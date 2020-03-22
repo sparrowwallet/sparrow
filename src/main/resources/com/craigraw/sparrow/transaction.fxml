@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<SplitPane dividerPositions="0.7" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" VBox.vgrow="ALWAYS" fx:controller="com.craigraw.sparrow.TransactionController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
+<items>
+    <SplitPane dividerPositions="0.4" prefHeight="160.0" prefWidth="200.0">
+        <items>
+            <TreeView prefHeight="154.0" prefWidth="174.0" fx:id="txtree" />
+            <ScrollPane fitToHeight="true" fitToWidth="true" prefHeight="200.0" prefWidth="200.0">
+                <content>
+                    <TableView prefHeight="200.0" prefWidth="200.0" fx:id="txnode">
+                        <columns>
+                            <TableColumn prefWidth="75.0" text="Name" />
+                            <TableColumn prefWidth="300.0" text="Value" />
+                        </columns>
+                    </TableView>
+                </content>
+            </ScrollPane>
+        </items>
+    </SplitPane>
+    <TextArea />
+</items>
+</SplitPane>
