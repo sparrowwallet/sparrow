@@ -1,0 +1,3 @@
+[submodule "drongo"]
+	path = drongo
+	url = git@github.com:craigraw/drongo.git
