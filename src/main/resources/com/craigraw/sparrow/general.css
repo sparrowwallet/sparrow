@@ -1,0 +1,6 @@
+.copyable-label, .copyable-label:focused {
+    -fx-background-color: transparent ;
+    -fx-background-insets: 0px ;
+    -fx-border :none;
+    -fx-padding: 0;
+}

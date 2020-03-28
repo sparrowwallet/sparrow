@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.control.Separator?>
+<?import tornadofx.control.DateTimePicker?>
+
+<GridPane fx:id="layout" hgap="10.0" prefHeight="350.0" prefWidth="600.0" vgap="10.0" alignment="CENTER" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.craigraw.sparrow.form.HeadersController" stylesheets="@../general.css">
+   <padding>
+      <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+   </padding>
+    <columnConstraints>
+        <ColumnConstraints minWidth="100" prefWidth="100"
+                           maxWidth="Infinity" halignment="RIGHT">
+        </ColumnConstraints>
+        <ColumnConstraints minWidth="200" prefWidth="200"
+                           maxWidth="Infinity" hgrow="ALWAYS">
+        </ColumnConstraints>
+    </columnConstraints>
+   <rowConstraints>
+      <RowConstraints />
+   </rowConstraints>
+    <!-- Add Header Label -->
+    <Label text="Headers" GridPane.columnIndex="0"
+           GridPane.rowIndex="0" GridPane.columnSpan="2"
+           GridPane.rowSpan="1" GridPane.halignment="LEFT" >
+        <font>
+            <Font name="Arial" size="24" ></Font>
+        </font>
+        <GridPane.margin>
+            <Insets top="0" right="0" bottom="10" left="0"></Insets>
+        </GridPane.margin>
+    </Label>
+
+    <Label text="Transaction ID: " GridPane.columnIndex="0" GridPane.rowIndex="1" />
+    <TextField fx:id="idField" editable="false" styleClass="copyable-label" prefHeight="40" prefWidth="520" minWidth="520" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+    <Label text="Version: " GridPane.columnIndex="0" GridPane.rowIndex="2" />
+    <Spinner fx:id="versionField" prefHeight="40" prefWidth="60" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+    <Label text="Type: " GridPane.columnIndex="0" GridPane.rowIndex="3" />
+    <Label fx:id="segwitField" prefHeight="40" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+    <Label fx:id="segwitVersionLabel" text="Segwit Version: " GridPane.columnIndex="0" GridPane.rowIndex="4" />
+    <Spinner fx:id="segwitVersionField" prefWidth="60" prefHeight="40" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+
+    <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" GridPane.rowSpan="1" GridPane.halignment="LEFT" />
+
+    <Label text="Locktime Type: " GridPane.columnIndex="0" GridPane.rowIndex="6" />
+    <HBox fillHeight="true" GridPane.columnIndex="1" GridPane.rowIndex="6">
+        <children>
+            <ToggleButton fx:id="locktimeBlockTypeField" text="Block" userData="block">
+                <toggleGroup>
+                    <ToggleGroup fx:id="locktimeTypeField" />
+                </toggleGroup>
+            </ToggleButton>
+            <ToggleButton fx:id="locktimeDateTypeField" text="Date" toggleGroup="$locktimeTypeField" userData="date" />
+        </children>
+    </HBox>
+
+    <Label text="Locktime: " GridPane.columnIndex="0" GridPane.rowIndex="7" />
+    <Spinner fx:id="locktimeBlockField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+    <DateTimePicker fx:id="locktimeDateField" visible="false" prefHeight="40" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+
+    <Separator GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2" GridPane.rowSpan="1" GridPane.halignment="LEFT" />
+
+    <Label text="Size: " GridPane.columnIndex="0" GridPane.rowIndex="9" />
+    <Label fx:id="sizeField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="9"/>
+
+    <Label text="Virtual Size: " GridPane.columnIndex="0" GridPane.rowIndex="10" />
+    <Label fx:id="virtualSizeField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="10"/>
+
+    <Label text="Fee: " GridPane.columnIndex="0" GridPane.rowIndex="11" />
+    <Label fx:id="feeField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="11"/>
+
+</GridPane>
