@@ -8,6 +8,8 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import tornadofx.control.DateTimePicker;
+import tornadofx.control.Field;
+import tornadofx.control.Fieldset;
 
 import java.net.URL;
 import java.time.*;
@@ -22,43 +24,46 @@ public class HeadersController implements Initializable, TransactionListener {
     private GridPane layout;
 
     @FXML
-    private TextField idField;
+    private TextField id;
 
     @FXML
-    private Spinner<Integer> versionField;
+    private Spinner<Integer> version;
 
     @FXML
-    private Label segwitField;
+    private TextField segwit;
 
     @FXML
-    private Label segwitVersionLabel;
+    private ToggleGroup locktimeType;
 
     @FXML
-    private Spinner<Integer> segwitVersionField;
+    private ToggleButton locktimeBlockType;
 
     @FXML
-    private ToggleGroup locktimeTypeField;
+    private ToggleButton locktimeDateType;
 
     @FXML
-    private ToggleButton locktimeBlockTypeField;
+    private Fieldset locktimeFieldset;
 
     @FXML
-    private ToggleButton locktimeDateTypeField;
+    private Field locktimeBlockField;
 
     @FXML
-    private Spinner<Integer> locktimeBlockField;
+    private Field locktimeDateField;
 
     @FXML
-    private DateTimePicker locktimeDateField;
+    private Spinner<Integer> locktimeBlock;
 
     @FXML
-    private Label feeField;
+    private DateTimePicker locktimeDate;
 
     @FXML
-    private Label sizeField;
+    private TextField fee;
 
     @FXML
-    private Label virtualSizeField;
+    private TextField size;
+
+    @FXML
+    private TextField virtualSize;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -71,38 +76,38 @@ public class HeadersController implements Initializable, TransactionListener {
 
         updateTxId();
 
-        versionField.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2, (int)tx.getVersion()));
-        versionField.valueProperty().addListener((obs, oldValue, newValue) -> {
+        version.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2, (int)tx.getVersion()));
+        version.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setVersion(newValue);
             EventManager.get().notify(tx);
         });
 
-        segwitField.setText(tx.isSegwit() ? "Segwit" : "Legacy" );
+        String type = "Legacy";
         if(tx.isSegwit()) {
-            segwitVersionField.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2, tx.getSegwitVersion()));
-            segwitVersionField.valueProperty().addListener((obs, oldValue, newValue) -> {
-                tx.setSegwitVersion(newValue);
-                EventManager.get().notify(tx);
-            });
-        } else {
-            layout.getChildren().removeAll(segwitVersionLabel, segwitVersionField);
+            type = "Segwit";
+            if(tx.getSegwitVersion() == 2) {
+                type = "Taproot";
+            }
         }
+        segwit.setText(type);
 
-        locktimeTypeField.selectedToggleProperty().addListener((ov, old_toggle, new_toggle) -> {
-            if(locktimeTypeField.getSelectedToggle() != null) {
-                String selection = locktimeTypeField.getSelectedToggle().getUserData().toString();
+        locktimeType.selectedToggleProperty().addListener((ov, old_toggle, new_toggle) -> {
+            if(locktimeType.getSelectedToggle() != null) {
+                String selection = locktimeType.getSelectedToggle().getUserData().toString();
                 if(selection.equals("block")) {
-                    locktimeBlockField.setVisible(true);
-                    locktimeDateField.setVisible(false);
-                    Integer block = locktimeBlockField.getValue();
+                    locktimeFieldset.getChildren().remove(locktimeDateField);
+                    locktimeFieldset.getChildren().remove(locktimeBlockField);
+                    locktimeFieldset.getChildren().add(locktimeBlockField);
+                    Integer block = locktimeBlock.getValue();
                     if(block != null) {
                         tx.setLockTime(block);
                         EventManager.get().notify(tx);
                     }
                 } else {
-                    locktimeBlockField.setVisible(false);
-                    locktimeDateField.setVisible(true);
-                    LocalDateTime date = locktimeDateField.getDateTimeValue();
+                    locktimeFieldset.getChildren().remove(locktimeBlockField);
+                    locktimeFieldset.getChildren().remove(locktimeDateField);
+                    locktimeFieldset.getChildren().add(locktimeDateField);
+                    LocalDateTime date = locktimeDate.getDateTimeValue();
                     if(date != null) {
                         tx.setLockTime(date.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
                         EventManager.get().notify(tx);
@@ -112,42 +117,39 @@ public class HeadersController implements Initializable, TransactionListener {
         });
 
         if(tx.getLockTime() < MAX_BLOCK_LOCKTIME) {
-            locktimeBlockField.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)MAX_BLOCK_LOCKTIME-1, (int)tx.getLockTime()));
-            locktimeBlockField.setVisible(true);
-            locktimeDateField.setVisible(false);
-            locktimeTypeField.selectToggle(locktimeBlockTypeField);
+            locktimeBlock.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)MAX_BLOCK_LOCKTIME-1, (int)tx.getLockTime()));
+            locktimeType.selectToggle(locktimeBlockType);
         } else {
+            locktimeBlock.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)MAX_BLOCK_LOCKTIME-1));
             LocalDateTime date = Instant.ofEpochSecond(tx.getLockTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
-            locktimeDateField.setDateTimeValue(date);
-            locktimeBlockField.setVisible(false);
-            locktimeDateField.setVisible(true);
-            locktimeTypeField.selectToggle(locktimeDateTypeField);
+            locktimeDate.setDateTimeValue(date);
+            locktimeType.selectToggle(locktimeDateType);
         }
 
-        locktimeBlockField.valueProperty().addListener((obs, oldValue, newValue) -> {
+        locktimeBlock.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLockTime(newValue);
             EventManager.get().notify(tx);
         });
 
-        locktimeDateField.setFormat("yyyy-MM-dd HH:mm:ss");
-        locktimeDateField.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
+        locktimeDate.setFormat("yyyy-MM-dd HH:mm:ss");
+        locktimeDate.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLockTime(newValue.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
             EventManager.get().notify(tx);
         });
 
         if(form.getPsbt() != null) {
-            feeField.setText(form.getPsbt().getFee().toString() + " sats");
+            fee.setText(form.getPsbt().getFee().toString() + " sats");
         } else {
-            feeField.setText("Unknown");
+            fee.setText("Unknown");
         }
 
-        sizeField.setText(tx.getSize() + " B");
+        size.setText(tx.getSize() + " B");
 
-        virtualSizeField.setText(tx.getVirtualSize() + " vB");
+        virtualSize.setText(tx.getVirtualSize() + " vB");
     }
 
     private void updateTxId() {
-        idField.setText(headersForm.getTransaction().calculateTxId(false).toString());
+        id.setText(headersForm.getTransaction().calculateTxId(false).toString());
     }
 
     @Override

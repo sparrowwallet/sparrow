@@ -2,81 +2,110 @@
 
 <?import javafx.geometry.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
-<?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
 <?import javafx.scene.control.Separator?>
 <?import tornadofx.control.DateTimePicker?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
 
 <GridPane fx:id="layout" hgap="10.0" prefHeight="350.0" prefWidth="600.0" vgap="10.0" alignment="CENTER" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.craigraw.sparrow.form.HeadersController" stylesheets="@../general.css">
    <padding>
       <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
    </padding>
     <columnConstraints>
-        <ColumnConstraints minWidth="100" prefWidth="100"
-                           maxWidth="Infinity" halignment="RIGHT">
+        <ColumnConstraints minWidth="290" prefWidth="290"
+                           maxWidth="Infinity">
         </ColumnConstraints>
-        <ColumnConstraints minWidth="200" prefWidth="200"
-                           maxWidth="Infinity" hgrow="ALWAYS">
+        <ColumnConstraints minWidth="290" prefWidth="290"
+                           maxWidth="Infinity">
         </ColumnConstraints>
     </columnConstraints>
    <rowConstraints>
       <RowConstraints />
    </rowConstraints>
-    <!-- Add Header Label -->
-    <Label text="Headers" GridPane.columnIndex="0"
-           GridPane.rowIndex="0" GridPane.columnSpan="2"
-           GridPane.rowSpan="1" GridPane.halignment="LEFT" >
-        <font>
-            <Font name="Arial" size="24" ></Font>
-        </font>
-        <GridPane.margin>
-            <Insets top="0" right="0" bottom="10" left="0"></Insets>
-        </GridPane.margin>
-    </Label>
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
+        <Fieldset text="Transaction" inputGrow="SOMETIMES">
+            <Field text="ID:">
+                <TextField fx:id="id" editable="false" styleClass="copyable-label, id" prefWidth="520" minWidth="520"/>
+            </Field>
+        </Fieldset>
+    </Form>
 
-    <Label text="Transaction ID: " GridPane.columnIndex="0" GridPane.rowIndex="1" />
-    <TextField fx:id="idField" editable="false" styleClass="copyable-label" prefHeight="40" prefWidth="520" minWidth="520" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+    <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <Label text="Version: " GridPane.columnIndex="0" GridPane.rowIndex="2" />
-    <Spinner fx:id="versionField" prefHeight="40" prefWidth="60" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="2">
+        <Fieldset text="Headers" inputGrow="SOMETIMES">
+            <Field text="Version:">
+                <Spinner fx:id="version" prefWidth="60" editable="true" />
+            </Field>
+            <Field text="Type:">
+                <TextField fx:id="segwit" editable="false" styleClass="copyable-label"/>
+            </Field>
+        </Fieldset>
+    </Form>
 
-    <Label text="Type: " GridPane.columnIndex="0" GridPane.rowIndex="3" />
-    <Label fx:id="segwitField" prefHeight="40" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+    <Form GridPane.columnIndex="1" GridPane.rowIndex="2">
+        <Fieldset fx:id="locktimeFieldset" text="Locktime" inputGrow="SOMETIMES">
+            <Field text="Type:">
+                <HBox fillHeight="true">
+                    <children>
+                        <ToggleButton fx:id="locktimeBlockType" text="Block" userData="block">
+                            <toggleGroup>
+                                <ToggleGroup fx:id="locktimeType" />
+                            </toggleGroup>
+                        </ToggleButton>
+                        <ToggleButton fx:id="locktimeDateType" text="Date" toggleGroup="$locktimeType" userData="date" />
+                    </children>
+                </HBox>
+            </Field>
+            <Field fx:id="locktimeBlockField" text="Block:">
+                <Spinner fx:id="locktimeBlock" prefWidth="120"/>
+            </Field>
+            <Field fx:id="locktimeDateField" text="Date:">
+                <DateTimePicker fx:id="locktimeDate" prefWidth="180"/>
+            </Field>
+        </Fieldset>
+    </Form>
 
-    <Label fx:id="segwitVersionLabel" text="Segwit Version: " GridPane.columnIndex="0" GridPane.rowIndex="4" />
-    <Spinner fx:id="segwitVersionField" prefWidth="60" prefHeight="40" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+    <Separator GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" GridPane.rowSpan="1" GridPane.halignment="LEFT" />
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="4">
+        <Fieldset text="Size" inputGrow="SOMETIMES">
+            <Field text="Bytes:">
+                <TextField fx:id="size" editable="false" styleClass="copyable-label" prefWidth="120"/>
+            </Field>
+            <Field text="vBytes:">
+                <TextField fx:id="virtualSize" editable="false" styleClass="copyable-label" prefWidth="120"/>
+            </Field>
+        </Fieldset>
+    </Form>
 
-    <Label text="Locktime Type: " GridPane.columnIndex="0" GridPane.rowIndex="6" />
-    <HBox fillHeight="true" GridPane.columnIndex="1" GridPane.rowIndex="6">
-        <children>
-            <ToggleButton fx:id="locktimeBlockTypeField" text="Block" userData="block">
-                <toggleGroup>
-                    <ToggleGroup fx:id="locktimeTypeField" />
-                </toggleGroup>
-            </ToggleButton>
-            <ToggleButton fx:id="locktimeDateTypeField" text="Date" toggleGroup="$locktimeTypeField" userData="date" />
-        </children>
-    </HBox>
+    <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
+        <Fieldset text="Fee" inputGrow="SOMETIMES">
+            <Field text="Amount:">
+                <TextField fx:id="fee" editable="false" styleClass="copyable-label" prefWidth="120"/>
+            </Field>
+            <Field text="Rate:">
+                <TextField fx:id="feeRateField" editable="false" styleClass="copyable-label" prefWidth="120"/>
+            </Field>
+        </Fieldset>
+    </Form>
 
-    <Label text="Locktime: " GridPane.columnIndex="0" GridPane.rowIndex="7" />
-    <Spinner fx:id="locktimeBlockField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
-    <DateTimePicker fx:id="locktimeDateField" visible="false" prefHeight="40" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+    <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <Separator GridPane.columnIndex="0" GridPane.rowIndex="8" GridPane.columnSpan="2" GridPane.rowSpan="1" GridPane.halignment="LEFT" />
-
-    <Label text="Size: " GridPane.columnIndex="0" GridPane.rowIndex="9" />
-    <Label fx:id="sizeField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="9"/>
-
-    <Label text="Virtual Size: " GridPane.columnIndex="0" GridPane.rowIndex="10" />
-    <Label fx:id="virtualSizeField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="10"/>
-
-    <Label text="Fee: " GridPane.columnIndex="0" GridPane.rowIndex="11" />
-    <Label fx:id="feeField" prefHeight="40" prefWidth="120" GridPane.columnIndex="1" GridPane.rowIndex="11"/>
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="6">
+        <Fieldset text="Blockchain" inputGrow="SOMETIMES">
+            <Field text="Status:">
+                <TextField fx:id="blockStatusField" editable="false" styleClass="copyable-label" prefWidth="120"/>
+            </Field>
+            <Field text="Block:">
+                <TextField fx:id="blockField" editable="false" styleClass="copyable-label" prefWidth="120"/>
+            </Field>
+        </Fieldset>
+    </Form>
 
 </GridPane>

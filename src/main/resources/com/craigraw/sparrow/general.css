@@ -2,5 +2,22 @@
     -fx-background-color: transparent ;
     -fx-background-insets: 0px ;
     -fx-border :none;
-    -fx-padding: 0;
+    -fx-padding: 5 0 5 0;
+}
+
+.form .fieldset:horizontal .label-container {
+    -fx-pref-width: 80px;
+    -fx-pref-height: 25px;
+}
+
+.form .field {
+    -fx-padding: 5 5;
+}
+
+.id {
+    -fx-font-family: Courier;
+}
+
+.form-separator {
+    -fx-padding: -15 0 0 0;
 }
