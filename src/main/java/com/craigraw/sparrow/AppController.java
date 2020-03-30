@@ -3,10 +3,12 @@ package com.craigraw.sparrow;
 import com.craigraw.drongo.Utils;
 import com.craigraw.drongo.protocol.Transaction;
 import com.craigraw.drongo.psbt.PSBT;
+import com.craigraw.drongo.psbt.PSBTParseException;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.stage.FileChooser;
@@ -49,22 +51,34 @@ public class AppController implements Initializable {
                     stream.read(bytes);
                     stream.close();
 
-                    Tab tab = null;
-                    if(PSBT.isPSBT(Hex.toHexString(bytes))) {
-                        PSBT psbt = new PSBT(bytes);
-                        tab = addTransactionTab(file.getName(), null, psbt);
+                    Tab tab;
+                    if(PSBT.isPSBT(bytes)) {
+                        try {
+                            PSBT psbt = new PSBT(bytes);
+                            tab = addTransactionTab(file.getName(), null, psbt);
+                        } catch(PSBTParseException e) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("PSBT File Invalid");
+                            alert.setHeaderText("PSBT File Invalid");
+                            alert.setContentText(e.getMessage());
+                            alert.showAndWait();
+                            return;
+                        }
+                    } else {
+                        try {
+                            Transaction transaction = new Transaction(bytes);
+                            tab = addTransactionTab(file.getName(), transaction, null);
+                        } catch(RuntimeException e) {
+                            Alert alert = new Alert(Alert.AlertType.ERROR);
+                            alert.setTitle("File Invalid");
+                            alert.setHeaderText("File Invalid");
+                            alert.setContentText("Unknown file format or invalid transaction");
+                            alert.showAndWait();
+                            return;
+                        }
                     }
 
-                    try {
-                        Transaction transaction = new Transaction(bytes);
-                        tab = addTransactionTab(file.getName(), transaction, null);
-                    } catch(Exception e) {
-                        //TODO: Handle not a transaction
-                    }
-
-                    if(tab != null) {
-                        tabs.getSelectionModel().select(tab);
-                    }
+                    tabs.getSelectionModel().select(tab);
                 } catch(IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -87,8 +101,12 @@ public class AppController implements Initializable {
             Transaction transaction = new Transaction(txbytes);
             addTransactionTab(name, transaction, null);
         } else if(psbtHex != null) {
-            PSBT psbt = PSBT.fromString(psbtHex);
-            addTransactionTab(name, null, psbt);
+            try {
+                PSBT psbt = PSBT.fromString(psbtHex);
+                addTransactionTab(name, null, psbt);
+            } catch(Exception e) {
+                //ignore
+            }
         }
     }
 
