@@ -4,16 +4,6 @@
     -fx-padding: 2;
 }
 
-.version-color { -fx-fill: #986801 }
-.segwit-marker-color { -fx-fill: #000000 }
-.segwit-flag-color { -fx-fill: #4078f2 }
-.num-inputs-color { -fx-fill: #ca1243 }
-.inputs-color { -fx-fill: #0184bc }
-.num-outputs-color { -fx-fill: #ca1243 }
-.outputs-color { -fx-fill: #50a14f }
-.witnesses-color { -fx-fill: #a626a4 }
-.locktime-color { -fx-fill: #986801 }
-
 .color-0 { -fx-fill: #ca1243 }
 .color-1 { -fx-fill: #d75f00 }
 .color-2 { -fx-fill: #c18401 }

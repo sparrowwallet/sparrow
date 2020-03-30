@@ -25,7 +25,7 @@
           </Menu>
         </menus>
       </MenuBar>
-      <TabPane prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" fx:id="tabs" />
+      <TabPane prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" fx:id="tabs" />
 
       <Label alignment="BOTTOM_LEFT" text="Label" />
    </children>

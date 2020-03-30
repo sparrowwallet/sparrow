@@ -1,14 +1,38 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
+<?import javafx.geometry.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import tornadofx.control.*?>
 
-<AnchorPane xmlns="http://javafx.com/javafx"
-            xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.craigraw.sparrow.form.OutputsController"
-            prefHeight="400.0" prefWidth="600.0">
+<?import javafx.scene.chart.PieChart?>
+<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@outputs.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.craigraw.sparrow.form.OutputsController">
+    <padding>
+        <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints maxWidth="Infinity" minWidth="290" prefWidth="290">
+        </ColumnConstraints>
+        <ColumnConstraints maxWidth="Infinity" minWidth="290" prefWidth="290">
+        </ColumnConstraints>
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+    </rowConstraints>
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="Outputs">
+            <Field text="Count:">
+                <TextField fx:id="count" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+            </Field>
+            <Field text="Total:">
+                <TextField fx:id="total" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+            </Field>
+        </Fieldset>
+    </Form>
 
-</AnchorPane>
+    <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" styleClass="form-separator"/>
+
+    <PieChart fx:id="outputsPie" prefHeight="400" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" startAngle="180" labelLineLength="50" labelsVisible="false" />
+
+</GridPane>
+

@@ -13,6 +13,10 @@ public class OutputsForm extends Form {
         this.transaction = transaction;
     }
 
+    public Transaction getTransaction() {
+        return transaction;
+    }
+
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("outputs.fxml"));
         Node node = loader.load();

@@ -1,0 +1,18 @@
+.version-color { -fx-fill: #986801 }
+.segwit-marker-color { -fx-fill: #000000 }
+.segwit-flag-color { -fx-fill: #4078f2 }
+
+.num-inputs-color { -fx-fill: #ca1243 }
+.input-hash-color { -fx-fill: #0184bc }
+.input-index-color { -fx-fill: #0184bc }
+.input-sigscript-length-color { -fx-fill: #0184bc }
+.input-sigscript-color { -fx-fill: #0184bc }
+.input-sequence-color { -fx-fill: #0184bc }
+
+.num-outputs-color { -fx-fill: #ca1243 }
+.output-value-color { -fx-fill: #50a14f }
+.output-pubkeyscript-length-color { -fx-fill: #50a14f }
+.output-pubkeyscript-color { -fx-fill: #50a14f }
+
+.witnesses-color { -fx-fill: #a626a4 }
+.locktime-color { -fx-fill: #986801 }

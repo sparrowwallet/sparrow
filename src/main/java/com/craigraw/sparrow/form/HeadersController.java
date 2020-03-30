@@ -6,7 +6,6 @@ import com.craigraw.sparrow.TransactionListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
@@ -19,9 +18,6 @@ public class HeadersController implements Initializable, TransactionListener {
     private HeadersForm headersForm;
 
     private static final long MAX_BLOCK_LOCKTIME = 500000000L;
-
-    @FXML
-    private GridPane layout;
 
     @FXML
     private TextField id;
@@ -65,6 +61,9 @@ public class HeadersController implements Initializable, TransactionListener {
     @FXML
     private TextField virtualSize;
 
+    @FXML
+    private TextField feeRateField;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().subscribe(this);
@@ -72,6 +71,10 @@ public class HeadersController implements Initializable, TransactionListener {
 
     void setModel(HeadersForm form) {
         this.headersForm = form;
+        initializeView();
+    }
+
+    private void initializeView() {
         Transaction tx = headersForm.getTransaction();
 
         updateTxId();
@@ -137,15 +140,21 @@ public class HeadersController implements Initializable, TransactionListener {
             EventManager.get().notify(tx);
         });
 
-        if(form.getPsbt() != null) {
-            fee.setText(form.getPsbt().getFee().toString() + " sats");
+        size.setText(tx.getSize() + " B");
+        virtualSize.setText(tx.getVirtualSize() + " vB");
+
+        Long feeAmt = null;
+        if(headersForm.getPsbt() != null) {
+            feeAmt = headersForm.getPsbt().getFee();
+        }
+
+        if(feeAmt != null) {
+            fee.setText(feeAmt + " sats");
+            double feeRate = feeAmt.doubleValue() / tx.getVirtualSize();
+            feeRateField.setText(String.format("%.2f", feeRate) + " sats/vByte");
         } else {
             fee.setText("Unknown");
         }
-
-        size.setText(tx.getSize() + " B");
-
-        virtualSize.setText(tx.getVirtualSize() + " vB");
     }
 
     private void updateTxId() {

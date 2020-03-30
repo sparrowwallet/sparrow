@@ -1,0 +1,31 @@
+.version-color { -fx-fill: #e5e5e6 }
+.segwit-marker-color { -fx-fill: #e5e5e6 }
+.segwit-flag-color { -fx-fill: #e5e5e6 }
+
+.num-inputs-color { -fx-fill: #e5e5e6 }
+.input-hash-color { -fx-fill: #e5e5e6 }
+.input-index-color { -fx-fill: #e5e5e6 }
+.input-sigscript-length-color { -fx-fill: #e5e5e6 }
+.input-sigscript-color { -fx-fill: #e5e5e6 }
+.input-sequence-color { -fx-fill: #e5e5e6 }
+
+.num-outputs-color { -fx-fill: #ca1243 }
+.output-value-color { -fx-fill: #000000 }
+.output-pubkeyscript-length-color { -fx-fill: #a626a4 }
+.output-pubkeyscript-color { -fx-fill: #50a14f }
+
+.witnesses-color { -fx-fill: #e5e5e6 }
+.locktime-color { -fx-fill: #e5e5e6 }
+
+.chart-legend-item{
+    -fx-font-family: Courier;
+}
+
+.default-color7.chart-pie { -fx-pie-color: #0184bc }
+.default-color6.chart-pie { -fx-pie-color: #a626a4 }
+.default-color5.chart-pie { -fx-pie-color: #d75f00 }
+.default-color4.chart-pie { -fx-pie-color: #986801 }
+.default-color3.chart-pie { -fx-pie-color: #ca1243 }
+.default-color2.chart-pie { -fx-pie-color: #c18401 }
+.default-color1.chart-pie { -fx-pie-color: #50a14f }
+.default-color0.chart-pie { -fx-pie-color: #4078f2 }

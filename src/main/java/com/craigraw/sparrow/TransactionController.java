@@ -5,6 +5,8 @@ import com.craigraw.drongo.psbt.PSBT;
 import com.craigraw.sparrow.form.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
 import javafx.scene.control.cell.TextFieldTreeCell;
@@ -47,7 +49,7 @@ public class TransactionController implements Initializable, TransactionListener
         TreeItem<Form> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
 
-        InputsForm inputsForm = new InputsForm(transaction);
+        InputsForm inputsForm = new InputsForm(transaction, psbt);
         TreeItem<Form> inputsItem = new TreeItem<>(inputsForm);
         inputsItem.setExpanded(true);
         for(TransactionInput txInput : transaction.getInputs()) {
@@ -83,10 +85,16 @@ public class TransactionController implements Initializable, TransactionListener
 
         txtree.getSelectionModel().selectedItemProperty().addListener((observable, old_val, new_val) -> {
             Form form = new_val.getValue();
-
             try {
-                txpane.getChildren().removeAll();
-                txpane.getChildren().add(form.getContents());
+                Node node = form.getContents();
+                txpane.getChildren().clear();
+                txpane.getChildren().add(node);
+
+                if(node instanceof Parent) {
+                    Parent parent = (Parent)node;
+                    txhex.getStylesheets().clear();
+                    txhex.getStylesheets().addAll(parent.getStylesheets());
+                }
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
             }
@@ -120,24 +128,30 @@ public class TransactionController implements Initializable, TransactionListener
         }
 
         //Number of inputs
-        cursor = addText(hex, cursor, 2, "num-inputs");
+        VarInt numInputs = new VarInt(transaction.getInputs().size());
+        cursor = addText(hex, cursor, numInputs.getSizeInBytes()*2, "num-inputs");
 
         //Inputs
-        int totalInputLength = 0;
         for(TransactionInput input : transaction.getInputs()) {
-            totalInputLength += input.getLength();
+            cursor = addText(hex, cursor, 32*2, "input-hash");
+            cursor = addText(hex, cursor, 4*2, "input-index");
+            VarInt scriptLen = new VarInt(input.getScriptBytes().length);
+            cursor = addText(hex, cursor, scriptLen.getSizeInBytes()*2, "input-sigscript-length");
+            cursor = addText(hex, cursor, (int)scriptLen.value*2, "input-sigscript");
+            cursor = addText(hex, cursor, 4*2, "input-sequence");
         }
-        cursor = addText(hex, cursor, totalInputLength*2, "inputs");
 
         //Number of outputs
-        cursor = addText(hex, cursor, 2, "num-outputs");
+        VarInt numOutputs = new VarInt(transaction.getOutputs().size());
+        cursor = addText(hex, cursor, numOutputs.getSizeInBytes()*2, "num-outputs");
 
         //Outputs
-        int totalOutputLength = 0;
         for(TransactionOutput output : transaction.getOutputs()) {
-            totalOutputLength += output.getLength();
+            cursor = addText(hex, cursor, 8*2, "output-value");
+            VarInt scriptLen = new VarInt(output.getScriptBytes().length);
+            cursor = addText(hex, cursor, scriptLen.getSizeInBytes()*2, "output-pubkeyscript-length");
+            cursor = addText(hex, cursor, (int)scriptLen.value*2, "output-pubkeyscript");
         }
-        cursor = addText(hex, cursor, totalOutputLength*2, "outputs");
 
         if(transaction.hasWitnesses()) {
             int totalWitnessLength = 0;
