@@ -1,12 +1,14 @@
 plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.8'
+    id 'org.kordamp.gradle.jdeps' version '0.9.0'
+    id 'org.beryx.jlink' version '2.17.4'
 }
 
-group 'com.craigraw'
+group 'com.sparrowwallet'
 version '1.0-SNAPSHOT'
 
-sourceCompatibility = 1.8
+sourceCompatibility = 1.9
 
 repositories {
     mavenCentral()
@@ -17,11 +19,49 @@ javafx {
     modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
-dependencies {
-    implementation project(':drongo')
-    compile group: 'org.fxmisc.richtext', name: 'richtextfx', version: '0.10.4'
-    compile group: 'no.tornado', name: 'tornadofx-controls', version: '1.0.4'
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+java {
+    disableAutoTargetJvm()
 }
 
-mainClassName = 'com.craigraw.sparrow.MainApp'
+dependencies {
+    implementation(project(':drongo')) {
+        exclude group: 'org.hamcrest'
+        exclude group: 'junit'
+    }
+    implementation('org.fxmisc.richtext:richtextfx:0.10.4')
+    implementation('no.tornado:tornadofx-controls:1.0.4')
+    implementation('org.controlsfx:controlsfx:11.0.1' ) {
+        exclude group: 'org.openjfx', module: 'javafx-base'
+        exclude group: 'org.openjfx', module: 'javafx-graphics'
+        exclude group: 'org.openjfx', module: 'javafx-controls'
+        exclude group: 'org.openjfx', module: 'javafx-swing'
+        exclude group: 'org.openjfx', module: 'javafx-fxml'
+        exclude group: 'org.openjfx', module: 'javafx-web'
+        exclude group: 'org.openjfx', module: 'javafx-media'
+    }
+    testImplementation('junit:junit:4.12')
+}
+
+mainClassName = 'com.sparrowwallet.sparrow.MainApp'
+
+
+
+jlink {
+    mergedModule {
+        requires 'java.management';
+        requires 'javafx.graphics';
+        requires 'java.naming';
+        requires 'javafx.controls';
+        requires 'java.logging';
+        requires 'java.sql';
+        requires 'java.xml';
+        requires 'javafx.base';
+        requires 'jdk.unsupported';
+    }
+
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']
+    launcher {
+        name = 'sparrow'
+    }
+    addExtraDependencies("javafx")
+}
