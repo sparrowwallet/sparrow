@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class InputsController extends FormController implements Initializable {
+public class InputsController extends TransactionFormController implements Initializable {
     private InputsForm inputsForm;
 
     @FXML

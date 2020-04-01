@@ -5,7 +5,7 @@
 <?import org.fxmisc.richtext.*?>
 
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
-<SplitPane dividerPositions="0.82" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.TransactionController">
+<SplitPane dividerPositions="0.82" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
 <items>
     <SplitPane dividerPositions="0.2" prefHeight="160.0" prefWidth="200.0">
         <items>

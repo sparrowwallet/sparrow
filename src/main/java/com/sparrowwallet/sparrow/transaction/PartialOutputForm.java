@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import javafx.fxml.FXMLLoader;
@@ -6,7 +6,7 @@ import javafx.scene.Node;
 
 import java.io.IOException;
 
-public class PartialOutputForm extends Form {
+public class PartialOutputForm extends TransactionForm {
     private PSBTOutput psbtOutput;
 
     public PartialOutputForm(PSBTOutput psbtOutput) {

@@ -1,9 +1,9 @@
-package com.sparrowwallet.sparrow;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.sparrow.form.*;
+import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
@@ -23,7 +23,7 @@ import java.util.ResourceBundle;
 public class TransactionController implements Initializable, TransactionListener {
 
     @FXML
-    private TreeView<Form> txtree;
+    private TreeView<TransactionForm> txtree;
 
     @FXML
     private Pane txpane;
@@ -46,24 +46,24 @@ public class TransactionController implements Initializable, TransactionListener
 
     private void initializeTxTree() {
         HeadersForm headersForm = new HeadersForm(transaction, psbt);
-        TreeItem<Form> rootItem = new TreeItem<>(headersForm);
+        TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
 
         InputsForm inputsForm = new InputsForm(transaction, psbt);
-        TreeItem<Form> inputsItem = new TreeItem<>(inputsForm);
+        TreeItem<TransactionForm> inputsItem = new TreeItem<>(inputsForm);
         inputsItem.setExpanded(true);
         for(TransactionInput txInput : transaction.getInputs()) {
             InputForm inputForm = new InputForm(txInput);
-            TreeItem<Form> inputItem = new TreeItem<>(inputForm);
+            TreeItem<TransactionForm> inputItem = new TreeItem<>(inputForm);
             inputsItem.getChildren().add(inputItem);
         }
 
         OutputsForm outputsForm = new OutputsForm(transaction);
-        TreeItem<Form> outputsItem = new TreeItem<>(outputsForm);
+        TreeItem<TransactionForm> outputsItem = new TreeItem<>(outputsForm);
         outputsItem.setExpanded(true);
         for(TransactionOutput txOutput : transaction.getOutputs()) {
             OutputForm outputForm = new OutputForm(txOutput);
-            TreeItem<Form> outputItem = new TreeItem<>(outputForm);
+            TreeItem<TransactionForm> outputItem = new TreeItem<>(outputForm);
             outputsItem.getChildren().add(outputItem);
         }
 
@@ -71,22 +71,22 @@ public class TransactionController implements Initializable, TransactionListener
         rootItem.getChildren().add(outputsItem);
         txtree.setRoot(rootItem);
 
-        txtree.setCellFactory(p -> new TextFieldTreeCell<>(new StringConverter<Form>(){
+        txtree.setCellFactory(p -> new TextFieldTreeCell<>(new StringConverter<TransactionForm>(){
             @Override
-            public String toString(Form form) {
-                return form.toString();
+            public String toString(TransactionForm transactionForm) {
+                return transactionForm.toString();
             }
 
             @Override
-            public Form fromString(String string) {
+            public TransactionForm fromString(String string) {
                 throw new IllegalStateException("No editing");
             }
         }));
 
         txtree.getSelectionModel().selectedItemProperty().addListener((observable, old_val, new_val) -> {
-            Form form = new_val.getValue();
+            TransactionForm transactionForm = new_val.getValue();
             try {
-                Node node = form.getContents();
+                Node node = transactionForm.getContents();
                 txpane.getChildren().clear();
                 txpane.getChildren().add(node);
 

@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import javafx.fxml.FXMLLoader;
@@ -6,7 +6,7 @@ import javafx.scene.Node;
 
 import java.io.IOException;
 
-public class PartialInputForm extends Form {
+public class PartialInputForm extends TransactionForm {
     private PSBTInput psbtInput;
 
     public PartialInputForm(PSBTInput psbtInput) {

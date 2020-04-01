@@ -4,5 +4,6 @@ open module com.sparrowwallet.sparrow {
     requires javafx.fxml;
     requires org.controlsfx.controls;
     requires org.fxmisc.richtext;
+    requires tornadofx.controls;
     requires com.sparrowwallet.drongo;
 }

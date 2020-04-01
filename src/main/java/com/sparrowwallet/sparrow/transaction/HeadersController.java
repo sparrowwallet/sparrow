@@ -1,8 +1,7 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.TransactionListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -14,7 +13,7 @@ import java.net.URL;
 import java.time.*;
 import java.util.ResourceBundle;
 
-public class HeadersController implements Initializable, TransactionListener {
+public class HeadersController extends TransactionFormController implements Initializable, TransactionListener {
     private HeadersForm headersForm;
 
     private static final long MAX_BLOCK_LOCKTIME = 500000000L;

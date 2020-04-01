@@ -48,15 +48,10 @@ mainClassName = 'com.sparrowwallet.sparrow.MainApp'
 
 jlink {
     mergedModule {
-        requires 'java.management';
         requires 'javafx.graphics';
-        requires 'java.naming';
         requires 'javafx.controls';
-        requires 'java.logging';
-        requires 'java.sql';
         requires 'java.xml';
         requires 'javafx.base';
-        requires 'jdk.unsupported';
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']

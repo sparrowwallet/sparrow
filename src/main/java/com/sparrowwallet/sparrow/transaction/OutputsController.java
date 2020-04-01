@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -10,7 +10,7 @@ import javafx.scene.control.TextField;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class OutputsController extends FormController implements Initializable {
+public class OutputsController extends TransactionFormController implements Initializable {
     private OutputsForm outputsForm;
 
     @FXML

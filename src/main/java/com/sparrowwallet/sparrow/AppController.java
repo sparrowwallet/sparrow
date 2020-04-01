@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.sparrow.transaction.TransactionController;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -113,7 +114,7 @@ public class AppController implements Initializable {
         try {
             Tab tab = new Tab(name);
             tab.setClosable(true);
-            FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("transaction.fxml"));
+            FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("transaction/transaction.fxml"));
             tab.setContent(transactionLoader.load());
             TransactionController controller = transactionLoader.getController();
 

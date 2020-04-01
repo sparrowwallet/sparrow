@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import javafx.fxml.FXMLLoader;
@@ -6,7 +6,7 @@ import javafx.scene.Node;
 
 import java.io.IOException;
 
-public class OutputForm extends Form {
+public class OutputForm extends TransactionForm {
     private TransactionOutput transactionOutput;
 
     public OutputForm(TransactionOutput transactionOutput) {

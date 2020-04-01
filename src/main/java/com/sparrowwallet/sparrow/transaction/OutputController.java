@@ -1,11 +1,11 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import javafx.fxml.Initializable;
 
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class OutputController implements Initializable {
+public class OutputController extends TransactionFormController implements Initializable {
     private OutputForm outputForm;
 
     @Override

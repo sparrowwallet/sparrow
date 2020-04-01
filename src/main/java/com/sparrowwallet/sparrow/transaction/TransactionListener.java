@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 

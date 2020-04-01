@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.transaction.TransactionListener;
 
 import java.util.ArrayList;
 import java.util.List;

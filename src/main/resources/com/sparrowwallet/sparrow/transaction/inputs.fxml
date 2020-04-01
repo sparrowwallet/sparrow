@@ -6,7 +6,7 @@
 <?import tornadofx.control.*?>
 
 <?import javafx.scene.chart.PieChart?>
-<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@outputs.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.form.OutputsController">
+<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@inputs.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputsController">
     <padding>
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
     </padding>
@@ -19,8 +19,8 @@
     <rowConstraints>
         <RowConstraints />
     </rowConstraints>
-    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
-        <Fieldset inputGrow="SOMETIMES" text="Outputs">
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="Inputs">
             <Field text="Count:">
                 <TextField fx:id="count" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
             </Field>
@@ -30,9 +30,16 @@
         </Fieldset>
     </Form>
 
+    <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="Signatures">
+            <Field text="Status:">
+                <TextField fx:id="signatures" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+            </Field>
+        </Fieldset>
+    </Form>
+
     <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <PieChart fx:id="outputsPie" prefHeight="400" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" startAngle="180" labelLineLength="50" labelsVisible="false" />
+    <PieChart fx:id="inputsPie" prefHeight="400" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2" startAngle="180" labelLineLength="50" labelsVisible="false" />
 
 </GridPane>
-

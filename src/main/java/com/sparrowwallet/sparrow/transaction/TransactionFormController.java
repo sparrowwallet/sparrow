@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.form;
+package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -10,7 +10,7 @@ import javafx.scene.control.Tooltip;
 
 import java.util.List;
 
-public abstract class FormController {
+public abstract class TransactionFormController {
     protected void addPieData(PieChart pie, List<TransactionOutput> outputs) {
         ObservableList<PieChart.Data> outputsPieData = FXCollections.observableArrayList();
 
