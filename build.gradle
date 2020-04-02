@@ -44,7 +44,9 @@ dependencies {
 
 mainClassName = 'com.sparrowwallet.sparrow.MainApp'
 
-
+run {
+    applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png"]
+}
 
 jlink {
     mergedModule {
@@ -59,4 +61,21 @@ jlink {
         name = 'sparrow'
     }
     addExtraDependencies("javafx")
+    jpackage {
+        imageName = "Sparrow"
+        installerName = "Sparrow"
+        appVersion = "0.1"
+        imageOptions = []
+        installerOptions = [
+                '--file-associations', 'src/main/resources/associations.properties',
+        ]
+        if (org.gradle.internal.os.OperatingSystem.current().windows) {
+            installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu']
+        }
+        if (org.gradle.internal.os.OperatingSystem.current().macOsX) {
+            imageOptions += ['--icon', 'src/main/resources/sparrow.icns']
+
+            installerType = "dmg"
+        }
+    }
 }

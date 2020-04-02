@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
+import com.sparrowwallet.sparrow.transaction.TransactionListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -28,6 +29,16 @@ public class AppController implements Initializable {
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+
+    }
+
+    void initializeView() {
+        tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, new_val) -> {
+            String tabName = new_val.getText();
+            Stage tabStage = (Stage)tabs.getScene().getWindow();
+            tabStage.setTitle("Sparrow - " + tabName);
+        });
+
         addExampleTxTabs();
     }
 
