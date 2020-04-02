@@ -189,5 +189,6 @@ public class HeadersController extends TransactionFormController implements Init
     @Override
     public void updated(Transaction transaction) {
         updateTxId();
+        locktimeFieldset.setText(headersForm.getTransaction().isLockTimeEnabled() ? "Locktime" : "Locktime (Disabled)");
     }
 }
