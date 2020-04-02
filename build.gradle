@@ -42,7 +42,7 @@ dependencies {
     testImplementation('junit:junit:4.12')
 }
 
-mainClassName = 'com.sparrowwallet.sparrow.MainApp'
+mainClassName = 'com.sparrowwallet.sparrow/com.sparrowwallet.sparrow.MainApp'
 
 run {
     applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png"]

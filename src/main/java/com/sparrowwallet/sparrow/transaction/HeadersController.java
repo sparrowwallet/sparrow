@@ -43,10 +43,16 @@ public class HeadersController extends TransactionFormController implements Init
     private Fieldset locktimeFieldset;
 
     @FXML
+    private Field locktimeNoneField;
+
+    @FXML
     private Field locktimeBlockField;
 
     @FXML
     private Field locktimeDateField;
+
+    @FXML
+    private Spinner<Integer> locktimeNone;
 
     @FXML
     private Spinner<Integer> locktimeBlock;
@@ -102,16 +108,15 @@ public class HeadersController extends TransactionFormController implements Init
                 if(selection.equals("none")) {
                     locktimeFieldset.getChildren().remove(locktimeDateField);
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
-                    locktimeFieldset.getChildren().add(locktimeBlockField);
-                    locktimeBlock.setDisable(true);
-                    locktimeBlock.getValueFactory().setValue(0);
+                    locktimeFieldset.getChildren().remove(locktimeNoneField);
+                    locktimeFieldset.getChildren().add(locktimeNoneField);
                     tx.setLockTime(0);
                     EventManager.get().notify(tx);
                 } else if(selection.equals("block")) {
                     locktimeFieldset.getChildren().remove(locktimeDateField);
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
+                    locktimeFieldset.getChildren().remove(locktimeNoneField);
                     locktimeFieldset.getChildren().add(locktimeBlockField);
-                    locktimeBlock.setDisable(false);
                     Integer block = locktimeBlock.getValue();
                     if(block != null) {
                         tx.setLockTime(block);
@@ -120,9 +125,11 @@ public class HeadersController extends TransactionFormController implements Init
                 } else {
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
                     locktimeFieldset.getChildren().remove(locktimeDateField);
+                    locktimeFieldset.getChildren().remove(locktimeNoneField);
                     locktimeFieldset.getChildren().add(locktimeDateField);
                     LocalDateTime date = locktimeDate.getDateTimeValue();
                     if(date != null) {
+                        locktimeDate.setDateTimeValue(date);
                         tx.setLockTime(date.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
                         EventManager.get().notify(tx);
                     }
@@ -130,14 +137,16 @@ public class HeadersController extends TransactionFormController implements Init
             }
         });
 
+        locktimeNone.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)MAX_BLOCK_LOCKTIME-1, 0));
         if(tx.getLockTime() < MAX_BLOCK_LOCKTIME) {
             locktimeBlock.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)MAX_BLOCK_LOCKTIME-1, (int)tx.getLockTime()));
             if(tx.getLockTime() == 0) {
                 locktimeToggleGroup.selectToggle(locktimeNoneType);
-                locktimeBlock.setDisable(true);
             } else {
                 locktimeToggleGroup.selectToggle(locktimeBlockType);
             }
+            LocalDateTime date = Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            locktimeDate.setDateTimeValue(date);
         } else {
             locktimeBlock.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)MAX_BLOCK_LOCKTIME-1));
             LocalDateTime date = Instant.ofEpochSecond(tx.getLockTime()).atZone(ZoneId.systemDefault()).toLocalDateTime();

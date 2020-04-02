@@ -35,8 +35,10 @@ public class AppController implements Initializable {
     void initializeView() {
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, new_val) -> {
             String tabName = new_val.getText();
-            Stage tabStage = (Stage)tabs.getScene().getWindow();
-            tabStage.setTitle("Sparrow - " + tabName);
+            if(tabs.getScene() != null) {
+                Stage tabStage = (Stage)tabs.getScene().getWindow();
+                tabStage.setTitle("Sparrow - " + tabName);
+            }
         });
 
         addExampleTxTabs();

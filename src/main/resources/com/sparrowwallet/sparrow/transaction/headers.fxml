@@ -63,6 +63,9 @@
                     </buttons>
                 </SegmentedButton>
             </Field>
+            <Field fx:id="locktimeNoneField" text="Block:">
+                <Spinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
+            </Field>
             <Field fx:id="locktimeBlockField" text="Block:">
                 <Spinner fx:id="locktimeBlock" prefWidth="120"/>
             </Field>

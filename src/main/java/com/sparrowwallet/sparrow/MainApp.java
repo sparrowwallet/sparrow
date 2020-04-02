@@ -14,7 +14,6 @@ public class MainApp extends Application {
         FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("app.fxml"));
         Parent root = transactionLoader.load();
         AppController appController = transactionLoader.getController();
-        appController.initializeView();
 
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
@@ -23,6 +22,8 @@ public class MainApp extends Application {
         stage.setScene(scene);
         stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/sparrow.png")));
         stage.show();
+
+        appController.initializeView();
     }
 
     public static void main(String[] args) {
