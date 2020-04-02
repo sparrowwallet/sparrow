@@ -33,6 +33,8 @@ public class TransactionController implements Initializable, TransactionListener
 
     private Transaction transaction;
     private PSBT psbt;
+    private int selectedInputIndex = -1;
+    private int selectedOutputIndex = -1;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -94,6 +96,18 @@ public class TransactionController implements Initializable, TransactionListener
                     Parent parent = (Parent)node;
                     txhex.getStylesheets().clear();
                     txhex.getStylesheets().addAll(parent.getStylesheets());
+
+                    selectedInputIndex = -1;
+                    selectedOutputIndex = -1;
+                    if(transactionForm instanceof InputForm) {
+                        InputForm inputForm = (InputForm)transactionForm;
+                        selectedInputIndex = inputForm.getTransactionInput().getIndex();
+                    } else if(transactionForm instanceof OutputForm) {
+                        OutputForm outputForm = (OutputForm)transactionForm;
+                        selectedOutputIndex = outputForm.getTransactionOutput().getIndex();
+                    }
+
+                    refreshTxHex();
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
@@ -132,13 +146,14 @@ public class TransactionController implements Initializable, TransactionListener
         cursor = addText(hex, cursor, numInputs.getSizeInBytes()*2, "num-inputs");
 
         //Inputs
-        for(TransactionInput input : transaction.getInputs()) {
-            cursor = addText(hex, cursor, 32*2, "input-hash");
-            cursor = addText(hex, cursor, 4*2, "input-index");
+        for (int i = 0; i < transaction.getInputs().size(); i++) {
+            TransactionInput input = transaction.getInputs().get(i);
+            cursor = addText(hex, cursor, 32*2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "hash"));
+            cursor = addText(hex, cursor, 4*2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "index"));
             VarInt scriptLen = new VarInt(input.getScriptBytes().length);
-            cursor = addText(hex, cursor, scriptLen.getSizeInBytes()*2, "input-sigscript-length");
-            cursor = addText(hex, cursor, (int)scriptLen.value*2, "input-sigscript");
-            cursor = addText(hex, cursor, 4*2, "input-sequence");
+            cursor = addText(hex, cursor, scriptLen.getSizeInBytes()*2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript-length"));
+            cursor = addText(hex, cursor, (int)scriptLen.value*2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript"));
+            cursor = addText(hex, cursor, 4*2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sequence"));
         }
 
         //Number of outputs
@@ -146,11 +161,12 @@ public class TransactionController implements Initializable, TransactionListener
         cursor = addText(hex, cursor, numOutputs.getSizeInBytes()*2, "num-outputs");
 
         //Outputs
-        for(TransactionOutput output : transaction.getOutputs()) {
-            cursor = addText(hex, cursor, 8*2, "output-value");
+        for (int i = 0; i < transaction.getOutputs().size(); i++) {
+            TransactionOutput output = transaction.getOutputs().get(i);
+            cursor = addText(hex, cursor, 8*2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value"));
             VarInt scriptLen = new VarInt(output.getScriptBytes().length);
-            cursor = addText(hex, cursor, scriptLen.getSizeInBytes()*2, "output-pubkeyscript-length");
-            cursor = addText(hex, cursor, (int)scriptLen.value*2, "output-pubkeyscript");
+            cursor = addText(hex, cursor, scriptLen.getSizeInBytes()*2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript-length"));
+            cursor = addText(hex, cursor, (int)scriptLen.value*2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"));
         }
 
         if(transaction.hasWitnesses()) {
@@ -169,8 +185,16 @@ public class TransactionController implements Initializable, TransactionListener
         }
     }
 
-    private int addText(String hex, int cursor, int length, String description) {
-        txhex.append(hex.substring(cursor, cursor+=length), description + "-color");
+    private String getIndexedStyleClass(int iterableIndex, int selectedIndex, String styleClass) {
+        if(selectedIndex == -1 || selectedIndex == iterableIndex) {
+            return styleClass;
+        }
+
+        return "other";
+    }
+
+    private int addText(String hex, int cursor, int length, String styleClass) {
+        txhex.append(hex.substring(cursor, cursor+=length), styleClass);
         return cursor;
     }
 

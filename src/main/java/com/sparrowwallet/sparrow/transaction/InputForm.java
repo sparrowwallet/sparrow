@@ -13,6 +13,10 @@ public class InputForm extends TransactionForm {
         this.transactionInput = transactionInput;
     }
 
+    public TransactionInput getTransactionInput() {
+        return transactionInput;
+    }
+
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("input.fxml"));
         Node node = loader.load();

@@ -1,0 +1,20 @@
+.version { -fx-fill: #e5e5e6 }
+.segwit-marker { -fx-fill: #e5e5e6 }
+.segwit-flag { -fx-fill: #e5e5e6 }
+
+.num-inputs { -fx-fill: #e5e5e6 }
+.input-hash { -fx-fill: #e5e5e6  }
+.input-index { -fx-fill: #e5e5e6 }
+.input-sigscript-length { -fx-fill: #e5e5e6 }
+.input-sigscript { -fx-fill: #e5e5e6 }
+.input-sequence { -fx-fill: #e5e5e6 }
+
+.num-outputs { -fx-fill: #e5e5e6 }
+.output-other { -fx-fill: #e5e5e6 }
+
+.output-value { -fx-fill: #000000 }
+.output-pubkeyscript-length { -fx-fill: #a626a4 }
+.output-pubkeyscript { -fx-fill: #50a14f }
+
+.witnesses { -fx-fill: #e5e5e6 }
+.locktime { -fx-fill: #e5e5e6 }

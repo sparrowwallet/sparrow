@@ -1,21 +1,21 @@
-.version-color { -fx-fill: #e5e5e6 }
-.segwit-marker-color { -fx-fill: #e5e5e6 }
-.segwit-flag-color { -fx-fill: #e5e5e6 }
+.version { -fx-fill: #e5e5e6 }
+.segwit-marker { -fx-fill: #e5e5e6 }
+.segwit-flag { -fx-fill: #e5e5e6 }
 
-.num-inputs-color { -fx-fill: #e5e5e6 }
-.input-hash-color { -fx-fill: #e5e5e6 }
-.input-index-color { -fx-fill: #e5e5e6 }
-.input-sigscript-length-color { -fx-fill: #e5e5e6 }
-.input-sigscript-color { -fx-fill: #e5e5e6 }
-.input-sequence-color { -fx-fill: #e5e5e6 }
+.num-inputs { -fx-fill: #e5e5e6 }
+.input-hash { -fx-fill: #e5e5e6 }
+.input-index { -fx-fill: #e5e5e6 }
+.input-sigscript-length { -fx-fill: #e5e5e6 }
+.input-sigscript { -fx-fill: #e5e5e6 }
+.input-sequence { -fx-fill: #e5e5e6 }
 
-.num-outputs-color { -fx-fill: #ca1243 }
-.output-value-color { -fx-fill: #000000 }
-.output-pubkeyscript-length-color { -fx-fill: #a626a4 }
-.output-pubkeyscript-color { -fx-fill: #50a14f }
+.num-outputs { -fx-fill: #ca1243 }
+.output-value { -fx-fill: #000000 }
+.output-pubkeyscript-length { -fx-fill: #a626a4 }
+.output-pubkeyscript { -fx-fill: #50a14f }
 
-.witnesses-color { -fx-fill: #e5e5e6 }
-.locktime-color { -fx-fill: #e5e5e6 }
+.witnesses { -fx-fill: #e5e5e6 }
+.locktime { -fx-fill: #e5e5e6 }
 
 .chart-legend-item{
     -fx-font-family: Courier;
