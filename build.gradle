@@ -45,7 +45,7 @@ dependencies {
 mainClassName = 'com.sparrowwallet.sparrow/com.sparrowwallet.sparrow.MainApp'
 
 run {
-    applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png"]
+    applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png", "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls"]
 }
 
 jlink {
@@ -59,6 +59,7 @@ jlink {
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']
     launcher {
         name = 'sparrow'
+        jvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls"]
     }
     addExtraDependencies("javafx")
     jpackage {

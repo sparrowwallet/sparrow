@@ -14,7 +14,10 @@
 .output-pubkeyscript-length { -fx-fill: #e5e5e6 }
 .output-pubkeyscript { -fx-fill: #e5e5e6 }
 
-.witnesses { -fx-fill: #e5e5e6 }
+.witness-count { -fx-fill: #ca1243 }
+.witness-length { -fx-fill: #986801 }
+.witness-data { -fx-fill: #a626a4 }
+
 .locktime { -fx-fill: #e5e5e6 }
 
 .chart-legend-item{

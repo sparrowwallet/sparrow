@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -55,7 +56,11 @@ public class TransactionController implements Initializable, TransactionListener
         TreeItem<TransactionForm> inputsItem = new TreeItem<>(inputsForm);
         inputsItem.setExpanded(true);
         for(TransactionInput txInput : transaction.getInputs()) {
-            InputForm inputForm = new InputForm(txInput);
+            PSBTInput psbtInput = null;
+            if(psbt != null && psbt.getPsbtInputs().size() > txInput.getIndex()) {
+                psbtInput = psbt.getPsbtInputs().get(txInput.getIndex());
+            }
+            InputForm inputForm = new InputForm(txInput, psbtInput);
             TreeItem<TransactionForm> inputItem = new TreeItem<>(inputForm);
             inputsItem.getChildren().add(inputItem);
         }
@@ -170,11 +175,17 @@ public class TransactionController implements Initializable, TransactionListener
         }
 
         if(transaction.hasWitnesses()) {
-            int totalWitnessLength = 0;
-            for(TransactionInput input : transaction.getInputs()) {
-                totalWitnessLength += input.getWitness().getLength();
+            for (int i = 0; i < transaction.getInputs().size(); i++) {
+                TransactionInput input = transaction.getInputs().get(i);
+                TransactionWitness witness = input.getWitness();
+                VarInt witnessCount = new VarInt(witness.getPushCount());
+                cursor = addText(hex, cursor, witnessCount.getSizeInBytes()*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
+                for(byte[] push : witness.getPushes()) {
+                    VarInt witnessLen = new VarInt(push.length);
+                    cursor = addText(hex, cursor, witnessLen.getSizeInBytes()*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
+                    cursor = addText(hex, cursor, (int)witnessLen.value*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"));
+                }
             }
-            cursor = addText(hex, cursor, totalWitnessLength*2, "witnesses");
         }
 
         //Locktime

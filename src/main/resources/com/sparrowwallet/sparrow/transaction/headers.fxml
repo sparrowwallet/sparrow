@@ -18,10 +18,10 @@
       <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
    </padding>
     <columnConstraints>
-        <ColumnConstraints minWidth="295" prefWidth="295"
+        <ColumnConstraints minWidth="330" prefWidth="330"
                            maxWidth="Infinity">
         </ColumnConstraints>
-        <ColumnConstraints minWidth="295" prefWidth="295"
+        <ColumnConstraints minWidth="330" prefWidth="330"
                            maxWidth="Infinity">
         </ColumnConstraints>
     </columnConstraints>
@@ -30,7 +30,7 @@
    </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset text="Transaction" inputGrow="SOMETIMES">
-            <Field text="ID:">
+            <Field text="Txid:">
                 <TextField fx:id="id" editable="false" styleClass="copyable-label, id" prefWidth="520" minWidth="520"/>
             </Field>
         </Fieldset>
@@ -67,7 +67,7 @@
                 <Spinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
             </Field>
             <Field fx:id="locktimeBlockField" text="Block:">
-                <Spinner fx:id="locktimeBlock" prefWidth="120"/>
+                <Spinner fx:id="locktimeBlock" editable="true" prefWidth="120"/>
             </Field>
             <Field fx:id="locktimeDateField" text="Date:">
                 <DateTimePicker fx:id="locktimeDate" prefWidth="180"/>
