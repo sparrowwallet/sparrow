@@ -4,7 +4,6 @@ import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import org.fxmisc.richtext.CodeArea;
