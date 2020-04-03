@@ -43,16 +43,16 @@
                 <HBox>
                     <VirtualizedScrollPane prefHeight="42">
                         <content>
-                            <CodeArea fx:id="scriptSig" editable="false" minWidth="520" prefWidth="520" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="scriptSig" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>
             </Field>
             <Field text="Witness:">
                 <HBox>
-                    <VirtualizedScrollPane prefHeight="42">
+                    <VirtualizedScrollPane fx:id="witnessScrollPane" prefHeight="42">
                         <content>
-                            <CodeArea fx:id="witness" editable="false" minWidth="520" prefWidth="520" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="witness" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>

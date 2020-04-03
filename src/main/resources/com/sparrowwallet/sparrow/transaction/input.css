@@ -31,26 +31,21 @@
 .script-other { -fx-fill: #a0a1a7 }
 .script-type { -fx-fill: #986801 }
 
+.uneditable-codearea {
+    -fx-font: 14px Courier;
+    -fx-padding: 4;
+}
+
 .virtualized-scroll-pane {
     -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -10%), -fx-text-box-border), linear-gradient(from 0px 0px to 0px 5px, derive(-fx-control-inner-background, -9%), -fx-control-inner-background);
     -fx-background-insets: 0, 1;
     -fx-background-radius: 3, 2;
 }
 
-.virtualized-scroll-pane:focused {
-    -fx-background-color:
-            -fx-focus-color,
-            -fx-control-inner-background,
-            -fx-faint-focus-color,
-            linear-gradient(from 0px 0px to 0px 5px, derive(-fx-control-inner-background, -9%), -fx-control-inner-background);
-    -fx-background-insets: -0.2, 1, -1.4, 3;
-    -fx-background-radius: 3, 2, 4, 0;
+.virtualized-scroll-pane:disabled {
+    -fx-opacity: 0.5;
 }
 
-/*
-I don't understand why this rule fix problem with border around CodeArea.
-May be somebody can explain it.
-*/
 .virtualized-scroll-pane .styled-text-area {
     -fx-background-insets: 0px;
     -fx-background-color: transparent;
@@ -58,14 +53,7 @@ May be somebody can explain it.
 
 .virtualized-scroll-pane .scroll-bar:vertical {
     -fx-background-radius: 0 2 2 0;
-
     -fx-padding: 0.08333325em 0.08333325em 0.08333325em 0;
     -fx-border-insets: 0.08333325em 0.08333325em 0.08333325em 0;
     -fx-background-insets: 0.08333325em 0.08333325em 0.08333325em 0;
-}
-
-.uneditable-codearea {
-    -fx-control-inner-background: transparent;
-    -fx-font: 14px Courier;
-    -fx-padding: 4;
 }

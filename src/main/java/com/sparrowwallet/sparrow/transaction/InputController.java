@@ -4,10 +4,12 @@ import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Fieldset;
+import org.fxmisc.flowless.VirtualizedScrollPane;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -26,6 +28,9 @@ public class InputController extends TransactionFormController implements Initia
 
     @FXML
     private CodeArea scriptSig;
+
+    @FXML
+    private VirtualizedScrollPane<CodeArea> witnessScrollPane;
 
     @FXML
     private CodeArea witness;
@@ -49,7 +54,13 @@ public class InputController extends TransactionFormController implements Initia
         appendScript(scriptSig, txInput.getScriptSig().toDisplayString());
 
         witness.clear();
-        appendScript(witness, txInput.getWitness().toString());
+        if(txInput.hasWitness()) {
+            appendScript(witness, txInput.getWitness().toDisplayString());
+        } else {
+            witnessScrollPane.setDisable(true);
+            witness.setVisible(false);
+        }
+
     }
 
     public void setModel(InputForm form) {
