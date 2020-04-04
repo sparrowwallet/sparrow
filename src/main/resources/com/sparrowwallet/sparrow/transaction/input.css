@@ -26,10 +26,11 @@
 
 .script-nest { -fx-fill: #000000 }
 .script-opcode { -fx-fill: #0184bc; }
+.script-hash { -fx-fill: #986801; }
 .script-signature { -fx-fill: #50a14f }
 .script-pubkey { -fx-fill: #a626a4 }
+.script-redeem { -fx-fill: #ca1243 }
 .script-other { -fx-fill: #a0a1a7 }
-.script-type { -fx-fill: #986801 }
 
 .uneditable-codearea {
     -fx-font: 14px Courier;

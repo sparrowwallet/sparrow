@@ -13,9 +13,9 @@
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="330" prefWidth="330">
+        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
         </ColumnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="330" prefWidth="330">
+        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
         </ColumnConstraints>
     </columnConstraints>
     <rowConstraints>
@@ -43,16 +43,34 @@
                 <HBox>
                     <VirtualizedScrollPane prefHeight="42">
                         <content>
-                            <CodeArea fx:id="scriptSig" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="scriptSigArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>
             </Field>
-            <Field text="Witness:">
+            <Field text="RedeemScript:">
                 <HBox>
-                    <VirtualizedScrollPane fx:id="witnessScrollPane" prefHeight="42">
+                    <VirtualizedScrollPane fx:id="redeemScriptScroll" prefHeight="42">
                         <content>
-                            <CodeArea fx:id="witness" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="redeemScriptArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                        </content>
+                    </VirtualizedScrollPane>
+                </HBox>
+            </Field>
+            <Field text="Witnesses:">
+                <HBox>
+                    <VirtualizedScrollPane fx:id="witnessesScroll" prefHeight="42">
+                        <content>
+                            <CodeArea fx:id="witnessesArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                        </content>
+                    </VirtualizedScrollPane>
+                </HBox>
+            </Field>
+            <Field text="WitnessScript:">
+                <HBox>
+                    <VirtualizedScrollPane fx:id="witnessScriptScroll" prefHeight="42">
+                        <content>
+                            <CodeArea fx:id="witnessScriptArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>

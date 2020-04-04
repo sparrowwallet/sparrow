@@ -11,9 +11,9 @@
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="330" prefWidth="330">
+        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
         </ColumnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="330" prefWidth="330">
+        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
         </ColumnConstraints>
     </columnConstraints>
     <rowConstraints>

@@ -6,7 +6,7 @@
 }
 
 .form .fieldset:horizontal .label-container {
-    -fx-pref-width: 90px;
+    -fx-pref-width: 110px;
     -fx-pref-height: 25px;
 }
 
