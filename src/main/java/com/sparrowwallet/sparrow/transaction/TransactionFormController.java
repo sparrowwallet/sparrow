@@ -88,7 +88,6 @@ public abstract class TransactionFormController {
                 } else if(chunk.isPubKey()) {
                     codeArea.append("<pubkey" + pubKeyCount++ + ">", "script-pubkey");
                 } else {
-                    System.out.println(chunk.isOpCode() + " " + chunk.opcode);
                     codeArea.append(chunk.toString(), "script-other");
                 }
 
@@ -102,7 +101,7 @@ public abstract class TransactionFormController {
     }
 
     protected void addScriptPopup(CodeArea area, Script script) {
-        ScriptContextMenu contextMenu = new ScriptContextMenu();
+        ScriptContextMenu contextMenu = new ScriptContextMenu(area, script);
         area.setContextMenu(contextMenu);
 
         Popup popup = new Popup();
@@ -116,15 +115,10 @@ public abstract class TransactionFormController {
             if(position.getMajor() % 2 == 0) {
                 ScriptChunk hoverChunk = script.getChunks().get(position.getMajor()/2);
                 if(!hoverChunk.isOpCode()) {
-                    contextMenu.setHoverChunk(hoverChunk);
                     Point2D pos = e.getScreenPosition();
                     popupMsg.setText(hoverChunk.toString());
                     popup.show(area, pos.getX(), pos.getY() + 10);
-                } else {
-                    contextMenu.setHoverChunk(null);
                 }
-            } else {
-                contextMenu.setHoverChunk(null);
             }
         });
         area.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> {

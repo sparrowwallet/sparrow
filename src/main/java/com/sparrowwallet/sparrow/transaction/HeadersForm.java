@@ -8,20 +8,12 @@ import javafx.scene.Node;
 import java.io.IOException;
 
 public class HeadersForm extends TransactionForm {
-    private Transaction transaction;
-    private PSBT psbt;
-
-    public HeadersForm(Transaction transaction, PSBT psbt) {
-        this.transaction = transaction;
-        this.psbt = psbt;
+    public HeadersForm(PSBT psbt) {
+        super(psbt);
     }
 
-    public Transaction getTransaction() {
-        return transaction;
-    }
-
-    public PSBT getPsbt() {
-        return psbt;
+    public HeadersForm(Transaction transaction) {
+        super(transaction);
     }
 
     public Node getContents() throws IOException {
@@ -33,6 +25,6 @@ public class HeadersForm extends TransactionForm {
     }
 
     public String toString() {
-        return "Tx [" + transaction.calculateTxId(false).toString().substring(0, 6) + "]";
+        return "Tx [" + getTransaction().calculateTxId(false).toString().substring(0, 6) + "]";
     }
 }

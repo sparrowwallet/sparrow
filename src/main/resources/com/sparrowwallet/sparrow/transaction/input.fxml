@@ -7,6 +7,9 @@
 <?import tornadofx.control.*?>
 <?import org.fxmisc.richtext.CodeArea?>
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
+<?import org.controlsfx.control.SegmentedButton?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -40,8 +43,8 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
         <Fieldset inputGrow="SOMETIMES" text="Script">
             <Field text="ScriptSig:">
-                <HBox>
-                    <VirtualizedScrollPane prefHeight="42">
+                <HBox prefHeight="42">
+                    <VirtualizedScrollPane>
                         <content>
                             <CodeArea fx:id="scriptSigArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
@@ -49,8 +52,8 @@
                 </HBox>
             </Field>
             <Field text="RedeemScript:">
-                <HBox>
-                    <VirtualizedScrollPane fx:id="redeemScriptScroll" prefHeight="42">
+                <HBox prefHeight="42">
+                    <VirtualizedScrollPane fx:id="redeemScriptScroll">
                         <content>
                             <CodeArea fx:id="redeemScriptArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
@@ -58,8 +61,8 @@
                 </HBox>
             </Field>
             <Field text="Witnesses:">
-                <HBox>
-                    <VirtualizedScrollPane fx:id="witnessesScroll" prefHeight="42">
+                <HBox prefHeight="42">
+                    <VirtualizedScrollPane fx:id="witnessesScroll">
                         <content>
                             <CodeArea fx:id="witnessesArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
@@ -67,8 +70,8 @@
                 </HBox>
             </Field>
             <Field text="WitnessScript:">
-                <HBox>
-                    <VirtualizedScrollPane fx:id="witnessScriptScroll" prefHeight="42">
+                <HBox prefHeight="42">
+                    <VirtualizedScrollPane fx:id="witnessScriptScroll">
                         <content>
                             <CodeArea fx:id="witnessScriptArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
@@ -77,4 +80,41 @@
             </Field>
         </Fieldset>
     </Form>
+
+    <Separator styleClass="form-separator" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3" />
+
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
+        <Fieldset fx:id="locktimeFieldset" text="Locktime" inputGrow="SOMETIMES">
+            <Field text="Type:">
+                <SegmentedButton>
+                    <toggleGroup>
+                        <ToggleGroup fx:id="locktimeToggleGroup" />
+                    </toggleGroup>
+                    <buttons>
+                        <ToggleButton fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
+                        <ToggleButton fx:id="locktimeAbsoluteType" text="Absolute" userData="absolute" toggleGroup="$locktimeToggleGroup" />
+                        <ToggleButton fx:id="locktimeRelativeType" text="Relative" userData="relative" toggleGroup="$locktimeToggleGroup" />
+                    </buttons>
+                </SegmentedButton>
+            </Field>
+            <Field fx:id="locktimeNoneField" text="Block:">
+                <Spinner fx:id="locktimeNone" disable="true" prefWidth="90"/>
+            </Field>
+            <Field fx:id="locktimeAbsoluteField" text="Block:">
+                <TextField fx:id="locktimeAbsolute" editable="false" prefWidth="120" styleClass="copyable-label"/>
+            </Field>
+            <Field fx:id="locktimeRelativeField" text="Block:">
+                <Spinner fx:id="locktimeRelative" editable="true" prefWidth="90" prefHeight="25"/>
+                <ComboBox fx:id="locktimeRelativeCombo">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="blocks" />
+                            <String fx:value="seconds" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </Field>
+        </Fieldset>
+    </Form>
+
 </GridPane>

@@ -1,20 +1,19 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.psbt.PSBT;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
 import java.io.IOException;
 
 public class OutputsForm extends TransactionForm {
-    private Transaction transaction;
-
-    public OutputsForm(Transaction transaction) {
-        this.transaction = transaction;
+    public OutputsForm(PSBT psbt) {
+        super(psbt);
     }
 
-    public Transaction getTransaction() {
-        return transaction;
+    public OutputsForm(Transaction transaction) {
+        super(transaction);
     }
 
     public Node getContents() throws IOException {

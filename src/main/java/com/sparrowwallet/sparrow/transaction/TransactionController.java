@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -48,11 +49,11 @@ public class TransactionController implements Initializable, TransactionListener
     }
 
     private void initializeTxTree() {
-        HeadersForm headersForm = new HeadersForm(transaction, psbt);
+        HeadersForm headersForm = (psbt == null ? new HeadersForm(transaction) : new HeadersForm(psbt));
         TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
 
-        InputsForm inputsForm = new InputsForm(transaction, psbt);
+        InputsForm inputsForm = (psbt == null ? new InputsForm(transaction) : new InputsForm(psbt));
         TreeItem<TransactionForm> inputsItem = new TreeItem<>(inputsForm);
         inputsItem.setExpanded(true);
         for(TransactionInput txInput : transaction.getInputs()) {
@@ -60,16 +61,20 @@ public class TransactionController implements Initializable, TransactionListener
             if(psbt != null && psbt.getPsbtInputs().size() > txInput.getIndex()) {
                 psbtInput = psbt.getPsbtInputs().get(txInput.getIndex());
             }
-            InputForm inputForm = new InputForm(txInput, psbtInput);
+            InputForm inputForm = (psbt == null ? new InputForm(transaction, txInput) : new InputForm(psbt, psbtInput));
             TreeItem<TransactionForm> inputItem = new TreeItem<>(inputForm);
             inputsItem.getChildren().add(inputItem);
         }
 
-        OutputsForm outputsForm = new OutputsForm(transaction);
+        OutputsForm outputsForm = (psbt == null ? new OutputsForm(transaction) : new OutputsForm(psbt));
         TreeItem<TransactionForm> outputsItem = new TreeItem<>(outputsForm);
         outputsItem.setExpanded(true);
         for(TransactionOutput txOutput : transaction.getOutputs()) {
-            OutputForm outputForm = new OutputForm(txOutput);
+            PSBTOutput psbtOutput = null;
+            if(psbt != null && psbt.getPsbtOutputs().size() > txOutput.getIndex()) {
+                psbtOutput = psbt.getPsbtOutputs().get(txOutput.getIndex());
+            }
+            OutputForm outputForm = (psbt == null ? new OutputForm(transaction, txOutput) : new OutputForm(psbt, psbtOutput));
             TreeItem<TransactionForm> outputItem = new TreeItem<>(outputForm);
             outputsItem.getChildren().add(outputItem);
         }
