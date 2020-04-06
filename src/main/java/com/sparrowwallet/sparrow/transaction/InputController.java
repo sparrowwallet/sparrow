@@ -1,14 +1,12 @@
 package com.sparrowwallet.sparrow.transaction;
 
-import com.sparrowwallet.drongo.protocol.Script;
-import com.sparrowwallet.drongo.protocol.ScriptChunk;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import org.controlsfx.control.ToggleSwitch;
 import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
@@ -56,6 +54,12 @@ public class InputController extends TransactionFormController implements Initia
     private CodeArea witnessesArea;
 
     @FXML
+    private TextField signatures;
+
+    @FXML
+    private ToggleSwitch rbf;
+
+    @FXML
     private ToggleGroup locktimeToggleGroup;
 
     @FXML
@@ -71,22 +75,19 @@ public class InputController extends TransactionFormController implements Initia
     private Fieldset locktimeFieldset;
 
     @FXML
-    private Field locktimeNoneField;
-
-    @FXML
     private Field locktimeAbsoluteField;
 
     @FXML
     private Field locktimeRelativeField;
 
     @FXML
-    private Spinner<Integer> locktimeNone;
-
-    @FXML
     private TextField locktimeAbsolute;
 
     @FXML
-    private Spinner<Integer> locktimeRelative;
+    private Spinner<Integer> locktimeRelativeBlocks;
+
+    @FXML
+    private Spinner<Integer> locktimeRelativeSeconds;
 
     @FXML
     private ComboBox<String> locktimeRelativeCombo;
@@ -106,7 +107,7 @@ public class InputController extends TransactionFormController implements Initia
         //TODO: Enable select outpoint when wallet present
         outpointSelect.setDisable(true);
         initializeScriptFields(txInput);
-
+        initializeStatusFields(txInput);
         initializeLocktimeFields(txInput);
     }
 
@@ -142,71 +143,137 @@ public class InputController extends TransactionFormController implements Initia
         }
     }
 
+    private void initializeStatusFields(TransactionInput txInput) {
+        Transaction transaction = inputForm.getTransaction();
+
+        signatures.setText("Unknown");
+        if(inputForm.getPsbtInput() != null) {
+            PSBTInput psbtInput = inputForm.getPsbtInput();
+
+            try {
+                int reqSigs = psbtInput.getSigningScript().getNumRequiredSignatures();
+                int foundSigs = psbtInput.getPartialSignatures().size();
+                signatures.setText(foundSigs + "/" + reqSigs);
+            } catch (NonStandardScriptException e) {
+                //TODO: Handle unusual transaction sig
+            }
+        }
+
+        rbf.setSelected(txInput.isReplaceByFeeEnabled());
+        rbf.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue) {
+                if(txInput.isAbsoluteTimeLockDisabled()) {
+                    locktimeToggleGroup.selectToggle(locktimeAbsoluteType);
+                } else if(txInput.isAbsoluteTimeLocked()) {
+                    txInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_ENABLED);
+                    EventManager.get().notify(transaction);
+                }
+            } else {
+                if(txInput.isAbsoluteTimeLocked()) {
+                    txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
+                    EventManager.get().notify(transaction);
+                } else if(txInput.isRelativeTimeLocked()) {
+                    locktimeToggleGroup.selectToggle(locktimeAbsoluteType);
+                }
+            }
+        });
+    }
+
     private void initializeLocktimeFields(TransactionInput txInput) {
         Transaction transaction = inputForm.getTransaction();
         locktimeToggleGroup.selectedToggleProperty().addListener((ov, old_toggle, new_toggle) -> {
             if(locktimeToggleGroup.getSelectedToggle() != null) {
                 String selection = locktimeToggleGroup.getSelectedToggle().getUserData().toString();
                 if(selection.equals("none")) {
-                    locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField, locktimeNoneField);
-                    locktimeFieldset.getChildren().add(locktimeNoneField);
+                    locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);
+                    locktimeFieldset.getChildren().add(locktimeAbsoluteField);
+                    updateAbsoluteLocktimeField(transaction);
+                    locktimeAbsoluteField.setDisable(true);
                     txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED);
+                    rbf.setSelected(false);
                     EventManager.get().notify(transaction);
                 } else if(selection.equals("absolute")) {
-                    locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField, locktimeNoneField);
+                    locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);
                     locktimeFieldset.getChildren().add(locktimeAbsoluteField);
-                    long locktime = transaction.getLocktime();
-                    if(locktime < Transaction.MAX_BLOCK_LOCKTIME) {
-                        locktimeAbsoluteField.setText("Block:");
-                        locktimeAbsolute.setText(Long.toString(locktime));
+                    updateAbsoluteLocktimeField(transaction);
+                    locktimeAbsoluteField.setDisable(false);
+                    if(rbf.selectedProperty().getValue()) {
+                        txInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_ENABLED);
                     } else {
-                        locktimeAbsoluteField.setText("Date:");
-                        LocalDateTime localDateTime = Instant.ofEpochSecond(locktime).atZone(ZoneId.systemDefault()).toLocalDateTime();
-                        locktimeAbsolute.setText(DateTimeFormatter.ofPattern(HeadersController.LOCKTIME_DATE_FORMAT).format(localDateTime));
+                        txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
                     }
-                    //TODO: Check RBF field and set appropriately
-                    txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
                     EventManager.get().notify(transaction);
                 } else {
-                    locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField, locktimeNoneField);
+                    locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);
                     locktimeFieldset.getChildren().add(locktimeRelativeField);
-                    setRelativeLocktime(txInput, transaction, locktimeRelative.getValue());
+                    if(locktimeRelativeCombo.getValue() == null) {
+                        locktimeRelativeCombo.getSelectionModel().select(0);
+                    } else {
+                        setRelativeLocktime(txInput, transaction);
+                    }
+                    rbf.setSelected(true);
                 }
             }
         });
 
-        locktimeNone.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, (int)transaction.getLocktime()));
-        locktimeRelativeCombo.getSelectionModel().select(0);
-        locktimeRelative.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)TransactionInput.MAX_RELATIVE_TIMELOCK_IN_BLOCKS, 0));
+        locktimeRelativeBlocks.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK, 0));
+        locktimeRelativeSeconds.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0,
+                (int)TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK*TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT, 0,
+                TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT));
+
+        locktimeRelativeBlocks.managedProperty().bind(locktimeRelativeBlocks.visibleProperty());
+        locktimeRelativeSeconds.managedProperty().bind(locktimeRelativeSeconds.visibleProperty());
+        locktimeRelativeCombo.getSelectionModel().selectedItemProperty().addListener((ov, old_toggle, new_toggle) -> {
+            boolean blocks = locktimeRelativeCombo.getValue().equals("blocks");
+            locktimeRelativeSeconds.setVisible(!blocks);
+            locktimeRelativeBlocks.setVisible(blocks);
+            setRelativeLocktime(txInput, transaction);
+        });
+
+        locktimeRelativeType.setDisable(!transaction.isRelativeLocktimeAllowed());
         if(txInput.isAbsoluteTimeLockDisabled()) {
             locktimeToggleGroup.selectToggle(locktimeNoneType);
         } else if(txInput.isAbsoluteTimeLocked()) {
             locktimeToggleGroup.selectToggle(locktimeAbsoluteType);
         } else {
-            locktimeRelative.valueFactoryProperty().get().setValue((int)txInput.getRelativeLocktime());
             if(txInput.isRelativeTimeLockedInBlocks()) {
+                locktimeRelativeBlocks.valueFactoryProperty().get().setValue((int)txInput.getRelativeLocktime());
                 locktimeRelativeCombo.getSelectionModel().select(0);
             } else {
+                locktimeRelativeSeconds.valueFactoryProperty().get().setValue((int)txInput.getRelativeLocktime() * TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT);
                 locktimeRelativeCombo.getSelectionModel().select(1);
             }
             locktimeToggleGroup.selectToggle(locktimeRelativeType);
         }
 
-        locktimeRelative.valueProperty().addListener((obs, oldValue, newValue) -> {
-            setRelativeLocktime(txInput, transaction, newValue);
+        locktimeRelativeBlocks.valueProperty().addListener((obs, oldValue, newValue) -> {
+            setRelativeLocktime(txInput, transaction);
         });
-
-        locktimeRelativeCombo.getSelectionModel().selectedItemProperty().addListener((ov, old_toggle, new_toggle) -> {
-            setRelativeLocktime(txInput, transaction, locktimeRelative.getValue());
+        locktimeRelativeSeconds.valueProperty().addListener((obs, oldValue, newValue) -> {
+            setRelativeLocktime(txInput, transaction);
         });
     }
 
-    private void setRelativeLocktime(TransactionInput txInput, Transaction transaction, Integer value) {
-        String relativeSelection = locktimeRelativeCombo.getValue();
-        if (relativeSelection.equals("blocks")) {
-            txInput.setSequenceNumber(value & 0xFFFF);
+    private void updateAbsoluteLocktimeField(Transaction transaction) {
+        long locktime = transaction.getLocktime();
+        if(locktime < Transaction.MAX_BLOCK_LOCKTIME) {
+            locktimeAbsoluteField.setText("Block:");
+            locktimeAbsolute.setText(Long.toString(locktime));
         } else {
-            txInput.setSequenceNumber((value & 0xFFFF) | 0x400000);
+            locktimeAbsoluteField.setText("Date:");
+            LocalDateTime localDateTime = Instant.ofEpochSecond(locktime).atZone(ZoneId.systemDefault()).toLocalDateTime();
+            locktimeAbsolute.setText(DateTimeFormatter.ofPattern(HeadersController.LOCKTIME_DATE_FORMAT).format(localDateTime));
+        }
+    }
+
+    private void setRelativeLocktime(TransactionInput txInput, Transaction transaction) {
+        String relativeSelection = locktimeRelativeCombo.getValue();
+        if(relativeSelection.equals("blocks")) {
+            Integer value = locktimeRelativeBlocks.getValue();
+            txInput.setSequenceNumber(value & TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK);
+        } else {
+            Integer value = locktimeRelativeSeconds.getValue() / TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT;
+            txInput.setSequenceNumber((value & TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK) | TransactionInput.RELATIVE_TIMELOCK_TYPE_FLAG);
         }
         EventManager.get().notify(transaction);
     }

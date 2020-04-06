@@ -10,6 +10,7 @@
 <?import org.controlsfx.control.SegmentedButton?>
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
+<?import org.controlsfx.control.ToggleSwitch?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -83,7 +84,18 @@
 
     <Separator styleClass="form-separator" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3" />
 
-    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="4">
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="4">
+        <Fieldset text="Status" inputGrow="SOMETIMES">
+            <Field text="Signatures:">
+                <TextField fx:id="signatures" editable="false" prefWidth="120" styleClass="copyable-label"/>
+            </Field>
+            <Field text="RBF:">
+                <ToggleSwitch fx:id="rbf"/>
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
         <Fieldset fx:id="locktimeFieldset" text="Locktime" inputGrow="SOMETIMES">
             <Field text="Type:">
                 <SegmentedButton>
@@ -91,20 +103,30 @@
                         <ToggleGroup fx:id="locktimeToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
-                        <ToggleButton fx:id="locktimeAbsoluteType" text="Absolute" userData="absolute" toggleGroup="$locktimeToggleGroup" />
-                        <ToggleButton fx:id="locktimeRelativeType" text="Relative" userData="relative" toggleGroup="$locktimeToggleGroup" />
+                        <ToggleButton fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup">
+                            <tooltip>
+                                <Tooltip text="Disable time locks"/>
+                            </tooltip>
+                        </ToggleButton>
+                        <ToggleButton fx:id="locktimeAbsoluteType" text="Absolute" userData="absolute" toggleGroup="$locktimeToggleGroup">
+                            <tooltip>
+                                <Tooltip text="Enable absolute (transaction level) time lock only"/>
+                            </tooltip>
+                        </ToggleButton>
+                        <ToggleButton fx:id="locktimeRelativeType" text="Relative" userData="relative" toggleGroup="$locktimeToggleGroup">
+                            <tooltip>
+                                <Tooltip text="Enable both absolute and relative time locks"/>
+                            </tooltip>
+                        </ToggleButton>
                     </buttons>
                 </SegmentedButton>
-            </Field>
-            <Field fx:id="locktimeNoneField" text="Block:">
-                <Spinner fx:id="locktimeNone" disable="true" prefWidth="90"/>
             </Field>
             <Field fx:id="locktimeAbsoluteField" text="Block:">
                 <TextField fx:id="locktimeAbsolute" editable="false" prefWidth="120" styleClass="copyable-label"/>
             </Field>
-            <Field fx:id="locktimeRelativeField" text="Block:">
-                <Spinner fx:id="locktimeRelative" editable="true" prefWidth="90" prefHeight="25"/>
+            <Field fx:id="locktimeRelativeField" text="Value:">
+                <Spinner fx:id="locktimeRelativeBlocks" editable="true" prefWidth="110"/>
+                <Spinner fx:id="locktimeRelativeSeconds" editable="true" prefWidth="110"/>
                 <ComboBox fx:id="locktimeRelativeCombo">
                     <items>
                         <FXCollections fx:factory="observableArrayList">

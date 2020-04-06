@@ -189,6 +189,12 @@ public class HeadersController extends TransactionFormController implements Init
     @Override
     public void updated(Transaction transaction) {
         updateTxId();
-        locktimeFieldset.setText(headersForm.getTransaction().isLocktimeSequenceEnabled() ? "Absolute Locktime" : "Absolute Locktime (sequence disabled)");
+
+        boolean locktimeEnabled = headersForm.getTransaction().isLocktimeSequenceEnabled();
+        locktimeNoneType.setDisable(!locktimeEnabled);
+        locktimeBlockType.setDisable(!locktimeEnabled);
+        locktimeBlock.setDisable(!locktimeEnabled);
+        locktimeDateType.setDisable(!locktimeEnabled);
+        locktimeDate.setDisable(!locktimeEnabled);
     }
 }

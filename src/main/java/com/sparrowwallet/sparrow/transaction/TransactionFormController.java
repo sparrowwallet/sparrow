@@ -106,7 +106,7 @@ public abstract class TransactionFormController {
 
         Popup popup = new Popup();
         Label popupMsg = new Label();
-        popupMsg.setStyle("-fx-background-color: #696c77; -fx-text-fill: white; -fx-padding: 5;");
+        popupMsg.getStyleClass().add("tooltip");
         popup.getContent().add(popupMsg);
 
         area.setMouseOverTextDelay(Duration.ofMillis(150));

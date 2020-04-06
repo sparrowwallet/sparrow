@@ -21,3 +21,9 @@
 .form-separator {
     -fx-padding: -15 0 0 0;
 }
+
+.toggle-switch {
+    -fx-translate-x: -20px;
+}
+
+
