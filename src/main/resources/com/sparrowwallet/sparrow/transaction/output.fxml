@@ -5,6 +5,48 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import org.fxmisc.richtext.CodeArea?>
+<?import org.fxmisc.flowless.VirtualizedScrollPane?>
+<?import tornadofx.control.Field?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Form?>
+<?import javafx.geometry.Insets?>
 
-<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@output.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.OutputController">
+<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@output.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.OutputController">
+    <padding>
+        <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
+        </ColumnConstraints>
+        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
+        </ColumnConstraints>
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+        <RowConstraints />
+    </rowConstraints>
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+        <Fieldset fx:id="outputFieldset" inputGrow="SOMETIMES" text="Output">
+            <Field text="Value:">
+                <TextField fx:id="value" editable="false" styleClass="copyable-label" />
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Separator styleClass="form-separator" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" />
+
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+        <Fieldset inputGrow="SOMETIMES" text="Script">
+            <Field text="ScriptPubKey:">
+                <HBox prefHeight="42">
+                    <VirtualizedScrollPane>
+                        <content>
+                            <CodeArea fx:id="scriptPubKeyArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                        </content>
+                    </VirtualizedScrollPane>
+                </HBox>
+            </Field>
+        </Fieldset>
+    </Form>
 </GridPane>

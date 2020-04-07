@@ -13,7 +13,7 @@
 <?import org.controlsfx.control.ToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
 
-<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
+<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
     </padding>

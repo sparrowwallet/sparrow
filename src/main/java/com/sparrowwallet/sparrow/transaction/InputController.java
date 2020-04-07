@@ -108,12 +108,12 @@ public class InputController extends TransactionFormController implements Initia
 
         //TODO: Enable select outpoint when wallet present
         outpointSelect.setDisable(true);
-        initializeScriptFields(txInput);
+        initializeScriptFields(txInput, psbtInput);
         initializeStatusFields(txInput);
         initializeLocktimeFields(txInput);
     }
 
-    private void initializeScriptFields(TransactionInput txInput) {
+    private void initializeScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
         //TODO: Is this safe?
         Script redeemScript = txInput.getScriptSig().getFirstNestedScript();
 

@@ -57,7 +57,23 @@ public abstract class TransactionFormController {
     }
 
     protected void appendScript(CodeArea codeArea, Script script, Script redeemScript, Script witnessScript) {
-        if(ScriptPattern.isP2WPKH(script)) {
+        if(ScriptPattern.isP2PKH(script)) {
+            codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
+            codeArea.append(" ", "");
+            codeArea.append(script.getChunks().get(1).toString(), "script-opcode");
+            codeArea.append(" ", "");
+            codeArea.append("<pkh>", "script-hash");
+            codeArea.append(" ", "");
+            codeArea.append(script.getChunks().get(3).toString(), "script-opcode");
+            codeArea.append(" ", "");
+            codeArea.append(script.getChunks().get(4).toString(), "script-opcode");
+        } else if(ScriptPattern.isP2SH(script)) {
+            codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
+            codeArea.append(" ", "");
+            codeArea.append("<sh>", "script-hash");
+            codeArea.append(" ", "");
+            codeArea.append(script.getChunks().get(2).toString(), "script-opcode");
+        } else if(ScriptPattern.isP2WPKH(script)) {
             codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
             codeArea.append(" ", "");
             codeArea.append("<wpkh>", "script-hash");
