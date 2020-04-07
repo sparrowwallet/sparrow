@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -13,6 +14,7 @@ import tornadofx.control.Fieldset;
 import org.fxmisc.flowless.VirtualizedScrollPane;
 
 import java.net.URL;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -87,7 +89,7 @@ public class InputController extends TransactionFormController implements Initia
     private Spinner<Integer> locktimeRelativeBlocks;
 
     @FXML
-    private Spinner<Integer> locktimeRelativeSeconds;
+    private RelativeTimelockSpinner locktimeRelativeSeconds;
 
     @FXML
     private ComboBox<String> locktimeRelativeCombo;
@@ -217,10 +219,6 @@ public class InputController extends TransactionFormController implements Initia
         });
 
         locktimeRelativeBlocks.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK, 0));
-        locktimeRelativeSeconds.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0,
-                (int)TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK*TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT, 0,
-                TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT));
-
         locktimeRelativeBlocks.managedProperty().bind(locktimeRelativeBlocks.visibleProperty());
         locktimeRelativeSeconds.managedProperty().bind(locktimeRelativeSeconds.visibleProperty());
         locktimeRelativeCombo.getSelectionModel().selectedItemProperty().addListener((ov, old_toggle, new_toggle) -> {
@@ -240,7 +238,7 @@ public class InputController extends TransactionFormController implements Initia
                 locktimeRelativeBlocks.valueFactoryProperty().get().setValue((int)txInput.getRelativeLocktime());
                 locktimeRelativeCombo.getSelectionModel().select(0);
             } else {
-                locktimeRelativeSeconds.valueFactoryProperty().get().setValue((int)txInput.getRelativeLocktime() * TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT);
+                locktimeRelativeSeconds.valueFactoryProperty().get().setValue(Duration.ofSeconds(txInput.getRelativeLocktime() * TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT));
                 locktimeRelativeCombo.getSelectionModel().select(1);
             }
             locktimeToggleGroup.selectToggle(locktimeRelativeType);
@@ -272,7 +270,7 @@ public class InputController extends TransactionFormController implements Initia
             Integer value = locktimeRelativeBlocks.getValue();
             txInput.setSequenceNumber(value & TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK);
         } else {
-            Integer value = locktimeRelativeSeconds.getValue() / TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT;
+            long value = locktimeRelativeSeconds.getValue().toSeconds() / TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT;
             txInput.setSequenceNumber((value & TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK) | TransactionInput.RELATIVE_TIMELOCK_TYPE_FLAG);
         }
         EventManager.get().notify(transaction);

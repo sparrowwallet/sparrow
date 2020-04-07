@@ -11,6 +11,7 @@
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
 <?import org.controlsfx.control.ToggleSwitch?>
+<?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -126,12 +127,12 @@
             </Field>
             <Field fx:id="locktimeRelativeField" text="Value:">
                 <Spinner fx:id="locktimeRelativeBlocks" editable="true" prefWidth="110"/>
-                <Spinner fx:id="locktimeRelativeSeconds" editable="true" prefWidth="110"/>
+                <RelativeTimelockSpinner fx:id="locktimeRelativeSeconds" editable="true" prefWidth="110"/>
                 <ComboBox fx:id="locktimeRelativeCombo">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <String fx:value="blocks" />
-                            <String fx:value="seconds" />
+                            <String fx:value="time" />
                         </FXCollections>
                     </items>
                 </ComboBox>
