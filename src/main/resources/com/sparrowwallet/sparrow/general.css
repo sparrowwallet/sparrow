@@ -14,6 +14,10 @@
     -fx-spacing: 2;
 }
 
+.form .label-button .input-container {
+    -fx-spacing: 10;
+}
+
 .form .field {
     -fx-padding: 5 5;
 }

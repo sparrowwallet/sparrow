@@ -31,7 +31,7 @@
     </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
         <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input">
-            <Field text="Outpoint:">
+            <Field text="Outpoint:" styleClass="label-button">
                 <CopyableIdLabel fx:id="outpoint" />
                 <Button fx:id="outpointSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
                     <graphic>
