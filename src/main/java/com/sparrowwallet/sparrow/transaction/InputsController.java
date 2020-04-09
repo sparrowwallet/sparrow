@@ -2,10 +2,10 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.TextField;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -16,13 +16,13 @@ public class InputsController extends TransactionFormController implements Initi
     private InputsForm inputsForm;
 
     @FXML
-    private TextField count;
+    private CopyableLabel count;
 
     @FXML
-    private TextField total;
+    private CopyableLabel total;
 
     @FXML
-    private TextField signatures;
+    private CopyableLabel signatures;
 
     @FXML
     private PieChart inputsPie;

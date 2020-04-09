@@ -4,8 +4,9 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import tornadofx.control.*?>
-
 <?import javafx.scene.chart.PieChart?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@outputs.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.OutputsController">
     <padding>
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
@@ -22,10 +23,10 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Outputs">
             <Field text="Count:">
-                <TextField fx:id="count" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+                <CopyableLabel fx:id="count" />
             </Field>
             <Field text="Total:">
-                <TextField fx:id="total" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+                <CopyableLabel fx:id="total" />
             </Field>
         </Fieldset>
     </Form>

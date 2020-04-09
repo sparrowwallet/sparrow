@@ -2,10 +2,10 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
-import javafx.scene.control.TextField;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -14,10 +14,10 @@ public class OutputsController extends TransactionFormController implements Init
     private OutputsForm outputsForm;
 
     @FXML
-    private TextField count;
+    private CopyableLabel count;
 
     @FXML
-    private TextField total;
+    private CopyableLabel total;
 
     @FXML
     private PieChart outputsPie;

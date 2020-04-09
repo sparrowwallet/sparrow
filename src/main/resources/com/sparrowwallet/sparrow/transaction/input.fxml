@@ -12,6 +12,8 @@
 <?import java.lang.String?>
 <?import org.controlsfx.control.ToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableIdLabel?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -30,7 +32,7 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
         <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input">
             <Field text="Outpoint:">
-                <TextField fx:id="outpoint" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label, id" />
+                <CopyableIdLabel fx:id="outpoint" />
                 <Button fx:id="outpointSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />
@@ -38,9 +40,9 @@
                 </Button>
             </Field>
             <Field text="Spends:">
-                <TextField fx:id="spends" editable="false" styleClass="copyable-label" maxWidth="80" />
-                <Label fx:id="from" text="from" maxWidth="30" style="-fx-padding: 0" />
-                <TextField fx:id="address" editable="false" styleClass="copyable-label, id" />
+                <CopyableLabel fx:id="spends" />
+                <CopyableLabel fx:id="from" text="from" />
+                <CopyableIdLabel fx:id="address" />
             </Field>
         </Fieldset>
     </Form>
@@ -93,7 +95,7 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="4">
         <Fieldset text="Status" inputGrow="SOMETIMES">
             <Field text="Signatures:">
-                <TextField fx:id="signatures" editable="false" prefWidth="120" styleClass="copyable-label"/>
+                <CopyableLabel fx:id="signatures" />
             </Field>
             <Field text="RBF:">
                 <ToggleSwitch fx:id="rbf"/>
@@ -128,7 +130,7 @@
                 </SegmentedButton>
             </Field>
             <Field fx:id="locktimeAbsoluteField" text="Block:">
-                <TextField fx:id="locktimeAbsolute" editable="false" prefWidth="120" styleClass="copyable-label"/>
+                <CopyableLabel fx:id="locktimeAbsolute" />
             </Field>
             <Field fx:id="locktimeRelativeField" text="Value:">
                 <Spinner fx:id="locktimeRelativeBlocks" editable="true" prefWidth="110"/>

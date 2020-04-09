@@ -3,10 +3,10 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.sparrow.control.CopyableIdLabel;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
 import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Fieldset;
 
@@ -20,13 +20,13 @@ public class OutputController extends TransactionFormController implements Initi
     private Fieldset outputFieldset;
 
     @FXML
-    private TextField value;
+    private CopyableLabel value;
 
     @FXML
-    private Label to;
+    private CopyableLabel to;
 
     @FXML
-    private TextField address;
+    private CopyableIdLabel address;
 
     @FXML
     private CodeArea scriptPubKeyArea;
@@ -42,7 +42,7 @@ public class OutputController extends TransactionFormController implements Initi
         outputFieldset.setText("Output #" + txOutput.getIndex());
 
         value.setText(txOutput.getValue() + " sats");
-
+        to.setVisible(false);
         try {
             Address[] addresses = txOutput.getScript().getToAddresses();
             to.setVisible(true);

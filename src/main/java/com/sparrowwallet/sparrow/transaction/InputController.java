@@ -6,6 +6,8 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.CopyableIdLabel;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -32,19 +34,19 @@ public class InputController extends TransactionFormController implements Initia
     private Fieldset inputFieldset;
 
     @FXML
-    private TextField outpoint;
+    private CopyableIdLabel outpoint;
 
     @FXML
     private Button outpointSelect;
 
     @FXML
-    private TextField spends;
+    private CopyableLabel spends;
 
     @FXML
-    private Label from;
+    private CopyableLabel from;
 
     @FXML
-    private TextField address;
+    private CopyableIdLabel address;
 
     @FXML
     private CodeArea scriptSigArea;
@@ -68,7 +70,7 @@ public class InputController extends TransactionFormController implements Initia
     private CodeArea witnessesArea;
 
     @FXML
-    private TextField signatures;
+    private CopyableLabel signatures;
 
     @FXML
     private ToggleSwitch rbf;
@@ -95,7 +97,7 @@ public class InputController extends TransactionFormController implements Initia
     private Field locktimeRelativeField;
 
     @FXML
-    private TextField locktimeAbsolute;
+    private CopyableLabel locktimeAbsolute;
 
     @FXML
     private Spinner<Integer> locktimeRelativeBlocks;

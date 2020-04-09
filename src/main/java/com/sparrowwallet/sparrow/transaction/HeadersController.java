@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.CopyableIdLabel;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -19,13 +21,13 @@ public class HeadersController extends TransactionFormController implements Init
     private HeadersForm headersForm;
 
     @FXML
-    private TextField id;
+    private CopyableIdLabel id;
 
     @FXML
     private Spinner<Integer> version;
 
     @FXML
-    private TextField segwit;
+    private CopyableLabel segwit;
 
     @FXML
     private ToggleGroup locktimeToggleGroup;
@@ -61,16 +63,16 @@ public class HeadersController extends TransactionFormController implements Init
     private DateTimePicker locktimeDate;
 
     @FXML
-    private TextField fee;
+    private CopyableLabel size;
 
     @FXML
-    private TextField size;
+    private CopyableLabel virtualSize;
 
     @FXML
-    private TextField virtualSize;
+    private CopyableLabel fee;
 
     @FXML
-    private TextField feeRateField;
+    private CopyableLabel feeRate;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -175,8 +177,8 @@ public class HeadersController extends TransactionFormController implements Init
 
         if(feeAmt != null) {
             fee.setText(feeAmt + " sats");
-            double feeRate = feeAmt.doubleValue() / tx.getVirtualSize();
-            feeRateField.setText(String.format("%.2f", feeRate) + " sats/vByte");
+            double feeRateAmt = feeAmt.doubleValue() / tx.getVirtualSize();
+            feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
         } else {
             fee.setText("Unknown");
         }

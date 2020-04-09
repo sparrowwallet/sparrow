@@ -5,6 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import tornadofx.control.*?>
 <?import javafx.scene.chart.PieChart?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@inputs.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputsController">
     <padding>
@@ -22,10 +23,10 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Inputs">
             <Field text="Count:">
-                <TextField fx:id="count" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+                <CopyableLabel fx:id="count" />
             </Field>
             <Field text="Total:">
-                <TextField fx:id="total" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+                <CopyableLabel fx:id="total" />
             </Field>
         </Fieldset>
     </Form>
@@ -33,7 +34,7 @@
     <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Signatures">
             <Field text="Status:">
-                <TextField fx:id="signatures" editable="false" minWidth="520" prefWidth="520" styleClass="copyable-label" />
+                <CopyableLabel fx:id="signatures" />
             </Field>
         </Fieldset>
     </Form>

@@ -2,7 +2,6 @@
 
 <?import javafx.geometry.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.Spinner?>
 <?import javafx.scene.control.ToggleButton?>
 <?import javafx.scene.control.ToggleGroup?>
@@ -11,8 +10,10 @@
 <?import tornadofx.control.Form?>
 <?import tornadofx.control.Fieldset?>
 <?import tornadofx.control.Field?>
-
 <?import org.controlsfx.control.SegmentedButton?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableIdLabel?>
+
 <GridPane hgap="10.0" prefHeight="350.0" prefWidth="600.0" vgap="10.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @../general.css">
    <padding>
       <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
@@ -31,7 +32,7 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset text="Transaction" inputGrow="SOMETIMES">
             <Field text="Txid:">
-                <TextField fx:id="id" editable="false" styleClass="copyable-label, id" prefWidth="520" minWidth="520"/>
+                <CopyableIdLabel fx:id="id"/>
             </Field>
         </Fieldset>
     </Form>
@@ -44,7 +45,7 @@
                 <Spinner fx:id="version" prefWidth="60" editable="true" />
             </Field>
             <Field text="Type:">
-                <TextField fx:id="segwit" editable="false" styleClass="copyable-label"/>
+                <CopyableLabel fx:id="segwit" />
             </Field>
         </Fieldset>
     </Form>
@@ -80,10 +81,10 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="4">
         <Fieldset text="Size" inputGrow="SOMETIMES">
             <Field text="Bytes:">
-                <TextField fx:id="size" editable="false" styleClass="copyable-label" prefWidth="120"/>
+                <CopyableLabel fx:id="size" />
             </Field>
             <Field text="vBytes:">
-                <TextField fx:id="virtualSize" editable="false" styleClass="copyable-label" prefWidth="120"/>
+                <CopyableLabel fx:id="virtualSize" />
             </Field>
         </Fieldset>
     </Form>
@@ -91,10 +92,10 @@
     <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
         <Fieldset text="Fee" inputGrow="SOMETIMES">
             <Field text="Amount:">
-                <TextField fx:id="fee" editable="false" styleClass="copyable-label" prefWidth="120"/>
+                <CopyableLabel fx:id="fee" />
             </Field>
             <Field text="Rate:">
-                <TextField fx:id="feeRateField" editable="false" styleClass="copyable-label" prefWidth="120"/>
+                <CopyableLabel fx:id="feeRate" />
             </Field>
         </Fieldset>
     </Form>
@@ -104,10 +105,10 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="6">
         <Fieldset text="Blockchain" inputGrow="SOMETIMES">
             <Field text="Status:">
-                <TextField fx:id="blockStatusField" editable="false" styleClass="copyable-label" prefWidth="120"/>
+                <CopyableLabel fx:id="blockStatusField" />
             </Field>
             <Field text="Block:">
-                <TextField fx:id="blockField" editable="false" styleClass="copyable-label" prefWidth="120"/>
+                <CopyableLabel fx:id="blockField" />
             </Field>
         </Fieldset>
     </Form>
