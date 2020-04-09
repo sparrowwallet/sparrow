@@ -185,22 +185,12 @@ public class InputController extends TransactionFormController implements Initia
         Script witnessScript = null;
 
         if(txInput.hasWitness()) {
-            List<ScriptChunk> witnessChunks = txInput.getWitness().asScriptChunks();
-            if(witnessChunks.get(witnessChunks.size() - 1).isScript()) {
-                witnesses = new Script(witnessChunks.subList(0, witnessChunks.size() - 1));
-                witnessScript = witnessChunks.get(witnessChunks.size() - 1).getScript();
-            } else {
-                witnesses = new Script(witnessChunks);
-            }
+            witnesses = new Script(txInput.getWitness().asScriptChunks());
+            witnessScript = txInput.getWitness().getWitnessScript();
         } else if(psbtInput != null) {
             if(psbtInput.getFinalScriptWitness() != null) {
-                List<ScriptChunk> witnessChunks = psbtInput.getFinalScriptWitness().asScriptChunks();
-                if(witnessChunks.get(witnessChunks.size() - 1).isScript()) {
-                    witnesses = new Script(witnessChunks.subList(0, witnessChunks.size() - 1));
-                    witnessScript = witnessChunks.get(witnessChunks.size() - 1).getScript();
-                } else {
-                    witnesses = new Script(witnessChunks);
-                }
+                witnesses = new Script(psbtInput.getFinalScriptWitness().asScriptChunks());
+                witnessScript = psbtInput.getFinalScriptWitness().getWitnessScript();
             } else if(psbtInput.getWitnessScript() != null) {
                 witnessScript = psbtInput.getWitnessScript();
             }
