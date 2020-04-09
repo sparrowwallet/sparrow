@@ -12,7 +12,7 @@
 <?import tornadofx.control.Form?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
-<?import com.sparrowwallet.sparrow.control.CopyableIdLabel?>
+<?import com.sparrowwallet.sparrow.control.IdLabel?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@output.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.OutputController">
     <padding>
@@ -33,7 +33,7 @@
             <Field text="Sends:">
                 <CopyableLabel fx:id="value"/>
                 <CopyableLabel fx:id="to" text="to" />
-                <CopyableIdLabel fx:id="address" />
+                <IdLabel fx:id="address" />
             </Field>
         </Fieldset>
     </Form>

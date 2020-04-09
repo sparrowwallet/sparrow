@@ -13,7 +13,7 @@
 <?import org.controlsfx.control.ToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
-<?import com.sparrowwallet.sparrow.control.CopyableIdLabel?>
+<?import com.sparrowwallet.sparrow.control.IdLabel?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -32,7 +32,7 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
         <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input">
             <Field text="Outpoint:" styleClass="label-button">
-                <CopyableIdLabel fx:id="outpoint" />
+                <IdLabel fx:id="outpoint" />
                 <Button fx:id="outpointSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />
@@ -42,7 +42,7 @@
             <Field text="Spends:">
                 <CopyableLabel fx:id="spends" />
                 <CopyableLabel fx:id="from" text="from" />
-                <CopyableIdLabel fx:id="address" />
+                <IdLabel fx:id="address" />
             </Field>
         </Fieldset>
     </Form>

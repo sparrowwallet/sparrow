@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CopyableIdLabel;
+import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner;
 import javafx.fxml.FXML;
@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.ResourceBundle;
 
 public class InputController extends TransactionFormController implements Initializable {
@@ -34,7 +33,7 @@ public class InputController extends TransactionFormController implements Initia
     private Fieldset inputFieldset;
 
     @FXML
-    private CopyableIdLabel outpoint;
+    private IdLabel outpoint;
 
     @FXML
     private Button outpointSelect;
@@ -46,7 +45,7 @@ public class InputController extends TransactionFormController implements Initia
     private CopyableLabel from;
 
     @FXML
-    private CopyableIdLabel address;
+    private IdLabel address;
 
     @FXML
     private CodeArea scriptSigArea;

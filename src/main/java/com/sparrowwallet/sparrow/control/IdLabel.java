@@ -2,14 +2,12 @@ package com.sparrowwallet.sparrow.control;
 
 import javafx.scene.text.Font;
 
-import java.awt.*;
-
-public class CopyableIdLabel extends CopyableLabel {
-    public CopyableIdLabel() {
+public class IdLabel extends CopyableLabel {
+    public IdLabel() {
         this("");
     }
 
-    public CopyableIdLabel(String text) {
+    public IdLabel(String text) {
         super(text);
         setFont(Font.font("Courier"));
     }

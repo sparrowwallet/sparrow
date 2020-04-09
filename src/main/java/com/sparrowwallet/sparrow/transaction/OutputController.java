@@ -3,7 +3,7 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
-import com.sparrowwallet.sparrow.control.CopyableIdLabel;
+import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -26,7 +26,7 @@ public class OutputController extends TransactionFormController implements Initi
     private CopyableLabel to;
 
     @FXML
-    private CopyableIdLabel address;
+    private IdLabel address;
 
     @FXML
     private CodeArea scriptPubKeyArea;

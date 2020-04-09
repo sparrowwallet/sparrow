@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CopyableIdLabel;
+import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -21,7 +21,7 @@ public class HeadersController extends TransactionFormController implements Init
     private HeadersForm headersForm;
 
     @FXML
-    private CopyableIdLabel id;
+    private IdLabel id;
 
     @FXML
     private Spinner<Integer> version;
