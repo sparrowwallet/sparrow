@@ -47,6 +47,7 @@ public class InputsController extends TransactionFormController implements Initi
         if(inputsForm.getPsbt() != null) {
             int reqSigs = 0;
             int foundSigs = 0;
+            boolean showDenominator = true;
 
             List<TransactionOutput> outputs = new ArrayList<>();
             for(int i = 0; i < tx.getInputs().size(); i++) {
@@ -59,11 +60,23 @@ public class InputsController extends TransactionFormController implements Initi
                     outputs.add(psbtInput.getWitnessUtxo());
                 }
 
-                try {
-                    reqSigs += psbtInput.getSigningScript().getNumRequiredSignatures();
+                if((psbtInput.getNonWitnessUtxo() != null || psbtInput.getWitnessUtxo() != null) && psbtInput.getSigningScript() != null) {
+                    try {
+                        reqSigs += psbtInput.getSigningScript().getNumRequiredSignatures();
+                    } catch (NonStandardScriptException e) {
+                        showDenominator = false;
+                        //TODO: Handle unusual transaction sig
+                    }
+                } else {
+                    showDenominator = false;
+                }
+
+                if(psbtInput.getFinalScriptWitness() != null) {
+                    foundSigs += psbtInput.getFinalScriptWitness().getSignatures().size();
+                } else if(psbtInput.getFinalScriptSig() != null) {
+                    foundSigs += psbtInput.getFinalScriptSig().getSignatures().size();
+                } else {
                     foundSigs += psbtInput.getPartialSignatures().size();
-                } catch (NonStandardScriptException e) {
-                    //TODO: Handle unusual transaction sig
                 }
             }
 
@@ -72,7 +85,12 @@ public class InputsController extends TransactionFormController implements Initi
                 totalAmt += output.getValue();
             }
             total.setText(totalAmt + " sats");
-            signatures.setText(foundSigs + "/" + reqSigs);
+            if(showDenominator) {
+                signatures.setText(foundSigs + "/" + reqSigs);
+            } else {
+                signatures.setText(foundSigs + "/?");
+            }
+
             addPieData(inputsPie, outputs);
         }
     }

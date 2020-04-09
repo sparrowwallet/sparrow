@@ -18,9 +18,9 @@
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
+        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
         </ColumnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
+        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
         </ColumnConstraints>
     </columnConstraints>
     <rowConstraints>
@@ -37,6 +37,11 @@
                     </graphic>
                 </Button>
             </Field>
+            <Field text="Spends:">
+                <TextField fx:id="spends" editable="false" styleClass="copyable-label" maxWidth="80" />
+                <Label fx:id="from" text="from" maxWidth="30" style="-fx-padding: 0" />
+                <TextField fx:id="address" editable="false" styleClass="copyable-label, id" />
+            </Field>
         </Fieldset>
     </Form>
 
@@ -48,7 +53,7 @@
                 <HBox prefHeight="42">
                     <VirtualizedScrollPane>
                         <content>
-                            <CodeArea fx:id="scriptSigArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="scriptSigArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>
@@ -57,7 +62,7 @@
                 <HBox prefHeight="42">
                     <VirtualizedScrollPane fx:id="redeemScriptScroll">
                         <content>
-                            <CodeArea fx:id="redeemScriptArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="redeemScriptArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>
@@ -66,7 +71,7 @@
                 <HBox prefHeight="42">
                     <VirtualizedScrollPane fx:id="witnessesScroll">
                         <content>
-                            <CodeArea fx:id="witnessesArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="witnessesArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>
@@ -75,7 +80,7 @@
                 <HBox prefHeight="42">
                     <VirtualizedScrollPane fx:id="witnessScriptScroll">
                         <content>
-                            <CodeArea fx:id="witnessScriptArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="witnessScriptArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>

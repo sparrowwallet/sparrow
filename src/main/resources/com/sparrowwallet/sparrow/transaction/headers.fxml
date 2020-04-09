@@ -18,10 +18,10 @@
       <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
    </padding>
     <columnConstraints>
-        <ColumnConstraints minWidth="340" prefWidth="340"
+        <ColumnConstraints minWidth="365" prefWidth="365"
                            maxWidth="Infinity">
         </ColumnConstraints>
-        <ColumnConstraints minWidth="340" prefWidth="340"
+        <ColumnConstraints minWidth="365" prefWidth="365"
                            maxWidth="Infinity">
         </ColumnConstraints>
     </columnConstraints>

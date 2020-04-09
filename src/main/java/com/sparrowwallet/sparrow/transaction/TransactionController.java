@@ -182,13 +182,15 @@ public class TransactionController implements Initializable, TransactionListener
         if(transaction.hasWitnesses()) {
             for (int i = 0; i < transaction.getInputs().size(); i++) {
                 TransactionInput input = transaction.getInputs().get(i);
-                TransactionWitness witness = input.getWitness();
-                VarInt witnessCount = new VarInt(witness.getPushCount());
-                cursor = addText(hex, cursor, witnessCount.getSizeInBytes()*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
-                for(byte[] push : witness.getPushes()) {
-                    VarInt witnessLen = new VarInt(push.length);
-                    cursor = addText(hex, cursor, witnessLen.getSizeInBytes()*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
-                    cursor = addText(hex, cursor, (int)witnessLen.value*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"));
+                if(input.hasWitness()) {
+                    TransactionWitness witness = input.getWitness();
+                    VarInt witnessCount = new VarInt(witness.getPushCount());
+                    cursor = addText(hex, cursor, witnessCount.getSizeInBytes()*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
+                    for(byte[] push : witness.getPushes()) {
+                        VarInt witnessLen = new VarInt(push.length);
+                        cursor = addText(hex, cursor, witnessLen.getSizeInBytes()*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
+                        cursor = addText(hex, cursor, (int)witnessLen.value*2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"));
+                    }
                 }
             }
         }

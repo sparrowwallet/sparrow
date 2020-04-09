@@ -17,9 +17,9 @@
         <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
+        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
         </ColumnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="340" prefWidth="340">
+        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
         </ColumnConstraints>
     </columnConstraints>
     <rowConstraints>
@@ -28,8 +28,10 @@
     </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
         <Fieldset fx:id="outputFieldset" inputGrow="SOMETIMES" text="Output">
-            <Field text="Value:">
-                <TextField fx:id="value" editable="false" styleClass="copyable-label" />
+            <Field text="Sends:">
+                <TextField fx:id="value" editable="false" styleClass="copyable-label" maxWidth="80"/>
+                <Label fx:id="to" text="to" />
+                <TextField fx:id="address" editable="false" styleClass="copyable-label, id" />
             </Field>
         </Fieldset>
     </Form>
@@ -42,7 +44,7 @@
                 <HBox prefHeight="42">
                     <VirtualizedScrollPane>
                         <content>
-                            <CodeArea fx:id="scriptPubKeyArea" editable="false" minWidth="570" prefWidth="570" wrapText="true" styleClass="uneditable-codearea" />
+                            <CodeArea fx:id="scriptPubKeyArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
                         </content>
                     </VirtualizedScrollPane>
                 </HBox>

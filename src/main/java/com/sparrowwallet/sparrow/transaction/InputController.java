@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
@@ -33,6 +36,15 @@ public class InputController extends TransactionFormController implements Initia
 
     @FXML
     private Button outpointSelect;
+
+    @FXML
+    private TextField spends;
+
+    @FXML
+    private Label from;
+
+    @FXML
+    private TextField address;
 
     @FXML
     private CodeArea scriptSigArea;
@@ -103,22 +115,62 @@ public class InputController extends TransactionFormController implements Initia
         TransactionInput txInput = inputForm.getTransactionInput();
         PSBTInput psbtInput = inputForm.getPsbtInput();
 
-        inputFieldset.setText("Input #" + txInput.getIndex());
-        outpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
-
-        //TODO: Enable select outpoint when wallet present
-        outpointSelect.setDisable(true);
+        initializeInputFields(txInput, psbtInput);
         initializeScriptFields(txInput, psbtInput);
         initializeStatusFields(txInput);
         initializeLocktimeFields(txInput);
     }
 
+    private void initializeInputFields(TransactionInput txInput, PSBTInput psbtInput) {
+        inputFieldset.setText("Input #" + txInput.getIndex());
+        outpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
+
+        spends.setText("Unknown");
+        from.setVisible(false);
+        if(psbtInput != null) {
+            TransactionOutput output = null;
+            if(psbtInput.getNonWitnessUtxo() != null) {
+                output = psbtInput.getNonWitnessUtxo().getOutputs().get(txInput.getIndex());
+            } else if(psbtInput.getWitnessUtxo() != null) {
+                output = psbtInput.getWitnessUtxo();
+            }
+
+            if(output != null) {
+                spends.setText(output.getValue() + " sats");
+                try {
+                    Address[] addresses = output.getScript().getToAddresses();
+                    from.setVisible(true);
+                    if(addresses.length == 1) {
+                        address.setText(addresses[0].getAddress());
+                    } else {
+                        address.setText("multiple addresses");
+                    }
+                } catch(NonStandardScriptException e) {
+                    //ignore
+                }
+            }
+        }
+
+        //TODO: Enable select outpoint when wallet present
+        outpointSelect.setDisable(true);
+    }
+
     private void initializeScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
         //TODO: Is this safe?
         Script redeemScript = txInput.getScriptSig().getFirstNestedScript();
+        if(redeemScript == null && psbtInput != null && psbtInput.getRedeemScript() != null) {
+            redeemScript = psbtInput.getRedeemScript();
+        }
+        if(redeemScript == null && psbtInput != null && psbtInput.getFinalScriptSig() != null) {
+            redeemScript = psbtInput.getFinalScriptSig().getFirstNestedScript();
+        }
 
         scriptSigArea.clear();
-        appendScript(scriptSigArea, txInput.getScriptSig(), redeemScript, null);
+        if(txInput.getScriptSig().isEmpty() && psbtInput != null && psbtInput.getFinalScriptSig() != null) {
+            appendScript(scriptSigArea, psbtInput.getFinalScriptSig(), redeemScript, null);
+        } else {
+            appendScript(scriptSigArea, txInput.getScriptSig(), redeemScript, null);
+        }
 
         redeemScriptArea.clear();
         if(redeemScript != null) {
@@ -129,18 +181,40 @@ public class InputController extends TransactionFormController implements Initia
 
         witnessesArea.clear();
         witnessScriptArea.clear();
+        Script witnesses = null;
+        Script witnessScript = null;
+
         if(txInput.hasWitness()) {
             List<ScriptChunk> witnessChunks = txInput.getWitness().asScriptChunks();
             if(witnessChunks.get(witnessChunks.size() - 1).isScript()) {
-                Script witnessScript = new Script(witnessChunks.get(witnessChunks.size() - 1).getData());
-                appendScript(witnessesArea, new Script(witnessChunks.subList(0, witnessChunks.size() - 1)), null, witnessScript);
-                appendScript(witnessScriptArea, witnessScript);
+                witnesses = new Script(witnessChunks.subList(0, witnessChunks.size() - 1));
+                witnessScript = witnessChunks.get(witnessChunks.size() - 1).getScript();
             } else {
-                appendScript(witnessesArea, new Script(witnessChunks));
-                witnessScriptScroll.setDisable(true);
+                witnesses = new Script(witnessChunks);
             }
+        } else if(psbtInput != null) {
+            if(psbtInput.getFinalScriptWitness() != null) {
+                List<ScriptChunk> witnessChunks = psbtInput.getFinalScriptWitness().asScriptChunks();
+                if(witnessChunks.get(witnessChunks.size() - 1).isScript()) {
+                    witnesses = new Script(witnessChunks.subList(0, witnessChunks.size() - 1));
+                    witnessScript = witnessChunks.get(witnessChunks.size() - 1).getScript();
+                } else {
+                    witnesses = new Script(witnessChunks);
+                }
+            } else if(psbtInput.getWitnessScript() != null) {
+                witnessScript = psbtInput.getWitnessScript();
+            }
+        }
+
+        if(witnesses != null) {
+            appendScript(witnessesArea, witnesses, null, witnessScript);
         } else {
             witnessesScroll.setDisable(true);
+        }
+
+        if(witnessScript != null) {
+            appendScript(witnessScriptArea, witnessScript);
+        } else {
             witnessScriptScroll.setDisable(true);
         }
     }
@@ -152,13 +226,23 @@ public class InputController extends TransactionFormController implements Initia
         if(inputForm.getPsbtInput() != null) {
             PSBTInput psbtInput = inputForm.getPsbtInput();
 
-            try {
-                int reqSigs = psbtInput.getSigningScript().getNumRequiredSignatures();
-                int foundSigs = psbtInput.getPartialSignatures().size();
-                signatures.setText(foundSigs + "/" + reqSigs);
-            } catch (NonStandardScriptException e) {
-                //TODO: Handle unusual transaction sig
+            int reqSigs = -1;
+            if((psbtInput.getNonWitnessUtxo() != null || psbtInput.getWitnessUtxo() != null) && psbtInput.getSigningScript() != null) {
+                try {
+                    reqSigs = psbtInput.getSigningScript().getNumRequiredSignatures();
+                } catch (NonStandardScriptException e) {
+                    //TODO: Handle unusual transaction sig
+                }
             }
+
+            int foundSigs = psbtInput.getPartialSignatures().size();
+            if(psbtInput.getFinalScriptWitness() != null) {
+                foundSigs = psbtInput.getFinalScriptWitness().getSignatures().size();
+            } else if(psbtInput.getFinalScriptSig() != null) {
+                foundSigs = psbtInput.getFinalScriptSig().getSignatures().size();
+            }
+
+            signatures.setText(foundSigs + "/" + (reqSigs < 0 ? "?" : reqSigs));
         }
 
         rbf.setSelected(txInput.isReplaceByFeeEnabled());
@@ -279,5 +363,29 @@ public class InputController extends TransactionFormController implements Initia
     public void setModel(InputForm form) {
         this.inputForm = form;
         initializeView();
+    }
+
+    @Override
+    protected String describeScriptChunk(ScriptChunk chunk) {
+        String chunkString = super.describeScriptChunk(chunk);
+
+        ECKey pubKey = null;
+        if(chunk.isSignature()) {
+            if(inputForm.getPsbtInput() != null) {
+                TransactionSignature signature = chunk.getSignature();
+                pubKey = inputForm.getPsbtInput().getKeyForSignature(signature);
+            }
+        } else if(chunk.isPubKey()) {
+            pubKey = chunk.getPubKey();
+        }
+
+        if(inputForm.getPsbtInput() != null) {
+            KeyDerivation derivation = inputForm.getPsbtInput().getKeyDerivation(pubKey);
+            if(derivation != null) {
+                return "[" + derivation.toString() + "] " + chunkString;
+            }
+        }
+
+        return chunkString;
     }
 }

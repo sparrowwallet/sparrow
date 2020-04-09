@@ -91,7 +91,7 @@ public abstract class TransactionFormController {
                 } else if(chunk.isSignature()) {
                     codeArea.append("<signature" + signatureCount++ + ">", "script-signature");
                 } else if(chunk.isScript()) {
-                    Script nestedScript = new Script(chunk.getData());
+                    Script nestedScript = chunk.getScript();
                     if (nestedScript.equals(redeemScript)) {
                         codeArea.append("<RedeemScript>", "script-redeem");
                     } else if (nestedScript.equals(witnessScript)) {
@@ -132,7 +132,7 @@ public abstract class TransactionFormController {
                 ScriptChunk hoverChunk = script.getChunks().get(position.getMajor()/2);
                 if(!hoverChunk.isOpCode()) {
                     Point2D pos = e.getScreenPosition();
-                    popupMsg.setText(hoverChunk.toString());
+                    popupMsg.setText(describeScriptChunk(hoverChunk));
                     popup.show(area, pos.getX(), pos.getY() + 10);
                 }
             }
@@ -140,5 +140,9 @@ public abstract class TransactionFormController {
         area.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> {
             popup.hide();
         });
+    }
+
+    protected String describeScriptChunk(ScriptChunk chunk) {
+        return chunk.toString();
     }
 }

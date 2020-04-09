@@ -10,6 +10,10 @@
     -fx-pref-height: 25px;
 }
 
+.form .input-container {
+    -fx-spacing: 2;
+}
+
 .form .field {
     -fx-padding: 5 5;
 }
