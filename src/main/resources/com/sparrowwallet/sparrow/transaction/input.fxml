@@ -14,6 +14,8 @@
 <?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
+<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.AddressLabel?>
 
 <GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -40,9 +42,9 @@
                 </Button>
             </Field>
             <Field text="Spends:">
-                <CopyableLabel fx:id="spends" />
+                <CoinLabel fx:id="spends" />
                 <CopyableLabel fx:id="from" text="from" />
-                <IdLabel fx:id="address" />
+                <AddressLabel fx:id="address" />
             </Field>
         </Fieldset>
     </Form>

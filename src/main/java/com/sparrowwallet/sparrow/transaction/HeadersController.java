@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
@@ -71,7 +72,7 @@ public class HeadersController extends TransactionFormController implements Init
     private CopyableLabel virtualSize;
 
     @FXML
-    private CopyableLabel fee;
+    private CoinLabel fee;
 
     @FXML
     private CopyableLabel feeRate;
@@ -178,11 +179,9 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         if(feeAmt != null) {
-            fee.setText(feeAmt + " sats");
+            fee.setValue(feeAmt);
             double feeRateAmt = feeAmt.doubleValue() / tx.getVirtualSize();
             feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
-        } else {
-            fee.setText("Unknown");
         }
     }
 

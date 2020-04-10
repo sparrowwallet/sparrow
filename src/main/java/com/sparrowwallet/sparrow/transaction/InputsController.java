@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -19,7 +20,7 @@ public class InputsController extends TransactionFormController implements Initi
     private CopyableLabel count;
 
     @FXML
-    private CopyableLabel total;
+    private CoinLabel total;
 
     @FXML
     private CopyableLabel signatures;
@@ -41,7 +42,6 @@ public class InputsController extends TransactionFormController implements Initi
         Transaction tx = inputsForm.getTransaction();
         count.setText(Integer.toString(tx.getInputs().size()));
 
-        total.setText("Unknown");
         signatures.setText("Unknown");
 
         if(inputsForm.getPsbt() != null) {
@@ -84,7 +84,7 @@ public class InputsController extends TransactionFormController implements Initi
             for(TransactionOutput output : outputs) {
                 totalAmt += output.getValue();
             }
-            total.setText(totalAmt + " sats");
+            total.setValue(totalAmt);
             if(showDenominator) {
                 signatures.setText(foundSigs + "/" + reqSigs);
             } else {

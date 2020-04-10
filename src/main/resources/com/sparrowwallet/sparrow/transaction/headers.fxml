@@ -13,6 +13,7 @@
 <?import org.controlsfx.control.SegmentedButton?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
+<?import com.sparrowwallet.sparrow.control.CoinLabel?>
 
 <GridPane hgap="10.0" prefHeight="350.0" prefWidth="600.0" vgap="10.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @../general.css">
    <padding>
@@ -92,7 +93,7 @@
     <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
         <Fieldset text="Fee" inputGrow="SOMETIMES">
             <Field text="Amount:">
-                <CopyableLabel fx:id="fee" />
+                <CoinLabel fx:id="fee" />
             </Field>
             <Field text="Rate:">
                 <CopyableLabel fx:id="feeRate" />

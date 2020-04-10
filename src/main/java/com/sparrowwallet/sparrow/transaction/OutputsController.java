@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -17,7 +18,7 @@ public class OutputsController extends TransactionFormController implements Init
     private CopyableLabel count;
 
     @FXML
-    private CopyableLabel total;
+    private CoinLabel total;
 
     @FXML
     private PieChart outputsPie;
@@ -40,7 +41,7 @@ public class OutputsController extends TransactionFormController implements Init
         for(TransactionOutput output : tx.getOutputs()) {
             totalAmt += output.getValue();
         }
-        total.setText(totalAmt + " sats");
+        total.setValue(totalAmt);
 
         if(totalAmt > 0) {
             addPieData(outputsPie, tx.getOutputs());

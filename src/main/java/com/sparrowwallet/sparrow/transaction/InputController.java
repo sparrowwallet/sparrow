@@ -6,9 +6,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.IdLabel;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -40,13 +38,13 @@ public class InputController extends TransactionFormController implements Initia
     private Button outpointSelect;
 
     @FXML
-    private CopyableLabel spends;
+    private CoinLabel spends;
 
     @FXML
     private CopyableLabel from;
 
     @FXML
-    private IdLabel address;
+    private AddressLabel address;
 
     @FXML
     private CodeArea scriptSigArea;
@@ -127,7 +125,6 @@ public class InputController extends TransactionFormController implements Initia
         inputFieldset.setText("Input #" + txInput.getIndex());
         outpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
 
-        spends.setText("Unknown");
         from.setVisible(false);
         if(psbtInput != null) {
             TransactionOutput output = null;
@@ -138,12 +135,12 @@ public class InputController extends TransactionFormController implements Initia
             }
 
             if(output != null) {
-                spends.setText(output.getValue() + " sats");
+                spends.setValue(output.getValue());
                 try {
                     Address[] addresses = output.getScript().getToAddresses();
                     from.setVisible(true);
                     if(addresses.length == 1) {
-                        address.setText(addresses[0].getAddress());
+                        address.setAddress(addresses[0]);
                     } else {
                         address.setText("multiple addresses");
                     }
