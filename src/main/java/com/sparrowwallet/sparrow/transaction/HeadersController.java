@@ -4,18 +4,20 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
+import com.google.common.eventbus.Subscribe;
 
 import java.net.URL;
 import java.time.*;
 import java.util.ResourceBundle;
 
-public class HeadersController extends TransactionFormController implements Initializable, TransactionListener {
+public class HeadersController extends TransactionFormController implements Initializable {
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private HeadersForm headersForm;
@@ -76,7 +78,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        EventManager.get().subscribe(this);
+        EventManager.get().register(this);
     }
 
     void setModel(HeadersForm form) {
@@ -92,7 +94,7 @@ public class HeadersController extends TransactionFormController implements Init
         version.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2, (int)tx.getVersion()));
         version.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setVersion(newValue);
-            EventManager.get().notify(tx);
+            EventManager.get().post(new TransactionChangedEvent(tx));
         });
 
         String type = "Legacy";
@@ -113,7 +115,7 @@ public class HeadersController extends TransactionFormController implements Init
                     locktimeFieldset.getChildren().remove(locktimeNoneField);
                     locktimeFieldset.getChildren().add(locktimeNoneField);
                     tx.setLocktime(0);
-                    EventManager.get().notify(tx);
+                    EventManager.get().post(new TransactionChangedEvent(tx));
                 } else if(selection.equals("block")) {
                     locktimeFieldset.getChildren().remove(locktimeDateField);
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
@@ -122,7 +124,7 @@ public class HeadersController extends TransactionFormController implements Init
                     Integer block = locktimeBlock.getValue();
                     if(block != null) {
                         tx.setLocktime(block);
-                        EventManager.get().notify(tx);
+                        EventManager.get().post(new TransactionChangedEvent(tx));
                     }
                 } else {
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
@@ -133,7 +135,7 @@ public class HeadersController extends TransactionFormController implements Init
                     if(date != null) {
                         locktimeDate.setDateTimeValue(date);
                         tx.setLocktime(date.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
-                        EventManager.get().notify(tx);
+                        EventManager.get().post(new TransactionChangedEvent(tx));
                     }
                 }
             }
@@ -158,13 +160,13 @@ public class HeadersController extends TransactionFormController implements Init
 
         locktimeBlock.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue);
-            EventManager.get().notify(tx);
+            EventManager.get().post(new TransactionChangedEvent(tx));
         });
 
         locktimeDate.setFormat(LOCKTIME_DATE_FORMAT);
         locktimeDate.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
-            EventManager.get().notify(tx);
+            EventManager.get().post(new TransactionChangedEvent(tx));
         });
 
         size.setText(tx.getSize() + " B");
@@ -188,15 +190,16 @@ public class HeadersController extends TransactionFormController implements Init
         id.setText(headersForm.getTransaction().calculateTxId(false).toString());
     }
 
-    @Override
-    public void updated(Transaction transaction) {
-        updateTxId();
-
-        boolean locktimeEnabled = headersForm.getTransaction().isLocktimeSequenceEnabled();
-        locktimeNoneType.setDisable(!locktimeEnabled);
-        locktimeBlockType.setDisable(!locktimeEnabled);
-        locktimeBlock.setDisable(!locktimeEnabled);
-        locktimeDateType.setDisable(!locktimeEnabled);
-        locktimeDate.setDisable(!locktimeEnabled);
+    @Subscribe
+    public void transactionChanged(TransactionChangedEvent event) {
+        if(headersForm.getTransaction().equals(event.getTransaction())) {
+            updateTxId();
+            boolean locktimeEnabled = headersForm.getTransaction().isLocktimeSequenceEnabled();
+            locktimeNoneType.setDisable(!locktimeEnabled);
+            locktimeBlockType.setDisable(!locktimeEnabled);
+            locktimeBlock.setDisable(!locktimeEnabled);
+            locktimeDateType.setDisable(!locktimeEnabled);
+            locktimeDate.setDisable(!locktimeEnabled);
+        }
     }
 }

@@ -3,20 +3,27 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import org.fxmisc.richtext.*?>
-
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
-<SplitPane dividerPositions="0.82" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
+<?import org.controlsfx.control.MasterDetailPane?>
+
+<SplitPane fx:id="tabContent" dividerPositions="0.82" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
 <items>
-    <SplitPane dividerPositions="0.2" prefHeight="160.0" prefWidth="200.0">
-        <items>
-            <TreeView fx:id="txtree" prefHeight="154.0" prefWidth="174.0" />
-            <Pane fx:id="txpane" />
-        </items>
-    </SplitPane>
-    <VirtualizedScrollPane>
-        <content>
-            <CodeArea fx:id="txhex" editable="false" wrapText="true" />
-        </content>
-    </VirtualizedScrollPane>
+    <MasterDetailPane fx:id="transactionMasterDetail" detailSide="BOTTOM">
+        <masterNode>
+            <SplitPane dividerPositions="0.2" prefHeight="160.0" prefWidth="200.0">
+                <items>
+                    <TreeView fx:id="txtree" prefHeight="154.0" prefWidth="174.0" />
+                    <Pane fx:id="txpane" />
+                </items>
+            </SplitPane>
+        </masterNode>
+        <detailNode>
+            <VirtualizedScrollPane>
+                <content>
+                    <CodeArea fx:id="txhex" editable="false" wrapText="true" />
+                </content>
+            </VirtualizedScrollPane>
+        </detailNode>
+    </MasterDetailPane>
 </items>
 </SplitPane>

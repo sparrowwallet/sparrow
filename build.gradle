@@ -28,6 +28,7 @@ dependencies {
         exclude group: 'org.hamcrest'
         exclude group: 'junit'
     }
+    implementation('com.google.guava:guava:28.2-jre')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('org.controlsfx:controlsfx:11.0.1' ) {
@@ -56,7 +57,7 @@ jlink {
         requires 'javafx.base';
     }
 
-    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information']
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png']
     launcher {
         name = 'sparrow'
         jvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls"]
@@ -75,7 +76,6 @@ jlink {
         }
         if (org.gradle.internal.os.OperatingSystem.current().macOsX) {
             imageOptions += ['--icon', 'src/main/resources/sparrow.icns']
-
             installerType = "dmg"
         }
     }

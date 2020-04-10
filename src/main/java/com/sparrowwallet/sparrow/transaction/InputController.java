@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner;
+import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -243,12 +244,12 @@ public class InputController extends TransactionFormController implements Initia
                     locktimeToggleGroup.selectToggle(locktimeAbsoluteType);
                 } else if(txInput.isAbsoluteTimeLocked()) {
                     txInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_ENABLED);
-                    EventManager.get().notify(transaction);
+                    EventManager.get().post(new TransactionChangedEvent(transaction));
                 }
             } else {
                 if(txInput.isAbsoluteTimeLocked()) {
                     txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
-                    EventManager.get().notify(transaction);
+                    EventManager.get().post(new TransactionChangedEvent(transaction));
                 } else if(txInput.isRelativeTimeLocked()) {
                     locktimeToggleGroup.selectToggle(locktimeAbsoluteType);
                 }
@@ -268,7 +269,7 @@ public class InputController extends TransactionFormController implements Initia
                     locktimeAbsoluteField.setDisable(true);
                     txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED);
                     rbf.setSelected(false);
-                    EventManager.get().notify(transaction);
+                    EventManager.get().post(new TransactionChangedEvent(transaction));
                 } else if(selection.equals("absolute")) {
                     locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);
                     locktimeFieldset.getChildren().add(locktimeAbsoluteField);
@@ -279,7 +280,7 @@ public class InputController extends TransactionFormController implements Initia
                     } else {
                         txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
                     }
-                    EventManager.get().notify(transaction);
+                    EventManager.get().post(new TransactionChangedEvent(transaction));
                 } else {
                     locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);
                     locktimeFieldset.getChildren().add(locktimeRelativeField);
@@ -348,7 +349,7 @@ public class InputController extends TransactionFormController implements Initia
             long value = locktimeRelativeSeconds.getValue().toSeconds() / TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT;
             txInput.setSequenceNumber((value & TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK) | TransactionInput.RELATIVE_TIMELOCK_TYPE_FLAG);
         }
-        EventManager.get().notify(transaction);
+        EventManager.get().post(new TransactionChangedEvent(transaction));
     }
 
     public void setModel(InputForm form) {
