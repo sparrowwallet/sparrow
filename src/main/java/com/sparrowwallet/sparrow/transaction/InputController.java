@@ -11,6 +11,7 @@ import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
 import org.controlsfx.control.ToggleSwitch;
 import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Field;
@@ -123,7 +124,17 @@ public class InputController extends TransactionFormController implements Initia
 
     private void initializeInputFields(TransactionInput txInput, PSBTInput psbtInput) {
         inputFieldset.setText("Input #" + txInput.getIndex());
-        outpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
+        if(txInput.isCoinBase()) {
+            outpoint.setText("Coinbase");
+            outpointSelect.setVisible(false);
+            long totalAmt = 0;
+            for(TransactionOutput output : inputForm.getTransaction().getOutputs()) {
+                totalAmt += output.getValue();
+            }
+            spends.setValue(totalAmt);
+        } else {
+            outpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
+        }
 
         from.setVisible(false);
         if(psbtInput != null) {

@@ -90,6 +90,8 @@ public abstract class TransactionFormController {
                     codeArea.append(chunk.toString(), "script-opcode");
                 } else if(chunk.isSignature()) {
                     codeArea.append("<signature" + signatureCount++ + ">", "script-signature");
+                } else if(chunk.isPubKey()) {
+                    codeArea.append("<pubkey" + pubKeyCount++ + ">", "script-pubkey");
                 } else if(chunk.isScript()) {
                     Script nestedScript = chunk.getScript();
                     if (nestedScript.equals(redeemScript)) {
@@ -101,8 +103,6 @@ public abstract class TransactionFormController {
                         appendScript(codeArea, nestedScript);
                         codeArea.append(")", "script-nest");
                     }
-                } else if(chunk.isPubKey()) {
-                    codeArea.append("<pubkey" + pubKeyCount++ + ">", "script-pubkey");
                 } else {
                     codeArea.append(chunk.toString(), "script-other");
                 }

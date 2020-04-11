@@ -10,8 +10,13 @@
         <menus>
           <Menu mnemonicParsing="false" text="File">
             <items>
-              <MenuItem text="_Open..." onAction="#open" />
-              <MenuItem mnemonicParsing="false" text="Close" />
+              <Menu mnemonicParsing="false" text="Open">
+                  <items>
+                      <MenuItem text="File..." onAction="#openFile" />
+                      <MenuItem text="Text..." onAction="#openText" />
+                  </items>
+              </Menu>
+              <MenuItem mnemonicParsing="false" text="Close" onAction="#closeTab" />
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Edit">
