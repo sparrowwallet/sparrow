@@ -5,39 +5,34 @@
 <?import org.controlsfx.control.StatusBar?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="750.0" prefWidth="1100.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
-   <children>
-      <MenuBar useSystemMenuBar="true">
-        <menus>
-          <Menu mnemonicParsing="false" text="File">
-            <items>
-              <Menu mnemonicParsing="false" text="Open">
-                  <items>
-                      <MenuItem text="File..." onAction="#openFile" />
-                      <MenuItem text="Text..." onAction="#openText" />
-                  </items>
-              </Menu>
-              <MenuItem mnemonicParsing="false" text="Close" onAction="#closeTab" />
-            </items>
-          </Menu>
-          <Menu mnemonicParsing="false" text="Edit">
-            <items>
-              <MenuItem mnemonicParsing="false" text="Delete" />
-            </items>
-          </Menu>
-            <Menu mnemonicParsing="false" text="View">
-                <items>
-                    <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex" />
-                </items>
-            </Menu>
-          <Menu mnemonicParsing="false" text="Help">
-            <items>
-              <MenuItem mnemonicParsing="false" text="About" />
-            </items>
-          </Menu>
-        </menus>
-      </MenuBar>
-      <TabPane prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" fx:id="tabs" />
+    <children>
+        <MenuBar useSystemMenuBar="true">
+            <menus>
+                <Menu mnemonicParsing="false" text="File">
+                    <items>
+                        <Menu mnemonicParsing="false" text="Open">
+                            <items>
+                                <MenuItem text="File..." onAction="#openFile"/>
+                                <MenuItem text="From Text..." onAction="#openText"/>
+                            </items>
+                        </Menu>
+                        <MenuItem mnemonicParsing="false" text="Close" onAction="#closeTab"/>
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="View">
+                    <items>
+                        <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Help">
+                    <items>
+                        <MenuItem mnemonicParsing="false" text="About"/>
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+        <TabPane prefHeight="200.0" prefWidth="200.0" VBox.vgrow="ALWAYS" fx:id="tabs"/>
 
-      <StatusBar text=""/>
-   </children>
+        <StatusBar text=""/>
+    </children>
 </VBox>
