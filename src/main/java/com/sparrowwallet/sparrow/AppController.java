@@ -42,6 +42,8 @@ public class AppController implements Initializable {
     @FXML
     private TabPane tabs;
 
+    public static boolean showTxHexProperty;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
@@ -78,6 +80,7 @@ public class AppController implements Initializable {
         });
 
         showTxHex.setSelected(true);
+        showTxHexProperty = true;
     }
 
     public void openFromFile(ActionEvent event) {
@@ -167,6 +170,7 @@ public class AppController implements Initializable {
     public void showTxHex(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         EventManager.get().post(new TransactionTabChangedEvent(tabs.getSelectionModel().getSelectedItem(), item.isSelected()));
+        showTxHexProperty = item.isSelected();
     }
 
     public void openExamples(ActionEvent event) {

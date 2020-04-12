@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
@@ -56,6 +57,7 @@ public class TransactionController implements Initializable {
 
     private void initializeView() {
         initializeTxTree();
+        transactionMasterDetail.setShowDetailNode(AppController.showTxHexProperty);
         refreshTxHex();
     }
 
