@@ -19,7 +19,7 @@
 }
 
 .form .field {
-    -fx-padding: 5 5;
+    -fx-padding: 3 5;
 }
 
 .id {
@@ -27,7 +27,7 @@
 }
 
 .form-separator {
-    -fx-padding: -15 0 0 0;
+    -fx-padding: -20 0 0 0;
 }
 
 .toggle-switch {

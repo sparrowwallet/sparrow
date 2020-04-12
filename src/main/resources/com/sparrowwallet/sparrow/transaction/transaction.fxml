@@ -10,10 +10,12 @@
 <items>
     <MasterDetailPane fx:id="transactionMasterDetail" detailSide="BOTTOM">
         <masterNode>
-            <SplitPane dividerPositions="0.2" prefHeight="160.0" prefWidth="200.0">
+            <SplitPane dividerPositions="0.2">
                 <items>
-                    <TreeView fx:id="txtree" prefHeight="154.0" prefWidth="174.0" />
-                    <Pane fx:id="txpane" />
+                    <TreeView fx:id="txtree">
+                        <SplitPane.resizableWithParent>false</SplitPane.resizableWithParent>
+                    </TreeView>
+                    <StackPane fx:id="txpane" />
                 </items>
             </SplitPane>
         </masterNode>

@@ -15,23 +15,19 @@
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
 
-<GridPane hgap="10.0" prefHeight="350.0" prefWidth="600.0" vgap="10.0" alignment="TOP_CENTER" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @../general.css">
+<GridPane hgap="10.0" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @../general.css">
    <padding>
-      <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+      <Insets left="25.0" right="25.0" top="25.0" />
    </padding>
     <columnConstraints>
-        <ColumnConstraints minWidth="365" prefWidth="365"
-                           maxWidth="Infinity">
-        </ColumnConstraints>
-        <ColumnConstraints minWidth="365" prefWidth="365"
-                           maxWidth="Infinity">
-        </ColumnConstraints>
+        <ColumnConstraints percentWidth="50" />
+        <ColumnConstraints percentWidth="50" />
     </columnConstraints>
    <rowConstraints>
       <RowConstraints />
    </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
-        <Fieldset text="Transaction" inputGrow="SOMETIMES">
+        <Fieldset text="Transaction" inputGrow="SOMETIMES" wrapWidth="620">
             <Field text="Txid:">
                 <IdLabel fx:id="id"/>
             </Field>

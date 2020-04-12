@@ -15,15 +15,13 @@
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
 <?import com.sparrowwallet.sparrow.control.AddressLabel?>
 
-<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="600.0" stylesheets="@output.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.OutputController">
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@output.css, @script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.OutputController">
     <padding>
-        <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+        <Insets left="25.0" right="25.0" top="25.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
-        </ColumnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
-        </ColumnConstraints>
+        <ColumnConstraints percentWidth="50" />
+        <ColumnConstraints percentWidth="50" />
     </columnConstraints>
     <rowConstraints>
         <RowConstraints />
@@ -44,13 +42,11 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
         <Fieldset inputGrow="SOMETIMES" text="Script">
             <Field text="ScriptPubKey:">
-                <HBox prefHeight="42">
-                    <VirtualizedScrollPane>
-                        <content>
-                            <CodeArea fx:id="scriptPubKeyArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
-                        </content>
-                    </VirtualizedScrollPane>
-                </HBox>
+                <VirtualizedScrollPane>
+                    <content>
+                        <CodeArea fx:id="scriptPubKeyArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                    </content>
+                </VirtualizedScrollPane>
             </Field>
         </Fieldset>
     </Form>

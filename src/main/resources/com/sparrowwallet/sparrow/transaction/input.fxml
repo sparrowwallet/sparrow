@@ -17,22 +17,20 @@
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
 <?import com.sparrowwallet.sparrow.control.AddressLabel?>
 
-<GridPane alignment="TOP_CENTER" hgap="10.0" prefHeight="500.0" prefWidth="620.0" stylesheets="@input.css, @script.css, @../general.css" vgap="10.0" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@input.css, @script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
-        <Insets bottom="25.0" left="25.0" right="25.0" top="25.0" />
+        <Insets left="25.0" right="25.0" top="25.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
-        </ColumnConstraints>
-        <ColumnConstraints maxWidth="Infinity" minWidth="365" prefWidth="365">
-        </ColumnConstraints>
+        <ColumnConstraints percentWidth="50" />
+        <ColumnConstraints percentWidth="50" />
     </columnConstraints>
     <rowConstraints>
         <RowConstraints />
-      <RowConstraints />
+        <RowConstraints />
     </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
-        <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input">
+        <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input" wrapWidth="680">
             <Field text="Outpoint:" styleClass="label-button">
                 <IdLabel fx:id="outpoint" />
                 <Button fx:id="outpointSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
@@ -54,40 +52,32 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
         <Fieldset inputGrow="SOMETIMES" text="Script">
             <Field text="ScriptSig:">
-                <HBox prefHeight="42">
-                    <VirtualizedScrollPane>
-                        <content>
-                            <CodeArea fx:id="scriptSigArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
-                        </content>
-                    </VirtualizedScrollPane>
-                </HBox>
+                <VirtualizedScrollPane>
+                    <content>
+                        <CodeArea fx:id="scriptSigArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                    </content>
+                </VirtualizedScrollPane>
             </Field>
             <Field text="RedeemScript:">
-                <HBox prefHeight="42">
-                    <VirtualizedScrollPane fx:id="redeemScriptScroll">
-                        <content>
-                            <CodeArea fx:id="redeemScriptArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
-                        </content>
-                    </VirtualizedScrollPane>
-                </HBox>
+                <VirtualizedScrollPane fx:id="redeemScriptScroll">
+                    <content>
+                        <CodeArea fx:id="redeemScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                    </content>
+                </VirtualizedScrollPane>
             </Field>
             <Field text="Witnesses:">
-                <HBox prefHeight="42">
-                    <VirtualizedScrollPane fx:id="witnessesScroll">
-                        <content>
-                            <CodeArea fx:id="witnessesArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
-                        </content>
-                    </VirtualizedScrollPane>
-                </HBox>
+                <VirtualizedScrollPane fx:id="witnessesScroll">
+                    <content>
+                        <CodeArea fx:id="witnessesArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                    </content>
+                </VirtualizedScrollPane>
             </Field>
             <Field text="WitnessScript:">
-                <HBox prefHeight="42">
-                    <VirtualizedScrollPane fx:id="witnessScriptScroll">
-                        <content>
-                            <CodeArea fx:id="witnessScriptArea" editable="false" minWidth="620" prefWidth="620" wrapText="true" styleClass="uneditable-codearea" />
-                        </content>
-                    </VirtualizedScrollPane>
-                </HBox>
+                <VirtualizedScrollPane fx:id="witnessScriptScroll">
+                    <content>
+                        <CodeArea fx:id="witnessScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                    </content>
+                </VirtualizedScrollPane>
             </Field>
         </Fieldset>
     </Form>
