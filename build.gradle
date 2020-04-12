@@ -54,6 +54,7 @@ jlink {
         requires 'javafx.graphics';
         requires 'javafx.controls';
         requires 'java.xml';
+        requires 'java.logging'
         requires 'javafx.base';
     }
 
@@ -66,7 +67,7 @@ jlink {
     jpackage {
         imageName = "Sparrow"
         installerName = "Sparrow"
-        appVersion = "0.1"
+        appVersion = "0.5"
         imageOptions = []
         installerOptions = [
                 '--file-associations', 'src/main/resources/associations.properties',
