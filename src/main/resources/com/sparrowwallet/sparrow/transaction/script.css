@@ -6,6 +6,27 @@
 .script-redeem { -fx-fill: #ca1243 }
 .script-other { -fx-fill: #a0a1a7 }
 
+.non-final {
+    -fx-fill: #696c77;
+}
+
+.final {
+    -fx-fill: #383a42;
+}
+
+.text-decoration-box {
+    -fx-translate-x: -10;
+    -fx-translate-y: 2;
+}
+
+.text-decoration-label {
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 9px;
+    -fx-fill: white;
+    -fx-translate-x: -10;
+    -fx-translate-y: 2;
+}
+
 .uneditable-codearea {
     -fx-font: 14px Courier;
     -fx-padding: 4;

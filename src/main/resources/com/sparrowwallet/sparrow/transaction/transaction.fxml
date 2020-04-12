@@ -6,7 +6,7 @@
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
 <?import org.controlsfx.control.MasterDetailPane?>
 
-<SplitPane fx:id="tabContent" dividerPositions="0.82" orientation="VERTICAL" prefHeight="200.0" prefWidth="160.0" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
+<SplitPane fx:id="tabContent" dividerPositions="0.82" orientation="VERTICAL" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
 <items>
     <MasterDetailPane fx:id="transactionMasterDetail" detailSide="BOTTOM">
         <masterNode>

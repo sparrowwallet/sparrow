@@ -10,9 +10,13 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import org.controlsfx.control.ToggleSwitch;
+import org.controlsfx.control.decoration.Decorator;
+import org.controlsfx.control.decoration.GraphicDecoration;
 import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
@@ -169,15 +173,18 @@ public class InputController extends TransactionFormController implements Initia
         //TODO: Is this safe?
         Script redeemScript = txInput.getScriptSig().getFirstNestedScript();
         if(redeemScript == null && psbtInput != null && psbtInput.getRedeemScript() != null) {
+            addPSBTDecoration(redeemScriptArea, "PSBT Redeem Script", "non-final");
             redeemScript = psbtInput.getRedeemScript();
         }
         if(redeemScript == null && psbtInput != null && psbtInput.getFinalScriptSig() != null) {
+            addPSBTDecoration(redeemScriptArea, "PSBT Final ScriptSig", "final");
             redeemScript = psbtInput.getFinalScriptSig().getFirstNestedScript();
         }
 
         scriptSigArea.clear();
         if(txInput.getScriptSig().isEmpty() && psbtInput != null && psbtInput.getFinalScriptSig() != null) {
             appendScript(scriptSigArea, psbtInput.getFinalScriptSig(), redeemScript, null);
+            addPSBTDecoration(scriptSigArea, "PSBT Final ScriptSig", "final");
         } else {
             appendScript(scriptSigArea, txInput.getScriptSig(), redeemScript, null);
         }
@@ -201,8 +208,11 @@ public class InputController extends TransactionFormController implements Initia
             if(psbtInput.getFinalScriptWitness() != null) {
                 witnesses = new Script(psbtInput.getFinalScriptWitness().asScriptChunks());
                 witnessScript = psbtInput.getFinalScriptWitness().getWitnessScript();
+                addPSBTDecoration(witnessesArea, "PSBT Final ScriptWitness", "final");
+                addPSBTDecoration(witnessScriptArea, "PSBT Final ScriptWitness", "final");
             } else if(psbtInput.getWitnessScript() != null) {
                 witnessScript = psbtInput.getWitnessScript();
+                addPSBTDecoration(witnessScriptArea, "PSBT Witness Script", "non-final");
             }
         }
 
@@ -217,6 +227,10 @@ public class InputController extends TransactionFormController implements Initia
         } else {
             witnessScriptScroll.setDisable(true);
         }
+    }
+
+    private void addPSBTDecoration(Node target, String description, String styleClass) {
+        Decorator.addDecoration(target, new GraphicDecoration(new TextDecoration("PSBT", description, styleClass), Pos.TOP_RIGHT));
     }
 
     private void initializeStatusFields(TransactionInput txInput) {
