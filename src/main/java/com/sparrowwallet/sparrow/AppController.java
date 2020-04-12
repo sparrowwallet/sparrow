@@ -17,6 +17,9 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -34,6 +37,9 @@ public class AppController implements Initializable {
     private CheckMenuItem showTxHex;
 
     @FXML
+    private StackPane rootStack;
+
+    @FXML
     private TabPane tabs;
 
     @Override
@@ -42,69 +48,92 @@ public class AppController implements Initializable {
     }
 
     void initializeView() {
+        rootStack.setOnDragOver(event -> {
+            if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            }
+            event.consume();
+        });
+
+        rootStack.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            boolean success = false;
+            if(db.hasFiles()) {
+                for(File file : db.getFiles()) {
+                    openFile(file);
+                }
+                success = true;
+            }
+            event.setDropCompleted(success);
+            event.consume();
+        });
+
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
-            String tabType = (String)selectedTab.getUserData();
-            if(tabType.equals(TRANSACTION_TAB_TYPE)) {
-                EventManager.get().post(new TransactionTabSelectedEvent(selectedTab));
+            if(selectedTab != null) {
+                String tabType = (String)selectedTab.getUserData();
+                if(tabType.equals(TRANSACTION_TAB_TYPE)) {
+                    EventManager.get().post(new TransactionTabSelectedEvent(selectedTab));
+                }
             }
         });
 
         showTxHex.setSelected(true);
-
-        addExampleTxTabs();
     }
 
-    public void openFile(ActionEvent event) {
+    public void openFromFile(ActionEvent event) {
         Stage window = new Stage();
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Transaction");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("All Files", "*.*"),
-                new FileChooser.ExtensionFilter("PSBT", "*.psbt"),
-                new FileChooser.ExtensionFilter("TXN", "*.txn")
+                new FileChooser.ExtensionFilter("PSBT", "*.psbt")
         );
 
         File file = fileChooser.showOpenDialog(window);
         if (file != null) {
-            if(file.exists()) {
+            openFile(file);
+        }
+    }
+
+    private void openFile(File file) {
+        if(file.exists()) {
+            try {
+                byte[] bytes = new byte[(int)file.length()];
+                FileInputStream stream = new FileInputStream(file);
+                stream.read(bytes);
+                stream.close();
+                String name = file.getName();
+
                 try {
-                    byte[] bytes = new byte[(int)file.length()];
-                    FileInputStream stream = new FileInputStream(file);
-                    stream.read(bytes);
-                    stream.close();
-                    String name = file.getName();
-
-                    try {
-                        Tab tab = addTransactionTab(name, bytes);
-                        tabs.getSelectionModel().select(tab);
-                    } catch(ParseException e) {
-                        ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                        ByteSource byteSource = new ByteSource() {
-                            @Override
-                            public InputStream openStream() {
-                                return inputStream;
-                            }
-                        };
-
-                        String text = byteSource.asCharSource(Charsets.UTF_8).read().trim();
-                        Tab tab = addTransactionTab(name, text);
-                        tabs.getSelectionModel().select(tab);
-                    }
-                } catch(IOException e) {
-                    showErrorDialog("Error opening file", e.getMessage());
-                } catch(PSBTParseException e) {
-                    showErrorDialog("Invalid PSBT", e.getMessage());
-                } catch(TransactionParseException e) {
-                    showErrorDialog("Invalid transaction", e.getMessage());
+                    Tab tab = addTransactionTab(name, bytes);
+                    tabs.getSelectionModel().select(tab);
                 } catch(ParseException e) {
-                    showErrorDialog("Invalid file", e.getMessage());
+                    ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
+                    ByteSource byteSource = new ByteSource() {
+                        @Override
+                        public InputStream openStream() {
+                            return inputStream;
+                        }
+                    };
+
+                    String text = byteSource.asCharSource(Charsets.UTF_8).read().trim();
+                    Tab tab = addTransactionTab(name, text);
+                    tabs.getSelectionModel().select(tab);
                 }
+            } catch(IOException e) {
+                showErrorDialog("Error opening file", e.getMessage());
+            } catch(PSBTParseException e) {
+                showErrorDialog("Invalid PSBT", e.getMessage());
+            } catch(TransactionParseException e) {
+                showErrorDialog("Invalid transaction", e.getMessage());
+            } catch(ParseException e) {
+                showErrorDialog("Invalid file", e.getMessage());
             }
         }
     }
 
-    public void openText(ActionEvent event) {
+    public void openFromText(ActionEvent event) {
         TextAreaDialog dialog = new TextAreaDialog();
         dialog.setTitle("Open from text");
         dialog.getDialogPane().setHeaderText("Paste a transaction or PSBT:");
@@ -140,7 +169,7 @@ public class AppController implements Initializable {
         EventManager.get().post(new TransactionTabChangedEvent(tabs.getSelectionModel().getSelectedItem(), item.isSelected()));
     }
 
-    private void addExampleTxTabs() {
+    public void openExamples(ActionEvent event) {
         try {
             addTransactionTab("p2pkh", "01000000019c2e0f24a03e72002a96acedb12a632e72b6b74c05dc3ceab1fe78237f886c48010000006a47304402203da9d487be5302a6d69e02a861acff1da472885e43d7528ed9b1b537a8e2cac9022002d1bca03a1e9715a99971bafe3b1852b7a4f0168281cbd27a220380a01b3307012102c9950c622494c2e9ff5a003e33b690fe4832477d32c2d256c67eab8bf613b34effffffff02b6f50500000000001976a914bdf63990d6dc33d705b756e13dd135466c06b3b588ac845e0201000000001976a9145fb0e9755a3424efd2ba0587d20b1e98ee29814a88ac06241559");
             addTransactionTab("p2sh", "0100000003a5ee1a0fd80dfbc3142df136ab56e082b799c13aa977c048bdf8f61bd158652c000000006b48304502203b0160de302cded63589a88214fe499a25aa1d86a2ea09129945cd632476a12c022100c77727daf0718307e184d55df620510cf96d4b5814ae3258519c0482c1ca82fa0121024f4102c1f1cf662bf99f2b034eb03edd4e6c96793cb9445ff519aab580649120ffffffff0fce901eb7b7551ba5f414735ff93b83a2a57403df11059ec88245fba2aaf1a0000000006a47304402204089adb8a1de1a9e22aa43b94d54f1e54dc9bea745d57df1a633e03dd9ede3c2022037d1e53e911ed7212186028f2e085f70524930e22eb6184af090ba4ab779a5b90121030644cb394bf381dbec91680bdf1be1986ad93cfb35603697353199fb285a119effffffff0fce901eb7b7551ba5f414735ff93b83a2a57403df11059ec88245fba2aaf1a0010000009300493046022100a07b2821f96658c938fa9c68950af0e69f3b2ce5f8258b3a6ad254d4bc73e11e022100e82fab8df3f7e7a28e91b3609f91e8ebf663af3a4dc2fd2abd954301a5da67e701475121022afc20bf379bc96a2f4e9e63ffceb8652b2b6a097f63fbee6ecec2a49a48010e2103a767c7221e9f15f870f1ad9311f5ab937d79fcaeee15bb2c722bca515581b4c052aeffffffff02a3b81b00000000001976a914ea00917f128f569cbdf79da5efcd9001671ab52c88ac80969800000000001976a9143dec0ead289be1afa8da127a7dbdd425a05e25f688ac00000000");

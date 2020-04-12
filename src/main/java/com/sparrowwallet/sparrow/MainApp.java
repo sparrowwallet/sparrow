@@ -19,11 +19,14 @@ public class MainApp extends Application {
         scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
 
         stage.setTitle("Sparrow");
+        stage.setMinWidth(650);
+        stage.setMinHeight(700);
         stage.setScene(scene);
         stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/sparrow.png")));
-        stage.show();
 
         appController.initializeView();
+
+        stage.show();
     }
 
     public static void main(String[] args) {
