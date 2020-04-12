@@ -32,6 +32,7 @@ import java.util.ResourceBundle;
 
 public class AppController implements Initializable {
     private static final String TRANSACTION_TAB_TYPE = "transaction";
+    public static final String DRAG_OVER_CLASS = "drag-over";
 
     @FXML
     private CheckMenuItem showTxHex;
@@ -68,6 +69,14 @@ public class AppController implements Initializable {
             }
             event.setDropCompleted(success);
             event.consume();
+        });
+
+        rootStack.setOnDragEntered(event -> {
+            rootStack.getStyleClass().add(DRAG_OVER_CLASS);
+        });
+
+        rootStack.setOnDragExited(event -> {
+            rootStack.getStyleClass().removeAll(DRAG_OVER_CLASS);
         });
 
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {

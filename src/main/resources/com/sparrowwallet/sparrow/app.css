@@ -1,5 +1,5 @@
 .background-box {
-    -fx-stroke: #696c77;
+    -fx-stroke: #a0a1a7;
     -fx-stroke-width: 1px;
     -fx-stroke-dash-array: 5 5;
     -fx-arc-height: 50;
@@ -7,7 +7,15 @@
     -fx-fill: transparent;
 }
 
+.drag-over > .background-box {
+    -fx-stroke: #383a42;
+}
+
 .background-text {
-    -fx-fill: #696c77;
+    -fx-fill: #a0a1a7;
     -fx-font-size: 20;
+}
+
+.drag-over > .background-text {
+    -fx-fill: #383a42;
 }
