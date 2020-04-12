@@ -12,7 +12,10 @@ import com.sparrowwallet.sparrow.event.TabEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -26,9 +29,7 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.URL;
 import java.text.ParseException;
-import java.util.Base64;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class AppController implements Initializable {
     private static final String TRANSACTION_TAB_TYPE = "transaction";
@@ -254,6 +255,7 @@ public class AppController implements Initializable {
             Tab tab = new Tab(tabName);
             TabData tabData = new TabData(TabData.TabType.TRANSACTION);
             tab.setUserData(tabData);
+            tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("transaction/transaction.fxml"));
             tab.setContent(transactionLoader.load());
@@ -270,6 +272,30 @@ public class AppController implements Initializable {
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private ContextMenu getTabContextMenu(Tab tab) {
+        ContextMenu contextMenu = new ContextMenu();
+
+        MenuItem close = new MenuItem("Close");
+        close.setOnAction(event -> {
+            tabs.getTabs().remove(tab);
+        });
+
+        MenuItem closeOthers = new MenuItem("Close Others");
+        closeOthers.setOnAction(event -> {
+            List<Tab> otherTabs = new ArrayList<>(tabs.getTabs());
+            otherTabs.remove(tab);
+            tabs.getTabs().removeAll(otherTabs);
+        });
+
+        MenuItem closeAll = new MenuItem("Close All");
+        closeAll.setOnAction(event -> {
+            tabs.getTabs().removeAll(tabs.getTabs());
+        });
+
+        contextMenu.getItems().addAll(close, closeOthers, closeAll);
+        return contextMenu;
     }
 
     @Subscribe
