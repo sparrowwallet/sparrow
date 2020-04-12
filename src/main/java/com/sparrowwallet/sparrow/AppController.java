@@ -81,8 +81,8 @@ public class AppController implements Initializable {
 
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
             if(selectedTab != null) {
-                String tabType = (String)selectedTab.getUserData();
-                if(tabType.equals(TRANSACTION_TAB_TYPE)) {
+                TabData tabData = (TabData)selectedTab.getUserData();
+                if(tabData.getType() == TabData.TabType.TRANSACTION) {
                     EventManager.get().post(new TransactionTabSelectedEvent(selectedTab));
                 }
             }
@@ -109,6 +109,14 @@ public class AppController implements Initializable {
     }
 
     private void openFile(File file) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(file.equals(tabData.getFile())) {
+                tabs.getSelectionModel().select(tab);
+                return;
+            }
+        }
+
         if(file.exists()) {
             try {
                 byte[] bytes = new byte[(int)file.length()];
@@ -119,6 +127,8 @@ public class AppController implements Initializable {
 
                 try {
                     Tab tab = addTransactionTab(name, bytes);
+                    TabData tabData = (TabData)tab.getUserData();
+                    tabData.setFile(file);
                     tabs.getSelectionModel().select(tab);
                 } catch(ParseException e) {
                     ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
@@ -153,6 +163,8 @@ public class AppController implements Initializable {
         if(text.isPresent() && !text.get().isEmpty()) {
             try {
                 Tab tab = addTransactionTab(null, text.get().trim());
+                TabData tabData = (TabData)tab.getUserData();
+                tabData.setText(text.get());
                 tabs.getSelectionModel().select(tab);
             } catch(PSBTParseException e) {
                 showErrorDialog("Invalid PSBT", e.getMessage());
@@ -240,7 +252,8 @@ public class AppController implements Initializable {
             }
 
             Tab tab = new Tab(tabName);
-            tab.setUserData(TRANSACTION_TAB_TYPE);
+            TabData tabData = new TabData(TabData.TabType.TRANSACTION);
+            tab.setUserData(tabData);
             tab.setClosable(true);
             FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("transaction/transaction.fxml"));
             tab.setContent(transactionLoader.load());
