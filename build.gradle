@@ -67,7 +67,8 @@ jlink {
     jpackage {
         imageName = "Sparrow"
         installerName = "Sparrow"
-        appVersion = "0.5"
+        appVersion = "0.51"
+        skipInstaller = true
         imageOptions = []
         installerOptions = [
                 '--file-associations', 'src/main/resources/associations.properties',
@@ -76,7 +77,8 @@ jlink {
             installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu']
         }
         if (org.gradle.internal.os.OperatingSystem.current().macOsX) {
-            imageOptions += ['--icon', 'src/main/resources/sparrow.icns']
+            installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
+            imageOptions += ['--icon', 'src/main/deploy/package/macosx/sparrow.icns']
             installerType = "dmg"
         }
     }
