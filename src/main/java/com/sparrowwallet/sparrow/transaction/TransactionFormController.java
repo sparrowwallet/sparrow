@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.fxmisc.richtext.model.TwoDimensional.Bias.Backward;
+import static com.sparrowwallet.drongo.protocol.ScriptType.*;
 
 public abstract class TransactionFormController {
     protected void addPieData(PieChart pie, List<TransactionOutput> outputs) {
@@ -57,7 +58,7 @@ public abstract class TransactionFormController {
     }
 
     protected void appendScript(CodeArea codeArea, Script script, Script redeemScript, Script witnessScript) {
-        if(ScriptPattern.isP2PKH(script)) {
+        if(P2PKH.isScriptType(script)) {
             codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
             codeArea.append(" ", "");
             codeArea.append(script.getChunks().get(1).toString(), "script-opcode");
@@ -67,17 +68,17 @@ public abstract class TransactionFormController {
             codeArea.append(script.getChunks().get(3).toString(), "script-opcode");
             codeArea.append(" ", "");
             codeArea.append(script.getChunks().get(4).toString(), "script-opcode");
-        } else if(ScriptPattern.isP2SH(script)) {
+        } else if(P2SH.isScriptType(script)) {
             codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
             codeArea.append(" ", "");
             codeArea.append("<sh>", "script-hash");
             codeArea.append(" ", "");
             codeArea.append(script.getChunks().get(2).toString(), "script-opcode");
-        } else if(ScriptPattern.isP2WPKH(script)) {
+        } else if(P2WPKH.isScriptType(script)) {
             codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
             codeArea.append(" ", "");
             codeArea.append("<wpkh>", "script-hash");
-        } else if(ScriptPattern.isP2WSH(script)) {
+        } else if(P2WSH.isScriptType(script)) {
             codeArea.append(script.getChunks().get(0).toString(), "script-opcode");
             codeArea.append(" ", "");
             codeArea.append("<wsh>", "script-hash");

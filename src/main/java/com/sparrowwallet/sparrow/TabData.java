@@ -32,6 +32,6 @@ public class TabData {
     }
 
     public enum TabType {
-        TRANSACTION
+        WALLET, TRANSACTION
     }
 }

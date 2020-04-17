@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.controlsfx.glyphfont.Glyph?>
+<?import com.sparrowwallet.sparrow.wallet.Function?>
+
+<BorderPane fx:id="tabContent" stylesheets="@wallet.css, @../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.WalletController">
+    <left>
+        <VBox styleClass="list-menu">
+            <ToggleButton VBox.vgrow="ALWAYS" text="Transactions" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity">
+                <toggleGroup>
+                    <ToggleGroup fx:id="walletMenu" />
+                </toggleGroup>
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="BTC" />
+                </graphic>
+                <userData>
+                    <Function fx:constant="TRANSACTIONS"/>
+                </userData>
+            </ToggleButton>
+            <ToggleButton VBox.vgrow="ALWAYS" text="Send" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="SEND" />
+                </graphic>
+                <userData>
+                    <Function fx:constant="SEND"/>
+                </userData>
+            </ToggleButton>
+            <ToggleButton VBox.vgrow="ALWAYS" text="Receive" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" />
+                </graphic>
+                <userData>
+                    <Function fx:constant="RECEIVE"/>
+                </userData>
+            </ToggleButton>
+            <ToggleButton VBox.vgrow="ALWAYS" text="Addresses" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="TH_LIST" />
+                </graphic>
+                <userData>
+                    <Function fx:constant="ADDRESSES"/>
+                </userData>
+            </ToggleButton>
+            <ToggleButton VBox.vgrow="ALWAYS" text="Policies" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="FILE_TEXT_ALT" />
+                </graphic>
+                <userData>
+                    <Function fx:constant="POLICIES"/>
+                </userData>
+            </ToggleButton>
+            <ToggleButton VBox.vgrow="ALWAYS" text="Settings" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="COG" />
+                </graphic>
+                <userData>
+                    <Function fx:constant="SETTINGS"/>
+                </userData>
+            </ToggleButton>
+        </VBox>
+    </left>
+    <center>
+        <StackPane fx:id="walletPane">
+
+        </StackPane>
+    </center>
+</BorderPane>

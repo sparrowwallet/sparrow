@@ -7,11 +7,14 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.TextAreaDialog;
 import com.sparrowwallet.sparrow.event.TabEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
+import com.sparrowwallet.sparrow.wallet.WalletController;
+import com.sparrowwallet.sparrow.wallet.WalletForm;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -88,6 +91,8 @@ public class AppController implements Initializable {
 
         showTxHex.setSelected(true);
         showTxHexProperty = true;
+
+        addWalletTab(null, new Wallet());
     }
 
     public void openFromFile(ActionEvent event) {
@@ -190,6 +195,36 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         EventManager.get().post(new TransactionTabChangedEvent(tabs.getSelectionModel().getSelectedItem(), item.isSelected()));
         showTxHexProperty = item.isSelected();
+    }
+
+    public void newWallet(ActionEvent event) {
+        Tab tab = addWalletTab(null, new Wallet());
+        tabs.getSelectionModel().select(tab);
+    }
+
+    public Tab addWalletTab(String name, Wallet wallet) {
+        try {
+            String tabName = name;
+            if(tabName == null || tabName.isEmpty()) {
+                tabName = "New wallet";
+            }
+
+            Tab tab = new Tab(tabName);
+            TabData tabData = new TabData(TabData.TabType.WALLET);
+            tab.setUserData(tabData);
+            tab.setContextMenu(getTabContextMenu(tab));
+            tab.setClosable(true);
+            FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
+            tab.setContent(walletLoader.load());
+            WalletController controller = walletLoader.getController();
+            WalletForm walletForm = new WalletForm(wallet);
+            controller.setWalletForm(walletForm);
+
+            tabs.getTabs().add(tab);
+            return tab;
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void openExamples(ActionEvent event) {

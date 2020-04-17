@@ -1,0 +1,11 @@
+.form .fieldset:horizontal .field {
+    -fx-pref-height: 40px;
+}
+
+.form .fieldset:horizontal .label-container {
+    -fx-alignment: center-left;
+}
+
+.form .fieldset:horizontal .input-container {
+    -fx-alignment: center-left;
+}

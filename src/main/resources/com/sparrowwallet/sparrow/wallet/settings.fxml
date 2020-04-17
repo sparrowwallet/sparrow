@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.collections.*?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import tornadofx.control.*?>
+<?import org.controlsfx.control.RangeSlider?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+<?import com.sparrowwallet.drongo.policy.PolicyType?>
+<?import com.sparrowwallet.drongo.protocol.ScriptType?>
+
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@settings.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
+    <padding>
+        <Insets left="25.0" right="25.0" top="25.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints percentWidth="50" />
+        <ColumnConstraints percentWidth="50" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+        <RowConstraints />
+    </rowConstraints>
+
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="Settings">
+            <Field text="Policy Type:">
+                <ComboBox fx:id="policyType">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <PolicyType fx:constant="SINGLE" />
+                            <PolicyType fx:constant="MULTI" />
+                            <PolicyType fx:constant="CUSTOM" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+
+            </Field>
+            <Field text="Script Type:">
+                <ComboBox fx:id="scriptType">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <ScriptType fx:constant="P2PK" />
+                            <ScriptType fx:constant="P2PKH" />
+                            <ScriptType fx:constant="P2SH" />
+                            <ScriptType fx:constant="P2SH_P2WPKH" />
+                            <ScriptType fx:constant="P2SH_P2WSH" />
+                            <ScriptType fx:constant="P2WPKH" />
+                            <ScriptType fx:constant="P2WSH" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="" fx:id="multisigFieldset">
+            <Field text="Cosigners:">
+                <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="2" max="10" lowValue="2" highValue="3" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
+            </Field>
+            <Field text="M of N:">
+                <CopyableLabel fx:id="multisigLowLabel" />
+                <CopyableLabel text="/"/>
+                <CopyableLabel fx:id="multisigHighLabel" />
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+        <Fieldset inputGrow="SOMETIMES" text="Default Policy">
+            <Field text="Policy:">
+                <TextField fx:id="policy" />
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <TabPane fx:id="keystoreTabs" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+
+    </TabPane>
+</GridPane>

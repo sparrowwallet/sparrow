@@ -1,0 +1,21 @@
+.list-menu {
+    -fx-pref-width: 180;
+    -fx-background-color: #3da0e3;
+}
+
+.list-item {
+    -fx-pref-width: 180;
+    -fx-background-color: #3da0e3;
+}
+
+.list-item * {
+    -fx-fill: #fff;
+}
+
+.list-item:hover {
+    -fx-background-color: #4aa7e5;
+}
+
+.list-item:selected {
+    -fx-background-color: #1e88cf;
+}
