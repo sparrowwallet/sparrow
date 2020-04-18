@@ -66,7 +66,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         label.textProperty().addListener((observable, oldValue, newValue) -> keystore.setLabel(newValue));
         fingerprint.textProperty().addListener((observable, oldValue, newValue) -> keystore.setKeyDerivation(new KeyDerivation(newValue, keystore.getKeyDerivation().getDerivationPath())));
         derivation.textProperty().addListener((observable, oldValue, newValue) -> keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue)));
-        xpub.textProperty().addListener((observable, oldValue, newValue) -> keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(newValue, null)));
+        xpub.textProperty().addListener((observable, oldValue, newValue) -> keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(newValue)));
     }
 
     public TextField getLabel() {
