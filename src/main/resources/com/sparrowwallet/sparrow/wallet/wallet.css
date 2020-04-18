@@ -19,3 +19,7 @@
 .list-item:selected {
     -fx-background-color: #1e88cf;
 }
+
+#walletPane {
+    -fx-background-color: -fx-background;
+}

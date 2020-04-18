@@ -35,7 +35,6 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
-
             </Field>
             <Field text="Script Type:">
                 <ComboBox fx:id="scriptType">
@@ -58,7 +57,7 @@
     <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="" fx:id="multisigFieldset">
             <Field text="Cosigners:">
-                <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="2" max="10" lowValue="2" highValue="3" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
+                <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="2" max="9" lowValue="2" highValue="3" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
             </Field>
             <Field text="M of N:">
                 <CopyableLabel fx:id="multisigLowLabel" />
@@ -69,14 +68,16 @@
     </Form>
 
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
-        <Fieldset inputGrow="SOMETIMES" text="Default Policy">
-            <Field text="Policy:">
-                <TextField fx:id="policy" />
+        <Fieldset inputGrow="SOMETIMES" text="Spending Policy">
+            <Field text="Miniscript:">
+                <TextField fx:id="spendingMiniscript" editable="false" />
             </Field>
         </Fieldset>
     </Form>
 
-    <TabPane fx:id="keystoreTabs" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
-
-    </TabPane>
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+        <Fieldset inputGrow="SOMETIMES" text="Keystores">
+            <StackPane fx:id="keystoreTabsPane"  />
+        </Fieldset>
+    </Form>
 </GridPane>

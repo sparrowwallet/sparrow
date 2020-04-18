@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXML;

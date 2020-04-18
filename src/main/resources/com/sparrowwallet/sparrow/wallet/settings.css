@@ -9,3 +9,8 @@
 .form .fieldset:horizontal .input-container {
     -fx-alignment: center-left;
 }
+
+#spendingMiniscript {
+    -fx-font-family: Courier;
+}
+

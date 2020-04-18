@@ -34,4 +34,11 @@
     -fx-translate-x: -20px;
 }
 
+.error {
+    -fx-effect: dropshadow(three-pass-box, darkred, 7, 0, 0, 0);
+}
+
+.warning {
+    -fx-effect: dropshadow(three-pass-box, gold, 14, 0, 0, 0);
+}
 
