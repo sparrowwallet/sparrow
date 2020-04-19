@@ -8,5 +8,6 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.drongo;
     requires com.google.common;
     requires flowless;
+    requires com.google.gson;
     requires javafx.swing;
 }

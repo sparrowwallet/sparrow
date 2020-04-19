@@ -10,74 +10,87 @@
 <?import com.sparrowwallet.drongo.policy.PolicyType?>
 <?import com.sparrowwallet.drongo.protocol.ScriptType?>
 
-<GridPane hgap="10.0" vgap="10.0" stylesheets="@settings.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
-    <padding>
-        <Insets left="25.0" right="25.0" top="25.0" />
-    </padding>
-    <columnConstraints>
-        <ColumnConstraints percentWidth="50" />
-        <ColumnConstraints percentWidth="50" />
-    </columnConstraints>
-    <rowConstraints>
-        <RowConstraints />
-        <RowConstraints />
-    </rowConstraints>
+<BorderPane stylesheets="@settings.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
+    <center>
+        <GridPane hgap="10.0" vgap="10.0">
+            <padding>
+                <Insets left="25.0" right="25.0" top="25.0" />
+            </padding>
+            <columnConstraints>
+                <ColumnConstraints percentWidth="50" />
+                <ColumnConstraints percentWidth="50" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints />
+                <RowConstraints />
+            </rowConstraints>
 
-    <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-        <Fieldset inputGrow="SOMETIMES" text="Settings">
-            <Field text="Policy Type:">
-                <ComboBox fx:id="policyType">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <PolicyType fx:constant="SINGLE" />
-                            <PolicyType fx:constant="MULTI" />
-                            <PolicyType fx:constant="CUSTOM" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-            </Field>
-            <Field text="Script Type:">
-                <ComboBox fx:id="scriptType">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <ScriptType fx:constant="P2PK" />
-                            <ScriptType fx:constant="P2PKH" />
-                            <ScriptType fx:constant="P2SH" />
-                            <ScriptType fx:constant="P2SH_P2WPKH" />
-                            <ScriptType fx:constant="P2SH_P2WSH" />
-                            <ScriptType fx:constant="P2WPKH" />
-                            <ScriptType fx:constant="P2WSH" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-            </Field>
-        </Fieldset>
-    </Form>
+            <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <Fieldset inputGrow="SOMETIMES" text="Settings">
+                    <Field text="Policy Type:">
+                        <ComboBox fx:id="policyType">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <PolicyType fx:constant="SINGLE" />
+                                    <PolicyType fx:constant="MULTI" />
+                                    <PolicyType fx:constant="CUSTOM" />
+                                </FXCollections>
+                            </items>
+                        </ComboBox>
+                    </Field>
+                    <Field text="Script Type:">
+                        <ComboBox fx:id="scriptType">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <ScriptType fx:constant="P2PK" />
+                                    <ScriptType fx:constant="P2PKH" />
+                                    <ScriptType fx:constant="P2SH" />
+                                    <ScriptType fx:constant="P2SH_P2WPKH" />
+                                    <ScriptType fx:constant="P2SH_P2WSH" />
+                                    <ScriptType fx:constant="P2WPKH" />
+                                    <ScriptType fx:constant="P2WSH" />
+                                </FXCollections>
+                            </items>
+                        </ComboBox>
+                    </Field>
+                </Fieldset>
+            </Form>
 
-    <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
-        <Fieldset inputGrow="SOMETIMES" text="" fx:id="multisigFieldset">
-            <Field text="Cosigners:">
-                <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="2" max="9" lowValue="2" highValue="3" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
-            </Field>
-            <Field text="M of N:">
-                <CopyableLabel fx:id="multisigLowLabel" />
-                <CopyableLabel text="/"/>
-                <CopyableLabel fx:id="multisigHighLabel" />
-            </Field>
-        </Fieldset>
-    </Form>
+            <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <Fieldset inputGrow="SOMETIMES" text="" fx:id="multisigFieldset">
+                    <Field text="Cosigners:">
+                        <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="2" max="9" lowValue="2" highValue="3" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
+                    </Field>
+                    <Field text="M of N:">
+                        <CopyableLabel fx:id="multisigLowLabel" />
+                        <CopyableLabel text="/"/>
+                        <CopyableLabel fx:id="multisigHighLabel" />
+                    </Field>
+                </Fieldset>
+            </Form>
 
-    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
-        <Fieldset inputGrow="SOMETIMES" text="Spending Policy">
-            <Field text="Miniscript:">
-                <TextField fx:id="spendingMiniscript" editable="false" />
-            </Field>
-        </Fieldset>
-    </Form>
+            <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
+                <Fieldset inputGrow="SOMETIMES" text="Spending Policy">
+                    <Field text="Miniscript:">
+                        <TextField fx:id="spendingMiniscript" editable="false" />
+                    </Field>
+                </Fieldset>
+            </Form>
 
-    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
-        <Fieldset inputGrow="SOMETIMES" text="Keystores">
-            <StackPane fx:id="keystoreTabsPane"  />
-        </Fieldset>
-    </Form>
-</GridPane>
+            <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                <Fieldset inputGrow="SOMETIMES" text="Keystores">
+                    <StackPane fx:id="keystoreTabsPane"  />
+                </Fieldset>
+            </Form>
+        </GridPane>
+    </center>
+    <bottom>
+        <AnchorPane>
+            <padding>
+                <Insets left="25.0" right="25.0" bottom="25.0" />
+            </padding>
+            <Button fx:id="apply" text="Apply" defaultButton="true" AnchorPane.rightAnchor="10" />
+            <Button fx:id="revert" text="Revert" cancelButton="true" AnchorPane.rightAnchor="80" />
+        </AnchorPane>
+    </bottom>
+</BorderPane>

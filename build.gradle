@@ -29,6 +29,7 @@ dependencies {
         exclude group: 'junit'
     }
     implementation('com.google.guava:guava:28.2-jre')
+    implementation('com.google.code.gson:gson:2.8.6')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('org.controlsfx:controlsfx:11.0.1' ) {

@@ -34,8 +34,12 @@
     -fx-translate-x: -20px;
 }
 
+.tab-error > .tab-container {
+    -fx-effect: dropshadow(three-pass-box, rgba(202, 18, 67, .6), 7, 0, 0, 0);
+}
+
 .error {
-    -fx-effect: dropshadow(three-pass-box, darkred, 7, 0, 0, 0);
+    -fx-effect: dropshadow(three-pass-box, rgb(202, 18, 67), 7, 0, 0, 0);
 }
 
 .warning {

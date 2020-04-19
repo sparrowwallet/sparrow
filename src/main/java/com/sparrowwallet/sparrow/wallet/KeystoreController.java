@@ -4,9 +4,9 @@ import com.sparrowwallet.drongo.ExtendedPublicKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Control;
@@ -36,7 +36,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     @FXML
     private TextField fingerprint;
 
-    private ValidationSupport validationSupport;
+    private ValidationSupport validationSupport = new ValidationSupport();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -61,21 +61,41 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(keystore.getKeyDerivation() != null) {
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
             fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
+        } else {
+            keystore.setKeyDerivation(new KeyDerivation("",""));
         }
 
-        label.textProperty().addListener((observable, oldValue, newValue) -> keystore.setLabel(newValue));
-        fingerprint.textProperty().addListener((observable, oldValue, newValue) -> keystore.setKeyDerivation(new KeyDerivation(newValue, keystore.getKeyDerivation().getDerivationPath())));
-        derivation.textProperty().addListener((observable, oldValue, newValue) -> keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue)));
-        xpub.textProperty().addListener((observable, oldValue, newValue) -> keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(newValue)));
+        label.textProperty().addListener((observable, oldValue, newValue) -> {
+            keystore.setLabel(newValue);
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+        });
+        fingerprint.textProperty().addListener((observable, oldValue, newValue) -> {
+            keystore.setKeyDerivation(new KeyDerivation(newValue, keystore.getKeyDerivation().getDerivationPath()));
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+        });
+        derivation.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(KeyDerivation.isValid(newValue)) {
+                keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue));
+                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+            }
+        });
+        xpub.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(ExtendedPublicKey.isValid(newValue)) {
+                keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(newValue));
+                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+            }
+        });
     }
 
     public TextField getLabel() {
         return label;
     }
 
-    private void setupValidation() {
-        validationSupport = new ValidationSupport();
+    public ValidationSupport getValidationSupport() {
+        return validationSupport;
+    }
 
+    private void setupValidation() {
         validationSupport.registerValidator(label, Validator.combine(
                 Validator.createEmptyValidator("Label is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is not unique", walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore).map(Keystore::getLabel).collect(Collectors.toList()).contains(newValue)),

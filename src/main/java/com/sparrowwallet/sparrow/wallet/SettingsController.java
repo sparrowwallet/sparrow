@@ -9,7 +9,9 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -54,6 +56,12 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private TabPane keystoreTabs;
 
+    @FXML
+    private Button apply;
+
+    @FXML
+    private Button revert;
+
     private final SimpleIntegerProperty totalKeystores = new SimpleIntegerProperty(0);
 
     @Override
@@ -63,15 +71,17 @@ public class SettingsController extends WalletFormController implements Initiali
 
     @Override
     public void initializeView() {
-        Wallet wallet = walletForm.getWallet();
-
         keystoreTabs = new TabPane();
         keystoreTabsPane.getChildren().add(Borders.wrap(keystoreTabs).etchedBorder().outerPadding(10, 5, 0 ,0).innerPadding(0).raised().buildAll());
 
         policyType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, policyType) -> {
-            wallet.setPolicyType(policyType);
+            walletForm.getWallet().setPolicyType(policyType);
+
             scriptType.setItems(FXCollections.observableArrayList(ScriptType.getScriptTypesForPolicyType(policyType)));
-            scriptType.getSelectionModel().select(policyType.getDefaultScriptType());
+            if(!ScriptType.getScriptTypesForPolicyType(policyType).contains(walletForm.getWallet().getScriptType())) {
+                scriptType.getSelectionModel().select(policyType.getDefaultScriptType());
+            }
+
             multisigFieldset.setVisible(policyType.equals(PolicyType.MULTI));
             if(policyType.equals(PolicyType.MULTI)) {
                 totalKeystores.bind(multisigControl.highValueProperty());
@@ -82,51 +92,74 @@ public class SettingsController extends WalletFormController implements Initiali
         });
 
         scriptType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, scriptType) -> {
-            int threshold = wallet.getPolicyType().equals(PolicyType.MULTI) ? (int)multisigControl.lowValueProperty().get() : 1;
-            wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), scriptType, wallet.getKeystores(), threshold));
-            EventManager.get().post(new WalletChangedEvent(wallet));
+            if(scriptType != null) {
+                walletForm.getWallet().setScriptType(scriptType);
+            }
+
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
         });
 
         multisigLowLabel.textProperty().bind(multisigControl.lowValueProperty().asString("%.0f") );
         multisigHighLabel.textProperty().bind(multisigControl.highValueProperty().asString("%.0f"));
 
         multisigControl.lowValueProperty().addListener((observable, oldValue, threshold) -> {
-            wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), threshold.intValue()));
-            EventManager.get().post(new WalletChangedEvent(wallet));
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
         });
 
         multisigFieldset.managedProperty().bind(multisigFieldset.visibleProperty());
 
         totalKeystores.addListener((observable, oldValue, numCosigners) -> {
-            int keystoreCount = wallet.getKeystores().size();
-            int keystoreNameCount = keystoreCount;
+            int keystoreCount = walletForm.getWallet().getKeystores().size();
+            int keystoreNameCount = keystoreCount + 1;
             while(keystoreCount < numCosigners.intValue()) {
                 keystoreCount++;
                 String name = "Keystore " + keystoreNameCount;
-                while(wallet.getKeystores().stream().map(Keystore::getLabel).collect(Collectors.toList()).contains(name)) {
+                while(walletForm.getWallet().getKeystores().stream().map(Keystore::getLabel).collect(Collectors.toList()).contains(name)) {
                     name = "Keystore " + (++keystoreNameCount);
                 }
-                wallet.getKeystores().add(new Keystore(name));
+                walletForm.getWallet().getKeystores().add(new Keystore(name));
             }
-            wallet.setKeystores(wallet.getKeystores().subList(0, numCosigners.intValue()));
+            walletForm.getWallet().setKeystores(walletForm.getWallet().getKeystores().subList(0, numCosigners.intValue()));
 
-            for(int i = 0; i < wallet.getKeystores().size(); i++) {
-                Keystore keystore = wallet.getKeystores().get(i);
+            for(int i = 0; i < walletForm.getWallet().getKeystores().size(); i++) {
+                Keystore keystore = walletForm.getWallet().getKeystores().get(i);
                 if(keystoreTabs.getTabs().size() == i) {
-                    Tab tab = getKeystoreTab(wallet, keystore);
+                    Tab tab = getKeystoreTab(walletForm.getWallet(), keystore);
                     keystoreTabs.getTabs().add(tab);
                 }
             }
-            while(keystoreTabs.getTabs().size() > wallet.getKeystores().size()) {
+            while(keystoreTabs.getTabs().size() > walletForm.getWallet().getKeystores().size()) {
                 keystoreTabs.getTabs().remove(keystoreTabs.getTabs().size() - 1);
             }
 
-            if(wallet.getPolicyType().equals(PolicyType.MULTI)) {
-                wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), wallet.getDefaultPolicy().getNumSignaturesRequired()));
-                EventManager.get().post(new WalletChangedEvent(wallet));
+            if(walletForm.getWallet().getPolicyType().equals(PolicyType.MULTI)) {
+                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
             }
         });
 
+        revert.setOnAction(event -> {
+            keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
+            totalKeystores.unbind();
+            totalKeystores.setValue(0);
+            walletForm.revert();
+            setFieldsFromWallet(walletForm.getWallet());
+        });
+
+        apply.setOnAction(event -> {
+            try {
+                walletForm.save();
+                revert.setDisable(true);
+                apply.setDisable(true);
+                EventManager.get().post(new WalletChangedEvent(walletForm.getWallet()));
+            } catch (IOException e) {
+                AppController.showErrorDialog("Error saving file", e.getMessage());
+            }
+        });
+
+        setFieldsFromWallet(walletForm.getWallet());
+    }
+
+    private void setFieldsFromWallet(Wallet wallet) {
         if(wallet.getPolicyType() == null) {
             wallet.setPolicyType(PolicyType.SINGLE);
             wallet.setScriptType(ScriptType.P2WPKH);
@@ -135,20 +168,23 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
-            totalKeystores.setValue(wallet.getKeystores().size());
+            totalKeystores.setValue(1);
         } else if(wallet.getPolicyType().equals(PolicyType.MULTI)) {
+            multisigControl.lowValueProperty().set(wallet.getDefaultPolicy().getNumSignaturesRequired());
             multisigControl.highValueProperty().set(wallet.getKeystores().size());
+            totalKeystores.bind(multisigControl.highValueProperty());
         }
 
         if(wallet.getPolicyType() != null) {
             policyType.getSelectionModel().select(walletForm.getWallet().getPolicyType());
-        } else {
-            policyType.getSelectionModel().select(0);
         }
 
         if(wallet.getScriptType() != null) {
             scriptType.getSelectionModel().select(walletForm.getWallet().getScriptType());
         }
+
+        revert.setDisable(true);
+        apply.setDisable(true);
     }
 
     private Tab getKeystoreTab(Wallet wallet, Keystore keystore) {
@@ -162,14 +198,47 @@ public class SettingsController extends WalletFormController implements Initiali
             controller.setKeystore(getWalletForm(), keystore);
             tab.textProperty().bind(controller.getLabel().textProperty());
 
+            controller.getValidationSupport().validationResultProperty().addListener((o, oldValue, result) -> {
+                if(result.getErrors().isEmpty()) {
+                    tab.getStyleClass().remove("tab-error");
+                    tab.setTooltip(null);
+                    apply.setDisable(false);
+                } else {
+                    if(!tab.getStyleClass().contains("tab-error")) {
+                        tab.getStyleClass().add("tab-error");
+                    }
+                    tab.setTooltip(new Tooltip(result.getErrors().iterator().next().getText()));
+                    apply.setDisable(true);
+                }
+            });
+
             return tab;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private boolean tabsValidate() {
+        for(Tab tab : keystoreTabs.getTabs()) {
+            if(tab.getStyleClass().contains("tab-error")) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     @Subscribe
-    public void updateMiniscript(WalletChangedEvent event) {
+    public void update(SettingsChangedEvent event) {
+        Wallet wallet = event.getWallet();
+        if(wallet.getPolicyType() == PolicyType.SINGLE) {
+            wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
+        } else if(wallet.getPolicyType() == PolicyType.MULTI) {
+            wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), (int)multisigControl.getLowValue()));
+        }
+
         spendingMiniscript.setText(event.getWallet().getDefaultPolicy().getMiniscript().getScript());
+        revert.setDisable(false);
+        Platform.runLater(() -> apply.setDisable(!tabsValidate()));
     }
 }
