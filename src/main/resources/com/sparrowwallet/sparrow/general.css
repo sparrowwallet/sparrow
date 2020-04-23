@@ -46,3 +46,7 @@
     -fx-effect: dropshadow(three-pass-box, gold, 14, 0, 0, 0);
 }
 
+.dialog-pane .header-panel {
+    -fx-padding: 20;
+}
+

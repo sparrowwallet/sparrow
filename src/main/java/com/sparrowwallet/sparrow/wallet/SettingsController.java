@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -9,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 import javafx.application.Platform;
@@ -25,6 +27,7 @@ import tornadofx.control.Fieldset;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -147,10 +150,14 @@ public class SettingsController extends WalletFormController implements Initiali
 
         apply.setOnAction(event -> {
             try {
-                walletForm.save();
-                revert.setDisable(true);
-                apply.setDisable(true);
-                EventManager.get().post(new WalletChangedEvent(walletForm.getWallet()));
+                Optional<ECKey> optionalPubKey = askForWalletPassword(walletForm.getEncryptionPubKey(), false);
+                if(optionalPubKey.isPresent()) {
+                    walletForm.setEncryptionPubKey(ECKey.fromPublicOnly(optionalPubKey.get()));
+                    walletForm.save();
+                    revert.setDisable(true);
+                    apply.setDisable(true);
+                    EventManager.get().post(new WalletChangedEvent(walletForm.getWallet()));
+                }
             } catch (IOException e) {
                 AppController.showErrorDialog("Error saving file", e.getMessage());
             }
@@ -240,5 +247,41 @@ public class SettingsController extends WalletFormController implements Initiali
         spendingMiniscript.setText(event.getWallet().getDefaultPolicy().getMiniscript().getScript());
         revert.setDisable(false);
         Platform.runLater(() -> apply.setDisable(!tabsValidate()));
+    }
+
+    public static Optional<ECKey> askForWalletPassword(ECKey existingPubKey, boolean required) {
+        WalletPasswordDialog.PasswordRequirement requirement;
+        if(existingPubKey == null && required) {
+            requirement = WalletPasswordDialog.PasswordRequirement.LOAD;
+        } else if(existingPubKey == null) {
+            requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
+        } else if(WalletForm.NO_PASSWORD_KEY.equals(existingPubKey)) {
+            requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY;
+        } else {
+            requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_SET;
+        }
+
+        WalletPasswordDialog dlg = new WalletPasswordDialog(requirement);
+        Optional<String> password = dlg.showAndWait();
+        if(password.isPresent()) {
+            if(!required && password.get().isEmpty()) {
+                return Optional.of(WalletForm.NO_PASSWORD_KEY);
+            }
+
+            ECKey encryptionFullKey = ECKey.createKeyPbkdf2HmacSha512(password.get());
+            ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+            if(existingPubKey != null) {
+                if(WalletForm.NO_PASSWORD_KEY.equals(existingPubKey) || existingPubKey.equals(encryptionPubKey)) {
+                    return Optional.of(encryptionPubKey);
+                } else {
+                    AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
+                    return Optional.empty();
+                }
+            }
+
+            return Optional.of(encryptionFullKey);
+        }
+
+        return Optional.empty();
     }
 }
