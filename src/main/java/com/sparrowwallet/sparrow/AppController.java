@@ -3,7 +3,9 @@ package com.sparrowwallet.sparrow;
 import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
+import com.google.gson.JsonSyntaxException;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -11,15 +13,15 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.TextAreaDialog;
+import com.sparrowwallet.sparrow.control.WalletNameDialog;
 import com.sparrowwallet.sparrow.event.TabEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
 import com.sparrowwallet.sparrow.storage.Storage;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
+import com.sparrowwallet.sparrow.wallet.SettingsController;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
-import javafx.beans.binding.Bindings;
-import javafx.beans.binding.BooleanBinding;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -30,10 +32,6 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.controlsfx.validation.ValidationResult;
-import org.controlsfx.validation.ValidationSupport;
-import org.controlsfx.validation.Validator;
-import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.io.*;
 import java.net.URL;
@@ -111,7 +109,8 @@ public class AppController implements Initializable {
         fileChooser.setTitle("Open Transaction");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("All Files", "*.*"),
-                new FileChooser.ExtensionFilter("PSBT", "*.psbt")
+                new FileChooser.ExtensionFilter("PSBT", "*.psbt"),
+                new FileChooser.ExtensionFilter("TXN", "*.txn")
         );
 
         File file = fileChooser.showOpenDialog(window);
@@ -207,28 +206,12 @@ public class AppController implements Initializable {
     }
 
     public void newWallet(ActionEvent event) {
-        TextInputDialog dlg = new TextInputDialog("");
-        dlg.setTitle("New Wallet");
-        dlg.getDialogPane().setContentText("Wallet name:");
-        dlg.getDialogPane().getStylesheets().add(getClass().getResource("general.css").toExternalForm());
-
-        ValidationSupport validationSupport = new ValidationSupport();
-        validationSupport.registerValidator(dlg.getEditor(), Validator.combine(
-                Validator.createEmptyValidator("Wallet name is required"),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Wallet name is not unique", Storage.getStorage().getWalletFile(newValue).exists())
-        ));
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
-
-        Button okButton = (Button)dlg.getDialogPane().lookupButton(ButtonType.OK);
-        BooleanBinding isInvalid = Bindings.createBooleanBinding(() ->
-                dlg.getEditor().getText().length() == 0 || Storage.getStorage().getWalletFile(dlg.getEditor().getText()).exists(), dlg.getEditor().textProperty());
-        okButton.disableProperty().bind(isInvalid);
-
+        WalletNameDialog dlg = new WalletNameDialog();
         Optional<String> walletName = dlg.showAndWait();
         if(walletName.isPresent()) {
             File walletFile = Storage.getStorage().getWalletFile(walletName.get());
             Wallet wallet = new Wallet(PolicyType.SINGLE, ScriptType.P2WPKH);
-            Tab tab = addWalletTab(walletFile, wallet);
+            Tab tab = addWalletTab(walletFile, null, wallet);
             tabs.getSelectionModel().select(tab);
         }
     }
@@ -242,16 +225,31 @@ public class AppController implements Initializable {
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
             try {
-                Wallet wallet = Storage.getStorage().loadWallet(file);
-                Tab tab = addWalletTab(file, wallet);
+                Wallet wallet;
+                ECKey encryptionPubKey = WalletForm.NO_PASSWORD_KEY;
+                try {
+                    wallet = Storage.getStorage().loadWallet(file);
+                } catch(JsonSyntaxException e) {
+                    Optional<ECKey> optionalFullKey = SettingsController.askForWalletPassword(null, true);
+                    if(!optionalFullKey.isPresent()) {
+                        return;
+                    }
+
+                    ECKey encryptionFullKey = optionalFullKey.get();
+                    wallet = Storage.getStorage().loadWallet(file, encryptionFullKey);
+                    encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+                }
+
+                Tab tab = addWalletTab(file, encryptionPubKey, wallet);
                 tabs.getSelectionModel().select(tab);
-            } catch (IOException e) {
+            } catch (Exception e) {
+                e.printStackTrace();
                 showErrorDialog("Error opening wallet", e.getMessage());
             }
         }
     }
 
-    public Tab addWalletTab(File walletFile, Wallet wallet) {
+    public Tab addWalletTab(File walletFile, ECKey encryptionPubKey, Wallet wallet) {
         try {
             Tab tab = new Tab(walletFile.getName());
             TabData tabData = new TabData(TabData.TabType.WALLET);
@@ -261,7 +259,7 @@ public class AppController implements Initializable {
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             tab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
-            WalletForm walletForm = new WalletForm(walletFile, wallet);
+            WalletForm walletForm = new WalletForm(walletFile, encryptionPubKey, wallet);
             controller.setWalletForm(walletForm);
 
             tabs.getTabs().add(tab);
