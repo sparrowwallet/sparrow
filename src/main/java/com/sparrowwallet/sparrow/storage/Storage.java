@@ -36,24 +36,16 @@ public class Storage {
         return SINGLETON;
     }
 
+    public Gson getGson() {
+        return gson;
+    }
+
     public Wallet loadWallet(File file) throws IOException {
         Reader reader = new FileReader(file);
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
 
         return wallet;
-    }
-
-    public static final void main(String[] args) throws Exception {
-        File file = new File("/Users/scy/.electrum-latest/wallets/scyone");
-        ECKey pubKey = ECKey.createKeyPbkdf2HmacSha512("ferSwogen");
-
-        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file));
-        byte[] encrypted = ByteStreams.toByteArray(inputStream);
-        byte[] decrypted = pubKey.decryptEcies(encrypted, getEncryptionMagic());
-        String jsonWallet = inflate(decrypted);
-
-        System.out.println(jsonWallet);
     }
 
     public Wallet loadWallet(File file, ECKey encryptionKey) throws IOException {
