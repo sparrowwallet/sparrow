@@ -1,0 +1,25 @@
+{
+    "fiat_value": {},
+    "invoices": {},
+    "keystore": {
+        "derivation": "m/84'/0'/0'",
+        "hw_type": "trezor",
+        "label": "trezortest",
+        "root_fingerprint": "ab543c67",
+        "soft_device_id": "65465645",
+        "type": "hardware",
+        "xpub": "ypub6a5Vi9w1Z6ZcTzc7Wo5jUq3au3KiHNBrbffpPSuRgCuYzeXRa8aCF1RCGqyTtqeM9SznqPDv7Hu78hwdos4aKSZKN7Uv4thD4noPYpzrfN9"
+    },
+    "labels": {},
+    "payment_requests": {},
+    "prevouts_by_scripthash": {},
+    "seed_version": 28,
+    "spent_outpoints": {},
+    "transactions": {},
+    "tx_fees": {},
+    "txi": {},
+    "txo": {},
+    "use_encryption": false,
+    "verified_tx3": {},
+    "wallet_type": "standard"
+}

@@ -210,7 +210,7 @@ public class AppController implements Initializable {
         Optional<String> walletName = dlg.showAndWait();
         if(walletName.isPresent()) {
             File walletFile = Storage.getStorage().getWalletFile(walletName.get());
-            Wallet wallet = new Wallet(PolicyType.SINGLE, ScriptType.P2WPKH);
+            Wallet wallet = new Wallet(walletName.get(), PolicyType.SINGLE, ScriptType.P2WPKH);
             Tab tab = addWalletTab(walletFile, null, wallet);
             tabs.getSelectionModel().select(tab);
         }
