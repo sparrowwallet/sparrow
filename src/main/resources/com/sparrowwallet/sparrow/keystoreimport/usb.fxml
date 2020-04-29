@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.image.ImageView?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
+<VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.UsbScanController">
+    <Glyph fontFamily="Font Awesome 5 Brands Regular" fontSize="50" icon="USB" />
+    <Label fx:id="message" text="Connect Hardware Wallet" />
+    <Button fx:id="scan" text="Scan..." wrapText="true" prefWidth="120" prefHeight="60" onAction="#scan"/>
+</VBox>

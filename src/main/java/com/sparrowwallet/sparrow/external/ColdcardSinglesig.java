@@ -56,7 +56,7 @@ public class ColdcardSinglesig implements SinglesigWalletImport {
                     String key = keyValue[0].trim();
                     String value = keyValue[1].trim();
 
-                    if(!key.equals("m") && scriptType.getDefaultDerivation().startsWith(key)) {
+                    if(!key.equals("m") && scriptType.getDefaultDerivationPath().startsWith(key)) {
                         ExtendedPublicKey extPubKey = ExtendedPublicKey.fromDescriptor(value);
                         Keystore keystore = new Keystore();
                         keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, key));

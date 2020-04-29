@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
+<VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.UsbScanController">
+    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="50" icon="EXCLAMATION_CIRCLE" />
+    <Label text="There was error connecting to the wallet:" />
+    <Label fx:id="message" />
+    <Button fx:id="scan" text="Scan Again..." wrapText="true" prefWidth="120" prefHeight="60" onAction="#scan"/>
+</VBox>

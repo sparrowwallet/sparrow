@@ -5,8 +5,10 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Control;
@@ -18,6 +20,7 @@ import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.net.URL;
+import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
@@ -36,7 +39,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     @FXML
     private TextField fingerprint;
 
-    private ValidationSupport validationSupport = new ValidationSupport();
+    private final ValidationSupport validationSupport = new ValidationSupport();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -118,5 +121,17 @@ public class KeystoreController extends WalletFormController implements Initiali
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+    }
+
+    public void importKeystore(ActionEvent event) {
+        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet());
+        Optional<Keystore> result = dlg.showAndWait();
+        if(result.isPresent()) {
+           Keystore keystore = result.get();
+           label.setText(keystore.getLabel());
+           fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
+           derivation.setText(keystore.getKeyDerivation().getDerivationPath());
+           xpub.setText(keystore.getExtendedPublicKey().toString());
+        }
     }
 }

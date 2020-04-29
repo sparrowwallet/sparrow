@@ -1,6 +1,11 @@
 package com.sparrowwallet.sparrow;
 
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -14,6 +19,7 @@ public class MainApp extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         GlyphFontRegistry.register(new FontAwesome5());
+        GlyphFontRegistry.register(new FontAwesome5Brands());
 
         FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("app.fxml"));
         Parent root = transactionLoader.load();
@@ -30,7 +36,14 @@ public class MainApp extends Application {
 
         appController.initializeView();
 
-        stage.show();
+        Wallet wallet = new Wallet();
+        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setScriptType(ScriptType.P2PKH);
+
+        KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
+        dlg.showAndWait();
+
+        //stage.show();
     }
 
     public static void main(String[] args) {
