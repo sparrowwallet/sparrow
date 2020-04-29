@@ -7,7 +7,7 @@ import javafx.fxml.FXML;
 
 import java.util.List;
 
-public class UsbDevicesController extends KeystoreImportDetailController {
+public class HwUsbDevicesController extends KeystoreImportDetailController {
     @FXML
     private DeviceAccordion deviceAccordion;
 

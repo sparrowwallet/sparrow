@@ -10,7 +10,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
-<VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.UsbScanController">
+<VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.HwUsbScanController">
     <Glyph fontFamily="Font Awesome 5 Brands Regular" fontSize="50" icon="USB" />
     <Label fx:id="message" text="Connect Hardware Wallet" />
     <Button fx:id="scan" text="Scan..." wrapText="true" prefWidth="120" prefHeight="60" onAction="#scan"/>

@@ -37,7 +37,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import from an Electrum wallet";
+        return "Import a single keystore from an Electrum wallet (use File > Import > Electrum to import a multisig wallet)";
     }
 
     @Override
@@ -45,12 +45,12 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
         Wallet wallet = importWallet(inputStream);
 
         if(!wallet.getPolicyType().equals(PolicyType.SINGLE) || wallet.getKeystores().size() != 1) {
-            throw new ImportException("Multisig wallet detected - import it through the File > Import menu");
+            throw new ImportException("Multisig wallet detected - import it using File > Import > Electrum");
         }
 
         if(!wallet.getScriptType().equals(scriptType)) {
-            //TODO: Derive appropriate ScriptType keystore
-            throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType());
+            //TODO: Derive appropriate ScriptType keystore from xprv if present
+            throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType() + ", and the correct script type cannot be derived without the master private key");
         }
 
         return wallet.getKeystores().get(0);
@@ -88,7 +88,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
                     keystore.setSource(KeystoreSource.HW_USB);
                     keystore.setWalletModel(WalletModel.fromType(ek.hw_type));
                     if(keystore.getWalletModel() == null) {
-                        throw new ImportException("Unknown hardware wallet type " + ek.hw_type);
+                        throw new ImportException("Wallet has keystore of unknown hardware wallet type \"" + ek.hw_type + "\"");
                     }
                 } else if("bip32".equals(ek.type)) {
                     if(ek.xprv != null) {

@@ -9,7 +9,7 @@ import javafx.scene.control.Label;
 
 import java.util.List;
 
-public class UsbScanController extends KeystoreImportDetailController {
+public class HwUsbScanController extends KeystoreImportDetailController {
     @FXML
     private Label message;
 

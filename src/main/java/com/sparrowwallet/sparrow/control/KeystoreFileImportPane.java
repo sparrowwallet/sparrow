@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -42,11 +43,17 @@ public class KeystoreFileImportPane extends TitledPane {
         getStyleClass().add("importpane");
         setContent(getContentBox(importer.getKeystoreImportDescription()));
 
+        removeArrow();
+    }
+
+    private void removeArrow() {
         Platform.runLater(() -> {
             Node arrow = this.lookup(".arrow");
-            if(arrow != null) {
+            if (arrow != null) {
                 arrow.setVisible(false);
                 arrow.setManaged(false);
+            } else {
+                removeArrow();
             }
         });
     }
@@ -133,7 +140,14 @@ public class KeystoreFileImportPane extends TitledPane {
                 descriptionLabel.getStyleClass().remove("description-label");
                 descriptionLabel.getStyleClass().add("description-error");
                 descriptionLabel.setText("Error Importing [View Details...]");
-                setContent(getContentBox(e.getMessage()));
+                String errorMessage = e.getMessage();
+                if(e.getCause() != null) {
+                    errorMessage = e.getCause().getMessage();
+                }
+                if(e instanceof JsonParseException || e.getCause() instanceof JsonParseException) {
+                    errorMessage = "File was not in JSON format";
+                }
+                setContent(getContentBox(errorMessage));
             }
         }
     }
@@ -143,10 +157,14 @@ public class KeystoreFileImportPane extends TitledPane {
         details.setWrapText(true);
 
         HBox contentBox = new HBox();
-        contentBox.setAlignment(Pos.TOP_RIGHT);
+        contentBox.setAlignment(Pos.TOP_LEFT);
         contentBox.getChildren().add(details);
         contentBox.setPadding(new Insets(10, 30, 10, 30));
-        contentBox.setPrefHeight(60);
+
+        double width = TextUtils.computeTextWidth(details.getFont(), message, 0.0D);
+        double numLines = Math.max(1, width / 400);
+        double height = Math.max(60, numLines * 40);
+        contentBox.setPrefHeight(height);
 
         return contentBox;
     }

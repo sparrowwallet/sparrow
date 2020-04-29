@@ -39,19 +39,23 @@ public class KeystoreImportController implements Initializable {
         importMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
             KeystoreSource importType = (KeystoreSource) selectedToggle.getUserData();
             System.out.println(importType);
-            setImportPane(importType.toString().toLowerCase());
+            String fxmlName = importType.toString().toLowerCase();
+            if(importType == KeystoreSource.SW_SEED || importType == KeystoreSource.SW_WATCH) {
+                fxmlName = "sw";
+            }
+            setImportPane(fxmlName);
         });
     }
 
     void showUsbDevices(List<Device> devices) {
         FXMLLoader loader = setImportPane("hw_usb-devices");
-        UsbDevicesController controller = loader.getController();
+        HwUsbDevicesController controller = loader.getController();
         controller.initializeView(devices);
     }
 
     void showUsbError(String message) {
         FXMLLoader loader = setImportPane("hw_usb-error");
-        UsbScanController controller = loader.getController();
+        HwUsbScanController controller = loader.getController();
         controller.initializeView(message);
     }
 

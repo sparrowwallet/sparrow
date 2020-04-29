@@ -21,7 +21,7 @@ public class KeystoreImportAccordion extends Accordion {
             if(importer instanceof KeystoreFileImport) {
                 importPane = new KeystoreFileImportPane(this, wallet, (KeystoreFileImport)importer);
             } else if(importer instanceof KeystoreMnemonicImport) {
-                //TODO:
+                //TODO: Import from the new Bip39KeystoreImport
             } else {
                 throw new IllegalArgumentException("Could not create ImportPane for importer of type " + importer.getClass());
             }

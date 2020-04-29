@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.*?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
-<VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.UsbScanController">
+<VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.HwUsbScanController">
     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="50" icon="EXCLAMATION_CIRCLE" />
     <Label text="There was error connecting to the wallet:" />
     <Label fx:id="message" />

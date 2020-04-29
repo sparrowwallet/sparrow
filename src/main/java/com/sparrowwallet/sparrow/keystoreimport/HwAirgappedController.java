@@ -11,7 +11,7 @@ import javafx.fxml.FXML;
 import java.util.Collections;
 import java.util.List;
 
-public class UsbAirgappedController extends KeystoreImportDetailController {
+public class HwAirgappedController extends KeystoreImportDetailController {
     @FXML
     private KeystoreImportAccordion importAccordion;
 

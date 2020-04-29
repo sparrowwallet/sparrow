@@ -57,11 +57,17 @@ public class DevicePane extends TitledPane {
         getStyleClass().add("devicepane");
         setDefaultStatus();
 
+        removeArrow();
+    }
+
+    private void removeArrow() {
         Platform.runLater(() -> {
             Node arrow = this.lookup(".arrow");
-            if(arrow != null) {
+            if (arrow != null) {
                 arrow.setVisible(false);
                 arrow.setManaged(false);
+            } else {
+                removeArrow();
             }
         });
     }
