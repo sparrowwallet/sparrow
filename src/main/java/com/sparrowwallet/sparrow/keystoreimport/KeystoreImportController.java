@@ -38,18 +38,19 @@ public class KeystoreImportController implements Initializable {
         this.wallet = wallet;
         importMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
             KeystoreSource importType = (KeystoreSource) selectedToggle.getUserData();
+            System.out.println(importType);
             setImportPane(importType.toString().toLowerCase());
         });
     }
 
     void showUsbDevices(List<Device> devices) {
-        FXMLLoader loader = setImportPane("usb-devices");
+        FXMLLoader loader = setImportPane("hw_usb-devices");
         UsbDevicesController controller = loader.getController();
         controller.initializeView(devices);
     }
 
     void showUsbError(String message) {
-        FXMLLoader loader = setImportPane("usb-error");
+        FXMLLoader loader = setImportPane("hw_usb-error");
         UsbScanController controller = loader.getController();
         controller.initializeView(message);
     }
