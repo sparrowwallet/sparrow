@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
@@ -83,6 +84,20 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
 
             for(ElectrumKeystore ek : ew.keystores.values()) {
                 Keystore keystore = new Keystore(ek.label);
+                if("hardware".equals(ek.type)) {
+                    keystore.setSource(KeystoreSource.HW_USB);
+                    keystore.setWalletModel(WalletModel.fromType(ek.hw_type));
+                    if(keystore.getWalletModel() == null) {
+                        throw new ImportException("Unknown hardware wallet type " + ek.hw_type);
+                    }
+                } else if("bip32".equals(ek.type)) {
+                    if(ek.xprv != null) {
+                        keystore.setSource(KeystoreSource.SW_SEED);
+                    } else {
+                        keystore.setSource(KeystoreSource.SW_WATCH);
+                    }
+                    keystore.setWalletModel(WalletModel.ELECTRUM);
+                }
                 keystore.setKeyDerivation(new KeyDerivation(ek.root_fingerprint, ek.derivation));
                 keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(ek.xpub));
                 wallet.getKeystores().add(keystore);
@@ -185,6 +200,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
 
     public static class ElectrumKeystore {
         public String xpub;
+        public String xprv;
         public String hw_type;
         public String ckcc_xfp;
         public String root_fingerprint;
@@ -192,5 +208,6 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
         public String soft_device_id;
         public String type;
         public String derivation;
+        public String seed;
     }
 }

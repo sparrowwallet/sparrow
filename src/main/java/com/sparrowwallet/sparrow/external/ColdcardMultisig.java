@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.storage.Storage;
@@ -42,6 +43,8 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
         ColdcardKeystore cck = Storage.getStorage().getGson().fromJson(reader, ColdcardKeystore.class);
 
         Keystore keystore = new Keystore("Coldcard " + cck.xfp);
+        keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+        keystore.setWalletModel(WalletModel.COLDCARD);
 
         if(scriptType.equals(ScriptType.P2SH)) {
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2sh_deriv));
@@ -113,6 +116,8 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
                         default:
                             if (key.length() == 8 && Utils.isHex(key)) {
                                 Keystore keystore = new Keystore("Coldcard " + key);
+                                keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+                                keystore.setWalletModel(WalletModel.COLDCARD);
                                 keystore.setKeyDerivation(new KeyDerivation(key, derivation));
                                 keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(value));
                                 wallet.getKeystores().add(keystore);

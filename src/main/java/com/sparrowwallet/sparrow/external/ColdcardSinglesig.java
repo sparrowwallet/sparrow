@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
@@ -82,6 +83,8 @@ public class ColdcardSinglesig implements KeystoreFileImport, SinglesigWalletImp
                     if(!key.equals("m") && scriptType.getDefaultDerivationPath().startsWith(key)) {
                         ExtendedPublicKey extPubKey = ExtendedPublicKey.fromDescriptor(value);
                         Keystore keystore = new Keystore();
+                        keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+                        keystore.setWalletModel(WalletModel.COLDCARD);
                         keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, key));
                         keystore.setExtendedPublicKey(extPubKey);
                         wallet.getKeystores().add(keystore);

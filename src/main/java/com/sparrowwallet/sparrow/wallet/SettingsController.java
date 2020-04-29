@@ -6,7 +6,9 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
@@ -120,7 +122,10 @@ public class SettingsController extends WalletFormController implements Initiali
                 while(walletForm.getWallet().getKeystores().stream().map(Keystore::getLabel).collect(Collectors.toList()).contains(name)) {
                     name = "Keystore " + (++keystoreNameCount);
                 }
-                walletForm.getWallet().getKeystores().add(new Keystore(name));
+                Keystore keystore = new Keystore(name);
+                keystore.setSource(KeystoreSource.SW_WATCH);
+                keystore.setWalletModel(WalletModel.SPARROW);
+                walletForm.getWallet().getKeystores().add(keystore);
             }
             walletForm.getWallet().setKeystores(walletForm.getWallet().getKeystores().subList(0, numCosigners.intValue()));
 
@@ -170,7 +175,10 @@ public class SettingsController extends WalletFormController implements Initiali
         if(wallet.getPolicyType() == null) {
             wallet.setPolicyType(PolicyType.SINGLE);
             wallet.setScriptType(ScriptType.P2WPKH);
-            wallet.getKeystores().add(new Keystore("Keystore 1"));
+            Keystore keystore = new Keystore("Keystore 1");
+            keystore.setSource(KeystoreSource.SW_WATCH);
+            keystore.setWalletModel(WalletModel.SPARROW);
+            wallet.getKeystores().add(keystore);
             wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
         }
 
