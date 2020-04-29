@@ -1,13 +1,10 @@
 package com.sparrowwallet.sparrow.external;
 
 import com.sparrowwallet.drongo.policy.PolicyType;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.wallet.Keystore;
-
-import java.io.InputStream;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 
 public interface KeystoreImport extends Import {
-    PolicyType getPolicyType();
-    Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException;
+    PolicyType getKeystorePolicyType();
+    WalletModel getWalletModel();
     String getKeystoreImportDescription();
 }

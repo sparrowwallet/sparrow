@@ -10,4 +10,8 @@ public abstract class KeystoreImportDetailController {
     void setMasterController(KeystoreImportController masterController) {
         this.masterController = masterController;
     }
+
+    public void initializeView() {
+
+    }
 }

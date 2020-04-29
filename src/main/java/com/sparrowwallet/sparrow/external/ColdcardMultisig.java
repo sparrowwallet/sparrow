@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.storage.Storage;
 
 import java.io.*;
@@ -17,17 +18,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ColdcardMultisig implements MultisigWalletImport, KeystoreImport, WalletExport {
+public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImport, WalletExport {
     private final Gson gson = new Gson();
 
     @Override
     public String getName() {
-        return "Coldcard (Multisig)";
+        return "Coldcard Multisig";
     }
 
     @Override
-    public PolicyType getPolicyType() {
+    public PolicyType getKeystorePolicyType() {
         return PolicyType.MULTI;
+    }
+
+    @Override
+    public WalletModel getWalletModel() {
+        return WalletModel.COLDCARD;
     }
 
     @Override

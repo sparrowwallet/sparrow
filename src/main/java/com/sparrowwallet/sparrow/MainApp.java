@@ -37,8 +37,8 @@ public class MainApp extends Application {
         appController.initializeView();
 
         Wallet wallet = new Wallet();
-        wallet.setPolicyType(PolicyType.SINGLE);
-        wallet.setScriptType(ScriptType.P2PKH);
+        wallet.setPolicyType(PolicyType.MULTI);
+        wallet.setScriptType(ScriptType.P2SH);
 
         KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
         dlg.showAndWait();

@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -16,7 +17,7 @@ import java.util.List;
 
 import static com.sparrowwallet.drongo.protocol.ScriptType.*;
 
-public class ColdcardSinglesig implements SinglesigWalletImport {
+public class ColdcardSinglesig implements KeystoreFileImport, SinglesigWalletImport {
     public static final List<ScriptType> ALLOWED_SCRIPT_TYPES = List.of(P2PKH, P2SH_P2WPKH, P2WPKH);
 
     @Override
@@ -25,7 +26,29 @@ public class ColdcardSinglesig implements SinglesigWalletImport {
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream, ScriptType scriptType) throws ImportException {
+    public PolicyType getKeystorePolicyType() {
+        return PolicyType.SINGLE;
+    }
+
+    @Override
+    public String getKeystoreImportDescription() {
+        return "Import file created by using the Advanced > Dump Summary feature on your Coldcard";
+    }
+
+    @Override
+    public WalletModel getWalletModel() {
+        return WalletModel.COLDCARD;
+    }
+
+    @Override
+    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException {
+        Wallet wallet = importWallet(scriptType, inputStream);
+
+        return wallet.getKeystores().get(0);
+    }
+
+    @Override
+    public Wallet importWallet(ScriptType scriptType, InputStream inputStream) throws ImportException {
         if(!ALLOWED_SCRIPT_TYPES.contains(scriptType)) {
             throw new ImportException("Script type of " + scriptType + " is not allowed");
         }

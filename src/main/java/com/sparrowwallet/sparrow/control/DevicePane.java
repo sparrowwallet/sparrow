@@ -51,7 +51,7 @@ public class DevicePane extends TitledPane {
         this.wallet = wallet;
         this.device = device;
 
-        setPadding(new Insets(0, 0, 0, 0));
+        setPadding(Insets.EMPTY);
 
         setGraphic(getTitle());
         getStyleClass().add("devicepane");
@@ -92,14 +92,14 @@ public class DevicePane extends TitledPane {
         labelsBox.setAlignment(Pos.CENTER_LEFT);
         this.mainLabel = new Label();
         mainLabel.setText(device.getModel().toDisplayString());
-        mainLabel.getStyleClass().add("devicelist-main-label");
+        mainLabel.getStyleClass().add("main-label");
         labelsBox.getChildren().add(mainLabel);
 
         this.statusLabel = new Label();
         statusLabel.textProperty().bind(status);
 
         labelsBox.getChildren().add(statusLabel);
-        statusLabel.getStyleClass().add("devicelist-status-label");
+        statusLabel.getStyleClass().add("status-label");
         listItem.getChildren().add(labelsBox);
         HBox.setHgrow(labelsBox, Priority.ALWAYS);
 

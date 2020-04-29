@@ -63,6 +63,7 @@ public class KeystoreImportController implements Initializable {
             Node importTypeNode = importLoader.load();
             KeystoreImportDetailController controller = importLoader.getController();
             controller.setMasterController(this);
+            controller.initializeView();
             importPane.getChildren().add(importTypeNode);
 
             return importLoader;

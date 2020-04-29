@@ -7,5 +7,5 @@ import java.io.InputStream;
 
 public interface SinglesigWalletImport extends Import {
     String getWalletImportDescription();
-    Wallet importWallet(InputStream inputStream, ScriptType scriptType) throws ImportException;
+    Wallet importWallet(ScriptType scriptType, InputStream inputStream) throws ImportException;
 }

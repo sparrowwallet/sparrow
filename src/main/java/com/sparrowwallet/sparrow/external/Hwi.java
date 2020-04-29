@@ -23,28 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-public class Hwi implements KeystoreImport {
+public class Hwi {
     private static File hwiExecutable;
-
-    @Override
-    public String getName() {
-        return "Hardware Wallet";
-    }
-
-    @Override
-    public String getKeystoreImportDescription() {
-        return "Imports a connected hardware wallet";
-    }
-
-    @Override
-    public PolicyType getPolicyType() {
-        return PolicyType.SINGLE;
-    }
-
-    @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException {
-        return null;
-    }
 
     public List<Device> enumerate(String passphrase) throws ImportException {
         try {

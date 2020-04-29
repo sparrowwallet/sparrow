@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -17,10 +18,41 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class Electrum implements SinglesigWalletImport, MultisigWalletImport, WalletExport {
+public class Electrum implements KeystoreFileImport, SinglesigWalletImport, MultisigWalletImport, WalletExport {
     @Override
     public String getName() {
         return "Electrum";
+    }
+
+    @Override
+    public PolicyType getKeystorePolicyType() {
+        return PolicyType.SINGLE;
+    }
+
+    @Override
+    public WalletModel getWalletModel() {
+        return WalletModel.ELECTRUM;
+    }
+
+    @Override
+    public String getKeystoreImportDescription() {
+        return "Import from an Electrum wallet";
+    }
+
+    @Override
+    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException {
+        Wallet wallet = importWallet(inputStream);
+
+        if(!wallet.getPolicyType().equals(PolicyType.SINGLE) || wallet.getKeystores().size() != 1) {
+            throw new ImportException("Multisig wallet detected - import it through the File > Import menu");
+        }
+
+        if(!wallet.getScriptType().equals(scriptType)) {
+            //TODO: Derive appropriate ScriptType keystore
+            throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType());
+        }
+
+        return wallet.getKeystores().get(0);
     }
 
     @Override
@@ -89,7 +121,7 @@ public class Electrum implements SinglesigWalletImport, MultisigWalletImport, Wa
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream, ScriptType scriptType) throws ImportException {
+    public Wallet importWallet(ScriptType scriptType, InputStream inputStream) throws ImportException {
         Wallet wallet = importWallet(inputStream);
         wallet.setScriptType(scriptType);
 
