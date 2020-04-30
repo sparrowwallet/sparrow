@@ -83,7 +83,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
             ScriptType scriptType = null;
 
             for(ElectrumKeystore ek : ew.keystores.values()) {
-                Keystore keystore = new Keystore(ek.label);
+                Keystore keystore = new Keystore(ek.label != null ? ek.label : "Electrum " + ek.root_fingerprint);
                 if("hardware".equals(ek.type)) {
                     keystore.setSource(KeystoreSource.HW_USB);
                     keystore.setWalletModel(WalletModel.fromType(ek.hw_type));
@@ -98,8 +98,9 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
                     }
                     keystore.setWalletModel(WalletModel.ELECTRUM);
                 }
+                ExtendedPublicKey xPub = ExtendedPublicKey.fromDescriptor(ek.xpub);
                 keystore.setKeyDerivation(new KeyDerivation(ek.root_fingerprint, ek.derivation));
-                keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(ek.xpub));
+                keystore.setExtendedPublicKey(xPub);
                 wallet.getKeystores().add(keystore);
 
                 ExtendedPublicKey.XpubHeader xpubHeader = ExtendedPublicKey.XpubHeader.fromXpub(ek.xpub);

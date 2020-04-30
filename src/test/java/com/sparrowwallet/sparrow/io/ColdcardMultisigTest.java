@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import java.io.*;
 
-public class ColdcardMultisigTest extends ImportExportTest {
+public class ColdcardMultisigTest extends IoTest {
     @Test
     public void importKeystore1() throws ImportException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();

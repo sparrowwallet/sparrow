@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ColdcardSinglesigTest extends ImportExportTest {
+public class ColdcardSinglesigTest extends IoTest {
     @Test
     public void testImport() throws ImportException {
         ColdcardSinglesig ccSingleSig = new ColdcardSinglesig();

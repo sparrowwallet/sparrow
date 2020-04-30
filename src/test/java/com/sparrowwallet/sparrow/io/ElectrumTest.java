@@ -11,7 +11,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class ElectrumTest extends ImportExportTest {
+public class ElectrumTest extends IoTest {
     @Test
     public void testSinglesigImport() throws ImportException {
         Electrum electrum = new Electrum();
