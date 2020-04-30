@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
@@ -42,14 +43,14 @@ public class ColdcardSinglesig implements KeystoreFileImport, SinglesigWalletImp
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException {
-        Wallet wallet = importWallet(scriptType, inputStream);
+    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = importWallet(scriptType, inputStream, password);
 
         return wallet.getKeystores().get(0);
     }
 
     @Override
-    public Wallet importWallet(ScriptType scriptType, InputStream inputStream) throws ImportException {
+    public Wallet importWallet(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         if(!ALLOWED_SCRIPT_TYPES.contains(scriptType)) {
             throw new ImportException("Script type of " + scriptType + " is not allowed");
         }
@@ -103,5 +104,10 @@ public class ColdcardSinglesig implements KeystoreFileImport, SinglesigWalletImp
     @Override
     public String getWalletImportDescription() {
         return "Import file created by using the Advanced > Dump Summary feature on your Coldcard";
+    }
+
+    @Override
+    public boolean isEncrypted(File file) {
+        return false;
     }
 }

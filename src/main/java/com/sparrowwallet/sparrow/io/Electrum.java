@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.ExtendedPublicKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -18,6 +19,7 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.zip.InflaterInputStream;
 
 public class Electrum implements KeystoreFileImport, SinglesigWalletImport, MultisigWalletImport, WalletExport {
     @Override
@@ -41,8 +43,8 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException {
-        Wallet wallet = importWallet(inputStream);
+    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = importWallet(inputStream, password);
 
         if(!wallet.getPolicyType().equals(PolicyType.SINGLE) || wallet.getKeystores().size() != 1) {
             throw new ImportException("Multisig wallet detected - import it using File > Import > Electrum");
@@ -57,14 +59,25 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream) throws ImportException {
-        InputStreamReader reader = new InputStreamReader(inputStream);
+    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+        Reader reader;
+        if(password != null) {
+            ECKey decryptionKey = ECKey.createKeyPbkdf2HmacSha512(password);
+            reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(inputStream, decryptionKey)));
+        } else {
+            reader = new InputStreamReader(inputStream);
+        }
+
         try {
             Gson gson = new Gson();
             Type stringStringMap = new TypeToken<Map<String, JsonElement>>(){}.getType();
             Map<String,JsonElement> map = gson.fromJson(reader, stringStringMap);
 
             ElectrumJsonWallet ew = new ElectrumJsonWallet();
+            if(map.get("wallet_type") == null) {
+                throw new ImportException("This is not a valid Electrum wallet");
+            }
+
             ew.wallet_type = map.get("wallet_type").getAsString();
 
             for(String key : map.keySet()) {
@@ -137,9 +150,10 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
     }
 
     @Override
-    public Wallet importWallet(ScriptType scriptType, InputStream inputStream) throws ImportException {
-        Wallet wallet = importWallet(inputStream);
+    public Wallet importWallet(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = importWallet(inputStream, password);
         wallet.setScriptType(scriptType);
+        //TODO: Check this usage results in a valid wallet
 
         return wallet;
     }
@@ -187,6 +201,11 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
         } catch (Exception e) {
             throw new ExportException(e);
         }
+    }
+
+    @Override
+    public boolean isEncrypted(File file) {
+        return FileType.BINARY.equals(IOUtils.getFileType(file));
     }
 
     @Override

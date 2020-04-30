@@ -14,7 +14,7 @@ public class ECIESInputStreamTest extends IoTest {
     public void decrypt() throws ImportException {
         Electrum electrum = new Electrum();
         ECKey decryptionKey = ECKey.createKeyPbkdf2HmacSha512("pass");
-        Wallet wallet = electrum.importWallet(new InflaterInputStream(new ECIESInputStream(getInputStream("electrum-encrypted"), decryptionKey)));
+        Wallet wallet = electrum.importWallet(new InflaterInputStream(new ECIESInputStream(getInputStream("electrum-encrypted"), decryptionKey)), null);
 
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());

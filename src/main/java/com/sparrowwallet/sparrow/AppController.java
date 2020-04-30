@@ -17,6 +17,8 @@ import com.sparrowwallet.sparrow.control.WalletNameDialog;
 import com.sparrowwallet.sparrow.event.TabEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
+import com.sparrowwallet.sparrow.io.FileType;
+import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.wallet.SettingsController;
@@ -227,9 +229,10 @@ public class AppController implements Initializable {
             try {
                 Wallet wallet;
                 ECKey encryptionPubKey = WalletForm.NO_PASSWORD_KEY;
-                try {
+                FileType fileType = IOUtils.getFileType(file);
+                if(FileType.JSON.equals(fileType)) {
                     wallet = Storage.getStorage().loadWallet(file);
-                } catch(JsonSyntaxException e) {
+                } else if(FileType.BINARY.equals(fileType)) {
                     Optional<ECKey> optionalFullKey = SettingsController.askForWalletPassword(null, true);
                     if(!optionalFullKey.isPresent()) {
                         return;
@@ -238,6 +241,8 @@ public class AppController implements Initializable {
                     ECKey encryptionFullKey = optionalFullKey.get();
                     wallet = Storage.getStorage().loadWallet(file, encryptionFullKey);
                     encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+                } else {
+                    throw new IOException("Unsupported file type");
                 }
 
                 Tab tab = addWalletTab(file, encryptionPubKey, wallet);

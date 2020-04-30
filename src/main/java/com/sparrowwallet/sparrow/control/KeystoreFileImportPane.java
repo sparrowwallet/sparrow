@@ -1,16 +1,19 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.google.gson.JsonParseException;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.io.KeystoreFileImport;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.TitledPane;
 import javafx.scene.image.Image;
@@ -20,7 +23,8 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.controlsfx.control.HyperlinkLabel;
+import org.controlsfx.control.textfield.CustomPasswordField;
+import org.controlsfx.control.textfield.TextFields;
 
 import java.io.*;
 
@@ -30,7 +34,11 @@ public class KeystoreFileImportPane extends TitledPane {
     private final KeystoreFileImport importer;
 
     private Label mainLabel;
-    private HyperlinkLabel descriptionLabel;
+    private Label descriptionLabel;
+    private Hyperlink showHideLink;
+    private Button importButton;
+
+    private final SimpleStringProperty password = new SimpleStringProperty("");
 
     public KeystoreFileImportPane(KeystoreImportAccordion importAccordion, Wallet wallet, KeystoreFileImport importer) {
         this.importAccordion = importAccordion;
@@ -83,21 +91,32 @@ public class KeystoreFileImportPane extends TitledPane {
         mainLabel.getStyleClass().add("main-label");
         labelsBox.getChildren().add(mainLabel);
 
-        this.descriptionLabel = new HyperlinkLabel();
+        HBox descriptionBox = new HBox();
+        descriptionBox.setSpacing(7);
+        labelsBox.getChildren().add(descriptionBox);
 
-        labelsBox.getChildren().add(descriptionLabel);
+        descriptionLabel = new Label("Keystore file import");
         descriptionLabel.getStyleClass().add("description-label");
-        descriptionLabel.setText("Keystore file import [View Details...]");
-        descriptionLabel.setOnAction(event -> {
-            setExpanded(true);
+        showHideLink = new Hyperlink("View Details...");
+        showHideLink.managedProperty().bind(showHideLink.visibleProperty());
+        showHideLink.setOnAction(event -> {
+            if(showHideLink.getText().contains("View")) {
+                setExpanded(true);
+                showHideLink.setText("Hide Details...");
+            } else {
+                setExpanded(false);
+                showHideLink.setText("View Details...");
+            }
         });
+        descriptionBox.getChildren().addAll(descriptionLabel, showHideLink);
+
         listItem.getChildren().add(labelsBox);
         HBox.setHgrow(labelsBox, Priority.ALWAYS);
 
         HBox buttonBox = new HBox();
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
 
-        Button importButton = new Button("Import File...");
+        importButton = new Button("Import File...");
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setOnAction(event -> {
             importFile();
@@ -125,29 +144,44 @@ public class KeystoreFileImportPane extends TitledPane {
 
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
-            importFile(file);
+            importFile(file, null);
         }
     }
 
-    private void importFile(File file) {
+    private void importFile(File file, String password) {
         if(file.exists()) {
             try {
-                InputStream inputStream = new BufferedInputStream(new FileInputStream(file));
-                Keystore keystore = importer.getKeystore(wallet.getScriptType(), inputStream);
-                EventManager.get().post(new KeystoreImportEvent(keystore));
+                if(importer.isEncrypted(file) && password == null) {
+                    descriptionLabel.getStyleClass().remove("description-error");
+                    descriptionLabel.getStyleClass().add("description-label");
+                    descriptionLabel.setText("Password Required");
+                    showHideLink.setVisible(false);
+                    setContent(getPasswordEntry(file));
+                    importButton.setDisable(true);
+                    setExpanded(true);
+                } else {
+                    InputStream inputStream = new BufferedInputStream(new FileInputStream(file));
+                    Keystore keystore = importer.getKeystore(wallet.getScriptType(), inputStream, password);
+                    EventManager.get().post(new KeystoreImportEvent(keystore));
+                }
             } catch (Exception e) {
-                setExpanded(false);
                 descriptionLabel.getStyleClass().remove("description-label");
                 descriptionLabel.getStyleClass().add("description-error");
-                descriptionLabel.setText("Error Importing [View Details...]");
+                descriptionLabel.setText("Import Error");
                 String errorMessage = e.getMessage();
-                if(e.getCause() != null) {
+                if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
                     errorMessage = e.getCause().getMessage();
+                }
+                if(e instanceof ECKey.InvalidPasswordException || e.getCause() instanceof ECKey.InvalidPasswordException) {
+                    errorMessage = "Invalid wallet password";
                 }
                 if(e instanceof JsonParseException || e.getCause() instanceof JsonParseException) {
                     errorMessage = "File was not in JSON format";
                 }
                 setContent(getContentBox(errorMessage));
+                setExpanded(true);
+                showHideLink.setText("Hide Details...");
+                importButton.setDisable(false);
             }
         }
     }
@@ -165,6 +199,30 @@ public class KeystoreFileImportPane extends TitledPane {
         double numLines = Math.max(1, width / 400);
         double height = Math.max(60, numLines * 40);
         contentBox.setPrefHeight(height);
+
+        return contentBox;
+    }
+
+    private Node getPasswordEntry(File file) {
+        CustomPasswordField passwordField = (CustomPasswordField) TextFields.createClearablePasswordField();
+        passwordField.setPromptText("Wallet password");
+        password.bind(passwordField.textProperty());
+        HBox.setHgrow(passwordField, Priority.ALWAYS);
+
+        Button importEncryptedButton = new Button("Import");
+        importEncryptedButton.setOnAction(event -> {
+            showHideLink.setVisible(true);
+            setExpanded(false);
+            importFile(file, password.get());
+        });
+
+        HBox contentBox = new HBox();
+        contentBox.setAlignment(Pos.TOP_RIGHT);
+        contentBox.setSpacing(20);
+        contentBox.getChildren().add(passwordField);
+        contentBox.getChildren().add(importEncryptedButton);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        contentBox.setPrefHeight(60);
 
         return contentBox;
     }

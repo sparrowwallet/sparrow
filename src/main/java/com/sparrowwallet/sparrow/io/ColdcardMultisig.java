@@ -37,7 +37,7 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream) throws ImportException {
+    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         InputStreamReader reader = new InputStreamReader(inputStream);
         ColdcardKeystore cck = Storage.getStorage().getGson().fromJson(reader, ColdcardKeystore.class);
 
@@ -77,7 +77,7 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream) throws ImportException {
+    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         Wallet wallet = new Wallet();
         wallet.setPolicyType(PolicyType.MULTI);
 
@@ -192,5 +192,10 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
     @Override
     public String getWalletExportDescription() {
         return "Export file that can be read by your Coldcard using the Settings > Multisig Wallets > Import from SD feature";
+    }
+
+    @Override
+    public boolean isEncrypted(File file) {
+        return false;
     }
 }
