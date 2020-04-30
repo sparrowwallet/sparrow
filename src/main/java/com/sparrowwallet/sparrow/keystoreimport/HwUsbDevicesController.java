@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.sparrowwallet.sparrow.control.DeviceAccordion;
-import com.sparrowwallet.sparrow.external.Device;
+import com.sparrowwallet.sparrow.io.Device;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 

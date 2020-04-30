@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.external;
+package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
@@ -12,7 +12,6 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
-import com.sparrowwallet.sparrow.storage.Storage;
 
 import java.io.*;
 import java.util.HashSet;

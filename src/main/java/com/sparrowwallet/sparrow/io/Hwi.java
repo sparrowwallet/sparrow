@@ -1,11 +1,8 @@
-package com.sparrowwallet.sparrow.external;
+package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
-import com.sparrowwallet.drongo.policy.PolicyType;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;

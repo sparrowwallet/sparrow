@@ -2,9 +2,9 @@ package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.sparrow.control.KeystoreImportAccordion;
-import com.sparrowwallet.sparrow.external.ColdcardMultisig;
-import com.sparrowwallet.sparrow.external.ColdcardSinglesig;
-import com.sparrowwallet.sparrow.external.KeystoreImport;
+import com.sparrowwallet.sparrow.io.ColdcardMultisig;
+import com.sparrowwallet.sparrow.io.ColdcardSinglesig;
+import com.sparrowwallet.sparrow.io.KeystoreImport;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 

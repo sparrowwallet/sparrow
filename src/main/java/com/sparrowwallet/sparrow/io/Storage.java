@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.storage;
+package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.ByteStreams;
 import com.google.gson.*;

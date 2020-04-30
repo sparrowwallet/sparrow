@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.external;
+package com.sparrowwallet.sparrow.io;
 
 public class ImportException extends Exception {
     public ImportException() {

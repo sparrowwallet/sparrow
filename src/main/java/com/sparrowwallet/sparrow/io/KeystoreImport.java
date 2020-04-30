@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.external;
+package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.WalletModel;

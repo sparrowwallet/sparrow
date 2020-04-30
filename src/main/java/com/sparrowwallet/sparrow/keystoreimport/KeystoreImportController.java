@@ -3,7 +3,7 @@ package com.sparrowwallet.sparrow.keystoreimport;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
-import com.sparrowwallet.sparrow.external.Device;
+import com.sparrowwallet.sparrow.io.Device;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;

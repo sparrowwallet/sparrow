@@ -1,8 +1,8 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.sparrowwallet.sparrow.control.KeystoreImportAccordion;
-import com.sparrowwallet.sparrow.external.Electrum;
-import com.sparrowwallet.sparrow.external.KeystoreImport;
+import com.sparrowwallet.sparrow.io.Electrum;
+import com.sparrowwallet.sparrow.io.KeystoreImport;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 

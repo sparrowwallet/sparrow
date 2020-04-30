@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.external;
+package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -10,7 +10,7 @@ public class ColdcardSinglesigTest extends ImportExportTest {
     @Test
     public void testImport() throws ImportException {
         ColdcardSinglesig ccSingleSig = new ColdcardSinglesig();
-        Wallet wallet = ccSingleSig.importWallet(getInputStream("cc-wallet-dump.txt"), ScriptType.P2PKH);
+        Wallet wallet = ccSingleSig.importWallet(ScriptType.P2PKH, getInputStream("cc-wallet-dump.txt"));
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
 
         Assert.assertEquals("Coldcard 3D88D0CF", wallet.getName());

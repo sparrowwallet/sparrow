@@ -17,7 +17,7 @@ import com.sparrowwallet.sparrow.control.WalletNameDialog;
 import com.sparrowwallet.sparrow.event.TabEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
-import com.sparrowwallet.sparrow.storage.Storage;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.wallet.SettingsController;
 import com.sparrowwallet.sparrow.wallet.WalletController;

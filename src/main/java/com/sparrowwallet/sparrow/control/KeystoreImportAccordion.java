@@ -1,9 +1,9 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.external.KeystoreFileImport;
-import com.sparrowwallet.sparrow.external.KeystoreImport;
-import com.sparrowwallet.sparrow.external.KeystoreMnemonicImport;
+import com.sparrowwallet.sparrow.io.KeystoreFileImport;
+import com.sparrowwallet.sparrow.io.KeystoreImport;
+import com.sparrowwallet.sparrow.io.KeystoreMnemonicImport;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Accordion;
 

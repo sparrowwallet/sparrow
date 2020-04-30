@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.external.Device;
+import com.sparrowwallet.sparrow.io.Device;
 import javafx.collections.ObservableList;
 import javafx.scene.control.Accordion;
 

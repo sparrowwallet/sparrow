@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.external;
+package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
 import com.sparrowwallet.drongo.ExtendedPublicKey;

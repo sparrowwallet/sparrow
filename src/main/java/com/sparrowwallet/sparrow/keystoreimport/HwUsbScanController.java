@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
-import com.sparrowwallet.sparrow.external.Device;
-import com.sparrowwallet.sparrow.external.Hwi;
+import com.sparrowwallet.sparrow.io.Device;
+import com.sparrowwallet.sparrow.io.Hwi;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;

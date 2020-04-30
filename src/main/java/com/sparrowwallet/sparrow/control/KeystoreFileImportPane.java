@@ -5,7 +5,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
-import com.sparrowwallet.sparrow.external.KeystoreFileImport;
+import com.sparrowwallet.sparrow.io.KeystoreFileImport;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

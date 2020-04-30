@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.storage.Storage;
+import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.File;
 import java.io.IOException;
