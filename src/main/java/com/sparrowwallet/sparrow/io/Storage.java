@@ -9,9 +9,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.DataFormatException;
-import java.util.zip.Deflater;
-import java.util.zip.Inflater;
+import java.util.zip.*;
 
 public class Storage {
     public static final String SPARROW_DIR = ".sparrow";
@@ -49,31 +47,11 @@ public class Storage {
     }
 
     public Wallet loadWallet(File file, ECKey encryptionKey) throws IOException {
-        BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file));
-        byte[] encrypted = ByteStreams.toByteArray(inputStream);
-        byte[] decrypted = encryptionKey.decryptEcies(encrypted, getEncryptionMagic());
-        String jsonWallet = inflate(decrypted);
+        Reader reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(new FileInputStream(file), encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
+        Wallet wallet = gson.fromJson(reader, Wallet.class);
+        reader.close();
 
-        return gson.fromJson(jsonWallet, Wallet.class);
-    }
-
-    private static String inflate(byte[] encryptedWallet) {
-        Inflater inflater = new Inflater();
-        inflater.setInput(encryptedWallet);
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try {
-            byte[] buf = new byte[1024];
-            while(!inflater.finished()) {
-                int byteCount = inflater.inflate(buf);
-                baos.write(buf, 0, byteCount);
-            }
-            inflater.end();
-        } catch(DataFormatException e) {
-            throw new RuntimeException(e);
-        }
-
-        return baos.toString(StandardCharsets.UTF_8);
+        return wallet;
     }
 
     public void storeWallet(File file, Wallet wallet) throws IOException {
@@ -93,29 +71,9 @@ public class Storage {
             throw new IOException("Could not create folder " + parent);
         }
 
-        String jsonWallet = gson.toJson(wallet);
-        byte[] compressedWallet = deflate(jsonWallet);
-        byte[] encryptedWallet = encryptionKey.encryptEcies(compressedWallet, getEncryptionMagic());
-
-        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(file));
-        outputStream.write(encryptedWallet);
-        outputStream.close();
-    }
-
-    private static byte[] deflate(String jsonWallet) {
-        Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION);
-        deflater.setInput(jsonWallet.getBytes(StandardCharsets.UTF_8));
-        deflater.finish();
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buf = new byte[1024];
-        while(!deflater.finished()) {
-            int byteCount = deflater.deflate(buf);
-            baos.write(buf, 0, byteCount);
-        }
-        deflater.end();
-
-        return baos.toByteArray();
+        OutputStreamWriter writer = new OutputStreamWriter(new DeflaterOutputStream(new ECIESOutputStream(new FileOutputStream(file), encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
+        gson.toJson(wallet, writer);
+        writer.close();
     }
 
     private static byte[] getEncryptionMagic() {
