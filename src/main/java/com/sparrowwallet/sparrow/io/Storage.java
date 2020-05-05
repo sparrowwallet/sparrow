@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.common.io.ByteStreams;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedPublicKey;
 import com.sparrowwallet.drongo.crypto.ECKey;
