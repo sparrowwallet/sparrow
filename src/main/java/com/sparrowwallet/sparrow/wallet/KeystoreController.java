@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.sparrowwallet.drongo.ExtendedPublicKey;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Keystore;
@@ -83,8 +83,8 @@ public class KeystoreController extends WalletFormController implements Initiali
             }
         });
         xpub.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(ExtendedPublicKey.isValid(newValue)) {
-                keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(newValue));
+            if(ExtendedKey.isValid(newValue)) {
+                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(newValue));
                 EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
             }
         });
@@ -107,7 +107,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         validationSupport.registerValidator(xpub, Validator.combine(
                 Validator.createEmptyValidator("xPub is required"),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "xPub is invalid", !ExtendedPublicKey.isValid(newValue))
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "xPub is invalid", !ExtendedKey.isValid(newValue))
         ));
 
         validationSupport.registerValidator(derivation, Validator.combine(

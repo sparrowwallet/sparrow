@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
-import com.sparrowwallet.drongo.ExtendedPublicKey;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.Policy;
@@ -27,11 +27,6 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
     }
 
     @Override
-    public PolicyType getKeystorePolicyType() {
-        return PolicyType.MULTI;
-    }
-
-    @Override
     public WalletModel getWalletModel() {
         return WalletModel.COLDCARD;
     }
@@ -47,13 +42,13 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
 
         if(scriptType.equals(ScriptType.P2SH)) {
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2sh_deriv));
-            keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(cck.p2sh));
+            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2sh));
         } else if(scriptType.equals(ScriptType.P2SH_P2WSH)) {
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_p2sh_deriv));
-            keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(cck.p2wsh_p2sh));
+            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh_p2sh));
         } else if(scriptType.equals(ScriptType.P2WSH)) {
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_deriv));
-            keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(cck.p2wsh));
+            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh));
         } else {
             throw new ImportException("Correct derivation not found for script type: " + scriptType);
         }
@@ -61,7 +56,7 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
         return keystore;
     }
 
-    public static class ColdcardKeystore {
+    private static class ColdcardKeystore {
         public String p2sh_deriv;
         public String p2sh;
         public String p2wsh_p2sh_deriv;
@@ -118,7 +113,7 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
                                 keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                                 keystore.setWalletModel(WalletModel.COLDCARD);
                                 keystore.setKeyDerivation(new KeyDerivation(key, derivation));
-                                keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(value));
+                                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(value));
                                 wallet.getKeystores().add(keystore);
                             }
                     }

@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.sparrowwallet.drongo.ExtendedPublicKey;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ECKey;
@@ -25,11 +25,6 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
     @Override
     public String getName() {
         return "Electrum";
-    }
-
-    @Override
-    public PolicyType getKeystorePolicyType() {
-        return PolicyType.SINGLE;
     }
 
     @Override
@@ -111,12 +106,12 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
                     }
                     keystore.setWalletModel(WalletModel.ELECTRUM);
                 }
-                ExtendedPublicKey xPub = ExtendedPublicKey.fromDescriptor(ek.xpub);
+                ExtendedKey xPub = ExtendedKey.fromDescriptor(ek.xpub);
                 keystore.setKeyDerivation(new KeyDerivation(ek.root_fingerprint, ek.derivation));
                 keystore.setExtendedPublicKey(xPub);
                 wallet.getKeystores().add(keystore);
 
-                ExtendedPublicKey.XpubHeader xpubHeader = ExtendedPublicKey.XpubHeader.fromXpub(ek.xpub);
+                ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromExtendedKey(ek.xpub);
                 scriptType = xpubHeader.getDefaultScriptType();
             }
 
@@ -170,7 +165,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
                 throw new ExportException("Could not export a wallet with a " + wallet.getPolicyType() + " policy");
             }
 
-            ExtendedPublicKey.XpubHeader xpubHeader = ExtendedPublicKey.XpubHeader.fromScriptType(wallet.getScriptType());
+            ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromScriptType(wallet.getScriptType());
 
             int index = 1;
             for(Keystore keystore : wallet.getKeystores()) {

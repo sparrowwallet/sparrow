@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.ExtendedPublicKey;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.wallet.Keystore;
@@ -363,7 +363,7 @@ public class DevicePane extends TitledPane {
             keystore.setSource(KeystoreSource.HW_USB);
             keystore.setWalletModel(device.getModel());
             keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
-            keystore.setExtendedPublicKey(ExtendedPublicKey.fromDescriptor(xpub));
+            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
 
             EventManager.get().post(new KeystoreImportEvent(keystore));
         });

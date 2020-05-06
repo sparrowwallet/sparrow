@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
-import com.sparrowwallet.drongo.ExtendedPublicKey;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.wallet.Wallet;
 
@@ -20,8 +20,8 @@ public class Storage {
 
     private Storage() {
         GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(ExtendedPublicKey.class, new ExtendedPublicKeySerializer());
-        gsonBuilder.registerTypeAdapter(ExtendedPublicKey.class, new ExtendedPublicKeyDeserializer());
+        gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeySerializer());
+        gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeyDeserializer());
         gson = gsonBuilder.setPrettyPrinting().create();
     }
 
@@ -95,17 +95,17 @@ public class Storage {
         return new File(System.getProperty("user.home"));
     }
 
-    private static class ExtendedPublicKeySerializer implements JsonSerializer<ExtendedPublicKey> {
+    private static class ExtendedPublicKeySerializer implements JsonSerializer<ExtendedKey> {
         @Override
-        public JsonElement serialize(ExtendedPublicKey src, Type typeOfSrc, JsonSerializationContext context) {
+        public JsonElement serialize(ExtendedKey src, Type typeOfSrc, JsonSerializationContext context) {
             return new JsonPrimitive(src.toString());
         }
     }
 
-    private static class ExtendedPublicKeyDeserializer implements JsonDeserializer<ExtendedPublicKey> {
+    private static class ExtendedPublicKeyDeserializer implements JsonDeserializer<ExtendedKey> {
         @Override
-        public ExtendedPublicKey deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return ExtendedPublicKey.fromDescriptor(json.getAsJsonPrimitive().getAsString());
+        public ExtendedKey deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return ExtendedKey.fromDescriptor(json.getAsJsonPrimitive().getAsString());
         }
     }
 }

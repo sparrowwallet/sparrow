@@ -15,7 +15,7 @@ public class ElectrumTest extends IoTest {
     @Test
     public void testSinglesigImport() throws ImportException {
         Electrum electrum = new Electrum();
-        Wallet wallet = electrum.importWallet(getInputStream("electrum-singlesig-wallet.json"));
+        Wallet wallet = electrum.importWallet(getInputStream("electrum-singlesig-wallet.json"), null);
 
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
@@ -31,11 +31,11 @@ public class ElectrumTest extends IoTest {
     public void testSinglesigExport() throws ImportException, ExportException, IOException {
         Electrum electrum = new Electrum();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-singlesig-wallet.json"));
-        Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes));
+        Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         electrum.exportWallet(wallet, baos);
 
-        wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()));
+        wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assert.assertTrue(wallet.isValid());
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
@@ -49,7 +49,7 @@ public class ElectrumTest extends IoTest {
     @Test
     public void testMultisigImport() throws ImportException {
         Electrum electrum = new Electrum();
-        Wallet wallet = electrum.importWallet(getInputStream("electrum-multisig-wallet.json"));
+        Wallet wallet = electrum.importWallet(getInputStream("electrum-multisig-wallet.json"), null);
 
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
@@ -67,11 +67,11 @@ public class ElectrumTest extends IoTest {
     public void testMultisigExport() throws ImportException, ExportException, IOException {
         Electrum electrum = new Electrum();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-multisig-wallet.json"));
-        Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes));
+        Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         electrum.exportWallet(wallet, baos);
 
-        wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()));
+        wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assert.assertTrue(wallet.isValid());
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
