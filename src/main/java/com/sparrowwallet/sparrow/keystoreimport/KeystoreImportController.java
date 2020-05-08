@@ -57,6 +57,12 @@ public class KeystoreImportController implements Initializable {
         controller.initializeView(devices);
     }
 
+    void showUsbNone() {
+        FXMLLoader loader = setImportPane("hw_usb-none");
+        HwUsbScanController controller = loader.getController();
+        controller.initializeView("No hardware wallets found");
+    }
+
     void showUsbError(String message) {
         FXMLLoader loader = setImportPane("hw_usb-error");
         HwUsbScanController controller = loader.getController();

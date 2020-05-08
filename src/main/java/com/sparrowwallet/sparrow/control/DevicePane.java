@@ -25,6 +25,10 @@ import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.validation.ValidationResult;
+import org.controlsfx.validation.ValidationSupport;
+import org.controlsfx.validation.Validator;
+import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.util.List;
 
@@ -35,6 +39,7 @@ public class DevicePane extends TitledPane {
 
     private Label mainLabel;
     private Label statusLabel;
+    private Hyperlink showHideLink;
     private CustomPasswordField pinField;
     private CustomTextField passphraseField;
     private Button unlockButton;
@@ -101,11 +106,34 @@ public class DevicePane extends TitledPane {
         mainLabel.getStyleClass().add("main-label");
         labelsBox.getChildren().add(mainLabel);
 
+        HBox statusBox = new HBox();
+        statusBox.setSpacing(7);
         this.statusLabel = new Label();
-        statusLabel.textProperty().bind(status);
-
-        labelsBox.getChildren().add(statusLabel);
         statusLabel.getStyleClass().add("status-label");
+        statusLabel.textProperty().bind(status);
+        statusBox.getChildren().add(statusLabel);
+
+        showHideLink = new Hyperlink("Show details...");
+        showHideLink.managedProperty().bind(showHideLink.visibleProperty());
+        showHideLink.setVisible(false);
+        showHideLink.setOnAction(event -> {
+            if(this.isExpanded()) {
+                setExpanded(false);
+            } else {
+                setExpanded(true);
+            }
+        });
+        this.expandedProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue) {
+                showHideLink.setText(showHideLink.getText().replace("Show", "Hide"));
+            } else {
+                showHideLink.setText(showHideLink.getText().replace("Hide", "Show"));
+            }
+        });
+        statusBox.getChildren().add(showHideLink);
+
+        labelsBox.getChildren().add(statusBox);
+
         listItem.getChildren().add(labelsBox);
         HBox.setHgrow(labelsBox, Priority.ALWAYS);
 
@@ -388,8 +416,47 @@ public class DevicePane extends TitledPane {
     private void showOperationButton() {
         if(deviceAccordion.getDeviceOperation().equals(DeviceAccordion.DeviceOperation.IMPORT)) {
             importButton.setVisible(true);
+            showHideLink.setText("Show derivation...");
+            showHideLink.setVisible(true);
+            setContent(getDerivationEntry(wallet.getScriptType().getDefaultDerivation()));
         } else {
             //TODO: Support further device operations such as signing
         }
+    }
+
+    private Node getDerivationEntry(List<ChildNumber> derivation) {
+        TextField derivationField = new TextField();
+        derivationField.setPromptText("Derivation path");
+        derivationField.setText(KeyDerivation.writePath(derivation));
+        HBox.setHgrow(derivationField, Priority.ALWAYS);
+
+        ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport.registerValidator(derivationField, Validator.combine(
+                Validator.createEmptyValidator("Derivation is required"),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid derivation", !KeyDerivation.isValid(newValue))
+        ));
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+
+        Button importDerivationButton = new Button("Import");
+        importDerivationButton.setOnAction(event -> {
+            showHideLink.setVisible(true);
+            setExpanded(false);
+            List<ChildNumber> importDerivation = KeyDerivation.parsePath(derivationField.getText());
+            importXpub(importDerivation);
+        });
+
+        derivationField.textProperty().addListener((observable, oldValue, newValue) -> {
+            importDerivationButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue));
+        });
+
+        HBox contentBox = new HBox();
+        contentBox.setAlignment(Pos.TOP_RIGHT);
+        contentBox.setSpacing(20);
+        contentBox.getChildren().add(derivationField);
+        contentBox.getChildren().add(importDerivationButton);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        contentBox.setPrefHeight(60);
+
+        return contentBox;
     }
 }

@@ -28,7 +28,11 @@ public class HwUsbScanController extends KeystoreImportDetailController {
         Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(null);
         enumerateService.setOnSucceeded(workerStateEvent -> {
             List<Device> devices = enumerateService.getValue();
-            getMasterController().showUsbDevices(devices);
+            if(devices.isEmpty()) {
+                getMasterController().showUsbNone();
+            } else {
+                getMasterController().showUsbDevices(devices);
+            }
         });
         enumerateService.setOnFailed(workerStateEvent -> {
             getMasterController().showUsbError(enumerateService.getException().getMessage());
