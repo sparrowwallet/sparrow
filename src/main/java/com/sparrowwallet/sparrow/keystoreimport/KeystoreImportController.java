@@ -37,8 +37,12 @@ public class KeystoreImportController implements Initializable {
     public void initializeView(Wallet wallet) {
         this.wallet = wallet;
         importMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
+            if(selectedToggle == null) {
+                oldValue.setSelected(true);
+                return;
+            }
+
             KeystoreSource importType = (KeystoreSource) selectedToggle.getUserData();
-            System.out.println(importType);
             String fxmlName = importType.toString().toLowerCase();
             if(importType == KeystoreSource.SW_SEED || importType == KeystoreSource.SW_WATCH) {
                 fxmlName = "sw";

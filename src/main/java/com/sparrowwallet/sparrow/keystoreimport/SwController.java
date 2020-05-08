@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.sparrowwallet.sparrow.control.KeystoreImportAccordion;
+import com.sparrowwallet.sparrow.io.Bip39;
 import com.sparrowwallet.sparrow.io.Electrum;
 import com.sparrowwallet.sparrow.io.KeystoreImport;
 import javafx.collections.FXCollections;
@@ -13,7 +14,7 @@ public class SwController extends KeystoreImportDetailController {
     private KeystoreImportAccordion importAccordion;
 
     public void initializeView() {
-        List<KeystoreImport> importers = List.of(new Electrum());
+        List<KeystoreImport> importers = List.of(new Bip39(), new Electrum());
         importAccordion.setKeystoreImporters(getMasterController().getWallet(), FXCollections.observableList(importers));
     }
 }

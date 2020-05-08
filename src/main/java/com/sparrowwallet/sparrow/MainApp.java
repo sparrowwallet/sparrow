@@ -41,9 +41,9 @@ public class MainApp extends Application {
         wallet.setScriptType(ScriptType.P2WPKH);
 
         KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
-        //dlg.showAndWait();
+        dlg.showAndWait();
 
-        stage.show();
+        //stage.show();
     }
 
     public static void main(String[] args) {

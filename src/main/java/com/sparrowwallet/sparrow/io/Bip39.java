@@ -15,7 +15,7 @@ public class Bip39 implements KeystoreMnemonicImport {
 
     @Override
     public WalletModel getWalletModel() {
-        return WalletModel.SPARROW;
+        return WalletModel.SEED;
     }
 
     @Override
@@ -25,8 +25,12 @@ public class Bip39 implements KeystoreMnemonicImport {
 
     @Override
     public Keystore getKeystore(List<ChildNumber> derivation, List<String> mnemonicWords, String passphrase) throws ImportException {
-        Bip39Calculator bip39Calculator = new Bip39Calculator();
-        byte[] seed = bip39Calculator.getSeed(mnemonicWords, passphrase);
-        return Keystore.fromSeed(seed, derivation);
+        try {
+            Bip39Calculator bip39Calculator = new Bip39Calculator();
+            byte[] seed = bip39Calculator.getSeed(mnemonicWords, passphrase);
+            return Keystore.fromSeed(seed, derivation);
+        } catch (Exception e) {
+            throw new ImportException(e);
+        }
     }
 }

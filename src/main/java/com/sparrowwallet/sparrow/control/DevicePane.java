@@ -128,7 +128,8 @@ public class DevicePane extends TitledPane {
         listItem.getChildren().add(buttonBox);
 
         this.layoutBoundsProperty().addListener((observable, oldValue, newValue) -> {
-            listItem.setPrefWidth(newValue.getWidth());
+            //Hack to force listItem to expand to full available width less border
+            listItem.setPrefWidth(newValue.getWidth() - 2);
         });
 
         return listItem;

@@ -16,12 +16,12 @@ public class KeystoreImportAccordion extends Accordion {
         this.importers = importers;
 
         for(KeystoreImport importer : importers) {
-            KeystoreFileImportPane importPane = null;
+            KeystoreImportPane importPane = null;
 
             if(importer instanceof KeystoreFileImport) {
-                importPane = new KeystoreFileImportPane(this, wallet, (KeystoreFileImport)importer);
+                importPane = new FileKeystoreImportPane(this, wallet, (KeystoreFileImport)importer);
             } else if(importer instanceof KeystoreMnemonicImport) {
-                //TODO: Import from the new Bip39KeystoreImport
+                importPane = new MnemonicKeystoreImportPane(this, wallet, (KeystoreMnemonicImport)importer);
             } else {
                 throw new IllegalArgumentException("Could not create ImportPane for importer of type " + importer.getClass());
             }

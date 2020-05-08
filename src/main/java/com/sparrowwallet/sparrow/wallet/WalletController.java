@@ -31,6 +31,11 @@ public class WalletController extends WalletFormController implements Initializa
 
     public void initializeView() {
         walletMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
+            if(selectedToggle == null) {
+                oldValue.setSelected(true);
+                return;
+            }
+
             Function function = (Function)selectedToggle.getUserData();
 
             boolean existing = false;

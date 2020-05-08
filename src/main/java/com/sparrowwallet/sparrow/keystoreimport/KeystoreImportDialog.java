@@ -31,8 +31,8 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             dialogPane.getButtonTypes().addAll(cancelButtonType);
-            dialogPane.setPrefWidth(620);
-            dialogPane.setPrefHeight(500);
+            dialogPane.setPrefWidth(650);
+            dialogPane.setPrefHeight(600);
 
             setResultConverter(dialogButton -> dialogButton != cancelButtonType ? keystore : null);
         } catch(IOException e) {
