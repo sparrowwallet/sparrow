@@ -19,6 +19,8 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static File hwiExecutable;
@@ -85,25 +87,77 @@ public class Hwi {
     }
 
     private synchronized File getHwiExecutable() throws IOException {
-        if(hwiExecutable == null) {
-            Platform platform = Platform.getCurrent();
-            System.out.println("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
-            InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
-            Set<PosixFilePermission> ownerExecutableWritable = PosixFilePermissions.fromString("rwxr--r--");
-            Path tempExecPath = Files.createTempFile("hwi", null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
-            File tempExec = tempExecPath.toFile();
-            System.out.println(tempExec.getAbsolutePath());
-            tempExec.deleteOnExit();
-            OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
-            ByteStreams.copy(new FramedLZ4CompressorInputStream(inputStream), tempExecStream);
-            inputStream.close();
-            tempExecStream.flush();
-            tempExecStream.close();
+        try {
+            if (hwiExecutable == null) {
+                Platform platform = Platform.getCurrent();
+                Set<PosixFilePermission> ownerExecutableWritable = PosixFilePermissions.fromString("rwxr--r--");
 
-            hwiExecutable = tempExec;
+                //A PyInstaller --onefile expands into a new directory on every run triggering OSX Gatekeeper checks.
+                //To avoid doing these with every invocation, use a --onedir packaging and expand into a temp folder on OSX
+                //The check will still happen on first invocation, but will not thereafter
+                //See https://github.com/bitcoin-core/HWI/issues/327 for details
+                if(platform.getPlatformId().toLowerCase().equals("mac")) {
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi-1.1.0-mac-amd64-signed.zip");
+                    Path tempHwiDirPath = Files.createTempDirectory("hwi", PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    File tempHwiDir = tempHwiDirPath.toFile();
+                    tempHwiDir.deleteOnExit();
+
+                    System.out.println(tempHwiDir.getAbsolutePath());
+
+                    File tempExec = null;
+                    ZipInputStream zis = new ZipInputStream(inputStream);
+                    ZipEntry zipEntry = zis.getNextEntry();
+                    while (zipEntry != null) {
+                        File newFile = newFile(tempHwiDir, zipEntry, ownerExecutableWritable);
+                        newFile.deleteOnExit();
+                        FileOutputStream fos = new FileOutputStream(newFile);
+                        ByteStreams.copy(zis, new FileOutputStream(newFile));
+                        fos.flush();
+                        fos.close();
+
+                        if (zipEntry.getName().equals("hwi")) {
+                            tempExec = newFile;
+                        }
+
+                        zipEntry = zis.getNextEntry();
+                    }
+                    zis.closeEntry();
+                    zis.close();
+
+                    hwiExecutable = tempExec;
+                } else {
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
+                    Path tempExecPath = Files.createTempFile("hwi", null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    File tempExec = tempExecPath.toFile();
+                    tempExec.deleteOnExit();
+                    OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
+                    ByteStreams.copy(new FramedLZ4CompressorInputStream(inputStream), tempExecStream);
+                    inputStream.close();
+                    tempExecStream.flush();
+                    tempExecStream.close();
+
+                    hwiExecutable = tempExec;
+                }
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
         }
 
         return hwiExecutable;
+    }
+
+    public static File newFile(File destinationDir, ZipEntry zipEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
+        String destDirPath = destinationDir.getCanonicalPath();
+
+        Path path = Path.of(destDirPath, zipEntry.getName());
+        File destFile = Files.createFile(path, PosixFilePermissions.asFileAttribute(setFilePermissions)).toFile();
+
+        String destFilePath = destFile.getCanonicalPath();
+        if (!destFilePath.startsWith(destDirPath + File.separator)) {
+            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+        }
+
+        return destFile;
     }
 
     private boolean wasSuccessful(String output) throws ImportException {
