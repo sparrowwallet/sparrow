@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.wallet.Wallet;
 
@@ -22,7 +23,9 @@ public class Storage {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeySerializer());
         gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeyDeserializer());
-        gson = gsonBuilder.setPrettyPrinting().create();
+        gsonBuilder.registerTypeAdapter(byte[].class, new ByteArraySerializer());
+        gsonBuilder.registerTypeAdapter(byte[].class, new ByteArrayDeserializer());
+        gson = gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
     }
 
     public static Storage getStorage() {
@@ -76,7 +79,7 @@ public class Storage {
     }
 
     private static byte[] getEncryptionMagic() {
-        return "BIE1".getBytes(StandardCharsets.UTF_8);
+        return "SPRW1".getBytes(StandardCharsets.UTF_8);
     }
 
     public File getWalletFile(String walletName) {
@@ -84,7 +87,12 @@ public class Storage {
     }
 
     public File getWalletsDir() {
-        return new File(getSparrowDir(), WALLETS_DIR);
+        File walletsDir = new File(getSparrowDir(), WALLETS_DIR);
+        if(!walletsDir.exists()) {
+            walletsDir.mkdirs();
+        }
+
+        return walletsDir;
     }
 
     private File getSparrowDir() {
@@ -106,6 +114,20 @@ public class Storage {
         @Override
         public ExtendedKey deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return ExtendedKey.fromDescriptor(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class ByteArraySerializer implements JsonSerializer<byte[]> {
+        @Override
+        public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(Utils.bytesToHex(src));
+        }
+    }
+
+    private static class ByteArrayDeserializer implements JsonDeserializer<byte[]> {
+        @Override
+        public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return Utils.hexToBytes(json.getAsJsonPrimitive().getAsString());
         }
     }
 }

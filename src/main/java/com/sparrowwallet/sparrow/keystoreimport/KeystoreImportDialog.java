@@ -43,7 +43,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     @Subscribe
     public void keystoreImported(KeystoreImportEvent event) {
         this.keystore = event.getKeystore();
-        System.out.println(keystore.getLabel() + " " + keystore.getKeyDerivation().getMasterFingerprint());
+        setResult(keystore);
         this.close();
     }
 }

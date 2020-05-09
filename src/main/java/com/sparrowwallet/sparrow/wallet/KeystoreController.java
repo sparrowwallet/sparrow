@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
@@ -12,6 +13,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Control;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import org.controlsfx.validation.ValidationResult;
@@ -26,6 +28,9 @@ import java.util.stream.Collectors;
 
 public class KeystoreController extends WalletFormController implements Initializable {
     private Keystore keystore;
+
+    @FXML
+    private Label type;
 
     @FXML
     private TextField label;
@@ -54,6 +59,8 @@ public class KeystoreController extends WalletFormController implements Initiali
     @Override
     public void initializeView() {
         Platform.runLater(this::setupValidation);
+
+        updateType();
 
         label.setText(keystore.getLabel());
 
@@ -102,7 +109,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.registerValidator(label, Validator.combine(
                 Validator.createEmptyValidator("Label is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is not unique", walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore).map(Keystore::getLabel).collect(Collectors.toList()).contains(newValue)),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is too long", newValue.length() > 16)
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is too long", newValue.replace(" ", "").length() > 16)
         ));
 
         validationSupport.registerValidator(xpub, Validator.combine(
@@ -123,11 +130,43 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
     }
 
+    private void updateType() {
+        type.setText(getTypeLabel(keystore));
+
+        boolean editable = (keystore.getSource() == KeystoreSource.SW_WATCH);
+        label.setEditable(editable);
+        fingerprint.setEditable(editable);
+        derivation.setEditable(editable);
+        xpub.setEditable(editable);
+    }
+
+    private String getTypeLabel(Keystore keystore) {
+        switch (keystore.getSource()) {
+            case HW_USB:
+                return "Connected Hardware Wallet (" + keystore.getWalletModel().toDisplayString() + ")";
+            case HW_AIRGAPPED:
+                return "Airgapped Hardware Wallet (" + keystore.getWalletModel().toDisplayString() + ")";
+            case SW_SEED:
+                return "Software Wallet";
+            case SW_WATCH:
+            default:
+                return "Software Wallet (Watch Only)";
+        }
+    }
+
     public void importKeystore(ActionEvent event) {
         KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet());
         Optional<Keystore> result = dlg.showAndWait();
         if(result.isPresent()) {
-           Keystore keystore = result.get();
+           Keystore importedKeystore = result.get();
+           keystore.setSource(importedKeystore.getSource());
+           keystore.setWalletModel(importedKeystore.getWalletModel());
+           keystore.setLabel(importedKeystore.getLabel());
+           keystore.setKeyDerivation(importedKeystore.getKeyDerivation());
+           keystore.setExtendedPublicKey(importedKeystore.getExtendedPublicKey());
+           keystore.setSeed(importedKeystore.getSeed());
+
+           updateType();
            label.setText(keystore.getLabel());
            fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
            derivation.setText(keystore.getKeyDerivation().getDerivationPath());

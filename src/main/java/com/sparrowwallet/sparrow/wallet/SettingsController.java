@@ -89,9 +89,12 @@ public class SettingsController extends WalletFormController implements Initiali
 
             multisigFieldset.setVisible(policyType.equals(PolicyType.MULTI));
             if(policyType.equals(PolicyType.MULTI)) {
+                totalKeystores.unbind();
+                totalKeystores.set(0);
                 totalKeystores.bind(multisigControl.highValueProperty());
             } else {
                 totalKeystores.unbind();
+                totalKeystores.set(0);
                 totalKeystores.set(1);
             }
         });
