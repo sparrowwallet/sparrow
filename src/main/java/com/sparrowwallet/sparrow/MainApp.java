@@ -40,10 +40,10 @@ public class MainApp extends Application {
         wallet.setPolicyType(PolicyType.SINGLE);
         wallet.setScriptType(ScriptType.P2WPKH);
 
-//        KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
-//        dlg.showAndWait();
+        KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
+        dlg.showAndWait();
 
-        stage.show();
+//        stage.show();
     }
 
     public static void main(String[] args) {

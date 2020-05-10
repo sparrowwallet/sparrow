@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.crypto.ChildNumber;
-import com.sparrowwallet.drongo.wallet.Bip39Calculator;
+import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
@@ -26,8 +26,8 @@ public class Bip39 implements KeystoreMnemonicImport {
     @Override
     public Keystore getKeystore(List<ChildNumber> derivation, List<String> mnemonicWords, String passphrase) throws ImportException {
         try {
-            Bip39Calculator bip39Calculator = new Bip39Calculator();
-            byte[] seed = bip39Calculator.getSeed(mnemonicWords, passphrase);
+            Bip39MnemonicCode.INSTANCE.check(mnemonicWords);
+            byte[] seed = Bip39MnemonicCode.toSeed(mnemonicWords, passphrase);
             return Keystore.fromSeed(seed, derivation);
         } catch (Exception e) {
             throw new ImportException(e);

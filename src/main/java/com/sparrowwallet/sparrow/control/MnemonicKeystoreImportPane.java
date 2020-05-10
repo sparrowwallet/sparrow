@@ -2,17 +2,15 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
-import com.sparrowwallet.drongo.wallet.Bip39Calculator;
+import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.io.*;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -24,7 +22,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.util.Callback;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
-import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.validation.ValidationResult;
@@ -32,6 +29,7 @@ import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -41,6 +39,11 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
 
     private SplitMenuButton enterMnemonicButton;
     private SplitMenuButton importButton;
+
+    private TilePane wordsPane;
+    private Button verifyButton;
+    private Button confirmButton;
+    private List<String> generatedMnemonicCode;
 
     private SimpleListProperty<String> wordEntriesProperty;
     private final SimpleStringProperty passphraseProperty = new SimpleStringProperty();
@@ -107,6 +110,7 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
     }
 
     private void enterMnemonic(int numWords) {
+        generatedMnemonicCode = null;
         setDescription("Enter mnemonic word list");
         showHideLink.setVisible(false);
         setContent(getMnemonicWordsEntry(numWords));
@@ -117,11 +121,11 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 
-        TilePane tilePane = new TilePane();
-        tilePane.setPrefRows(numWords/3);
-        tilePane.setHgap(10);
-        tilePane.setVgap(10);
-        tilePane.setOrientation(Orientation.VERTICAL);
+        wordsPane = new TilePane();
+        wordsPane.setPrefRows(numWords/3);
+        wordsPane.setHgap(10);
+        wordsPane.setVgap(10);
+        wordsPane.setOrientation(Orientation.VERTICAL);
 
         List<String> words = new ArrayList<>();
         for(int i = 0; i < numWords; i++) {
@@ -132,44 +136,95 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
         wordEntriesProperty = new SimpleListProperty<>(wordEntryList);
         for(int i = 0; i < numWords; i++) {
             WordEntry wordEntry = new WordEntry(i, wordEntryList);
-            tilePane.getChildren().add(wordEntry);
+            wordsPane.getChildren().add(wordEntry);
         }
 
-        vBox.getChildren().add(tilePane);
-
-        AnchorPane anchorPane = new AnchorPane();
-        anchorPane.setPadding(new Insets(0, 32, 0, 10));
+        vBox.getChildren().add(wordsPane);
 
         PassphraseEntry passphraseEntry = new PassphraseEntry();
-        AnchorPane.setLeftAnchor(passphraseEntry, 0.0);
+        passphraseEntry.setPadding(new Insets(0, 32, 0, 10));
+        vBox.getChildren().add(passphraseEntry);
 
-        Button okButton = new Button("Ok");
-        okButton.setPrefWidth(70);
-        okButton.setDisable(true);
-        okButton.setOnAction(event -> {
+        AnchorPane buttonPane = new AnchorPane();
+        buttonPane.setPadding(new Insets(0, 32, 0, 10));
+
+        Button generateButton = new Button("Generate New");
+        generateButton.setOnAction(event -> {
+            generateNew();
+        });
+        buttonPane.getChildren().add(generateButton);
+        AnchorPane.setLeftAnchor(generateButton, 0.0);
+
+        confirmButton = new Button("Confirm Backup");
+        confirmButton.setOnAction(event -> {
+            confirmBackup();
+        });
+        confirmButton.managedProperty().bind(confirmButton.visibleProperty());
+        confirmButton.setVisible(false);
+        buttonPane.getChildren().add(confirmButton);
+        AnchorPane.setRightAnchor(confirmButton, 0.0);
+
+        verifyButton = new Button("Verify");
+        verifyButton.setDisable(true);
+        verifyButton.setOnAction(event -> {
             prepareImport();
         });
+        verifyButton.managedProperty().bind(verifyButton.visibleProperty());
 
         wordEntriesProperty.addListener((ListChangeListener<String>) c -> {
             for(String word : wordEntryList) {
                 if(!WordEntry.isValid(word)) {
-                    okButton.setDisable(true);
+                    verifyButton.setDisable(true);
                     return;
                 }
             }
 
-            okButton.setDisable(false);
+            verifyButton.setDisable(false);
         });
+        buttonPane.getChildren().add(verifyButton);
+        AnchorPane.setRightAnchor(verifyButton, 0.0);
 
-        AnchorPane.setRightAnchor(okButton, 0.0);
-
-        anchorPane.getChildren().addAll(passphraseEntry, okButton);
-        vBox.getChildren().add(anchorPane);
+        vBox.getChildren().add(buttonPane);
 
         return vBox;
     }
 
+    private void generateNew() {
+        setDescription("Write down word list to confirm backup");
+        showHideLink.setVisible(false);
+
+        int mnemonicSeedLength = wordEntriesProperty.get().size() * 11;
+        int entropyLength = mnemonicSeedLength - (mnemonicSeedLength/33);
+
+        DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), entropyLength, "");
+        generatedMnemonicCode = deterministicSeed.getMnemonicCode();
+        if(generatedMnemonicCode.size() != wordsPane.getChildren().size()) {
+            throw new IllegalStateException("Generated mnemonic words list not same size as displayed words list");
+        }
+
+        for (int i = 0; i < wordsPane.getChildren().size(); i++) {
+            WordEntry wordEntry = (WordEntry)wordsPane.getChildren().get(i);
+            wordEntry.getEditor().setText(generatedMnemonicCode.get(i));
+            wordEntry.getEditor().setEditable(false);
+        }
+
+        verifyButton.setVisible(false);
+        confirmButton.setVisible(true);
+    }
+
+    private void confirmBackup() {
+        setDescription("Confirm backup by re-entering words");
+        showHideLink.setVisible(false);
+        setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size()));
+        setExpanded(true);
+    }
+
     private void prepareImport() {
+        if(generatedMnemonicCode != null && !generatedMnemonicCode.equals(wordEntriesProperty.get())) {
+            setError("Import Error", "Confirmation words did not match generated mnemonic");
+            return;
+        }
+
         if(importKeystore(wallet.getScriptType().getDefaultDerivation(), true)) {
             setExpanded(false);
             enterMnemonicButton.setVisible(false);
@@ -203,6 +258,7 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
 
     private static class WordEntry extends HBox {
         private static List<String> wordList;
+        private final TextField wordField;
 
         public WordEntry(int wordNumber, ObservableList<String> wordEntryList) {
             super();
@@ -212,11 +268,10 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
             Label label = new Label((wordNumber+1) + ".");
             label.setPrefWidth(20);
             label.setAlignment(Pos.CENTER_RIGHT);
-            TextField wordField = new TextField();
+            wordField = new TextField();
             wordField.setMaxWidth(100);
 
-            Bip39Calculator bip39Calculator = new Bip39Calculator();
-            wordList = bip39Calculator.getWordList();
+            wordList = Bip39MnemonicCode.INSTANCE.getWordList();
             TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));
 
             ValidationSupport validationSupport = new ValidationSupport();
@@ -231,6 +286,10 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
             });
 
             this.getChildren().addAll(label, wordField);
+        }
+
+        public TextField getEditor() {
+            return wordField;
         }
 
         public static boolean isValid(String word) {
@@ -264,11 +323,12 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
         public PassphraseEntry() {
             super();
 
-            setAlignment(Pos.CENTER_RIGHT);
+            setAlignment(Pos.CENTER_LEFT);
             setSpacing(10);
             Label passphraseLabel = new Label("Passphrase:");
             CustomTextField passphraseField = (CustomTextField) TextFields.createClearableTextField();
             passphraseProperty.bind(passphraseField.textProperty());
+            passphraseField.setPromptText("Leave blank for none");
 
             getChildren().addAll(passphraseLabel, passphraseField);
         }
