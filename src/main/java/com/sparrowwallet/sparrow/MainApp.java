@@ -43,7 +43,7 @@ public class MainApp extends Application {
         KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
         dlg.showAndWait();
 
-//        stage.show();
+        stage.show();
     }
 
     public static void main(String[] args) {

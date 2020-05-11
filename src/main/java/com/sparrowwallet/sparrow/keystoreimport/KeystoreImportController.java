@@ -4,10 +4,12 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.io.Device;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.StackPane;
 
@@ -49,6 +51,15 @@ public class KeystoreImportController implements Initializable {
             }
             setImportPane(fxmlName);
         });
+    }
+
+    public void selectSource(KeystoreSource keystoreSource) {
+        for(Toggle toggle : importMenu.getToggles()) {
+            if(toggle.getUserData().equals(keystoreSource)) {
+                Platform.runLater(() -> importMenu.selectToggle(toggle));
+                return;
+            }
+        }
     }
 
     void showUsbDevices(List<Device> devices) {

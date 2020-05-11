@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
@@ -20,6 +21,10 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     private Keystore keystore;
 
     public KeystoreImportDialog(Wallet wallet) {
+        this(wallet, KeystoreSource.HW_USB);
+    }
+
+    public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource) {
         EventManager.get().register(this);
         final DialogPane dialogPane = getDialogPane();
 
@@ -28,6 +33,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
             dialogPane.setContent(Borders.wrap(ksiLoader.load()).lineBorder().outerPadding(0).innerPadding(0).buildAll());
             keystoreImportController = ksiLoader.getController();
             keystoreImportController.initializeView(wallet);
+            keystoreImportController.selectSource(initialSource);
 
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             dialogPane.getButtonTypes().addAll(cancelButtonType);

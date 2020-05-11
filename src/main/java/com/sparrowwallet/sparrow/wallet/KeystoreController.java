@@ -12,14 +12,13 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Control;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
+import tornadofx.control.Form;
 
 import java.net.URL;
 import java.util.Optional;
@@ -28,6 +27,9 @@ import java.util.stream.Collectors;
 
 public class KeystoreController extends WalletFormController implements Initializable {
     private Keystore keystore;
+
+    @FXML
+    private StackPane selectSourcePane;
 
     @FXML
     private Label type;
@@ -59,6 +61,8 @@ public class KeystoreController extends WalletFormController implements Initiali
     @Override
     public void initializeView() {
         Platform.runLater(this::setupValidation);
+
+        selectSourcePane.managedProperty().bind(selectSourcePane.visibleProperty());
 
         updateType();
 
@@ -95,6 +99,16 @@ public class KeystoreController extends WalletFormController implements Initiali
                 EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
             }
         });
+    }
+
+    public void selectSource(ActionEvent event) {
+        ToggleButton sourceButton = (ToggleButton)event.getSource();
+        KeystoreSource keystoreSource = (KeystoreSource)sourceButton.getUserData();
+        if(keystoreSource != KeystoreSource.SW_WATCH) {
+            launchImportDialog(keystoreSource);
+        } else {
+            selectSourcePane.setVisible(false);
+        }
     }
 
     public TextField getLabel() {
@@ -150,27 +164,33 @@ public class KeystoreController extends WalletFormController implements Initiali
                 return "Software Wallet";
             case SW_WATCH:
             default:
-                return "Software Wallet (Watch Only)";
+                return "Watch Only Wallet";
         }
     }
 
     public void importKeystore(ActionEvent event) {
-        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet());
-        Optional<Keystore> result = dlg.showAndWait();
-        if(result.isPresent()) {
-           Keystore importedKeystore = result.get();
-           keystore.setSource(importedKeystore.getSource());
-           keystore.setWalletModel(importedKeystore.getWalletModel());
-           keystore.setLabel(importedKeystore.getLabel());
-           keystore.setKeyDerivation(importedKeystore.getKeyDerivation());
-           keystore.setExtendedPublicKey(importedKeystore.getExtendedPublicKey());
-           keystore.setSeed(importedKeystore.getSeed());
+        launchImportDialog(KeystoreSource.HW_USB);
+    }
 
-           updateType();
-           label.setText(keystore.getLabel());
-           fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
-           derivation.setText(keystore.getKeyDerivation().getDerivationPath());
-           xpub.setText(keystore.getExtendedPublicKey().toString());
+    private void launchImportDialog(KeystoreSource initialSource) {
+        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource);
+        Optional<Keystore> result = dlg.showAndWait();
+        if (result.isPresent()) {
+            selectSourcePane.setVisible(false);
+
+            Keystore importedKeystore = result.get();
+            keystore.setSource(importedKeystore.getSource());
+            keystore.setWalletModel(importedKeystore.getWalletModel());
+            keystore.setLabel(importedKeystore.getLabel());
+            keystore.setKeyDerivation(importedKeystore.getKeyDerivation());
+            keystore.setExtendedPublicKey(importedKeystore.getExtendedPublicKey());
+            keystore.setSeed(importedKeystore.getSeed());
+
+            updateType();
+            label.setText(keystore.getLabel());
+            fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
+            derivation.setText(keystore.getKeyDerivation().getDerivationPath());
+            xpub.setText(keystore.getExtendedPublicKey().toString());
         }
     }
 }
