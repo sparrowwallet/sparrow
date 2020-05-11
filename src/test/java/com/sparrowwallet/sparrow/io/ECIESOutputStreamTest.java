@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -16,7 +17,7 @@ public class ECIESOutputStreamTest extends IoTest {
     @Test
     public void encrypt() throws ImportException, ExportException {
         Electrum electrum = new Electrum();
-        ECKey decryptionKey = ECKey.createKeyPbkdf2HmacSha512("pass");
+        ECKey decryptionKey = ECIESKeyCrypter.deriveECKey("pass");
         Wallet wallet = electrum.importWallet(new InflaterInputStream(new ECIESInputStream(getInputStream("electrum-encrypted"), decryptionKey)), null);
 
         ECKey encyptionKey = ECKey.fromPublicOnly(decryptionKey);

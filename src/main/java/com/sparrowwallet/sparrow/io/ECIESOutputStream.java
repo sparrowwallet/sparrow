@@ -1,7 +1,9 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.ByteStreams;
+import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptedData;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -32,8 +34,9 @@ public class ECIESOutputStream extends FilterOutputStream {
     public void close() throws IOException {
         super.close();
         byte[] unencrypted = ((ByteArrayOutputStream)out).toByteArray();
-        byte[] encryptedWallet = encryptionKey.encryptEcies(unencrypted, encryptionMagic);
-        ByteStreams.copy(new ByteArrayInputStream(encryptedWallet), encryptedStream);
+        ECIESKeyCrypter keyCrypter = new ECIESKeyCrypter();
+        EncryptedData encryptedData = keyCrypter.encrypt(unencrypted, encryptionMagic, encryptionKey);
+        ByteStreams.copy(new ByteArrayInputStream(encryptedData.getEncryptedBytes()), encryptedStream);
         encryptedStream.flush();
         encryptedStream.close();
     }

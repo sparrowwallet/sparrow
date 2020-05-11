@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.google.gson.JsonParseException;
-import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -83,7 +83,7 @@ public class FileKeystoreImportPane extends KeystoreImportPane {
                 if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
                     errorMessage = e.getCause().getMessage();
                 }
-                if(e instanceof ECKey.InvalidPasswordException || e.getCause() instanceof ECKey.InvalidPasswordException) {
+                if(e instanceof ECIESKeyCrypter.InvalidPasswordException || e.getCause() instanceof ECIESKeyCrypter.InvalidPasswordException) {
                     errorMessage = "Invalid wallet password";
                 }
                 if(e instanceof JsonParseException || e.getCause() instanceof JsonParseException) {

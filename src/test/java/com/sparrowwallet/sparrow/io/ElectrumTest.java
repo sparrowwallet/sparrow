@@ -83,4 +83,20 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals("7bb026be", wallet.getKeystores().get(2).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(2).getKeyDerivation().getDerivationPath());
     }
+
+    @Test
+    public void testEncryptedImport() throws ImportException, IOException {
+        Electrum electrum = new Electrum();
+        byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-encrypted"));
+        Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), "pass");
+
+        Assert.assertTrue(wallet.isValid());
+        Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
+        Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
+        Assert.assertEquals("pkh(electrum05aba071)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("05aba071", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
+        Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
+        Assert.assertEquals("xpub67vv394epQsLhdjNGx7dfgURicP7XwBMuHPTVAMdXcXhDuC9VP8SqVvh2cYqKWm9xoUd6YynWK8JzRcXpmeuZFRH7i1kt8fR9GXoJSiHk1E", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+    }
 }

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -279,7 +280,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 return Optional.of(WalletForm.NO_PASSWORD_KEY);
             }
 
-            ECKey encryptionFullKey = ECKey.createKeyPbkdf2HmacSha512(password.get());
+            ECKey encryptionFullKey = ECIESKeyCrypter.deriveECKey(password.get());
             ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
             if(existingPubKey != null) {
                 if(WalletForm.NO_PASSWORD_KEY.equals(existingPubKey) || existingPubKey.equals(encryptionPubKey)) {

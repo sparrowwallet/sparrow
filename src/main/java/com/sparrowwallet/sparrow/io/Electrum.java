@@ -5,6 +5,7 @@ import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -57,7 +58,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         Reader reader;
         if(password != null) {
-            ECKey decryptionKey = ECKey.createKeyPbkdf2HmacSha512(password);
+            ECKey decryptionKey = ECIESKeyCrypter.deriveECKey(password);
             reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(inputStream, decryptionKey)));
         } else {
             reader = new InputStreamReader(inputStream);

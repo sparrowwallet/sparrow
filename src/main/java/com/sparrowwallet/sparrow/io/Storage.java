@@ -79,7 +79,7 @@ public class Storage {
     }
 
     private static byte[] getEncryptionMagic() {
-        return "SPRW1".getBytes(StandardCharsets.UTF_8);
+        return "BIE1".getBytes(StandardCharsets.UTF_8);
     }
 
     public File getWalletFile(String walletName) {
