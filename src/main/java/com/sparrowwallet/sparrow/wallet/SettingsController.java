@@ -159,7 +159,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
         apply.setOnAction(event -> {
             try {
-                Optional<ECKey> optionalPubKey = askForWalletPassword(walletForm.getEncryptionPubKey(), false);
+                Optional<ECKey> optionalPubKey = askForWalletPassword(walletForm.getEncryptionPubKey());
                 if(optionalPubKey.isPresent()) {
                     walletForm.setEncryptionPubKey(ECKey.fromPublicOnly(optionalPubKey.get()));
                     walletForm.save();
@@ -261,11 +261,9 @@ public class SettingsController extends WalletFormController implements Initiali
         Platform.runLater(() -> apply.setDisable(!tabsValidate()));
     }
 
-    public static Optional<ECKey> askForWalletPassword(ECKey existingPubKey, boolean required) {
+    private Optional<ECKey> askForWalletPassword(ECKey existingPubKey) {
         WalletPasswordDialog.PasswordRequirement requirement;
-        if(existingPubKey == null && required) {
-            requirement = WalletPasswordDialog.PasswordRequirement.LOAD;
-        } else if(existingPubKey == null) {
+        if(existingPubKey == null) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
         } else if(WalletForm.NO_PASSWORD_KEY.equals(existingPubKey)) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY;
@@ -276,7 +274,7 @@ public class SettingsController extends WalletFormController implements Initiali
         WalletPasswordDialog dlg = new WalletPasswordDialog(requirement);
         Optional<String> password = dlg.showAndWait();
         if(password.isPresent()) {
-            if(!required && password.get().isEmpty()) {
+            if(password.get().isEmpty()) {
                 return Optional.of(WalletForm.NO_PASSWORD_KEY);
             }
 

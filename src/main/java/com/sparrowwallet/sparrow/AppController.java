@@ -3,9 +3,10 @@ package com.sparrowwallet.sparrow;
 import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
-import com.google.gson.JsonSyntaxException;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -14,6 +15,7 @@ import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.TextAreaDialog;
 import com.sparrowwallet.sparrow.control.WalletNameDialog;
+import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.TabEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
@@ -21,7 +23,6 @@ import com.sparrowwallet.sparrow.io.FileType;
 import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
-import com.sparrowwallet.sparrow.wallet.SettingsController;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import javafx.event.ActionEvent;
@@ -233,12 +234,13 @@ public class AppController implements Initializable {
                 if(FileType.JSON.equals(fileType)) {
                     wallet = Storage.getStorage().loadWallet(file);
                 } else if(FileType.BINARY.equals(fileType)) {
-                    Optional<ECKey> optionalFullKey = SettingsController.askForWalletPassword(null, true);
-                    if(!optionalFullKey.isPresent()) {
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+                    Optional<String> password = dlg.showAndWait();
+                    if(!password.isPresent()) {
                         return;
                     }
 
-                    ECKey encryptionFullKey = optionalFullKey.get();
+                    ECKey encryptionFullKey = ECIESKeyCrypter.deriveECKey(password.get());
                     wallet = Storage.getStorage().loadWallet(file, encryptionFullKey);
                     encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
                 } else {
@@ -247,8 +249,9 @@ public class AppController implements Initializable {
 
                 Tab tab = addWalletTab(file, encryptionPubKey, wallet);
                 tabs.getSelectionModel().select(tab);
+            } catch (InvalidPasswordException e) {
+                showErrorDialog("Invalid Password", "The password was invalid.");
             } catch (Exception e) {
-                e.printStackTrace();
                 showErrorDialog("Error opening wallet", e.getMessage());
             }
         }
