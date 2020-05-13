@@ -20,6 +20,11 @@
     -fx-background-color: #1e88cf;
 }
 
+.list-item:disabled {
+    -fx-background-color: #a0a1a7;
+    -fx-opacity: 1;
+}
+
 #walletPane {
     -fx-background-color: -fx-background;
 }

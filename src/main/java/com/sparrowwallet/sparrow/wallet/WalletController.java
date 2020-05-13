@@ -2,10 +2,13 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
+import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
@@ -59,6 +62,26 @@ public class WalletController extends WalletFormController implements Initializa
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
+            }
+        });
+
+        if(!walletForm.getWallet().isValid()) {
+            for(Toggle toggle : walletMenu.getToggles()) {
+                if(toggle.getUserData().equals(Function.SETTINGS)) {
+                    toggle.setSelected(true);
+                } else {
+                    ((ToggleButton)toggle).setDisable(true);
+                }
+            }
+        }
+    }
+
+    public void selectFunction(Function function) {
+        Platform.runLater(() -> {
+            for(Toggle toggle : walletMenu.getToggles()) {
+                if(toggle.getUserData().equals(function)) {
+                    toggle.setSelected(true);
+                }
             }
         });
     }

@@ -259,7 +259,11 @@ public class AppController implements Initializable {
 
     public Tab addWalletTab(File walletFile, ECKey encryptionPubKey, Wallet wallet) {
         try {
-            Tab tab = new Tab(walletFile.getName());
+            String name = walletFile.getName();
+            if(name.endsWith(".json")) {
+                name = name.substring(0, name.lastIndexOf('.'));
+            }
+            Tab tab = new Tab(name);
             TabData tabData = new TabData(TabData.TabType.WALLET);
             tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));

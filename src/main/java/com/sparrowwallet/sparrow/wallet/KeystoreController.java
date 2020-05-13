@@ -63,6 +63,9 @@ public class KeystoreController extends WalletFormController implements Initiali
         Platform.runLater(this::setupValidation);
 
         selectSourcePane.managedProperty().bind(selectSourcePane.visibleProperty());
+        if(keystore.isValid()) {
+            selectSourcePane.setVisible(false);
+        }
 
         updateType();
 

@@ -62,6 +62,16 @@ public class Storage {
             throw new IOException("Could not create folder " + parent);
         }
 
+        if(!file.getName().endsWith(".json")) {
+            File jsonFile = new File(parent, file.getName() + ".json");
+            if(file.exists()) {
+                if(!file.renameTo(jsonFile)) {
+                    throw new IOException("Could not rename " + file.getName() + " to " + jsonFile.getName());
+                }
+            }
+            file = jsonFile;
+        }
+
         Writer writer = new FileWriter(file);
         gson.toJson(wallet, writer);
         writer.close();
@@ -71,6 +81,16 @@ public class Storage {
         File parent = file.getParentFile();
         if(!parent.exists() && !parent.mkdirs()) {
             throw new IOException("Could not create folder " + parent);
+        }
+
+        if(file.getName().endsWith(".json")) {
+            File noJsonFile = new File(parent, file.getName().substring(0, file.getName().lastIndexOf('.')));
+            if(file.exists()) {
+                if(!file.renameTo(noJsonFile)) {
+                    throw new IOException("Could not rename " + file.getName() + " to " + noJsonFile.getName());
+                }
+            }
+            file = noJsonFile;
         }
 
         OutputStreamWriter writer = new OutputStreamWriter(new DeflaterOutputStream(new ECIESOutputStream(new FileOutputStream(file), encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);

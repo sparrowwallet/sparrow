@@ -88,14 +88,14 @@ public class SettingsController extends WalletFormController implements Initiali
                 scriptType.getSelectionModel().select(policyType.getDefaultScriptType());
             }
 
+            if(oldValue != null) {
+                clearKeystoreTabs();
+            }
+
             multisigFieldset.setVisible(policyType.equals(PolicyType.MULTI));
             if(policyType.equals(PolicyType.MULTI)) {
-                totalKeystores.unbind();
-                totalKeystores.set(0);
                 totalKeystores.bind(multisigControl.highValueProperty());
             } else {
-                totalKeystores.unbind();
-                totalKeystores.set(0);
                 totalKeystores.set(1);
             }
         });
@@ -159,9 +159,9 @@ public class SettingsController extends WalletFormController implements Initiali
 
         apply.setOnAction(event -> {
             try {
-                Optional<ECKey> optionalPubKey = askForWalletPassword(walletForm.getEncryptionPubKey());
+                Optional<ECKey> optionalPubKey = requestEncryption(walletForm.getEncryptionPubKey());
                 if(optionalPubKey.isPresent()) {
-                    walletForm.setEncryptionPubKey(ECKey.fromPublicOnly(optionalPubKey.get()));
+                    walletForm.setEncryptionPubKey(optionalPubKey.get());
                     walletForm.save();
                     revert.setDisable(true);
                     apply.setDisable(true);
@@ -173,6 +173,11 @@ public class SettingsController extends WalletFormController implements Initiali
         });
 
         setFieldsFromWallet(walletForm.getWallet());
+    }
+
+    private void clearKeystoreTabs() {
+        totalKeystores.unbind();
+        totalKeystores.set(0);
     }
 
     private void setFieldsFromWallet(Wallet wallet) {
@@ -261,7 +266,7 @@ public class SettingsController extends WalletFormController implements Initiali
         Platform.runLater(() -> apply.setDisable(!tabsValidate()));
     }
 
-    private Optional<ECKey> askForWalletPassword(ECKey existingPubKey) {
+    private Optional<ECKey> requestEncryption(ECKey existingPubKey) {
         WalletPasswordDialog.PasswordRequirement requirement;
         if(existingPubKey == null) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
@@ -280,16 +285,14 @@ public class SettingsController extends WalletFormController implements Initiali
 
             ECKey encryptionFullKey = ECIESKeyCrypter.deriveECKey(password.get());
             ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
-            if(existingPubKey != null) {
-                if(WalletForm.NO_PASSWORD_KEY.equals(existingPubKey) || existingPubKey.equals(encryptionPubKey)) {
-                    return Optional.of(encryptionPubKey);
-                } else {
-                    AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
-                    return Optional.empty();
-                }
+
+            if(existingPubKey != null && !WalletForm.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
+                AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
+                return Optional.empty();
             }
 
-            return Optional.of(encryptionFullKey);
+            walletForm.getWallet().encrypt(password.get());
+            return Optional.of(encryptionPubKey);
         }
 
         return Optional.empty();
