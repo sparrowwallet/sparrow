@@ -26,8 +26,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         stackPane.getChildren().add(anchorPane);
 
         ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setPrefWidth(500);
-        scrollPane.setPrefHeight(500);
+        scrollPane.setPrefHeight(280);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         anchorPane.getChildren().add(scrollPane);
         scrollPane.setFitToWidth(true);
@@ -44,8 +43,8 @@ public class WalletImportDialog extends Dialog<Wallet> {
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
-        dialogPane.setPrefWidth(650);
-        dialogPane.setPrefHeight(600);
+        dialogPane.setPrefWidth(500);
+        dialogPane.setPrefHeight(360);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);
     }

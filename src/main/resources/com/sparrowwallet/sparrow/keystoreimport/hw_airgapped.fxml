@@ -6,10 +6,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<?import com.sparrowwallet.sparrow.control.KeystoreImportAccordion?>
-
 <AnchorPane stylesheets="@keystoreimport.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.HwAirgappedController">
     <ScrollPane AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" fitToWidth="true">
-        <KeystoreImportAccordion fx:id="importAccordion" />
+        <Accordion fx:id="importAccordion" />
     </ScrollPane>
 </AnchorPane>

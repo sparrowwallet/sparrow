@@ -106,8 +106,10 @@ public class TitledDescriptionPane extends TitledPane {
         descriptionLabel.getStyleClass().remove("description-label");
         descriptionLabel.getStyleClass().add("description-error");
         descriptionLabel.setText(title);
-        setContent(getContentBox(detail));
-        setExpanded(true);
+        if(detail != null && !detail.isEmpty()) {
+            setContent(getContentBox(detail));
+            setExpanded(true);
+        }
     }
 
     protected Node getContentBox(String message) {

@@ -5,10 +5,9 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import com.sparrowwallet.sparrow.control.DeviceAccordion?>
 
 <AnchorPane stylesheets="@keystoreimport.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.HwUsbDevicesController">
         <ScrollPane AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" fitToWidth="true">
-            <DeviceAccordion fx:id="deviceAccordion" />
+            <Accordion fx:id="deviceAccordion" />
         </ScrollPane>
 </AnchorPane>

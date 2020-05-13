@@ -12,14 +12,11 @@ import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.control.textfield.CustomTextField;
@@ -32,115 +29,28 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.util.List;
 
-public class DevicePane extends TitledPane {
-    private final DeviceAccordion deviceAccordion;
+public class DevicePane extends TitledDescriptionPane {
+    private final DeviceOperation deviceOperation;
     private final Wallet wallet;
     private final Device device;
 
-    private Label mainLabel;
-    private Label statusLabel;
-    private Hyperlink showHideLink;
     private CustomPasswordField pinField;
-    private CustomTextField passphraseField;
     private Button unlockButton;
     private Button enterPinButton;
     private Button setPassphraseButton;
     private SplitMenuButton importButton;
 
-    private final SimpleStringProperty status = new SimpleStringProperty("");
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
 
-    public DevicePane(DeviceAccordion deviceAccordion, Wallet wallet, Device device) {
-        super();
-        this.deviceAccordion = deviceAccordion;
+    public DevicePane(DeviceOperation deviceOperation, Wallet wallet, Device device) {
+        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        this.deviceOperation = deviceOperation;
         this.wallet = wallet;
         this.device = device;
 
-        setPadding(Insets.EMPTY);
-
-        setGraphic(getTitle());
-        getStyleClass().add("titled-description-pane");
         setDefaultStatus();
-
-        removeArrow();
-    }
-
-    private void removeArrow() {
-        Platform.runLater(() -> {
-            Node arrow = this.lookup(".arrow");
-            if (arrow != null) {
-                arrow.setVisible(false);
-                arrow.setManaged(false);
-            } else {
-                removeArrow();
-            }
-        });
-    }
-
-    private void setDefaultStatus() {
-        setStatus(device.getNeedsPinSent() ? "Locked" : device.getNeedsPassphraseSent() ? "Passphrase Required" : "Unlocked");
-    }
-
-    private Node getTitle() {
-        HBox listItem = new HBox();
-        listItem.setPadding(new Insets(10, 20, 10, 10));
-        listItem.setSpacing(10);
-
-        HBox imageBox = new HBox();
-        imageBox.setMinWidth(50);
-        imageBox.setMinHeight(50);
-        listItem.getChildren().add(imageBox);
-
-        Image image = new Image("image/" + device.getType() + ".png", 50, 50, true, true);
-        if (!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setImage(image);
-            imageBox.getChildren().add(imageView);
-        }
-
-        VBox labelsBox = new VBox();
-        labelsBox.setSpacing(5);
-        labelsBox.setAlignment(Pos.CENTER_LEFT);
-        this.mainLabel = new Label();
-        mainLabel.setText(device.getModel().toDisplayString());
-        mainLabel.getStyleClass().add("main-label");
-        labelsBox.getChildren().add(mainLabel);
-
-        HBox statusBox = new HBox();
-        statusBox.setSpacing(7);
-        this.statusLabel = new Label();
-        statusLabel.getStyleClass().add("status-label");
-        statusLabel.textProperty().bind(status);
-        statusBox.getChildren().add(statusLabel);
-
-        showHideLink = new Hyperlink("Show details...");
-        showHideLink.managedProperty().bind(showHideLink.visibleProperty());
         showHideLink.setVisible(false);
-        showHideLink.setOnAction(event -> {
-            if(this.isExpanded()) {
-                setExpanded(false);
-            } else {
-                setExpanded(true);
-            }
-        });
-        this.expandedProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue) {
-                showHideLink.setText(showHideLink.getText().replace("Show", "Hide"));
-            } else {
-                showHideLink.setText(showHideLink.getText().replace("Hide", "Show"));
-            }
-        });
-        statusBox.getChildren().add(showHideLink);
 
-        labelsBox.getChildren().add(statusBox);
-
-        listItem.getChildren().add(labelsBox);
-        HBox.setHgrow(labelsBox, Priority.ALWAYS);
-
-        HBox buttonBox = new HBox();
-        buttonBox.setAlignment(Pos.CENTER_RIGHT);
-
-        createUnlockButton();
         createSetPassphraseButton();
         createImportButton();
 
@@ -152,15 +62,17 @@ public class DevicePane extends TitledPane {
             showOperationButton();
         }
 
-        buttonBox.getChildren().addAll(unlockButton, setPassphraseButton, importButton);
-        listItem.getChildren().add(buttonBox);
+        buttonBox.getChildren().addAll(setPassphraseButton, importButton);
+    }
 
-        this.layoutBoundsProperty().addListener((observable, oldValue, newValue) -> {
-            //Hack to force listItem to expand to full available width less border
-            listItem.setPrefWidth(newValue.getWidth() - 2);
-        });
+    @Override
+    protected Control createButton() {
+        createUnlockButton();
+        return unlockButton;
+    }
 
-        return listItem;
+    private void setDefaultStatus() {
+        setDescription(device.getNeedsPinSent() ? "Locked" : device.getNeedsPassphraseSent() ? "Passphrase Required" : "Unlocked");
     }
 
     private void createUnlockButton() {
@@ -256,7 +168,7 @@ public class DevicePane extends TitledPane {
     }
 
     private Node getPassphraseEntry() {
-        passphraseField = (CustomTextField)TextFields.createClearableTextField();
+        CustomTextField passphraseField = (CustomTextField)TextFields.createClearableTextField();
         passphrase.bind(passphraseField.textProperty());
         HBox.setHgrow(passphraseField, Priority.ALWAYS);
 
@@ -284,12 +196,12 @@ public class DevicePane extends TitledPane {
                 setContent(getPinEntry());
                 setExpanded(true);
             } else {
-                setErrorStatus("Could not request PIN");
+                setError("Could not request PIN", null);
                 unlockButton.setDisable(false);
             }
         });
         promptPinService.setOnFailed(workerStateEvent -> {
-            setErrorStatus(promptPinService.getException().getMessage());
+            setError(promptPinService.getException().getMessage(), null);
             unlockButton.setDisable(false);
         });
         promptPinService.start();
@@ -314,7 +226,7 @@ public class DevicePane extends TitledPane {
                     showOperationButton();
                 }
             } else {
-                setErrorStatus("Incorrect PIN");
+                setError("Incorrect PIN", null);
                 enterPinButton.setDisable(false);
                 if(pinField != null) {
                     pinField.setText("");
@@ -322,7 +234,7 @@ public class DevicePane extends TitledPane {
             }
         });
         sendPinService.setOnFailed(workerStateEvent -> {
-            setErrorStatus(sendPinService.getException().getMessage());
+            setError(sendPinService.getException().getMessage(), null);
             enterPinButton.setDisable(false);
         });
         sendPinService.start();
@@ -344,13 +256,13 @@ public class DevicePane extends TitledPane {
                 setDefaultStatus();
                 showOperationButton();
             } else {
-                setErrorStatus("Passphrase send failed");
+                setError("Passphrase send failed", null);
                 setPassphraseButton.setDisable(false);
                 setPassphraseButton.setVisible(true);
             }
         });
         enumerateService.setOnFailed(workerStateEvent -> {
-            setErrorStatus(enumerateService.getException().getMessage());
+            setError(enumerateService.getException().getMessage(), null);
             setPassphraseButton.setDisable(false);
             setPassphraseButton.setVisible(true);
         });
@@ -371,7 +283,7 @@ public class DevicePane extends TitledPane {
                 importXpub(derivation);
             });
             enumerateService.setOnFailed(workerStateEvent -> {
-                setErrorStatus(enumerateService.getException().getMessage());
+                setError(enumerateService.getException().getMessage(), null);
                 importButton.setDisable(false);
             });
             enumerateService.start();
@@ -397,24 +309,14 @@ public class DevicePane extends TitledPane {
             EventManager.get().post(new KeystoreImportEvent(keystore));
         });
         getXpubService.setOnFailed(workerStateEvent -> {
-            setErrorStatus(getXpubService.getException().getMessage());
+            setError(getXpubService.getException().getMessage(), null);
             importButton.setDisable(false);
         });
         getXpubService.start();
     }
 
-    private void setStatus(String statusMessage) {
-        statusLabel.getStyleClass().remove("status-error");
-        status.setValue(statusMessage);
-    }
-
-    private void setErrorStatus(String statusMessage) {
-        statusLabel.getStyleClass().add("status-error");
-        status.setValue(statusMessage);
-    }
-
     private void showOperationButton() {
-        if(deviceAccordion.getDeviceOperation().equals(DeviceAccordion.DeviceOperation.IMPORT)) {
+        if(deviceOperation.equals(DeviceOperation.IMPORT)) {
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
             showHideLink.setVisible(true);
@@ -458,5 +360,9 @@ public class DevicePane extends TitledPane {
         contentBox.setPrefHeight(60);
 
         return contentBox;
+    }
+
+    public enum DeviceOperation {
+        IMPORT;
     }
 }

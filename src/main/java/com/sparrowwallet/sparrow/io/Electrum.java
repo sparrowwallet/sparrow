@@ -43,7 +43,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         Wallet wallet = importWallet(inputStream, password);
 
         if(!wallet.getPolicyType().equals(PolicyType.SINGLE) || wallet.getKeystores().size() != 1) {
-            throw new ImportException("Multisig wallet detected - import it using File > Import > Electrum");
+            throw new ImportException("Multisig wallet detected - import it using File > Import Wallet");
         }
 
         if(!wallet.getScriptType().equals(scriptType)) {
@@ -71,7 +71,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
             ElectrumJsonWallet ew = new ElectrumJsonWallet();
             if(map.get("wallet_type") == null) {
-                throw new ImportException("This is not a valid Electrum wallet");
+                throw new ImportException("File was not a valid Electrum wallet");
             }
 
             ew.wallet_type = map.get("wallet_type").getAsString();

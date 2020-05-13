@@ -1,20 +1,33 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
-import com.sparrowwallet.sparrow.control.KeystoreImportAccordion;
-import com.sparrowwallet.sparrow.io.Bip39;
-import com.sparrowwallet.sparrow.io.Electrum;
-import com.sparrowwallet.sparrow.io.KeystoreImport;
-import javafx.collections.FXCollections;
+import com.sparrowwallet.sparrow.control.FileKeystoreImportPane;
+import com.sparrowwallet.sparrow.control.MnemonicKeystoreImportPane;
+import com.sparrowwallet.sparrow.control.TitledDescriptionPane;
+import com.sparrowwallet.sparrow.io.*;
 import javafx.fxml.FXML;
+import javafx.scene.control.Accordion;
 
 import java.util.List;
 
 public class SwController extends KeystoreImportDetailController {
     @FXML
-    private KeystoreImportAccordion importAccordion;
+    private Accordion importAccordion;
 
     public void initializeView() {
         List<KeystoreImport> importers = List.of(new Bip39(), new Electrum());
-        importAccordion.setKeystoreImporters(getMasterController().getWallet(), FXCollections.observableList(importers));
+
+        for(KeystoreImport importer : importers) {
+            TitledDescriptionPane importPane = null;
+
+            if(importer instanceof KeystoreFileImport) {
+                importPane = new FileKeystoreImportPane(getMasterController().getWallet(), (KeystoreFileImport)importer);
+            } else if(importer instanceof KeystoreMnemonicImport) {
+                importPane = new MnemonicKeystoreImportPane(getMasterController().getWallet(), (KeystoreMnemonicImport)importer);
+            } else {
+                throw new IllegalArgumentException("Could not create ImportPane for importer of type " + importer.getClass());
+            }
+
+            importAccordion.getPanes().add(importPane);
+        }
     }
 }
