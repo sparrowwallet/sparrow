@@ -59,7 +59,7 @@ public class DevicePane extends TitledPane {
         setPadding(Insets.EMPTY);
 
         setGraphic(getTitle());
-        getStyleClass().add("devicepane");
+        getStyleClass().add("titled-description-pane");
         setDefaultStatus();
 
         removeArrow();

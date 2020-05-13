@@ -34,7 +34,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class MnemonicKeystoreImportPane extends KeystoreImportPane {
+public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
+    protected final Wallet wallet;
     private final KeystoreMnemonicImport importer;
 
     private SplitMenuButton enterMnemonicButton;
@@ -48,21 +49,19 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
     private SimpleListProperty<String> wordEntriesProperty;
     private final SimpleStringProperty passphraseProperty = new SimpleStringProperty();
 
-    public MnemonicKeystoreImportPane(KeystoreImportAccordion importAccordion, Wallet wallet, KeystoreMnemonicImport importer) {
-        super(importAccordion, wallet, importer);
+    public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer) {
+        super(importer.getName(), "Mnemonic import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        this.wallet = wallet;
         this.importer = importer;
+
+        createImportButton();
+        buttonBox.getChildren().add(importButton);
     }
 
     @Override
-    protected Node getTitle(KeystoreImport importer) {
-        Node title = super.getTitle(importer);
-        setDescription("Keystore file import");
-
+    protected Control createButton() {
         createEnterMnemonicButton();
-        createImportButton();
-        buttonBox.getChildren().addAll(enterMnemonicButton, importButton);
-
-        return title;
+        return enterMnemonicButton;
     }
 
     private void createEnterMnemonicButton() {
@@ -102,8 +101,6 @@ public class MnemonicKeystoreImportPane extends KeystoreImportPane {
             });
             importButton.getItems().add(item);
         }
-
-
 
         importButton.managedProperty().bind(importButton.visibleProperty());
         importButton.setVisible(false);

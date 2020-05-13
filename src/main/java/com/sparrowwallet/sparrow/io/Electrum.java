@@ -22,7 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.InflaterInputStream;
 
-public class Electrum implements KeystoreFileImport, SinglesigWalletImport, MultisigWalletImport, WalletExport {
+public class Electrum implements KeystoreFileImport, WalletImport, WalletExport {
     @Override
     public String getName() {
         return "Electrum";
@@ -131,7 +131,7 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
             }
 
             if(!wallet.isValid()) {
-                throw new IllegalStateException("Electrum wallet is in an inconsistent state");
+                throw new IllegalStateException("Electrum wallet is in an inconsistent state.");
             }
 
             return wallet;
@@ -143,15 +143,6 @@ public class Electrum implements KeystoreFileImport, SinglesigWalletImport, Mult
     @Override
     public String getWalletImportDescription() {
         return "Import an Electrum wallet";
-    }
-
-    @Override
-    public Wallet importWallet(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
-        Wallet wallet = importWallet(inputStream, password);
-        wallet.setScriptType(scriptType);
-        //TODO: Check this usage results in a valid wallet
-
-        return wallet;
     }
 
     @Override

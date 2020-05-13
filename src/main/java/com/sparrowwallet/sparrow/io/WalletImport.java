@@ -5,8 +5,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.io.File;
 import java.io.InputStream;
 
-public interface MultisigWalletImport extends Import {
+public interface WalletImport extends Import, FileImport {
     String getWalletImportDescription();
     Wallet importWallet(InputStream inputStream, String password) throws ImportException;
-    boolean isEncrypted(File file);
 }

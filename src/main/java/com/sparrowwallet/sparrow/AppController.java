@@ -14,6 +14,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.TextAreaDialog;
+import com.sparrowwallet.sparrow.control.WalletImportDialog;
 import com.sparrowwallet.sparrow.control.WalletNameDialog;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.TabEvent;
@@ -254,6 +255,17 @@ public class AppController implements Initializable {
             } catch (Exception e) {
                 showErrorDialog("Error opening wallet", e.getMessage());
             }
+        }
+    }
+
+    public void importWallet(ActionEvent event) {
+        WalletImportDialog dlg = new WalletImportDialog();
+        Optional<Wallet> optionalWallet = dlg.showAndWait();
+        if(optionalWallet.isPresent()) {
+            Wallet wallet = optionalWallet.get();
+            File walletFile = Storage.getStorage().getWalletFile(wallet.getName());
+            Tab tab = addWalletTab(walletFile, null, wallet);
+            tabs.getSelectionModel().select(tab);
         }
     }
 

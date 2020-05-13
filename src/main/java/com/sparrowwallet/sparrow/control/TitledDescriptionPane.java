@@ -1,53 +1,33 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.io.KeystoreImport;
+import com.sparrowwallet.sparrow.AppController;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Hyperlink;
-import javafx.scene.control.Label;
-import javafx.scene.control.TitledPane;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-public abstract class KeystoreImportPane extends TitledPane {
-    protected final KeystoreImportAccordion importAccordion;
-    protected final Wallet wallet;
-
-    private Label mainLabel;
+public class TitledDescriptionPane extends TitledPane {
     private Label descriptionLabel;
     protected Hyperlink showHideLink;
     protected HBox buttonBox;
 
-    public KeystoreImportPane(KeystoreImportAccordion importAccordion, Wallet wallet, KeystoreImport importer) {
-        this.importAccordion = importAccordion;
-        this.wallet = wallet;
+    public TitledDescriptionPane(String title, String description, String content, String imageUrl) {
+        getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        getStyleClass().add("titled-description-pane");
 
         setPadding(Insets.EMPTY);
-        setGraphic(getTitle(importer));
-        getStyleClass().add("importpane");
-        setContent(getContentBox(importer.getKeystoreImportDescription()));
+        setGraphic(getTitle(title, description, imageUrl));
+        setContent(getContentBox(content));
         removeArrow();
     }
 
-    private void removeArrow() {
-        Platform.runLater(() -> {
-            Node arrow = this.lookup(".arrow");
-            if (arrow != null) {
-                arrow.setVisible(false);
-                arrow.setManaged(false);
-            } else {
-                removeArrow();
-            }
-        });
-    }
-
-    protected Node getTitle(KeystoreImport importer) {
+    protected Node getTitle(String title, String description, String imageUrl) {
         HBox listItem = new HBox();
         listItem.setPadding(new Insets(10, 20, 10, 10));
         listItem.setSpacing(10);
@@ -57,7 +37,7 @@ public abstract class KeystoreImportPane extends TitledPane {
         imageBox.setMinHeight(50);
         listItem.getChildren().add(imageBox);
 
-        Image image = new Image("image/" + importer.getWalletModel().getType() + ".png", 50, 50, true, true);
+        Image image = new Image(imageUrl, 50, 50, true, true);
         if (!image.isError()) {
             ImageView imageView = new ImageView();
             imageView.setImage(image);
@@ -67,8 +47,8 @@ public abstract class KeystoreImportPane extends TitledPane {
         VBox labelsBox = new VBox();
         labelsBox.setSpacing(5);
         labelsBox.setAlignment(Pos.CENTER_LEFT);
-        this.mainLabel = new Label();
-        mainLabel.setText(importer.getName());
+        Label mainLabel = new Label();
+        mainLabel.setText(title);
         mainLabel.getStyleClass().add("main-label");
         labelsBox.getChildren().add(mainLabel);
 
@@ -76,16 +56,12 @@ public abstract class KeystoreImportPane extends TitledPane {
         descriptionBox.setSpacing(7);
         labelsBox.getChildren().add(descriptionBox);
 
-        descriptionLabel = new Label("Keystore Import");
+        descriptionLabel = new Label(description);
         descriptionLabel.getStyleClass().add("description-label");
         showHideLink = new Hyperlink("Show Details...");
         showHideLink.managedProperty().bind(showHideLink.visibleProperty());
         showHideLink.setOnAction(event -> {
-            if(this.isExpanded()) {
-                setExpanded(false);
-            } else {
-                setExpanded(true);
-            }
+            setExpanded(!this.isExpanded());
         });
         this.expandedProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue) {
@@ -101,6 +77,10 @@ public abstract class KeystoreImportPane extends TitledPane {
 
         buttonBox = new HBox();
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        Control button = createButton();
+        if(button != null) {
+            buttonBox.getChildren().add(button);
+        }
         listItem.getChildren().add(buttonBox);
 
         this.layoutBoundsProperty().addListener((observable, oldValue, newValue) -> {
@@ -109,6 +89,11 @@ public abstract class KeystoreImportPane extends TitledPane {
         });
 
         return listItem;
+    }
+
+    protected Control createButton() {
+        //No buttons by default
+        return null;
     }
 
     protected void setDescription(String text) {
@@ -140,5 +125,17 @@ public abstract class KeystoreImportPane extends TitledPane {
         contentBox.setPrefHeight(height);
 
         return contentBox;
+    }
+
+    private void removeArrow() {
+        Platform.runLater(() -> {
+            Node arrow = this.lookup(".arrow");
+            if (arrow != null) {
+                arrow.setVisible(false);
+                arrow.setManaged(false);
+            } else {
+                removeArrow();
+            }
+        });
     }
 }

@@ -6,7 +6,6 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import java.io.File;
 import java.io.InputStream;
 
-public interface KeystoreFileImport extends KeystoreImport {
-    boolean isEncrypted(File file);
+public interface KeystoreFileImport extends KeystoreImport, FileImport {
     Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException;
 }

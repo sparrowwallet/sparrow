@@ -18,7 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImport, WalletExport {
+public class ColdcardMultisig implements WalletImport, KeystoreFileImport, WalletExport {
     private final Gson gson = new Gson();
 
     @Override
@@ -124,6 +124,10 @@ public class ColdcardMultisig implements MultisigWalletImport, KeystoreFileImpor
             Policy policy = Policy.getPolicy(PolicyType.MULTI, scriptType, wallet.getKeystores(), threshold);
             wallet.setDefaultPolicy(policy);
             wallet.setScriptType(scriptType);
+
+            if(!wallet.isValid()) {
+                throw new IllegalStateException("This file does not describe a valid wallet. Please use the Settings > Multisig Wallets > Export XPUB feature on your Coldcard.");
+            }
 
             return wallet;
         } catch(Exception e) {

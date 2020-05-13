@@ -50,3 +50,51 @@
     -fx-padding: 20;
 }
 
+.titled-description-pane > .title {
+    -fx-background-color: white;
+    -fx-padding: 0;
+    -fx-border-color: #e5e5e6;
+    /*-fx-border-width: 1;*/
+}
+
+.titled-description-pane > .title > .arrow-button {
+    -fx-padding: 0;
+}
+
+.titled-description-pane > .title > .arrow-button > .arrow {
+    visibility: hidden;
+    -fx-translate-x: -1000;
+    -fx-padding: 0;
+}
+
+.titled-description-pane .main-label .text {
+
+}
+
+.titled-description-pane .status-label .text, .titled-description-pane .description-label .text {
+    -fx-fill: #a0a1a7;
+}
+
+.titled-description-pane .status-error .text, .titled-description-pane .description-error .text {
+    -fx-fill: #ca1243;
+}
+
+.titled-description-pane .description-label, .titled-description-pane .description-error {
+    -fx-border-width: 0px;
+    -fx-border-color: transparent;
+}
+
+.titled-description-pane .hyperlink {
+    -fx-padding: 0;
+    -fx-border-width: 0;
+    -fx-fill: #1e88cf;
+}
+
+.titled-description-pane .hyperlink:visited {
+    -fx-text-fill: #1e88cf;
+    -fx-underline: false;
+}
+
+.titled-description-pane .hyperlink:hover:visited {
+    -fx-underline: true;
+}
