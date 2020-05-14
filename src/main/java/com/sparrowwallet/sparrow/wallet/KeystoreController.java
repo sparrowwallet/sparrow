@@ -1,8 +1,10 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.sparrow.EventManager;
@@ -21,6 +23,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import tornadofx.control.Form;
 
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -50,7 +53,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        EventManager.get().register(this);
     }
 
     public void setKeystore(WalletForm walletForm, Keystore keystore) {
@@ -84,22 +87,22 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
             keystore.setLabel(newValue);
-            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_LABEL));
         });
         fingerprint.textProperty().addListener((observable, oldValue, newValue) -> {
             keystore.setKeyDerivation(new KeyDerivation(newValue, keystore.getKeyDerivation().getDerivationPath()));
-            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_FINGERPRINT));
         });
         derivation.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(KeyDerivation.isValid(newValue)) {
+            if(KeyDerivation.isValid(newValue) && !matchesAnotherScriptType(newValue)) {
                 keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue));
-                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_DERIVATION));
             }
         });
         xpub.textProperty().addListener((observable, oldValue, newValue) -> {
             if(ExtendedKey.isValid(newValue)) {
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(newValue));
-                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
             }
         });
     }
@@ -136,7 +139,8 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         validationSupport.registerValidator(derivation, Validator.combine(
                 Validator.createEmptyValidator("Derivation is required"),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation is invalid", !KeyDerivation.isValid(newValue))
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation is invalid", !KeyDerivation.isValid(newValue)),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation matches another script type", matchesAnotherScriptType(newValue))
         ));
 
         validationSupport.registerValidator(fingerprint, Validator.combine(
@@ -145,6 +149,14 @@ public class KeystoreController extends WalletFormController implements Initiali
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+    }
+
+    private boolean matchesAnotherScriptType(String derivationPath) {
+        if(walletForm.getWallet().getScriptType() != null && walletForm.getWallet().getScriptType().getAccount(derivationPath) > -1) {
+            return false;
+        }
+
+        return Arrays.stream(ScriptType.values()).anyMatch(scriptType -> !scriptType.equals(walletForm.getWallet().getScriptType()) && scriptType.getAccount(derivationPath) > -1);
     }
 
     private void updateType() {
@@ -194,6 +206,15 @@ public class KeystoreController extends WalletFormController implements Initiali
             fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
             xpub.setText(keystore.getExtendedPublicKey().toString());
+        }
+    }
+
+    @Subscribe
+    public void update(SettingsChangedEvent event) {
+        if(event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE) && !derivation.getText().isEmpty()) {
+            String derivationPath = derivation.getText();
+            derivation.setText("");
+            derivation.setText(derivationPath);
         }
     }
 }

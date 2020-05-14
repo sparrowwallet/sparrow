@@ -77,6 +77,7 @@ public class WalletPasswordDialog extends Dialog<String> {
         }
 
         password.setPromptText("Password");
+        password.requestFocus();
         passwordConfirm.setPromptText("Password Confirmation");
 
         setResultConverter(dialogButton -> dialogButton == okButtonType ? password.getText() : null);

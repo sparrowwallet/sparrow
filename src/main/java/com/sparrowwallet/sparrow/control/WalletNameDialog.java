@@ -56,6 +56,7 @@ public class WalletNameDialog extends Dialog<String> {
         okButton.disableProperty().bind(isInvalid);
 
         name.setPromptText("Wallet Name");
+        name.requestFocus();
         setResultConverter(dialogButton -> dialogButton == okButtonType ? name.getText() : null);
     }
 }

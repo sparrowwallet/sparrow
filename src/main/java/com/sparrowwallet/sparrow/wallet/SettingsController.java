@@ -105,14 +105,14 @@ public class SettingsController extends WalletFormController implements Initiali
                 walletForm.getWallet().setScriptType(scriptType);
             }
 
-            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.SCRIPT_TYPE));
         });
 
         multisigLowLabel.textProperty().bind(multisigControl.lowValueProperty().asString("%.0f") );
         multisigHighLabel.textProperty().bind(multisigControl.highValueProperty().asString("%.0f"));
 
         multisigControl.lowValueProperty().addListener((observable, oldValue, threshold) -> {
-            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.MUTLISIG_THRESHOLD));
         });
 
         multisigFieldset.managedProperty().bind(multisigFieldset.visibleProperty());
@@ -145,7 +145,7 @@ public class SettingsController extends WalletFormController implements Initiali
             }
 
             if(walletForm.getWallet().getPolicyType().equals(PolicyType.MULTI)) {
-                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet()));
+                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.MULTISIG_TOTAL));
             }
         });
 
