@@ -5,19 +5,17 @@ import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
-import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.*;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.InflaterInputStream;
@@ -92,7 +90,17 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             ScriptType scriptType = null;
 
             for(ElectrumKeystore ek : ew.keystores.values()) {
-                Keystore keystore = new Keystore(ek.label != null ? ek.label : "Electrum " + ek.root_fingerprint);
+                Keystore keystore = new Keystore();
+                ExtendedKey xPub = ExtendedKey.fromDescriptor(ek.xpub);
+                String derivationPath = ek.derivation;
+                if(derivationPath == null) {
+                    derivationPath = "m/0";
+                }
+                String masterFingerprint = ek.root_fingerprint;
+                if(masterFingerprint == null) {
+                    masterFingerprint = Utils.bytesToHex(xPub.getParentFingerprint());
+                }
+
                 if("hardware".equals(ek.type)) {
                     keystore.setSource(KeystoreSource.HW_USB);
                     keystore.setWalletModel(WalletModel.fromType(ek.hw_type));
@@ -100,16 +108,32 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                         throw new ImportException("Wallet has keystore of unknown hardware wallet type \"" + ek.hw_type + "\"");
                     }
                 } else if("bip32".equals(ek.type)) {
-                    if(ek.xprv != null) {
+                    if(ek.xprv != null && ek.seed == null) {
+                        throw new ImportException("Electrum does not support exporting BIP39 derived seeds.");
+                    } else if(ek.seed != null) {
                         keystore.setSource(KeystoreSource.SW_SEED);
+                        String seed = ek.seed;
+                        String passphrase = ek.passphrase;
+                        if(password != null) {
+                            seed = decrypt(seed, password);
+                            passphrase = decrypt(passphrase, password);
+                        }
+
+                        keystore.setSeed(new DeterministicSeed(seed, null, passphrase, 0, DeterministicSeed.Type.ELECTRUM));
+                        keystore.getSeed().setPassphrase(passphrase);
+
+                        if(derivationPath == "m/0") {
+                            derivationPath = "m/0'";
+                        }
                     } else {
                         keystore.setSource(KeystoreSource.SW_WATCH);
                     }
                     keystore.setWalletModel(WalletModel.ELECTRUM);
                 }
-                ExtendedKey xPub = ExtendedKey.fromDescriptor(ek.xpub);
-                keystore.setKeyDerivation(new KeyDerivation(ek.root_fingerprint, ek.derivation));
+
+                keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, derivationPath));
                 keystore.setExtendedPublicKey(xPub);
+                keystore.setLabel(ek.label != null ? ek.label : "Electrum " + masterFingerprint);
                 wallet.getKeystores().add(keystore);
 
                 ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromExtendedKey(ek.xpub);
@@ -138,6 +162,13 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         } catch (Exception e) {
             throw new ImportException(e);
         }
+    }
+
+    private String decrypt(String encrypted, String password) {
+        byte[] passwordHash = Utils.sha256sha256(password.getBytes(StandardCharsets.UTF_8));
+        byte[] encryptedBytes = Base64.getDecoder().decode(encrypted);
+        byte[] decrypted = Utils.decryptAesCbcPkcs7(Arrays.copyOfRange(encryptedBytes, 0, 16), Arrays.copyOfRange(encryptedBytes, 16, encryptedBytes.length), passwordHash);
+        return new String(decrypted, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -177,7 +208,12 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
                     ek.xprv = keystore.getExtendedPrivateKey().toString(xprvHeader);
                     ek.pw_hash_version = 1;
-                    ew.seed_type = "bip39";
+                    if(keystore.getSeed().getType() == DeterministicSeed.Type.ELECTRUM) {
+                        ek.seed = keystore.getSeed().getMnemonicString();
+                        ek.passphrase = keystore.getSeed().getPassphrase();
+                    } else if(keystore.getSeed().getType() == DeterministicSeed.Type.BIP39) {
+                        ew.seed_type = "bip39";
+                    }
                     ew.use_encryption = false;
                 } else if(keystore.getSource() == KeystoreSource.SW_WATCH) {
                     ek.type = "bip32";
@@ -245,6 +281,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         public String type;
         public String derivation;
         public String seed;
+        public String passphrase;
         public Integer pw_hash_version;
     }
 }

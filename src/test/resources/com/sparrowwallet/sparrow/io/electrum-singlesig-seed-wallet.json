@@ -1,0 +1,21 @@
+{
+    "keystore": {
+        "passphrase": "thisisapassphrase",
+        "pw_hash_version": 1,
+        "seed": "coach fan denial rifle frost rival join install one wasp cool antique",
+        "type": "bip32",
+        "xprv": "zprvAZDwhnKYRqGVShncQGS6jnRgB5tiPcMphaSroKJ967TayHjLurfD5h2i4wkwDVBC4REYf1aDp8sXG7ShPXxgUHBPUWMi6aFNc6x8hXtJ5WF",
+        "xpub": "zpub6nDJ7HrSGCpnfBs5WHy76vNQj7jCo55g4oNTbhhkeSzZr64VTPyTdVMBvEQ5yXzjbdzQnoSZAL33a6d5BPjc5Cc4DdPk8UvpSd5CMXhCKEi"
+    },
+    "seed_type": "segwit",
+    "seed_version": 18,
+    "spent_outpoints": {},
+    "stored_height": 630454,
+    "transactions": {},
+    "tx_fees": {},
+    "txi": {},
+    "txo": {},
+    "use_encryption": false,
+    "verified_tx3": {},
+    "wallet_type": "standard"
+}

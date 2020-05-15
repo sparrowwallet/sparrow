@@ -2,7 +2,7 @@
     "fiat_value": {},
     "invoices": {},
     "keystore": {
-        "derivation": "m/84'/0'/0'",
+        "derivation": "m/49'/0'/0'",
         "hw_type": "trezor",
         "label": "trezortest",
         "root_fingerprint": "ab543c67",

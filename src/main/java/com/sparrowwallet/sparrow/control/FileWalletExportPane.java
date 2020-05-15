@@ -58,11 +58,11 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                copy.decrypt(password.get(), "");
 
                for(Keystore keystore : copy.getKeystores()) {
-                   if(keystore.hasSeed() && keystore.getSeed().needPassphrase()) {
+                   if(keystore.hasSeed() && keystore.getSeed().usesPassphrase()) {
                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(keystore);
                        Optional<String> passphrase = passphraseDialog.showAndWait();
                        if(passphrase.isPresent()) {
-                           keystore.setPassphrase(passphrase.get());
+                           keystore.getSeed().setPassphrase(passphrase.get());
                        } else {
                            return;
                        }

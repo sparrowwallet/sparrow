@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.ByteStreams;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -22,7 +23,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assert.assertEquals("pkh(trezortest)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("ab543c67", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
-        Assert.assertEquals("m/84'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
+        Assert.assertEquals("m/49'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assert.assertTrue(wallet.isValid());
     }
@@ -42,7 +43,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assert.assertEquals("pkh(trezortest)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("ab543c67", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
-        Assert.assertEquals("m/84'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
+        Assert.assertEquals("m/49'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
     }
 
@@ -94,9 +95,31 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(electrum05aba071)", wallet.getDefaultPolicy().getMiniscript().getScript());
-        Assert.assertEquals("05aba071", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
+        Assert.assertEquals("pkh(electrumf881eac5)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("f881eac5", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
-        Assert.assertEquals("xpub67vv394epQsLhdjNGx7dfgURicP7XwBMuHPTVAMdXcXhDuC9VP8SqVvh2cYqKWm9xoUd6YynWK8JzRcXpmeuZFRH7i1kt8fR9GXoJSiHk1E", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+        Assert.assertEquals("xpub69iSRreMB6fu24sU8Tdxv7yYGqzPkDwPkwqUfKJTxW3p8afW7XvTewVCapuX3dQjdD197iF65WcjYaNpFbwWT3RyuZ1KJ3ToJNVWKWyAJ6f", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+    }
+
+    @Test
+    public void testSinglesigSeedExport() throws ImportException, ExportException, IOException {
+        Electrum electrum = new Electrum();
+        byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-singlesig-seed-wallet.json"));
+        Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        electrum.exportWallet(wallet, baos);
+        Assert.assertEquals("e14c40c638e2c83d1f20e5ee9cd744bc2ba1ef64fa939926f3778fc8735e891f56852f687b32bbd044f272d2831137e3eeba61fd1f285fa73dcc97d9f2be3cd1", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getSeedBytes()));
+
+        wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
+        Assert.assertTrue(wallet.isValid());
+        Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
+        Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
+        Assert.assertEquals("pkh(electrum59c5474f)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("59c5474f", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
+        Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
+        Assert.assertEquals("xpub68YmVxWbxqjpxbUqqaPrgkBQPBSJuq6gEaL22uuytSEojtS2x5eLPN2uspUuyigtnMkoHrFSF1KwoXPwjzuaUjErUwztxfHquAwuaQhSd9J", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+        Assert.assertEquals(wallet.getKeystores().get(0).getSeed().getMnemonicString(), "coach fan denial rifle frost rival join install one wasp cool antique");
+        Assert.assertEquals("e14c40c638e2c83d1f20e5ee9cd744bc2ba1ef64fa939926f3778fc8735e891f56852f687b32bbd044f272d2831137e3eeba61fd1f285fa73dcc97d9f2be3cd1", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getSeedBytes()));
     }
 }
