@@ -157,15 +157,36 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                 throw new ExportException("Could not export a wallet with a " + wallet.getPolicyType() + " policy");
             }
 
-            ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromScriptType(wallet.getScriptType());
+            ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromScriptType(wallet.getScriptType(), false);
+            ExtendedKey.Header xprvHeader = ExtendedKey.Header.fromScriptType(wallet.getScriptType(), true);
 
             int index = 1;
             for(Keystore keystore : wallet.getKeystores()) {
                 ElectrumKeystore ek = new ElectrumKeystore();
-                ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
-                ek.derivation = keystore.getKeyDerivation().getDerivationPath();
-                ek.root_fingerprint = keystore.getKeyDerivation().getMasterFingerprint();
-                ek.label = keystore.getLabel();
+
+                if(keystore.getSource() == KeystoreSource.HW_USB || keystore.getSource() == KeystoreSource.HW_AIRGAPPED) {
+                    ek.label = keystore.getLabel();
+                    ek.derivation = keystore.getKeyDerivation().getDerivationPath();
+                    ek.root_fingerprint = keystore.getKeyDerivation().getMasterFingerprint();
+                    ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
+                    ek.type = "hardware";
+                    ek.hw_type = keystore.getWalletModel().getType();
+                    ew.use_encryption = false;
+                } else if(keystore.getSource() == KeystoreSource.SW_SEED) {
+                    ek.type = "bip32";
+                    ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
+                    ek.xprv = keystore.getExtendedPrivateKey().toString(xprvHeader);
+                    ek.pw_hash_version = 1;
+                    ew.seed_type = "bip39";
+                    ew.use_encryption = false;
+                } else if(keystore.getSource() == KeystoreSource.SW_WATCH) {
+                    ek.type = "bip32";
+                    ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
+                    ek.pw_hash_version = 1;
+                    ew.use_encryption = false;
+                } else {
+                    throw new ExportException("Cannot export a keystore of source " + keystore.getSource());
+                }
 
                 if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
                     ew.keystores.put("keystore", ek);
@@ -179,6 +200,12 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             Gson gson = new Gson();
             JsonObject eJson = gson.toJsonTree(ew.keystores).getAsJsonObject();
             eJson.addProperty("wallet_type", ew.wallet_type);
+            if(ew.use_encryption != null) {
+                eJson.addProperty("use_encryption", ew.use_encryption);
+            }
+            if(ew.seed_type != null) {
+                eJson.addProperty("seed_type", ew.seed_type);
+            }
 
             gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             String json = gson.toJson(eJson);
@@ -203,6 +230,8 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     private static class ElectrumJsonWallet {
         public Map<String, ElectrumKeystore> keystores = new LinkedHashMap<>();
         public String wallet_type;
+        public String seed_type;
+        public Boolean use_encryption;
     }
 
     public static class ElectrumKeystore {
@@ -216,5 +245,6 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         public String type;
         public String derivation;
         public String seed;
+        public Integer pw_hash_version;
     }
 }

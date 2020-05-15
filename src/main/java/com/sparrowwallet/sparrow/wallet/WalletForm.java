@@ -11,7 +11,7 @@ import java.io.IOException;
 public class WalletForm {
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECIESKeyCrypter.deriveECKey(""));
 
-    private File walletFile;
+    private final File walletFile;
     private ECKey encryptionPubKey;
     private Wallet oldWallet;
     private Wallet wallet;
@@ -25,6 +25,10 @@ public class WalletForm {
 
     public Wallet getWallet() {
         return wallet;
+    }
+
+    public File getWalletFile() {
+        return walletFile;
     }
 
     public ECKey getEncryptionPubKey() {

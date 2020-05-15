@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.sparrow.EventManager;
@@ -20,10 +19,8 @@ import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
-import tornadofx.control.Form;
 
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -94,7 +91,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_FINGERPRINT));
         });
         derivation.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(KeyDerivation.isValid(newValue) && !matchesAnotherScriptType(newValue)) {
+            if(KeyDerivation.isValid(newValue) && !walletForm.getWallet().derivationMatchesAnotherScriptType(newValue)) {
                 keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue));
                 EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_DERIVATION));
             }
@@ -140,7 +137,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.registerValidator(derivation, Validator.combine(
                 Validator.createEmptyValidator("Derivation is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation is invalid", !KeyDerivation.isValid(newValue)),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation matches another script type", matchesAnotherScriptType(newValue))
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation matches another script type", walletForm.getWallet().derivationMatchesAnotherScriptType(newValue))
         ));
 
         validationSupport.registerValidator(fingerprint, Validator.combine(
@@ -149,14 +146,6 @@ public class KeystoreController extends WalletFormController implements Initiali
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
-    }
-
-    private boolean matchesAnotherScriptType(String derivationPath) {
-        if(walletForm.getWallet().getScriptType() != null && walletForm.getWallet().getScriptType().getAccount(derivationPath) > -1) {
-            return false;
-        }
-
-        return Arrays.stream(ScriptType.values()).anyMatch(scriptType -> !scriptType.equals(walletForm.getWallet().getScriptType()) && scriptType.getAccount(derivationPath) > -1);
     }
 
     private void updateType() {
@@ -211,9 +200,9 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @Subscribe
     public void update(SettingsChangedEvent event) {
-        if(event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE) && !derivation.getText().isEmpty()) {
+        if(walletForm.getWallet().equals(event.getWallet()) && event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE) && !derivation.getText().isEmpty()) {
             String derivationPath = derivation.getText();
-            derivation.setText("");
+            derivation.setText(derivationPath + " ");
             derivation.setText(derivationPath);
         }
     }

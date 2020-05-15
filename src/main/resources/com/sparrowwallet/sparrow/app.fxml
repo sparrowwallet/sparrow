@@ -22,6 +22,7 @@
                             </items>
                         </Menu>
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
+                        <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
                         <MenuItem mnemonicParsing="false" text="Close" onAction="#closeTab"/>
                     </items>
                 </Menu>

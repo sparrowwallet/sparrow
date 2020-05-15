@@ -18,6 +18,7 @@ public class FontAwesome5 extends GlyphFont {
         CIRCLE('\uf111'),
         EXCLAMATION_CIRCLE('\uf06a'),
         EYE('\uf06e'),
+        KEY('\uf084'),
         LAPTOP('\uf109'),
         SD_CARD('\uf7c2'),
         WALLET('\uf555');

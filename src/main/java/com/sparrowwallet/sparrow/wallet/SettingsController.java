@@ -165,7 +165,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     walletForm.save();
                     revert.setDisable(true);
                     apply.setDisable(true);
-                    EventManager.get().post(new WalletChangedEvent(walletForm.getWallet()));
+                    EventManager.get().post(new WalletChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
                 }
             } catch (IOException e) {
                 AppController.showErrorDialog("Error saving file", e.getMessage());
@@ -226,13 +226,11 @@ public class SettingsController extends WalletFormController implements Initiali
                 if(result.getErrors().isEmpty()) {
                     tab.getStyleClass().remove("tab-error");
                     tab.setTooltip(null);
-                    apply.setDisable(false);
                 } else {
                     if(!tab.getStyleClass().contains("tab-error")) {
                         tab.getStyleClass().add("tab-error");
                     }
                     tab.setTooltip(new Tooltip(result.getErrors().iterator().next().getText()));
-                    apply.setDisable(true);
                 }
             });
 
@@ -242,28 +240,20 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
-    private boolean tabsValidate() {
-        for(Tab tab : keystoreTabs.getTabs()) {
-            if(tab.getStyleClass().contains("tab-error")) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     @Subscribe
     public void update(SettingsChangedEvent event) {
         Wallet wallet = event.getWallet();
-        if(wallet.getPolicyType() == PolicyType.SINGLE) {
-            wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
-        } else if(wallet.getPolicyType() == PolicyType.MULTI) {
-            wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), (int)multisigControl.getLowValue()));
-        }
+        if(walletForm.getWallet().equals(wallet)) {
+            if(wallet.getPolicyType() == PolicyType.SINGLE) {
+                wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
+            } else if(wallet.getPolicyType() == PolicyType.MULTI) {
+                wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), (int)multisigControl.getLowValue()));
+            }
 
-        spendingMiniscript.setText(event.getWallet().getDefaultPolicy().getMiniscript().getScript());
-        revert.setDisable(false);
-        Platform.runLater(() -> apply.setDisable(!tabsValidate()));
+            spendingMiniscript.setText(wallet.getDefaultPolicy().getMiniscript().getScript());
+            revert.setDisable(false);
+            apply.setDisable(!wallet.isValid());
+        }
     }
 
     private Optional<ECKey> requestEncryption(ECKey existingPubKey) {

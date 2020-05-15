@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
-public class ExportException extends Throwable {
+public class ExportException extends Exception {
     public ExportException() {
         super();
     }

@@ -13,13 +13,8 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.control.TextAreaDialog;
-import com.sparrowwallet.sparrow.control.WalletImportDialog;
-import com.sparrowwallet.sparrow.control.WalletNameDialog;
-import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
-import com.sparrowwallet.sparrow.event.TabEvent;
-import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
-import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
+import com.sparrowwallet.sparrow.control.*;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.FileType;
 import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
@@ -45,6 +40,9 @@ import java.util.*;
 public class AppController implements Initializable {
     private static final String TRANSACTION_TAB_TYPE = "transaction";
     public static final String DRAG_OVER_CLASS = "drag-over";
+
+    @FXML
+    private MenuItem exportWallet;
 
     @FXML
     private CheckMenuItem showTxHex;
@@ -96,12 +94,19 @@ public class AppController implements Initializable {
                 TabData tabData = (TabData)selectedTab.getUserData();
                 if(tabData.getType() == TabData.TabType.TRANSACTION) {
                     EventManager.get().post(new TransactionTabSelectedEvent(selectedTab));
+                    exportWallet.setDisable(true);
+                    showTxHex.setDisable(false);
+                } else if(tabData.getType() == TabData.TabType.WALLET) {
+                    EventManager.get().post(new WalletTabSelectedEvent(selectedTab));
+                    exportWallet.setDisable(false);
+                    showTxHex.setDisable(true);
                 }
             }
         });
 
         showTxHex.setSelected(true);
         showTxHexProperty = true;
+        exportWallet.setDisable(true);
 
         //addWalletTab("newWallet", new Wallet(PolicyType.SINGLE, ScriptType.P2WPKH));
     }
@@ -269,6 +274,19 @@ public class AppController implements Initializable {
         }
     }
 
+    public void exportWallet(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.WALLET) {
+            WalletTabData walletTabData = (WalletTabData)tabData;
+            WalletExportDialog dlg = new WalletExportDialog(walletTabData.getWallet());
+            Optional<Wallet> wallet = dlg.showAndWait();
+            if(wallet.isPresent()) {
+                //Successful export
+            }
+        }
+    }
+
     public Tab addWalletTab(File walletFile, ECKey encryptionPubKey, Wallet wallet) {
         try {
             String name = walletFile.getName();
@@ -276,7 +294,7 @@ public class AppController implements Initializable {
                 name = name.substring(0, name.lastIndexOf('.'));
             }
             Tab tab = new Tab(name);
-            TabData tabData = new TabData(TabData.TabType.WALLET);
+            TabData tabData = new WalletTabData(TabData.TabType.WALLET, wallet, walletFile);
             tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
@@ -351,7 +369,7 @@ public class AppController implements Initializable {
             }
 
             Tab tab = new Tab(tabName);
-            TabData tabData = new TabData(TabData.TabType.TRANSACTION);
+            TabData tabData = new TransactionTabData(TabData.TabType.TRANSACTION, transaction);
             tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
@@ -397,7 +415,7 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void tabSelected(TabEvent event) {
+    public void tabSelected(TabSelectedEvent event) {
         Tab selectedTab = event.getTab();
         String tabType = (String)selectedTab.getUserData();
 
