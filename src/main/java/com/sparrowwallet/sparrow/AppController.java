@@ -4,14 +4,13 @@ import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
-import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -235,22 +234,63 @@ public class AppController implements Initializable {
         if(file != null) {
             try {
                 Wallet wallet;
+                String password = null;
                 ECKey encryptionPubKey = WalletForm.NO_PASSWORD_KEY;
                 FileType fileType = IOUtils.getFileType(file);
                 if(FileType.JSON.equals(fileType)) {
                     wallet = Storage.getStorage().loadWallet(file);
                 } else if(FileType.BINARY.equals(fileType)) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
-                    Optional<String> password = dlg.showAndWait();
-                    if(!password.isPresent()) {
+                    Optional<String> optionalPassword = dlg.showAndWait();
+                    if(!optionalPassword.isPresent()) {
                         return;
                     }
 
-                    ECKey encryptionFullKey = ECIESKeyCrypter.deriveECKey(password.get());
+                    password = optionalPassword.get();
+                    ECKey encryptionFullKey = ECIESKeyCrypter.deriveECKey(password);
                     wallet = Storage.getStorage().loadWallet(file, encryptionFullKey);
                     encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
                 } else {
                     throw new IOException("Unsupported file type");
+                }
+
+                if(wallet.containsSeeds()) {
+                    //Derive xpub and master fingerprint from seed, potentially with passphrase
+                    Wallet copy = wallet.copy();
+                    if(wallet.isEncrypted()) {
+                        if(password == null) {
+                            throw new IllegalStateException("Wallet seeds are encrypted but wallet is not");
+                        }
+
+                        copy.decrypt(password);
+                    }
+
+                    for(Keystore copyKeystore : copy.getKeystores()) {
+                        if(copyKeystore.hasSeed()) {
+                            if(copyKeystore.getSeed().needsPassphrase()) {
+                                KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(copyKeystore);
+                                Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
+                                if(optionalPassphrase.isPresent()) {
+                                    copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
+                                } else {
+                                    return;
+                                }
+                            } else {
+                                copyKeystore.getSeed().setPassphrase("");
+                            }
+                        }
+                    }
+
+                    for(int i = 0; i < wallet.getKeystores().size(); i++) {
+                        Keystore keystore = wallet.getKeystores().get(i);
+                        if(keystore.hasSeed()) {
+                            Keystore copyKeystore = copy.getKeystores().get(i);
+                            Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                            keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                            keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                            keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                        }
+                    }
                 }
 
                 Tab tab = addWalletTab(file, encryptionPubKey, wallet);

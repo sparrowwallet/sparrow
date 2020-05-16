@@ -88,7 +88,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals("m/48'/0'/0'/2'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6EfEGa5isJbQFSswM5Uptw5BSq2Td1ZDJr3QUNUcMySpC7itZ3ccypVHtLPnvMzKQ2qxrAgH49vhVxRcaQLFbixAVRR8RACrYTp88Uv9h8Z", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assert.assertEquals("ca9a2b19", wallet.getKeystores().get(2).getKeyDerivation().getMasterFingerprint());
-        Assert.assertEquals("m/48'/0'/0'/1'", wallet.getKeystores().get(2).getKeyDerivation().getDerivationPath());
+        Assert.assertEquals("m/47'/0'/0'/1'", wallet.getKeystores().get(2).getKeyDerivation().getDerivationPath());
         Assert.assertTrue(wallet.isValid());
     }
 

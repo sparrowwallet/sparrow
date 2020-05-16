@@ -28,7 +28,7 @@ public class Bip39 implements KeystoreMnemonicImport {
     public Keystore getKeystore(List<ChildNumber> derivation, List<String> mnemonicWords, String passphrase) throws ImportException {
         try {
             Bip39MnemonicCode.INSTANCE.check(mnemonicWords);
-            DeterministicSeed seed = new DeterministicSeed(mnemonicWords, null, passphrase, System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
+            DeterministicSeed seed = new DeterministicSeed(mnemonicWords, passphrase, System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
             return Keystore.fromSeed(seed, derivation);
         } catch (Exception e) {
             throw new ImportException(e);

@@ -152,7 +152,6 @@ public class KeystoreController extends WalletFormController implements Initiali
         type.setText(getTypeLabel(keystore));
 
         boolean editable = (keystore.getSource() == KeystoreSource.SW_WATCH);
-        label.setEditable(editable);
         fingerprint.setEditable(editable);
         derivation.setEditable(editable);
         xpub.setEditable(editable);

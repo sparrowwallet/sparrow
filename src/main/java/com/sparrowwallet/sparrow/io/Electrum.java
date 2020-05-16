@@ -112,17 +112,15 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                         throw new ImportException("Electrum does not support exporting BIP39 derived seeds.");
                     } else if(ek.seed != null) {
                         keystore.setSource(KeystoreSource.SW_SEED);
-                        String seed = ek.seed;
+                        String mnemonic = ek.seed;
                         String passphrase = ek.passphrase;
                         if(password != null) {
-                            seed = decrypt(seed, password);
+                            mnemonic = decrypt(mnemonic, password);
                             passphrase = decrypt(passphrase, password);
                         }
 
-                        keystore.setSeed(new DeterministicSeed(seed, null, passphrase, 0, DeterministicSeed.Type.ELECTRUM));
-                        keystore.getSeed().setPassphrase(passphrase);
-
-                        if(derivationPath == "m/0") {
+                        keystore.setSeed(new DeterministicSeed(mnemonic, passphrase, 0, DeterministicSeed.Type.ELECTRUM));
+                        if(derivationPath.equals("m/0")) {
                             derivationPath = "m/0'";
                         }
                     } else {

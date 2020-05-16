@@ -9,6 +9,6 @@ Format: P2WSH
 # derivation: m/48'/0'/0'/2'
 4B569672: xpub6FFEQVG6QR28giDuML74Y7EMPwqEiKftNjScLzg5WKM41bf6LMP2XspjBgNp28tvkNUZdokmTY4TcRbuGZBSMvNoUECrKW1y3TBPeQJVmAg
 
-# derivation: m/48'/0'/0'/1'
+# derivation: m/47'/0'/0'/1'
 CA9A2B19: xpub6Eb6Z1xtmWRiWKgRpHf6dHiEagGd6FLiBXrnma1nFK4PGRYqSVqVyJaxna5Mb8etSP4ATKVAvKnXG1a9HZauoAawuSDJT5RgH2HqEVHZVHY
 

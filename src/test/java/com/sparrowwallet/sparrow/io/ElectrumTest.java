@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.Assert;
 import org.junit.Test;
@@ -102,7 +103,7 @@ public class ElectrumTest extends IoTest {
     }
 
     @Test
-    public void testSinglesigSeedExport() throws ImportException, ExportException, IOException {
+    public void testSinglesigSeedExport() throws ImportException, ExportException, IOException, MnemonicException {
         Electrum electrum = new Electrum();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-singlesig-seed-wallet.json"));
         Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);

@@ -55,19 +55,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
             WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<String> password = dlg.showAndWait();
             if(password.isPresent()) {
-               copy.decrypt(password.get(), "");
-
-               for(Keystore keystore : copy.getKeystores()) {
-                   if(keystore.hasSeed() && keystore.getSeed().usesPassphrase()) {
-                       KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(keystore);
-                       Optional<String> passphrase = passphraseDialog.showAndWait();
-                       if(passphrase.isPresent()) {
-                           keystore.getSeed().setPassphrase(passphrase.get());
-                       } else {
-                           return;
-                       }
-                   }
-               }
+               copy.decrypt(password.get());
             } else {
                 return;
             }
