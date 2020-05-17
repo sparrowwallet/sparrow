@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.Pbkdf2KeyDeriver;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.io.Storage;
 
@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class WalletForm {
-    public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECIESKeyCrypter.deriveECKey(""));
+    public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(""));
 
     private final File walletFile;
     private ECKey encryptionPubKey;

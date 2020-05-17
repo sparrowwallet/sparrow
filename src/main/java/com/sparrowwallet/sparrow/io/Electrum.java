@@ -56,7 +56,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         Reader reader;
         if(password != null) {
-            ECKey decryptionKey = ECIESKeyCrypter.deriveECKey(password);
+            ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password);
             reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(inputStream, decryptionKey)));
         } else {
             reader = new InputStreamReader(inputStream);
@@ -163,9 +163,15 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     private String decrypt(String encrypted, String password) {
-        byte[] passwordHash = Utils.sha256sha256(password.getBytes(StandardCharsets.UTF_8));
+        KeyDeriver keyDeriver = new DoubleSha256KeyDeriver();
+        Key key = keyDeriver.deriveKey(password);
         byte[] encryptedBytes = Base64.getDecoder().decode(encrypted);
-        byte[] decrypted = Utils.decryptAesCbcPkcs7(Arrays.copyOfRange(encryptedBytes, 0, 16), Arrays.copyOfRange(encryptedBytes, 16, encryptedBytes.length), passwordHash);
+
+        KeyCrypter keyCrypter = new AESKeyCrypter();
+        byte[] initializationVector = Arrays.copyOfRange(encryptedBytes, 0, 16);
+        byte[] cipher = Arrays.copyOfRange(encryptedBytes, 16, encryptedBytes.length);
+        EncryptedData data = new EncryptedData(initializationVector, cipher, null, keyDeriver.getDeriverType(), keyCrypter.getCrypterType());
+        byte[] decrypted = keyCrypter.decrypt(data, key);
         return new String(decrypted, StandardCharsets.UTF_8);
     }
 

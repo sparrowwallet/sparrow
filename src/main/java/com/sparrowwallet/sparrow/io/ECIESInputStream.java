@@ -43,7 +43,7 @@ public class ECIESInputStream extends FilterInputStream {
             byte[] encryptedBytes = ByteStreams.toByteArray(in);
             in.close();
             ECIESKeyCrypter keyCrypter = new ECIESKeyCrypter();
-            byte[] decryptedBytes = keyCrypter.decrypt(new EncryptedData(encryptionMagic, encryptedBytes, null), decryptionKey);
+            byte[] decryptedBytes = keyCrypter.decrypt(new EncryptedData(encryptionMagic, encryptedBytes, null, null), decryptionKey);
             in = new ByteArrayInputStream(decryptedBytes);
             decrypted = true;
         }

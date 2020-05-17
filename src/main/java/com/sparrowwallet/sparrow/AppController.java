@@ -247,7 +247,7 @@ public class AppController implements Initializable {
                     }
 
                     password = optionalPassword.get();
-                    ECKey encryptionFullKey = ECIESKeyCrypter.deriveECKey(password);
+                    ECKey encryptionFullKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password);
                     wallet = Storage.getStorage().loadWallet(file, encryptionFullKey);
                     encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
                 } else {

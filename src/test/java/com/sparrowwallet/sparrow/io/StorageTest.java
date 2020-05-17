@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.Pbkdf2KeyDeriver;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
@@ -15,14 +16,14 @@ import java.io.*;
 public class StorageTest extends IoTest {
     @Test
     public void loadWallet() throws IOException {
-        ECKey decryptionKey = ECIESKeyCrypter.deriveECKey("pass");
+        ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey("pass");
         Wallet wallet = Storage.getStorage().loadWallet(getFile("sparrow-single-wallet"), decryptionKey);
         Assert.assertTrue(wallet.isValid());
     }
 
     @Test
     public void loadSeedWallet() throws IOException, MnemonicException {
-        ECKey decryptionKey = ECIESKeyCrypter.deriveECKey("pass");
+        ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey("pass");
 
         Wallet wallet = Storage.getStorage().loadWallet(getFile("sparrow-single-seed-wallet"), decryptionKey);
         Assert.assertTrue(wallet.isValid());
@@ -41,7 +42,7 @@ public class StorageTest extends IoTest {
 
     @Test
     public void saveWallet() throws IOException {
-        ECKey decryptionKey = ECIESKeyCrypter.deriveECKey("pass");
+        ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey("pass");
         Wallet wallet = Storage.getStorage().loadWallet(getFile("sparrow-single-wallet"), decryptionKey);
         Assert.assertTrue(wallet.isValid());
 
