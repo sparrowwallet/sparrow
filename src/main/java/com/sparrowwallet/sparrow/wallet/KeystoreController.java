@@ -182,6 +182,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             selectSourcePane.setVisible(false);
 
             Keystore importedKeystore = result.get();
+            walletForm.getWallet().makeLabelsUnique(importedKeystore);
             keystore.setSource(importedKeystore.getSource());
             keystore.setWalletModel(importedKeystore.getWalletModel());
             keystore.setLabel(importedKeystore.getLabel());

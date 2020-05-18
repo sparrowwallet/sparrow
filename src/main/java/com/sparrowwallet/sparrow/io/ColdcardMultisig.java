@@ -36,7 +36,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         InputStreamReader reader = new InputStreamReader(inputStream);
         ColdcardKeystore cck = Storage.getGson().fromJson(reader, ColdcardKeystore.class);
 
-        Keystore keystore = new Keystore("Coldcard " + cck.xfp);
+        Keystore keystore = new Keystore("Coldcard");
         keystore.setSource(KeystoreSource.HW_AIRGAPPED);
         keystore.setWalletModel(WalletModel.COLDCARD);
 
@@ -109,11 +109,12 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
                             break;
                         default:
                             if (key.length() == 8 && Utils.isHex(key)) {
-                                Keystore keystore = new Keystore("Coldcard " + key);
+                                Keystore keystore = new Keystore("Coldcard");
                                 keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                                 keystore.setWalletModel(WalletModel.COLDCARD);
                                 keystore.setKeyDerivation(new KeyDerivation(key, derivation));
                                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(value));
+                                wallet.makeLabelsUnique(keystore);
                                 wallet.getKeystores().add(keystore);
                             }
                     }

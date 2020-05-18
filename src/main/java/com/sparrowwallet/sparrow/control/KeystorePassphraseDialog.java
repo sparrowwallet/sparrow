@@ -19,15 +19,15 @@ public class KeystorePassphraseDialog extends Dialog<String> {
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Keystore Passphrase");
-        dialogPane.setHeaderText("Please enter the passphrase for keystore: " + keystore.getLabel());
+        dialogPane.setHeaderText("Please enter the passphrase for keystore: \n" + keystore.getLabel());
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         dialogPane.setPrefWidth(380);
         dialogPane.setPrefHeight(200);
 
-        Glyph lock = new Glyph("FontAwesome5", FontAwesome5.Glyph.KEY);
-        lock.setFontSize(50);
-        dialogPane.setGraphic(lock);
+        Glyph key = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.KEY);
+        key.setFontSize(50);
+        dialogPane.setGraphic(key);
 
         final VBox content = new VBox(10);
         content.setPrefHeight(50);

@@ -59,7 +59,7 @@ public class ColdcardSinglesig implements KeystoreFileImport {
                         ScriptType ckScriptType = ScriptType.valueOf(ck.name.replace("p2wpkh-p2sh", "p2sh_p2wpkh").toUpperCase());
                         if(ckScriptType.equals(scriptType)) {
                             Keystore keystore = new Keystore();
-                            keystore.setLabel("Coldcard " + masterFingerprint.toUpperCase());
+                            keystore.setLabel("Coldcard");
                             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                             keystore.setWalletModel(WalletModel.COLDCARD);
                             keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, ck.deriv));
