@@ -3,17 +3,16 @@ package com.sparrowwallet.sparrow;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
-
-import java.io.File;
+import com.sparrowwallet.sparrow.io.Storage;
 
 public class WalletTabData extends TabData {
     private Wallet wallet;
-    private final File walletFile;
+    private final Storage storage;
 
-    public WalletTabData(TabType type, Wallet wallet, File walletFile) {
+    public WalletTabData(TabType type, Wallet wallet, Storage storage) {
         super(type);
         this.wallet = wallet;
-        this.walletFile = walletFile;
+        this.storage = storage;
 
         EventManager.get().register(this);
     }
@@ -22,13 +21,13 @@ public class WalletTabData extends TabData {
         return wallet;
     }
 
-    public File getWalletFile() {
-        return walletFile;
+    public Storage getStorage() {
+        return storage;
     }
 
     @Subscribe
     public void walletChanged(WalletChangedEvent event) {
-        if(event.getWalletFile().equals(walletFile)) {
+        if(event.getWalletFile().equals(storage.getWalletFile())) {
             wallet = event.getWallet();
         }
     }

@@ -1,8 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.crypto.Pbkdf2KeyDeriver;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -16,7 +15,7 @@ import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
-import javafx.application.Platform;
+import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -159,9 +158,9 @@ public class SettingsController extends WalletFormController implements Initiali
 
         apply.setOnAction(event -> {
             try {
-                Optional<ECKey> optionalPubKey = requestEncryption(walletForm.getEncryptionPubKey());
+                Optional<ECKey> optionalPubKey = requestEncryption(walletForm.getStorage().getEncryptionPubKey());
                 if(optionalPubKey.isPresent()) {
-                    walletForm.setEncryptionPubKey(optionalPubKey.get());
+                    walletForm.getStorage().setEncryptionPubKey(optionalPubKey.get());
                     walletForm.save();
                     revert.setDisable(true);
                     apply.setDisable(true);
@@ -260,7 +259,7 @@ public class SettingsController extends WalletFormController implements Initiali
         WalletPasswordDialog.PasswordRequirement requirement;
         if(existingPubKey == null) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
-        } else if(WalletForm.NO_PASSWORD_KEY.equals(existingPubKey)) {
+        } else if(Storage.NO_PASSWORD_KEY.equals(existingPubKey)) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY;
         } else {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_SET;
@@ -270,19 +269,24 @@ public class SettingsController extends WalletFormController implements Initiali
         Optional<String> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(password.get().isEmpty()) {
-                return Optional.of(WalletForm.NO_PASSWORD_KEY);
+                return Optional.of(Storage.NO_PASSWORD_KEY);
             }
 
-            ECKey encryptionFullKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password.get());
-            ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+            try {
+                ECKey encryptionFullKey = walletForm.getStorage().getEncryptionKey(password.get());
+                ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
 
-            if(existingPubKey != null && !WalletForm.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
-                AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
-                return Optional.empty();
+                if(existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
+                    AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
+                    return Optional.empty();
+                }
+
+                Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                walletForm.getWallet().encrypt(key);
+                return Optional.of(encryptionPubKey);
+            } catch (Exception e) {
+                AppController.showErrorDialog("Wallet File Invalid", e.getMessage());
             }
-
-            walletForm.getWallet().encrypt(password.get());
-            return Optional.of(encryptionPubKey);
         }
 
         return Optional.empty();

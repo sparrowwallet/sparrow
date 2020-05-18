@@ -217,9 +217,10 @@ public class AppController implements Initializable {
         WalletNameDialog dlg = new WalletNameDialog();
         Optional<String> walletName = dlg.showAndWait();
         if(walletName.isPresent()) {
-            File walletFile = Storage.getStorage().getWalletFile(walletName.get());
+            File walletFile = Storage.getWalletFile(walletName.get());
+            Storage storage = new Storage(walletFile);
             Wallet wallet = new Wallet(walletName.get(), PolicyType.SINGLE, ScriptType.P2WPKH);
-            Tab tab = addWalletTab(walletFile, null, wallet);
+            Tab tab = addWalletTab(storage, wallet);
             tabs.getSelectionModel().select(tab);
         }
     }
@@ -228,17 +229,17 @@ public class AppController implements Initializable {
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Wallet");
-        fileChooser.setInitialDirectory(Storage.getStorage().getWalletsDir());
+        fileChooser.setInitialDirectory(Storage.getWalletsDir());
 
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
             try {
                 Wallet wallet;
                 String password = null;
-                ECKey encryptionPubKey = WalletForm.NO_PASSWORD_KEY;
+                Storage storage = new Storage(file);
                 FileType fileType = IOUtils.getFileType(file);
                 if(FileType.JSON.equals(fileType)) {
-                    wallet = Storage.getStorage().loadWallet(file);
+                    wallet = storage.loadWallet();
                 } else if(FileType.BINARY.equals(fileType)) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
                     Optional<String> optionalPassword = dlg.showAndWait();
@@ -247,53 +248,12 @@ public class AppController implements Initializable {
                     }
 
                     password = optionalPassword.get();
-                    ECKey encryptionFullKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password);
-                    wallet = Storage.getStorage().loadWallet(file, encryptionFullKey);
-                    encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+                    wallet = storage.loadWallet(password);
                 } else {
                     throw new IOException("Unsupported file type");
                 }
 
-                if(wallet.containsSeeds()) {
-                    //Derive xpub and master fingerprint from seed, potentially with passphrase
-                    Wallet copy = wallet.copy();
-                    if(wallet.isEncrypted()) {
-                        if(password == null) {
-                            throw new IllegalStateException("Wallet seeds are encrypted but wallet is not");
-                        }
-
-                        copy.decrypt(password);
-                    }
-
-                    for(Keystore copyKeystore : copy.getKeystores()) {
-                        if(copyKeystore.hasSeed()) {
-                            if(copyKeystore.getSeed().needsPassphrase()) {
-                                KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(copyKeystore);
-                                Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
-                                if(optionalPassphrase.isPresent()) {
-                                    copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
-                                } else {
-                                    return;
-                                }
-                            } else {
-                                copyKeystore.getSeed().setPassphrase("");
-                            }
-                        }
-                    }
-
-                    for(int i = 0; i < wallet.getKeystores().size(); i++) {
-                        Keystore keystore = wallet.getKeystores().get(i);
-                        if(keystore.hasSeed()) {
-                            Keystore copyKeystore = copy.getKeystores().get(i);
-                            Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
-                            keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
-                            keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
-                            keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
-                        }
-                    }
-                }
-
-                Tab tab = addWalletTab(file, encryptionPubKey, wallet);
+                Tab tab = addWalletTab(storage, wallet);
                 tabs.getSelectionModel().select(tab);
             } catch (InvalidPasswordException e) {
                 showErrorDialog("Invalid Password", "The password was invalid.");
@@ -308,8 +268,9 @@ public class AppController implements Initializable {
         Optional<Wallet> optionalWallet = dlg.showAndWait();
         if(optionalWallet.isPresent()) {
             Wallet wallet = optionalWallet.get();
-            File walletFile = Storage.getStorage().getWalletFile(wallet.getName());
-            Tab tab = addWalletTab(walletFile, null, wallet);
+            File walletFile = Storage.getWalletFile(wallet.getName());
+            Storage storage = new Storage(walletFile);
+            Tab tab = addWalletTab(storage, wallet);
             tabs.getSelectionModel().select(tab);
         }
     }
@@ -327,21 +288,21 @@ public class AppController implements Initializable {
         }
     }
 
-    public Tab addWalletTab(File walletFile, ECKey encryptionPubKey, Wallet wallet) {
+    public Tab addWalletTab(Storage storage, Wallet wallet) {
         try {
-            String name = walletFile.getName();
+            String name = storage.getWalletFile().getName();
             if(name.endsWith(".json")) {
                 name = name.substring(0, name.lastIndexOf('.'));
             }
             Tab tab = new Tab(name);
-            TabData tabData = new WalletTabData(TabData.TabType.WALLET, wallet, walletFile);
+            TabData tabData = new WalletTabData(TabData.TabType.WALLET, wallet, storage);
             tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             tab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
-            WalletForm walletForm = new WalletForm(walletFile, encryptionPubKey, wallet);
+            WalletForm walletForm = new WalletForm(storage, wallet);
             controller.setWalletForm(walletForm);
 
             tabs.getTabs().add(tab);

@@ -15,45 +15,46 @@ import java.io.*;
 
 public class StorageTest extends IoTest {
     @Test
-    public void loadWallet() throws IOException {
-        ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey("pass");
-        Wallet wallet = Storage.getStorage().loadWallet(getFile("sparrow-single-wallet"), decryptionKey);
+    public void loadWallet() throws IOException, MnemonicException, StorageException {
+        Storage storage = new Storage(getFile("sparrow-single-wallet"));
+        Wallet wallet = storage.loadWallet("pass");
         Assert.assertTrue(wallet.isValid());
     }
 
     @Test
-    public void loadSeedWallet() throws IOException, MnemonicException {
-        ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey("pass");
-
-        Wallet wallet = Storage.getStorage().loadWallet(getFile("sparrow-single-seed-wallet"), decryptionKey);
+    public void loadSeedWallet() throws IOException, MnemonicException, StorageException {
+        Storage storage = new Storage(getFile("sparrow-single-seed-wallet"));
+        Wallet wallet = storage.loadWallet("pass");
         Assert.assertTrue(wallet.isValid());
 
-        Assert.assertEquals("testa1", wallet.getName());
+        Assert.assertEquals("testd2", wallet.getName());
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assert.assertEquals("pkh(60bcd3a7)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("60bcd3a7", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
-        Assert.assertEquals("m/84'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
-        Assert.assertEquals("xpub6BrhGFTWPd3DQaGP7p5zTQkE5nqVbaRs23HNae8jAoNJYS2NGa9Sgpeqv1dS5ygwD4sQfwqLCk5qXRK45FTgnqHRcrPnts3Qgh78BZrnoMn", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
-        Assert.assertEquals("a48767d6b58732a0cad17ed93e23022ec603a177e75461f2aed994713fbbe532b61f6c0758a8aedcf9b2b8102c01c6f3e3e212ca06f13644d4ac8dad66556e164b7eaf79d0b42eadecee8b735e97fc0a", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getEncryptedData().getEncryptedBytes()));
-        Assert.assertNull(wallet.getKeystores().get(0).getSeed().getSeedBytes());
+        Assert.assertEquals("m/84'/0'/3'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
+        Assert.assertEquals("xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+        Assert.assertEquals("af6ebd81714c301c3a71fe11a7a9c99ccef4b33d4b36582220767bfa92768a2aa040f88b015b2465f8075a8b9dbf892a7d6e6c49932109f2cbc05ba0bd7f355fbcc34c237f71be5fb4dd7f8184e44cb0", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getEncryptedData().getEncryptedBytes()));
+        Assert.assertNull(wallet.getKeystores().get(0).getSeed().getMnemonicCode());
     }
 
     @Test
-    public void saveWallet() throws IOException {
-        ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey("pass");
-        Wallet wallet = Storage.getStorage().loadWallet(getFile("sparrow-single-wallet"), decryptionKey);
+    public void saveWallet() throws IOException, MnemonicException, StorageException {
+        Storage storage = new Storage(getFile("sparrow-single-wallet"));
+        Wallet wallet = storage.loadWallet("pass");
         Assert.assertTrue(wallet.isValid());
 
-        ECKey encyptionKey = ECKey.fromPublicOnly(decryptionKey);
         File tempWallet = File.createTempFile("sparrow", "tmp");
         tempWallet.deleteOnExit();
 
-        ByteArrayOutputStream dummyFileOutputStream = new ByteArrayOutputStream();
-        Storage.getStorage().storeWallet(tempWallet, encyptionKey, wallet);
+        Storage tempStorage = new Storage(tempWallet);
+        tempStorage.setKeyDeriver(storage.getKeyDeriver());
+        tempStorage.setEncryptionPubKey(storage.getEncryptionPubKey());
+        tempStorage.storeWallet(wallet);
 
-        wallet = Storage.getStorage().loadWallet(tempWallet, decryptionKey);
+        Storage temp2Storage = new Storage(tempWallet);
+        wallet = temp2Storage.loadWallet("pass");
         Assert.assertTrue(wallet.isValid());
     }
 }

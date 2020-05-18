@@ -3,33 +3,45 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.control.KeystorePassphraseDialog;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Optional;
 import java.util.zip.*;
 
+import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
+
 public class Storage {
+    public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
+
     public static final String SPARROW_DIR = ".sparrow";
     public static final String WALLETS_DIR = "wallets";
+    public static final String HEADER_MAGIC_1 = "SPRW1";
+    private static final int BINARY_HEADER_LENGTH = 28;
 
-    private static Storage SINGLETON;
-
+    private File walletFile;
     private final Gson gson;
+    private AsymmetricKeyDeriver keyDeriver;
+    private ECKey encryptionPubKey;
 
-    private Storage() {
-        gson = getGson();
+    public Storage(File walletFile) {
+        this.walletFile = walletFile;
+        this.gson = getGson();
+        this.encryptionPubKey = NO_PASSWORD_KEY;
     }
 
-    public static Storage getStorage() {
-        if(SINGLETON == null) {
-            SINGLETON = new Storage();
-        }
-
-        return SINGLETON;
+    public File getWalletFile() {
+        return walletFile;
     }
 
     public static Gson getGson() {
@@ -49,73 +61,200 @@ public class Storage {
         return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
     }
 
-    public Wallet loadWallet(File file) throws IOException {
-        Reader reader = new FileReader(file);
+    public Wallet loadWallet() throws IOException, MnemonicException {
+        Reader reader = new FileReader(walletFile);
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
+
+        restorePublicKeysFromSeed(wallet, null);
 
         return wallet;
     }
 
-    public Wallet loadWallet(File file, ECKey encryptionKey) throws IOException {
-        Reader reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(new FileInputStream(file), encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
+    public Wallet loadWallet(String password) throws IOException, MnemonicException, StorageException {
+        InputStream fileStream = new FileInputStream(walletFile);
+        ECKey encryptionKey = getEncryptionKey(password, fileStream);
+
+        InputStream inputStream = new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic()));
+        Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
 
+        Key key = new Key(encryptionKey.getPrivKeyBytes(), keyDeriver.getSalt(), EncryptionType.Deriver.ARGON2);
+        restorePublicKeysFromSeed(wallet, key);
+
+        encryptionPubKey = ECKey.fromPublicOnly(encryptionKey);
         return wallet;
     }
 
-    public void storeWallet(File file, Wallet wallet) throws IOException {
-        File parent = file.getParentFile();
+    private void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
+        if(wallet.containsSeeds()) {
+            //Derive xpub and master fingerprint from seed, potentially with passphrase
+            Wallet copy = wallet.copy();
+            if(wallet.isEncrypted()) {
+                if(key == null) {
+                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
+                }
+
+                copy.decrypt(key);
+            }
+
+            for(Keystore copyKeystore : copy.getKeystores()) {
+                if(copyKeystore.hasSeed()) {
+                    if(copyKeystore.getSeed().needsPassphrase()) {
+                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(copyKeystore);
+                        Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
+                        if(optionalPassphrase.isPresent()) {
+                            copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
+                        } else {
+                            return;
+                        }
+                    } else {
+                        copyKeystore.getSeed().setPassphrase("");
+                    }
+                }
+            }
+
+            for(int i = 0; i < wallet.getKeystores().size(); i++) {
+                Keystore keystore = wallet.getKeystores().get(i);
+                if(keystore.hasSeed()) {
+                    Keystore copyKeystore = copy.getKeystores().get(i);
+                    Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                    keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                    keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                    keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                }
+            }
+        }
+    }
+
+    public void storeWallet(Wallet wallet) throws IOException {
+        if(encryptionPubKey != null && !NO_PASSWORD_KEY.equals(encryptionPubKey)) {
+            storeWallet(encryptionPubKey, wallet);
+            return;
+        }
+
+        File parent = walletFile.getParentFile();
         if(!parent.exists() && !parent.mkdirs()) {
             throw new IOException("Could not create folder " + parent);
         }
 
-        if(!file.getName().endsWith(".json")) {
-            File jsonFile = new File(parent, file.getName() + ".json");
-            if(file.exists()) {
-                if(!file.renameTo(jsonFile)) {
-                    throw new IOException("Could not rename " + file.getName() + " to " + jsonFile.getName());
+        if(!walletFile.getName().endsWith(".json")) {
+            File jsonFile = new File(parent, walletFile.getName() + ".json");
+            if(walletFile.exists()) {
+                if(!walletFile.renameTo(jsonFile)) {
+                    throw new IOException("Could not rename " + walletFile.getName() + " to " + jsonFile.getName());
                 }
             }
-            file = jsonFile;
+            walletFile = jsonFile;
         }
 
-        Writer writer = new FileWriter(file);
+        Writer writer = new FileWriter(walletFile);
         gson.toJson(wallet, writer);
         writer.close();
     }
 
-    public void storeWallet(File file, ECKey encryptionKey, Wallet wallet) throws IOException {
-        File parent = file.getParentFile();
+    private void storeWallet(ECKey encryptionPubKey, Wallet wallet) throws IOException {
+        File parent = walletFile.getParentFile();
         if(!parent.exists() && !parent.mkdirs()) {
             throw new IOException("Could not create folder " + parent);
         }
 
-        if(file.getName().endsWith(".json")) {
-            File noJsonFile = new File(parent, file.getName().substring(0, file.getName().lastIndexOf('.')));
-            if(file.exists()) {
-                if(!file.renameTo(noJsonFile)) {
-                    throw new IOException("Could not rename " + file.getName() + " to " + noJsonFile.getName());
+        if(walletFile.getName().endsWith(".json")) {
+            File noJsonFile = new File(parent, walletFile.getName().substring(0, walletFile.getName().lastIndexOf('.')));
+            if(walletFile.exists()) {
+                if(!walletFile.renameTo(noJsonFile)) {
+                    throw new IOException("Could not rename " + walletFile.getName() + " to " + noJsonFile.getName());
                 }
             }
-            file = noJsonFile;
+            walletFile = noJsonFile;
         }
 
-        OutputStreamWriter writer = new OutputStreamWriter(new DeflaterOutputStream(new ECIESOutputStream(new FileOutputStream(file), encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
+        OutputStream outputStream = new FileOutputStream(walletFile);
+        writeBinaryHeader(outputStream);
+
+        OutputStreamWriter writer = new OutputStreamWriter(new DeflaterOutputStream(new ECIESOutputStream(outputStream, encryptionPubKey, getEncryptionMagic())), StandardCharsets.UTF_8);
         gson.toJson(wallet, writer);
         writer.close();
+    }
+
+    private void writeBinaryHeader(OutputStream outputStream) throws IOException {
+        ByteBuffer buf = ByteBuffer.allocate(21);
+        buf.put(HEADER_MAGIC_1.getBytes(StandardCharsets.UTF_8));
+        buf.put(keyDeriver.getSalt());
+
+        byte[] encoded = Base64.getEncoder().encode(buf.array());
+        if(encoded.length != BINARY_HEADER_LENGTH) {
+            throw new IllegalStateException("Header length not " + BINARY_HEADER_LENGTH + " bytes");
+        }
+        outputStream.write(encoded);
+    }
+
+    public ECKey getEncryptionPubKey() {
+        return encryptionPubKey;
+    }
+
+    public void setEncryptionPubKey(ECKey encryptionPubKey) {
+        this.encryptionPubKey = encryptionPubKey;
+    }
+
+    public ECKey getEncryptionKey(String password) throws IOException, StorageException {
+        return getEncryptionKey(password, null);
+    }
+
+    private ECKey getEncryptionKey(String password, InputStream inputStream) throws IOException, StorageException {
+        if(password.equals("")) {
+            return NO_PASSWORD_KEY;
+        }
+
+        return getKeyDeriver(inputStream).deriveECKey(password);
+    }
+
+    public AsymmetricKeyDeriver getKeyDeriver() {
+        return keyDeriver;
+    }
+
+    void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
+        this.keyDeriver = keyDeriver;
+    }
+
+    private AsymmetricKeyDeriver getKeyDeriver(InputStream inputStream) throws IOException, StorageException {
+        if(keyDeriver == null) {
+            byte[] salt = new byte[SPRW1_PARAMETERS.saltLength];
+
+            if(inputStream != null) {
+                byte[] header = new byte[BINARY_HEADER_LENGTH];
+                int read = inputStream.read(header);
+                if(read != BINARY_HEADER_LENGTH) {
+                    throw new StorageException("Not a Sparrow wallet - invalid header");
+                }
+                byte[] decodedHeader = Base64.getDecoder().decode(header);
+                byte[] magic = Arrays.copyOfRange(decodedHeader, 0, HEADER_MAGIC_1.length());
+                if(!HEADER_MAGIC_1.equals(new String(magic, StandardCharsets.UTF_8))) {
+                    throw new StorageException("Not a Sparrow wallet - invalid magic");
+                }
+                salt = Arrays.copyOfRange(decodedHeader, HEADER_MAGIC_1.length(), decodedHeader.length);
+            } else {
+                SecureRandom secureRandom = new SecureRandom();
+                secureRandom.nextBytes(salt);
+            }
+
+            keyDeriver = new Argon2KeyDeriver(salt);
+        }
+
+        return keyDeriver;
     }
 
     private static byte[] getEncryptionMagic() {
         return "BIE1".getBytes(StandardCharsets.UTF_8);
     }
 
-    public File getWalletFile(String walletName) {
+    public static File getWalletFile(String walletName) {
+        //TODO: Check for existing file
         return new File(getWalletsDir(), walletName);
     }
 
-    public File getWalletsDir() {
+    public static File getWalletsDir() {
         File walletsDir = new File(getSparrowDir(), WALLETS_DIR);
         if(!walletsDir.exists()) {
             walletsDir.mkdirs();
@@ -124,11 +263,11 @@ public class Storage {
         return walletsDir;
     }
 
-    private File getSparrowDir() {
+    private static File getSparrowDir() {
         return new File(getHomeDir(), SPARROW_DIR);
     }
 
-    private File getHomeDir() {
+    private static File getHomeDir() {
         return new File(System.getProperty("user.home"));
     }
 

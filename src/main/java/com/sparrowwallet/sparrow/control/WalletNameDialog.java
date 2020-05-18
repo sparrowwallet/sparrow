@@ -43,7 +43,7 @@ public class WalletNameDialog extends Dialog<String> {
         Platform.runLater( () -> {
             validationSupport.registerValidator(name, Validator.combine(
                     Validator.createEmptyValidator("Wallet name is required"),
-                    (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Wallet name is not unique", Storage.getStorage().getWalletFile(newValue).exists())
+                    (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Wallet name is not unique", Storage.getWalletFile(newValue).exists())
             ));
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         });
@@ -52,7 +52,7 @@ public class WalletNameDialog extends Dialog<String> {
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         BooleanBinding isInvalid = Bindings.createBooleanBinding(() ->
-                name.getText().length() == 0 || Storage.getStorage().getWalletFile(name.getText()).exists(), name.textProperty());
+                name.getText().length() == 0 || Storage.getWalletFile(name.getText()).exists(), name.textProperty());
         okButton.disableProperty().bind(isInvalid);
 
         name.setPromptText("Wallet Name");
