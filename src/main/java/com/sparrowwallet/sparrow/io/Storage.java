@@ -93,14 +93,6 @@ public class Storage {
         if(wallet.containsSeeds()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
             Wallet copy = wallet.copy();
-            if(wallet.isEncrypted()) {
-                if(key == null) {
-                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
-                }
-
-                copy.decrypt(key);
-            }
-
             for(Keystore copyKeystore : copy.getKeystores()) {
                 if(copyKeystore.hasSeed()) {
                     if(copyKeystore.getSeed().needsPassphrase()) {
@@ -117,6 +109,14 @@ public class Storage {
                 }
             }
 
+            if(wallet.isEncrypted()) {
+                if(key == null) {
+                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
+                }
+
+                copy.decrypt(key);
+            }
+
             for(int i = 0; i < wallet.getKeystores().size(); i++) {
                 Keystore keystore = wallet.getKeystores().get(i);
                 if(keystore.hasSeed()) {
@@ -125,6 +125,7 @@ public class Storage {
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                    copyKeystore.getSeed().clear();
                 }
             }
         }

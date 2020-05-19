@@ -16,7 +16,7 @@ public class ColdcardMultisigTest extends IoTest {
     public void importKeystore1() throws ImportException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Keystore keystore = ccMultisig.getKeystore(ScriptType.P2SH_P2WSH, getInputStream("cc-multisig-keystore-1.json"), null);
-        Assert.assertEquals("Coldcard 0F056943", keystore.getLabel());
+        Assert.assertEquals("Coldcard", keystore.getLabel());
         Assert.assertEquals("m/48'/1'/0'/1'", keystore.getKeyDerivation().getDerivationPath());
         Assert.assertEquals("0f056943", keystore.getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals(ExtendedKey.fromDescriptor("Upub5T4XUooQzDXL58NCHk8ZCw9BsRSLCtnyHeZEExAq1XdnBFXiXVrHFuvvmh3TnCR7XmKHxkwqdACv68z7QKT1vwru9L1SZSsw8B2fuBvtSa6"), keystore.getExtendedPublicKey());
@@ -33,7 +33,7 @@ public class ColdcardMultisigTest extends IoTest {
     public void importKeystore2() throws ImportException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Keystore keystore = ccMultisig.getKeystore(ScriptType.P2SH, getInputStream("cc-multisig-keystore-2.json"), null);
-        Assert.assertEquals("Coldcard 6BA6CFD0", keystore.getLabel());
+        Assert.assertEquals("Coldcard", keystore.getLabel());
         Assert.assertEquals("m/45'", keystore.getKeyDerivation().getDerivationPath());
         Assert.assertEquals("6ba6cfd0", keystore.getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals(ExtendedKey.fromDescriptor("tpubD9429UXFGCTKJ9NdiNK4rC5ygqSUkginycYHccqSg5gkmyQ7PZRHNjk99M6a6Y3NY8ctEUUJvCu6iCCui8Ju3xrHRu3Ez1CKB4ZFoRZDdP9"), keystore.getExtendedPublicKey());
@@ -44,7 +44,7 @@ public class ColdcardMultisigTest extends IoTest {
     public void importKeystore2b() throws ImportException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Keystore keystore = ccMultisig.getKeystore(ScriptType.P2WSH, getInputStream("cc-multisig-keystore-2.json"), null);
-        Assert.assertEquals("Coldcard 6BA6CFD0", keystore.getLabel());
+        Assert.assertEquals("Coldcard", keystore.getLabel());
         Assert.assertEquals("m/48'/1'/0'/2'", keystore.getKeyDerivation().getDerivationPath());
         Assert.assertEquals("6ba6cfd0", keystore.getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals(ExtendedKey.fromDescriptor("Vpub5nUnvPehg1VYQh13dGznx1P9moac3SNUrn3qhU9r85RhXabYbSSBNsNNwyR7akozAZJw1SZmRRjry1zY8PWMuw8Ga1vQZ5qzPjKyTDQwtzs"), keystore.getExtendedPublicKey());
@@ -59,7 +59,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("multi(2,coldcard0f056943,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("multi(2,coldcard1,coldcard2,coldcard3,coldcard4)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertTrue(wallet.isValid());
     }
 
@@ -71,7 +71,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("multi(2,coldcard0f056943,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("multi(2,coldcard1,coldcard2,coldcard3,coldcard4)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertTrue(wallet.isValid());
     }
 
@@ -83,7 +83,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assert.assertEquals(3, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("multi(3,coldcard06b57041,coldcard4b569672,coldcardca9a2b19)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("multi(3,coldcard1,coldcard2,coldcard3)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("06b57041", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/0'/0'/2'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6EfEGa5isJbQFSswM5Uptw5BSq2Td1ZDJr3QUNUcMySpC7itZ3ccypVHtLPnvMzKQ2qxrAgH49vhVxRcaQLFbixAVRR8RACrYTp88Uv9h8Z", wallet.getKeystores().get(0).getExtendedPublicKey().toString());

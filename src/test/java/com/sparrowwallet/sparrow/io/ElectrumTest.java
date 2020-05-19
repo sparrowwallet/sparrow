@@ -96,7 +96,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(electrumf881eac5)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("pkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("f881eac5", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub69iSRreMB6fu24sU8Tdxv7yYGqzPkDwPkwqUfKJTxW3p8afW7XvTewVCapuX3dQjdD197iF65WcjYaNpFbwWT3RyuZ1KJ3ToJNVWKWyAJ6f", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -116,11 +116,11 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(electrum59c5474f)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("pkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("59c5474f", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub68YmVxWbxqjpxbUqqaPrgkBQPBSJuq6gEaL22uuytSEojtS2x5eLPN2uspUuyigtnMkoHrFSF1KwoXPwjzuaUjErUwztxfHquAwuaQhSd9J", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
-        Assert.assertEquals(wallet.getKeystores().get(0).getSeed().getMnemonicString(), "coach fan denial rifle frost rival join install one wasp cool antique");
+        Assert.assertEquals(wallet.getKeystores().get(0).getSeed().getMnemonicString().asString(), "coach fan denial rifle frost rival join install one wasp cool antique");
         Assert.assertEquals("e14c40c638e2c83d1f20e5ee9cd744bc2ba1ef64fa939926f3778fc8735e891f56852f687b32bbd044f272d2831137e3eeba61fd1f285fa73dcc97d9f2be3cd1", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getSeedBytes()));
     }
 }
