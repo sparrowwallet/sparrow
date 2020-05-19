@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.sparrow.AppController;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -14,7 +15,7 @@ import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
-public class WalletPasswordDialog extends Dialog<String> {
+public class WalletPasswordDialog extends Dialog<SecureString> {
     private final ButtonType okButtonType;
     private final PasswordRequirement requirement;
     private final CustomPasswordField password;
@@ -80,7 +81,7 @@ public class WalletPasswordDialog extends Dialog<String> {
         password.requestFocus();
         passwordConfirm.setPromptText("Password Confirmation");
 
-        setResultConverter(dialogButton -> dialogButton == okButtonType ? password.getText() : null);
+        setResultConverter(dialogButton -> dialogButton == okButtonType ? new SecureString(password.getText()) : null);
     }
 
     public enum PasswordRequirement {

@@ -8,6 +8,8 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.KeystorePassphraseDialog;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -71,7 +73,7 @@ public class Storage {
         return wallet;
     }
 
-    public Wallet loadWallet(String password) throws IOException, MnemonicException, StorageException {
+    public Wallet loadWallet(CharSequence password) throws IOException, MnemonicException, StorageException {
         InputStream fileStream = new FileInputStream(walletFile);
         ECKey encryptionKey = getEncryptionKey(password, fileStream);
 
@@ -198,11 +200,11 @@ public class Storage {
         this.encryptionPubKey = encryptionPubKey;
     }
 
-    public ECKey getEncryptionKey(String password) throws IOException, StorageException {
+    public ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException {
         return getEncryptionKey(password, null);
     }
 
-    private ECKey getEncryptionKey(String password, InputStream inputStream) throws IOException, StorageException {
+    private ECKey getEncryptionKey(CharSequence password, InputStream inputStream) throws IOException, StorageException {
         if(password.equals("")) {
             return NO_PASSWORD_KEY;
         }
@@ -310,6 +312,25 @@ public class Storage {
             }
 
             return jsonObject;
+        }
+    }
+
+    public static class KeyDerivationService extends Service<ECKey> {
+        private final Storage storage;
+        private final String password;
+
+        public KeyDerivationService(Storage storage, String password) {
+            this.storage = storage;
+            this.password = password;
+        }
+
+        @Override
+        protected Task<ECKey> createTask() {
+            return new Task<>() {
+                protected ECKey call() throws IOException, StorageException {
+                    return storage.getEncryptionKey(password);
+                }
+            };
         }
     }
 }

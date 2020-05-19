@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow;
 import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -10,7 +11,6 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
-import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -235,14 +235,14 @@ public class AppController implements Initializable {
         if(file != null) {
             try {
                 Wallet wallet;
-                String password = null;
+                CharSequence password = null;
                 Storage storage = new Storage(file);
                 FileType fileType = IOUtils.getFileType(file);
                 if(FileType.JSON.equals(fileType)) {
                     wallet = storage.loadWallet();
                 } else if(FileType.BINARY.equals(fileType)) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
-                    Optional<String> optionalPassword = dlg.showAndWait();
+                    Optional<SecureString> optionalPassword = dlg.showAndWait();
                     if(!optionalPassword.isPresent()) {
                         return;
                     }

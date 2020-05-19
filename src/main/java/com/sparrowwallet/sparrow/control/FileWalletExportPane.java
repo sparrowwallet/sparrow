@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
@@ -53,7 +53,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
 
         if(copy.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
-            Optional<String> password = dlg.showAndWait();
+            Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                copy.decrypt(password.get());
             } else {

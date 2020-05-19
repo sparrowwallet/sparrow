@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -266,9 +267,9 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         WalletPasswordDialog dlg = new WalletPasswordDialog(requirement);
-        Optional<String> password = dlg.showAndWait();
+        Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            if(password.get().isEmpty()) {
+            if(password.get().length() == 0) {
                 return Optional.of(Storage.NO_PASSWORD_KEY);
             }
 
