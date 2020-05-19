@@ -41,6 +41,6 @@
             <TabPane fx:id="tabs" />
         </StackPane>
 
-        <StatusBar text=""/>
+        <StatusBar fx:id="statusBar" text=""/>
     </children>
 </VBox>

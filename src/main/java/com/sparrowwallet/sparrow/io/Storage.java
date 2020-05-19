@@ -2,12 +2,12 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.control.KeystorePassphraseDialog;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 
@@ -18,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Optional;
 import java.util.zip.*;
 
 import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
@@ -68,12 +67,10 @@ public class Storage {
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
 
-        restorePublicKeysFromSeed(wallet, null);
-
         return wallet;
     }
 
-    public Wallet loadWallet(CharSequence password) throws IOException, MnemonicException, StorageException {
+    public WalletAndKey loadWallet(CharSequence password) throws IOException, MnemonicException, StorageException {
         InputStream fileStream = new FileInputStream(walletFile);
         ECKey encryptionKey = getEncryptionKey(password, fileStream);
 
@@ -83,52 +80,9 @@ public class Storage {
         reader.close();
 
         Key key = new Key(encryptionKey.getPrivKeyBytes(), keyDeriver.getSalt(), EncryptionType.Deriver.ARGON2);
-        restorePublicKeysFromSeed(wallet, key);
 
         encryptionPubKey = ECKey.fromPublicOnly(encryptionKey);
-        return wallet;
-    }
-
-    private void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
-        if(wallet.containsSeeds()) {
-            //Derive xpub and master fingerprint from seed, potentially with passphrase
-            Wallet copy = wallet.copy();
-            for(Keystore copyKeystore : copy.getKeystores()) {
-                if(copyKeystore.hasSeed()) {
-                    if(copyKeystore.getSeed().needsPassphrase()) {
-                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(copyKeystore);
-                        Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
-                        if(optionalPassphrase.isPresent()) {
-                            copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
-                        } else {
-                            return;
-                        }
-                    } else {
-                        copyKeystore.getSeed().setPassphrase("");
-                    }
-                }
-            }
-
-            if(wallet.isEncrypted()) {
-                if(key == null) {
-                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
-                }
-
-                copy.decrypt(key);
-            }
-
-            for(int i = 0; i < wallet.getKeystores().size(); i++) {
-                Keystore keystore = wallet.getKeystores().get(i);
-                if(keystore.hasSeed()) {
-                    Keystore copyKeystore = copy.getKeystores().get(i);
-                    Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
-                    keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
-                    keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
-                    keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
-                    copyKeystore.getSeed().clear();
-                }
-            }
-        }
+        return new WalletAndKey(wallet, key);
     }
 
     public void storeWallet(Wallet wallet) throws IOException {
@@ -316,11 +270,44 @@ public class Storage {
         }
     }
 
+    public static class WalletAndKey {
+        public final Wallet wallet;
+        public final Key key;
+
+        public WalletAndKey(Wallet wallet, Key key) {
+            this.wallet = wallet;
+            this.key = key;
+        }
+    }
+
+    public static class LoadWalletService extends Service<WalletAndKey> {
+        private final Storage storage;
+        private final SecureString password;
+
+        public LoadWalletService(Storage storage, SecureString password) {
+            this.storage = storage;
+            this.password = password;
+        }
+
+        @Override
+        protected Task<WalletAndKey> createTask() {
+            return new Task<>() {
+                protected WalletAndKey call() throws IOException, StorageException, MnemonicException {
+                    try {
+                        return storage.loadWallet(password);
+                    } finally {
+                        password.clear();
+                    }
+                }
+            };
+        }
+    }
+
     public static class KeyDerivationService extends Service<ECKey> {
         private final Storage storage;
-        private final String password;
+        private final SecureString password;
 
-        public KeyDerivationService(Storage storage, String password) {
+        public KeyDerivationService(Storage storage, SecureString password) {
             this.storage = storage;
             this.password = password;
         }
@@ -329,7 +316,35 @@ public class Storage {
         protected Task<ECKey> createTask() {
             return new Task<>() {
                 protected ECKey call() throws IOException, StorageException {
-                    return storage.getEncryptionKey(password);
+                    try {
+                        return storage.getEncryptionKey(password);
+                    } finally {
+                        password.clear();
+                    }
+                }
+            };
+        }
+    }
+
+    public static class DecryptWalletService extends Service<Wallet> {
+        private final Wallet wallet;
+        private final SecureString password;
+
+        public DecryptWalletService(Wallet wallet, SecureString password) {
+            this.wallet = wallet;
+            this.password = password;
+        }
+
+        @Override
+        protected Task<Wallet> createTask() {
+            return new Task<>() {
+                protected Wallet call() throws IOException, StorageException {
+                    try {
+                        wallet.decrypt(password);
+                        return wallet;
+                    } finally {
+                        password.clear();
+                    }
                 }
             };
         }

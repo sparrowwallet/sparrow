@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
+import com.sparrowwallet.sparrow.event.TimedWorkerEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -158,18 +159,9 @@ public class SettingsController extends WalletFormController implements Initiali
         });
 
         apply.setOnAction(event -> {
-            try {
-                Optional<ECKey> optionalPubKey = requestEncryption(walletForm.getStorage().getEncryptionPubKey());
-                if(optionalPubKey.isPresent()) {
-                    walletForm.getStorage().setEncryptionPubKey(optionalPubKey.get());
-                    walletForm.save();
-                    revert.setDisable(true);
-                    apply.setDisable(true);
-                    EventManager.get().post(new WalletChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
-                }
-            } catch (IOException e) {
-                AppController.showErrorDialog("Error saving file", e.getMessage());
-            }
+            revert.setDisable(true);
+            apply.setDisable(true);
+            saveWallet();
         });
 
         setFieldsFromWallet(walletForm.getWallet());
@@ -256,7 +248,9 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
-    private Optional<ECKey> requestEncryption(ECKey existingPubKey) {
+    private void saveWallet() {
+        ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
+
         WalletPasswordDialog.PasswordRequirement requirement;
         if(existingPubKey == null) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
@@ -270,26 +264,58 @@ public class SettingsController extends WalletFormController implements Initiali
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(password.get().length() == 0) {
-                return Optional.of(Storage.NO_PASSWORD_KEY);
-            }
-
-            try {
-                ECKey encryptionFullKey = walletForm.getStorage().getEncryptionKey(password.get());
-                ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
-
-                if(existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
-                    AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
-                    return Optional.empty();
+                try {
+                    walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+                    walletForm.save();
+                    EventManager.get().post(new WalletChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
+                } catch (IOException e) {
+                    AppController.showErrorDialog("Error saving wallet", e.getMessage());
+                    revert.setDisable(false);
+                    apply.setDisable(false);
                 }
+            } else {
+                Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
+                keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new TimedWorkerEvent("Done"));
+                    ECKey encryptionFullKey = keyDerivationService.getValue();
+                    Key key = null;
 
-                Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                walletForm.getWallet().encrypt(key);
-                return Optional.of(encryptionPubKey);
-            } catch (Exception e) {
-                AppController.showErrorDialog("Wallet File Invalid", e.getMessage());
+                    try {
+                        ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+
+                        if(existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
+                            AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
+                            revert.setDisable(false);
+                            apply.setDisable(false);
+                            return;
+                        }
+
+                        key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                        walletForm.getWallet().encrypt(key);
+
+                        walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
+                        walletForm.save();
+                        EventManager.get().post(new WalletChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
+                    } catch (Exception e) {
+                        AppController.showErrorDialog("Error saving wallet", e.getMessage());
+                        revert.setDisable(false);
+                        apply.setDisable(false);
+                    } finally {
+                        encryptionFullKey.clear();
+                        if(key != null) {
+                            key.clear();
+                        }
+                    }
+                });
+                keyDerivationService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new TimedWorkerEvent("Failed"));
+                    AppController.showErrorDialog("Error saving wallet", keyDerivationService.getException().getMessage());
+                    revert.setDisable(false);
+                    apply.setDisable(false);
+                });
+                keyDerivationService.start();
+                EventManager.get().post(new TimedWorkerEvent("Encrypting wallet...", 1000));
             }
         }
-
-        return Optional.empty();
     }
 }

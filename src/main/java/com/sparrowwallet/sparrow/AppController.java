@@ -11,6 +11,8 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -20,6 +22,10 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -30,6 +36,8 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import org.controlsfx.control.StatusBar;
 
 import java.io.*;
 import java.net.URL;
@@ -52,11 +60,16 @@ public class AppController implements Initializable {
     @FXML
     private TabPane tabs;
 
+    @FXML
+    private StatusBar statusBar;
+
+    private Timeline statusTimeline;
+
     public static boolean showTxHexProperty;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        EventManager.get().register(this);
     }
 
     void initializeView() {
@@ -234,12 +247,12 @@ public class AppController implements Initializable {
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
             try {
-                Wallet wallet;
-                CharSequence password = null;
                 Storage storage = new Storage(file);
                 FileType fileType = IOUtils.getFileType(file);
                 if(FileType.JSON.equals(fileType)) {
-                    wallet = storage.loadWallet();
+                    Wallet wallet = storage.loadWallet();
+                    Tab tab = addWalletTab(storage, wallet);
+                    tabs.getSelectionModel().select(tab);
                 } else if(FileType.BINARY.equals(fileType)) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
                     Optional<SecureString> optionalPassword = dlg.showAndWait();
@@ -247,18 +260,79 @@ public class AppController implements Initializable {
                         return;
                     }
 
-                    password = optionalPassword.get();
-                    wallet = storage.loadWallet(password);
+                    SecureString password = optionalPassword.get();
+                    Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
+                    loadWalletService.setOnSucceeded(workerStateEvent -> {
+                        EventManager.get().post(new TimedWorkerEvent("Done"));
+                        Storage.WalletAndKey walletAndKey = loadWalletService.getValue();
+                        try {
+                            restorePublicKeysFromSeed(walletAndKey.wallet, walletAndKey.key);
+                            Tab tab = addWalletTab(storage, walletAndKey.wallet);
+                            tabs.getSelectionModel().select(tab);
+                        } catch(MnemonicException e) {
+                            showErrorDialog("Error Opening Wallet", e.getMessage());
+                        } finally {
+                            walletAndKey.key.clear();
+                        }
+                    });
+                    loadWalletService.setOnFailed(workerStateEvent -> {
+                        EventManager.get().post(new TimedWorkerEvent("Failed"));
+                        Throwable exception = loadWalletService.getException();
+                        if(exception instanceof InvalidPasswordException) {
+                            showErrorDialog("Invalid Password", "The wallet password was invalid.");
+                        } else {
+                            showErrorDialog("Error Opening Wallet", exception.getMessage());
+                        }
+                    });
+                    loadWalletService.start();
+                    EventManager.get().post(new TimedWorkerEvent("Decrypting wallet...", 1000));
                 } else {
                     throw new IOException("Unsupported file type");
                 }
+            } catch(Exception e) {
+                showErrorDialog("Error Opening Wallet", e.getMessage());
+            }
+        }
+    }
 
-                Tab tab = addWalletTab(storage, wallet);
-                tabs.getSelectionModel().select(tab);
-            } catch (InvalidPasswordException e) {
-                showErrorDialog("Invalid Password", "The password was invalid.");
-            } catch (Exception e) {
-                showErrorDialog("Error opening wallet", e.getMessage());
+    private void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
+        if(wallet.containsSeeds()) {
+            //Derive xpub and master fingerprint from seed, potentially with passphrase
+            Wallet copy = wallet.copy();
+            for(Keystore copyKeystore : copy.getKeystores()) {
+                if(copyKeystore.hasSeed()) {
+                    if(copyKeystore.getSeed().needsPassphrase()) {
+                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(copyKeystore);
+                        Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
+                        if(optionalPassphrase.isPresent()) {
+                            copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
+                        } else {
+                            return;
+                        }
+                    } else {
+                        copyKeystore.getSeed().setPassphrase("");
+                    }
+                }
+            }
+
+            if(wallet.isEncrypted()) {
+                if(key == null) {
+                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
+                }
+
+                copy.decrypt(key);
+            }
+
+            for(int i = 0; i < wallet.getKeystores().size(); i++) {
+                Keystore keystore = wallet.getKeystores().get(i);
+                if(keystore.hasSeed()) {
+                    Keystore copyKeystore = copy.getKeystores().get(i);
+                    Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                    keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                    keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                    keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                    copyKeystore.getSeed().clear();
+                }
             }
         }
     }
@@ -418,12 +492,35 @@ public class AppController implements Initializable {
     @Subscribe
     public void tabSelected(TabSelectedEvent event) {
         Tab selectedTab = event.getTab();
-        String tabType = (String)selectedTab.getUserData();
 
         String tabName = selectedTab.getText();
         if(tabs.getScene() != null) {
             Stage tabStage = (Stage)tabs.getScene().getWindow();
             tabStage.setTitle("Sparrow - " + tabName);
         }
+    }
+
+    @Subscribe
+    public void timedWorker(TimedWorkerEvent event) {
+        if(statusTimeline != null && statusTimeline.getStatus() == Animation.Status.RUNNING) {
+            if(event.getTimeMills() == 0) {
+                statusTimeline.stop();
+                statusBar.setText("");
+                statusBar.setProgress(0);
+            }
+
+            return;
+        }
+
+        statusBar.setText(event.getStatus());
+        statusTimeline = new Timeline(
+                new KeyFrame(Duration.ZERO, new KeyValue(statusBar.progressProperty(), 0)),
+                new KeyFrame(Duration.millis(event.getTimeMills()), e -> {
+                   statusBar.setText("");
+                   statusBar.setProgress(0);
+                }, new KeyValue(statusBar.progressProperty(), 1))
+        );
+        statusTimeline.setCycleCount(1);
+        statusTimeline.play();
     }
 }
