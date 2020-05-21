@@ -3,7 +3,8 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.TimedWorkerEvent;
+import com.sparrowwallet.sparrow.event.StorageEvent;
+import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.WalletExport;
@@ -59,7 +60,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new TimedWorkerEvent("Done"));
+                    EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
                     try {
                         OutputStream outputStream = new FileOutputStream(file);
@@ -76,11 +77,11 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                     }
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new TimedWorkerEvent("Failed"));
+                    EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Failed"));
                     setError("Export Error", decryptWalletService.getException().getMessage());
                 });
+                EventManager.get().post(new StorageEvent(file, TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
-                EventManager.get().post(new TimedWorkerEvent("Decrypting wallet...", 1000));
             }
         }
     }

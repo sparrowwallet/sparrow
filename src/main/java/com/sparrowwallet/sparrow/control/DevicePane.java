@@ -300,7 +300,7 @@ public class DevicePane extends TitledDescriptionPane {
             String xpub = getXpubService.getValue();
 
             Keystore keystore = new Keystore();
-            keystore.setLabel(device.getModel().toDisplayString() + " " + device.getFingerprint().toUpperCase());
+            keystore.setLabel(device.getModel().toDisplayString());
             keystore.setSource(KeystoreSource.HW_USB);
             keystore.setWalletModel(device.getModel());
             keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));

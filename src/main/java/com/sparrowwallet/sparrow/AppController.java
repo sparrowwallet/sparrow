@@ -12,13 +12,12 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
-import com.sparrowwallet.sparrow.io.FileType;
-import com.sparrowwallet.sparrow.io.IOUtils;
-import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
@@ -30,6 +29,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
@@ -263,7 +263,7 @@ public class AppController implements Initializable {
                     SecureString password = optionalPassword.get();
                     Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
-                        EventManager.get().post(new TimedWorkerEvent("Done"));
+                        EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
                         Storage.WalletAndKey walletAndKey = loadWalletService.getValue();
                         try {
                             restorePublicKeysFromSeed(walletAndKey.wallet, walletAndKey.key);
@@ -276,7 +276,7 @@ public class AppController implements Initializable {
                         }
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
-                        EventManager.get().post(new TimedWorkerEvent("Failed"));
+                        EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
                         Throwable exception = loadWalletService.getException();
                         if(exception instanceof InvalidPasswordException) {
                             showErrorDialog("Invalid Password", "The wallet password was invalid.");
@@ -284,8 +284,8 @@ public class AppController implements Initializable {
                             showErrorDialog("Error Opening Wallet", exception.getMessage());
                         }
                     });
+                    EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
                     loadWalletService.start();
-                    EventManager.get().post(new TimedWorkerEvent("Decrypting wallet...", 1000));
                 } else {
                     throw new IOException("Unsupported file type");
                 }
@@ -378,6 +378,15 @@ public class AppController implements Initializable {
             WalletController controller = walletLoader.getController();
             WalletForm walletForm = new WalletForm(storage, wallet);
             controller.setWalletForm(walletForm);
+
+            if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
+                Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(null);
+                enumerateService.setOnSucceeded(workerStateEvent -> {
+                    List<Device> devices = enumerateService.getValue();
+                    EventManager.get().post(new UsbDeviceEvent(devices));
+                });
+                enumerateService.start();
+            }
 
             tabs.getTabs().add(tab);
             return tab;
@@ -501,26 +510,45 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void timedWorker(TimedWorkerEvent event) {
-        if(statusTimeline != null && statusTimeline.getStatus() == Animation.Status.RUNNING) {
-            if(event.getTimeMills() == 0) {
+    public void timedWorker(TimedEvent event) {
+        if(event.getTimeMills() == 0) {
+            if(statusTimeline != null && statusTimeline.getStatus() == Animation.Status.RUNNING) {
                 statusTimeline.stop();
-                statusBar.setText("");
-                statusBar.setProgress(0);
             }
-
-            return;
+            statusBar.setText("");
+            statusBar.setProgress(event.getTimeMills());
+        } else if(event.getTimeMills() < 0) {
+            statusBar.setText(event.getStatus());
+            statusBar.setProgress(event.getTimeMills());
+        } else {
+            statusBar.setText(event.getStatus());
+            statusTimeline = new Timeline(
+                    new KeyFrame(Duration.ZERO, new KeyValue(statusBar.progressProperty(), 0)),
+                    new KeyFrame(Duration.millis(event.getTimeMills()), e -> {
+                        statusBar.setText("");
+                        statusBar.setProgress(0);
+                    }, new KeyValue(statusBar.progressProperty(), 1))
+            );
+            statusTimeline.setCycleCount(1);
+            statusTimeline.play();
         }
+    }
 
-        statusBar.setText(event.getStatus());
-        statusTimeline = new Timeline(
-                new KeyFrame(Duration.ZERO, new KeyValue(statusBar.progressProperty(), 0)),
-                new KeyFrame(Duration.millis(event.getTimeMills()), e -> {
-                   statusBar.setText("");
-                   statusBar.setProgress(0);
-                }, new KeyValue(statusBar.progressProperty(), 1))
-        );
-        statusTimeline.setCycleCount(1);
-        statusTimeline.play();
+    @Subscribe
+    public void usbDevicesFound(UsbDeviceEvent event) {
+        if(event.getDevices().isEmpty()) {
+            Node usbStatus = null;
+            for(Node node : statusBar.getRightItems()) {
+                if(node instanceof UsbStatusButton) {
+                    usbStatus = node;
+                }
+            }
+            if(usbStatus != null) {
+                statusBar.getRightItems().removeAll(usbStatus);
+            }
+        } else {
+            UsbStatusButton usbStatusButton = new UsbStatusButton(event.getDevices());
+            statusBar.getRightItems().add(usbStatusButton);
+        }
     }
 }

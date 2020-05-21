@@ -1,7 +1,9 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -65,13 +67,17 @@ public class WalletController extends WalletFormController implements Initializa
             }
         });
 
-        if(!walletForm.getWallet().isValid()) {
-            for(Toggle toggle : walletMenu.getToggles()) {
-                if(toggle.getUserData().equals(Function.SETTINGS)) {
+        configure(walletForm.getWallet().isValid());
+    }
+
+    public void configure(boolean isWalletValid) {
+        for(Toggle toggle : walletMenu.getToggles()) {
+            if(toggle.getUserData().equals(Function.SETTINGS)) {
+                if(!isWalletValid) {
                     toggle.setSelected(true);
-                } else {
-                    ((ToggleButton)toggle).setDisable(true);
                 }
+            } else {
+                ((ToggleButton)toggle).setDisable(!isWalletValid);
             }
         }
     }
@@ -84,5 +90,10 @@ public class WalletController extends WalletFormController implements Initializa
                 }
             }
         });
+    }
+
+    @Subscribe
+    public void walletChanged(WalletChangedEvent event) {
+        configure(walletForm.getWallet().isValid());
     }
 }

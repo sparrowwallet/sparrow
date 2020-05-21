@@ -15,7 +15,8 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
-import com.sparrowwallet.sparrow.event.TimedWorkerEvent;
+import com.sparrowwallet.sparrow.event.StorageEvent;
+import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -276,7 +277,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else {
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new TimedWorkerEvent("Done"));
+                    EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.END, "Done"));
                     ECKey encryptionFullKey = keyDerivationService.getValue();
                     Key key = null;
 
@@ -308,13 +309,13 @@ public class SettingsController extends WalletFormController implements Initiali
                     }
                 });
                 keyDerivationService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new TimedWorkerEvent("Failed"));
+                    EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.END, "Failed"));
                     AppController.showErrorDialog("Error saving wallet", keyDerivationService.getException().getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
                 });
+                EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.START, "Encrypting wallet..."));
                 keyDerivationService.start();
-                EventManager.get().post(new TimedWorkerEvent("Encrypting wallet...", 1000));
             }
         }
     }

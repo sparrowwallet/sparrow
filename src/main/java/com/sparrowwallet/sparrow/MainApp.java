@@ -14,6 +14,9 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 public class MainApp extends Application {
 
     @Override
@@ -42,6 +45,9 @@ public class MainApp extends Application {
 
 //        KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
 //        dlg.showAndWait();
+
+        Path path = Paths.get("").toAbsolutePath();
+        System.out.println(path.toFile().getAbsolutePath());
 
         stage.show();
     }
