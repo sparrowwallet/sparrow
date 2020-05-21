@@ -206,6 +206,13 @@ public class Storage {
         return "BIE1".getBytes(StandardCharsets.UTF_8);
     }
 
+    public static boolean walletExists(String walletName) {
+        File encrypted = new File(getWalletsDir(), walletName);
+        File unencrypted = new File(getWalletsDir(), walletName + ".json");
+
+        return (encrypted.exists() || unencrypted.exists());
+    }
+
     public static File getWalletFile(String walletName) {
         //TODO: Check for existing file
         return new File(getWalletsDir(), walletName);

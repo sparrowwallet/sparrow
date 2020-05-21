@@ -21,8 +21,10 @@
                                 <MenuItem text="Examples" onAction="#openExamples"/>
                             </items>
                         </Menu>
+                        <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
+                        <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Close" onAction="#closeTab"/>
                     </items>
                 </Menu>

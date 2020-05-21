@@ -62,19 +62,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
-                    try {
-                        OutputStream outputStream = new FileOutputStream(file);
-                        exporter.exportWallet(decryptedWallet, outputStream);
-                        EventManager.get().post(new WalletExportEvent(decryptedWallet));
-                    } catch(Exception e) {
-                        String errorMessage = e.getMessage();
-                        if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
-                            errorMessage = e.getCause().getMessage();
-                        }
-                        setError("Export Error", errorMessage);
-                    } finally {
-                        decryptedWallet.clearPrivate();
-                    }
+                    exportWallet(file, decryptedWallet);
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Failed"));
@@ -83,6 +71,24 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 EventManager.get().post(new StorageEvent(file, TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
             }
+        } else {
+            exportWallet(file, copy);
+        }
+    }
+
+    private void exportWallet(File file, Wallet decryptedWallet) {
+        try {
+            OutputStream outputStream = new FileOutputStream(file);
+            exporter.exportWallet(decryptedWallet, outputStream);
+            EventManager.get().post(new WalletExportEvent(decryptedWallet));
+        } catch(Exception e) {
+            String errorMessage = e.getMessage();
+            if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
+                errorMessage = e.getCause().getMessage();
+            }
+            setError("Export Error", errorMessage);
+        } finally {
+            decryptedWallet.clearPrivate();
         }
     }
 }

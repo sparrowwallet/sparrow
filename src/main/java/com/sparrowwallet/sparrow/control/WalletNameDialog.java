@@ -43,7 +43,7 @@ public class WalletNameDialog extends Dialog<String> {
         Platform.runLater( () -> {
             validationSupport.registerValidator(name, Validator.combine(
                     Validator.createEmptyValidator("Wallet name is required"),
-                    (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Wallet name is not unique", Storage.getWalletFile(newValue).exists())
+                    (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Wallet name is not unique", Storage.walletExists(newValue))
             ));
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         });

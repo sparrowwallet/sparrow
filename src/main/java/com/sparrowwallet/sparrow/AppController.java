@@ -109,8 +109,9 @@ public class AppController implements Initializable {
                     exportWallet.setDisable(true);
                     showTxHex.setDisable(false);
                 } else if(tabData.getType() == TabData.TabType.WALLET) {
+                    WalletTabData walletTabData = (WalletTabData)tabData;
                     EventManager.get().post(new WalletTabSelectedEvent(selectedTab));
-                    exportWallet.setDisable(false);
+                    exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
                     showTxHex.setDisable(true);
                 }
             }
@@ -509,6 +510,11 @@ public class AppController implements Initializable {
             Stage tabStage = (Stage)tabs.getScene().getWindow();
             tabStage.setTitle("Sparrow - " + tabName);
         }
+    }
+
+    @Subscribe
+    public void walletChanged(WalletChangedEvent event) {
+        exportWallet.setDisable(!event.getWallet().isValid());
     }
 
     @Subscribe
