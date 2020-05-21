@@ -290,6 +290,7 @@ public class AppController implements Initializable {
                     throw new IOException("Unsupported file type");
                 }
             } catch(Exception e) {
+                e.printStackTrace();
                 showErrorDialog("Error Opening Wallet", e.getMessage());
             }
         }
@@ -380,7 +381,8 @@ public class AppController implements Initializable {
             controller.setWalletForm(walletForm);
 
             if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
-                Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(null);
+                Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
+                enumerateService.setPeriod(new Duration(30 * 1000));
                 enumerateService.setOnSucceeded(workerStateEvent -> {
                     List<Device> devices = enumerateService.getValue();
                     EventManager.get().post(new UsbDeviceEvent(devices));
@@ -536,19 +538,26 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void usbDevicesFound(UsbDeviceEvent event) {
-        if(event.getDevices().isEmpty()) {
-            Node usbStatus = null;
-            for(Node node : statusBar.getRightItems()) {
-                if(node instanceof UsbStatusButton) {
-                    usbStatus = node;
-                }
+        UsbStatusButton usbStatus = null;
+        for(Node node : statusBar.getRightItems()) {
+            if(node instanceof UsbStatusButton) {
+                usbStatus = (UsbStatusButton)node;
             }
+        }
+
+        if(event.getDevices().isEmpty()) {
             if(usbStatus != null) {
                 statusBar.getRightItems().removeAll(usbStatus);
             }
         } else {
-            UsbStatusButton usbStatusButton = new UsbStatusButton(event.getDevices());
-            statusBar.getRightItems().add(usbStatusButton);
+            if(usbStatus == null) {
+                usbStatus = new UsbStatusButton();
+                statusBar.getRightItems().add(usbStatus);
+            } else {
+                usbStatus.getItems().remove(0, usbStatus.getItems().size());
+            }
+
+            usbStatus.setDevices(event.getDevices());
         }
     }
 }

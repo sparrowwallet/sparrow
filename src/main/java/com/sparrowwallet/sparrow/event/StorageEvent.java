@@ -1,16 +1,22 @@
 package com.sparrowwallet.sparrow.event;
 
+import com.sparrowwallet.sparrow.io.Config;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 public class StorageEvent extends TimedEvent {
     private static boolean firstRunDone = false;
-    private static int keyDerivationPeriod = -1;
     private static final Map<File, Long> eventTime = new HashMap<>();
 
     public StorageEvent(File file, Action action, String status) {
         super(action, status);
+
+        Integer keyDerivationPeriod = Config.get().getKeyDerivationPeriod();
+        if(keyDerivationPeriod == null) {
+            keyDerivationPeriod = -1;
+        }
 
         if(action == Action.START) {
             eventTime.put(file, System.currentTimeMillis());
@@ -19,9 +25,9 @@ public class StorageEvent extends TimedEvent {
             long start = eventTime.get(file);
             if(firstRunDone) {
                 keyDerivationPeriod = (int)(System.currentTimeMillis() - start);
+                Config.get().setKeyDerivationPeriod(keyDerivationPeriod);
             }
             firstRunDone = true;
-            System.out.println(keyDerivationPeriod);
             timeMills = 0;
         }
     }

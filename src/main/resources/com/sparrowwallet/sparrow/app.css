@@ -19,3 +19,7 @@
 .drag-over > .background-text {
     -fx-fill: #383a42;
 }
+
+.status-bar .right-items {
+    -fx-padding: 0 0 0 8;
+}

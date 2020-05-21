@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
@@ -23,8 +24,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class Hwi {
-    private static File hwiExecutable;
-
     public List<Device> enumerate(String passphrase) throws ImportException {
         try {
             List<String> command;
@@ -86,9 +85,10 @@ public class Hwi {
         return CharStreams.toString(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
     }
 
-    private synchronized File getHwiExecutable() throws IOException {
-        try {
-            if (hwiExecutable == null) {
+    private synchronized File getHwiExecutable() {
+        File hwiExecutable = Config.get().getHwi();
+        if(hwiExecutable == null || !hwiExecutable.exists()) {
+            try {
                 Platform platform = Platform.getCurrent();
                 Set<PosixFilePermission> ownerExecutableWritable = PosixFilePermissions.fromString("rwxr--r--");
 
@@ -100,16 +100,15 @@ public class Hwi {
                     InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi-1.1.0-mac-amd64-signed.zip");
                     Path tempHwiDirPath = Files.createTempDirectory("hwi", PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
-                    tempHwiDir.deleteOnExit();
-
-                    System.out.println(tempHwiDir.getAbsolutePath());
+                    //tempHwiDir.deleteOnExit();
+                    //System.out.println(tempHwiDir.getAbsolutePath());
 
                     File tempExec = null;
                     ZipInputStream zis = new ZipInputStream(inputStream);
                     ZipEntry zipEntry = zis.getNextEntry();
                     while (zipEntry != null) {
                         File newFile = newFile(tempHwiDir, zipEntry, ownerExecutableWritable);
-                        newFile.deleteOnExit();
+                        //newFile.deleteOnExit();
                         FileOutputStream fos = new FileOutputStream(newFile);
                         ByteStreams.copy(zis, new FileOutputStream(newFile));
                         fos.flush();
@@ -129,7 +128,7 @@ public class Hwi {
                     InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
                     Path tempExecPath = Files.createTempFile("hwi", null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempExec = tempExecPath.toFile();
-                    tempExec.deleteOnExit();
+                    //tempExec.deleteOnExit();
                     OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
                     ByteStreams.copy(new FramedLZ4CompressorInputStream(inputStream), tempExecStream);
                     inputStream.close();
@@ -138,9 +137,11 @@ public class Hwi {
 
                     hwiExecutable = tempExec;
                 }
+            } catch(Exception e) {
+                e.printStackTrace();
             }
-        } catch(Exception e) {
-            e.printStackTrace();
+
+            Config.get().setHwi(hwiExecutable);
         }
 
         return hwiExecutable;
@@ -185,6 +186,24 @@ public class Hwi {
         private final String passphrase;
 
         public EnumerateService(String passphrase) {
+            this.passphrase = passphrase;
+        }
+
+        @Override
+        protected Task<List<Device>> createTask() {
+            return new Task<>() {
+                protected List<Device> call() throws ImportException {
+                    Hwi hwi = new Hwi();
+                    return hwi.enumerate(passphrase);
+                }
+            };
+        }
+    }
+
+    public static class ScheduledEnumerateService extends ScheduledService<List<Device>> {
+        private final String passphrase;
+
+        public ScheduledEnumerateService(String passphrase) {
             this.passphrase = passphrase;
         }
 

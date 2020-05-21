@@ -69,7 +69,7 @@ jlink {
     jpackage {
         imageName = "Sparrow"
         installerName = "Sparrow"
-        appVersion = "0.51"
+        appVersion = "0.6"
         skipInstaller = true
         imageOptions = []
         installerOptions = [

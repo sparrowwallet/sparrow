@@ -3,7 +3,6 @@ package com.sparrowwallet.sparrow;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import javafx.application.Application;
@@ -13,9 +12,6 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class MainApp extends Application {
 
@@ -45,9 +41,6 @@ public class MainApp extends Application {
 
 //        KeystoreImportDialog dlg = new KeystoreImportDialog(wallet);
 //        dlg.showAndWait();
-
-        Path path = Paths.get("").toAbsolutePath();
-        System.out.println(path.toFile().getAbsolutePath());
 
         stage.show();
     }

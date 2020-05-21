@@ -220,11 +220,11 @@ public class Storage {
         return walletsDir;
     }
 
-    private static File getSparrowDir() {
+    static File getSparrowDir() {
         return new File(getHomeDir(), SPARROW_DIR);
     }
 
-    private static File getHomeDir() {
+    static File getHomeDir() {
         return new File(System.getProperty("user.home"));
     }
 

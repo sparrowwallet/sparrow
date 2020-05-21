@@ -20,6 +20,8 @@ public class FontAwesome5 extends GlyphFont {
         EYE('\uf06e'),
         KEY('\uf084'),
         LAPTOP('\uf109'),
+        LOCK('\uf023'),
+        LOCK_OPEN('\uf3c1'),
         SD_CARD('\uf7c2'),
         WALLET('\uf555');
 

@@ -16,7 +16,7 @@
                     <ToggleGroup fx:id="walletMenu" />
                 </toggleGroup>
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="BTC" />
+                    <Glyph fontFamily="FontAwesome" icon="BTC" fontSize="20" />
                 </graphic>
                 <userData>
                     <Function fx:constant="TRANSACTIONS"/>
@@ -24,7 +24,7 @@
             </ToggleButton>
             <ToggleButton VBox.vgrow="ALWAYS" text="Send" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="SEND" />
+                    <Glyph fontFamily="FontAwesome" icon="SEND" fontSize="20" />
                 </graphic>
                 <userData>
                     <Function fx:constant="SEND"/>
@@ -32,7 +32,7 @@
             </ToggleButton>
             <ToggleButton VBox.vgrow="ALWAYS" text="Receive" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" />
+                    <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" fontSize="20" />
                 </graphic>
                 <userData>
                     <Function fx:constant="RECEIVE"/>
@@ -40,7 +40,7 @@
             </ToggleButton>
             <ToggleButton VBox.vgrow="ALWAYS" text="Addresses" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="TH_LIST" />
+                    <Glyph fontFamily="FontAwesome" icon="TH_LIST" fontSize="20" />
                 </graphic>
                 <userData>
                     <Function fx:constant="ADDRESSES"/>
@@ -48,7 +48,7 @@
             </ToggleButton>
             <ToggleButton VBox.vgrow="ALWAYS" text="Policies" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="FILE_TEXT" />
+                    <Glyph fontFamily="FontAwesome" icon="FILE_TEXT" fontSize="20" />
                 </graphic>
                 <userData>
                     <Function fx:constant="POLICIES"/>
@@ -56,7 +56,7 @@
             </ToggleButton>
             <ToggleButton VBox.vgrow="ALWAYS" text="Settings" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="COG" />
+                    <Glyph fontFamily="FontAwesome" icon="COG" fontSize="20" />
                 </graphic>
                 <userData>
                     <Function fx:constant="SETTINGS"/>
