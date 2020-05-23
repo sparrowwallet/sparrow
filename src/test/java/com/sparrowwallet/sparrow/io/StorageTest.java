@@ -17,14 +17,14 @@ public class StorageTest extends IoTest {
     @Test
     public void loadWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
-        Wallet wallet = storage.loadWallet("pass");
+        Wallet wallet = storage.loadWallet("pass").wallet;
         Assert.assertTrue(wallet.isValid());
     }
 
     @Test
     public void loadSeedWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-seed-wallet"));
-        Wallet wallet = storage.loadWallet("pass");
+        Wallet wallet = storage.loadWallet("pass").wallet;
         Assert.assertTrue(wallet.isValid());
 
         Assert.assertEquals("testd2", wallet.getName());
@@ -42,7 +42,7 @@ public class StorageTest extends IoTest {
     @Test
     public void saveWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
-        Wallet wallet = storage.loadWallet("pass");
+        Wallet wallet = storage.loadWallet("pass").wallet;
         Assert.assertTrue(wallet.isValid());
 
         File tempWallet = File.createTempFile("sparrow", "tmp");
@@ -54,7 +54,7 @@ public class StorageTest extends IoTest {
         tempStorage.storeWallet(wallet);
 
         Storage temp2Storage = new Storage(tempWallet);
-        wallet = temp2Storage.loadWallet("pass");
+        wallet = temp2Storage.loadWallet("pass").wallet;
         Assert.assertTrue(wallet.isValid());
     }
 }

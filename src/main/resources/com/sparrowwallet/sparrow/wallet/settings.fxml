@@ -33,7 +33,7 @@
                                 <FXCollections fx:factory="observableArrayList">
                                     <PolicyType fx:constant="SINGLE" />
                                     <PolicyType fx:constant="MULTI" />
-                                    <PolicyType fx:constant="CUSTOM" />
+                                    <!-- <PolicyType fx:constant="CUSTOM" /> -->
                                 </FXCollections>
                             </items>
                         </ComboBox>
