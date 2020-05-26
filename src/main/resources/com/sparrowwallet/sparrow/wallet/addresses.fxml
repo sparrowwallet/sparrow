@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.AddressTreeTable?>
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@addresses.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.AddressesController">
+    <padding>
+        <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints percentWidth="100.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints percentHeight="50" />
+        <RowConstraints percentHeight="50" />
+    </rowConstraints>
+    <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <top>
+            <Label styleClass="address-treetable-label" text="Receiving Addresses:"/>
+        </top>
+        <center>
+            <AddressTreeTable fx:id="receiveTable" />
+        </center>
+    </BorderPane>
+    <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <top>
+            <Label styleClass="address-treetable-label" text="Change Addresses:"/>
+        </top>
+        <center>
+            <AddressTreeTable fx:id="changeTable" />
+        </center>
+    </BorderPane>
+</GridPane>

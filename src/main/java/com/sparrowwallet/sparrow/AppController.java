@@ -252,12 +252,13 @@ public class AppController implements Initializable {
                 FileType fileType = IOUtils.getFileType(file);
                 if(FileType.JSON.equals(fileType)) {
                     Wallet wallet = storage.loadWallet();
+                    restorePublicKeysFromSeed(wallet, null);
                     Tab tab = addWalletTab(storage, wallet);
                     tabs.getSelectionModel().select(tab);
                 } else if(FileType.BINARY.equals(fileType)) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
                     Optional<SecureString> optionalPassword = dlg.showAndWait();
-                    if(!optionalPassword.isPresent()) {
+                    if(optionalPassword.isEmpty()) {
                         return;
                     }
 

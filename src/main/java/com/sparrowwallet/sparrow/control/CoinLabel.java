@@ -16,7 +16,7 @@ import java.util.Locale;
 public class CoinLabel extends CopyableLabel {
     public static final int MAX_SATS_SHOWN = 1000000;
 
-    private DecimalFormat btcFormat = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+    public static final DecimalFormat BTC_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
     private final LongProperty value = new SimpleLongProperty();
     private Tooltip tooltip;
@@ -28,7 +28,7 @@ public class CoinLabel extends CopyableLabel {
 
     public CoinLabel(String text) {
         super(text);
-        btcFormat.setMaximumFractionDigits(8);
+        BTC_FORMAT.setMaximumFractionDigits(8);
         valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue));
         tooltip = new Tooltip();
         contextMenu = new CoinContextMenu();
@@ -51,7 +51,7 @@ public class CoinLabel extends CopyableLabel {
         setContextMenu(contextMenu);
 
         String satsValue = String.format(Locale.ENGLISH, "%,d",value) + " sats";
-        String btcValue = btcFormat.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+        String btcValue = BTC_FORMAT.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
         if(value > MAX_SATS_SHOWN) {
             tooltip.setText(satsValue);
             setText(btcValue);
@@ -78,7 +78,7 @@ public class CoinLabel extends CopyableLabel {
             copyBtcValue.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(btcFormat.format((double)getValue() / Transaction.SATOSHIS_PER_BITCOIN));
+                content.putString(BTC_FORMAT.format((double)getValue() / Transaction.SATOSHIS_PER_BITCOIN));
                 Clipboard.getSystemClipboard().setContent(content);
             });
 

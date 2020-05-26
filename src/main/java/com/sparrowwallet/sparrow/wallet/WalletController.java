@@ -47,9 +47,9 @@ public class WalletController extends WalletFormController implements Initializa
             for(Node walletFunction : walletPane.getChildren()) {
                 if(walletFunction.getUserData().equals(function)) {
                     existing = true;
-                    walletFunction.setViewOrder(1);
-                } else {
                     walletFunction.setViewOrder(0);
+                } else {
+                    walletFunction.setViewOrder(1);
                 }
             }
 
@@ -57,6 +57,7 @@ public class WalletController extends WalletFormController implements Initializa
                 if(!existing) {
                     FXMLLoader functionLoader = new FXMLLoader(AppController.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml"));
                     Node walletFunction = functionLoader.load();
+                    walletFunction.setUserData(function);
                     WalletFormController controller = functionLoader.getController();
                     controller.setWalletForm(getWalletForm());
                     walletFunction.setViewOrder(1);

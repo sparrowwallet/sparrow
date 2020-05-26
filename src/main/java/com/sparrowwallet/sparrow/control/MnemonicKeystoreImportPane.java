@@ -2,10 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
-import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
-import com.sparrowwallet.drongo.wallet.DeterministicSeed;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.io.*;
@@ -244,7 +241,9 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             return true;
         } catch (ImportException e) {
             String errorMessage = e.getMessage();
-            if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
+            if(e.getCause() instanceof MnemonicException.MnemonicChecksumException) {
+                errorMessage = "Invalid word list - checksum incorrect";
+            } else if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
                 errorMessage = e.getCause().getMessage();
             }
             setError("Import Error", errorMessage);

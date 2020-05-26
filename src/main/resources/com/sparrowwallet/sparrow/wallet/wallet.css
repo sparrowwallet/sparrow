@@ -25,6 +25,6 @@
     -fx-opacity: 1;
 }
 
-#walletPane {
+.wallet-pane {
     -fx-background-color: -fx-background;
 }

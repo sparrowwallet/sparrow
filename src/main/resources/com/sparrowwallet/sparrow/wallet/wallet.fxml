@@ -65,7 +65,7 @@
         </VBox>
     </left>
     <center>
-        <StackPane fx:id="walletPane">
+        <StackPane fx:id="walletPane" styleClass="wallet-pane">
 
         </StackPane>
     </center>
