@@ -10,6 +10,7 @@ open module com.sparrowwallet.sparrow {
     requires com.google.common;
     requires flowless;
     requires com.google.gson;
-    requires org.apache.commons.compress;
+    requires com.google.zxing;
+    requires com.google.zxing.javase;
     requires javafx.swing;
 }

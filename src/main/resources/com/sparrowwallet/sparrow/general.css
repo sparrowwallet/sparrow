@@ -98,3 +98,22 @@
 .titled-description-pane .hyperlink:hover:visited {
     -fx-underline: true;
 }
+
+.copyable-text-field .copy-button {
+    -fx-padding: 0 3 0 0;
+}
+
+.copyable-text-field .copy-button > .graphic {
+    -fx-background-color: #949494;
+    -fx-scale-shape: false;
+    -fx-padding: 4.5 4.5 4.5 4.5; /* Graphic is 9x9 px */
+    -fx-shape: "M 6.429688 7.875 L 6.429688 8.578125 C 6.429688 8.8125 6.210938 9 5.945312 9 L 0.480469 9 C 0.214844 9 0 8.8125 0 8.578125 L 0 2.109375 C 0 1.875 0.214844 1.6875 0.480469 1.6875 L 1.929688 1.6875 L 1.929688 6.890625 C 1.929688 7.433594 2.433594 7.875 3.054688 7.875 Z M 6.429688 1.828125 L 6.429688 0 L 3.054688 0 C 2.789062 0 2.570312 0.1875 2.570312 0.421875 L 2.570312 6.890625 C 2.570312 7.125 2.789062 7.3125 3.054688 7.3125 L 8.519531 7.3125 C 8.785156 7.3125 9 7.125 9 6.890625 L 9 2.25 L 6.910156 2.25 C 6.644531 2.25 6.429688 2.058594 6.429688 1.828125 Z M 8.859375 1.28125 L 7.535156 0.125 C 7.445312 0.0429688 7.320312 0 7.191406 0 L 7.070312 0 L 7.070312 1.6875 L 9 1.6875 L 9 1.582031 C 9 1.46875 8.949219 1.363281 8.859375 1.28125 Z M 8.859375 1.28125 ";
+}
+
+.copyable-text-field .copy-button:hover > .graphic {
+    -fx-background-color: #0184bc;
+}
+
+.copyable-text-field .copy-button:pressed > .graphic {
+    -fx-background-color: #116a8d;
+}

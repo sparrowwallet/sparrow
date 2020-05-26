@@ -7,7 +7,6 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import org.apache.commons.compress.compressors.lz4.FramedLZ4CompressorInputStream;
 import org.controlsfx.tools.Platform;
 
 import java.io.*;
@@ -20,6 +19,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -130,7 +130,7 @@ public class Hwi {
                     File tempExec = tempExecPath.toFile();
                     //tempExec.deleteOnExit();
                     OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
-                    ByteStreams.copy(new FramedLZ4CompressorInputStream(inputStream), tempExecStream);
+                    ByteStreams.copy(new GZIPInputStream(inputStream), tempExecStream);
                     inputStream.close();
                     tempExecStream.flush();
                     tempExecStream.close();

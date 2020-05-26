@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import javafx.scene.image.ImageView?>
+<?import org.fxmisc.flowless.VirtualizedScrollPane?>
+<?import org.fxmisc.richtext.CodeArea?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+<?import org.controlsfx.glyphfont.Glyph?>
+<?import com.sparrowwallet.sparrow.control.CopyableTextField?>
+
+<BorderPane stylesheets="@receive.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.ReceiveController">
+    <center>
+
+        <GridPane hgap="10.0" vgap="10.0">
+            <padding>
+                <Insets left="25.0" right="25.0" top="25.0" />
+            </padding>
+            <columnConstraints>
+                <ColumnConstraints percentWidth="70" />
+                <ColumnConstraints percentWidth="30" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints />
+            </rowConstraints>
+            <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <Fieldset inputGrow="SOMETIMES" text="Receive">
+                    <Field text="Address:">
+                        <CopyableTextField fx:id="address" styleClass="address-text-field" editable="false" prefWidth="350"/>
+                    </Field>
+                    <Field text="Label:">
+                        <TextField fx:id="label" />
+                    </Field>
+                    <Field text="Derivation:">
+                        <CopyableLabel fx:id="derivationPath" />
+                    </Field>
+                    <Field text="Last Used:">
+                        <CopyableLabel fx:id="lastUsed" />
+                    </Field>
+                </Fieldset>
+            </Form>
+
+            <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <ImageView fx:id="qrCode" styleClass="qr-code" AnchorPane.rightAnchor="5"/>
+            </AnchorPane>
+
+            <Separator styleClass="form-separator" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" />
+
+            <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+                <Fieldset inputGrow="SOMETIMES" text="Required Script">
+                    <Field text="ScriptPubKey:">
+                        <VirtualizedScrollPane>
+                            <content>
+                                <CodeArea fx:id="scriptPubKeyArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                            </content>
+                        </VirtualizedScrollPane>
+                    </Field>
+                </Fieldset>
+            </Form>
+
+        </GridPane>
+    </center>
+    <bottom>
+        <AnchorPane>
+            <padding>
+                <Insets left="25.0" right="25.0" bottom="25.0" />
+            </padding>
+            <Button fx:id="nextAddress" text="Get Next Address" defaultButton="true" AnchorPane.rightAnchor="10" onAction="#getNewAddress">
+                <graphic>
+                    <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" fontSize="12" />
+                </graphic>
+            </Button>
+        </AnchorPane>
+    </bottom>
+</BorderPane>

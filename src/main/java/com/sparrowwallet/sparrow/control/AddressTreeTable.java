@@ -3,12 +3,11 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
+import com.sparrowwallet.sparrow.wallet.Entry;
+import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.event.Event;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -24,26 +23,24 @@ import org.controlsfx.glyphfont.Glyph;
 import java.lang.reflect.Field;
 import java.util.Locale;
 
-public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
-    public void initialize(Wallet.Node rootNode) {
+public class AddressTreeTable extends TreeTableView<Entry> {
+    public void initialize(NodeEntry rootEntry) {
         getStyleClass().add("address-treetable");
 
         String address = null;
-        Data rootData = new Data(rootNode);
-        TreeItem<Data> rootItem = new TreeItem<>(rootData);
-        for(Wallet.Node childNode : rootNode.getChildren()) {
-            Data childData = new Data(childNode);
-            TreeItem<Data> childItem = new TreeItem<>(childData);
+        TreeItem<Entry> rootItem = new TreeItem<>(rootEntry);
+        for(Entry childEntry : rootEntry.getChildren()) {
+            TreeItem<Entry> childItem = new TreeItem<>(childEntry);
             rootItem.getChildren().add(childItem);
-            address = childNode.getAddress().toString();
+            address = rootEntry.getNode().getAddress().toString();
         }
 
         rootItem.setExpanded(true);
         setRoot(rootItem);
         setShowRoot(false);
 
-        TreeTableColumn<Data, Data> addressCol = new TreeTableColumn<>("Address / Outpoints");
-        addressCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Data, Data> param) -> {
+        TreeTableColumn<Entry, Entry> addressCol = new TreeTableColumn<>("Address / Outpoints");
+        addressCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
         });
         addressCol.setCellFactory(p -> new DataCell());
@@ -54,23 +51,26 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
             addressCol.setMinWidth(TextUtils.computeTextWidth(Font.font("Courier"), address, 0.0));
         }
 
-        TreeTableColumn<Data, String> labelCol = new TreeTableColumn<>("Label");
-        labelCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Data, String> param) -> {
-            return param.getValue().getValue().getLabelProperty();
+        TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>("Label");
+        labelCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
+            return param.getValue().getValue().labelProperty();
         });
         labelCol.setCellFactory(p -> new LabelCell());
         labelCol.setSortable(false);
         getColumns().add(labelCol);
 
-        TreeTableColumn<Data, Long> amountCol = new TreeTableColumn<>("Amount");
-        amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Data, Long> param) -> {
+        TreeTableColumn<Entry, Long> amountCol = new TreeTableColumn<>("Amount");
+        amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Long> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getAmount());
         });
         amountCol.setCellFactory(p -> new AmountCell());
         amountCol.setSortable(false);
         getColumns().add(amountCol);
 
-        TreeTableColumn<Data, Void> actionCol = new TreeTableColumn<>("Actions");
+        TreeTableColumn<Entry, Entry> actionCol = new TreeTableColumn<>("Actions");
+        actionCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
+            return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
+        });
         actionCol.setCellFactory(p -> new ActionCell());
         actionCol.setSortable(false);
         getColumns().add(actionCol);
@@ -79,53 +79,23 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
     }
 
-    public static class Data {
-        private final Wallet.Node walletNode;
-        private final SimpleStringProperty labelProperty;
-        private final Long amount;
-
-        public Data(Wallet.Node walletNode) {
-            this.walletNode = walletNode;
-
-            labelProperty = new SimpleStringProperty(walletNode.getLabel());
-            labelProperty.addListener((observable, oldValue, newValue) -> walletNode.setLabel(newValue));
-
-            amount = walletNode.getAmount();
-        }
-
-        public Wallet.Node getWalletNode() {
-            return walletNode;
-        }
-
-        public String getLabel() {
-            return labelProperty.get();
-        }
-
-        public StringProperty getLabelProperty() {
-            return labelProperty;
-        }
-
-        public Long getAmount() {
-            return amount;
-        }
-    }
-
-    private static class DataCell extends TreeTableCell<Data, Data> {
+    private static class DataCell extends TreeTableCell<Entry, Entry> {
         public DataCell() {
             super();
-            getStyleClass().add("data-cell");
+            getStyleClass().add("address-cell");
         }
 
         @Override
-        protected void updateItem(Data data, boolean empty) {
-            super.updateItem(data, empty);
+        protected void updateItem(Entry entry, boolean empty) {
+            super.updateItem(entry, empty);
 
             if(empty) {
                 setText(null);
                 setGraphic(null);
             } else {
-                if(data.getWalletNode() != null) {
-                    Address address = data.getWalletNode().getAddress();
+                if(entry instanceof NodeEntry) {
+                    NodeEntry nodeEntry = (NodeEntry)entry;
+                    Address address = nodeEntry.getNode().getAddress();
                     setText(address.toString());
                     setContextMenu(new AddressContextMenu(address));
                 } else {
@@ -157,7 +127,7 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
         }
     }
 
-    private static class LabelCell extends TextFieldTreeTableCell<Data, String> {
+    private static class LabelCell extends TextFieldTreeTableCell<Entry, String> {
         public LabelCell() {
             super(new DefaultStringConverter());
             getStyleClass().add("label-cell");
@@ -183,10 +153,10 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
             // intercept the loss of focus. The default commitEdit(...) method
             // simply bails if we are not editing...
             if (!isEditing() && !label.equals(getItem())) {
-                TreeTableView<Data> treeTable = getTreeTableView();
+                TreeTableView<Entry> treeTable = getTreeTableView();
                 if(treeTable != null) {
-                    TreeTableColumn<Data, String> column = getTableColumn();
-                    TreeTableColumn.CellEditEvent<Data, String> event = new TreeTableColumn.CellEditEvent<>(
+                    TreeTableColumn<Entry, String> column = getTableColumn();
+                    TreeTableColumn.CellEditEvent<Entry, String> event = new TreeTableColumn.CellEditEvent<>(
                             treeTable, new TreeTablePosition<>(treeTable, getIndex(), column),
                             TreeTableColumn.editCommitEvent(), label
                     );
@@ -231,7 +201,7 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
         }
     }
 
-    private static class AmountCell extends TreeTableCell<Data, Long> {
+    private static class AmountCell extends TreeTableCell<Entry, Long> {
         public AmountCell() {
             super();
             getStyleClass().add("amount-cell");
@@ -260,8 +230,9 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
         }
     }
 
-    private static class ActionCell extends TreeTableCell<Data, Void> {
+    private static class ActionCell extends TreeTableCell<Entry, Entry> {
         private final HBox actionBox;
+        private final Button receiveButton;
 
         public ActionCell() {
             super();
@@ -271,23 +242,27 @@ public class AddressTreeTable extends TreeTableView<AddressTreeTable.Data> {
             actionBox.setSpacing(8);
             actionBox.setAlignment(Pos.CENTER);
 
-            Button receiveButton = new Button("");
+            receiveButton = new Button("");
             Glyph receiveGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.ARROW_DOWN);
             receiveGlyph.setFontSize(12);
             receiveButton.setGraphic(receiveGlyph);
             receiveButton.setOnAction(event -> {
-                EventManager.get().post(new ReceiveActionEvent(getTreeTableView().getTreeItem(getIndex()).getValue().getWalletNode()));
+                NodeEntry nodeEntry = (NodeEntry)getTreeTableView().getTreeItem(getIndex()).getValue();
+                EventManager.get().post(new ReceiveActionEvent(nodeEntry));
             });
-
-            actionBox.getChildren().add(receiveButton);
         }
 
         @Override
-        protected void updateItem(Void item, boolean empty) {
-            super.updateItem(item, empty);
+        protected void updateItem(Entry entry, boolean empty) {
+            super.updateItem(entry, empty);
             if (empty) {
                 setGraphic(null);
             } else {
+                actionBox.getChildren().remove(0, actionBox.getChildren().size());
+                if(entry instanceof NodeEntry) {
+                    actionBox.getChildren().add(receiveButton);
+                }
+
                 setGraphic(actionBox);
             }
         }

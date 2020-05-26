@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.wallet;
 
-public abstract class WalletFormController {
+import com.sparrowwallet.sparrow.BaseController;
+
+public abstract class WalletFormController extends BaseController {
     public WalletForm walletForm;
 
     public WalletForm getWalletForm() {

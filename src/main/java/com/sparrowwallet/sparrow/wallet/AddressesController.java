@@ -26,7 +26,7 @@ public class AddressesController extends WalletFormController implements Initial
     public void initializeView() {
         Wallet wallet = walletForm.getWallet();
 
-        receiveTable.initialize(wallet.getNodes(KeyPurpose.RECEIVE));
-        changeTable.initialize(wallet.getNodes(KeyPurpose.CHANGE));
+        receiveTable.initialize(getWalletForm().getNodeEntry(KeyPurpose.RECEIVE));
+        changeTable.initialize(getWalletForm().getNodeEntry(KeyPurpose.CHANGE));
     }
 }
