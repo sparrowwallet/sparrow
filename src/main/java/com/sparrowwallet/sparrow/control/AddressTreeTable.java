@@ -5,8 +5,10 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
+import com.sparrowwallet.sparrow.event.ReceiveToEvent;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.event.Event;
 import javafx.geometry.Pos;
@@ -27,16 +29,11 @@ public class AddressTreeTable extends TreeTableView<Entry> {
     public void initialize(NodeEntry rootEntry) {
         getStyleClass().add("address-treetable");
 
-        String address = null;
-        TreeItem<Entry> rootItem = new TreeItem<>(rootEntry);
-        for(Entry childEntry : rootEntry.getChildren()) {
-            TreeItem<Entry> childItem = new TreeItem<>(childEntry);
-            rootItem.getChildren().add(childItem);
-            address = rootEntry.getNode().getAddress().toString();
-        }
+        String address = rootEntry.getNode().getAddress().toString();
+        RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
+        setRoot(rootItem);
 
         rootItem.setExpanded(true);
-        setRoot(rootItem);
         setShowRoot(false);
 
         TreeTableColumn<Entry, Entry> addressCol = new TreeTableColumn<>("Address / Outpoints");
@@ -249,6 +246,7 @@ public class AddressTreeTable extends TreeTableView<Entry> {
             receiveButton.setOnAction(event -> {
                 NodeEntry nodeEntry = (NodeEntry)getTreeTableView().getTreeItem(getIndex()).getValue();
                 EventManager.get().post(new ReceiveActionEvent(nodeEntry));
+                Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
             });
         }
 

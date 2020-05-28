@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -9,8 +10,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.CopyableTextField;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import com.sparrowwallet.sparrow.event.ReceiveToEvent;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -42,6 +42,9 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     @FXML
     private CodeArea scriptPubKeyArea;
+
+    @FXML
+    private CodeArea outputDescriptor;
 
     private NodeEntry currentEntry;
 
@@ -78,6 +81,9 @@ public class ReceiveController extends WalletFormController implements Initializ
 
         scriptPubKeyArea.clear();
         appendScript(scriptPubKeyArea, nodeEntry.getNode().getOutputScript(), null, null);
+
+        outputDescriptor.clear();
+        outputDescriptor.appendText(nodeEntry.getNode().getOutputDescriptor());
     }
 
     private Image getQrCode(String address) {
@@ -100,5 +106,10 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void getNewAddress(ActionEvent event) {
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
         setNodeEntry(freshEntry);
+    }
+
+    @Subscribe
+    public void receiveTo(ReceiveToEvent event) {
+        setNodeEntry(event.getReceiveEntry());
     }
 }

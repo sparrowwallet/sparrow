@@ -20,13 +20,13 @@
 <BorderPane stylesheets="@receive.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.ReceiveController">
     <center>
 
-        <GridPane hgap="10.0" vgap="10.0">
+        <GridPane styleClass="receive-form" hgap="10.0" vgap="10.0">
             <padding>
                 <Insets left="25.0" right="25.0" top="25.0" />
             </padding>
             <columnConstraints>
-                <ColumnConstraints percentWidth="70" />
-                <ColumnConstraints percentWidth="30" />
+                <ColumnConstraints percentWidth="80" />
+                <ColumnConstraints percentWidth="20" />
             </columnConstraints>
             <rowConstraints>
                 <RowConstraints />
@@ -34,7 +34,7 @@
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <Fieldset inputGrow="SOMETIMES" text="Receive">
                     <Field text="Address:">
-                        <CopyableTextField fx:id="address" styleClass="address-text-field" editable="false" prefWidth="350"/>
+                        <CopyableTextField fx:id="address" styleClass="address-text-field" editable="false"/>
                     </Field>
                     <Field text="Label:">
                         <TextField fx:id="label" />
@@ -56,10 +56,22 @@
 
             <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
                 <Fieldset inputGrow="SOMETIMES" text="Required Script">
-                    <Field text="ScriptPubKey:">
+                    <Field text="ScriptPubKey">
                         <VirtualizedScrollPane>
                             <content>
                                 <CodeArea fx:id="scriptPubKeyArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                            </content>
+                        </VirtualizedScrollPane>
+                    </Field>
+                </Fieldset>
+            </Form>
+
+            <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3">
+                <Fieldset inputGrow="SOMETIMES" text="Output Descriptor">
+                    <Field text="Descriptor:">
+                        <VirtualizedScrollPane>
+                            <content>
+                                <CodeArea fx:id="outputDescriptor" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
                             </content>
                         </VirtualizedScrollPane>
                     </Field>

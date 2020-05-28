@@ -6,3 +6,8 @@
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);
     -fx-padding: 20;
 }
+
+.receive-form .form .fieldset:horizontal .label-container {
+    -fx-pref-width: 90px;
+    -fx-pref-height: 25px;
+}

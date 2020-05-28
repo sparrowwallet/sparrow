@@ -1,20 +1,23 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Entry {
     private final SimpleStringProperty labelProperty;
-    private final List<Entry> children = new ArrayList<>();
+    private final ObservableList<Entry> children;
 
-    public Entry(String label) {
+    public Entry(String label, List<Entry> entries) {
         this.labelProperty = new SimpleStringProperty(label);
+        this.children = FXCollections.observableList(entries);
     }
 
-    public Entry(SimpleStringProperty labelProperty) {
+    public Entry(SimpleStringProperty labelProperty, ObservableList<Entry> children) {
         this.labelProperty = labelProperty;
+        this.children = children;
     }
 
     public String getLabel() {
@@ -25,7 +28,7 @@ public abstract class Entry {
         return labelProperty;
     }
 
-    public List<Entry> getChildren() {
+    public ObservableList<Entry> getChildren() {
         return children;
     }
 

@@ -52,11 +52,6 @@ public class WalletForm {
         } else {
             Wallet.Node purposeNode = getWallet().getNode(keyPurpose);
             purposeEntry = new NodeEntry(purposeNode);
-            for(Wallet.Node childNode : purposeNode.getChildren()) {
-                NodeEntry childEntry = new NodeEntry(childNode);
-                purposeEntry.getChildren().add(childEntry);
-            }
-
             accountEntries.add(purposeEntry);
         }
 

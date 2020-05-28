@@ -18,6 +18,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Iterator;
+import java.util.TreeSet;
 import java.util.zip.*;
 
 import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
@@ -49,14 +51,16 @@ public class Storage {
         return getGson(true);
     }
 
-    private static Gson getGson(boolean includeKeystoreSerializer) {
+    private static Gson getGson(boolean includeWalletSerializers) {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeySerializer());
         gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeyDeserializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArraySerializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArrayDeserializer());
-        if(includeKeystoreSerializer) {
+        if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
+            gsonBuilder.registerTypeAdapter(Wallet.Node.class, new NodeSerializer());
+            gsonBuilder.registerTypeAdapter(Wallet.Node.class, new NodeDeserializer());
         }
 
         return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
@@ -266,7 +270,6 @@ public class Storage {
     private static class KeystoreSerializer implements JsonSerializer<Keystore> {
         @Override
         public JsonElement serialize(Keystore keystore, Type typeOfSrc, JsonSerializationContext context) {
-
             JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(keystore);
             if(keystore.hasSeed()) {
                 jsonObject.remove("extendedPublicKey");
@@ -274,6 +277,42 @@ public class Storage {
             }
 
             return jsonObject;
+        }
+    }
+
+    private static class NodeSerializer implements JsonSerializer<Wallet.Node> {
+        @Override
+        public JsonElement serialize(Wallet.Node node, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(node);
+
+            JsonArray children = jsonObject.getAsJsonArray("children");
+            Iterator<JsonElement> iter = children.iterator();
+            while(iter.hasNext()) {
+                JsonObject childObject = (JsonObject)iter.next();
+                if(childObject.get("label") == null) {
+                    iter.remove();
+                }
+
+                if(childObject.get("children") != null && childObject.getAsJsonArray("children").size() == 0) {
+                    childObject.remove("children");
+                }
+            }
+
+            return jsonObject;
+        }
+    }
+
+    private static class NodeDeserializer implements JsonDeserializer<Wallet.Node> {
+        @Override
+        public Wallet.Node deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            Wallet.Node node = getGson(false).fromJson(json, typeOfT);
+            for(Wallet.Node childNode : node.getChildren()) {
+                if(childNode.getChildren() == null) {
+                    childNode.setChildren(new TreeSet<>());
+                }
+            }
+
+            return node;
         }
     }
 

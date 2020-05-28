@@ -2,10 +2,10 @@ package com.sparrowwallet.sparrow.event;
 
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
 
-public class ReceiveActionEvent {
+public class ReceiveToEvent {
     private final NodeEntry receiveEntry;
 
-    public ReceiveActionEvent(NodeEntry receiveEntry) {
+    public ReceiveToEvent(NodeEntry receiveEntry) {
         this.receiveEntry = receiveEntry;
     }
 
