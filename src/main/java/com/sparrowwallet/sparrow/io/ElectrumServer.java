@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.TransactionReference;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.jetbrains.annotations.NotNull;
@@ -77,19 +78,19 @@ public class ElectrumServer {
         getMempool(wallet, wallet.getNode(keyPurpose).getChildren());
     }
 
-    public void getHistory(Wallet wallet, Collection<Wallet.Node> nodes) throws ServerException {
+    public void getHistory(Wallet wallet, Collection<WalletNode> nodes) throws ServerException {
         getReferences(wallet, "blockchain.scripthash.get_history", nodes);
     }
 
-    public void getMempool(Wallet wallet, Collection<Wallet.Node> nodes) throws ServerException {
+    public void getMempool(Wallet wallet, Collection<WalletNode> nodes) throws ServerException {
         getReferences(wallet, "blockchain.scripthash.get_mempool", nodes);
     }
 
-    public void getReferences(Wallet wallet, String method, Collection<Wallet.Node> nodes) throws ServerException {
+    public void getReferences(Wallet wallet, String method, Collection<WalletNode> nodes) throws ServerException {
         try {
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
-            for(Wallet.Node node : nodes) {
+            for(WalletNode node : nodes) {
                 batchRequest.add(node.getDerivationPath(), method, getScriptHash(wallet, node));
             }
             Map<String, ScriptHashTx[]> result = batchRequest.execute();
@@ -97,9 +98,9 @@ public class ElectrumServer {
             for(String path : result.keySet()) {
                 ScriptHashTx[] txes = result.get(path);
 
-                Optional<Wallet.Node> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
+                Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
                 if(optionalNode.isPresent()) {
-                    Wallet.Node node = optionalNode.get();
+                    WalletNode node = optionalNode.get();
                     Set<TransactionReference> references = Arrays.stream(txes).map(ScriptHashTx::getTransactionReference).collect(Collectors.toSet());
 
                     for(TransactionReference reference : references) {
@@ -129,9 +130,9 @@ public class ElectrumServer {
     }
 
     public void getReferencedTransactions(Wallet wallet, KeyPurpose keyPurpose) throws ServerException {
-        Wallet.Node purposeNode = wallet.getNode(keyPurpose);
+        WalletNode purposeNode = wallet.getNode(keyPurpose);
         Set<TransactionReference> references = new HashSet<>();
-        for(Wallet.Node addressNode : purposeNode.getChildren()) {
+        for(WalletNode addressNode : purposeNode.getChildren()) {
             references.addAll(addressNode.getHistory());
         }
 
@@ -163,7 +164,7 @@ public class ElectrumServer {
         }
     }
 
-    private String getScriptHash(Wallet wallet, Wallet.Node node) {
+    private String getScriptHash(Wallet wallet, WalletNode node) {
         byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);

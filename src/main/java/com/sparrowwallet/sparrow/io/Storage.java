@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 
@@ -62,8 +63,8 @@ public class Storage {
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
         if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
-            gsonBuilder.registerTypeAdapter(Wallet.Node.class, new NodeSerializer());
-            gsonBuilder.registerTypeAdapter(Wallet.Node.class, new NodeDeserializer());
+            gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeSerializer());
+            gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeDeserializer());
         }
 
         return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
@@ -304,9 +305,9 @@ public class Storage {
         }
     }
 
-    private static class NodeSerializer implements JsonSerializer<Wallet.Node> {
+    private static class NodeSerializer implements JsonSerializer<WalletNode> {
         @Override
-        public JsonElement serialize(Wallet.Node node, Type typeOfSrc, JsonSerializationContext context) {
+        public JsonElement serialize(WalletNode node, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(node);
 
             JsonArray children = jsonObject.getAsJsonArray("children");
@@ -330,11 +331,11 @@ public class Storage {
         }
     }
 
-    private static class NodeDeserializer implements JsonDeserializer<Wallet.Node> {
+    private static class NodeDeserializer implements JsonDeserializer<WalletNode> {
         @Override
-        public Wallet.Node deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            Wallet.Node node = getGson(false).fromJson(json, typeOfT);
-            for(Wallet.Node childNode : node.getChildren()) {
+        public WalletNode deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            WalletNode node = getGson(false).fromJson(json, typeOfT);
+            for(WalletNode childNode : node.getChildren()) {
                 if(childNode.getChildren() == null) {
                     childNode.setChildren(new TreeSet<>());
                 }

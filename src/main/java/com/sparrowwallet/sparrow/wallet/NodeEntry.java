@@ -3,14 +3,15 @@ package com.sparrowwallet.sparrow.wallet;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 
 import java.util.stream.Collectors;
 
 public class NodeEntry extends Entry {
     private final Wallet wallet;
-    private final Wallet.Node node;
+    private final WalletNode node;
 
-    public NodeEntry(Wallet wallet, Wallet.Node node) {
+    public NodeEntry(Wallet wallet, WalletNode node) {
         super(node.getLabel(), node.getChildren().stream().map(childNode -> new NodeEntry(wallet, childNode)).collect(Collectors.toList()));
         this.wallet = wallet;
         this.node = node;
@@ -37,7 +38,7 @@ public class NodeEntry extends Entry {
         return null;
     }
 
-    public Wallet.Node getNode() {
+    public WalletNode getNode() {
         return node;
     }
 }

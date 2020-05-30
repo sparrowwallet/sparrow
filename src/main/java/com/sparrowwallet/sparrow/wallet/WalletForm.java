@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.File;
@@ -50,7 +51,7 @@ public class WalletForm {
         if(optionalPurposeEntry.isPresent()) {
             purposeEntry = optionalPurposeEntry.get();
         } else {
-            Wallet.Node purposeNode = getWallet().getNode(keyPurpose);
+            WalletNode purposeNode = getWallet().getNode(keyPurpose);
             purposeEntry = new NodeEntry(getWallet(), purposeNode);
             accountEntries.add(purposeEntry);
         }
@@ -60,7 +61,7 @@ public class WalletForm {
 
     public NodeEntry getFreshNodeEntry(KeyPurpose keyPurpose, NodeEntry currentEntry) {
         NodeEntry rootEntry = getNodeEntry(keyPurpose);
-        Wallet.Node freshNode = getWallet().getFreshNode(keyPurpose, currentEntry == null ? null : currentEntry.getNode());
+        WalletNode freshNode = getWallet().getFreshNode(keyPurpose, currentEntry == null ? null : currentEntry.getNode());
 
         for(Entry childEntry : rootEntry.getChildren()) {
             NodeEntry nodeEntry = (NodeEntry)childEntry;
