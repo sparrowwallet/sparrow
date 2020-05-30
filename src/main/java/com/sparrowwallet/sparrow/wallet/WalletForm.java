@@ -51,7 +51,7 @@ public class WalletForm {
             purposeEntry = optionalPurposeEntry.get();
         } else {
             Wallet.Node purposeNode = getWallet().getNode(keyPurpose);
-            purposeEntry = new NodeEntry(purposeNode);
+            purposeEntry = new NodeEntry(getWallet(), purposeNode);
             accountEntries.add(purposeEntry);
         }
 
@@ -69,7 +69,7 @@ public class WalletForm {
             }
         }
 
-        NodeEntry freshEntry = new NodeEntry(freshNode);
+        NodeEntry freshEntry = new NodeEntry(getWallet(), freshNode);
         rootEntry.getChildren().add(freshEntry);
         return freshEntry;
     }

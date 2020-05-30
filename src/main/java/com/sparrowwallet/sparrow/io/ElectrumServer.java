@@ -73,24 +73,24 @@ public class ElectrumServer {
     }
 
     public void getHistory(Wallet wallet, KeyPurpose keyPurpose) throws ServerException {
-        getHistory(wallet.getNode(keyPurpose).getChildren());
-        getMempool(wallet.getNode(keyPurpose).getChildren());
+        getHistory(wallet, wallet.getNode(keyPurpose).getChildren());
+        getMempool(wallet, wallet.getNode(keyPurpose).getChildren());
     }
 
-    public void getHistory(Collection<Wallet.Node> nodes) throws ServerException {
-        getReferences("blockchain.scripthash.get_history", nodes);
+    public void getHistory(Wallet wallet, Collection<Wallet.Node> nodes) throws ServerException {
+        getReferences(wallet, "blockchain.scripthash.get_history", nodes);
     }
 
-    public void getMempool(Collection<Wallet.Node> nodes) throws ServerException {
-        getReferences("blockchain.scripthash.get_mempool", nodes);
+    public void getMempool(Wallet wallet, Collection<Wallet.Node> nodes) throws ServerException {
+        getReferences(wallet, "blockchain.scripthash.get_mempool", nodes);
     }
 
-    public void getReferences(String method, Collection<Wallet.Node> nodes) throws ServerException {
+    public void getReferences(Wallet wallet, String method, Collection<Wallet.Node> nodes) throws ServerException {
         try {
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
             for(Wallet.Node node : nodes) {
-                batchRequest.add(node.getDerivationPath(), method, getScriptHash(node));
+                batchRequest.add(node.getDerivationPath(), method, getScriptHash(wallet, node));
             }
             Map<String, ScriptHashTx[]> result = batchRequest.execute();
 
@@ -163,26 +163,8 @@ public class ElectrumServer {
         }
     }
 
-    public void getHistory(Wallet.Node node) throws ServerException {
-        getHistory(getScriptHash(node));
-    }
-
-    public void getHistory(String scriptHash) throws ServerException {
-        try {
-            JsonRpcClient client = new JsonRpcClient(getTransport());
-            List<ScriptHashTx> txList = client.onDemand(ELectrumXService.class).getHistory(scriptHash);
-            for(ScriptHashTx tx : txList) {
-                System.out.println(tx);
-            }
-        } catch (IllegalStateException e) {
-            throw new ServerException(e.getCause());
-        } catch (Exception e) {
-            throw new ServerException(e);
-        }
-    }
-
-    private String getScriptHash(Wallet.Node node) {
-        byte[] hash = Sha256Hash.hash(node.getOutputScript().getProgram());
+    private String getScriptHash(Wallet wallet, Wallet.Node node) {
+        byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);
     }

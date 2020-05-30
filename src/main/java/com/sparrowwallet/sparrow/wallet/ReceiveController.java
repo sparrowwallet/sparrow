@@ -65,7 +65,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
         this.currentEntry = nodeEntry;
 
-        address.setText(nodeEntry.getNode().getAddress().toString());
+        address.setText(nodeEntry.getAddress().toString());
 
         label.textProperty().bindBidirectional(nodeEntry.labelProperty());
 
@@ -74,16 +74,16 @@ public class ReceiveController extends WalletFormController implements Initializ
         //TODO: Find last used block height if available (red flag?)
         lastUsed.setText("Unknown");
 
-        Image qrImage = getQrCode(nodeEntry.getNode().getAddress().toString());
+        Image qrImage = getQrCode(nodeEntry.getAddress().toString());
         if(qrImage != null) {
             qrCode.setImage(qrImage);
         }
 
         scriptPubKeyArea.clear();
-        appendScript(scriptPubKeyArea, nodeEntry.getNode().getOutputScript(), null, null);
+        appendScript(scriptPubKeyArea, nodeEntry.getOutputScript(), null, null);
 
         outputDescriptor.clear();
-        outputDescriptor.appendText(nodeEntry.getNode().getOutputDescriptor());
+        outputDescriptor.appendText(nodeEntry.getOutputDescriptor());
     }
 
     private Image getQrCode(String address) {

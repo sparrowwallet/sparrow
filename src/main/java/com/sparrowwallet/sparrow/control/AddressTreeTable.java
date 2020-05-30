@@ -29,7 +29,7 @@ public class AddressTreeTable extends TreeTableView<Entry> {
     public void initialize(NodeEntry rootEntry) {
         getStyleClass().add("address-treetable");
 
-        String address = rootEntry.getNode().getAddress().toString();
+        String address = rootEntry.getAddress().toString();
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);
 
@@ -92,7 +92,7 @@ public class AddressTreeTable extends TreeTableView<Entry> {
             } else {
                 if(entry instanceof NodeEntry) {
                     NodeEntry nodeEntry = (NodeEntry)entry;
-                    Address address = nodeEntry.getNode().getAddress();
+                    Address address = nodeEntry.getAddress();
                     setText(address.toString());
                     setContextMenu(new AddressContextMenu(address));
                 } else {
