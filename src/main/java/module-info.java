@@ -12,5 +12,9 @@ open module com.sparrowwallet.sparrow {
     requires com.google.gson;
     requires com.google.zxing;
     requires com.google.zxing.javase;
+    requires simple.json.rpc.client;
+    requires simple.json.rpc.core;
+    requires org.jetbrains.annotations;
+    requires com.fasterxml.jackson.databind;
     requires javafx.swing;
 }

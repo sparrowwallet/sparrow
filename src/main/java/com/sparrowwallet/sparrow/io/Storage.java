@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -57,6 +58,8 @@ public class Storage {
         gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeyDeserializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArraySerializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArrayDeserializer());
+        gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionSerializer());
+        gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
         if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
             gsonBuilder.registerTypeAdapter(Wallet.Node.class, new NodeSerializer());
@@ -267,6 +270,27 @@ public class Storage {
         }
     }
 
+    private static class TransactionSerializer implements JsonSerializer<Transaction> {
+        @Override
+        public JsonElement serialize(Transaction src, Type typeOfSrc, JsonSerializationContext context) {
+            try {
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                src.bitcoinSerializeToStream(baos);
+                return new JsonPrimitive(Utils.bytesToHex(baos.toByteArray()));
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
+    private static class TransactionDeserializer implements JsonDeserializer<Transaction> {
+        @Override
+        public Transaction deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            byte[] rawTx = Utils.hexToBytes(json.getAsJsonPrimitive().getAsString());
+            return new Transaction(rawTx);
+        }
+    }
+
     private static class KeystoreSerializer implements JsonSerializer<Keystore> {
         @Override
         public JsonElement serialize(Keystore keystore, Type typeOfSrc, JsonSerializationContext context) {
@@ -296,6 +320,10 @@ public class Storage {
                 if(childObject.get("children") != null && childObject.getAsJsonArray("children").size() == 0) {
                     childObject.remove("children");
                 }
+
+                if(childObject.get("history") != null && childObject.getAsJsonArray("history").size() == 0) {
+                    childObject.remove("history");
+                }
             }
 
             return jsonObject;
@@ -309,6 +337,9 @@ public class Storage {
             for(Wallet.Node childNode : node.getChildren()) {
                 if(childNode.getChildren() == null) {
                     childNode.setChildren(new TreeSet<>());
+                }
+                if(childNode.getHistory() == null) {
+                    childNode.setHistory(new TreeSet<>());
                 }
             }
 

@@ -382,6 +382,17 @@ public class AppController implements Initializable {
             WalletForm walletForm = new WalletForm(storage, wallet);
             controller.setWalletForm(walletForm);
 
+            if(wallet.isValid()) {
+                ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet);
+                historyService.setOnSucceeded(workerStateEvent -> {
+                    //TODO: Show connected
+                });
+                historyService.setOnFailed(workerStateEvent -> {
+                    //TODO: Show not connected, log exception
+                });
+                historyService.start();
+            }
+
             if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
                 Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
                 enumerateService.setPeriod(new Duration(30 * 1000));

@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
-import com.sparrowwallet.drongo.Utils;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -11,6 +10,8 @@ public class Config {
 
     private Integer keyDerivationPeriod;
     private File hwi;
+    private String electrumServer;
+    private File electrumServerCert;
 
     private static Config INSTANCE;
 
@@ -68,6 +69,24 @@ public class Config {
 
     public void setHwi(File hwi) {
         this.hwi = hwi;
+        flush();
+    }
+
+    public String getElectrumServer() {
+        return electrumServer;
+    }
+
+    public void setElectrumServer(String electrumServer) {
+        this.electrumServer = electrumServer;
+        flush();
+    }
+
+    public File getElectrumServerCert() {
+        return electrumServerCert;
+    }
+
+    public void setElectrumServerCert(File electrumServerCert) {
+        this.electrumServerCert = electrumServerCert;
         flush();
     }
 
