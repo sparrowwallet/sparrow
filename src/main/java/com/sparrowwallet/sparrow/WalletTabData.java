@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 
 public class WalletTabData extends TabData {
@@ -26,7 +26,7 @@ public class WalletTabData extends TabData {
     }
 
     @Subscribe
-    public void walletChanged(WalletChangedEvent event) {
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
         if(event.getWalletFile().equals(storage.getWalletFile())) {
             wallet = event.getWallet();
         }

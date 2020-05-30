@@ -1,8 +1,12 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.File;
@@ -20,8 +24,11 @@ public class WalletForm {
 
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
-        this.oldWallet = currentWallet;
-        this.wallet = currentWallet.copy();
+        this.oldWallet = currentWallet.copy();
+        this.wallet = currentWallet;
+        refreshHistory();
+
+        EventManager.get().register(this);
     }
 
     public Wallet getWallet() {
@@ -36,13 +43,39 @@ public class WalletForm {
         return storage.getWalletFile();
     }
 
-    public void revert() {
+    public void revertAndRefresh() {
         this.wallet = oldWallet.copy();
+        refreshHistory();
     }
 
     public void save() throws IOException {
         storage.storeWallet(wallet);
         oldWallet = wallet.copy();
+    }
+
+    public void saveAndRefresh() throws IOException {
+        //TODO: Detect trivial changes and don't clear history
+        wallet.clearHistory();
+        save();
+        refreshHistory();
+    }
+
+    public void refreshHistory() {
+        if(wallet.isValid()) {
+            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet);
+            historyService.setOnSucceeded(workerStateEvent -> {
+                //TODO: Show connected
+                try {
+                    storage.storeWallet(wallet);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            historyService.setOnFailed(workerStateEvent -> {
+                //TODO: Show not connected, log exception
+            });
+            historyService.start();
+        }
     }
 
     public NodeEntry getNodeEntry(KeyPurpose keyPurpose) {
@@ -73,5 +106,15 @@ public class WalletForm {
         NodeEntry freshEntry = new NodeEntry(getWallet(), freshNode);
         rootEntry.getChildren().add(freshEntry);
         return freshEntry;
+    }
+
+    @Subscribe
+    public void walletChanged(WalletChangedEvent event) {
+        try {
+            save();
+        } catch (IOException e) {
+            //Background save failed
+            e.printStackTrace();
+        }
     }
 }

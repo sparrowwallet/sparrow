@@ -4,6 +4,8 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 
 import java.util.stream.Collectors;
 
@@ -16,7 +18,10 @@ public class NodeEntry extends Entry {
         this.wallet = wallet;
         this.node = node;
 
-        labelProperty().addListener((observable, oldValue, newValue) -> node.setLabel(newValue));
+        labelProperty().addListener((observable, oldValue, newValue) -> {
+            node.setLabel(newValue);
+            EventManager.get().post(new WalletChangedEvent(wallet));
+        });
     }
 
     public Address getAddress() {

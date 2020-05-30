@@ -314,16 +314,16 @@ public class Storage {
             Iterator<JsonElement> iter = children.iterator();
             while(iter.hasNext()) {
                 JsonObject childObject = (JsonObject)iter.next();
-                if(childObject.get("label") == null) {
-                    iter.remove();
-                }
-
                 if(childObject.get("children") != null && childObject.getAsJsonArray("children").size() == 0) {
                     childObject.remove("children");
                 }
 
                 if(childObject.get("history") != null && childObject.getAsJsonArray("history").size() == 0) {
                     childObject.remove("history");
+                }
+
+                if(childObject.get("label") == null && childObject.get("children") == null && childObject.get("history") == null) {
+                    iter.remove();
                 }
             }
 

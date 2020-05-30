@@ -17,7 +17,7 @@ import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
-import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -155,7 +155,7 @@ public class SettingsController extends WalletFormController implements Initiali
             keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
             totalKeystores.unbind();
             totalKeystores.setValue(0);
-            walletForm.revert();
+            walletForm.revertAndRefresh();
             setFieldsFromWallet(walletForm.getWallet());
         });
 
@@ -267,8 +267,8 @@ public class SettingsController extends WalletFormController implements Initiali
             if(password.get().length() == 0) {
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
-                    walletForm.save();
-                    EventManager.get().post(new WalletChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
+                    walletForm.saveAndRefresh();
+                    EventManager.get().post(new WalletSettingsChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
                 } catch (IOException e) {
                     AppController.showErrorDialog("Error saving wallet", e.getMessage());
                     revert.setDisable(false);
@@ -295,8 +295,8 @@ public class SettingsController extends WalletFormController implements Initiali
                         walletForm.getWallet().encrypt(key);
 
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
-                        walletForm.save();
-                        EventManager.get().post(new WalletChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
+                        walletForm.saveAndRefresh();
+                        EventManager.get().post(new WalletSettingsChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
                     } catch (Exception e) {
                         AppController.showErrorDialog("Error saving wallet", e.getMessage());
                         revert.setDisable(false);
