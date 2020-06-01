@@ -2,16 +2,12 @@ package com.sparrowwallet.sparrow.io;
 
 import com.github.arteam.simplejsonrpc.client.*;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
-import com.github.arteam.simplejsonrpc.client.generator.CurrentTimeIdGenerator;
-import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
-import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
-import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.wallet.TransactionReference;
+import com.sparrowwallet.drongo.wallet.BlockchainTransactionHash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import javafx.concurrent.Service;
@@ -101,13 +97,13 @@ public class ElectrumServer {
                 Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
                 if(optionalNode.isPresent()) {
                     WalletNode node = optionalNode.get();
-                    Set<TransactionReference> references = Arrays.stream(txes).map(ScriptHashTx::getTransactionReference).collect(Collectors.toSet());
+                    Set<BlockchainTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).collect(Collectors.toSet());
 
-                    for(TransactionReference reference : references) {
+                    for(BlockchainTransactionHash reference : references) {
                         if(!node.getHistory().add(reference)) {
-                            Optional<TransactionReference> optionalReference = node.getHistory().stream().filter(tr -> tr.getTransactionId().equals(reference.getTransactionId())).findFirst();
+                            Optional<BlockchainTransactionHash> optionalReference = node.getHistory().stream().filter(tr -> tr.getHash().equals(reference.getHash())).findFirst();
                             if(optionalReference.isPresent()) {
-                                TransactionReference existingReference = optionalReference.get();
+                                BlockchainTransactionHash existingReference = optionalReference.get();
                                 if(existingReference.getHeight() < reference.getHeight()) {
                                     node.getHistory().remove(existingReference);
                                     node.getHistory().add(reference);
@@ -131,29 +127,30 @@ public class ElectrumServer {
 
     public void getReferencedTransactions(Wallet wallet, KeyPurpose keyPurpose) throws ServerException {
         WalletNode purposeNode = wallet.getNode(keyPurpose);
-        Set<TransactionReference> references = new HashSet<>();
+        Set<BlockchainTransactionHash> references = new HashSet<>();
         for(WalletNode addressNode : purposeNode.getChildren()) {
             references.addAll(addressNode.getHistory());
         }
 
-        Map<String, Transaction> transactionMap = getTransactions(references);
+        Map<Sha256Hash, Transaction> transactionMap = getTransactions(references);
         wallet.getTransactions().putAll(transactionMap);
     }
 
-    public Map<String, Transaction> getTransactions(Set<TransactionReference> references) throws ServerException {
+    public Map<Sha256Hash, Transaction> getTransactions(Set<BlockchainTransactionHash> references) throws ServerException {
         try {
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
-            for(TransactionReference reference : references) {
-                batchRequest.add(reference.getTransactionId(), "blockchain.transaction.get", reference.getTransactionId());
+            for(BlockchainTransactionHash reference : references) {
+                batchRequest.add(reference.getHashAsString(), "blockchain.transaction.get", reference.getHashAsString());
             }
             Map<String, String> result = batchRequest.execute();
 
-            Map<String, Transaction> transactionMap = new HashMap<>();
+            Map<Sha256Hash, Transaction> transactionMap = new HashMap<>();
             for(String txid : result.keySet()) {
+                Sha256Hash hash = Sha256Hash.wrap(txid);
                 byte[] rawtx = Utils.hexToBytes(result.get(txid));
                 Transaction transaction = new Transaction(rawtx);
-                transactionMap.put(txid, transaction);
+                transactionMap.put(hash, transaction);
             }
 
             return transactionMap;
@@ -175,8 +172,9 @@ public class ElectrumServer {
         public String tx_hash;
         public long fee;
 
-        public TransactionReference getTransactionReference() {
-            return new TransactionReference(tx_hash, height, fee);
+        public BlockchainTransactionHash getBlockchainTransactionHash() {
+            Sha256Hash hash = Sha256Hash.wrap(tx_hash);
+            return new BlockchainTransactionHash(hash, height, fee);
         }
 
         @Override
@@ -187,16 +185,6 @@ public class ElectrumServer {
                     ", fee=" + fee +
                     '}';
         }
-    }
-
-    @JsonRpcService
-    @JsonRpcId(CurrentTimeIdGenerator.class)
-    @JsonRpcParams(ParamsType.MAP)
-    private interface ELectrumXService {
-
-        @JsonRpcMethod("blockchain.scripthash.get_history")
-        List<ScriptHashTx> getHistory(@JsonRpcParam("scripthash") String scriptHash);
-
     }
 
     private static class TcpTransport implements Transport {

@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
@@ -59,6 +60,8 @@ public class Storage {
         gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeyDeserializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArraySerializer());
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArrayDeserializer());
+        gsonBuilder.registerTypeAdapter(Sha256Hash.class, new Sha256HashSerializer());
+        gsonBuilder.registerTypeAdapter(Sha256Hash.class, new Sha256HashDeserializer());
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionSerializer());
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
         if(includeWalletSerializers) {
@@ -268,6 +271,20 @@ public class Storage {
         @Override
         public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return Utils.hexToBytes(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class Sha256HashSerializer implements JsonSerializer<Sha256Hash> {
+        @Override
+        public JsonElement serialize(Sha256Hash src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toString());
+        }
+    }
+
+    private static class Sha256HashDeserializer implements JsonDeserializer<Sha256Hash> {
+        @Override
+        public Sha256Hash deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return Sha256Hash.wrap(json.getAsJsonPrimitive().getAsString());
         }
     }
 
