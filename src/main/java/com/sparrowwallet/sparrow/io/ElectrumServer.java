@@ -61,28 +61,28 @@ public class ElectrumServer {
         return serverVersion.get(1);
     }
 
-    public Map<WalletNode, Set<BlockchainTransactionHash>> getHistory(Wallet wallet) throws ServerException {
-        Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap = new HashMap<>();
+    public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet) throws ServerException {
+        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new HashMap<>();
         getHistory(wallet, KeyPurpose.RECEIVE, nodeTransactionMap);
         getHistory(wallet, KeyPurpose.CHANGE, nodeTransactionMap);
 
         return nodeTransactionMap;
     }
 
-    public void getHistory(Wallet wallet, KeyPurpose keyPurpose, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap) throws ServerException {
+    public void getHistory(Wallet wallet, KeyPurpose keyPurpose, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         getHistory(wallet, wallet.getNode(keyPurpose).getChildren(), nodeTransactionMap);
         getMempool(wallet, wallet.getNode(keyPurpose).getChildren(), nodeTransactionMap);
     }
 
-    public void getHistory(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap) throws ServerException {
+    public void getHistory(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         getReferences(wallet, "blockchain.scripthash.get_history", nodes, nodeTransactionMap);
     }
 
-    public void getMempool(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap) throws ServerException {
+    public void getMempool(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         getReferences(wallet, "blockchain.scripthash.get_mempool", nodes, nodeTransactionMap);
     }
 
-    public void getReferences(Wallet wallet, String method, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap) throws ServerException {
+    public void getReferences(Wallet wallet, String method, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         try {
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
@@ -98,17 +98,17 @@ public class ElectrumServer {
                 if(optionalNode.isPresent()) {
                     WalletNode node = optionalNode.get();
 
-                    Set<BlockchainTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).collect(Collectors.toCollection(TreeSet::new));
-                    Set<BlockchainTransactionHash> existingReferences = nodeTransactionMap.get(node);
+                    Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).collect(Collectors.toCollection(TreeSet::new));
+                    Set<BlockTransactionHash> existingReferences = nodeTransactionMap.get(node);
 
                     if(existingReferences == null && !references.isEmpty()) {
                         nodeTransactionMap.put(node, references);
                     } else {
-                        for(BlockchainTransactionHash reference : references) {
+                        for(BlockTransactionHash reference : references) {
                             if(!existingReferences.add(reference)) {
-                                Optional<BlockchainTransactionHash> optionalReference = existingReferences.stream().filter(tr -> tr.getHash().equals(reference.getHash())).findFirst();
+                                Optional<BlockTransactionHash> optionalReference = existingReferences.stream().filter(tr -> tr.getHash().equals(reference.getHash())).findFirst();
                                 if(optionalReference.isPresent()) {
-                                    BlockchainTransactionHash existingReference = optionalReference.get();
+                                    BlockTransactionHash existingReference = optionalReference.get();
                                     if(existingReference.getHeight() < reference.getHeight()) {
                                         existingReferences.remove(existingReference);
                                         existingReferences.add(reference);
@@ -126,13 +126,13 @@ public class ElectrumServer {
         }
     }
 
-    public void getReferencedTransactions(Wallet wallet, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap) throws ServerException {
-        Set<BlockchainTransactionHash> references = new TreeSet<>();
-        for(Set<BlockchainTransactionHash> nodeReferences : nodeTransactionMap.values()) {
+    public void getReferencedTransactions(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
+        Set<BlockTransactionHash> references = new TreeSet<>();
+        for(Set<BlockTransactionHash> nodeReferences : nodeTransactionMap.values()) {
             references.addAll(nodeReferences);
         }
 
-        Map<Sha256Hash, BlockchainTransaction> transactionMap = getTransactions(references);
+        Map<Sha256Hash, BlockTransaction> transactionMap = getTransactions(references);
         for(Sha256Hash hash : transactionMap.keySet()) {
             if(wallet.getTransactions().get(hash) == null) {
                 wallet.getTransactions().put(hash, transactionMap.get(hash));
@@ -143,29 +143,29 @@ public class ElectrumServer {
         }
     }
 
-    public Map<Sha256Hash, BlockchainTransaction> getTransactions(Set<BlockchainTransactionHash> references) throws ServerException {
+    public Map<Sha256Hash, BlockTransaction> getTransactions(Set<BlockTransactionHash> references) throws ServerException {
         try {
-            Set<BlockchainTransactionHash> checkReferences = new TreeSet<>(references);
+            Set<BlockTransactionHash> checkReferences = new TreeSet<>(references);
 
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
-            for(BlockchainTransactionHash reference : references) {
+            for(BlockTransactionHash reference : references) {
                 batchRequest.add(reference.getHashAsString(), "blockchain.transaction.get", reference.getHashAsString());
             }
             Map<String, String> result = batchRequest.execute();
 
-            Map<Sha256Hash, BlockchainTransaction> transactionMap = new HashMap<>();
+            Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
             for(String txid : result.keySet()) {
                 Sha256Hash hash = Sha256Hash.wrap(txid);
                 byte[] rawtx = Utils.hexToBytes(result.get(txid));
                 Transaction transaction = new Transaction(rawtx);
 
-                Optional<BlockchainTransactionHash> optionalReference = references.stream().filter(reference -> reference.getHash().equals(hash)).findFirst();
+                Optional<BlockTransactionHash> optionalReference = references.stream().filter(reference -> reference.getHash().equals(hash)).findFirst();
                 if(optionalReference.isEmpty()) {
                     throw new IllegalStateException("Returned transaction " + hash.toString() + " that was not requested");
                 }
-                BlockchainTransactionHash reference = optionalReference.get();
-                BlockchainTransaction blockchainTransaction = new BlockchainTransaction(reference.getHash(), reference.getHeight(), reference.getFee(), transaction);
+                BlockTransactionHash reference = optionalReference.get();
+                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), reference.getFee(), transaction);
 
                 transactionMap.put(hash, blockchainTransaction);
                 checkReferences.remove(reference);
@@ -183,17 +183,17 @@ public class ElectrumServer {
         }
     }
 
-    public void calculateNodeHistory(Wallet wallet, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap) {
+    public void calculateNodeHistory(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
         for(WalletNode node : nodeTransactionMap.keySet()) {
             calculateNodeHistory(wallet, nodeTransactionMap, node);
         }
     }
 
-    public void calculateNodeHistory(Wallet wallet, Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap, WalletNode node) {
+    public void calculateNodeHistory(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, WalletNode node) {
         Script nodeScript = wallet.getOutputScript(node);
-        Set<BlockchainTransactionHash> history = nodeTransactionMap.get(node);
-        for(BlockchainTransactionHash reference : history) {
-            BlockchainTransaction blockchainTransaction = wallet.getTransactions().get(reference.getHash());
+        Set<BlockTransactionHash> history = nodeTransactionMap.get(node);
+        for(BlockTransactionHash reference : history) {
+            BlockTransaction blockchainTransaction = wallet.getTransactions().get(reference.getHash());
             if(blockchainTransaction == null) {
                 throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
             }
@@ -202,32 +202,32 @@ public class ElectrumServer {
             for(int inputIndex = 0; inputIndex < transaction.getInputs().size(); inputIndex++) {
                 TransactionInput input = transaction.getInputs().get(inputIndex);
                 Sha256Hash previousHash = input.getOutpoint().getHash();
-                BlockchainTransaction previousTransaction = wallet.getTransactions().get(previousHash);
+                BlockTransaction previousTransaction = wallet.getTransactions().get(previousHash);
                 if(previousTransaction == null) {
                     //No referenced transaction found, cannot check if spends from wallet
                     //This is fine so long as all referenced transactions have been returned, in which case this refers to a transaction that does not affect this wallet
                     continue;
                 }
 
-                Optional<BlockchainTransactionHash> optionalTxHash = history.stream().filter(txHash -> txHash.getHash().equals(previousHash)).findFirst();
+                Optional<BlockTransactionHash> optionalTxHash = history.stream().filter(txHash -> txHash.getHash().equals(previousHash)).findFirst();
                 if(optionalTxHash.isEmpty()) {
                     //No previous transaction history found, cannot check if spends from wallet
                     //This is fine so long as all referenced transactions have been returned, in which case this refers to a transaction that does not affect this wallet node
                     continue;
                 }
 
-                BlockchainTransactionHash spentTxHash = optionalTxHash.get();
+                BlockTransactionHash spentTxHash = optionalTxHash.get();
                 TransactionOutput spentOutput = previousTransaction.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
                 if(spentOutput.getScript().equals(nodeScript)) {
-                    BlockchainTransactionHashIndex spendingTXI = new BlockchainTransactionHashIndex(reference.getHash(), reference.getHeight(), reference.getFee(), inputIndex, spentOutput.getValue());
-                    BlockchainTransactionHashIndex spentTXO = new BlockchainTransactionHashIndex(spentTxHash.getHash(), spentTxHash.getHeight(), spentTxHash.getFee(), spentOutput.getIndex(), spentOutput.getValue(), spendingTXI);
+                    BlockTransactionHashIndex spendingTXI = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), reference.getFee(), inputIndex, spentOutput.getValue());
+                    BlockTransactionHashIndex spentTXO = new BlockTransactionHashIndex(spentTxHash.getHash(), spentTxHash.getHeight(), spentTxHash.getFee(), spentOutput.getIndex(), spentOutput.getValue(), spendingTXI);
 
-                    Optional<BlockchainTransactionHashIndex> optionalReference = node.getTransactionOutputs().stream().filter(receivedTXO -> receivedTXO.equals(spentTXO)).findFirst();
+                    Optional<BlockTransactionHashIndex> optionalReference = node.getTransactionOutputs().stream().filter(receivedTXO -> receivedTXO.equals(spentTXO)).findFirst();
                     if(optionalReference.isEmpty()) {
                         throw new IllegalStateException("Found spent transaction output " + spentTXO + " but no record of receiving it");
                     }
 
-                    BlockchainTransactionHashIndex receivedTXO = optionalReference.get();
+                    BlockTransactionHashIndex receivedTXO = optionalReference.get();
                     receivedTXO.setSpentBy(spendingTXI);
                 }
             }
@@ -235,12 +235,12 @@ public class ElectrumServer {
             for(int outputIndex = 0; outputIndex < transaction.getOutputs().size(); outputIndex++) {
                 TransactionOutput output = transaction.getOutputs().get(outputIndex);
                 if(output.getScript().equals(nodeScript)) {
-                    BlockchainTransactionHashIndex receivingTXO = new BlockchainTransactionHashIndex(reference.getHash(), reference.getHeight(), reference.getFee(), output.getIndex(), output.getValue());
-                    Optional<BlockchainTransactionHashIndex> optionalExistingTXO = node.getTransactionOutputs().stream().filter(txo -> txo.getHash().equals(receivingTXO.getHash()) && txo.getIndex() == receivingTXO.getIndex() && txo.getHeight() != receivingTXO.getHeight()).findFirst();
+                    BlockTransactionHashIndex receivingTXO = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), reference.getFee(), output.getIndex(), output.getValue());
+                    Optional<BlockTransactionHashIndex> optionalExistingTXO = node.getTransactionOutputs().stream().filter(txo -> txo.getHash().equals(receivingTXO.getHash()) && txo.getIndex() == receivingTXO.getIndex() && txo.getHeight() != receivingTXO.getHeight()).findFirst();
                     if(optionalExistingTXO.isEmpty()) {
                         node.getTransactionOutputs().add(receivingTXO);
                     } else {
-                        BlockchainTransactionHashIndex existingTXO = optionalExistingTXO.get();
+                        BlockTransactionHashIndex existingTXO = optionalExistingTXO.get();
                         if(existingTXO.getHeight() < receivingTXO.getHeight()) {
                             node.getTransactionOutputs().remove(existingTXO);
                             node.getTransactionOutputs().add(receivingTXO);
@@ -262,9 +262,9 @@ public class ElectrumServer {
         public String tx_hash;
         public long fee;
 
-        public BlockchainTransactionHash getBlockchainTransactionHash() {
+        public BlockTransactionHash getBlockchainTransactionHash() {
             Sha256Hash hash = Sha256Hash.wrap(tx_hash);
-            return new BlockchainTransaction(hash, height, fee, null);
+            return new BlockTransaction(hash, height, fee, null);
         }
 
         @Override
@@ -386,7 +386,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected Boolean call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    Map<WalletNode, Set<BlockchainTransactionHash>> nodeTransactionMap = electrumServer.getHistory(wallet);
+                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = electrumServer.getHistory(wallet);
                     electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
                     electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
                     return true;
