@@ -19,10 +19,7 @@ import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Iterator;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.zip.*;
 
 import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
@@ -62,6 +59,8 @@ public class Storage {
         gsonBuilder.registerTypeAdapter(byte[].class, new ByteArrayDeserializer());
         gsonBuilder.registerTypeAdapter(Sha256Hash.class, new Sha256HashSerializer());
         gsonBuilder.registerTypeAdapter(Sha256Hash.class, new Sha256HashDeserializer());
+        gsonBuilder.registerTypeAdapter(Date.class, new DateSerializer());
+        gsonBuilder.registerTypeAdapter(Date.class, new DateDeserializer());
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionSerializer());
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
         if(includeWalletSerializers) {
@@ -285,6 +284,20 @@ public class Storage {
         @Override
         public Sha256Hash deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return Sha256Hash.wrap(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class DateSerializer implements JsonSerializer<Date> {
+        @Override
+        public JsonElement serialize(Date src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.getTime());
+        }
+    }
+
+    private static class DateDeserializer implements JsonDeserializer<Date> {
+        @Override
+        public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return new Date(json.getAsJsonPrimitive().getAsLong());
         }
     }
 

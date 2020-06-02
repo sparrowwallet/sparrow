@@ -132,18 +132,55 @@ public class ElectrumServer {
             references.addAll(nodeReferences);
         }
 
-        Map<Sha256Hash, BlockTransaction> transactionMap = getTransactions(references);
-        for(Sha256Hash hash : transactionMap.keySet()) {
-            if(wallet.getTransactions().get(hash) == null) {
-                wallet.getTransactions().put(hash, transactionMap.get(hash));
-            } else if(wallet.getTransactions().get(hash).getHeight() <= 0) {
-                transactionMap.get(hash).setLabel(wallet.getTransactions().get(hash).getLabel());
-                wallet.getTransactions().put(hash, transactionMap.get(hash));
+        Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(references);
+        Map<Sha256Hash, BlockTransaction> transactionMap = getTransactions(references, blockHeaderMap);
+
+        if(!transactionMap.equals(wallet.getTransactions())) {
+            for(BlockTransaction blockTx : transactionMap.values()) {
+                Optional<String> optionalLabel = wallet.getTransactions().values().stream().filter(oldBlTx -> oldBlTx.getHash().equals(blockTx.getHash())).map(BlockTransaction::getLabel).findFirst();
+                optionalLabel.ifPresent(blockTx::setLabel);
             }
+
+            wallet.getTransactions().clear();
+            wallet.getTransactions().putAll(transactionMap);
         }
     }
 
-    public Map<Sha256Hash, BlockTransaction> getTransactions(Set<BlockTransactionHash> references) throws ServerException {
+    public Map<Integer, BlockHeader> getBlockHeaders(Set<BlockTransactionHash> references) throws ServerException {
+        try {
+            Set<Integer> blockHeights = new TreeSet<>();
+            for(BlockTransactionHash reference : references) {
+                blockHeights.add(reference.getHeight());
+            }
+
+            JsonRpcClient client = new JsonRpcClient(getTransport());
+            BatchRequestBuilder<Integer, String> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(String.class);
+            for(Integer height : blockHeights) {
+                batchRequest.add(height, "blockchain.block.header", height);
+            }
+            Map<Integer, String> result = batchRequest.execute();
+
+            Map<Integer, BlockHeader> blockHeaderMap = new TreeMap<>();
+            for(Integer height : result.keySet()) {
+                byte[] blockHeaderBytes = Utils.hexToBytes(result.get(height));
+                BlockHeader blockHeader = new BlockHeader(blockHeaderBytes);
+                blockHeaderMap.put(height, blockHeader);
+                blockHeights.remove(height);
+            }
+
+            if(!blockHeights.isEmpty()) {
+                throw new IllegalStateException("Could not retrieve blocks " + blockHeights);
+            }
+
+            return blockHeaderMap;
+        } catch (IllegalStateException e) {
+            throw new ServerException(e.getCause());
+        } catch (Exception e) {
+            throw new ServerException(e);
+        }
+    }
+
+    public Map<Sha256Hash, BlockTransaction> getTransactions(Set<BlockTransactionHash> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
         try {
             Set<BlockTransactionHash> checkReferences = new TreeSet<>(references);
 
@@ -165,7 +202,13 @@ public class ElectrumServer {
                     throw new IllegalStateException("Returned transaction " + hash.toString() + " that was not requested");
                 }
                 BlockTransactionHash reference = optionalReference.get();
-                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), reference.getFee(), transaction);
+
+                BlockHeader blockHeader = blockHeaderMap.get(reference.getHeight());
+                if(blockHeader == null) {
+                    throw new IllegalStateException("Block header at height " + reference.getHeight() + " not retrieved");
+                }
+
+                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockHeader.getTimeAsDate(), reference.getFee(), transaction);
 
                 transactionMap.put(hash, blockchainTransaction);
                 checkReferences.remove(reference);
@@ -190,15 +233,33 @@ public class ElectrumServer {
     }
 
     public void calculateNodeHistory(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, WalletNode node) {
+        Set<BlockTransactionHashIndex> transactionOutputs = new TreeSet<>();
+
         Script nodeScript = wallet.getOutputScript(node);
         Set<BlockTransactionHash> history = nodeTransactionMap.get(node);
         for(BlockTransactionHash reference : history) {
-            BlockTransaction blockchainTransaction = wallet.getTransactions().get(reference.getHash());
-            if(blockchainTransaction == null) {
+            BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
+            if (blockTransaction == null) {
                 throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
             }
+            Transaction transaction = blockTransaction.getTransaction();
 
-            Transaction transaction = blockchainTransaction.getTransaction();
+            for (int outputIndex = 0; outputIndex < transaction.getOutputs().size(); outputIndex++) {
+                TransactionOutput output = transaction.getOutputs().get(outputIndex);
+                if (output.getScript().equals(nodeScript)) {
+                    BlockTransactionHashIndex receivingTXO = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), reference.getFee(), output.getIndex(), output.getValue());
+                    transactionOutputs.add(receivingTXO);
+                }
+            }
+        }
+
+        for(BlockTransactionHash reference : history) {
+            BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
+            if (blockTransaction == null) {
+                throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
+            }
+            Transaction transaction = blockTransaction.getTransaction();
+
             for(int inputIndex = 0; inputIndex < transaction.getInputs().size(); inputIndex++) {
                 TransactionInput input = transaction.getInputs().get(inputIndex);
                 Sha256Hash previousHash = input.getOutpoint().getHash();
@@ -219,10 +280,10 @@ public class ElectrumServer {
                 BlockTransactionHash spentTxHash = optionalTxHash.get();
                 TransactionOutput spentOutput = previousTransaction.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
                 if(spentOutput.getScript().equals(nodeScript)) {
-                    BlockTransactionHashIndex spendingTXI = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), reference.getFee(), inputIndex, spentOutput.getValue());
-                    BlockTransactionHashIndex spentTXO = new BlockTransactionHashIndex(spentTxHash.getHash(), spentTxHash.getHeight(), spentTxHash.getFee(), spentOutput.getIndex(), spentOutput.getValue(), spendingTXI);
+                    BlockTransactionHashIndex spendingTXI = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), reference.getFee(), inputIndex, spentOutput.getValue());
+                    BlockTransactionHashIndex spentTXO = new BlockTransactionHashIndex(spentTxHash.getHash(), spentTxHash.getHeight(), previousTransaction.getDate(), spentTxHash.getFee(), spentOutput.getIndex(), spentOutput.getValue(), spendingTXI);
 
-                    Optional<BlockTransactionHashIndex> optionalReference = node.getTransactionOutputs().stream().filter(receivedTXO -> receivedTXO.equals(spentTXO)).findFirst();
+                    Optional<BlockTransactionHashIndex> optionalReference = transactionOutputs.stream().filter(receivedTXO -> receivedTXO.equals(spentTXO)).findFirst();
                     if(optionalReference.isEmpty()) {
                         throw new IllegalStateException("Found spent transaction output " + spentTXO + " but no record of receiving it");
                     }
@@ -231,23 +292,16 @@ public class ElectrumServer {
                     receivedTXO.setSpentBy(spendingTXI);
                 }
             }
+        }
 
-            for(int outputIndex = 0; outputIndex < transaction.getOutputs().size(); outputIndex++) {
-                TransactionOutput output = transaction.getOutputs().get(outputIndex);
-                if(output.getScript().equals(nodeScript)) {
-                    BlockTransactionHashIndex receivingTXO = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), reference.getFee(), output.getIndex(), output.getValue());
-                    Optional<BlockTransactionHashIndex> optionalExistingTXO = node.getTransactionOutputs().stream().filter(txo -> txo.getHash().equals(receivingTXO.getHash()) && txo.getIndex() == receivingTXO.getIndex() && txo.getHeight() != receivingTXO.getHeight()).findFirst();
-                    if(optionalExistingTXO.isEmpty()) {
-                        node.getTransactionOutputs().add(receivingTXO);
-                    } else {
-                        BlockTransactionHashIndex existingTXO = optionalExistingTXO.get();
-                        if(existingTXO.getHeight() < receivingTXO.getHeight()) {
-                            node.getTransactionOutputs().remove(existingTXO);
-                            node.getTransactionOutputs().add(receivingTXO);
-                        }
-                    }
-                }
+        if(!transactionOutputs.equals(node.getTransactionOutputs())) {
+            for(BlockTransactionHashIndex txo : transactionOutputs) {
+                Optional<String> optionalLabel = node.getTransactionOutputs().stream().filter(oldTxo -> oldTxo.getHash().equals(txo.getHash()) && oldTxo.getIndex() == txo.getIndex()).map(BlockTransactionHash::getLabel).findFirst();
+                optionalLabel.ifPresent(txo::setLabel);
             }
+
+            node.getTransactionOutputs().clear();
+            node.getTransactionOutputs().addAll(transactionOutputs);
         }
     }
 
@@ -264,7 +318,7 @@ public class ElectrumServer {
 
         public BlockTransactionHash getBlockchainTransactionHash() {
             Sha256Hash hash = Sha256Hash.wrap(tx_hash);
-            return new BlockTransaction(hash, height, fee, null);
+            return new BlockTransaction(hash, height, null, fee, null);
         }
 
         @Override
