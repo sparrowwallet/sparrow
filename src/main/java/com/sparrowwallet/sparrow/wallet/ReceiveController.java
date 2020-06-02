@@ -110,6 +110,8 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     @Subscribe
     public void receiveTo(ReceiveToEvent event) {
-        setNodeEntry(event.getReceiveEntry());
+        if(event.getReceiveEntry().getWallet().equals(getWalletForm().getWallet())) {
+            setNodeEntry(event.getReceiveEntry());
+        }
     }
 }

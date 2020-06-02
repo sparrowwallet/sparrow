@@ -110,11 +110,13 @@ public class WalletForm {
 
     @Subscribe
     public void walletChanged(WalletChangedEvent event) {
-        try {
-            save();
-        } catch (IOException e) {
-            //Background save failed
-            e.printStackTrace();
+        if(event.getWallet().equals(wallet)) {
+            try {
+                save();
+            } catch (IOException e) {
+                //Background save failed
+                e.printStackTrace();
+            }
         }
     }
 }

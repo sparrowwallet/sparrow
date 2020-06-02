@@ -24,6 +24,14 @@ public class NodeEntry extends Entry {
         });
     }
 
+    public Wallet getWallet() {
+        return wallet;
+    }
+
+    public WalletNode getNode() {
+        return node;
+    }
+
     public Address getAddress() {
         return wallet.getAddress(node);
     }
@@ -41,9 +49,5 @@ public class NodeEntry extends Entry {
         //TODO: Iterate through TransactionEntries to calculate amount
 
         return null;
-    }
-
-    public WalletNode getNode() {
-        return node;
     }
 }

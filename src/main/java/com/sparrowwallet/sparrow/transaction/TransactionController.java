@@ -244,7 +244,7 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void transactionChanged(TransactionChangedEvent event) {
-        if (event.getTransaction().equals(transaction)) {
+        if(event.getTransaction().equals(transaction)) {
             refreshTxHex();
             txtree.refresh();
         }
