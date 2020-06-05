@@ -16,5 +16,6 @@ open module com.sparrowwallet.sparrow {
     requires simple.json.rpc.core;
     requires org.jetbrains.annotations;
     requires com.fasterxml.jackson.databind;
+    requires centerdevice.nsmenufx;
     requires javafx.swing;
 }

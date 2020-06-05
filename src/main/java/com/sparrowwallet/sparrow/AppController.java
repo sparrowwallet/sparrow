@@ -19,9 +19,11 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
+import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -40,6 +42,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.StatusBar;
+import org.controlsfx.tools.Platform;
 
 import java.io.*;
 import java.net.URL;
@@ -55,6 +58,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem exportWallet;
+
+    @FXML
+    private Menu fileMenu;
 
     @FXML
     private CheckMenuItem showTxHex;
@@ -83,6 +89,8 @@ public class AppController implements Initializable {
     }
 
     void initializeView() {
+        setOsxApplicationMenu();
+
         rootStack.setOnDragOver(event -> {
             if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
                 event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
@@ -170,6 +178,21 @@ public class AppController implements Initializable {
         });
 
         return pingService;
+    }
+
+    private void setOsxApplicationMenu() {
+        if(Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
+            MenuToolkit tk = MenuToolkit.toolkit();
+            MenuItem preferences = new MenuItem("Preferences...");
+            preferences.setOnAction(this::openPreferences);
+            Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(MainApp.APP_NAME, null), new SeparatorMenuItem(),
+                    preferences, new SeparatorMenuItem(),
+                    tk.createHideMenuItem(MainApp.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
+                    tk.createQuitMenuItem(MainApp.APP_NAME));
+            tk.setApplicationMenu(defaultApplicationMenu);
+
+            fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("macHide"));
+        }
     }
 
     public void openFromFile(ActionEvent event) {
@@ -411,6 +434,11 @@ public class AppController implements Initializable {
                 //Successful export
             }
         }
+    }
+
+    public void openPreferences(ActionEvent event) {
+        PreferencesDialog preferencesDialog = new PreferencesDialog();
+        preferencesDialog.showAndWait();
     }
 
     public Tab addWalletTab(Storage storage, Wallet wallet) {

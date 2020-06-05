@@ -12,6 +12,10 @@ import org.controlsfx.tools.Borders;
 import java.io.IOException;
 
 public class PreferencesDialog extends Dialog<Void> {
+    public PreferencesDialog() {
+        this(null);
+    }
+
     public PreferencesDialog(PreferenceGroup initialGroup) {
         final DialogPane dialogPane = getDialogPane();
 
@@ -20,7 +24,11 @@ public class PreferencesDialog extends Dialog<Void> {
             dialogPane.setContent(Borders.wrap(preferencesLoader.load()).lineBorder().outerPadding(0).innerPadding(0).buildAll());
             PreferencesController preferencesController = preferencesLoader.getController();
             preferencesController.initializeView(Config.get());
-            preferencesController.selectGroup(initialGroup);
+            if(initialGroup != null) {
+                preferencesController.selectGroup(initialGroup);
+            } else {
+                preferencesController.selectGroup(PreferenceGroup.SERVER);
+            }
 
             final ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
             dialogPane.getButtonTypes().addAll(closeButtonType);

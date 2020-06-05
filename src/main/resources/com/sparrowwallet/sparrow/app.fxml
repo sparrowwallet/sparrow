@@ -11,7 +11,7 @@
     <children>
         <MenuBar useSystemMenuBar="true">
             <menus>
-                <Menu mnemonicParsing="false" text="File">
+                <Menu fx:id="fileMenu" mnemonicParsing="false" text="File">
                     <items>
                         <MenuItem mnemonicParsing="false" text="New Wallet" onAction="#newWallet"/>
                         <MenuItem mnemonicParsing="false" text="Open Wallet..." onAction="#openWallet"/>
@@ -25,8 +25,10 @@
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
-                        <SeparatorMenuItem />
-                        <MenuItem mnemonicParsing="false" text="Close" onAction="#closeTab"/>
+                        <SeparatorMenuItem styleClass="macHide" />
+                        <MenuItem styleClass="macHide" mnemonicParsing="false" text="Preferences..." onAction="#openPreferences"/>
+                        <SeparatorMenuItem styleClass="macHide" />
+                        <MenuItem styleClass="macHide" mnemonicParsing="false" text="Close" onAction="#closeTab"/>
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="View">
