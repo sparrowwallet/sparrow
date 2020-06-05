@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
+import com.sparrowwallet.sparrow.Mode;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -8,10 +9,13 @@ import java.lang.reflect.Type;
 public class Config {
     public static final String CONFIG_FILENAME = ".config";
 
+    private Mode mode;
     private Integer keyDerivationPeriod;
     private File hwi;
     private String electrumServer;
     private File electrumServerCert;
+    private boolean useProxy;
+    private String proxyServer;
 
     private static Config INSTANCE;
 
@@ -54,6 +58,15 @@ public class Config {
         return INSTANCE;
     }
 
+    public Mode getMode() {
+        return mode;
+    }
+
+    public void setMode(Mode mode) {
+        this.mode = mode;
+        flush();
+    }
+
     public Integer getKeyDerivationPeriod() {
         return keyDerivationPeriod;
     }
@@ -87,6 +100,24 @@ public class Config {
 
     public void setElectrumServerCert(File electrumServerCert) {
         this.electrumServerCert = electrumServerCert;
+        flush();
+    }
+
+    public boolean isUseProxy() {
+        return useProxy;
+    }
+
+    public void setUseProxy(boolean useProxy) {
+        this.useProxy = useProxy;
+        flush();
+    }
+
+    public String getProxyServer() {
+        return proxyServer;
+    }
+
+    public void setProxyServer(String proxyServer) {
+        this.proxyServer = proxyServer;
         flush();
     }
 

@@ -10,12 +10,12 @@
 <?import org.controlsfx.control.SegmentedButton?>
 <?import javafx.collections.FXCollections?>
 <?import java.lang.String?>
-<?import org.controlsfx.control.ToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
 <?import com.sparrowwallet.sparrow.control.AddressLabel?>
+<?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@input.css, @../script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -90,7 +90,7 @@
                 <CopyableLabel fx:id="signatures" />
             </Field>
             <Field text="RBF:">
-                <ToggleSwitch fx:id="rbf"/>
+                <UnlabeledToggleSwitch fx:id="rbf"/>
             </Field>
         </Fieldset>
     </Form>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.preferences.PreferenceGroup?>
+<?import org.controlsfx.glyphfont.Glyph?>
+<BorderPane stylesheets="@../general.css, @preferences.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.preferences.PreferencesController">
+    <padding>
+        <Insets top="0" left="0" right="0" bottom="0" />
+    </padding>
+    <left>
+        <VBox styleClass="list-menu">
+            <ToggleButton VBox.vgrow="ALWAYS" text="Server" wrapText="true" textAlignment="CENTER" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$preferencesMenu">
+                <toggleGroup>
+                    <ToggleGroup fx:id="preferencesMenu" />
+                </toggleGroup>
+                <graphic>
+                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SERVER" />
+                </graphic>
+                <userData>
+                    <PreferenceGroup fx:constant="SERVER"/>
+                </userData>
+            </ToggleButton>
+        </VBox>
+    </left>
+    <center>
+        <StackPane fx:id="preferencesPane">
+
+        </StackPane>
+    </center>
+</BorderPane>

@@ -48,8 +48,15 @@ dependencies {
 
 mainClassName = 'com.sparrowwallet.sparrow/com.sparrowwallet.sparrow.MainApp'
 
+compileJava {
+    options.with {
+        fork = true
+        compilerArgs.addAll(["--add-exports", "org.controlsfx.controls/impl.org.controlsfx.skin=com.sparrowwallet.sparrow"])
+    }
+}
+
 run {
-    applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png", "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls", "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.inputmap=org.controlsfx.controls", "--add-opens=javafx.graphics/com.sun.javafx.scene.traversal=org.controlsfx.controls", "--add-opens=javafx.base/com.sun.javafx.event=org.controlsfx.controls", "--add-opens=javafx.controls/javafx.scene.control.cell=com.sparrowwallet.sparrow"]
+    applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png", "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls", "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.inputmap=org.controlsfx.controls", "--add-opens=javafx.graphics/com.sun.javafx.scene.traversal=org.controlsfx.controls", "--add-opens=javafx.base/com.sun.javafx.event=org.controlsfx.controls", "--add-opens=javafx.controls/javafx.scene.control.cell=com.sparrowwallet.sparrow", "--add-opens=org.controlsfx.controls/impl.org.controlsfx.skin=com.sparrowwallet.sparrow"]
 }
 
 jlink {
@@ -64,7 +71,7 @@ jlink {
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png']
     launcher {
         name = 'sparrow'
-        jvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls", "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.inputmap=org.controlsfx.controls", "--add-opens=javafx.graphics/com.sun.javafx.scene.traversal=org.controlsfx.controls", "--add-opens=javafx.base/com.sun.javafx.event=org.controlsfx.controls", "--add-opens=javafx.controls/javafx.scene.control.cell=com.sparrowwallet.sparrow"]
+        jvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls", "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls", "--add-opens=javafx.controls/com.sun.javafx.scene.control.inputmap=org.controlsfx.controls", "--add-opens=javafx.graphics/com.sun.javafx.scene.traversal=org.controlsfx.controls", "--add-opens=javafx.base/com.sun.javafx.event=org.controlsfx.controls", "--add-opens=javafx.controls/javafx.scene.control.cell=com.sparrowwallet.sparrow", "--add-opens=org.controlsfx.controls/impl.org.controlsfx.skin=com.sparrowwallet.sparrow"]
     }
     addExtraDependencies("javafx")
     jpackage {

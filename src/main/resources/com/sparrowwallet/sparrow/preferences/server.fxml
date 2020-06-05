@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
+<?import org.controlsfx.glyphfont.Glyph?>
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.ServerPreferencesController">
+    <padding>
+        <Insets left="25.0" right="25.0" top="25.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints percentWidth="100" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+    </rowConstraints>
+
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="Electrum Server">
+            <Field text="URL:">
+                <TextField fx:id="host" promptText="e.g. 127.0.0.1"/>
+                <TextField fx:id="port" promptText="e.g. 50002" prefWidth="80" />
+            </Field>
+            <Field text="Use SSL:">
+                <UnlabeledToggleSwitch fx:id="useSsl"/>
+            </Field>
+            <Field text="Certificate:" styleClass="label-button">
+                <TextField fx:id="certificate" editable="false" promptText="Optional server certificate (.crt)"/>
+                <Button fx:id="certificateSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
+                    <graphic>
+                        <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />
+                    </graphic>
+                </Button>
+            </Field>
+        </Fieldset>
+
+        <Fieldset inputGrow="SOMETIMES" text="Proxy">
+            <Field text="Use Proxy:">
+                <UnlabeledToggleSwitch fx:id="useProxy"/>
+            </Field>
+            <Field text="Proxy URL:">
+                <TextField fx:id="proxyHost" />
+                <TextField fx:id="proxyPort" prefWidth="80" />
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <StackPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <Button fx:id="testConnection" text="Test Connection">
+            <graphic>
+                <Glyph fontFamily="FontAwesome" icon="QUESTION_CIRCLE" prefWidth="13" />
+            </graphic>
+        </Button>
+    </StackPane>
+
+    <StackPane GridPane.columnIndex="0" GridPane.rowIndex="2">
+        <padding>
+            <Insets top="10.0" bottom="20.0"/>
+        </padding>
+        <TextArea fx:id="testResults" editable="false" wrapText="true"/>
+    </StackPane>
+
+</GridPane>

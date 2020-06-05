@@ -70,6 +70,9 @@ public class AppController implements Initializable {
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
+
+        ElectrumServer.PingService pingService = new ElectrumServer.PingService();
+        //pingService.
     }
 
     void initializeView() {

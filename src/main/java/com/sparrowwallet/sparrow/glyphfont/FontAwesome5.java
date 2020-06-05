@@ -15,13 +15,16 @@ public class FontAwesome5 extends GlyphFont {
      * The individual glyphs offered by the FontAwesome5 font.
      */
     public static enum Glyph implements INamedCharacter {
+        CHECK_CIRCLE('\uf058'),
         CIRCLE('\uf111'),
         EXCLAMATION_CIRCLE('\uf06a'),
+        ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
         KEY('\uf084'),
         LAPTOP('\uf109'),
         LOCK('\uf023'),
         LOCK_OPEN('\uf3c1'),
+        QUESTION_CIRCLE('\uf059'),
         SD_CARD('\uf7c2'),
         WALLET('\uf555');
 

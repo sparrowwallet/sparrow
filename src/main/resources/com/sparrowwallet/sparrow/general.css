@@ -30,10 +30,6 @@
     -fx-padding: -20 0 0 0;
 }
 
-.toggle-switch {
-    -fx-translate-x: -20px;
-}
-
 .tab-error > .tab-container {
     -fx-effect: dropshadow(three-pass-box, rgba(202, 18, 67, .6), 7, 0, 0, 0);
 }
@@ -84,18 +80,18 @@
     -fx-border-color: transparent;
 }
 
-.titled-description-pane .hyperlink {
+.hyperlink {
     -fx-padding: 0;
     -fx-border-width: 0;
     -fx-fill: #1e88cf;
 }
 
-.titled-description-pane .hyperlink:visited {
+.hyperlink:visited {
     -fx-text-fill: #1e88cf;
     -fx-underline: false;
 }
 
-.titled-description-pane .hyperlink:hover:visited {
+.hyperlink:hover:visited {
     -fx-underline: true;
 }
 

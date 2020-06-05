@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import javax.net.SocketFactory;
 import javax.net.ssl.*;
 import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.Certificate;
@@ -24,13 +26,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class ElectrumServer {
+    private static final String[] SUPPORTED_VERSIONS = new String[]{"1.3", "1.4.2"};
+
     private static Transport transport;
 
-    private synchronized Transport getTransport() throws ServerException {
+    private static synchronized Transport getTransport() throws ServerException {
         if(transport == null) {
             try {
                 String electrumServer = Config.get().getElectrumServer();
                 File electrumServerCert = Config.get().getElectrumServerCert();
+                String proxyServer = Config.get().getProxyServer();
 
                 if(electrumServer == null) {
                     throw new ServerException("Electrum server URL not specified");
@@ -46,7 +51,21 @@ public class ElectrumServer {
                 }
 
                 HostAndPort server = protocol.getServerHostAndPort(electrumServer);
-                transport = protocol.getTransport(server, electrumServerCert);
+
+                if(Config.get().isUseProxy() && proxyServer != null && !proxyServer.isBlank()) {
+                    HostAndPort proxy = HostAndPort.fromString(proxyServer);
+                    if(electrumServerCert != null) {
+                        transport = protocol.getTransport(server, electrumServerCert, proxy);
+                    } else {
+                        transport = protocol.getTransport(server, proxy);
+                    }
+                } else {
+                    if(electrumServerCert != null) {
+                        transport = protocol.getTransport(server, electrumServerCert);
+                    } else {
+                        transport = protocol.getTransport(server);
+                    }
+                }
             } catch (Exception e) {
                 throw new ServerException(e);
             }
@@ -55,10 +74,31 @@ public class ElectrumServer {
         return transport;
     }
 
-    public String getServerVersion() throws ServerException {
+    public void ping() throws ServerException {
         JsonRpcClient client = new JsonRpcClient(getTransport());
-        List<String> serverVersion = client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", "Sparrow").param("protocol_version", "1.4").execute();
-        return serverVersion.get(1);
+        client.createRequest().returnAs(Void.class).method("server.ping").id(1).execute();
+    }
+
+    public List<String> getServerVersion() throws ServerException {
+        JsonRpcClient client = new JsonRpcClient(getTransport());
+        return client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", "Sparrow").param("protocol_version", SUPPORTED_VERSIONS).execute();
+    }
+
+    public String getServerBanner() throws ServerException {
+        JsonRpcClient client = new JsonRpcClient(getTransport());
+        return client.createRequest().returnAs(String.class).method("server.banner").id(1).execute();
+    }
+
+    public static synchronized void closeActiveConnection() throws ServerException {
+        try {
+            if(transport != null) {
+                Closeable closeableTransport = (Closeable)transport;
+                closeableTransport.close();
+                transport = null;
+            }
+        } catch (IOException e) {
+            throw new ServerException(e);
+        }
     }
 
     public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet) throws ServerException {
@@ -327,11 +367,11 @@ public class ElectrumServer {
         }
     }
 
-    private static class TcpTransport implements Transport {
-        private static final int DEFAULT_PORT = 50001;
+    public static class TcpTransport implements Transport, Closeable {
+        public static final int DEFAULT_PORT = 50001;
 
         protected final HostAndPort server;
-        private final SocketFactory socketFactory;
+        protected final SocketFactory socketFactory;
 
         private Socket socket;
 
@@ -376,12 +416,19 @@ public class ElectrumServer {
         protected Socket createSocket() throws IOException {
             return socketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
         }
+
+        @Override
+        public void close() throws IOException {
+            if(socket != null) {
+                socket.close();
+            }
+        }
     }
 
-    private static class TcpOverTlsTransport extends TcpTransport {
-        private static final int DEFAULT_PORT = 50002;
+    public static class TcpOverTlsTransport extends TcpTransport {
+        public static final int DEFAULT_PORT = 50002;
 
-        private final SSLSocketFactory sslSocketFactory;
+        protected final SSLSocketFactory sslSocketFactory;
 
         public TcpOverTlsTransport(HostAndPort server) throws NoSuchAlgorithmException, KeyManagementException {
             super(server);
@@ -428,6 +475,70 @@ public class ElectrumServer {
         }
     }
 
+    public static class ProxyTcpOverTlsTransport extends TcpOverTlsTransport {
+        public static final int DEFAULT_PROXY_PORT = 1080;
+
+        private HostAndPort proxy;
+
+        public ProxyTcpOverTlsTransport(HostAndPort server, HostAndPort proxy) throws KeyManagementException, NoSuchAlgorithmException {
+            super(server);
+            this.proxy = proxy;
+        }
+
+        public ProxyTcpOverTlsTransport(HostAndPort server, File crtFile, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+            super(server, crtFile);
+            this.proxy = proxy;
+        }
+
+        @Override
+        protected Socket createSocket() throws IOException {
+            InetSocketAddress proxyAddr = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT));
+            Socket underlying = new Socket(new Proxy(Proxy.Type.SOCKS, proxyAddr));
+            underlying.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
+            SSLSocket sslSocket = (SSLSocket)sslSocketFactory.createSocket(underlying, proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT), true);
+            sslSocket.startHandshake();
+
+            return sslSocket;
+        }
+    }
+
+    public static class ServerVersionService extends Service<List<String>> {
+        @Override
+        protected Task<List<String>> createTask() {
+            return new Task<List<String>>() {
+                protected List<String> call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    return electrumServer.getServerVersion();
+                }
+            };
+        }
+    }
+
+    public static class ServerBannerService extends Service<String> {
+        @Override
+        protected Task<String> createTask() {
+            return new Task<>() {
+                protected String call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    return electrumServer.getServerBanner();
+                }
+            };
+        }
+    }
+
+    public static class PingService extends Service<Boolean> {
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                protected Boolean call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    electrumServer.ping();
+                    return true;
+                }
+            };
+        }
+    }
+
     public static class TransactionHistoryService extends Service<Boolean> {
         private final Wallet wallet;
 
@@ -452,22 +563,54 @@ public class ElectrumServer {
     public enum Protocol {
         TCP {
             @Override
-            public Transport getTransport(HostAndPort server, File serverCert) throws IOException {
+            public Transport getTransport(HostAndPort server) {
                 return new TcpTransport(server);
+            }
+
+            @Override
+            public Transport getTransport(HostAndPort server, File serverCert) {
+                return new TcpTransport(server);
+            }
+
+            @Override
+            public Transport getTransport(HostAndPort server, HostAndPort proxy) {
+                throw new UnsupportedOperationException("TCP protocol does not support proxying");
+            }
+
+            @Override
+            public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
+                throw new UnsupportedOperationException("TCP protocol does not support proxying");
             }
         },
         SSL{
             @Override
+            public Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException {
+                return new TcpOverTlsTransport(server);
+            }
+
+            @Override
             public Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-                if(serverCert != null && serverCert.exists()) {
-                    return new TcpOverTlsTransport(server, serverCert);
-                } else {
-                    return new TcpOverTlsTransport(server);
-                }
+                return new TcpOverTlsTransport(server, serverCert);
+            }
+
+            @Override
+            public Transport getTransport(HostAndPort server, HostAndPort proxy) throws NoSuchAlgorithmException, KeyManagementException {
+                return new ProxyTcpOverTlsTransport(server, proxy);
+            }
+
+            @Override
+            public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+                return new ProxyTcpOverTlsTransport(server, serverCert, proxy);
             }
         };
 
+        public abstract Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException;
+
         public abstract Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
+
+        public abstract Transport getTransport(HostAndPort server, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
+
+        public abstract Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
 
         public HostAndPort getServerHostAndPort(String url) {
             return HostAndPort.fromString(url.substring(this.toUrlString().length()));
@@ -475,6 +618,18 @@ public class ElectrumServer {
 
         public String toUrlString() {
             return toString().toLowerCase() + "://";
+        }
+
+        public String toUrlString(String host) {
+            return toUrlString(HostAndPort.fromHost(host));
+        }
+
+        public String toUrlString(String host, int port) {
+            return toUrlString(HostAndPort.fromParts(host, port));
+        }
+
+        public String toUrlString(HostAndPort hostAndPort) {
+            return toUrlString() + hostAndPort.toString();
         }
 
         public static Protocol getProtocol(String url) {

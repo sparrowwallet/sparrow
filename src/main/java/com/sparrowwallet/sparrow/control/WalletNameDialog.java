@@ -23,7 +23,7 @@ public class WalletNameDialog extends Dialog<String> {
         this.name = (CustomTextField)TextFields.createClearableTextField();
         final DialogPane dialogPane = getDialogPane();
 
-        setTitle("Wallet Password");
+        setTitle("Wallet Name");
         dialogPane.setHeaderText("Enter a name for this wallet:");
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
