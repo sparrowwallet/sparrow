@@ -24,7 +24,7 @@ public class MainApp extends Application {
         GlyphFontRegistry.register(new FontAwesome5Brands());
 
         Mode mode = Config.get().getMode();
-        if(true || mode == null) {
+        if(mode == null) {
             WelcomeDialog welcomeDialog = new WelcomeDialog(getHostServices());
             Optional<Mode> optionalMode = welcomeDialog.showAndWait();
             if(optionalMode.isPresent()) {

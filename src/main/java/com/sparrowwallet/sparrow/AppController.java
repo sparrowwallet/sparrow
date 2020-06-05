@@ -607,7 +607,7 @@ public class AppController implements Initializable {
         } else {
             if(usbStatus == null) {
                 usbStatus = new UsbStatusButton();
-                statusBar.getRightItems().add(usbStatus);
+                statusBar.getRightItems().add(0, usbStatus);
             } else {
                 usbStatus.getItems().remove(0, usbStatus.getItems().size());
             }

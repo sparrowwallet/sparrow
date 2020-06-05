@@ -27,4 +27,5 @@
 .status-bar .right-items {
     -fx-alignment: center-right;
     -fx-padding: 0 0 0 8;
+    -fx-spacing: 10;
 }
