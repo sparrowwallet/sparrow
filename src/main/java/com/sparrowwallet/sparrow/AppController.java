@@ -5,7 +5,8 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -25,6 +26,7 @@ import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -45,6 +47,9 @@ import java.text.ParseException;
 import java.util.*;
 
 public class AppController implements Initializable {
+    private static final int SERVER_PING_PERIOD = 10 * 1000;
+    private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
+
     private static final String TRANSACTION_TAB_TYPE = "transaction";
     public static final String DRAG_OVER_CLASS = "drag-over";
 
@@ -63,16 +68,18 @@ public class AppController implements Initializable {
     @FXML
     private StatusBar statusBar;
 
+    @FXML
+    private UnlabeledToggleSwitch serverToggle;
+
     private Timeline statusTimeline;
+
+    private ElectrumServer.PingService pingService;
 
     public static boolean showTxHexProperty;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
-
-        ElectrumServer.PingService pingService = new ElectrumServer.PingService();
-        //pingService.
     }
 
     void initializeView() {
@@ -124,7 +131,45 @@ public class AppController implements Initializable {
         showTxHexProperty = true;
         exportWallet.setDisable(true);
 
-        //addWalletTab("newWallet", new Wallet(PolicyType.SINGLE, ScriptType.P2WPKH));
+        serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            Config.get().setMode(newValue ? Mode.ONLINE : Mode.OFFLINE);
+            if(newValue) {
+                if(pingService.getState() == Worker.State.CANCELLED) {
+                    pingService.reset();
+                }
+
+                if(!pingService.isRunning()) {
+                    pingService.start();
+                }
+            } else {
+                pingService.cancel();
+            }
+        });
+
+        pingService = createPingService();
+        Config config = Config.get();
+        if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
+            pingService.start();
+        }
+    }
+
+    private ElectrumServer.PingService createPingService() {
+        ElectrumServer.PingService pingService = new ElectrumServer.PingService();
+        pingService.setPeriod(new Duration(SERVER_PING_PERIOD));
+        pingService.setOnSucceeded(successEvent -> {
+            serverToggle.setSelected(true);
+            if(pingService.getValue() != null) {
+                statusBar.setText("Connected: " + pingService.getValue().split(System.lineSeparator(), 2)[0]);
+            } else {
+                statusBar.setText("");
+            }
+        });
+        pingService.setOnFailed(failEvent -> {
+            serverToggle.setSelected(false);
+            statusBar.setText(failEvent.getSource().getException().getMessage());
+        });
+
+        return pingService;
     }
 
     public void openFromFile(ActionEvent event) {
@@ -387,7 +432,7 @@ public class AppController implements Initializable {
 
             if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
                 Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
-                enumerateService.setPeriod(new Duration(30 * 1000));
+                enumerateService.setPeriod(new Duration(ENUMERATE_HW_PERIOD));
                 enumerateService.setOnSucceeded(workerStateEvent -> {
                     List<Device> devices = enumerateService.getValue();
                     EventManager.get().post(new UsbDeviceEvent(devices));

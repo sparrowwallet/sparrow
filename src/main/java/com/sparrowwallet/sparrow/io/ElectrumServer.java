@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
+import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.jetbrains.annotations.NotNull;
@@ -76,7 +77,7 @@ public class ElectrumServer {
 
     public void ping() throws ServerException {
         JsonRpcClient client = new JsonRpcClient(getTransport());
-        client.createRequest().returnAs(Void.class).method("server.ping").id(1).execute();
+        client.createRequest().method("server.ping").id(1).executeNullable();
     }
 
     public List<String> getServerVersion() throws ServerException {
@@ -526,16 +527,42 @@ public class ElectrumServer {
         }
     }
 
-    public static class PingService extends Service<Boolean> {
+    public static class PingService extends ScheduledService<String> {
+        private boolean firstCall = true;
+
         @Override
-        protected Task<Boolean> createTask() {
+        protected Task<String> createTask() {
             return new Task<>() {
-                protected Boolean call() throws ServerException {
+                protected String call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    electrumServer.ping();
-                    return true;
+                    if(firstCall) {
+                        electrumServer.getServerVersion();
+                        firstCall = false;
+                        return electrumServer.getServerBanner();
+                    } else {
+                        electrumServer.ping();
+                    }
+
+                    return null;
                 }
             };
+        }
+
+        @Override
+        public boolean cancel() {
+            try {
+                closeActiveConnection();
+            } catch (ServerException e) {
+                e.printStackTrace();
+            }
+
+            return super.cancel();
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            firstCall = true;
         }
     }
 

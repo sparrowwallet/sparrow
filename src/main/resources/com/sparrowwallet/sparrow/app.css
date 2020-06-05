@@ -20,6 +20,11 @@
     -fx-fill: #383a42;
 }
 
+.status-bar .status-label {
+    -fx-alignment: center-left;
+}
+
 .status-bar .right-items {
+    -fx-alignment: center-right;
     -fx-padding: 0 0 0 8;
 }

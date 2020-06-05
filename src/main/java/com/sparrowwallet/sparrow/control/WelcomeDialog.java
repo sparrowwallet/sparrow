@@ -7,7 +7,6 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.HyperlinkLabel;
 import org.controlsfx.control.StatusBar;
@@ -42,8 +41,8 @@ public class WelcomeDialog extends Dialog<Mode> {
             dialogPane.setGraphic(imageView);
         }
 
-        final ButtonType onlineButtonType = new javafx.scene.control.ButtonType("Configure Now", ButtonBar.ButtonData.OK_DONE);
-        final ButtonType offlineButtonType = new javafx.scene.control.ButtonType("Configure Later or Use Offline", ButtonBar.ButtonData.CANCEL_CLOSE);
+        final ButtonType onlineButtonType = new javafx.scene.control.ButtonType("Configure Server", ButtonBar.ButtonData.OK_DONE);
+        final ButtonType offlineButtonType = new javafx.scene.control.ButtonType("Later or Offline Mode", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(onlineButtonType, offlineButtonType);
 
         final VBox content = new VBox(20);

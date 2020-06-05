@@ -5,6 +5,7 @@
 <?import org.controlsfx.control.StatusBar?>
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.shape.Rectangle?>
+<?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="750.0" prefWidth="1000.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
     <children>
@@ -43,6 +44,10 @@
             <TabPane fx:id="tabs" />
         </StackPane>
 
-        <StatusBar fx:id="statusBar" text="" minHeight="36"/>
+        <StatusBar fx:id="statusBar" text="" minHeight="36">
+            <rightItems>
+                <UnlabeledToggleSwitch fx:id="serverToggle" />
+            </rightItems>
+        </StatusBar>
     </children>
 </VBox>
