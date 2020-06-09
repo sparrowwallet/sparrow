@@ -34,6 +34,9 @@ dependencies {
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('com.google.zxing:javase:3.4.0')
     implementation('com.github.arteam:simple-json-rpc-client:1.0')
+    implementation('com.github.arteam:simple-json-rpc-server:1.0') {
+        exclude group: 'org.slf4j'
+    }
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.0.1' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'

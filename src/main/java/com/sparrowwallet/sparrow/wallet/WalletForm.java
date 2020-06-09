@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.NewBlockEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
@@ -118,5 +119,10 @@ public class WalletForm {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        refreshHistory();
     }
 }

@@ -13,6 +13,7 @@ open module com.sparrowwallet.sparrow {
     requires com.google.zxing;
     requires com.google.zxing.javase;
     requires simple.json.rpc.client;
+    requires simple.json.rpc.server;
     requires simple.json.rpc.core;
     requires org.jetbrains.annotations;
     requires com.fasterxml.jackson.databind;

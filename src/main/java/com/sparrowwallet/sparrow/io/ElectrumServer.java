@@ -2,12 +2,19 @@ package com.sparrowwallet.sparrow.io;
 
 import com.github.arteam.simplejsonrpc.client.*;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
+import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
+import com.sparrowwallet.sparrow.event.NewBlockEvent;
+import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -390,6 +397,14 @@ public class ElectrumServer {
         }
     }
 
+    @JsonRpcService
+    public static class SubscriptionService {
+        @JsonRpcMethod("blockchain.headers.subscribe")
+        public void newBlockHeaderTip(@JsonRpcParam("header") final BlockHeaderTip header) {
+            Platform.runLater(() -> EventManager.get().post(new NewBlockEvent(header.height, header.getBlockHeader())));
+        }
+    }
+
     public static class TcpTransport implements Transport, Closeable {
         public static final int DEFAULT_PORT = 50001;
 
@@ -403,6 +418,9 @@ public class ElectrumServer {
         private final ReentrantLock clientRequestLock = new ReentrantLock();
         private boolean running = false;
         private boolean reading = true;
+
+        private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
+        private final SubscriptionService subscriptionService = new SubscriptionService();
 
         public TcpTransport(HostAndPort server) {
             this.server = server;
@@ -447,9 +465,10 @@ public class ElectrumServer {
                 try {
                     String received = readInputStream();
                     if(received.contains("method")) {
-                        //Handle notification
-                        System.out.println("Notification: " + received);
+                        //Handle subscription notification
+                        jsonRpcServer.handle(received, subscriptionService);
                     } else {
+                        //Handle client's response
                         response = received;
                         reading = false;
                         notifyAll();

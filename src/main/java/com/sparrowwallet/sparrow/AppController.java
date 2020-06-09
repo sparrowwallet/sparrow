@@ -677,4 +677,10 @@ public class AppController implements Initializable {
         String status = "Connection error: " + reason;
         EventManager.get().post(new StatusEvent(status));
     }
+
+    @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        String status = "Updating to new block height " + event.getHeight();
+        EventManager.get().post(new StatusEvent(status));
+    }
 }
