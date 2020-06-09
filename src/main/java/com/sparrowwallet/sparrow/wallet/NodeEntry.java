@@ -14,7 +14,11 @@ public class NodeEntry extends Entry {
     private final WalletNode node;
 
     public NodeEntry(Wallet wallet, WalletNode node) {
-        super(node.getLabel(), node.getChildren().stream().map(childNode -> new NodeEntry(wallet, childNode)).collect(Collectors.toList()));
+        super(node.getLabel(),
+                !node.getChildren().isEmpty() ?
+                        node.getChildren().stream().map(childNode -> new NodeEntry(wallet, childNode)).collect(Collectors.toList()) :
+                        node.getTransactionOutputs().stream().map(txo -> new HashIndexEntry(wallet, txo, HashIndexEntry.Type.OUTPUT)).collect(Collectors.toList()));
+
         this.wallet = wallet;
         this.node = node;
 
@@ -45,9 +49,11 @@ public class NodeEntry extends Entry {
     }
 
     @Override
-    public Long getAmount() {
-        //TODO: Iterate through TransactionEntries to calculate amount
+    public Long getValue() {
+        if(node.getTransactionOutputs().isEmpty()) {
+            return null;
+        }
 
-        return null;
+        return node.getUnspentValue();
     }
 }

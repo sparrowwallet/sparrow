@@ -32,5 +32,5 @@ public abstract class Entry {
         return children;
     }
 
-    public abstract Long getAmount();
+    public abstract Long getValue();
 }

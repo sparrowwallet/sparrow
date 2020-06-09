@@ -85,4 +85,9 @@ public class CoinLabel extends CopyableLabel {
             getItems().addAll(copySatsValue, copyBtcValue);
         }
     }
+
+    public static DecimalFormat getBTCFormat() {
+        BTC_FORMAT.setMaximumFractionDigits(8);
+        return BTC_FORMAT;
+    }
 }

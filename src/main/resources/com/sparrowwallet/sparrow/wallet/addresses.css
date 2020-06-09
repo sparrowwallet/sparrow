@@ -8,8 +8,28 @@
     -fx-font-family: Courier;
 }
 
+.hashindex-row {
+    -fx-background-color: #fafafa;
+}
+
+.hashindex-row .text {
+    -fx-fill: #696c77;
+}
+
+.hashindex-row.spent .text {
+    -fx-fill: #a0a1a7;
+}
+
 .label-cell .text-field {
     -fx-padding: 0;
+}
+
+.amount-cell {
+    -fx-alignment: center-right;
+}
+
+.amount-cell.spent .text {
+    -fx-strikethrough: true;
 }
 
 .action-cell .button {
