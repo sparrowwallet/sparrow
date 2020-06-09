@@ -24,10 +24,7 @@ import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.codecentric.centerdevice.MenuToolkit;
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
+import javafx.animation.*;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -53,7 +50,6 @@ public class AppController implements Initializable {
     private static final int SERVER_PING_PERIOD = 10 * 1000;
     private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
 
-    private static final String TRANSACTION_TAB_TYPE = "transaction";
     public static final String DRAG_OVER_CLASS = "drag-over";
 
     @FXML
@@ -77,9 +73,12 @@ public class AppController implements Initializable {
     @FXML
     private UnlabeledToggleSwitch serverToggle;
 
+    //Determines if a change in serverToggle changes the offline/online mode
+    private boolean changeMode = true;
+
     private Timeline statusTimeline;
 
-    private ElectrumServer.PingService pingService;
+    private ElectrumServer.ConnectionService connectionService;
 
     public static boolean showTxHexProperty;
 
@@ -89,7 +88,7 @@ public class AppController implements Initializable {
     }
 
     void initializeView() {
-        setOsxApplicationMenu();
+        //setOsxApplicationMenu();
 
         rootStack.setOnDragOver(event -> {
             if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
@@ -140,44 +139,52 @@ public class AppController implements Initializable {
         exportWallet.setDisable(true);
 
         serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            Config.get().setMode(newValue ? Mode.ONLINE : Mode.OFFLINE);
-            if(newValue) {
-                if(pingService.getState() == Worker.State.CANCELLED) {
-                    pingService.reset();
-                }
+            if(changeMode) {
+                Config.get().setMode(newValue ? Mode.ONLINE : Mode.OFFLINE);
+                if(newValue) {
+                    if(connectionService.getState() == Worker.State.CANCELLED) {
+                        connectionService.reset();
+                    }
 
-                if(!pingService.isRunning()) {
-                    pingService.start();
+                    if(!connectionService.isRunning()) {
+                        connectionService.start();
+                    }
+                } else {
+                    connectionService.cancel();
                 }
-            } else {
-                pingService.cancel();
             }
         });
 
-        pingService = createPingService();
+        connectionService = createConnectionService();
         Config config = Config.get();
         if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
-            pingService.start();
+            connectionService.start();
         }
     }
 
-    private ElectrumServer.PingService createPingService() {
-        ElectrumServer.PingService pingService = new ElectrumServer.PingService();
-        pingService.setPeriod(new Duration(SERVER_PING_PERIOD));
-        pingService.setOnSucceeded(successEvent -> {
+    private ElectrumServer.ConnectionService createConnectionService() {
+        ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService();
+        connectionService.setPeriod(new Duration(SERVER_PING_PERIOD));
+        connectionService.setRestartOnFailure(true);
+
+        connectionService.setOnSucceeded(successEvent -> {
+            changeMode = false;
             serverToggle.setSelected(true);
-            if(pingService.getValue() != null) {
-                statusBar.setText("Connected: " + pingService.getValue().split(System.lineSeparator(), 2)[0]);
-            } else {
-                statusBar.setText("");
+            changeMode = true;
+
+            if(connectionService.getValue() != null) {
+                EventManager.get().post(connectionService.getValue());
             }
         });
-        pingService.setOnFailed(failEvent -> {
+        connectionService.setOnFailed(failEvent -> {
+            changeMode = false;
             serverToggle.setSelected(false);
-            statusBar.setText(failEvent.getSource().getException().getMessage());
+            changeMode = true;
+
+            EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
         });
 
-        return pingService;
+        return connectionService;
     }
 
     private void setOsxApplicationMenu() {
@@ -595,6 +602,19 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void statusUpdated(StatusEvent event) {
+        statusBar.setText(event.getStatus());
+
+        PauseTransition wait = new PauseTransition(Duration.seconds(10));
+        wait.setOnFinished((e) -> {
+            if(statusBar.getText().equals(event.getStatus())) {
+                statusBar.setText("");
+            }
+        });
+        wait.play();
+    }
+
+    @Subscribe
     public void timedWorker(TimedEvent event) {
         if(event.getTimeMills() == 0) {
             if(statusTimeline != null && statusTimeline.getStatus() == Animation.Status.RUNNING) {
@@ -642,5 +662,19 @@ public class AppController implements Initializable {
 
             usbStatus.setDevices(event.getDevices());
         }
+    }
+
+    @Subscribe
+    public void newConnection(ConnectionEvent event) {
+        String banner = event.getServerBanner();
+        String status = "Connected: " + (banner == null ? "Server" : banner.split(System.lineSeparator(), 2)[0]) + " at height " + event.getBlockHeight();
+        EventManager.get().post(new StatusEvent(status));
+    }
+
+    @Subscribe
+    public void connectionFailed(ConnectionFailedEvent event) {
+        String reason = event.getException().getCause() != null ? event.getException().getCause().getMessage() : event.getException().getMessage();
+        String status = "Connection error: " + reason;
+        EventManager.get().post(new StatusEvent(status));
     }
 }

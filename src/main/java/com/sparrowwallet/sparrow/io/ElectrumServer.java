@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -24,6 +25,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class ElectrumServer {
@@ -75,6 +77,11 @@ public class ElectrumServer {
         return transport;
     }
 
+    public void connect() throws ServerException {
+        TcpTransport tcpTransport = (TcpTransport)getTransport();
+        tcpTransport.connect();
+    }
+
     public void ping() throws ServerException {
         JsonRpcClient client = new JsonRpcClient(getTransport());
         client.createRequest().method("server.ping").id(1).executeNullable();
@@ -88,6 +95,11 @@ public class ElectrumServer {
     public String getServerBanner() throws ServerException {
         JsonRpcClient client = new JsonRpcClient(getTransport());
         return client.createRequest().returnAs(String.class).method("server.banner").id(1).execute();
+    }
+
+    public BlockHeaderTip subscribeBlockHeaders() throws ServerException {
+        JsonRpcClient client = new JsonRpcClient(getTransport());
+        return client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(1).execute();
     }
 
     public static synchronized void closeActiveConnection() throws ServerException {
@@ -368,6 +380,16 @@ public class ElectrumServer {
         }
     }
 
+    private static class BlockHeaderTip {
+        public int height;
+        public String hex;
+
+        public BlockHeader getBlockHeader() {
+            byte[] blockHeaderBytes = Utils.hexToBytes(hex);
+            return new BlockHeader(blockHeaderBytes);
+        }
+    }
+
     public static class TcpTransport implements Transport, Closeable {
         public static final int DEFAULT_PORT = 50001;
 
@@ -376,6 +398,12 @@ public class ElectrumServer {
 
         private Socket socket;
 
+        private String response;
+
+        private final ReentrantLock clientRequestLock = new ReentrantLock();
+        private boolean running = false;
+        private boolean reading = true;
+
         public TcpTransport(HostAndPort server) {
             this.server = server;
             this.socketFactory = SocketFactory.getDefault();
@@ -383,27 +411,62 @@ public class ElectrumServer {
 
         @Override
         public @NotNull String pass(@NotNull String request) throws IOException {
-            if(socket == null) {
-                socket = createSocket();
-            }
-
+            clientRequestLock.lock();
             try {
-                writeRequest(socket, request);
-            } catch (IOException e) {
-                socket = createSocket();
-                writeRequest(socket, request);
+                writeRequest(request);
+                return readResponse();
+            } finally {
+                clientRequestLock.unlock();
             }
-
-            return readResponse(socket);
         }
 
-        private void writeRequest(Socket socket, String request) throws IOException {
+        private void writeRequest(String request) throws IOException {
             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
             out.println(request);
             out.flush();
         }
 
-        private String readResponse(Socket socket) throws IOException {
+        private synchronized String readResponse() {
+            while(reading) {
+                try {
+                    wait();
+                } catch (InterruptedException e) {
+                    //Restore interrupt status and continue
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            reading = true;
+
+            notifyAll();
+            return response;
+        }
+
+        public synchronized void readInputLoop() throws ServerException {
+            while(running) {
+                try {
+                    String received = readInputStream();
+                    if(received.contains("method")) {
+                        //Handle notification
+                        System.out.println("Notification: " + received);
+                    } else {
+                        response = received;
+                        reading = false;
+                        notifyAll();
+                        wait();
+                    }
+                } catch(InterruptedException e) {
+                    //Restore interrupt status and continue
+                    Thread.currentThread().interrupt();
+                } catch(IOException e) {
+                    if(running) {
+                        throw new ServerException(e);
+                    }
+                }
+            }
+        }
+
+        protected String readInputStream() throws IOException {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             String response = in.readLine();
 
@@ -414,6 +477,15 @@ public class ElectrumServer {
             return response;
         }
 
+        public void connect() throws ServerException {
+            try {
+                socket = createSocket();
+                running = true;
+            } catch (IOException e) {
+                throw new ServerException(e);
+            }
+        }
+
         protected Socket createSocket() throws IOException {
             return socketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
         }
@@ -421,6 +493,7 @@ public class ElectrumServer {
         @Override
         public void close() throws IOException {
             if(socket != null) {
+                running = false;
                 socket.close();
             }
         }
@@ -527,20 +600,38 @@ public class ElectrumServer {
         }
     }
 
-    public static class PingService extends ScheduledService<String> {
+    public static class ConnectionService extends ScheduledService<ConnectionEvent> implements Thread.UncaughtExceptionHandler {
         private boolean firstCall = true;
+        private Thread reader;
+        private Throwable lastReaderException;
 
         @Override
-        protected Task<String> createTask() {
+        protected Task<ConnectionEvent> createTask() {
             return new Task<>() {
-                protected String call() throws ServerException {
+                protected ConnectionEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
                     if(firstCall) {
-                        electrumServer.getServerVersion();
+                        electrumServer.connect();
+
+                        reader = new Thread(new ReadRunnable());
+                        reader.setDaemon(true);
+                        reader.setUncaughtExceptionHandler(ConnectionService.this);
+                        reader.start();
+
+                        List<String> serverVersion = electrumServer.getServerVersion();
                         firstCall = false;
-                        return electrumServer.getServerBanner();
+
+                        BlockHeaderTip tip = electrumServer.subscribeBlockHeaders();
+                        String banner = electrumServer.getServerBanner();
+
+                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader());
                     } else {
-                        electrumServer.ping();
+                        if(reader.isAlive()) {
+                            electrumServer.ping();
+                        } else {
+                            firstCall = true;
+                            throw new ServerException("Connection to server failed", lastReaderException);
+                        }
                     }
 
                     return null;
@@ -563,6 +654,24 @@ public class ElectrumServer {
         public void reset() {
             super.reset();
             firstCall = true;
+            lastReaderException = null;
+        }
+
+        @Override
+        public void uncaughtException(Thread t, Throwable e) {
+            this.lastReaderException = e;
+        }
+    }
+
+    public static class ReadRunnable implements Runnable {
+        @Override
+        public void run() {
+            try {
+                TcpTransport tcpTransport = (TcpTransport)getTransport();
+                tcpTransport.readInputLoop();
+            } catch (ServerException e) {
+                throw new RuntimeException(e.getCause() != null ? e.getCause() : e);
+            }
         }
     }
 
