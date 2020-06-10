@@ -17,8 +17,8 @@
                         <MenuItem mnemonicParsing="false" text="Open Wallet..." onAction="#openWallet"/>
                         <Menu mnemonicParsing="false" text="Open Transaction">
                             <items>
-                                <MenuItem text="File..." onAction="#openFromFile"/>
-                                <MenuItem text="From Text..." onAction="#openFromText"/>
+                                <MenuItem text="File..." onAction="#openTransactionFromFile"/>
+                                <MenuItem text="From Text..." onAction="#openTransactionFromText"/>
                                 <MenuItem text="Examples" onAction="#openExamples"/>
                             </items>
                         </Menu>

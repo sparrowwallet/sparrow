@@ -19,7 +19,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.layout.HBox;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.Region;
 import javafx.scene.text.Font;
 import javafx.util.converter.DefaultStringConverter;
 import org.controlsfx.glyphfont.FontAwesome;
@@ -67,16 +68,26 @@ public class AddressTreeTable extends TreeTableView<Entry> {
         amountCol.setSortable(false);
         getColumns().add(amountCol);
 
-        TreeTableColumn<Entry, Entry> actionCol = new TreeTableColumn<>("Actions");
-        actionCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
-            return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
-        });
-        actionCol.setCellFactory(p -> new ActionCell());
-        actionCol.setSortable(false);
-        getColumns().add(actionCol);
-
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+
+        scrollTo(rootEntry.getNode().getHighestUsedIndex());
+
+        setOnMouseClicked(mouseEvent -> {
+            if(mouseEvent.getButton().equals(MouseButton.PRIMARY)){
+                if(mouseEvent.getClickCount() == 2) {
+                    TreeItem<Entry> treeItem = getSelectionModel().getSelectedItem();
+                    if(treeItem != null && treeItem.getChildren().isEmpty()) {
+                        Entry entry = getSelectionModel().getSelectedItem().getValue();
+                        if(entry instanceof NodeEntry) {
+                            NodeEntry nodeEntry = (NodeEntry)entry;
+                            EventManager.get().post(new ReceiveActionEvent(nodeEntry));
+                            Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
+                        }
+                    }
+                }
+            }
+        });
     }
 
     private static void applyRowStyles(TreeTableCell<?, ?> cell, Entry entry) {
@@ -100,6 +111,9 @@ public class AddressTreeTable extends TreeTableView<Entry> {
     private static class DataCell extends TreeTableCell<Entry, Entry> {
         public DataCell() {
             super();
+            setAlignment(Pos.CENTER_LEFT);
+            setContentDisplay(ContentDisplay.RIGHT);
+            getStyleClass().add("data-cell");
         }
 
         @Override
@@ -117,8 +131,21 @@ public class AddressTreeTable extends TreeTableView<Entry> {
                     NodeEntry nodeEntry = (NodeEntry)entry;
                     Address address = nodeEntry.getAddress();
                     setText(address.toString());
-                    setContextMenu(new AddressContextMenu(address));
+                    setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor()));
+                    Tooltip tooltip = new Tooltip();
+                    tooltip.setText(nodeEntry.getNode().getDerivationPath());
+                    setTooltip(tooltip);
                     getStyleClass().add("address-cell");
+
+                    Button receiveButton = new Button("");
+                    Glyph receiveGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.ARROW_DOWN);
+                    receiveGlyph.setFontSize(12);
+                    receiveButton.setGraphic(receiveGlyph);
+                    receiveButton.setOnAction(event -> {
+                        EventManager.get().post(new ReceiveActionEvent(nodeEntry));
+                        Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
+                    });
+                    setGraphic(receiveButton);
                 } else if(entry instanceof HashIndexEntry) {
                     HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                     setText(hashIndexEntry.getDescription());
@@ -126,13 +153,22 @@ public class AddressTreeTable extends TreeTableView<Entry> {
                     Tooltip tooltip = new Tooltip();
                     tooltip.setText(hashIndexEntry.getHashIndex().toString());
                     setTooltip(tooltip);
+
+                    Button viewTransactionButton = new Button("");
+                    Glyph searchGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SEARCH);
+                    searchGlyph.setFontSize(12);
+                    viewTransactionButton.setGraphic(searchGlyph);
+                    viewTransactionButton.setOnAction(event -> {
+                        EventManager.get().post(new TransactionViewEvent(hashIndexEntry.getBlockTransaction(), hashIndexEntry));
+                    });
+                    setGraphic(viewTransactionButton);
                 }
             }
         }
     }
 
     private static class AddressContextMenu extends ContextMenu {
-        public AddressContextMenu(Address address) {
+        public AddressContextMenu(Address address, String outputDescriptor) {
             MenuItem copyAddress = new MenuItem("Copy Address");
             copyAddress.setOnAction(AE -> {
                 hide();
@@ -149,7 +185,15 @@ public class AddressTreeTable extends TreeTableView<Entry> {
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
-            getItems().addAll(copyAddress, copyHex);
+            MenuItem copyOutputDescriptor = new MenuItem("Copy Output Descriptor");
+            copyOutputDescriptor.setOnAction(AE -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(outputDescriptor);
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+
+            getItems().addAll(copyAddress, copyHex, copyOutputDescriptor);
         }
     }
 
@@ -248,6 +292,7 @@ public class AddressTreeTable extends TreeTableView<Entry> {
         public AmountCell() {
             super();
             getStyleClass().add("amount-cell");
+            setContentDisplay(ContentDisplay.RIGHT);
         }
 
         @Override
@@ -263,64 +308,24 @@ public class AddressTreeTable extends TreeTableView<Entry> {
                 String satsValue = String.format(Locale.ENGLISH, "%,d", amount);
                 String btcValue = CoinLabel.getBTCFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
 
+                Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
+                if(entry instanceof HashIndexEntry) {
+                    Region node = new Region();
+                    node.setPrefWidth(10);
+                    setGraphic(node);
+
+                    if(((HashIndexEntry) entry).getType() == HashIndexEntry.Type.INPUT) {
+                        satsValue = "-" + satsValue;
+                    }
+                } else {
+                    setGraphic(null);
+                }
+
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(btcValue);
 
                 setText(satsValue);
                 setTooltip(tooltip);
-            }
-        }
-    }
-
-    private static class ActionCell extends TreeTableCell<Entry, Entry> {
-        private final HBox actionBox;
-        private final Button receiveButton;
-        private final Button viewTransactionButton;
-
-        public ActionCell() {
-            super();
-            getStyleClass().add("action-cell");
-
-            actionBox = new HBox();
-            actionBox.setSpacing(8);
-            actionBox.setAlignment(Pos.CENTER);
-
-            receiveButton = new Button("");
-            Glyph receiveGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.ARROW_DOWN);
-            receiveGlyph.setFontSize(12);
-            receiveButton.setGraphic(receiveGlyph);
-            receiveButton.setOnAction(event -> {
-                NodeEntry nodeEntry = (NodeEntry)getTreeTableView().getTreeItem(getIndex()).getValue();
-                EventManager.get().post(new ReceiveActionEvent(nodeEntry));
-                Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
-            });
-
-            viewTransactionButton = new Button("");
-            Glyph searchGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SEARCH);
-            searchGlyph.setFontSize(12);
-            viewTransactionButton.setGraphic(searchGlyph);
-            viewTransactionButton.setOnAction(event -> {
-                HashIndexEntry hashIndexEntry = (HashIndexEntry)getTreeTableView().getTreeItem(getIndex()).getValue();
-                EventManager.get().post(new TransactionViewEvent(hashIndexEntry.getBlockTransaction(), hashIndexEntry));
-            });
-        }
-
-        @Override
-        protected void updateItem(Entry entry, boolean empty) {
-            super.updateItem(entry, empty);
-            if (empty) {
-                setGraphic(null);
-            } else {
-                applyRowStyles(this, getTreeTableView().getTreeItem(getIndex()).getValue());
-
-                actionBox.getChildren().remove(0, actionBox.getChildren().size());
-                if(entry instanceof NodeEntry) {
-                    actionBox.getChildren().add(receiveButton);
-                } else if(entry instanceof HashIndexEntry) {
-                    actionBox.getChildren().add(viewTransactionButton);
-                }
-
-                setGraphic(actionBox);
             }
         }
     }

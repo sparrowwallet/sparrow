@@ -102,7 +102,7 @@ public class AppController implements Initializable {
             boolean success = false;
             if(db.hasFiles()) {
                 for(File file : db.getFiles()) {
-                    openFile(file);
+                    openTransactionFile(file);
                 }
                 success = true;
             }
@@ -160,6 +160,8 @@ public class AppController implements Initializable {
         if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
             connectionService.start();
         }
+
+        openWalletFile(new File("/Users/scy/.sparrow/wallets/sparta.json"));
     }
 
     private ElectrumServer.ConnectionService createConnectionService() {
@@ -202,7 +204,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void openFromFile(ActionEvent event) {
+    public void openTransactionFromFile(ActionEvent event) {
         Stage window = new Stage();
 
         FileChooser fileChooser = new FileChooser();
@@ -215,11 +217,11 @@ public class AppController implements Initializable {
 
         File file = fileChooser.showOpenDialog(window);
         if (file != null) {
-            openFile(file);
+            openTransactionFile(file);
         }
     }
 
-    private void openFile(File file) {
+    private void openTransactionFile(File file) {
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();
             if(file.equals(tabData.getFile())) {
@@ -266,7 +268,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void openFromText(ActionEvent event) {
+    public void openTransactionFromText(ActionEvent event) {
         TextAreaDialog dialog = new TextAreaDialog();
         dialog.setTitle("Open from text");
         dialog.getDialogPane().setHeaderText("Paste a transaction or PSBT:");
@@ -325,54 +327,58 @@ public class AppController implements Initializable {
 
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
-            try {
-                Storage storage = new Storage(file);
-                FileType fileType = IOUtils.getFileType(file);
-                if(FileType.JSON.equals(fileType)) {
-                    Wallet wallet = storage.loadWallet();
-                    restorePublicKeysFromSeed(wallet, null);
-                    Tab tab = addWalletTab(storage, wallet);
-                    tabs.getSelectionModel().select(tab);
-                } else if(FileType.BINARY.equals(fileType)) {
-                    WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
-                    Optional<SecureString> optionalPassword = dlg.showAndWait();
-                    if(optionalPassword.isEmpty()) {
-                        return;
-                    }
+            openWalletFile(file);
+        }
+    }
 
-                    SecureString password = optionalPassword.get();
-                    Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
-                    loadWalletService.setOnSucceeded(workerStateEvent -> {
-                        EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
-                        Storage.WalletAndKey walletAndKey = loadWalletService.getValue();
-                        try {
-                            restorePublicKeysFromSeed(walletAndKey.wallet, walletAndKey.key);
-                            Tab tab = addWalletTab(storage, walletAndKey.wallet);
-                            tabs.getSelectionModel().select(tab);
-                        } catch(MnemonicException e) {
-                            showErrorDialog("Error Opening Wallet", e.getMessage());
-                        } finally {
-                            walletAndKey.key.clear();
-                        }
-                    });
-                    loadWalletService.setOnFailed(workerStateEvent -> {
-                        EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
-                        Throwable exception = loadWalletService.getException();
-                        if(exception instanceof InvalidPasswordException) {
-                            showErrorDialog("Invalid Password", "The wallet password was invalid.");
-                        } else {
-                            showErrorDialog("Error Opening Wallet", exception.getMessage());
-                        }
-                    });
-                    EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
-                    loadWalletService.start();
-                } else {
-                    throw new IOException("Unsupported file type");
+    private void openWalletFile(File file) {
+        try {
+            Storage storage = new Storage(file);
+            FileType fileType = IOUtils.getFileType(file);
+            if(FileType.JSON.equals(fileType)) {
+                Wallet wallet = storage.loadWallet();
+                restorePublicKeysFromSeed(wallet, null);
+                Tab tab = addWalletTab(storage, wallet);
+                tabs.getSelectionModel().select(tab);
+            } else if(FileType.BINARY.equals(fileType)) {
+                WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+                Optional<SecureString> optionalPassword = dlg.showAndWait();
+                if(optionalPassword.isEmpty()) {
+                    return;
                 }
-            } catch(Exception e) {
-                e.printStackTrace();
-                showErrorDialog("Error Opening Wallet", e.getMessage());
+
+                SecureString password = optionalPassword.get();
+                Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
+                loadWalletService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
+                    Storage.WalletAndKey walletAndKey = loadWalletService.getValue();
+                    try {
+                        restorePublicKeysFromSeed(walletAndKey.wallet, walletAndKey.key);
+                        Tab tab = addWalletTab(storage, walletAndKey.wallet);
+                        tabs.getSelectionModel().select(tab);
+                    } catch(MnemonicException e) {
+                        showErrorDialog("Error Opening Wallet", e.getMessage());
+                    } finally {
+                        walletAndKey.key.clear();
+                    }
+                });
+                loadWalletService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
+                    Throwable exception = loadWalletService.getException();
+                    if(exception instanceof InvalidPasswordException) {
+                        showErrorDialog("Invalid Password", "The wallet password was invalid.");
+                    } else {
+                        showErrorDialog("Error Opening Wallet", exception.getMessage());
+                    }
+                });
+                EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
+                loadWalletService.start();
+            } else {
+                throw new IOException("Unsupported file type");
             }
+        } catch(Exception e) {
+            e.printStackTrace();
+            showErrorDialog("Error Opening Wallet", e.getMessage());
         }
     }
 

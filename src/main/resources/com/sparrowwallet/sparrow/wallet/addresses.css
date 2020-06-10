@@ -9,15 +9,15 @@
 }
 
 .hashindex-row {
-    -fx-background-color: #fafafa;
+    -fx-text-fill: #696c77;
 }
 
-.hashindex-row .text {
-    -fx-fill: #696c77;
+.hashindex-row.spent {
+    -fx-text-fill: #a0a1a7;
 }
 
-.hashindex-row.spent .text {
-    -fx-fill: #a0a1a7;
+.tree-table-row-cell:selected .hashindex-row {
+    -fx-text-fill: white;
 }
 
 .label-cell .text-field {
@@ -32,8 +32,18 @@
     -fx-strikethrough: true;
 }
 
-.action-cell .button {
+.data-cell .button {
     -fx-padding: 0;
     -fx-pref-height: 18;
     -fx-pref-width: 18;
+    -fx-border-width: 0;
+    -fx-background-color: -fx-background;
+}
+
+.data-cell .button .label .text {
+    -fx-fill: -fx-background;
+}
+
+.data-cell:hover .button .label .text {
+    -fx-fill: -fx-text-base-color;
 }
