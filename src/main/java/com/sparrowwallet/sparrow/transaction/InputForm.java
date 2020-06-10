@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
@@ -17,6 +18,11 @@ public class InputForm extends TransactionForm {
         super(psbt);
         this.transactionInput = psbt.getTransaction().getInputs().get(psbt.getPsbtInputs().indexOf(psbtInput));
         this.psbtInput = psbtInput;
+    }
+
+    public InputForm(BlockTransaction blockTransaction, TransactionInput transactionInput) {
+        super(blockTransaction);
+        this.transactionInput = transactionInput;
     }
 
     public InputForm(Transaction transaction, TransactionInput transactionInput) {

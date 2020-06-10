@@ -277,6 +277,7 @@ public class InputController extends TransactionFormController implements Initia
                 }
             }
         });
+        rbf.setDisable(!inputForm.isEditable());
     }
 
     private void initializeLocktimeFields(TransactionInput txInput) {
@@ -348,6 +349,13 @@ public class InputController extends TransactionFormController implements Initia
         locktimeRelativeSeconds.valueProperty().addListener((obs, oldValue, newValue) -> {
             setRelativeLocktime(txInput, transaction);
         });
+
+        locktimeNoneType.setDisable(!inputForm.isEditable());
+        locktimeAbsoluteType.setDisable(!inputForm.isEditable());
+        locktimeRelativeType.setDisable(!inputForm.isEditable());
+        locktimeRelativeBlocks.setDisable(!inputForm.isEditable());
+        locktimeRelativeSeconds.setDisable(!inputForm.isEditable());
+        locktimeRelativeCombo.setDisable(!inputForm.isEditable());
     }
 
     private void updateAbsoluteLocktimeField(Transaction transaction) {

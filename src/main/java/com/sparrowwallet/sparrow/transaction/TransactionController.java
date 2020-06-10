@@ -6,11 +6,10 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
-import com.sparrowwallet.sparrow.event.TransactionTabChangedEvent;
-import com.sparrowwallet.sparrow.event.TransactionTabSelectedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
@@ -26,6 +25,8 @@ import org.fxmisc.richtext.CodeArea;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class TransactionController implements Initializable {
@@ -47,6 +48,7 @@ public class TransactionController implements Initializable {
 
     private Transaction transaction;
     private PSBT psbt;
+    private BlockTransaction blockTransaction;
     private int selectedInputIndex = -1;
     private int selectedOutputIndex = -1;
 
@@ -62,11 +64,11 @@ public class TransactionController implements Initializable {
     }
 
     private void initializeTxTree() {
-        HeadersForm headersForm = (psbt == null ? new HeadersForm(transaction) : new HeadersForm(psbt));
+        HeadersForm headersForm = (psbt != null ? new HeadersForm(psbt) : (blockTransaction != null ? new HeadersForm(blockTransaction) : new HeadersForm(transaction)));
         TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
 
-        InputsForm inputsForm = (psbt == null ? new InputsForm(transaction) : new InputsForm(psbt));
+        InputsForm inputsForm = (psbt != null ? new InputsForm(psbt) : (blockTransaction != null ? new InputsForm(blockTransaction) : new InputsForm(transaction)));
         TreeItem<TransactionForm> inputsItem = new TreeItem<>(inputsForm);
         inputsItem.setExpanded(true);
         for (TransactionInput txInput : transaction.getInputs()) {
@@ -74,12 +76,12 @@ public class TransactionController implements Initializable {
             if (psbt != null && psbt.getPsbtInputs().size() > txInput.getIndex()) {
                 psbtInput = psbt.getPsbtInputs().get(txInput.getIndex());
             }
-            InputForm inputForm = (psbt == null ? new InputForm(transaction, txInput) : new InputForm(psbt, psbtInput));
+            InputForm inputForm = (psbt != null ? new InputForm(psbt, psbtInput) : (blockTransaction != null ? new InputForm(blockTransaction, txInput) : new InputForm(transaction, txInput)));
             TreeItem<TransactionForm> inputItem = new TreeItem<>(inputForm);
             inputsItem.getChildren().add(inputItem);
         }
 
-        OutputsForm outputsForm = (psbt == null ? new OutputsForm(transaction) : new OutputsForm(psbt));
+        OutputsForm outputsForm = (psbt != null ? new OutputsForm(psbt) : (blockTransaction != null ? new OutputsForm(blockTransaction) : new OutputsForm(transaction)));
         TreeItem<TransactionForm> outputsItem = new TreeItem<>(outputsForm);
         outputsItem.setExpanded(true);
         for (TransactionOutput txOutput : transaction.getOutputs()) {
@@ -87,7 +89,7 @@ public class TransactionController implements Initializable {
             if (psbt != null && psbt.getPsbtOutputs().size() > txOutput.getIndex()) {
                 psbtOutput = psbt.getPsbtOutputs().get(txOutput.getIndex());
             }
-            OutputForm outputForm = (psbt == null ? new OutputForm(transaction, txOutput) : new OutputForm(psbt, psbtOutput));
+            OutputForm outputForm = (psbt != null ? new OutputForm(psbt, psbtOutput) : (blockTransaction != null ? new OutputForm(blockTransaction, txOutput) : new OutputForm(transaction, txOutput)));
             TreeItem<TransactionForm> outputItem = new TreeItem<>(outputForm);
             outputsItem.getChildren().add(outputItem);
         }
@@ -229,17 +231,18 @@ public class TransactionController implements Initializable {
         return cursor;
     }
 
-    public void setPSBT(PSBT psbt) {
-        this.psbt = psbt;
-        this.transaction = psbt.getTransaction();
-
-        initializeView();
-    }
-
     public void setTransaction(Transaction transaction) {
         this.transaction = transaction;
 
         initializeView();
+    }
+
+    public void setPSBT(PSBT psbt) {
+        this.psbt = psbt;
+    }
+
+    public void setBlockTransaction(BlockTransaction blockTransaction) {
+        this.blockTransaction = blockTransaction;
     }
 
     @Subscribe
@@ -258,5 +261,26 @@ public class TransactionController implements Initializable {
     @Subscribe
     public void tabChanged(TransactionTabChangedEvent event) {
         transactionMasterDetail.setShowDetailNode(event.isTxHexVisible());
+    }
+
+    @Subscribe
+    public void inputSelected(TransactionInputSelectedEvent event) {
+        Optional<TreeItem<TransactionForm>> optionalInputs = txtree.getRoot().getChildren().stream().filter(item -> item.getValue() instanceof InputsForm).findFirst();
+        selectItem(optionalInputs, (int)event.getIndex());
+    }
+
+    @Subscribe
+    public void outputSelected(TransactionOutputSelectedEvent event) {
+        Optional<TreeItem<TransactionForm>> optionalOutputs = txtree.getRoot().getChildren().stream().filter(item -> item.getValue() instanceof OutputsForm).findFirst();
+        selectItem(optionalOutputs, (int)event.getIndex());
+    }
+
+    private void selectItem(Optional<TreeItem<TransactionForm>> optionalParent, int index) {
+        if(optionalParent.isPresent()) {
+            List<TreeItem<TransactionForm>> inputs = optionalParent.get().getChildren();
+            if(inputs.size() > index) {
+                txtree.getSelectionModel().select(inputs.get(index));
+            }
+        }
     }
 }

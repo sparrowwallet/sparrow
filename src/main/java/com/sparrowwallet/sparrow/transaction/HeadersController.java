@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.IdLabel;
@@ -13,6 +14,7 @@ import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
 import com.google.common.eventbus.Subscribe;
+import tornadofx.control.Form;
 
 import java.net.URL;
 import java.time.*;
@@ -77,6 +79,15 @@ public class HeadersController extends TransactionFormController implements Init
     @FXML
     private CopyableLabel feeRate;
 
+    @FXML
+    private Form blockchainForm;
+
+    @FXML
+    private CopyableLabel blockStatus;
+
+    @FXML
+    private CopyableLabel blockHeight;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -97,6 +108,7 @@ public class HeadersController extends TransactionFormController implements Init
             tx.setVersion(newValue);
             EventManager.get().post(new TransactionChangedEvent(tx));
         });
+        version.setDisable(!headersForm.isEditable());
 
         String type = "Legacy";
         if(tx.isSegwit()) {
@@ -170,6 +182,12 @@ public class HeadersController extends TransactionFormController implements Init
             EventManager.get().post(new TransactionChangedEvent(tx));
         });
 
+        locktimeNoneType.setDisable(!headersForm.isEditable());
+        locktimeBlockType.setDisable(!headersForm.isEditable());
+        locktimeDateType.setDisable(!headersForm.isEditable());
+        locktimeBlock.setDisable(!headersForm.isEditable());
+        locktimeDate.setDisable(!headersForm.isEditable());
+
         size.setText(tx.getSize() + " B");
         virtualSize.setText(tx.getVirtualSize() + " vB");
 
@@ -182,6 +200,20 @@ public class HeadersController extends TransactionFormController implements Init
             fee.setValue(feeAmt);
             double feeRateAmt = feeAmt.doubleValue() / tx.getVirtualSize();
             feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
+        }
+
+        blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
+        blockchainForm.setVisible(headersForm.getBlockTransaction() != null);
+        if(headersForm.getBlockTransaction() != null) {
+            Integer currentHeight = AppController.getCurrentBlockHeight();
+            if(currentHeight == null) {
+                blockStatus.setText("Unknown");
+            } else {
+                int confirmations = currentHeight - headersForm.getBlockTransaction().getHeight() + 1;
+                blockStatus.setText(confirmations + " Confirmations");
+            }
+
+            blockHeight.setText(Integer.toString(headersForm.getBlockTransaction().getHeight()));
         }
     }
 

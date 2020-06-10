@@ -124,5 +124,6 @@ public class WalletForm {
     @Subscribe
     public void newBlock(NewBlockEvent event) {
         refreshHistory();
+        wallet.setStoredBlockHeight(event.getHeight());
     }
 }

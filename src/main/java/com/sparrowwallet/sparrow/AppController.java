@@ -12,19 +12,18 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.MnemonicException;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
+import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
+import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -39,7 +38,6 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.controlsfx.control.StatusBar;
-import org.controlsfx.tools.Platform;
 
 import java.io.*;
 import java.net.URL;
@@ -79,6 +77,8 @@ public class AppController implements Initializable {
     private Timeline statusTimeline;
 
     private ElectrumServer.ConnectionService connectionService;
+
+    public static Integer currentBlockHeight;
 
     public static boolean showTxHexProperty;
 
@@ -190,7 +190,7 @@ public class AppController implements Initializable {
     }
 
     private void setOsxApplicationMenu() {
-        if(Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
+        if(org.controlsfx.tools.Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
@@ -287,6 +287,10 @@ public class AppController implements Initializable {
                 showErrorDialog("Could not recognise input", e.getMessage());
             }
         }
+    }
+
+    public static Integer getCurrentBlockHeight() {
+        return currentBlockHeight;
     }
 
     public static void showErrorDialog(String title, String content) {
@@ -519,13 +523,13 @@ public class AppController implements Initializable {
     private Tab addTransactionTab(String name, byte[] bytes) throws PSBTParseException, ParseException, TransactionParseException {
         if(PSBT.isPSBT(bytes)) {
             PSBT psbt = new PSBT(bytes);
-            return addTransactionTab(name, null, psbt);
+            return addTransactionTab(name, psbt);
         }
 
         if(Transaction.isTransaction(bytes)) {
             try {
                 Transaction transaction = new Transaction(bytes);
-                return addTransactionTab(name, transaction, null);
+                return addTransactionTab(name, transaction);
             } catch(Exception e) {
                 throw new TransactionParseException(e.getMessage());
             }
@@ -534,15 +538,34 @@ public class AppController implements Initializable {
         throw new ParseException("Not a valid PSBT or transaction", 0);
     }
 
-    private Tab addTransactionTab(String name, Transaction transaction, PSBT psbt) {
+    private Tab addTransactionTab(String name, Transaction transaction) {
+        return addTransactionTab(name, transaction, null, null);
+    }
+
+    private Tab addTransactionTab(String name, PSBT psbt) {
+        return addTransactionTab(name, psbt.getTransaction(), psbt, null);
+    }
+
+    private Tab addTransactionTab(BlockTransaction blockTransaction) {
+        return addTransactionTab(null, blockTransaction.getTransaction(), null, blockTransaction);
+    }
+
+    private Tab addTransactionTab(String name, Transaction transaction, PSBT psbt, BlockTransaction blockTransaction) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData instanceof TransactionTabData) {
+                TransactionTabData transactionTabData = (TransactionTabData)tabData;
+                if(transactionTabData.getTransaction() == transaction) {
+                    return tab;
+                }
+            }
+        }
+
         try {
             String tabName = name;
+
             if(tabName == null || tabName.isEmpty()) {
-                if(transaction != null) {
-                    tabName = "[" + transaction.getTxId().toString().substring(0, 6) + "]";
-                } else if(psbt != null) {
-                    tabName = "[" + psbt.getTransaction().getTxId().toString().substring(0, 6) + "]";
-                }
+                tabName = "[" + transaction.getTxId().toString().substring(0, 6) + "]";
             }
 
             Tab tab = new Tab(tabName);
@@ -554,11 +577,9 @@ public class AppController implements Initializable {
             tab.setContent(transactionLoader.load());
             TransactionController controller = transactionLoader.getController();
 
-            if(transaction != null) {
-                controller.setTransaction(transaction);
-            } else if(psbt != null) {
-                controller.setPSBT(psbt);
-            }
+            controller.setPSBT(psbt);
+            controller.setBlockTransaction(blockTransaction);
+            controller.setTransaction(transaction);
 
             tabs.getTabs().add(tab);
             return tab;
@@ -672,6 +693,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void newConnection(ConnectionEvent event) {
+        currentBlockHeight = event.getBlockHeight();
         String banner = event.getServerBanner();
         String status = "Connected: " + (banner == null ? "Server" : banner.split(System.lineSeparator(), 2)[0]) + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));
@@ -686,7 +708,21 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
+        currentBlockHeight = event.getHeight();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
+    }
+
+    @Subscribe
+    public void viewTransaction(ViewTransactionEvent event) {
+        Tab tab = addTransactionTab(event.getBlockTransaction());
+        tabs.getSelectionModel().select(tab);
+        Platform.runLater(() -> {
+            if(event.getHashIndexEntry().getType().equals(HashIndexEntry.Type.INPUT)) {
+                EventManager.get().post(new TransactionInputSelectedEvent(event.getHashIndexEntry().getHashIndex().getIndex()));
+            } else {
+                EventManager.get().post(new TransactionOutputSelectedEvent(event.getHashIndexEntry().getHashIndex().getIndex()));
+            }
+        });
     }
 }

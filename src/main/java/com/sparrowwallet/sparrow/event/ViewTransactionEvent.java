@@ -3,15 +3,15 @@ package com.sparrowwallet.sparrow.event;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 
-public class TransactionViewEvent {
+public class ViewTransactionEvent {
     public final BlockTransaction blockTransaction;
     public final HashIndexEntry hashIndexEntry;
 
-    public TransactionViewEvent(BlockTransaction blockTransaction) {
+    public ViewTransactionEvent(BlockTransaction blockTransaction) {
         this(blockTransaction, null);
     }
 
-    public TransactionViewEvent(BlockTransaction blockTransaction, HashIndexEntry hashIndexEntry) {
+    public ViewTransactionEvent(BlockTransaction blockTransaction, HashIndexEntry hashIndexEntry) {
         this.blockTransaction = blockTransaction;
         this.hashIndexEntry = hashIndexEntry;
     }

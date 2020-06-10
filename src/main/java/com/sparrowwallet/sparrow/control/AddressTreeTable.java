@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
-import com.sparrowwallet.sparrow.event.TransactionViewEvent;
+import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
@@ -159,7 +159,7 @@ public class AddressTreeTable extends TreeTableView<Entry> {
                     searchGlyph.setFontSize(12);
                     viewTransactionButton.setGraphic(searchGlyph);
                     viewTransactionButton.setOnAction(event -> {
-                        EventManager.get().post(new TransactionViewEvent(hashIndexEntry.getBlockTransaction(), hashIndexEntry));
+                        EventManager.get().post(new ViewTransactionEvent(hashIndexEntry.getBlockTransaction(), hashIndexEntry));
                     });
                     setGraphic(viewTransactionButton);
                 }

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
@@ -10,6 +11,10 @@ import java.io.IOException;
 public class HeadersForm extends TransactionForm {
     public HeadersForm(PSBT psbt) {
         super(psbt);
+    }
+
+    public HeadersForm(BlockTransaction blockTransaction) {
+        super(blockTransaction);
     }
 
     public HeadersForm(Transaction transaction) {
