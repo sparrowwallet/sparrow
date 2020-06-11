@@ -10,6 +10,8 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.ElectrumServer;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
@@ -25,9 +27,7 @@ import org.fxmisc.richtext.CodeArea;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.util.List;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class TransactionController implements Initializable {
 
@@ -49,6 +49,7 @@ public class TransactionController implements Initializable {
     private Transaction transaction;
     private PSBT psbt;
     private BlockTransaction blockTransaction;
+
     private int selectedInputIndex = -1;
     private int selectedOutputIndex = -1;
 
@@ -61,6 +62,7 @@ public class TransactionController implements Initializable {
         initializeTxTree();
         transactionMasterDetail.setShowDetailNode(AppController.showTxHexProperty);
         refreshTxHex();
+        fetchBlockTransactions();
     }
 
     private void initializeTxTree() {
@@ -142,6 +144,28 @@ public class TransactionController implements Initializable {
         txtree.getSelectionModel().select(txtree.getRoot());
     }
 
+    public void setTreeSelection(TransactionView view, Integer index) {
+        select(txtree.getRoot(), view, index);
+    }
+
+    private void select(TreeItem<TransactionForm> treeItem, TransactionView view, Integer index) {
+        if(treeItem.getValue().getView().equals(view)) {
+            if(view.equals(TransactionView.INPUT) || view.equals(TransactionView.OUTPUT)) {
+                if(treeItem.getParent().getChildren().indexOf(treeItem) == index) {
+                    txtree.getSelectionModel().select(treeItem);
+                    return;
+                }
+            } else {
+                txtree.getSelectionModel().select(treeItem);
+                return;
+            }
+        }
+
+        for(TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
+            select(childItem, view, index);
+        }
+    }
+
     void refreshTxHex() {
         txhex.clear();
 
@@ -218,6 +242,49 @@ public class TransactionController implements Initializable {
         }
     }
 
+    private void fetchBlockTransactions() {
+        if(AppController.isOnline()) {
+            Set<Sha256Hash> references = new HashSet<>();
+            if(psbt == null) {
+                references.add(transaction.getTxId());
+            }
+            for(TransactionInput input : transaction.getInputs()) {
+                references.add(input.getOutpoint().getHash());
+            }
+
+            ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(references);
+            transactionReferenceService.setOnSucceeded(successEvent -> {
+                Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
+                BlockTransaction thisBlockTx = null;
+                Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
+                for(Sha256Hash txid : transactionMap.keySet()) {
+                    BlockTransaction blockTx = transactionMap.get(txid);
+                    if(txid.equals(transaction.getTxId())) {
+                        thisBlockTx = blockTx;
+                    } else {
+                        inputTransactions.put(txid, blockTx);
+                        references.remove(txid);
+                    }
+                }
+
+                references.remove(transaction.getTxId());
+                if(!references.isEmpty()) {
+                    System.out.println("Failed to retrieve all referenced input transactions, aborting transaction fetch");
+                    return;
+                }
+
+                final BlockTransaction blockTx = thisBlockTx;
+                Platform.runLater(() -> {
+                    EventManager.get().post(new BlockTransactionFetchedEvent(transaction.getTxId(), blockTx, inputTransactions));
+                });
+            });
+            transactionReferenceService.setOnFailed(failedEvent -> {
+                failedEvent.getSource().getException().printStackTrace();
+            });
+            transactionReferenceService.start();
+        }
+    }
+
     private String getIndexedStyleClass(int iterableIndex, int selectedIndex, String styleClass) {
         if (selectedIndex == -1 || selectedIndex == iterableIndex) {
             return styleClass;
@@ -264,23 +331,19 @@ public class TransactionController implements Initializable {
     }
 
     @Subscribe
-    public void inputSelected(TransactionInputSelectedEvent event) {
-        Optional<TreeItem<TransactionForm>> optionalInputs = txtree.getRoot().getChildren().stream().filter(item -> item.getValue() instanceof InputsForm).findFirst();
-        selectItem(optionalInputs, (int)event.getIndex());
+    public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
+        if(event.getTxId().equals(transaction.getTxId())) {
+            setBlockTransaction(txtree.getRoot(), event);
+        }
     }
 
-    @Subscribe
-    public void outputSelected(TransactionOutputSelectedEvent event) {
-        Optional<TreeItem<TransactionForm>> optionalOutputs = txtree.getRoot().getChildren().stream().filter(item -> item.getValue() instanceof OutputsForm).findFirst();
-        selectItem(optionalOutputs, (int)event.getIndex());
-    }
+    private void setBlockTransaction(TreeItem<TransactionForm> treeItem, BlockTransactionFetchedEvent event) {
+        TransactionForm form = treeItem.getValue();
+        form.setBlockTransaction(event.getBlockTransaction());
+        form.setInputTransactions(event.getInputTransactions());
 
-    private void selectItem(Optional<TreeItem<TransactionForm>> optionalParent, int index) {
-        if(optionalParent.isPresent()) {
-            List<TreeItem<TransactionForm>> inputs = optionalParent.get().getChildren();
-            if(inputs.size() > index) {
-                txtree.getSelectionModel().select(inputs.get(index));
-            }
+        for(TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
+            setBlockTransaction(childItem, event);
         }
     }
 }

@@ -71,7 +71,10 @@ public class AddressTreeTable extends TreeTableView<Entry> {
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
 
-        scrollTo(rootEntry.getNode().getHighestUsedIndex());
+        Integer highestUsedIndex = rootEntry.getNode().getHighestUsedIndex();
+        if(highestUsedIndex != null) {
+            scrollTo(highestUsedIndex);
+        }
 
         setOnMouseClicked(mouseEvent -> {
             if(mouseEvent.getButton().equals(MouseButton.PRIMARY)){

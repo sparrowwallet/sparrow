@@ -1,13 +1,17 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
+import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
+import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -28,6 +32,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class InputController extends TransactionFormController implements Initializable {
@@ -38,6 +43,9 @@ public class InputController extends TransactionFormController implements Initia
 
     @FXML
     private IdLabel outpoint;
+
+    @FXML
+    private Hyperlink linkedOutpoint;
 
     @FXML
     private Button outpointSelect;
@@ -128,6 +136,10 @@ public class InputController extends TransactionFormController implements Initia
 
     private void initializeInputFields(TransactionInput txInput, PSBTInput psbtInput) {
         inputFieldset.setText("Input #" + txInput.getIndex());
+
+        outpoint.managedProperty().bind(outpoint.visibleProperty());
+        linkedOutpoint.managedProperty().bind(linkedOutpoint.visibleProperty());
+
         if(txInput.isCoinBase()) {
             outpoint.setText("Coinbase");
             outpointSelect.setVisible(false);
@@ -136,7 +148,11 @@ public class InputController extends TransactionFormController implements Initia
                 totalAmt += output.getValue();
             }
             spends.setValue(totalAmt);
+        } else if(inputForm.getInputTransactions() != null) {
+            updateOutpoint(inputForm.getInputTransactions());
         } else {
+            outpoint.setVisible(true);
+            linkedOutpoint.setVisible(false);
             outpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
         }
 
@@ -149,24 +165,49 @@ public class InputController extends TransactionFormController implements Initia
                 output = psbtInput.getWitnessUtxo();
             }
 
-            if(output != null) {
-                spends.setValue(output.getValue());
-                try {
-                    Address[] addresses = output.getScript().getToAddresses();
-                    from.setVisible(true);
-                    if(addresses.length == 1) {
-                        address.setAddress(addresses[0]);
-                    } else {
-                        address.setText("multiple addresses");
-                    }
-                } catch(NonStandardScriptException e) {
-                    //ignore
-                }
-            }
+            updateSpends(output);
+        } else if(inputForm.getInputTransactions() != null) {
+            updateSpends(inputForm.getInputTransactions());
         }
 
         //TODO: Enable select outpoint when wallet present
         outpointSelect.setDisable(true);
+    }
+
+    private void updateOutpoint(Map<Sha256Hash, BlockTransaction> inputTransactions) {
+        outpoint.setVisible(false);
+        linkedOutpoint.setVisible(true);
+
+        TransactionInput txInput = inputForm.getTransactionInput();
+        linkedOutpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
+        linkedOutpoint.setOnAction(event -> {
+            BlockTransaction linkedTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
+            EventManager.get().post(new ViewTransactionEvent(linkedTransaction, TransactionView.OUTPUT, (int)txInput.getOutpoint().getIndex()));
+        });
+    }
+
+    private void updateSpends(Map<Sha256Hash, BlockTransaction> inputTransactions) {
+        TransactionInput txInput = inputForm.getTransactionInput();
+        BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
+        TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+        updateSpends(output);
+    }
+
+    private void updateSpends(TransactionOutput output) {
+        if (output != null) {
+            spends.setValue(output.getValue());
+            try {
+                Address[] addresses = output.getScript().getToAddresses();
+                from.setVisible(true);
+                if (addresses.length == 1) {
+                    address.setAddress(addresses[0]);
+                } else {
+                    address.setText("multiple addresses");
+                }
+            } catch (NonStandardScriptException e) {
+                //ignore
+            }
+        }
     }
 
     private void initializeScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
@@ -409,5 +450,15 @@ public class InputController extends TransactionFormController implements Initia
         }
 
         return chunkString;
+    }
+
+    @Subscribe
+    public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
+        if(event.getTxId().equals(inputForm.getTransaction().getTxId())) {
+            updateOutpoint(event.getInputTransactions());
+            if(inputForm.getPsbt() == null) {
+                updateSpends(event.getInputTransactions());
+            }
+        }
     }
 }

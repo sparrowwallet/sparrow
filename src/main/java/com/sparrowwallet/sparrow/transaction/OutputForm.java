@@ -38,12 +38,18 @@ public class OutputForm extends TransactionForm {
         return psbtOutput;
     }
 
+    @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("output.fxml"));
         Node node = loader.load();
         OutputController controller = loader.getController();
         controller.setModel(this);
         return node;
+    }
+
+    @Override
+    public TransactionView getView() {
+        return TransactionView.OUTPUT;
     }
 
     public String toString() {

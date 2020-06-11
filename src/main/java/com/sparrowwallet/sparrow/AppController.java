@@ -18,12 +18,13 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
-import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
+import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
-import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -73,6 +74,8 @@ public class AppController implements Initializable {
 
     //Determines if a change in serverToggle changes the offline/online mode
     private boolean changeMode = true;
+
+    private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
 
     private Timeline statusTimeline;
 
@@ -155,6 +158,8 @@ public class AppController implements Initializable {
             }
         });
 
+        onlineProperty.bindBidirectional(serverToggle.selectedProperty());
+
         connectionService = createConnectionService();
         Config config = Config.get();
         if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
@@ -171,7 +176,7 @@ public class AppController implements Initializable {
 
         connectionService.setOnSucceeded(successEvent -> {
             changeMode = false;
-            serverToggle.setSelected(true);
+            onlineProperty.setValue(true);
             changeMode = true;
 
             if(connectionService.getValue() != null) {
@@ -180,7 +185,7 @@ public class AppController implements Initializable {
         });
         connectionService.setOnFailed(failEvent -> {
             changeMode = false;
-            serverToggle.setSelected(false);
+            onlineProperty.setValue(false);
             changeMode = true;
 
             EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
@@ -287,6 +292,10 @@ public class AppController implements Initializable {
                 showErrorDialog("Could not recognise input", e.getMessage());
             }
         }
+    }
+
+    public static boolean isOnline() {
+        return onlineProperty.get();
     }
 
     public static Integer getCurrentBlockHeight() {
@@ -539,18 +548,18 @@ public class AppController implements Initializable {
     }
 
     private Tab addTransactionTab(String name, Transaction transaction) {
-        return addTransactionTab(name, transaction, null, null);
+        return addTransactionTab(name, transaction, null, null, null, null);
     }
 
     private Tab addTransactionTab(String name, PSBT psbt) {
-        return addTransactionTab(name, psbt.getTransaction(), psbt, null);
+        return addTransactionTab(name, psbt.getTransaction(), psbt, null, null, null);
     }
 
-    private Tab addTransactionTab(BlockTransaction blockTransaction) {
-        return addTransactionTab(null, blockTransaction.getTransaction(), null, blockTransaction);
+    private Tab addTransactionTab(BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
+        return addTransactionTab(null, blockTransaction.getTransaction(), null, blockTransaction, initialView, initialIndex);
     }
 
-    private Tab addTransactionTab(String name, Transaction transaction, PSBT psbt, BlockTransaction blockTransaction) {
+    private Tab addTransactionTab(String name, Transaction transaction, PSBT psbt, BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();
             if(tabData instanceof TransactionTabData) {
@@ -580,6 +589,12 @@ public class AppController implements Initializable {
             controller.setPSBT(psbt);
             controller.setBlockTransaction(blockTransaction);
             controller.setTransaction(transaction);
+
+            if(initialView != null) {
+                controller.setTreeSelection(initialView, initialIndex);
+            } else {
+                controller.setTreeSelection(TransactionView.HEADERS, null);
+            }
 
             tabs.getTabs().add(tab);
             return tab;
@@ -715,14 +730,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void viewTransaction(ViewTransactionEvent event) {
-        Tab tab = addTransactionTab(event.getBlockTransaction());
+        Tab tab = addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
         tabs.getSelectionModel().select(tab);
-        Platform.runLater(() -> {
-            if(event.getHashIndexEntry().getType().equals(HashIndexEntry.Type.INPUT)) {
-                EventManager.get().post(new TransactionInputSelectedEvent(event.getHashIndexEntry().getHashIndex().getIndex()));
-            } else {
-                EventManager.get().post(new TransactionOutputSelectedEvent(event.getHashIndexEntry().getHashIndex().getIndex()));
-            }
-        });
     }
 }

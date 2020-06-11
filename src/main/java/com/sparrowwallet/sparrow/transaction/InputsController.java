@@ -1,9 +1,13 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
@@ -11,6 +15,7 @@ import javafx.scene.chart.PieChart;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class InputsController extends TransactionFormController implements Initializable {
@@ -30,7 +35,7 @@ public class InputsController extends TransactionFormController implements Initi
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        EventManager.get().register(this);
     }
 
     public void setModel(InputsForm form) {
@@ -92,6 +97,46 @@ public class InputsController extends TransactionFormController implements Initi
             }
 
             addPieData(inputsPie, outputs);
+        } else if(inputsForm.getInputTransactions() != null) {
+            updateBlockTransactionInputs(inputsForm.getInputTransactions());
+        }
+    }
+
+    private void updateBlockTransactionInputs(Map<Sha256Hash, BlockTransaction> inputTransactions) {
+        List<TransactionOutput> outputs = new ArrayList<>();
+
+        int foundSigs = 0;
+        for(TransactionInput input : inputsForm.getTransaction().getInputs()) {
+            if(input.hasWitness()) {
+                foundSigs += input.getWitness().getSignatures().size();
+            } else {
+                foundSigs += input.getScriptSig().getSignatures().size();
+            }
+
+            BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
+            if(inputTx == null) {
+                throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
+            }
+
+            TransactionOutput output = inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
+            outputs.add(output);
+        }
+
+        long totalAmt = 0;
+        for(TransactionOutput output : outputs) {
+            totalAmt += output.getValue();
+        }
+        total.setValue(totalAmt);
+
+        //TODO: Find signing script and get required num sigs
+        signatures.setText(foundSigs + "/" + foundSigs);
+        addPieData(inputsPie, outputs);
+    }
+
+    @Subscribe
+    public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
+        if(event.getTxId().equals(inputsForm.getTransaction().getTxId()) && inputsForm.getPsbt() != null) {
+            updateBlockTransactionInputs(event.getInputTransactions());
         }
     }
 }

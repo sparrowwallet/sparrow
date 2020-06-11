@@ -99,13 +99,19 @@
 
     <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <Form fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.rowIndex="6">
+    <Form fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
         <Fieldset text="Blockchain" inputGrow="SOMETIMES">
             <Field text="Status:">
                 <CopyableLabel fx:id="blockStatus" />
             </Field>
             <Field text="Block Height:">
                 <CopyableLabel fx:id="blockHeight" />
+            </Field>
+            <Field text="Timestamp:">
+                <CopyableLabel fx:id="blockTimestamp" />
+            </Field>
+            <Field text="Block Hash:">
+                <IdLabel fx:id="blockHash" />
             </Field>
         </Fieldset>
     </Form>

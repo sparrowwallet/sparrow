@@ -1,7 +1,9 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.arteam.simplejsonrpc.client.*;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
+import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
@@ -11,6 +13,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
@@ -365,6 +368,32 @@ public class ElectrumServer {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public Map<Sha256Hash, BlockTransaction> getReferencedTransactions(Set<Sha256Hash> references) throws ServerException {
+        JsonRpcClient client = new JsonRpcClient(getTransport());
+        BatchRequestBuilder<String, VerboseTransaction> batchRequest = client.createBatchRequest().keysType(String.class).returnType(VerboseTransaction.class);
+        for(Sha256Hash reference : references) {
+            batchRequest.add(reference.toString(), "blockchain.transaction.get", reference.toString(), true);
+        }
+
+        Map<String, VerboseTransaction> result;
+        try {
+            result = batchRequest.execute();
+        } catch (JsonRpcBatchException e) {
+            System.out.println("Some errors retrieving transactions: " + e.getErrors());
+            result = (Map<String, VerboseTransaction>)e.getSuccesses();
+        }
+
+        Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
+        for(String txid : result.keySet()) {
+            Sha256Hash hash = Sha256Hash.wrap(txid);
+            BlockTransaction blockTransaction = result.get(txid).getBlockTransaction();
+            transactionMap.put(hash, blockTransaction);
+        }
+
+        return transactionMap;
+    }
+
     private String getScriptHash(Wallet wallet, WalletNode node) {
         byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
@@ -394,6 +423,36 @@ public class ElectrumServer {
         public BlockHeader getBlockHeader() {
             byte[] blockHeaderBytes = Utils.hexToBytes(hex);
             return new BlockHeader(blockHeaderBytes);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    private static class VerboseTransaction {
+        public String blockhash;
+        public long blocktime;
+        public int confirmations;
+        public String hash;
+        public String hex;
+        public int locktime;
+        public long size;
+        public String txid;
+        public int version;
+
+        public int getHeight() {
+            Integer currentHeight = AppController.getCurrentBlockHeight();
+            if(currentHeight != null) {
+                return currentHeight - confirmations + 1;
+            }
+
+            return -1;
+        }
+
+        public Date getDate() {
+            return new Date(blocktime * 1000);
+        }
+
+        public BlockTransaction getBlockTransaction() {
+            return new BlockTransaction(Sha256Hash.wrap(txid), getHeight(), getDate(), 0L, new Transaction(Utils.hexToBytes(hex)), Sha256Hash.wrap(blockhash));
         }
     }
 
@@ -571,7 +630,7 @@ public class ElectrumServer {
     public static class ProxyTcpOverTlsTransport extends TcpOverTlsTransport {
         public static final int DEFAULT_PROXY_PORT = 1080;
 
-        private HostAndPort proxy;
+        private final HostAndPort proxy;
 
         public ProxyTcpOverTlsTransport(HostAndPort server, HostAndPort proxy) throws KeyManagementException, NoSuchAlgorithmException {
             super(server);
@@ -710,6 +769,32 @@ public class ElectrumServer {
                     electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
                     electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
                     return true;
+                }
+            };
+        }
+    }
+
+    public static class TransactionReferenceService extends Service<Map<Sha256Hash, BlockTransaction>> {
+        private final Set<Sha256Hash> references;
+
+        public TransactionReferenceService(Transaction transaction) {
+            references = new HashSet<>();
+            references.add(transaction.getTxId());
+            for(TransactionInput input : transaction.getInputs()) {
+                references.add(input.getOutpoint().getHash());
+            }
+        }
+
+        public TransactionReferenceService(Set<Sha256Hash> references) {
+            this.references = references;
+        }
+
+        @Override
+        protected Task<Map<Sha256Hash, BlockTransaction>> createTask() {
+            return new Task<>() {
+                protected Map<Sha256Hash, BlockTransaction> call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    return electrumServer.getReferencedTransactions(references);
                 }
             };
         }

@@ -21,12 +21,18 @@ public class OutputsForm extends TransactionForm {
         super(transaction);
     }
 
+    @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("outputs.fxml"));
         Node node = loader.load();
         OutputsController controller = loader.getController();
         controller.setModel(this);
         return node;
+    }
+
+    @Override
+    public TransactionView getView() {
+        return TransactionView.OUTPUTS;
     }
 
     public String toString() {

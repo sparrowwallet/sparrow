@@ -38,12 +38,18 @@ public class InputForm extends TransactionForm {
         return psbtInput;
     }
 
+    @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("input.fxml"));
         Node node = loader.load();
         InputController controller = loader.getController();
         controller.setModel(this);
         return node;
+    }
+
+    @Override
+    public TransactionView getView() {
+        return TransactionView.INPUT;
     }
 
     public String toString() {

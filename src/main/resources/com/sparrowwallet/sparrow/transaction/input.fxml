@@ -33,6 +33,7 @@
         <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input" wrapWidth="680">
             <Field text="Outpoint:" styleClass="label-button">
                 <IdLabel fx:id="outpoint" />
+                <Hyperlink fx:id="linkedOutpoint" visible="false" />
                 <Button fx:id="outpointSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />

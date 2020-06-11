@@ -1,15 +1,22 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
@@ -17,11 +24,14 @@ import com.google.common.eventbus.Subscribe;
 import tornadofx.control.Form;
 
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.time.*;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class HeadersController extends TransactionFormController implements Initializable {
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
+    public static final String BLOCK_TIMESTAMP_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss ZZZ";
 
     private HeadersForm headersForm;
 
@@ -87,6 +97,12 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private CopyableLabel blockHeight;
+
+    @FXML
+    private CopyableLabel blockTimestamp;
+
+    @FXML
+    private IdLabel blockHash;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -194,26 +210,82 @@ public class HeadersController extends TransactionFormController implements Init
         Long feeAmt = null;
         if(headersForm.getPsbt() != null) {
             feeAmt = headersForm.getPsbt().getFee();
+        } else if(headersForm.getInputTransactions() != null) {
+            feeAmt = calculateFee(headersForm.getInputTransactions());
         }
 
         if(feeAmt != null) {
-            fee.setValue(feeAmt);
-            double feeRateAmt = feeAmt.doubleValue() / tx.getVirtualSize();
-            feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
+            updateFee(feeAmt);
         }
 
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
-        blockchainForm.setVisible(headersForm.getBlockTransaction() != null);
         if(headersForm.getBlockTransaction() != null) {
-            Integer currentHeight = AppController.getCurrentBlockHeight();
-            if(currentHeight == null) {
-                blockStatus.setText("Unknown");
-            } else {
-                int confirmations = currentHeight - headersForm.getBlockTransaction().getHeight() + 1;
-                blockStatus.setText(confirmations + " Confirmations");
+            updateBlockchainForm(headersForm.getBlockTransaction());
+        } else {
+            blockchainForm.setVisible(false);
+        }
+    }
+
+    private long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
+        long feeAmt = 0L;
+        for(TransactionInput input : headersForm.getTransaction().getInputs()) {
+            BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
+            if(inputTx == null) {
+                throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
             }
 
-            blockHeight.setText(Integer.toString(headersForm.getBlockTransaction().getHeight()));
+            feeAmt += inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex()).getValue();
+        }
+
+        for(TransactionOutput output : headersForm.getTransaction().getOutputs()) {
+            feeAmt -= output.getValue();
+        }
+
+        return feeAmt;
+    }
+
+    private void updateFee(Long feeAmt) {
+        fee.setValue(feeAmt);
+        double feeRateAmt = feeAmt.doubleValue() / headersForm.getTransaction().getVirtualSize();
+        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
+    }
+
+    private void updateBlockchainForm(BlockTransaction blockTransaction) {
+        blockchainForm.setVisible(true);
+
+        Integer currentHeight = AppController.getCurrentBlockHeight();
+        if(currentHeight == null) {
+            blockStatus.setText("Unknown");
+        } else {
+            int confirmations = currentHeight - blockTransaction.getHeight() + 1;
+            blockStatus.setText(confirmations + " Confirmations");
+        }
+
+        blockHeight.setText(Integer.toString(blockTransaction.getHeight()));
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat(BLOCK_TIMESTAMP_DATE_FORMAT);
+        blockTimestamp.setText(dateFormat.format(blockTransaction.getDate()));
+
+        blockHash.managedProperty().bind(blockHash.visibleProperty());
+        if(blockTransaction.getBlockHash() != null) {
+            blockHash.setVisible(true);
+            blockHash.setText(blockTransaction.getBlockHash().toString());
+            blockHash.setContextMenu(new BlockHeightContextMenu(blockTransaction.getBlockHash()));
+        } else {
+            blockHash.setVisible(false);
+        }
+    }
+
+    private static class BlockHeightContextMenu extends ContextMenu {
+        public BlockHeightContextMenu(Sha256Hash blockHash) {
+            MenuItem copyBlockHash = new MenuItem("Copy Block Hash");
+            copyBlockHash.setOnAction(AE -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(blockHash.toString());
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+            getItems().add(copyBlockHash);
         }
     }
 
@@ -231,6 +303,17 @@ public class HeadersController extends TransactionFormController implements Init
             locktimeBlock.setDisable(!locktimeEnabled);
             locktimeDateType.setDisable(!locktimeEnabled);
             locktimeDate.setDisable(!locktimeEnabled);
+        }
+    }
+
+    @Subscribe
+    public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
+        if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
+            if(event.getBlockTransaction() != null) {
+                updateBlockchainForm(event.getBlockTransaction());
+            }
+
+            updateFee(calculateFee(event.getInputTransactions()));
         }
     }
 }
