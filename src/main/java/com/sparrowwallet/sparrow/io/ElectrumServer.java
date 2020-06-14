@@ -155,7 +155,14 @@ public class ElectrumServer {
             for(WalletNode node : nodes) {
                 batchRequest.add(node.getDerivationPath(), method, getScriptHash(wallet, node));
             }
-            Map<String, ScriptHashTx[]> result = batchRequest.execute();
+
+            Map<String, ScriptHashTx[]> result;
+            try {
+                result = batchRequest.execute();
+            } catch (JsonRpcBatchException e) {
+                //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed.
+                throw new IllegalStateException("Failed to retrieve references for paths: " + e.getErrors().keySet());
+            }
 
             for(String path : result.keySet()) {
                 ScriptHashTx[] txes = result.get(path);
@@ -373,7 +380,7 @@ public class ElectrumServer {
         Set<BlockTransactionHash> history = nodeTransactionMap.get(node);
         for(BlockTransactionHash reference : history) {
             BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
-            if (blockTransaction == null) {
+            if (blockTransaction == null || blockTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
                 throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
             }
             Transaction transaction = blockTransaction.getTransaction();
@@ -389,7 +396,7 @@ public class ElectrumServer {
 
         for(BlockTransactionHash reference : history) {
             BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
-            if (blockTransaction == null) {
+            if (blockTransaction == null || blockTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
                 throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
             }
             Transaction transaction = blockTransaction.getTransaction();
@@ -398,7 +405,10 @@ public class ElectrumServer {
                 TransactionInput input = transaction.getInputs().get(inputIndex);
                 Sha256Hash previousHash = input.getOutpoint().getHash();
                 BlockTransaction previousTransaction = wallet.getTransactions().get(previousHash);
-                if(previousTransaction == null) {
+
+                if(previousTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
+                    throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
+                } else if(previousTransaction == null) {
                     //No referenced transaction found, cannot check if spends from wallet
                     //This is fine so long as all referenced transactions have been returned, in which case this refers to a transaction that does not affect this wallet
                     continue;
