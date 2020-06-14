@@ -18,9 +18,9 @@ public class CoinLabel extends CopyableLabel {
 
     public static final DecimalFormat BTC_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
-    private final LongProperty value = new SimpleLongProperty();
-    private Tooltip tooltip;
-    private CoinContextMenu contextMenu;
+    private final LongProperty value = new SimpleLongProperty(-1);
+    private final Tooltip tooltip;
+    private final CoinContextMenu contextMenu;
 
     public CoinLabel() {
         this("Unknown");
@@ -62,11 +62,8 @@ public class CoinLabel extends CopyableLabel {
     }
 
     private class CoinContextMenu extends ContextMenu {
-        private MenuItem copySatsValue;
-        private MenuItem copyBtcValue;
-
         public CoinContextMenu() {
-            copySatsValue = new MenuItem("Copy Value in Satoshis");
+            MenuItem copySatsValue = new MenuItem("Copy Value in Satoshis");
             copySatsValue.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
@@ -74,7 +71,7 @@ public class CoinLabel extends CopyableLabel {
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
-            copyBtcValue = new MenuItem("Copy Value in BTC");
+            MenuItem copyBtcValue = new MenuItem("Copy Value in BTC");
             copyBtcValue.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();

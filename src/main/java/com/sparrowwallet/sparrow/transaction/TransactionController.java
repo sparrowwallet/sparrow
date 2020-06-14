@@ -62,7 +62,8 @@ public class TransactionController implements Initializable {
         initializeTxTree();
         transactionMasterDetail.setShowDetailNode(AppController.showTxHexProperty);
         refreshTxHex();
-        fetchBlockTransactions();
+        fetchThisAndInputBlockTransactions();
+        fetchOutputBlockTransactions();
     }
 
     private void initializeTxTree() {
@@ -134,7 +135,7 @@ public class TransactionController implements Initializable {
                         selectedOutputIndex = outputForm.getTransactionOutput().getIndex();
                     }
 
-                    refreshTxHex();
+                    Platform.runLater(this::refreshTxHex);
                 }
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
@@ -149,9 +150,9 @@ public class TransactionController implements Initializable {
     }
 
     private void select(TreeItem<TransactionForm> treeItem, TransactionView view, Integer index) {
-        if(treeItem.getValue().getView().equals(view)) {
-            if(view.equals(TransactionView.INPUT) || view.equals(TransactionView.OUTPUT)) {
-                if(treeItem.getParent().getChildren().indexOf(treeItem) == index) {
+        if (treeItem.getValue().getView().equals(view)) {
+            if (view.equals(TransactionView.INPUT) || view.equals(TransactionView.OUTPUT)) {
+                if (treeItem.getParent().getChildren().indexOf(treeItem) == index) {
                     txtree.getSelectionModel().select(treeItem);
                     return;
                 }
@@ -161,12 +162,13 @@ public class TransactionController implements Initializable {
             }
         }
 
-        for(TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
+        for (TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
             select(childItem, view, index);
         }
     }
 
     void refreshTxHex() {
+        //TODO: Handle large transactions like efd513fffbbc2977c2d3933dfaab590b5cab5841ee791b3116e531ac9f8034ed better by not replacing text
         txhex.clear();
 
         String hex = "";
@@ -242,14 +244,16 @@ public class TransactionController implements Initializable {
         }
     }
 
-    private void fetchBlockTransactions() {
-        if(AppController.isOnline()) {
+    private void fetchThisAndInputBlockTransactions() {
+        if (AppController.isOnline()) {
             Set<Sha256Hash> references = new HashSet<>();
-            if(psbt == null) {
+            if (psbt == null) {
                 references.add(transaction.getTxId());
             }
-            for(TransactionInput input : transaction.getInputs()) {
-                references.add(input.getOutpoint().getHash());
+            for (TransactionInput input : transaction.getInputs()) {
+                if(!input.isCoinBase()) {
+                    references.add(input.getOutpoint().getHash());
+                }
             }
 
             ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(references);
@@ -257,9 +261,9 @@ public class TransactionController implements Initializable {
                 Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
                 BlockTransaction thisBlockTx = null;
                 Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
-                for(Sha256Hash txid : transactionMap.keySet()) {
+                for (Sha256Hash txid : transactionMap.keySet()) {
                     BlockTransaction blockTx = transactionMap.get(txid);
-                    if(txid.equals(transaction.getTxId())) {
+                    if (txid.equals(transaction.getTxId())) {
                         thisBlockTx = blockTx;
                     } else {
                         inputTransactions.put(txid, blockTx);
@@ -268,7 +272,7 @@ public class TransactionController implements Initializable {
                 }
 
                 references.remove(transaction.getTxId());
-                if(!references.isEmpty()) {
+                if (!references.isEmpty()) {
                     System.out.println("Failed to retrieve all referenced input transactions, aborting transaction fetch");
                     return;
                 }
@@ -282,6 +286,22 @@ public class TransactionController implements Initializable {
                 failedEvent.getSource().getException().printStackTrace();
             });
             transactionReferenceService.start();
+        }
+    }
+
+    private void fetchOutputBlockTransactions() {
+        if (AppController.isOnline() && psbt == null) {
+            ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(transaction);
+            transactionOutputsReferenceService.setOnSucceeded(successEvent -> {
+                List<BlockTransaction> outputTransactions = transactionOutputsReferenceService.getValue();
+                Platform.runLater(() -> {
+                    EventManager.get().post(new BlockTransactionOutputsFetchedEvent(transaction.getTxId(), outputTransactions));
+                });
+            });
+            transactionOutputsReferenceService.setOnFailed(failedEvent -> {
+                failedEvent.getSource().getException().printStackTrace();
+            });
+            transactionOutputsReferenceService.start();
         }
     }
 
@@ -314,7 +334,7 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void transactionChanged(TransactionChangedEvent event) {
-        if(event.getTransaction().equals(transaction)) {
+        if (event.getTransaction().equals(transaction)) {
             refreshTxHex();
             txtree.refresh();
         }
@@ -332,7 +352,7 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if(event.getTxId().equals(transaction.getTxId())) {
+        if (event.getTxId().equals(transaction.getTxId())) {
             setBlockTransaction(txtree.getRoot(), event);
         }
     }
@@ -342,8 +362,24 @@ public class TransactionController implements Initializable {
         form.setBlockTransaction(event.getBlockTransaction());
         form.setInputTransactions(event.getInputTransactions());
 
-        for(TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
+        for (TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
             setBlockTransaction(childItem, event);
+        }
+    }
+
+    @Subscribe
+    public void blockTransactionOutputsFetched(BlockTransactionOutputsFetchedEvent event) {
+        if (event.getTxId().equals(transaction.getTxId())) {
+            setBlockTransactionOutputs(txtree.getRoot(), event);
+        }
+    }
+
+    private void setBlockTransactionOutputs(TreeItem<TransactionForm> treeItem, BlockTransactionOutputsFetchedEvent event) {
+        TransactionForm form = treeItem.getValue();
+        form.setOutputTransactions(event.getOutputTransactions());
+
+        for (TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
+            setBlockTransactionOutputs(childItem, event);
         }
     }
 }

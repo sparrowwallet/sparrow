@@ -1,17 +1,28 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressLabel;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
+import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
+import com.sparrowwallet.sparrow.io.ElectrumServer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Hyperlink;
+import javafx.scene.control.Label;
 import org.fxmisc.richtext.CodeArea;
+import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
 public class OutputController extends TransactionFormController implements Initializable {
@@ -30,11 +41,23 @@ public class OutputController extends TransactionFormController implements Initi
     private AddressLabel address;
 
     @FXML
+    private Field spentField;
+
+    @FXML
+    private Label spent;
+
+    @FXML
+    private Field spentByField;
+
+    @FXML
+    private Hyperlink spentBy;
+
+    @FXML
     private CodeArea scriptPubKeyArea;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        EventManager.get().register(this);
     }
 
     public void initializeView() {
@@ -56,12 +79,63 @@ public class OutputController extends TransactionFormController implements Initi
             //ignore
         }
 
+        spentField.managedProperty().bind(spentField.visibleProperty());
+        spentByField.managedProperty().bind(spentByField.visibleProperty());
+        spentByField.setVisible(false);
+
+        if(outputForm.getPsbt() != null) {
+            spent.setText("Unspent");
+        } else if(outputForm.getOutputTransactions() != null) {
+            updateSpent(outputForm.getOutputTransactions());
+        } else {
+            spent.setText("Unknown");
+        }
+
         scriptPubKeyArea.clear();
         appendScript(scriptPubKeyArea, txOutput.getScript(), null, null);
+    }
+
+    private void updateSpent(List<BlockTransaction> outputTransactions) {
+        int outputIndex = outputForm.getTransactionOutputIndex();
+        spent.setText("Unspent");
+
+        if(outputIndex >= 0 && outputIndex < outputTransactions.size()) {
+            BlockTransaction outputBlockTransaction = outputTransactions.get(outputIndex);
+            if(outputBlockTransaction != null) {
+                spent.setText("Spent");
+
+                if(outputBlockTransaction == ElectrumServer.UNFETCHABLE_BLOCK_TRANSACTION) {
+                    spent.setText("Spent (Spending transaction history too large to fetch)");
+                    return;
+                }
+
+                for(int i = 0; i < outputBlockTransaction.getTransaction().getInputs().size(); i++) {
+                    TransactionInput input = outputBlockTransaction.getTransaction().getInputs().get(i);
+                    if(input.getOutpoint().getHash().equals(outputForm.getTransaction().getTxId()) && input.getOutpoint().getIndex() == outputIndex) {
+                        spentField.setVisible(false);
+                        spentByField.setVisible(true);
+
+                        final Integer inputIndex = i;
+                        spentBy.setText(outputBlockTransaction.getHash().toString() + ":" + inputIndex);
+                        spentBy.setOnAction(event -> {
+                            EventManager.get().post(new ViewTransactionEvent(outputBlockTransaction, TransactionView.INPUT, inputIndex));
+                        });
+                        spentBy.setContextMenu(new TransactionReferenceContextMenu(spentBy.getText()));
+                    }
+                }
+            }
+        }
     }
 
     public void setModel(OutputForm form) {
         this.outputForm = form;
         initializeView();
+    }
+
+    @Subscribe
+    public void blockTransactionOutputsFetched(BlockTransactionOutputsFetchedEvent event) {
+        if(event.getTxId().equals(outputForm.getTransaction().getTxId()) && outputForm.getPsbt() == null) {
+            updateSpent(event.getOutputTransactions());
+        }
     }
 }

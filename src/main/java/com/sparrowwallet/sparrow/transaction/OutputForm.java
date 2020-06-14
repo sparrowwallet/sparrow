@@ -11,7 +11,7 @@ import javafx.scene.Node;
 import java.io.IOException;
 
 public class OutputForm extends TransactionForm {
-    private TransactionOutput transactionOutput;
+    private final TransactionOutput transactionOutput;
     private PSBTOutput psbtOutput;
 
     public OutputForm(PSBT psbt, PSBTOutput psbtOutput) {
@@ -36,6 +36,10 @@ public class OutputForm extends TransactionForm {
 
     public PSBTOutput getPsbtOutput() {
         return psbtOutput;
+    }
+
+    public int getTransactionOutputIndex() {
+        return getTransaction().getOutputs().indexOf(transactionOutput);
     }
 
     @Override

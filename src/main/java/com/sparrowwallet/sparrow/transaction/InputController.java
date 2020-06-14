@@ -121,7 +121,7 @@ public class InputController extends TransactionFormController implements Initia
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        EventManager.get().register(this);
     }
 
     public void initializeView() {
@@ -184,13 +184,16 @@ public class InputController extends TransactionFormController implements Initia
             BlockTransaction linkedTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
             EventManager.get().post(new ViewTransactionEvent(linkedTransaction, TransactionView.OUTPUT, (int)txInput.getOutpoint().getIndex()));
         });
+        linkedOutpoint.setContextMenu(new TransactionReferenceContextMenu(linkedOutpoint.getText()));
     }
 
     private void updateSpends(Map<Sha256Hash, BlockTransaction> inputTransactions) {
         TransactionInput txInput = inputForm.getTransactionInput();
-        BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
-        TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
-        updateSpends(output);
+        if(!txInput.isCoinBase()) {
+            BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
+            TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+            updateSpends(output);
+        }
     }
 
     private void updateSpends(TransactionOutput output) {

@@ -34,6 +34,12 @@
                 <CopyableLabel fx:id="to" text="to" />
                 <AddressLabel fx:id="address" />
             </Field>
+            <Field fx:id="spentField" text="Spent?">
+                <Label fx:id="spent" />
+            </Field>
+            <Field fx:id="spentByField" text="Spent By:">
+                <Hyperlink fx:id="spentBy" styleClass="id" />
+            </Field>
         </Fieldset>
     </Form>
 

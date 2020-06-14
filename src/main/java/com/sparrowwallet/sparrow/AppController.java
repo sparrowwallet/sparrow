@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
@@ -23,6 +24,7 @@ import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.Worker;
@@ -56,6 +58,9 @@ public class AppController implements Initializable {
 
     @FXML
     private Menu fileMenu;
+
+    @FXML
+    private MenuItem openTransactionIdItem;
 
     @FXML
     private CheckMenuItem showTxHex;
@@ -165,6 +170,8 @@ public class AppController implements Initializable {
         if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
             connectionService.start();
         }
+
+        openTransactionIdItem.disableProperty().bind(onlineProperty.not());
 
         openWalletFile(new File("/Users/scy/.sparrow/wallets/sparta.json"));
     }
@@ -291,6 +298,32 @@ public class AppController implements Initializable {
             } catch(ParseException e) {
                 showErrorDialog("Could not recognise input", e.getMessage());
             }
+        }
+    }
+
+    public void openTransactionFromId(ActionEvent event) {
+        TransactionIdDialog dialog = new TransactionIdDialog();
+        Optional<Sha256Hash> optionalTxId = dialog.showAndWait();
+        if(optionalTxId.isPresent()) {
+            Sha256Hash txId = optionalTxId.get();
+            ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txId));
+            transactionReferenceService.setOnSucceeded(successEvent -> {
+                BlockTransaction blockTransaction = transactionReferenceService.getValue().get(txId);
+                if(blockTransaction == null) {
+                    showErrorDialog("Invalid transaction ID", "A transaction with that ID could not be found.");
+                } else {
+                    Platform.runLater(() -> {
+                        EventManager.get().post(new ViewTransactionEvent(blockTransaction));
+                    });
+                }
+            });
+            transactionReferenceService.setOnFailed(failEvent -> {
+                Platform.runLater(() -> {
+                    Throwable e = failEvent.getSource().getException();
+                    showErrorDialog("Error fetching transaction", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+                });
+            });
+            transactionReferenceService.start();
         }
     }
 
@@ -564,7 +597,7 @@ public class AppController implements Initializable {
             TabData tabData = (TabData)tab.getUserData();
             if(tabData instanceof TransactionTabData) {
                 TransactionTabData transactionTabData = (TransactionTabData)tabData;
-                if(transactionTabData.getTransaction() == transaction) {
+                if(transactionTabData.getTransaction().getTxId().equals(transaction.getTxId())) {
                     return tab;
                 }
             }

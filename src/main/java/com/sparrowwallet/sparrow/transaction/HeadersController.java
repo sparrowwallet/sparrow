@@ -210,6 +210,8 @@ public class HeadersController extends TransactionFormController implements Init
         Long feeAmt = null;
         if(headersForm.getPsbt() != null) {
             feeAmt = headersForm.getPsbt().getFee();
+        } else if(headersForm.getTransaction().getInputs().size() == 1 && headersForm.getTransaction().getInputs().get(0).isCoinBase()) {
+            feeAmt = 0L;
         } else if(headersForm.getInputTransactions() != null) {
             feeAmt = calculateFee(headersForm.getInputTransactions());
         }
@@ -229,6 +231,10 @@ public class HeadersController extends TransactionFormController implements Init
     private long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
         long feeAmt = 0L;
         for(TransactionInput input : headersForm.getTransaction().getInputs()) {
+            if(input.isCoinBase()) {
+                return 0L;
+            }
+
             BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
             if(inputTx == null) {
                 throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());

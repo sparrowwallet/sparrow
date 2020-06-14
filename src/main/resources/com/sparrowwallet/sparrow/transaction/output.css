@@ -21,3 +21,11 @@
 .witness-data { -fx-fill: #e5e5e6 }
 
 .locktime { -fx-fill: #e5e5e6 }
+
+#spentField .input-container {
+    -fx-alignment: center-left;
+}
+
+#spentByField .input-container {
+    -fx-alignment: center-left;
+}

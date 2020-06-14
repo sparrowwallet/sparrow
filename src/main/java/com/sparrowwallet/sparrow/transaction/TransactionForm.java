@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import javafx.scene.Node;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 public abstract class TransactionForm {
@@ -14,6 +15,7 @@ public abstract class TransactionForm {
     private PSBT psbt;
     private BlockTransaction blockTransaction;
     private Map<Sha256Hash, BlockTransaction> inputTransactions;
+    private List<BlockTransaction> outputTransactions;
 
     public TransactionForm(PSBT psbt) {
         this.transaction = psbt.getTransaction();
@@ -51,6 +53,14 @@ public abstract class TransactionForm {
 
     public void setInputTransactions(Map<Sha256Hash, BlockTransaction> inputTransactions) {
         this.inputTransactions = inputTransactions;
+    }
+
+    public List<BlockTransaction> getOutputTransactions() {
+        return outputTransactions;
+    }
+
+    public void setOutputTransactions(List<BlockTransaction> outputTransactions) {
+        this.outputTransactions = outputTransactions;
     }
 
     public boolean isEditable() {

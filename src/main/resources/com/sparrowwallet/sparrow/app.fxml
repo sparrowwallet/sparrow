@@ -18,6 +18,7 @@
                         <Menu mnemonicParsing="false" text="Open Transaction">
                             <items>
                                 <MenuItem text="File..." onAction="#openTransactionFromFile"/>
+                                <MenuItem fx:id="openTransactionIdItem" text="From ID..." onAction="#openTransactionFromId"/>
                                 <MenuItem text="From Text..." onAction="#openTransactionFromText"/>
                                 <MenuItem text="Examples" onAction="#openExamples"/>
                             </items>

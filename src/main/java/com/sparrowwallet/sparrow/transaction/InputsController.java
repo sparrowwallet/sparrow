@@ -113,13 +113,24 @@ public class InputsController extends TransactionFormController implements Initi
                 foundSigs += input.getScriptSig().getSignatures().size();
             }
 
-            BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
-            if(inputTx == null) {
-                throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
-            }
+            if(input.isCoinBase()) {
+                long totalAmt = 0;
+                for(TransactionOutput output : inputsForm.getTransaction().getOutputs()) {
+                    totalAmt += output.getValue();
+                }
+                total.setValue(totalAmt);
+                signatures.setText("N/A");
+                addCoinbasePieData(inputsPie, totalAmt);
+                return;
+            } else {
+                BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
+                if(inputTx == null) {
+                    throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
+                }
 
-            TransactionOutput output = inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
-            outputs.add(output);
+                TransactionOutput output = inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
+                outputs.add(output);
+            }
         }
 
         long totalAmt = 0;
