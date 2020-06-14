@@ -228,7 +228,21 @@ public class ElectrumServer {
             for(Integer index : result.keySet()) {
                 ScriptHashTx[] txes = result.get(index);
 
-                Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).filter(ref -> !ref.getHash().equals(transaction.getTxId())).collect(Collectors.toCollection(TreeSet::new));
+                int txBlockHeight = 0;
+                Optional<BlockTransactionHash> optionalTxHash = Arrays.stream(txes)
+                        .map(ScriptHashTx::getBlockchainTransactionHash)
+                        .filter(ref -> ref.getHash().equals(transaction.getTxId()))
+                        .findFirst();
+                if(optionalTxHash.isPresent()) {
+                    txBlockHeight = optionalTxHash.get().getHeight();
+                }
+
+                final int minBlockHeight = txBlockHeight;
+                Set<BlockTransactionHash> references = Arrays.stream(txes)
+                        .map(ScriptHashTx::getBlockchainTransactionHash)
+                        .filter(ref -> !ref.getHash().equals(transaction.getTxId()) && ref.getHeight() >= minBlockHeight)
+                        .collect(Collectors.toCollection(TreeSet::new));
+
                 blockTransactionHashes.set(index, references);
             }
 
@@ -934,9 +948,9 @@ public class ElectrumServer {
                             } else {
                                 BlockTransaction blockTransaction = transactionMap.get(reference.getHash());
                                 for(TransactionInput input : blockTransaction.getTransaction().getInputs()) {
-                                    if(input.getOutpoint().getHash().equals(transaction.getTxId())) {
+                                    if(input.getOutpoint().getHash().equals(transaction.getTxId()) && input.getOutpoint().getIndex() == i) {
                                         if(blockTransactions.set(i, blockTransaction) != null) {
-                                            throw new IllegalStateException("Double spend detected on hash " + reference.getHash());
+                                            throw new IllegalStateException("Double spend detected for output #" + i + " on hash " + reference.getHash());
                                         }
                                     }
                                 }

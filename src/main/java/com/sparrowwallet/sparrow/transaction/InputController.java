@@ -214,8 +214,15 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     private void initializeScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
-        //TODO: Is this safe?
+        //TODO: While we immediately check if the referenced transaction output is P2SH, where this is not present getting the first nested script is not safe
         Script redeemScript = txInput.getScriptSig().getFirstNestedScript();
+        if(redeemScript != null && inputForm.getReferencedTransactionOutput() != null) {
+            Script lockingScript = inputForm.getReferencedTransactionOutput().getScript();
+            if(!ScriptType.P2SH.isScriptType(lockingScript)) {
+                redeemScript = null;
+            }
+        }
+
         if(redeemScript == null && psbtInput != null && psbtInput.getRedeemScript() != null) {
             addPSBTDecoration(redeemScriptArea, "PSBT Redeem Script", "non-final");
             redeemScript = psbtInput.getRedeemScript();

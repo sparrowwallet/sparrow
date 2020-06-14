@@ -2,9 +2,11 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.sparrow.io.ElectrumServer;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
@@ -36,6 +38,17 @@ public class InputForm extends TransactionForm {
 
     public PSBTInput getPsbtInput() {
         return psbtInput;
+    }
+
+    public TransactionOutput getReferencedTransactionOutput() {
+        if(getInputTransactions() != null) {
+            BlockTransaction inputTransaction = getInputTransactions().get(transactionInput.getOutpoint().getHash());
+            if(inputTransaction != null && !inputTransaction.equals(ElectrumServer.UNFETCHABLE_BLOCK_TRANSACTION)) {
+                return inputTransaction.getTransaction().getOutputs().get((int)transactionInput.getOutpoint().getIndex());
+            }
+        }
+
+        return null;
     }
 
     @Override
