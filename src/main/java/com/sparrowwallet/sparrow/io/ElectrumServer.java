@@ -200,11 +200,11 @@ public class ElectrumServer {
     }
 
     @SuppressWarnings("unchecked")
-    public List<Set<BlockTransactionHash>> getOutputTransactionReferences(Transaction transaction) throws ServerException {
+    public List<Set<BlockTransactionHash>> getOutputTransactionReferences(Transaction transaction, int indexStart, int indexEnd) throws ServerException {
         try {
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<Integer, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(ScriptHashTx[].class);
-            for(int i = 0; i < transaction.getOutputs().size(); i++) {
+            for(int i = indexStart; i < transaction.getOutputs().size() && i < indexEnd; i++) {
                 TransactionOutput output = transaction.getOutputs().get(i);
                 batchRequest.add(i, "blockchain.scripthash.get_history", getScriptHash(output));
             }
@@ -910,9 +910,19 @@ public class ElectrumServer {
 
     public static class TransactionOutputsReferenceService extends Service<List<BlockTransaction>> {
         private final Transaction transaction;
+        private final int indexStart;
+        private final int indexEnd;
 
         public TransactionOutputsReferenceService(Transaction transaction) {
             this.transaction = transaction;
+            this.indexStart = 0;
+            this.indexEnd = transaction.getOutputs().size();
+        }
+
+        public TransactionOutputsReferenceService(Transaction transaction, int indexStart, int indexEnd) {
+            this.transaction = transaction;
+            this.indexStart = Math.min(transaction.getOutputs().size(), indexStart);
+            this.indexEnd = Math.min(transaction.getOutputs().size(), indexEnd);
         }
 
         @Override
@@ -920,7 +930,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected List<BlockTransaction> call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    List<Set<BlockTransactionHash>> outputTransactionReferences = electrumServer.getOutputTransactionReferences(transaction);
+                    List<Set<BlockTransactionHash>> outputTransactionReferences = electrumServer.getOutputTransactionReferences(transaction, indexStart, indexEnd);
 
                     Set<BlockTransactionHash> setReferences = new HashSet<>();
                     for(Set<BlockTransactionHash> outputReferences : outputTransactionReferences) {

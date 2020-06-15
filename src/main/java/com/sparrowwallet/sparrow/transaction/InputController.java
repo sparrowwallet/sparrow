@@ -191,6 +191,11 @@ public class InputController extends TransactionFormController implements Initia
         TransactionInput txInput = inputForm.getTransactionInput();
         if(!txInput.isCoinBase()) {
             BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
+            if(blockTransaction == null) {
+                System.out.println("Could not retrieve block transaction for input #" + inputForm.getIndex());
+                return;
+            }
+
             TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
             updateSpends(output);
         }
@@ -464,7 +469,7 @@ public class InputController extends TransactionFormController implements Initia
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if(event.getTxId().equals(inputForm.getTransaction().getTxId())) {
+        if(event.getTxId().equals(inputForm.getTransaction().getTxId()) && inputForm.getIndex() >= event.getPageStart() && inputForm.getIndex() < event.getPageEnd()) {
             updateOutpoint(event.getInputTransactions());
             if(inputForm.getPsbt() == null) {
                 updateSpends(event.getInputTransactions());

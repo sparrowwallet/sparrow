@@ -621,13 +621,10 @@ public class AppController implements Initializable {
 
             controller.setPSBT(psbt);
             controller.setBlockTransaction(blockTransaction);
-            controller.setTransaction(transaction);
-
             if(initialView != null) {
-                controller.setTreeSelection(initialView, initialIndex);
-            } else {
-                controller.setTreeSelection(TransactionView.HEADERS, null);
+                controller.setInitialView(initialView, initialIndex);
             }
+            controller.setTransaction(transaction);
 
             tabs.getTabs().add(tab);
             return tab;

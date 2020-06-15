@@ -228,7 +228,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
-    private long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
+    private Long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
         long feeAmt = 0L;
         for(TransactionInput input : headersForm.getTransaction().getInputs()) {
             if(input.isCoinBase()) {
@@ -237,7 +237,8 @@ public class HeadersController extends TransactionFormController implements Init
 
             BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
             if(inputTx == null) {
-                throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
+                System.out.println("Cannot find transaction for hash " + input.getOutpoint().getHash() + ", still paging?");
+                return null;
             }
 
             feeAmt += inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex()).getValue();
@@ -319,7 +320,10 @@ public class HeadersController extends TransactionFormController implements Init
                 updateBlockchainForm(event.getBlockTransaction());
             }
 
-            updateFee(calculateFee(event.getInputTransactions()));
+            Long feeAmt = calculateFee(event.getInputTransactions());
+            if(feeAmt != null) {
+                updateFee(feeAmt);
+            }
         }
     }
 }

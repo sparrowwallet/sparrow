@@ -10,23 +10,23 @@ import javafx.scene.Node;
 
 import java.io.IOException;
 
-public class OutputForm extends TransactionForm {
+public class OutputForm extends IndexedTransactionForm {
     private final TransactionOutput transactionOutput;
     private PSBTOutput psbtOutput;
 
     public OutputForm(PSBT psbt, PSBTOutput psbtOutput) {
-        super(psbt);
+        super(psbt, psbt.getPsbtOutputs().indexOf(psbtOutput));
         this.transactionOutput = psbt.getTransaction().getOutputs().get(psbt.getPsbtOutputs().indexOf(psbtOutput));
         this.psbtOutput = psbtOutput;
     }
 
     public OutputForm(BlockTransaction blockTransaction, TransactionOutput transactionOutput) {
-        super(blockTransaction);
+        super(blockTransaction, blockTransaction.getTransaction().getOutputs().indexOf(transactionOutput));
         this.transactionOutput = transactionOutput;
     }
 
     public OutputForm(Transaction transaction, TransactionOutput transactionOutput) {
-        super(transaction);
+        super(transaction, transaction.getOutputs().indexOf(transactionOutput));
         this.transactionOutput = transactionOutput;
     }
 

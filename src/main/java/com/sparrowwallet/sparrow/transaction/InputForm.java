@@ -12,23 +12,23 @@ import javafx.scene.Node;
 
 import java.io.IOException;
 
-public class InputForm extends TransactionForm {
-    private TransactionInput transactionInput;
+public class InputForm extends IndexedTransactionForm {
+    private final TransactionInput transactionInput;
     private PSBTInput psbtInput;
 
     public InputForm(PSBT psbt, PSBTInput psbtInput) {
-        super(psbt);
+        super(psbt, psbt.getPsbtInputs().indexOf(psbtInput));
         this.transactionInput = psbt.getTransaction().getInputs().get(psbt.getPsbtInputs().indexOf(psbtInput));
         this.psbtInput = psbtInput;
     }
 
     public InputForm(BlockTransaction blockTransaction, TransactionInput transactionInput) {
-        super(blockTransaction);
+        super(blockTransaction, blockTransaction.getTransaction().getInputs().indexOf(transactionInput));
         this.transactionInput = transactionInput;
     }
 
     public InputForm(Transaction transaction, TransactionInput transactionInput) {
-        super(transaction);
+        super(transaction, transaction.getInputs().indexOf(transactionInput));
         this.transactionInput = transactionInput;
     }
 

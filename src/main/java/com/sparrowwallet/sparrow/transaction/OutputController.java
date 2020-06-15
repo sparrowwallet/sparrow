@@ -134,7 +134,7 @@ public class OutputController extends TransactionFormController implements Initi
 
     @Subscribe
     public void blockTransactionOutputsFetched(BlockTransactionOutputsFetchedEvent event) {
-        if(event.getTxId().equals(outputForm.getTransaction().getTxId()) && outputForm.getPsbt() == null) {
+        if(event.getTxId().equals(outputForm.getTransaction().getTxId()) && outputForm.getPsbt() == null && outputForm.getIndex() >= event.getPageStart() && outputForm.getIndex() < event.getPageEnd()) {
             updateSpent(event.getOutputTransactions());
         }
     }
