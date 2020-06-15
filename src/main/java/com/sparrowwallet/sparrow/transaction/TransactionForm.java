@@ -11,60 +11,46 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class TransactionForm {
-    private final Transaction transaction;
-    private PSBT psbt;
-    private BlockTransaction blockTransaction;
-    private Map<Sha256Hash, BlockTransaction> inputTransactions;
-    private List<BlockTransaction> outputTransactions;
+    private final TransactionData txdata;
 
-    public TransactionForm(PSBT psbt) {
-        this.transaction = psbt.getTransaction();
-        this.psbt = psbt;
-    }
-
-    public TransactionForm(BlockTransaction blockTransaction) {
-        this.transaction = blockTransaction.getTransaction();
-        this.blockTransaction = blockTransaction;
-    }
-
-    public TransactionForm(Transaction transaction) {
-        this.transaction = transaction;
+    public TransactionForm(TransactionData txdata) {
+        this.txdata = txdata;
     }
 
     public Transaction getTransaction() {
-        return transaction;
+        return txdata.getTransaction();
     }
 
     public PSBT getPsbt() {
-        return psbt;
+        return txdata.getPsbt();
     }
 
     public BlockTransaction getBlockTransaction() {
-        return blockTransaction;
+        return txdata.getBlockTransaction();
     }
 
     public void setBlockTransaction(BlockTransaction blockTransaction) {
-        this.blockTransaction = blockTransaction;
+        txdata.setBlockTransaction(blockTransaction);
     }
 
     public Map<Sha256Hash, BlockTransaction> getInputTransactions() {
-        return inputTransactions;
+        return txdata.getInputTransactions();
     }
 
     public void setInputTransactions(Map<Sha256Hash, BlockTransaction> inputTransactions) {
-        this.inputTransactions = inputTransactions;
+        txdata.setInputTransactions(inputTransactions);
     }
 
     public List<BlockTransaction> getOutputTransactions() {
-        return outputTransactions;
+        return txdata.getOutputTransactions();
     }
 
     public void setOutputTransactions(List<BlockTransaction> outputTransactions) {
-        this.outputTransactions = outputTransactions;
+        txdata.setOutputTransactions(outputTransactions);
     }
 
     public boolean isEditable() {
-        return blockTransaction == null;
+        return txdata.getBlockTransaction() == null;
     }
 
     public abstract Node getContents() throws IOException;

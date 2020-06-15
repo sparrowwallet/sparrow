@@ -46,9 +46,7 @@ public class TransactionController implements Initializable {
     @FXML
     private CodeArea txhex;
 
-    private Transaction transaction;
-    private PSBT psbt;
-    private BlockTransaction blockTransaction;
+    private TransactionData txdata;
 
     private TransactionView initialView;
     private Integer initialIndex;
@@ -64,9 +62,9 @@ public class TransactionController implements Initializable {
         EventManager.get().register(this);
     }
 
-    private void initializeView() {
-        highestInputIndex = Math.min(transaction.getInputs().size(), PageForm.PAGE_SIZE);
-        highestOutputIndex = Math.min(transaction.getOutputs().size(), PageForm.PAGE_SIZE);
+    public void initializeView() {
+        highestInputIndex = Math.min(getTransaction().getInputs().size(), PageForm.PAGE_SIZE);
+        highestOutputIndex = Math.min(getTransaction().getOutputs().size(), PageForm.PAGE_SIZE);
 
         initializeTxTree();
         transactionMasterDetail.setShowDetailNode(AppController.showTxHexProperty);
@@ -76,15 +74,15 @@ public class TransactionController implements Initializable {
     }
 
     private void initializeTxTree() {
-        HeadersForm headersForm = (psbt != null ? new HeadersForm(psbt) : (blockTransaction != null ? new HeadersForm(blockTransaction) : new HeadersForm(transaction)));
+        HeadersForm headersForm = new HeadersForm(txdata);
         TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
 
-        InputsForm inputsForm = (psbt != null ? new InputsForm(psbt) : (blockTransaction != null ? new InputsForm(blockTransaction) : new InputsForm(transaction)));
+        InputsForm inputsForm = new InputsForm(txdata);
         TreeItem<TransactionForm> inputsItem = new TreeItem<>(inputsForm);
         inputsItem.setExpanded(true);
         boolean inputPagingAdded = false;
-        for(int i = 0; i < transaction.getInputs().size(); i++) {
+        for(int i = 0; i < getTransaction().getInputs().size(); i++) {
             if(i < PageForm.PAGE_SIZE || (TransactionView.INPUT.equals(initialView) && i == initialIndex)) {
                 TreeItem<TransactionForm> inputItem = createInputTreeItem(i);
                 inputsItem.getChildren().add(inputItem);
@@ -96,11 +94,11 @@ public class TransactionController implements Initializable {
             }
         }
 
-        OutputsForm outputsForm = (psbt != null ? new OutputsForm(psbt) : (blockTransaction != null ? new OutputsForm(blockTransaction) : new OutputsForm(transaction)));
+        OutputsForm outputsForm = new OutputsForm(txdata);
         TreeItem<TransactionForm> outputsItem = new TreeItem<>(outputsForm);
         outputsItem.setExpanded(true);
         boolean outputPagingAdded = false;
-        for(int i = 0; i < transaction.getOutputs().size(); i++) {
+        for(int i = 0; i < getTransaction().getOutputs().size(); i++) {
             if(i < PageForm.PAGE_SIZE || (TransactionView.OUTPUT.equals(initialView) && i == initialIndex)) {
                 TreeItem<TransactionForm> outputItem = createOutputTreeItem(i);
                 outputsItem.getChildren().add(outputItem);
@@ -139,7 +137,7 @@ public class TransactionController implements Initializable {
                     TreeItem<TransactionForm> parentItem = optParentItem.get();
                     parentItem.getChildren().remove(selectedItem);
 
-                    int max = pageForm.getView().equals(TransactionView.INPUT) ? transaction.getInputs().size() : transaction.getOutputs().size();
+                    int max = pageForm.getView().equals(TransactionView.INPUT) ? getTransaction().getInputs().size() : getTransaction().getOutputs().size();
                     for(int i = pageForm.getPageStart(); i < max && i < pageForm.getPageEnd(); i++) {
                         TreeItem<TransactionForm> newItem = pageForm.getView().equals(TransactionView.INPUT) ? createInputTreeItem(i) : createOutputTreeItem(i);
                         parentItem.getChildren().add(newItem);
@@ -202,22 +200,22 @@ public class TransactionController implements Initializable {
     }
 
     private TreeItem<TransactionForm> createInputTreeItem(int inputIndex) {
-        TransactionInput txInput = transaction.getInputs().get(inputIndex);
+        TransactionInput txInput = getTransaction().getInputs().get(inputIndex);
         PSBTInput psbtInput = null;
-        if (psbt != null && psbt.getPsbtInputs().size() > txInput.getIndex()) {
-            psbtInput = psbt.getPsbtInputs().get(txInput.getIndex());
+        if(getPSBT() != null && getPSBT().getPsbtInputs().size() > txInput.getIndex()) {
+            psbtInput = getPSBT().getPsbtInputs().get(txInput.getIndex());
         }
-        InputForm inputForm = (psbt != null ? new InputForm(psbt, psbtInput) : (blockTransaction != null ? new InputForm(blockTransaction, txInput) : new InputForm(transaction, txInput)));
+        InputForm inputForm = (getPSBT() != null ? new InputForm(txdata, psbtInput) : new InputForm(txdata, txInput));
         return new TreeItem<>(inputForm);
     }
 
     private TreeItem<TransactionForm> createOutputTreeItem(int outputIndex) {
-        TransactionOutput txOutput = transaction.getOutputs().get(outputIndex);
+        TransactionOutput txOutput = getTransaction().getOutputs().get(outputIndex);
         PSBTOutput psbtOutput = null;
-        if (psbt != null && psbt.getPsbtOutputs().size() > txOutput.getIndex()) {
-            psbtOutput = psbt.getPsbtOutputs().get(txOutput.getIndex());
+        if (getPSBT() != null && getPSBT().getPsbtOutputs().size() > txOutput.getIndex()) {
+            psbtOutput = getPSBT().getPsbtOutputs().get(txOutput.getIndex());
         }
-        OutputForm outputForm = (psbt != null ? new OutputForm(psbt, psbtOutput) : (blockTransaction != null ? new OutputForm(blockTransaction, txOutput) : new OutputForm(transaction, txOutput)));
+        OutputForm outputForm = (getPSBT() != null ? new OutputForm(txdata, psbtOutput) : new OutputForm(txdata, txOutput));
         return new TreeItem<>(outputForm);
     }
 
@@ -251,7 +249,7 @@ public class TransactionController implements Initializable {
         String hex = "";
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            transaction.bitcoinSerializeToStream(baos);
+            getTransaction().bitcoinSerializeToStream(baos);
             hex = Utils.bytesToHex(baos.toByteArray());
         } catch (IOException e) {
             throw new IllegalStateException("Can't happen");
@@ -262,7 +260,7 @@ public class TransactionController implements Initializable {
         //Version
         cursor = addText(hex, cursor, 8, "version");
 
-        if (transaction.hasWitnesses()) {
+        if(getTransaction().hasWitnesses()) {
             //Segwit marker
             cursor = addText(hex, cursor, 2, "segwit-marker");
             //Segwit flag
@@ -270,16 +268,16 @@ public class TransactionController implements Initializable {
         }
 
         //Number of inputs
-        VarInt numInputs = new VarInt(transaction.getInputs().size());
+        VarInt numInputs = new VarInt(getTransaction().getInputs().size());
         cursor = addText(hex, cursor, numInputs.getSizeInBytes() * 2, "num-inputs");
 
         //Inputs
-        for (int i = 0; i < transaction.getInputs().size(); i++) {
+        for(int i = 0; i < getTransaction().getInputs().size(); i++) {
             if(i == highestInputIndex) {
                 txhex.append("...", "");
             }
 
-            TransactionInput input = transaction.getInputs().get(i);
+            TransactionInput input = getTransaction().getInputs().get(i);
             boolean skip = (i >= highestInputIndex);
             cursor = addText(hex, cursor, 32 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "hash"), skip);
             cursor = addText(hex, cursor, 4 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "index"), skip);
@@ -290,16 +288,16 @@ public class TransactionController implements Initializable {
         }
 
         //Number of outputs
-        VarInt numOutputs = new VarInt(transaction.getOutputs().size());
+        VarInt numOutputs = new VarInt(getTransaction().getOutputs().size());
         cursor = addText(hex, cursor, numOutputs.getSizeInBytes() * 2, "num-outputs");
 
         //Outputs
-        for (int i = 0; i < transaction.getOutputs().size(); i++) {
+        for(int i = 0; i < getTransaction().getOutputs().size(); i++) {
             if(i == highestOutputIndex) {
                 txhex.append("...", "");
             }
 
-            TransactionOutput output = transaction.getOutputs().get(i);
+            TransactionOutput output = getTransaction().getOutputs().get(i);
             boolean skip = (i >= highestOutputIndex);
             cursor = addText(hex, cursor, 8 * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value"), skip);
             VarInt scriptLen = new VarInt(output.getScriptBytes().length);
@@ -307,13 +305,13 @@ public class TransactionController implements Initializable {
             cursor = addText(hex, cursor, (int) scriptLen.value * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"), skip);
         }
 
-        if (transaction.hasWitnesses()) {
-            for (int i = 0; i < transaction.getInputs().size(); i++) {
+        if(getTransaction().hasWitnesses()) {
+            for (int i = 0; i < getTransaction().getInputs().size(); i++) {
                 if(i == highestInputIndex) {
                     txhex.append("...", "");
                 }
 
-                TransactionInput input = transaction.getInputs().get(i);
+                TransactionInput input = getTransaction().getInputs().get(i);
                 boolean skip = (i >= highestInputIndex);
                 if (input.hasWitness()) {
                     TransactionWitness witness = input.getWitness();
@@ -337,15 +335,15 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppController.isOnline() && indexStart < transaction.getInputs().size()) {
+        if(AppController.isOnline() && indexStart < getTransaction().getInputs().size()) {
             Set<Sha256Hash> references = new HashSet<>();
-            if (psbt == null) {
-                references.add(transaction.getTxId());
+            if(getPSBT() == null) {
+                references.add(getTransaction().getTxId());
             }
 
-            int maxIndex = Math.min(transaction.getInputs().size(), indexEnd);
+            int maxIndex = Math.min(getTransaction().getInputs().size(), indexEnd);
             for(int i = indexStart; i < maxIndex; i++) {
-                TransactionInput input = transaction.getInputs().get(i);
+                TransactionInput input = getTransaction().getInputs().get(i);
                 if(!input.isCoinBase()) {
                     references.add(input.getOutpoint().getHash());
                 }
@@ -362,7 +360,7 @@ public class TransactionController implements Initializable {
                 Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
                 for (Sha256Hash txid : transactionMap.keySet()) {
                     BlockTransaction blockTx = transactionMap.get(txid);
-                    if (txid.equals(transaction.getTxId())) {
+                    if (txid.equals(getTransaction().getTxId())) {
                         thisBlockTx = blockTx;
                     } else {
                         inputTransactions.put(txid, blockTx);
@@ -370,7 +368,7 @@ public class TransactionController implements Initializable {
                     }
                 }
 
-                references.remove(transaction.getTxId());
+                references.remove(getTransaction().getTxId());
                 if (!references.isEmpty()) {
                     System.out.println("Failed to retrieve all referenced input transactions, aborting transaction fetch");
                     return;
@@ -378,7 +376,7 @@ public class TransactionController implements Initializable {
 
                 final BlockTransaction blockTx = thisBlockTx;
                 Platform.runLater(() -> {
-                    EventManager.get().post(new BlockTransactionFetchedEvent(transaction.getTxId(), blockTx, inputTransactions, indexStart, maxIndex));
+                    EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction().getTxId(), blockTx, inputTransactions, indexStart, maxIndex));
                 });
             });
             transactionReferenceService.setOnFailed(failedEvent -> {
@@ -389,13 +387,13 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchOutputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppController.isOnline() && psbt == null && indexStart < transaction.getOutputs().size()) {
-            int maxIndex = Math.min(transaction.getOutputs().size(), indexEnd);
-            ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(transaction, indexStart, maxIndex);
+        if(AppController.isOnline() && getPSBT() == null && indexStart < getTransaction().getOutputs().size()) {
+            int maxIndex = Math.min(getTransaction().getOutputs().size(), indexEnd);
+            ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(getTransaction(), indexStart, maxIndex);
             transactionOutputsReferenceService.setOnSucceeded(successEvent -> {
                 List<BlockTransaction> outputTransactions = transactionOutputsReferenceService.getValue();
                 Platform.runLater(() -> {
-                    EventManager.get().post(new BlockTransactionOutputsFetchedEvent(transaction.getTxId(), outputTransactions, indexStart, maxIndex));
+                    EventManager.get().post(new BlockTransactionOutputsFetchedEvent(getTransaction().getTxId(), outputTransactions, indexStart, maxIndex));
                 });
             });
             transactionOutputsReferenceService.setOnFailed(failedEvent -> {
@@ -425,18 +423,28 @@ public class TransactionController implements Initializable {
         return cursor + length;
     }
 
-    public void setTransaction(Transaction transaction) {
-        this.transaction = transaction;
+    public Transaction getTransaction() {
+        return txdata.getTransaction();
+    }
 
-        initializeView();
+    public void setTransaction(Transaction transaction) {
+        this.txdata = new TransactionData(transaction);
+    }
+
+    public PSBT getPSBT() {
+        return txdata.getPsbt();
     }
 
     public void setPSBT(PSBT psbt) {
-        this.psbt = psbt;
+        this.txdata = new TransactionData(psbt);
+    }
+
+    public BlockTransaction getBlockTransaction() {
+        return txdata.getBlockTransaction();
     }
 
     public void setBlockTransaction(BlockTransaction blockTransaction) {
-        this.blockTransaction = blockTransaction;
+        this.txdata = new TransactionData(blockTransaction);
     }
 
     public void setInitialView(TransactionView initialView, Integer initialIndex) {
@@ -446,7 +454,7 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void transactionChanged(TransactionChangedEvent event) {
-        if (event.getTransaction().equals(transaction)) {
+        if(event.getTransaction().equals(getTransaction())) {
             refreshTxHex();
             txtree.refresh();
         }
@@ -464,47 +472,29 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if (event.getTxId().equals(transaction.getTxId())) {
-            setBlockTransaction(txtree.getRoot(), event);
-        }
-    }
-
-    private void setBlockTransaction(TreeItem<TransactionForm> treeItem, BlockTransactionFetchedEvent event) {
-        TransactionForm form = treeItem.getValue();
-        form.setBlockTransaction(event.getBlockTransaction());
-        if(form.getInputTransactions() == null) {
-            form.setInputTransactions(event.getInputTransactions());
-        } else {
-            form.getInputTransactions().putAll(event.getInputTransactions());
-        }
-
-        for (TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
-            setBlockTransaction(childItem, event);
+        if(event.getTxId().equals(getTransaction().getTxId())) {
+            txdata.setBlockTransaction(event.getBlockTransaction());
+            if(txdata.getInputTransactions() == null) {
+                txdata.setInputTransactions(event.getInputTransactions());
+            } else {
+                txdata.getInputTransactions().putAll(event.getInputTransactions());
+            }
         }
     }
 
     @Subscribe
     public void blockTransactionOutputsFetched(BlockTransactionOutputsFetchedEvent event) {
-        if (event.getTxId().equals(transaction.getTxId())) {
-            setBlockTransactionOutputs(txtree.getRoot(), event);
-        }
-    }
-
-    private void setBlockTransactionOutputs(TreeItem<TransactionForm> treeItem, BlockTransactionOutputsFetchedEvent event) {
-        TransactionForm form = treeItem.getValue();
-        if(form.getOutputTransactions() == null) {
-            form.setOutputTransactions(event.getOutputTransactions());
-        } else {
-            for(int i = 0; i < event.getOutputTransactions().size(); i++) {
-                BlockTransaction outputTransaction = event.getOutputTransactions().get(i);
-                if(outputTransaction != null) {
-                    form.getOutputTransactions().set(i, outputTransaction);
+        if (event.getTxId().equals(getTransaction().getTxId())) {
+            if(txdata.getOutputTransactions() == null) {
+                txdata.setOutputTransactions(event.getOutputTransactions());
+            } else {
+                for(int i = 0; i < event.getOutputTransactions().size(); i++) {
+                    BlockTransaction outputTransaction = event.getOutputTransactions().get(i);
+                    if(outputTransaction != null) {
+                        txdata.getOutputTransactions().set(i, outputTransaction);
+                    }
                 }
             }
-        }
-
-        for (TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
-            setBlockTransactionOutputs(childItem, event);
         }
     }
 }

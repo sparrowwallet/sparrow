@@ -9,16 +9,8 @@ import javafx.scene.Node;
 import java.io.IOException;
 
 public class OutputsForm extends TransactionForm {
-    public OutputsForm(PSBT psbt) {
-        super(psbt);
-    }
-
-    public OutputsForm(BlockTransaction blockTransaction) {
-        super(blockTransaction);
-    }
-
-    public OutputsForm(Transaction transaction) {
-        super(transaction);
+    public OutputsForm(TransactionData txdata) {
+        super(txdata);
     }
 
     @Override

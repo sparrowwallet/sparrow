@@ -1,24 +1,13 @@
 package com.sparrowwallet.sparrow.transaction;
 
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
 import java.io.IOException;
 
 public class InputsForm extends TransactionForm {
-    public InputsForm(PSBT psbt) {
-        super(psbt);
-    }
-
-    public InputsForm(BlockTransaction blockTransaction) {
-        super(blockTransaction);
-    }
-
-    public InputsForm(Transaction transaction) {
-        super(transaction);
+    public InputsForm(TransactionData txdata) {
+        super(txdata);
     }
 
     @Override

@@ -619,14 +619,21 @@ public class AppController implements Initializable {
             tab.setContent(transactionLoader.load());
             TransactionController controller = transactionLoader.getController();
 
-            controller.setPSBT(psbt);
-            controller.setBlockTransaction(blockTransaction);
+            if(psbt != null) {
+                controller.setPSBT(psbt);
+            } else if(blockTransaction != null) {
+                controller.setBlockTransaction(blockTransaction);
+            } else {
+                controller.setTransaction(transaction);
+            }
+
             if(initialView != null) {
                 controller.setInitialView(initialView, initialIndex);
             }
-            controller.setTransaction(transaction);
 
+            controller.initializeView();
             tabs.getTabs().add(tab);
+
             return tab;
         } catch(IOException e) {
             throw new RuntimeException(e);

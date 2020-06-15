@@ -1,9 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
-import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
@@ -16,19 +14,14 @@ public class InputForm extends IndexedTransactionForm {
     private final TransactionInput transactionInput;
     private PSBTInput psbtInput;
 
-    public InputForm(PSBT psbt, PSBTInput psbtInput) {
-        super(psbt, psbt.getPsbtInputs().indexOf(psbtInput));
-        this.transactionInput = psbt.getTransaction().getInputs().get(psbt.getPsbtInputs().indexOf(psbtInput));
+    public InputForm(TransactionData txdata, PSBTInput psbtInput) {
+        super(txdata, txdata.getPsbt().getPsbtInputs().indexOf(psbtInput));
+        this.transactionInput = txdata.getPsbt().getTransaction().getInputs().get(txdata.getPsbt().getPsbtInputs().indexOf(psbtInput));
         this.psbtInput = psbtInput;
     }
 
-    public InputForm(BlockTransaction blockTransaction, TransactionInput transactionInput) {
-        super(blockTransaction, blockTransaction.getTransaction().getInputs().indexOf(transactionInput));
-        this.transactionInput = transactionInput;
-    }
-
-    public InputForm(Transaction transaction, TransactionInput transactionInput) {
-        super(transaction, transaction.getInputs().indexOf(transactionInput));
+    public InputForm(TransactionData txdata, TransactionInput transactionInput) {
+        super(txdata, txdata.getTransaction().getInputs().indexOf(transactionInput));
         this.transactionInput = transactionInput;
     }
 
