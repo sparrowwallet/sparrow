@@ -71,6 +71,12 @@ public class TransactionController implements Initializable {
         refreshTxHex();
         fetchThisAndInputBlockTransactions(0, highestInputIndex);
         fetchOutputBlockTransactions(0, highestOutputIndex);
+
+        if(TransactionView.INPUT.equals(initialView) && initialIndex >= PageForm.PAGE_SIZE) {
+            fetchThisAndInputBlockTransactions(initialIndex, initialIndex + 1);
+        } else if(TransactionView.OUTPUT.equals(initialView) && initialIndex >= PageForm.PAGE_SIZE) {
+            fetchOutputBlockTransactions(initialIndex, initialIndex + 1);
+        }
     }
 
     private void initializeTxTree() {
@@ -83,9 +89,13 @@ public class TransactionController implements Initializable {
         inputsItem.setExpanded(true);
         boolean inputPagingAdded = false;
         for(int i = 0; i < getTransaction().getInputs().size(); i++) {
-            if(i < PageForm.PAGE_SIZE || (TransactionView.INPUT.equals(initialView) && i == initialIndex)) {
+            if(i < PageForm.PAGE_SIZE) {
                 TreeItem<TransactionForm> inputItem = createInputTreeItem(i);
                 inputsItem.getChildren().add(inputItem);
+            } else if(TransactionView.INPUT.equals(initialView) && i == initialIndex) {
+                TreeItem<TransactionForm> inputItem = createInputTreeItem(i);
+                inputsItem.getChildren().add(inputItem);
+                inputPagingAdded = false;
             } else if(!inputPagingAdded) {
                 PageForm pageForm = new PageForm(TransactionView.INPUT, i, i + PageForm.PAGE_SIZE);
                 TreeItem<TransactionForm> pageItem = new TreeItem<>(pageForm);
@@ -99,9 +109,13 @@ public class TransactionController implements Initializable {
         outputsItem.setExpanded(true);
         boolean outputPagingAdded = false;
         for(int i = 0; i < getTransaction().getOutputs().size(); i++) {
-            if(i < PageForm.PAGE_SIZE || (TransactionView.OUTPUT.equals(initialView) && i == initialIndex)) {
+            if(i < PageForm.PAGE_SIZE) {
                 TreeItem<TransactionForm> outputItem = createOutputTreeItem(i);
                 outputsItem.getChildren().add(outputItem);
+            } else if(TransactionView.OUTPUT.equals(initialView) && i == initialIndex) {
+                TreeItem<TransactionForm> outputItem = createOutputTreeItem(i);
+                outputsItem.getChildren().add(outputItem);
+                outputPagingAdded = false;
             } else if(!outputPagingAdded) {
                 PageForm pageForm = new PageForm(TransactionView.OUTPUT, i, i + PageForm.PAGE_SIZE);
                 TreeItem<TransactionForm> pageItem = new TreeItem<>(pageForm);
@@ -135,18 +149,40 @@ public class TransactionController implements Initializable {
 
                 if(optParentItem.isPresent()) {
                     TreeItem<TransactionForm> parentItem = optParentItem.get();
+                    int treeIndex = parentItem.getChildren().indexOf(selectedItem);
                     parentItem.getChildren().remove(selectedItem);
 
                     int max = pageForm.getView().equals(TransactionView.INPUT) ? getTransaction().getInputs().size() : getTransaction().getOutputs().size();
                     for(int i = pageForm.getPageStart(); i < max && i < pageForm.getPageEnd(); i++) {
-                        TreeItem<TransactionForm> newItem = pageForm.getView().equals(TransactionView.INPUT) ? createInputTreeItem(i) : createOutputTreeItem(i);
-                        parentItem.getChildren().add(newItem);
+                        int txIndex = i;
+                        TreeItem<TransactionForm> newItem = pageForm.getView().equals(TransactionView.INPUT) ? createInputTreeItem(txIndex) : createOutputTreeItem(txIndex);
+                        Optional<TreeItem<TransactionForm>> optionalExisting = parentItem.getChildren().stream().filter(item -> ((IndexedTransactionForm)item.getValue()).getIndex() == txIndex).findFirst();
+
+                        boolean pageItem = false;
+                        if(optionalExisting.isPresent() && optionalExisting.get().getValue() instanceof PageForm) {
+                            parentItem.getChildren().remove(optionalExisting.get());
+                            pageItem = true;
+                        }
+
+                        if(optionalExisting.isEmpty() || pageItem) {
+                            if(treeIndex >= parentItem.getChildren().size()) {
+                                parentItem.getChildren().add(newItem);
+                            } else {
+                                parentItem.getChildren().add(treeIndex, newItem);
+                            }
+                        }
+
+                        treeIndex++;
                     }
 
                     if(pageForm.getPageEnd() < max) {
                         PageForm nextPageForm = new PageForm(pageForm.getView(), pageForm.getPageStart() + PageForm.PAGE_SIZE, pageForm.getPageEnd() + PageForm.PAGE_SIZE);
                         TreeItem<TransactionForm> nextPageItem = new TreeItem<>(nextPageForm);
-                        parentItem.getChildren().add(nextPageItem);
+                        if(pageForm.getPageEnd() >= parentItem.getChildren().size()) {
+                            parentItem.getChildren().add(nextPageItem);
+                        } else {
+                            parentItem.getChildren().add(pageForm.getPageEnd(), nextPageItem);
+                        }
                     }
 
                     if(pageForm.getView().equals(TransactionView.INPUT)) {
@@ -158,10 +194,7 @@ public class TransactionController implements Initializable {
                     }
 
                     setTreeSelection(pageForm.getView(), pageForm.getPageStart());
-                    Platform.runLater(() -> {
-                        txtree.scrollTo(pageForm.getPageStart());
-                        refreshTxHex();
-                    });
+                    Platform.runLater(this::refreshTxHex);
                 }
             } else {
                 try {
@@ -220,26 +253,35 @@ public class TransactionController implements Initializable {
     }
 
     public void setTreeSelection(TransactionView view, Integer index) {
-        select(txtree.getRoot(), view, index);
+        TreeItem<TransactionForm> treeItem = getTreeItem(view, index);
+        txtree.getSelectionModel().select(treeItem);
+        txtree.scrollTo(txtree.getRow(treeItem));
     }
 
-    private void select(TreeItem<TransactionForm> treeItem, TransactionView view, Integer index) {
+    private TreeItem<TransactionForm> getTreeItem(TransactionView view, Integer index) {
+        return getTreeItem(txtree.getRoot(), view, index);
+    }
+
+    private TreeItem<TransactionForm> getTreeItem(TreeItem<TransactionForm> treeItem, TransactionView view, Integer index) {
         if(treeItem.getValue().getView().equals(view)) {
             if(view.equals(TransactionView.INPUT) || view.equals(TransactionView.OUTPUT)) {
                 IndexedTransactionForm txForm = (IndexedTransactionForm)treeItem.getValue();
                 if(txForm.getIndex() == index) {
-                    txtree.getSelectionModel().select(treeItem);
-                    return;
+                    return treeItem;
                 }
             } else {
-                txtree.getSelectionModel().select(treeItem);
-                return;
+                return treeItem;
             }
         }
 
         for(TreeItem<TransactionForm> childItem : treeItem.getChildren()) {
-            select(childItem, view, index);
+            TreeItem<TransactionForm> foundItem = getTreeItem(childItem, view, index);
+            if(foundItem != null) {
+                return foundItem;
+            }
         }
+
+        return null;
     }
 
     void refreshTxHex() {
@@ -450,6 +492,58 @@ public class TransactionController implements Initializable {
     public void setInitialView(TransactionView initialView, Integer initialIndex) {
         this.initialView = initialView;
         this.initialIndex = initialIndex;
+    }
+
+    @Subscribe
+    public void viewTransaction(ViewTransactionEvent event) {
+        if(txdata.getTransaction().getTxId().equals(event.getBlockTransaction().getTransaction().getTxId())) {
+            TreeItem<TransactionForm> existingItem = getTreeItem(event.getInitialView(), event.getInitialIndex());
+            if(existingItem != null && !(existingItem.getValue() instanceof PageForm)) {
+                setTreeSelection(event.getInitialView(), event.getInitialIndex());
+            } else if(event.getInitialView().equals(TransactionView.INPUT) || event.getInitialView().equals(TransactionView.OUTPUT)) {
+                TreeItem<TransactionForm> parentItem = getTreeItem(event.getInitialView().equals(TransactionView.INPUT) ? TransactionView.INPUTS : TransactionView.OUTPUTS, null);
+
+                TreeItem<TransactionForm> newItem = event.getInitialView().equals(TransactionView.INPUT) ? createInputTreeItem(event.getInitialIndex()) : createOutputTreeItem(event.getInitialIndex());
+                PageForm nextPageForm = new PageForm(event.getInitialView(), event.getInitialIndex() + 1, event.getInitialIndex() + 1 + PageForm.PAGE_SIZE);
+                TreeItem<TransactionForm> nextPageItem = new TreeItem<>(nextPageForm);
+
+                if(existingItem != null) {
+                    parentItem.getChildren().remove(existingItem);
+                }
+
+                int max = event.getInitialView().equals(TransactionView.INPUT) ? getTransaction().getInputs().size() : getTransaction().getOutputs().size();
+                int highestIndex = ((IndexedTransactionForm)parentItem.getChildren().get(parentItem.getChildren().size() - 1).getValue()).getIndex();
+                if(event.getInitialIndex() < highestIndex) {
+                    for(int i = 0; i < parentItem.getChildren().size(); i++) {
+                        TreeItem<TransactionForm> childItem = parentItem.getChildren().get(i);
+                        IndexedTransactionForm txForm = (IndexedTransactionForm)childItem.getValue();
+                        if(txForm.getIndex() > event.getInitialIndex()) {
+                            parentItem.getChildren().add(i, newItem);
+                            if(txForm.getIndex() != event.getInitialIndex() + 1) {
+                                parentItem.getChildren().add(i + 1, nextPageItem);
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    parentItem.getChildren().add(newItem);
+                    if((event.getInitialIndex() + 1) != max) {
+                        parentItem.getChildren().add(nextPageItem);
+                    }
+                }
+
+                if(event.getInitialView().equals(TransactionView.INPUT)) {
+                    highestInputIndex = Math.min(max, event.getInitialIndex());
+                    fetchThisAndInputBlockTransactions(event.getInitialIndex(), event.getInitialIndex() + 1);
+                } else {
+                    highestOutputIndex = Math.min(max, event.getInitialIndex());
+                    fetchOutputBlockTransactions(event.getInitialIndex(), event.getInitialIndex() + 1);
+                }
+
+                setTreeSelection(event.getInitialView(), event.getInitialIndex());
+                Platform.runLater(this::refreshTxHex);
+            }
+        }
     }
 
     @Subscribe

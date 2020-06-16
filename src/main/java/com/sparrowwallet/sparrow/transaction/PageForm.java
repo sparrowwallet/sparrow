@@ -39,6 +39,6 @@ public class PageForm extends IndexedTransactionForm {
 
     @Override
     public String toString() {
-        return "Load More...";
+        return "...";
     }
 }

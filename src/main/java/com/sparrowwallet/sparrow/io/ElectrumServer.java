@@ -934,7 +934,9 @@ public class ElectrumServer {
 
                     Set<BlockTransactionHash> setReferences = new HashSet<>();
                     for(Set<BlockTransactionHash> outputReferences : outputTransactionReferences) {
-                        setReferences.addAll(outputReferences);
+                        if(outputReferences != null) {
+                            setReferences.addAll(outputReferences);
+                        }
                     }
                     setReferences.remove(null);
                     setReferences.remove(UNFETCHABLE_BLOCK_TRANSACTION);
@@ -952,15 +954,17 @@ public class ElectrumServer {
 
                     for(int i = 0; i < outputTransactionReferences.size(); i++) {
                         Set<BlockTransactionHash> outputReferences = outputTransactionReferences.get(i);
-                        for(BlockTransactionHash reference : outputReferences) {
-                            if(reference == UNFETCHABLE_BLOCK_TRANSACTION) {
-                                blockTransactions.set(i, UNFETCHABLE_BLOCK_TRANSACTION);
-                            } else {
-                                BlockTransaction blockTransaction = transactionMap.get(reference.getHash());
-                                for(TransactionInput input : blockTransaction.getTransaction().getInputs()) {
-                                    if(input.getOutpoint().getHash().equals(transaction.getTxId()) && input.getOutpoint().getIndex() == i) {
-                                        if(blockTransactions.set(i, blockTransaction) != null) {
-                                            throw new IllegalStateException("Double spend detected for output #" + i + " on hash " + reference.getHash());
+                        if(outputReferences != null) {
+                            for(BlockTransactionHash reference : outputReferences) {
+                                if(reference == UNFETCHABLE_BLOCK_TRANSACTION) {
+                                    blockTransactions.set(i, UNFETCHABLE_BLOCK_TRANSACTION);
+                                } else {
+                                    BlockTransaction blockTransaction = transactionMap.get(reference.getHash());
+                                    for(TransactionInput input : blockTransaction.getTransaction().getInputs()) {
+                                        if(input.getOutpoint().getHash().equals(transaction.getTxId()) && input.getOutpoint().getIndex() == i) {
+                                            if(blockTransactions.set(i, blockTransaction) != null) {
+                                                throw new IllegalStateException("Double spend detected for output #" + i + " on hash " + reference.getHash());
+                                            }
                                         }
                                     }
                                 }
