@@ -17,6 +17,7 @@ public class OutputsForm extends TransactionForm {
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("outputs.fxml"));
         Node node = loader.load();
+        node.setUserData(this);
         OutputsController controller = loader.getController();
         controller.setModel(this);
         return node;

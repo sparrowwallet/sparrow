@@ -4,6 +4,10 @@
     -fx-padding: 2;
 }
 
+.tx-pane {
+    -fx-background-color: -fx-background;
+}
+
 .color-0 { -fx-fill: #ca1243 }
 .color-1 { -fx-fill: #d75f00 }
 .color-2 { -fx-fill: #c18401 }

@@ -38,6 +38,7 @@ public class OutputForm extends IndexedTransactionForm {
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("output.fxml"));
         Node node = loader.load();
+        node.setUserData(this);
         OutputController controller = loader.getController();
         controller.setModel(this);
         return node;

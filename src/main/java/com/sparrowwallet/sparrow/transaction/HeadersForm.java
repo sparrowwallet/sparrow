@@ -14,6 +14,7 @@ public class HeadersForm extends TransactionForm {
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("headers.fxml"));
         Node node = loader.load();
+        node.setUserData(this);
         HeadersController controller = loader.getController();
         controller.setModel(this);
         return node;

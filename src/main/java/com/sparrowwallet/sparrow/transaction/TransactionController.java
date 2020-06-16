@@ -197,30 +197,43 @@ public class TransactionController implements Initializable {
                     Platform.runLater(this::refreshTxHex);
                 }
             } else {
+                Node detailPane = null;
+                for(Node txdetail : txpane.getChildren()) {
+                    TransactionForm childForm = (TransactionForm)txdetail.getUserData();
+                    if(transactionForm == childForm) {
+                        detailPane = txdetail;
+                        txdetail.setViewOrder(0);
+                    } else {
+                        txdetail.setViewOrder(1);
+                    }
+                }
+
                 try {
-                    Node node = transactionForm.getContents();
-                    txpane.getChildren().clear();
-                    txpane.getChildren().add(node);
-
-                    if (node instanceof Parent) {
-                        Parent parent = (Parent) node;
-                        txhex.getStylesheets().clear();
-                        txhex.getStylesheets().addAll(parent.getStylesheets());
-
-                        selectedInputIndex = -1;
-                        selectedOutputIndex = -1;
-                        if (transactionForm instanceof InputForm) {
-                            InputForm inputForm = (InputForm) transactionForm;
-                            selectedInputIndex = inputForm.getTransactionInput().getIndex();
-                        } else if (transactionForm instanceof OutputForm) {
-                            OutputForm outputForm = (OutputForm) transactionForm;
-                            selectedOutputIndex = outputForm.getTransactionOutput().getIndex();
-                        }
-
-                        Platform.runLater(this::refreshTxHex);
+                    if(detailPane == null) {
+                        detailPane = transactionForm.getContents();
+                        detailPane.setViewOrder(0);
+                        txpane.getChildren().add(detailPane);
                     }
                 } catch (IOException e) {
                     throw new IllegalStateException("Can't find pane", e);
+                }
+
+                if(detailPane instanceof Parent) {
+                    Parent parent = (Parent)detailPane;
+                    txhex.getStylesheets().clear();
+                    txhex.getStylesheets().addAll(parent.getStylesheets());
+
+                    selectedInputIndex = -1;
+                    selectedOutputIndex = -1;
+                    if(transactionForm instanceof InputForm) {
+                        InputForm inputForm = (InputForm) transactionForm;
+                        selectedInputIndex = inputForm.getTransactionInput().getIndex();
+                    } else if(transactionForm instanceof OutputForm) {
+                        OutputForm outputForm = (OutputForm) transactionForm;
+                        selectedOutputIndex = outputForm.getTransactionOutput().getIndex();
+                    }
+
+                    Platform.runLater(this::refreshTxHex);
                 }
             }
         });

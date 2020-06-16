@@ -48,6 +48,7 @@ public class InputForm extends IndexedTransactionForm {
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("input.fxml"));
         Node node = loader.load();
+        node.setUserData(this);
         InputController controller = loader.getController();
         controller.setModel(this);
         return node;
