@@ -122,7 +122,9 @@ public class HeadersController extends TransactionFormController implements Init
         version.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2, (int)tx.getVersion()));
         version.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setVersion(newValue);
-            EventManager.get().post(new TransactionChangedEvent(tx));
+            if(oldValue != null) {
+                EventManager.get().post(new TransactionChangedEvent(tx));
+            }
         });
         version.setDisable(!headersForm.isEditable());
 
@@ -144,7 +146,9 @@ public class HeadersController extends TransactionFormController implements Init
                     locktimeFieldset.getChildren().remove(locktimeNoneField);
                     locktimeFieldset.getChildren().add(locktimeNoneField);
                     tx.setLocktime(0);
-                    EventManager.get().post(new TransactionChangedEvent(tx));
+                    if(old_toggle != null) {
+                        EventManager.get().post(new TransactionChangedEvent(tx));
+                    }
                 } else if(selection.equals("block")) {
                     locktimeFieldset.getChildren().remove(locktimeDateField);
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
@@ -153,7 +157,9 @@ public class HeadersController extends TransactionFormController implements Init
                     Integer block = locktimeBlock.getValue();
                     if(block != null) {
                         tx.setLocktime(block);
-                        EventManager.get().post(new TransactionChangedEvent(tx));
+                        if(old_toggle != null) {
+                            EventManager.get().post(new TransactionChangedEvent(tx));
+                        }
                     }
                 } else {
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
@@ -164,7 +170,9 @@ public class HeadersController extends TransactionFormController implements Init
                     if(date != null) {
                         locktimeDate.setDateTimeValue(date);
                         tx.setLocktime(date.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
-                        EventManager.get().post(new TransactionChangedEvent(tx));
+                        if(old_toggle != null) {
+                            EventManager.get().post(new TransactionChangedEvent(tx));
+                        }
                     }
                 }
             }
@@ -189,13 +197,17 @@ public class HeadersController extends TransactionFormController implements Init
 
         locktimeBlock.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue);
-            EventManager.get().post(new TransactionChangedEvent(tx));
+            if(oldValue != null) {
+                EventManager.get().post(new TransactionChangedEvent(tx));
+            }
         });
 
         locktimeDate.setFormat(LOCKTIME_DATE_FORMAT);
         locktimeDate.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
-            EventManager.get().post(new TransactionChangedEvent(tx));
+            if(oldValue != null) {
+                EventManager.get().post(new TransactionChangedEvent(tx));
+            }
         });
 
         locktimeNoneType.setDisable(!headersForm.isEditable());

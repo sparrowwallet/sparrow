@@ -125,7 +125,8 @@ public class InputsController extends TransactionFormController implements Initi
             } else {
                 BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
                 if(inputTx == null) {
-                    throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
+                    System.out.println("Cannot find transaction for hash " + input.getOutpoint().getHash() + ", still paging?");
+                    return;
                 }
 
                 TransactionOutput output = inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());

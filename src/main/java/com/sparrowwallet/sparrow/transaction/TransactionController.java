@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -9,6 +8,7 @@ import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import javafx.application.Platform;
@@ -22,9 +22,7 @@ import javafx.scene.control.cell.TextFieldTreeCell;
 import javafx.scene.layout.Pane;
 import javafx.util.StringConverter;
 import org.controlsfx.control.MasterDetailPane;
-import org.fxmisc.richtext.CodeArea;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
@@ -44,7 +42,7 @@ public class TransactionController implements Initializable {
     private Pane txpane;
 
     @FXML
-    private CodeArea txhex;
+    private TransactionHexArea txhex;
 
     private TransactionData txdata;
 
@@ -54,23 +52,18 @@ public class TransactionController implements Initializable {
     private int selectedInputIndex = -1;
     private int selectedOutputIndex = -1;
 
-    private int highestInputIndex;
-    private int highestOutputIndex;
-
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
     }
 
     public void initializeView() {
-        highestInputIndex = Math.min(getTransaction().getInputs().size(), PageForm.PAGE_SIZE);
-        highestOutputIndex = Math.min(getTransaction().getOutputs().size(), PageForm.PAGE_SIZE);
-
         initializeTxTree();
         transactionMasterDetail.setShowDetailNode(AppController.showTxHexProperty);
-        refreshTxHex();
-        fetchThisAndInputBlockTransactions(0, highestInputIndex);
-        fetchOutputBlockTransactions(0, highestOutputIndex);
+        txhex.setTransaction(getTransaction());
+        highlightTxHex();
+        fetchThisAndInputBlockTransactions(0, Math.min(getTransaction().getInputs().size(), PageForm.PAGE_SIZE));
+        fetchOutputBlockTransactions(0, Math.min(getTransaction().getOutputs().size(), PageForm.PAGE_SIZE));
 
         if(TransactionView.INPUT.equals(initialView) && initialIndex >= PageForm.PAGE_SIZE) {
             fetchThisAndInputBlockTransactions(initialIndex, initialIndex + 1);
@@ -186,15 +179,12 @@ public class TransactionController implements Initializable {
                     }
 
                     if(pageForm.getView().equals(TransactionView.INPUT)) {
-                        highestInputIndex = Math.min(max, pageForm.getPageEnd());
                         fetchThisAndInputBlockTransactions(pageForm.getPageStart(), Math.min(max, pageForm.getPageEnd()));
                     } else {
-                        highestOutputIndex = Math.min(max, pageForm.getPageEnd());
                         fetchOutputBlockTransactions(pageForm.getPageStart(), Math.min(max, pageForm.getPageEnd()));
                     }
 
                     setTreeSelection(pageForm.getView(), pageForm.getPageStart());
-                    Platform.runLater(this::refreshTxHex);
                 }
             } else {
                 Node detailPane = null;
@@ -233,7 +223,7 @@ public class TransactionController implements Initializable {
                         selectedOutputIndex = outputForm.getTransactionOutput().getIndex();
                     }
 
-                    Platform.runLater(this::refreshTxHex);
+                    Platform.runLater(this::highlightTxHex);
                 }
             }
         });
@@ -297,96 +287,8 @@ public class TransactionController implements Initializable {
         return null;
     }
 
-    void refreshTxHex() {
-        //TODO: Handle large transactions like efd513fffbbc2977c2d3933dfaab590b5cab5841ee791b3116e531ac9f8034ed better by not replacing text
-        txhex.clear();
-
-        String hex = "";
-        try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            getTransaction().bitcoinSerializeToStream(baos);
-            hex = Utils.bytesToHex(baos.toByteArray());
-        } catch (IOException e) {
-            throw new IllegalStateException("Can't happen");
-        }
-
-        int cursor = 0;
-
-        //Version
-        cursor = addText(hex, cursor, 8, "version");
-
-        if(getTransaction().hasWitnesses()) {
-            //Segwit marker
-            cursor = addText(hex, cursor, 2, "segwit-marker");
-            //Segwit flag
-            cursor = addText(hex, cursor, 2, "segwit-flag");
-        }
-
-        //Number of inputs
-        VarInt numInputs = new VarInt(getTransaction().getInputs().size());
-        cursor = addText(hex, cursor, numInputs.getSizeInBytes() * 2, "num-inputs");
-
-        //Inputs
-        for(int i = 0; i < getTransaction().getInputs().size(); i++) {
-            if(i == highestInputIndex) {
-                txhex.append("...", "");
-            }
-
-            TransactionInput input = getTransaction().getInputs().get(i);
-            boolean skip = (i >= highestInputIndex);
-            cursor = addText(hex, cursor, 32 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "hash"), skip);
-            cursor = addText(hex, cursor, 4 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "index"), skip);
-            VarInt scriptLen = new VarInt(input.getScriptBytes().length);
-            cursor = addText(hex, cursor, scriptLen.getSizeInBytes() * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript-length"), skip);
-            cursor = addText(hex, cursor, (int) scriptLen.value * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript"), skip);
-            cursor = addText(hex, cursor, 4 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sequence"), skip);
-        }
-
-        //Number of outputs
-        VarInt numOutputs = new VarInt(getTransaction().getOutputs().size());
-        cursor = addText(hex, cursor, numOutputs.getSizeInBytes() * 2, "num-outputs");
-
-        //Outputs
-        for(int i = 0; i < getTransaction().getOutputs().size(); i++) {
-            if(i == highestOutputIndex) {
-                txhex.append("...", "");
-            }
-
-            TransactionOutput output = getTransaction().getOutputs().get(i);
-            boolean skip = (i >= highestOutputIndex);
-            cursor = addText(hex, cursor, 8 * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value"), skip);
-            VarInt scriptLen = new VarInt(output.getScriptBytes().length);
-            cursor = addText(hex, cursor, scriptLen.getSizeInBytes() * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript-length"), skip);
-            cursor = addText(hex, cursor, (int) scriptLen.value * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"), skip);
-        }
-
-        if(getTransaction().hasWitnesses()) {
-            for (int i = 0; i < getTransaction().getInputs().size(); i++) {
-                if(i == highestInputIndex) {
-                    txhex.append("...", "");
-                }
-
-                TransactionInput input = getTransaction().getInputs().get(i);
-                boolean skip = (i >= highestInputIndex);
-                if (input.hasWitness()) {
-                    TransactionWitness witness = input.getWitness();
-                    VarInt witnessCount = new VarInt(witness.getPushCount());
-                    cursor = addText(hex, cursor, witnessCount.getSizeInBytes() * 2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"), skip);
-                    for (byte[] push : witness.getPushes()) {
-                        VarInt witnessLen = new VarInt(push.length);
-                        cursor = addText(hex, cursor, witnessLen.getSizeInBytes() * 2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"), skip);
-                        cursor = addText(hex, cursor, (int) witnessLen.value * 2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"), skip);
-                    }
-                }
-            }
-        }
-
-        //Locktime
-        cursor = addText(hex, cursor, 8, "locktime");
-
-        if(cursor != hex.length()) {
-            throw new IllegalStateException("Cursor position does not match transaction serialisation " + cursor + ": " + hex.length());
-        }
+    void highlightTxHex() {
+        txhex.applyHighlighting(getTransaction(), selectedInputIndex, selectedOutputIndex);
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
@@ -458,26 +360,6 @@ public class TransactionController implements Initializable {
         }
     }
 
-    private String getIndexedStyleClass(int iterableIndex, int selectedIndex, String styleClass) {
-        if (selectedIndex == -1 || selectedIndex == iterableIndex) {
-            return styleClass;
-        }
-
-        return "other";
-    }
-
-    private int addText(String hex, int cursor, int length, String styleClass) {
-        return addText(hex, cursor, length, styleClass, false);
-    }
-
-    private int addText(String hex, int cursor, int length, String styleClass, boolean skip) {
-        if(!skip) {
-            txhex.append(hex.substring(cursor, cursor + length), styleClass);
-        }
-
-        return cursor + length;
-    }
-
     public Transaction getTransaction() {
         return txdata.getTransaction();
     }
@@ -546,15 +428,12 @@ public class TransactionController implements Initializable {
                 }
 
                 if(event.getInitialView().equals(TransactionView.INPUT)) {
-                    highestInputIndex = Math.min(max, event.getInitialIndex());
                     fetchThisAndInputBlockTransactions(event.getInitialIndex(), event.getInitialIndex() + 1);
                 } else {
-                    highestOutputIndex = Math.min(max, event.getInitialIndex());
                     fetchOutputBlockTransactions(event.getInitialIndex(), event.getInitialIndex() + 1);
                 }
 
                 setTreeSelection(event.getInitialView(), event.getInitialIndex());
-                Platform.runLater(this::refreshTxHex);
             }
         }
     }
@@ -562,7 +441,8 @@ public class TransactionController implements Initializable {
     @Subscribe
     public void transactionChanged(TransactionChangedEvent event) {
         if(event.getTransaction().equals(getTransaction())) {
-            refreshTxHex();
+            txhex.setTransaction(getTransaction());
+            highlightTxHex();
             txtree.refresh();
         }
     }

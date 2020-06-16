@@ -2,9 +2,9 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.fxmisc.richtext.*?>
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
 <?import org.controlsfx.control.MasterDetailPane?>
+<?import com.sparrowwallet.sparrow.control.TransactionHexArea?>
 
 <SplitPane fx:id="tabContent" dividerPositions="0.82" orientation="VERTICAL" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
 <items>
@@ -22,7 +22,7 @@
         <detailNode>
             <VirtualizedScrollPane>
                 <content>
-                    <CodeArea fx:id="txhex" editable="false" wrapText="true" />
+                    <TransactionHexArea fx:id="txhex" editable="false" wrapText="true" />
                 </content>
             </VirtualizedScrollPane>
         </detailNode>
