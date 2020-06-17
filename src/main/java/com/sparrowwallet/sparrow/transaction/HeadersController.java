@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
+import com.sparrowwallet.sparrow.event.TransactionLocktimeChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -199,6 +200,7 @@ public class HeadersController extends TransactionFormController implements Init
             tx.setLocktime(newValue);
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
+                EventManager.get().post(new TransactionLocktimeChangedEvent(tx));
             }
         });
 
@@ -249,8 +251,12 @@ public class HeadersController extends TransactionFormController implements Init
 
             BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
             if(inputTx == null) {
-                System.out.println("Cannot find transaction for hash " + input.getOutpoint().getHash() + ", still paging?");
-                return null;
+                if(headersForm.allInputsFetched()) {
+                    throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
+                } else {
+                    //Still paging
+                    return null;
+                }
             }
 
             feeAmt += inputTx.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex()).getValue();

@@ -16,18 +16,21 @@ import javafx.scene.input.ClipboardContent;
 import java.util.List;
 
 public abstract class TransactionFormController extends BaseController {
+    private static final int MAX_PIE_SEGMENTS = 200;
+
     protected void addPieData(PieChart pie, List<TransactionOutput> outputs) {
         ObservableList<PieChart.Data> outputsPieData = FXCollections.observableArrayList();
 
         long totalAmt = 0;
-        for(TransactionOutput output : outputs) {
-            String name = "Unknown";
+        for(int i = 0; i < outputs.size(); i++) {
+            TransactionOutput output = outputs.get(i);
+            String name = "#" + i;
             try {
                 Address[] addresses = output.getScript().getToAddresses();
                 if(addresses.length == 1) {
-                    name = addresses[0].getAddress();
+                    name = name + " " + addresses[0].getAddress();
                 } else {
-                    name = "[" + addresses[0].getAddress() + ",...]";
+                    name = name + " [" + addresses[0].getAddress() + ",...]";
                 }
             } catch(NonStandardScriptException e) {
                 //ignore
@@ -46,12 +49,16 @@ public abstract class TransactionFormController extends BaseController {
     }
 
     private void addPieData(PieChart pie, ObservableList<PieChart.Data> outputsPieData) {
+        if(outputsPieData.size() > MAX_PIE_SEGMENTS) {
+            return;
+        }
+
         pie.setData(outputsPieData);
         final double totalSum = outputsPieData.stream().map(PieChart.Data::getPieValue).mapToDouble(Double::doubleValue).sum();
         pie.getData().forEach(data -> {
             Tooltip tooltip = new Tooltip();
             double percent = 100.0 * (data.getPieValue() / totalSum);
-            tooltip.setText(String.format("%.1f", percent) + "%");
+            tooltip.setText(data.getName() + " " + String.format("%.1f", percent) + "%");
             Tooltip.install(data.getNode(), tooltip);
             data.pieValueProperty().addListener((observable, oldValue, newValue) -> tooltip.setText(newValue + "%"));
         });

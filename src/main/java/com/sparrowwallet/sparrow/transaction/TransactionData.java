@@ -15,6 +15,11 @@ public class TransactionData {
     private Map<Sha256Hash, BlockTransaction> inputTransactions;
     private List<BlockTransaction> outputTransactions;
 
+    private int minInputFetched;
+    private int maxInputFetched;
+    private int minOutputFetched;
+    private int maxOutputFetched;
+
     public TransactionData(PSBT psbt) {
         this.transaction = psbt.getTransaction();
         this.psbt = psbt;
@@ -53,11 +58,51 @@ public class TransactionData {
         this.inputTransactions = inputTransactions;
     }
 
+    public void updateInputsFetchedRange(int pageStart, int pageEnd) {
+        if(pageStart < 0 || pageEnd > transaction.getInputs().size()) {
+            throw new IllegalStateException("Paging outside transaction inputs range");
+        }
+
+        if(pageStart != maxInputFetched) {
+            //non contiguous range, ignore
+            return;
+        }
+
+        this.minInputFetched = Math.min(minInputFetched, pageStart);
+        this.maxInputFetched = Math.max(maxInputFetched, pageEnd);
+    }
+
+    public int getMaxInputFetched() {
+        return maxInputFetched;
+    }
+
+    public boolean allInputsFetched() {
+        return minInputFetched == 0 && maxInputFetched == transaction.getOutputs().size();
+    }
+
     public List<BlockTransaction> getOutputTransactions() {
         return outputTransactions;
     }
 
     public void setOutputTransactions(List<BlockTransaction> outputTransactions) {
         this.outputTransactions = outputTransactions;
+    }
+
+    public void updateOutputsFetchedRange(int pageStart, int pageEnd) {
+        if(pageStart < 0 || pageEnd > transaction.getOutputs().size()) {
+            throw new IllegalStateException("Paging outside transaction outputs range");
+        }
+
+        if(pageStart != maxOutputFetched) {
+            //non contiguous range, ignore
+            return;
+        }
+
+        this.minOutputFetched = Math.min(minOutputFetched, pageStart);
+        this.maxOutputFetched = Math.max(maxOutputFetched, pageEnd);
+    }
+
+    public boolean allOutputsFetched() {
+        return minOutputFetched == 0 && maxOutputFetched == transaction.getOutputs().size();
     }
 }

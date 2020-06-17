@@ -10,7 +10,7 @@ public class ViewTransactionEvent {
     public final Integer initialIndex;
 
     public ViewTransactionEvent(BlockTransaction blockTransaction) {
-        this(blockTransaction, null, null);
+        this(blockTransaction, TransactionView.HEADERS, null);
     }
 
     public ViewTransactionEvent(BlockTransaction blockTransaction, HashIndexEntry hashIndexEntry) {

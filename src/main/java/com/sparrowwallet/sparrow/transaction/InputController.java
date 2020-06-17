@@ -11,6 +11,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
+import com.sparrowwallet.sparrow.event.TransactionLocktimeChangedEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -192,8 +193,12 @@ public class InputController extends TransactionFormController implements Initia
         if(!txInput.isCoinBase()) {
             BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
             if(blockTransaction == null) {
-                System.out.println("Could not retrieve block transaction for input #" + inputForm.getIndex());
-                return;
+                if(inputForm.getIndex() < inputForm.getMaxInputFetched()) {
+                    throw new IllegalStateException("Could not retrieve block transaction for input #" + inputForm.getIndex());
+                } else {
+                    //Still paging
+                    return;
+                }
             }
 
             TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
@@ -484,6 +489,13 @@ public class InputController extends TransactionFormController implements Initia
             if(inputForm.getPsbt() == null) {
                 updateSpends(event.getInputTransactions());
             }
+        }
+    }
+
+    @Subscribe
+    public void transctionLocktimeChanged(TransactionLocktimeChangedEvent event) {
+        if(event.getTransaction().equals(inputForm.getTransaction())) {
+            locktimeAbsolute.setText(Long.toString(event.getTransaction().getLocktime()));
         }
     }
 }

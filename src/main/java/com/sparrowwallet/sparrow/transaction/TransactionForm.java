@@ -29,24 +29,24 @@ public abstract class TransactionForm {
         return txdata.getBlockTransaction();
     }
 
-    public void setBlockTransaction(BlockTransaction blockTransaction) {
-        txdata.setBlockTransaction(blockTransaction);
-    }
-
     public Map<Sha256Hash, BlockTransaction> getInputTransactions() {
         return txdata.getInputTransactions();
     }
 
-    public void setInputTransactions(Map<Sha256Hash, BlockTransaction> inputTransactions) {
-        txdata.setInputTransactions(inputTransactions);
+    public int getMaxInputFetched() {
+        return txdata.getMaxInputFetched();
+    }
+
+    public boolean allInputsFetched() {
+        return txdata.allInputsFetched();
     }
 
     public List<BlockTransaction> getOutputTransactions() {
         return txdata.getOutputTransactions();
     }
 
-    public void setOutputTransactions(List<BlockTransaction> outputTransactions) {
-        txdata.setOutputTransactions(outputTransactions);
+    public boolean allOutputsFetched() {
+        return txdata.allOutputsFetched();
     }
 
     public boolean isEditable() {

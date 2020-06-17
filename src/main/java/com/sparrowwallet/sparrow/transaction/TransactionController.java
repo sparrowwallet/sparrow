@@ -90,7 +90,7 @@ public class TransactionController implements Initializable {
                 inputsItem.getChildren().add(inputItem);
                 inputPagingAdded = false;
             } else if(!inputPagingAdded) {
-                PageForm pageForm = new PageForm(TransactionView.INPUT, i, i + PageForm.PAGE_SIZE);
+                PageForm pageForm = new PageForm(TransactionView.INPUT, i, Math.min(getTransaction().getInputs().size(), i + PageForm.PAGE_SIZE));
                 TreeItem<TransactionForm> pageItem = new TreeItem<>(pageForm);
                 inputsItem.getChildren().add(pageItem);
                 inputPagingAdded = true;
@@ -110,7 +110,7 @@ public class TransactionController implements Initializable {
                 outputsItem.getChildren().add(outputItem);
                 outputPagingAdded = false;
             } else if(!outputPagingAdded) {
-                PageForm pageForm = new PageForm(TransactionView.OUTPUT, i, i + PageForm.PAGE_SIZE);
+                PageForm pageForm = new PageForm(TransactionView.OUTPUT, i, Math.min(getTransaction().getOutputs().size(), i + PageForm.PAGE_SIZE));
                 TreeItem<TransactionForm> pageItem = new TreeItem<>(pageForm);
                 outputsItem.getChildren().add(pageItem);
                 outputPagingAdded = true;
@@ -169,7 +169,7 @@ public class TransactionController implements Initializable {
                     }
 
                     if(pageForm.getPageEnd() < max) {
-                        PageForm nextPageForm = new PageForm(pageForm.getView(), pageForm.getPageStart() + PageForm.PAGE_SIZE, pageForm.getPageEnd() + PageForm.PAGE_SIZE);
+                        PageForm nextPageForm = new PageForm(pageForm.getView(), pageForm.getPageEnd(), Math.min(max, pageForm.getPageEnd() + PageForm.PAGE_SIZE));
                         TreeItem<TransactionForm> nextPageItem = new TreeItem<>(nextPageForm);
                         if(pageForm.getPageEnd() >= parentItem.getChildren().size()) {
                             parentItem.getChildren().add(nextPageItem);
@@ -397,16 +397,16 @@ public class TransactionController implements Initializable {
                 setTreeSelection(event.getInitialView(), event.getInitialIndex());
             } else if(event.getInitialView().equals(TransactionView.INPUT) || event.getInitialView().equals(TransactionView.OUTPUT)) {
                 TreeItem<TransactionForm> parentItem = getTreeItem(event.getInitialView().equals(TransactionView.INPUT) ? TransactionView.INPUTS : TransactionView.OUTPUTS, null);
-
                 TreeItem<TransactionForm> newItem = event.getInitialView().equals(TransactionView.INPUT) ? createInputTreeItem(event.getInitialIndex()) : createOutputTreeItem(event.getInitialIndex());
-                PageForm nextPageForm = new PageForm(event.getInitialView(), event.getInitialIndex() + 1, event.getInitialIndex() + 1 + PageForm.PAGE_SIZE);
+
+                int max = event.getInitialView().equals(TransactionView.INPUT) ? getTransaction().getInputs().size() : getTransaction().getOutputs().size();
+                PageForm nextPageForm = new PageForm(event.getInitialView(), event.getInitialIndex() + 1, Math.min(max, event.getInitialIndex() + 1 + PageForm.PAGE_SIZE));
                 TreeItem<TransactionForm> nextPageItem = new TreeItem<>(nextPageForm);
 
                 if(existingItem != null) {
                     parentItem.getChildren().remove(existingItem);
                 }
 
-                int max = event.getInitialView().equals(TransactionView.INPUT) ? getTransaction().getInputs().size() : getTransaction().getOutputs().size();
                 int highestIndex = ((IndexedTransactionForm)parentItem.getChildren().get(parentItem.getChildren().size() - 1).getValue()).getIndex();
                 if(event.getInitialIndex() < highestIndex) {
                     for(int i = 0; i < parentItem.getChildren().size(); i++) {
@@ -466,6 +466,7 @@ public class TransactionController implements Initializable {
             } else {
                 txdata.getInputTransactions().putAll(event.getInputTransactions());
             }
+            txdata.updateInputsFetchedRange(event.getPageStart(), event.getPageEnd());
         }
     }
 
@@ -482,6 +483,7 @@ public class TransactionController implements Initializable {
                     }
                 }
             }
+            txdata.updateOutputsFetchedRange(event.getPageStart(), event.getPageEnd());
         }
     }
 }

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
+import javafx.application.Platform;
 import org.fxmisc.richtext.CodeArea;
 
 import java.io.ByteArrayOutputStream;
@@ -12,6 +13,7 @@ import java.util.Objects;
 
 public class TransactionHexArea extends CodeArea {
     private static final int TRUNCATE_AT = 30000;
+    private static final int SEGMENTS_INTERVAL = 250;
 
     private List<TransactionSegment> previousSegmentList = new ArrayList<>();
 
@@ -38,14 +40,24 @@ public class TransactionHexArea extends CodeArea {
         List<TransactionSegment> segments = getTransactionSegments(transaction, selectedInputIndex, selectedOutputIndex);
         List<TransactionSegment> changedSegments = new ArrayList<>(segments);
         changedSegments.removeAll(previousSegmentList);
+        applyHighlighting(0, changedSegments);
+        previousSegmentList = segments;
+    }
 
-        for(TransactionSegment segment : changedSegments) {
+    private void applyHighlighting(int start, List<TransactionSegment> segments) {
+        int end = Math.min(segments.size(), start + SEGMENTS_INTERVAL);
+        for(int i = start; i < end; i++) {
+            TransactionSegment segment = segments.get(i);
             if(segment.start < TRUNCATE_AT) {
                 setStyleClass(segment.start, Math.min(TRUNCATE_AT, segment.start + segment.length), segment.style);
             }
         }
 
-        previousSegmentList = segments;
+        if(end < segments.size()) {
+            Platform.runLater(() -> {
+                applyHighlighting(end, segments);
+            });
+        }
     }
 
     public List<TransactionSegment> getTransactionSegments(Transaction transaction, int selectedInputIndex, int selectedOutputIndex) {
