@@ -493,7 +493,7 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     @Subscribe
-    public void transctionLocktimeChanged(TransactionLocktimeChangedEvent event) {
+    public void transactionLocktimeChanged(TransactionLocktimeChangedEvent event) {
         if(event.getTransaction().equals(inputForm.getTransaction())) {
             locktimeAbsolute.setText(Long.toString(event.getTransaction().getLocktime()));
         }

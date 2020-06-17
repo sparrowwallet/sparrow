@@ -77,7 +77,7 @@ public class TransactionData {
     }
 
     public boolean allInputsFetched() {
-        return minInputFetched == 0 && maxInputFetched == transaction.getOutputs().size();
+        return minInputFetched == 0 && maxInputFetched == transaction.getInputs().size();
     }
 
     public List<BlockTransaction> getOutputTransactions() {

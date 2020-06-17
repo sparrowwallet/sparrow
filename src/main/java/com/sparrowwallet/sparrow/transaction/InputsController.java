@@ -125,10 +125,15 @@ public class InputsController extends TransactionFormController implements Initi
             } else {
                 BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
                 if(inputTx == null) {
+                    inputTx = inputsForm.getInputTransactions().get(input.getOutpoint().getHash());
+                }
+
+                if(inputTx == null) {
                     if(inputsForm.allInputsFetched()) {
                         throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
                     } else {
                         //Still paging
+                        total.setText("Unknown (" + inputsForm.getMaxInputFetched() + " of " + inputsForm.getTransaction().getInputs().size() + " inputs fetched)");
                         return;
                     }
                 }
@@ -151,7 +156,7 @@ public class InputsController extends TransactionFormController implements Initi
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if(event.getTxId().equals(inputsForm.getTransaction().getTxId()) && inputsForm.getPsbt() != null) {
+        if(event.getTxId().equals(inputsForm.getTransaction().getTxId()) && inputsForm.getPsbt() == null) {
             updateBlockTransactionInputs(event.getInputTransactions());
         }
     }

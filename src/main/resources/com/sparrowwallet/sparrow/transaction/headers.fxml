@@ -14,6 +14,8 @@
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import javafx.scene.control.Button?>
+<?import org.controlsfx.glyphfont.Glyph?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -28,8 +30,13 @@
    </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset text="Transaction" inputGrow="SOMETIMES" wrapWidth="620">
-            <Field text="Txid:">
+            <Field text="Txid:" styleClass="label-button">
                 <IdLabel fx:id="id"/>
+                <Button maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Cy" onAction="#copyId">
+                    <graphic>
+                        <Glyph fontFamily="FontAwesome" icon="COPY" prefWidth="15" />
+                    </graphic>
+                </Button>
             </Field>
         </Fieldset>
     </Form>

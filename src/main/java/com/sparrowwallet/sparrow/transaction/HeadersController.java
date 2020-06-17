@@ -13,6 +13,7 @@ import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
 import com.sparrowwallet.sparrow.event.TransactionLocktimeChangedEvent;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -251,10 +252,15 @@ public class HeadersController extends TransactionFormController implements Init
 
             BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
             if(inputTx == null) {
+                inputTx = headersForm.getInputTransactions().get(input.getOutpoint().getHash());
+            }
+
+            if(inputTx == null) {
                 if(headersForm.allInputsFetched()) {
                     throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
                 } else {
                     //Still paging
+                    fee.setText("Unknown (" + headersForm.getMaxInputFetched() + " of " + headersForm.getTransaction().getInputs().size() + " inputs fetched)");
                     return null;
                 }
             }
@@ -316,6 +322,12 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateTxId() {
         id.setText(headersForm.getTransaction().calculateTxId(false).toString());
+    }
+
+    public void copyId(ActionEvent event) {
+        ClipboardContent content = new ClipboardContent();
+        content.putString(headersForm.getTransaction().getTxId().toString());
+        Clipboard.getSystemClipboard().setContent(content);
     }
 
     @Subscribe
