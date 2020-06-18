@@ -45,6 +45,10 @@ public abstract class TransactionForm {
         return txdata.getOutputTransactions();
     }
 
+    public int getMaxOutputFetched() {
+        return txdata.getMaxOutputFetched();
+    }
+
     public boolean allOutputsFetched() {
         return txdata.allOutputsFetched();
     }

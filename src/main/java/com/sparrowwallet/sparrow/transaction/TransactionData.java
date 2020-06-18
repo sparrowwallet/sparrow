@@ -102,6 +102,10 @@ public class TransactionData {
         this.maxOutputFetched = Math.max(maxOutputFetched, pageEnd);
     }
 
+    public int getMaxOutputFetched() {
+        return maxOutputFetched;
+    }
+
     public boolean allOutputsFetched() {
         return minOutputFetched == 0 && maxOutputFetched == transaction.getOutputs().size();
     }

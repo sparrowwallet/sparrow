@@ -85,7 +85,7 @@ public class OutputController extends TransactionFormController implements Initi
 
         if(outputForm.getPsbt() != null) {
             spent.setText("Unspent");
-        } else if(outputForm.getOutputTransactions() != null) {
+        } else if(outputForm.getOutputTransactions() != null && outputForm.getIndex() < outputForm.getMaxOutputFetched()) {
             updateSpent(outputForm.getOutputTransactions());
         } else {
             spent.setText("Unknown");
@@ -96,7 +96,7 @@ public class OutputController extends TransactionFormController implements Initi
     }
 
     private void updateSpent(List<BlockTransaction> outputTransactions) {
-        int outputIndex = outputForm.getTransactionOutputIndex();
+        int outputIndex = outputForm.getIndex();
         spent.setText("Unspent");
 
         if(outputIndex >= 0 && outputIndex < outputTransactions.size()) {

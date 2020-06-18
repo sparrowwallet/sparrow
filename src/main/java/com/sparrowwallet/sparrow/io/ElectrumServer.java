@@ -326,6 +326,7 @@ public class ElectrumServer {
                 batchRequest.add(reference.getHashAsString(), "blockchain.transaction.get", reference.getHashAsString());
             }
 
+            String strErrorTx = Sha256Hash.ZERO_HASH.toString();
             Map<String, String> result;
             try {
                 result = batchRequest.execute();
@@ -333,21 +334,22 @@ public class ElectrumServer {
                 result = (Map<String, String>)e.getSuccesses();
                 for(Object hash : e.getErrors().keySet()) {
                     String txhash = (String)hash;
-                    result.put(txhash, Sha256Hash.ZERO_HASH.toString());
+                    result.put(txhash, strErrorTx);
                 }
             }
 
             Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
             for(String txid : result.keySet()) {
                 Sha256Hash hash = Sha256Hash.wrap(txid);
+                String strRawTx = result.get(txid);
 
-                if(hash.equals(Sha256Hash.ZERO_HASH)) {
+                if(strRawTx.equals(strErrorTx)) {
                     transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
                     checkReferences.removeIf(ref -> ref.getHash().equals(hash));
                     continue;
                 }
 
-                byte[] rawtx = Utils.hexToBytes(result.get(txid));
+                byte[] rawtx = Utils.hexToBytes(strRawTx);
                 Transaction transaction = new Transaction(rawtx);
 
                 Optional<BlockTransactionHash> optionalReference = references.stream().filter(reference -> reference.getHash().equals(hash)).findFirst();
@@ -420,12 +422,12 @@ public class ElectrumServer {
                 Sha256Hash previousHash = input.getOutpoint().getHash();
                 BlockTransaction previousTransaction = wallet.getTransactions().get(previousHash);
 
-                if(previousTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
-                    throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
-                } else if(previousTransaction == null) {
+                if(previousTransaction == null) {
                     //No referenced transaction found, cannot check if spends from wallet
                     //This is fine so long as all referenced transactions have been returned, in which case this refers to a transaction that does not affect this wallet
                     continue;
+                } else if(previousTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
+                    throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
                 }
 
                 Optional<BlockTransactionHash> optionalTxHash = history.stream().filter(txHash -> txHash.getHash().equals(previousHash)).findFirst();
@@ -957,13 +959,22 @@ public class ElectrumServer {
                         if(outputReferences != null) {
                             for(BlockTransactionHash reference : outputReferences) {
                                 if(reference == UNFETCHABLE_BLOCK_TRANSACTION) {
-                                    blockTransactions.set(i, UNFETCHABLE_BLOCK_TRANSACTION);
+                                    if(blockTransactions.get(i) == null) {
+                                        blockTransactions.set(i, UNFETCHABLE_BLOCK_TRANSACTION);
+                                    }
                                 } else {
                                     BlockTransaction blockTransaction = transactionMap.get(reference.getHash());
-                                    for(TransactionInput input : blockTransaction.getTransaction().getInputs()) {
-                                        if(input.getOutpoint().getHash().equals(transaction.getTxId()) && input.getOutpoint().getIndex() == i) {
-                                            if(blockTransactions.set(i, blockTransaction) != null) {
-                                                throw new IllegalStateException("Double spend detected for output #" + i + " on hash " + reference.getHash());
+                                    if(blockTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
+                                        if(blockTransactions.get(i) == null) {
+                                            blockTransactions.set(i, UNFETCHABLE_BLOCK_TRANSACTION);
+                                        }
+                                    } else {
+                                        for(TransactionInput input : blockTransaction.getTransaction().getInputs()) {
+                                            if(input.getOutpoint().getHash().equals(transaction.getTxId()) && input.getOutpoint().getIndex() == i) {
+                                                BlockTransaction previousTx = blockTransactions.set(i, blockTransaction);
+                                                if(previousTx != null && !previousTx.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
+                                                    throw new IllegalStateException("Double spend detected for output #" + i + " on hash " + reference.getHash());
+                                                }
                                             }
                                         }
                                     }

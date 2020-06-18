@@ -30,10 +30,6 @@ public class OutputForm extends IndexedTransactionForm {
         return psbtOutput;
     }
 
-    public int getTransactionOutputIndex() {
-        return getTransaction().getOutputs().indexOf(transactionOutput);
-    }
-
     @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("output.fxml"));
