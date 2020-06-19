@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
@@ -27,7 +28,9 @@ import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public class AddressTreeTable extends TreeTableView<Entry> {
     public void initialize(NodeEntry rootEntry) {
@@ -91,6 +94,19 @@ public class AddressTreeTable extends TreeTableView<Entry> {
                 }
             }
         });
+    }
+
+    public void updateHistory(List<WalletNode> updatedNodes) {
+        NodeEntry rootEntry = (NodeEntry)getRoot().getValue();
+
+        for(WalletNode updatedNode : updatedNodes) {
+            Optional<Entry> optEntry = rootEntry.getChildren().stream().filter(childEntry -> ((NodeEntry)childEntry).getNode().equals(updatedNode)).findFirst();
+            if(optEntry.isPresent()) {
+                int index = rootEntry.getChildren().indexOf(optEntry.get());
+                NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
+                rootEntry.getChildren().set(index, nodeEntry);
+            }
+        }
     }
 
     private static void applyRowStyles(TreeTableCell<?, ?> cell, Entry entry) {
