@@ -515,6 +515,7 @@ public class AppController implements Initializable {
             tab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
             WalletForm walletForm = new WalletForm(storage, wallet);
+            EventManager.get().register(walletForm);
             controller.setWalletForm(walletForm);
 
             if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {

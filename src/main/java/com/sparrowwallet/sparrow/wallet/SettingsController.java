@@ -32,6 +32,8 @@ import tornadofx.control.Fieldset;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -72,6 +74,8 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private final SimpleIntegerProperty totalKeystores = new SimpleIntegerProperty(0);
 
+    private boolean initialising = true;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -90,9 +94,10 @@ public class SettingsController extends WalletFormController implements Initiali
                 scriptType.getSelectionModel().select(policyType.getDefaultScriptType());
             }
 
-            if(oldValue != null) {
+            if(!initialising) {
                 clearKeystoreTabs();
             }
+            initialising = false;
 
             multisigFieldset.setVisible(policyType.equals(PolicyType.MULTI));
             if(policyType.equals(PolicyType.MULTI)) {
@@ -133,7 +138,9 @@ public class SettingsController extends WalletFormController implements Initiali
                 keystore.setWalletModel(WalletModel.SPARROW);
                 walletForm.getWallet().getKeystores().add(keystore);
             }
-            walletForm.getWallet().setKeystores(walletForm.getWallet().getKeystores().subList(0, numCosigners.intValue()));
+            List<Keystore> newKeystoreList = new ArrayList<>(walletForm.getWallet().getKeystores().subList(0, numCosigners.intValue()));
+            walletForm.getWallet().getKeystores().clear();
+            walletForm.getWallet().getKeystores().addAll(newKeystoreList);
 
             for(int i = 0; i < walletForm.getWallet().getKeystores().size(); i++) {
                 Keystore keystore = walletForm.getWallet().getKeystores().get(i);
@@ -155,7 +162,8 @@ public class SettingsController extends WalletFormController implements Initiali
             keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
             totalKeystores.unbind();
             totalKeystores.setValue(0);
-            walletForm.revertAndRefresh();
+            walletForm.revert();
+            initialising = true;
             setFieldsFromWallet(walletForm.getWallet());
         });
 

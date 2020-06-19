@@ -60,7 +60,13 @@ public class WalletController extends WalletFormController implements Initializa
                     Node walletFunction = functionLoader.load();
                     walletFunction.setUserData(function);
                     WalletFormController controller = functionLoader.getController();
-                    controller.setWalletForm(getWalletForm());
+
+                    WalletForm walletForm = getWalletForm();
+                    if(function.equals(Function.SETTINGS)) {
+                        walletForm = new SettingsWalletForm(getWalletForm().getStorage(), getWalletForm().getWallet());
+                    }
+
+                    controller.setWalletForm(walletForm);
                     walletFunction.setViewOrder(1);
                     walletPane.getChildren().add(walletFunction);
                 }

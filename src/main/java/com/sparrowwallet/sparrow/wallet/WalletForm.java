@@ -4,32 +4,30 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
 import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
+import javafx.application.Platform;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class WalletForm {
     private final Storage storage;
-    private Wallet oldWallet;
-    private Wallet wallet;
+    protected Wallet wallet;
 
     private final List<NodeEntry> accountEntries = new ArrayList<>();
 
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
-        this.oldWallet = currentWallet.copy();
         this.wallet = currentWallet;
-        refreshHistory();
-
-        EventManager.get().register(this);
+        refreshHistory(wallet.getStoredBlockHeight());
     }
 
     public Wallet getWallet() {
@@ -44,39 +42,58 @@ public class WalletForm {
         return storage.getWalletFile();
     }
 
-    public void revertAndRefresh() {
-        this.wallet = oldWallet.copy();
-        refreshHistory();
+    public void revert() {
+        throw new UnsupportedOperationException("Only SettingsWalletForm supports revert");
     }
 
     public void save() throws IOException {
         storage.storeWallet(wallet);
-        oldWallet = wallet.copy();
     }
 
     public void saveAndRefresh() throws IOException {
-        //TODO: Detect trivial changes and don't clear history
         wallet.clearHistory();
         save();
-        refreshHistory();
+        refreshHistory(wallet.getStoredBlockHeight());
     }
 
-    public void refreshHistory() {
-        if(wallet.isValid()) {
+    public void refreshHistory(Integer blockHeight) {
+        Wallet previousWallet = wallet.copy();
+        if(wallet.isValid() && AppController.isOnline()) {
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet);
             historyService.setOnSucceeded(workerStateEvent -> {
-                //TODO: Show connected
-                try {
-                    storage.storeWallet(wallet);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                wallet.setStoredBlockHeight(blockHeight);
+                notifyIfHistoryChanged(previousWallet);
             });
             historyService.setOnFailed(workerStateEvent -> {
-                //TODO: Show not connected, log exception
+                workerStateEvent.getSource().getException().printStackTrace();
             });
             historyService.start();
         }
+    }
+
+    private void notifyIfHistoryChanged(Wallet previousWallet) {
+        List<WalletNode> historyChangedNodes = new ArrayList<>();
+        historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
+        historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
+
+        if(!historyChangedNodes.isEmpty()) {
+            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, historyChangedNodes)));
+        }
+    }
+
+    private List<WalletNode> getHistoryChangedNodes(Set<WalletNode> previousNodes, Set<WalletNode> currentNodes) {
+        List<WalletNode> changedNodes = new ArrayList<>();
+        for(WalletNode currentNode : currentNodes) {
+            Optional<WalletNode> optPreviousNode = previousNodes.stream().filter(node -> node.equals(currentNode)).findFirst();
+            if(optPreviousNode.isPresent()) {
+                WalletNode previousNode = optPreviousNode.get();
+                if(!currentNode.getTransactionOutputs().equals(previousNode.getTransactionOutputs())) {
+                    changedNodes.add(currentNode);
+                }
+            }
+        }
+
+        return changedNodes;
     }
 
     public NodeEntry getNodeEntry(KeyPurpose keyPurpose) {
@@ -123,7 +140,11 @@ public class WalletForm {
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
-        refreshHistory();
-        wallet.setStoredBlockHeight(event.getHeight());
+        refreshHistory(event.getHeight());
+    }
+
+    @Subscribe
+    public void connected(ConnectionEvent event) {
+        refreshHistory(event.getBlockHeight());
     }
 }
