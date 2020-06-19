@@ -6,10 +6,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.ConnectionEvent;
-import com.sparrowwallet.sparrow.event.NewBlockEvent;
-import com.sparrowwallet.sparrow.event.WalletChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
@@ -62,7 +59,7 @@ public class WalletForm {
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet);
             historyService.setOnSucceeded(workerStateEvent -> {
                 wallet.setStoredBlockHeight(blockHeight);
-                notifyIfHistoryChanged(previousWallet);
+                notifyIfChanged(previousWallet, blockHeight);
             });
             historyService.setOnFailed(workerStateEvent -> {
                 workerStateEvent.getSource().getException().printStackTrace();
@@ -71,13 +68,15 @@ public class WalletForm {
         }
     }
 
-    private void notifyIfHistoryChanged(Wallet previousWallet) {
+    private void notifyIfChanged(Wallet previousWallet, Integer blockHeight) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
         if(!historyChangedNodes.isEmpty()) {
             Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, historyChangedNodes)));
+        } else if(blockHeight != null && !blockHeight.equals(previousWallet.getStoredBlockHeight())) {
+            Platform.runLater(() -> EventManager.get().post(new WalletBlockHeightChangedEvent(wallet, blockHeight)));
         }
     }
 
