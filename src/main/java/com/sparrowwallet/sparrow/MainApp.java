@@ -19,8 +19,12 @@ import java.util.Optional;
 public class MainApp extends Application {
     public static final String APP_NAME = "Sparrow";
 
+    private Stage mainStage;
+
     @Override
     public void start(Stage stage) throws Exception {
+        this.mainStage = stage;
+
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
 
@@ -42,6 +46,7 @@ public class MainApp extends Application {
         FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("app.fxml"));
         Parent root = transactionLoader.load();
         AppController appController = transactionLoader.getController();
+        appController.setApplication(this);
 
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
@@ -55,6 +60,11 @@ public class MainApp extends Application {
         appController.initializeView();
 
         stage.show();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        mainStage.close();
     }
 
     public static void main(String[] args) {

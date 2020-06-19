@@ -53,6 +53,8 @@ public class AppController implements Initializable {
 
     public static final String DRAG_OVER_CLASS = "drag-over";
 
+    private MainApp application;
+
     @FXML
     private MenuItem exportWallet;
 
@@ -96,7 +98,7 @@ public class AppController implements Initializable {
     }
 
     void initializeView() {
-        //setOsxApplicationMenu();
+        setOsxApplicationMenu();
 
         rootStack.setOnDragOver(event -> {
             if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
@@ -199,6 +201,10 @@ public class AppController implements Initializable {
         });
 
         return connectionService;
+    }
+
+    public void setApplication(MainApp application) {
+        this.application = application;
     }
 
     private void setOsxApplicationMenu() {
@@ -345,6 +351,14 @@ public class AppController implements Initializable {
 
     public void closeTab(ActionEvent event) {
         tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
+    }
+
+    public void quit(ActionEvent event) {
+        try {
+            application.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void showTxHex(ActionEvent event) {

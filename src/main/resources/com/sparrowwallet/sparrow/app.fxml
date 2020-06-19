@@ -28,8 +28,10 @@
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
                         <SeparatorMenuItem styleClass="macHide" />
                         <MenuItem styleClass="macHide" mnemonicParsing="false" text="Preferences..." onAction="#openPreferences"/>
+                        <SeparatorMenuItem />
+                        <MenuItem mnemonicParsing="false" text="Close Tab" onAction="#closeTab"/>
                         <SeparatorMenuItem styleClass="macHide" />
-                        <MenuItem styleClass="macHide" mnemonicParsing="false" text="Close" onAction="#closeTab"/>
+                        <MenuItem styleClass="macHide" mnemonicParsing="false" text="Quit" onAction="#quit"/>
                     </items>
                 </Menu>
                 <Menu mnemonicParsing="false" text="View">
