@@ -19,6 +19,7 @@ public class WalletForm {
     private final Storage storage;
     protected Wallet wallet;
 
+    private WalletTransactionsEntry walletTransactionsEntry;
     private final List<NodeEntry> accountEntries = new ArrayList<>();
 
     public WalletForm(Storage storage, Wallet currentWallet) {
@@ -125,6 +126,14 @@ public class WalletForm {
         return freshEntry;
     }
 
+    public WalletTransactionsEntry getWalletTransactionsEntry() {
+        if(walletTransactionsEntry == null) {
+            walletTransactionsEntry = new WalletTransactionsEntry(wallet);
+        }
+
+        return walletTransactionsEntry;
+    }
+
     @Subscribe
     public void walletChanged(WalletChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
@@ -135,6 +144,14 @@ public class WalletForm {
                 e.printStackTrace();
             }
         }
+    }
+
+    @Subscribe
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        walletTransactionsEntry = null;
+        accountEntries.clear();
+
+        EventManager.get().post(new WalletNodesChangedEvent(wallet));
     }
 
     @Subscribe

@@ -17,7 +17,7 @@ public class NodeEntry extends Entry {
         super(node.getLabel(),
                 !node.getChildren().isEmpty() ?
                         node.getChildren().stream().map(childNode -> new NodeEntry(wallet, childNode)).collect(Collectors.toList()) :
-                        node.getTransactionOutputs().stream().map(txo -> new HashIndexEntry(wallet, txo, HashIndexEntry.Type.OUTPUT)).collect(Collectors.toList()));
+                        node.getTransactionOutputs().stream().map(txo -> new HashIndexEntry(wallet, txo, HashIndexEntry.Type.OUTPUT, node.getKeyPurpose())).collect(Collectors.toList()));
 
         this.wallet = wallet;
         this.node = node;

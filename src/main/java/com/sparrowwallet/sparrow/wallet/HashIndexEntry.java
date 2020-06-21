@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -9,17 +10,20 @@ import com.sparrowwallet.sparrow.event.WalletChangedEvent;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
-public class HashIndexEntry extends Entry {
+public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> {
     private final Wallet wallet;
     private final BlockTransactionHashIndex hashIndex;
     private final Type type;
+    private final KeyPurpose keyPurpose;
 
-    public HashIndexEntry(Wallet wallet, BlockTransactionHashIndex hashIndex, Type type) {
-        super(hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT)) : Collections.emptyList());
+    public HashIndexEntry(Wallet wallet, BlockTransactionHashIndex hashIndex, Type type, KeyPurpose keyPurpose) {
+        super(hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT, keyPurpose)) : Collections.emptyList());
         this.wallet = wallet;
         this.hashIndex = hashIndex;
         this.type = type;
+        this.keyPurpose = keyPurpose;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
             hashIndex.setLabel(newValue);
@@ -39,13 +43,18 @@ public class HashIndexEntry extends Entry {
         return type;
     }
 
+    public KeyPurpose getKeyPurpose() {
+        return keyPurpose;
+    }
+
     public BlockTransaction getBlockTransaction() {
         return wallet.getTransactions().get(hashIndex.getHash());
     }
 
     public String getDescription() {
-        return (type.equals(Type.INPUT) ? "Spent by " : "Received from ") +
-                getHashIndex().getHash().toString().substring(0, 8) + "...:" + getHashIndex().getIndex() +
+        return (type.equals(Type.INPUT) ? "Spent by input " : "Received from output ") +
+                getHashIndex().getHash().toString().substring(0, 8) + "...:" +
+                getHashIndex().getIndex() +
                 " on " + DateLabel.getShortDateFormat(getHashIndex().getDate());
     }
 
@@ -60,5 +69,34 @@ public class HashIndexEntry extends Entry {
 
     public enum Type {
         INPUT, OUTPUT
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HashIndexEntry that = (HashIndexEntry) o;
+        return wallet.equals(that.wallet) &&
+                hashIndex.equals(that.hashIndex) &&
+                type == that.type &&
+                keyPurpose == that.keyPurpose;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(wallet, hashIndex, type, keyPurpose);
+    }
+
+    @Override
+    public int compareTo(HashIndexEntry o) {
+        if(!getType().equals(o.getType())) {
+            return o.getType().ordinal() - getType().ordinal();
+        }
+
+        if(getHashIndex().getHeight() != o.getHashIndex().getHeight()) {
+            return o.getHashIndex().getHeight() - getHashIndex().getHeight();
+        }
+
+        return (int)o.getHashIndex().getIndex() - (int)getHashIndex().getIndex();
     }
 }

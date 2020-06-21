@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.IOException;
@@ -25,10 +27,11 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void saveAndRefresh() throws IOException {
-        //TODO: Detect trivial changes and don't clear history
-        walletCopy.clearHistory();
+        //TODO: Detect trivial changes and don't clear everything
+        walletCopy.clearNodes();
         wallet = walletCopy.copy();
         save();
+        EventManager.get().post(new WalletSettingsChangedEvent(wallet, getWalletFile()));
         refreshHistory(wallet.getStoredBlockHeight());
     }
 }

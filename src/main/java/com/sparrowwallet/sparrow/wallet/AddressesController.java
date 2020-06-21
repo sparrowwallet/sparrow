@@ -2,11 +2,11 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
@@ -28,22 +28,30 @@ public class AddressesController extends WalletFormController implements Initial
 
     @Override
     public void initializeView() {
-        Wallet wallet = walletForm.getWallet();
-
         receiveTable.initialize(getWalletForm().getNodeEntry(KeyPurpose.RECEIVE));
         changeTable.initialize(getWalletForm().getNodeEntry(KeyPurpose.CHANGE));
     }
 
     @Subscribe
-    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        List<WalletNode> receiveNodes = event.getReceiveNodes();
-        if(!receiveNodes.isEmpty()) {
-            receiveTable.updateHistory(receiveNodes);
+    public void walletNodesChanged(WalletNodesChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            receiveTable.updateAll(getWalletForm().getNodeEntry(KeyPurpose.RECEIVE));
+            changeTable.updateAll(getWalletForm().getNodeEntry(KeyPurpose.CHANGE));
         }
+    }
 
-        List<WalletNode> changeNodes = event.getChangeNodes();
-        if(!changeNodes.isEmpty()) {
-            changeTable.updateHistory(changeNodes);
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            List<WalletNode> receiveNodes = event.getReceiveNodes();
+            if(!receiveNodes.isEmpty()) {
+                receiveTable.updateHistory(receiveNodes);
+            }
+
+            List<WalletNode> changeNodes = event.getChangeNodes();
+            if(!changeNodes.isEmpty()) {
+                changeTable.updateHistory(changeNodes);
+            }
         }
     }
 }

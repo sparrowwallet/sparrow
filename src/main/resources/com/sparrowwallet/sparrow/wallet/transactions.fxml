@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import com.sparrowwallet.sparrow.control.TransactionsTreeTable?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane stylesheets="@transactions.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.TransactionsController">
+    <padding>
+        <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
+    </padding>
+    <top>
+        <Label styleClass="transactions-treetable-label" text="Transactions:"/>
+    </top>
+    <center>
+        <TransactionsTreeTable fx:id="transactionsTable" />
+    </center>
+</BorderPane>

@@ -276,7 +276,6 @@ public class SettingsController extends WalletFormController implements Initiali
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
-                    EventManager.get().post(new WalletSettingsChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
                 } catch (IOException e) {
                     AppController.showErrorDialog("Error saving wallet", e.getMessage());
                     revert.setDisable(false);
@@ -304,7 +303,6 @@ public class SettingsController extends WalletFormController implements Initiali
 
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();
-                        EventManager.get().post(new WalletSettingsChangedEvent(walletForm.getWallet(), walletForm.getWalletFile()));
                     } catch (Exception e) {
                         AppController.showErrorDialog("Error saving wallet", e.getMessage());
                         revert.setDisable(false);
