@@ -274,12 +274,15 @@ public class ElectrumServer {
             references.addAll(nodeReferences);
         }
 
-        Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(references);
-        Map<Sha256Hash, BlockTransaction> transactionMap = getTransactions(references, blockHeaderMap);
+        Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
+        if(!references.isEmpty()) {
+            Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(references);
+            transactionMap = getTransactions(references, blockHeaderMap);
+        }
 
         if(!transactionMap.equals(wallet.getTransactions())) {
             for(BlockTransaction blockTx : transactionMap.values()) {
-                Optional<String> optionalLabel = wallet.getTransactions().values().stream().filter(oldBlTx -> oldBlTx.getHash().equals(blockTx.getHash())).map(BlockTransaction::getLabel).findFirst();
+                Optional<String> optionalLabel = wallet.getTransactions().values().stream().filter(oldBlTx -> oldBlTx.getHash().equals(blockTx.getHash())).map(BlockTransaction::getLabel).filter(Objects::nonNull).findFirst();
                 optionalLabel.ifPresent(blockTx::setLabel);
             }
 

@@ -25,7 +25,7 @@ public class WalletForm {
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
         this.wallet = currentWallet;
-        refreshHistory(wallet.getStoredBlockHeight());
+        refreshHistory(AppController.getCurrentBlockHeight());
     }
 
     public Wallet getWallet() {
@@ -51,7 +51,7 @@ public class WalletForm {
     public void saveAndRefresh() throws IOException {
         wallet.clearHistory();
         save();
-        refreshHistory(wallet.getStoredBlockHeight());
+        refreshHistory(AppController.getCurrentBlockHeight());
     }
 
     public void refreshHistory(Integer blockHeight) {
@@ -136,31 +136,36 @@ public class WalletForm {
 
     @Subscribe
     public void walletLabelChanged(WalletEntryLabelChangedEvent event) {
-        backgroundSaveWallet(event);
+        if(event.getWallet().equals(wallet)) {
+            backgroundSaveWallet(event);
+        }
     }
 
     @Subscribe
     public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
-        backgroundSaveWallet(event);
+        if(event.getWallet().equals(wallet)) {
+            backgroundSaveWallet(event);
+        }
     }
 
     private void backgroundSaveWallet(WalletChangedEvent event) {
-        if(event.getWallet().equals(wallet)) {
-            try {
-                save();
-            } catch (IOException e) {
-                //Background save failed
-                e.printStackTrace();
-            }
+        try {
+            save();
+        } catch (IOException e) {
+            //Background save failed
+            e.printStackTrace();
         }
     }
 
     @Subscribe
     public void walletSettingsChanged(WalletSettingsChangedEvent event) {
-        walletTransactionsEntry = null;
-        accountEntries.clear();
-
-        EventManager.get().post(new WalletNodesChangedEvent(wallet));
+        if(event.getWalletFile().equals(storage.getWalletFile())) {
+            wallet = event.getWallet();
+            walletTransactionsEntry = null;
+            accountEntries.clear();
+            EventManager.get().post(new WalletNodesChangedEvent(wallet));
+            refreshHistory(AppController.getCurrentBlockHeight());
+        }
     }
 
     @Subscribe

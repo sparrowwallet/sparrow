@@ -32,6 +32,5 @@ public class SettingsWalletForm extends WalletForm {
         wallet = walletCopy.copy();
         save();
         EventManager.get().post(new WalletSettingsChangedEvent(wallet, getWalletFile()));
-        refreshHistory(wallet.getStoredBlockHeight());
     }
 }

@@ -37,7 +37,7 @@ public class WalletTransactionsEntry extends Entry {
     }
 
     public void updateTransactions() {
-        List<Entry> current = getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
+        List<Entry> current = getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).peek(entry -> entry.setParent(this)).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
         for(Entry currentEntry : current) {
             int index = previous.indexOf(currentEntry);
@@ -57,7 +57,9 @@ public class WalletTransactionsEntry extends Entry {
         getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.RECEIVE));
         getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.CHANGE));
 
-        return walletTransactionMap.values();
+        List<WalletTransaction> walletTxList = new ArrayList<>(walletTransactionMap.values());
+        Collections.reverse(walletTxList);
+        return walletTxList;
     }
 
     private static void getWalletTransactions(Wallet wallet, Map<BlockTransaction, WalletTransaction> walletTransactionMap, WalletNode purposeNode) {

@@ -5,6 +5,7 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.scene.control.Label;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
@@ -49,6 +50,7 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         balanceCol.setSortable(true);
         getColumns().add(balanceCol);
 
+        setPlaceholder(new Label("No transactions"));
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
@@ -59,6 +61,12 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);
         rootItem.setExpanded(true);
+
+        if(getColumns().size() > 0) {
+            TreeTableColumn<Entry, ?> dateCol = getColumns().get(0);
+            getSortOrder().add(dateCol);
+            dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
+        }
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
