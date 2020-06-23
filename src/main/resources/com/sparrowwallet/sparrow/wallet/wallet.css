@@ -47,7 +47,11 @@
     -fx-text-fill: #a0a1a7;
 }
 
-.tree-table-row-cell:selected .hashindex-row {
+.transaction-row.confirming {
+    -fx-text-fill: #696c77;
+}
+
+.tree-table-row-cell:selected .hashindex-row, .tree-table-row-cell:selected .transaction-row {
     -fx-text-fill: white;
 }
 
@@ -61,6 +65,27 @@
 
 .amount-cell.spent .text {
     -fx-strikethrough: true;
+}
+
+.amount-cell .confirmation-progress {
+    -fx-pref-width: 14;
+    -fx-padding: 0 8 0 0;
+}
+
+.confirmation-progress-circle, .confirmation-progress-tick {
+    -fx-stroke: -fx-text-base-color;
+}
+
+.tree-table-row-cell:selected .confirmation-progress-circle, .tree-table-row-cell:selected .confirmation-progress-tick {
+    -fx-stroke: white;
+}
+
+.confirmation-progress-arc {
+    -fx-fill: -fx-text-base-color;
+}
+
+.tree-table-row-cell:selected .confirmation-progress-arc {
+    -fx-fill: white;
 }
 
 .entry-cell .button {
@@ -77,4 +102,8 @@
 
 .entry-cell:hover .button .label .text {
     -fx-fill: -fx-text-base-color;
+}
+
+.tree-table-row-cell:selected .entry-cell:hover .button .label .text {
+    -fx-fill: white;
 }

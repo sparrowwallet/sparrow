@@ -1,20 +1,22 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.WalletChangedEvent;
-import org.jetbrains.annotations.NotNull;
+import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.IntegerPropertyBase;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class TransactionEntry extends Entry implements Comparable<TransactionEntry> {
-    private static final int BLOCKS_TO_CONFIRM = 6;
+    public static final int BLOCKS_TO_CONFIRM = 6;
+    public static final int BLOCKS_TO_FULLY_CONFIRM = 100;
 
     private final Wallet wallet;
     private final BlockTransaction blockTransaction;
@@ -27,8 +29,13 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
             blockTransaction.setLabel(newValue);
-            EventManager.get().post(new WalletChangedEvent(wallet));
+            EventManager.get().post(new WalletEntryLabelChangedEvent(wallet, this));
         });
+
+        setConfirmations(calculateConfirmations());
+        if(isFullyConfirming()) {
+            EventManager.get().register(this);
+        }
     }
 
     public Wallet getWallet() {
@@ -66,12 +73,27 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         return getConfirmations() < BLOCKS_TO_CONFIRM;
     }
 
-    public int getConfirmations() {
+    public boolean isFullyConfirming() {
+        return getConfirmations() < BLOCKS_TO_FULLY_CONFIRM;
+    }
+
+    public int calculateConfirmations() {
         if(blockTransaction.getHeight() == 0) {
             return 0;
         }
 
         return wallet.getStoredBlockHeight() - blockTransaction.getHeight() + 1;
+    }
+
+    public String getConfirmationsDescription() {
+        int confirmations = getConfirmations();
+        if(confirmations == 0) {
+            return "Unconfirmed in mempool";
+        } else if(confirmations < BLOCKS_TO_FULLY_CONFIRM) {
+            return confirmations + " confirmation" + (confirmations == 1 ? "" : "s");
+        } else {
+            return BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
+        }
     }
 
     private static List<Entry> createChildEntries(Wallet wallet, Map<BlockTransactionHashIndex, KeyPurpose> incoming, Map<BlockTransactionHashIndex, KeyPurpose> outgoing) {
@@ -116,7 +138,51 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     }
 
     @Override
-    public int compareTo(@NotNull TransactionEntry other) {
+    public int compareTo(TransactionEntry other) {
         return blockTransaction.compareTo(other.blockTransaction);
+    }
+
+    /**
+     * Defines the number of confirmations
+     */
+    private IntegerProperty confirmations;
+
+    public final void setConfirmations(int value) {
+        if(confirmations != null || value != 0) {
+            confirmationsProperty().set(value);
+        }
+    }
+
+    public final int getConfirmations() {
+        return confirmations == null ? 0 : confirmations.get();
+    }
+
+    public final IntegerProperty confirmationsProperty() {
+        if(confirmations == null) {
+            confirmations = new IntegerPropertyBase(0) {
+
+                @Override
+                public Object getBean() {
+                    return TransactionEntry.this;
+                }
+
+                @Override
+                public String getName() {
+                    return "confirmations";
+                }
+            };
+        }
+        return confirmations;
+    }
+
+    @Subscribe
+    public void blockHeightChanged(WalletBlockHeightChangedEvent event) {
+        if(getWallet().equals(event.getWallet())) {
+            setConfirmations(calculateConfirmations());
+
+            if(!isFullyConfirming()) {
+                EventManager.get().unregister(this);
+            }
+        }
     }
 }

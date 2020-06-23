@@ -13,7 +13,7 @@
         <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
     </padding>
     <top>
-        <Label styleClass="transactions-treetable-label" text="Transactions:"/>
+        <Label styleClass="transactions-treetable-label" text="Transactions:" /> <!-- onMouseClicked="#advanceBlock" -->
     </top>
     <center>
         <TransactionsTreeTable fx:id="transactionsTable" />

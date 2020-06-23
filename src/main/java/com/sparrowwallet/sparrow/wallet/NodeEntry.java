@@ -5,7 +5,7 @@ import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 
 import java.util.stream.Collectors;
 
@@ -24,7 +24,7 @@ public class NodeEntry extends Entry {
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
             node.setLabel(newValue);
-            EventManager.get().post(new WalletChangedEvent(wallet));
+            EventManager.get().post(new WalletEntryLabelChangedEvent(wallet, this));
         });
     }
 

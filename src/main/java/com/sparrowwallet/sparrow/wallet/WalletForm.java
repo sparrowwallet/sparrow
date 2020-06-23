@@ -75,7 +75,7 @@ public class WalletForm {
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
         if(!historyChangedNodes.isEmpty()) {
-            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, historyChangedNodes)));
+            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, blockHeight, historyChangedNodes)));
         } else if(blockHeight != null && !blockHeight.equals(previousWallet.getStoredBlockHeight())) {
             Platform.runLater(() -> EventManager.get().post(new WalletBlockHeightChangedEvent(wallet, blockHeight)));
         }
@@ -135,7 +135,16 @@ public class WalletForm {
     }
 
     @Subscribe
-    public void walletChanged(WalletChangedEvent event) {
+    public void walletLabelChanged(WalletEntryLabelChangedEvent event) {
+        backgroundSaveWallet(event);
+    }
+
+    @Subscribe
+    public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
+        backgroundSaveWallet(event);
+    }
+
+    private void backgroundSaveWallet(WalletChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
             try {
                 save();

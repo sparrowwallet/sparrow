@@ -3,10 +3,12 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
+import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.input.MouseEvent;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -38,5 +40,13 @@ public class TransactionsController extends WalletFormController implements Init
         if(event.getWallet().equals(walletForm.getWallet())) {
             transactionsTable.updateHistory(event.getHistoryChangedNodes());
         }
+    }
+
+    //TODO: Remove
+    public void advanceBlock(MouseEvent event) {
+        Integer currentBlock = getWalletForm().getWallet().getStoredBlockHeight();
+        getWalletForm().getWallet().setStoredBlockHeight(currentBlock+1);
+        System.out.println("Advancing from " + currentBlock + " to " + getWalletForm().getWallet().getStoredBlockHeight());
+        EventManager.get().post(new WalletBlockHeightChangedEvent(getWalletForm().getWallet(), currentBlock+1));
     }
 }

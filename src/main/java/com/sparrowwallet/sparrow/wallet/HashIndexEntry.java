@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.DateLabel;
-import com.sparrowwallet.sparrow.event.WalletChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +27,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
             hashIndex.setLabel(newValue);
-            EventManager.get().post(new WalletChangedEvent(wallet));
+            EventManager.get().post(new WalletEntryLabelChangedEvent(wallet, this));
         });
     }
 

@@ -2,17 +2,16 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.transaction.TransactionView;
-import com.sparrowwallet.sparrow.wallet.*;
+import com.sparrowwallet.sparrow.wallet.Entry;
+import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
+import com.sparrowwallet.sparrow.wallet.NodeEntry;
+import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -185,6 +184,15 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
         if(entry != null) {
             if(entry instanceof TransactionEntry) {
                 cell.getStyleClass().add("transaction-row");
+                TransactionEntry transactionEntry = (TransactionEntry)entry;
+                if(transactionEntry.isConfirming()) {
+                    cell.getStyleClass().add("confirming");
+                    transactionEntry.confirmationsProperty().addListener((observable, oldValue, newValue) -> {
+                        if(!transactionEntry.isConfirming()) {
+                            cell.getStyleClass().remove("confirming");
+                        }
+                    });
+                }
             } else if(entry instanceof NodeEntry) {
                 cell.getStyleClass().add("node-row");
             } else if(entry instanceof HashIndexEntry) {
