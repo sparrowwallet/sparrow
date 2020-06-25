@@ -70,6 +70,7 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
+        //Recalculate from scratch and update according - any changes may affect the balance of other transactions
         WalletTransactionsEntry rootEntry = (WalletTransactionsEntry)getRoot().getValue();
         rootEntry.updateTransactions();
         sort();

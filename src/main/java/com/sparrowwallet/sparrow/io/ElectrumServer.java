@@ -142,13 +142,18 @@ public class ElectrumServer {
         getHistory(wallet, purposeNode.getChildren(), nodeTransactionMap, 0);
 
         int historySize = purposeNode.getChildren().size();
-        int gapLimitSize = nodeTransactionMap.size() + Wallet.DEFAULT_LOOKAHEAD;
+        int gapLimitSize = getGapLimitSize(nodeTransactionMap);
         while(historySize < gapLimitSize) {
             purposeNode.fillToIndex(gapLimitSize - 1);
             getHistory(wallet, purposeNode.getChildren(), nodeTransactionMap, historySize);
             historySize = purposeNode.getChildren().size();
-            gapLimitSize = nodeTransactionMap.size() + Wallet.DEFAULT_LOOKAHEAD;
+            gapLimitSize = getGapLimitSize(nodeTransactionMap);
         }
+    }
+
+    private int getGapLimitSize(Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
+        int highestIndex = nodeTransactionMap.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(entry -> entry.getKey().getIndex()).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
+        return highestIndex + Wallet.DEFAULT_LOOKAHEAD + 1;
     }
 
     public void getHistory(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
@@ -188,7 +193,7 @@ public class ElectrumServer {
                     Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).collect(Collectors.toCollection(TreeSet::new));
                     Set<BlockTransactionHash> existingReferences = nodeTransactionMap.get(node);
 
-                    if(existingReferences == null && !references.isEmpty()) {
+                    if(existingReferences == null) {
                         nodeTransactionMap.put(node, references);
                     } else {
                         for(BlockTransactionHash reference : references) {
