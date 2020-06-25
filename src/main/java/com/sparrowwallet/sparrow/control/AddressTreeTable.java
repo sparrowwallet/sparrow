@@ -92,6 +92,7 @@ public class AddressTreeTable extends TreeTableView<Entry> {
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
+        //We only ever add or replace child nodes - never remove in order to keep a full sequence
         NodeEntry rootEntry = (NodeEntry)getRoot().getValue();
 
         for(WalletNode updatedNode : updatedNodes) {
