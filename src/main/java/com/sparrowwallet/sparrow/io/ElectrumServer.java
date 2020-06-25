@@ -482,7 +482,7 @@ public class ElectrumServer {
 
         if(!transactionOutputs.equals(node.getTransactionOutputs())) {
             for(BlockTransactionHashIndex txo : transactionOutputs) {
-                Optional<String> optionalLabel = node.getTransactionOutputs().stream().filter(oldTxo -> oldTxo.getHash().equals(txo.getHash()) && oldTxo.getIndex() == txo.getIndex()).map(BlockTransactionHash::getLabel).findFirst();
+                Optional<String> optionalLabel = node.getTransactionOutputs().stream().filter(oldTxo -> oldTxo.getHash().equals(txo.getHash()) && oldTxo.getIndex() == txo.getIndex() && oldTxo.getLabel() != null).map(BlockTransactionHash::getLabel).findFirst();
                 optionalLabel.ifPresent(txo::setLabel);
             }
 
