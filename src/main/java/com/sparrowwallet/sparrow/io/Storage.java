@@ -366,7 +366,10 @@ public class Storage {
         @Override
         public WalletNode deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             WalletNode node = getGson(false).fromJson(json, typeOfT);
+            node.parseDerivation();
+
             for(WalletNode childNode : node.getChildren()) {
+                childNode.parseDerivation();
                 if(childNode.getChildren() == null) {
                     childNode.setChildren(new TreeSet<>());
                 }

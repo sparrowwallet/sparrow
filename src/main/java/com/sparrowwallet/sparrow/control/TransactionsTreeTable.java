@@ -34,17 +34,17 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         labelCol.setSortable(true);
         getColumns().add(labelCol);
 
-        TreeTableColumn<Entry, Long> amountCol = new TreeTableColumn<>("Value");
-        amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Long> param) -> {
+        TreeTableColumn<Entry, Number> amountCol = new TreeTableColumn<>("Value");
+        amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getValue());
         });
         amountCol.setCellFactory(p -> new AmountCell());
         amountCol.setSortable(true);
         getColumns().add(amountCol);
 
-        TreeTableColumn<Entry, Long> balanceCol = new TreeTableColumn<>("Balance");
-        balanceCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Long> param) -> {
-            return new ReadOnlyObjectWrapper<>(param.getValue().getValue() instanceof TransactionEntry ? ((TransactionEntry)param.getValue().getValue()).getBalance() : null);
+        TreeTableColumn<Entry, Number> balanceCol = new TreeTableColumn<>("Balance");
+        balanceCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
+            return param.getValue().getValue() instanceof TransactionEntry ? ((TransactionEntry)param.getValue().getValue()).balanceProperty() : new ReadOnlyObjectWrapper<>(null);
         });
         balanceCol.setCellFactory(p -> new AmountCell());
         balanceCol.setSortable(true);
@@ -62,7 +62,7 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         setRoot(rootItem);
         rootItem.setExpanded(true);
 
-        if(getColumns().size() > 0) {
+        if(getColumns().size() > 0 && getSortOrder().isEmpty()) {
             TreeTableColumn<Entry, ?> dateCol = getColumns().get(0);
             getSortOrder().add(dateCol);
             dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
@@ -72,5 +72,6 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
     public void updateHistory(List<WalletNode> updatedNodes) {
         WalletTransactionsEntry rootEntry = (WalletTransactionsEntry)getRoot().getValue();
         rootEntry.updateTransactions();
+        sort();
     }
 }

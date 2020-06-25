@@ -176,6 +176,7 @@ public class AppController implements Initializable {
         openTransactionIdItem.disableProperty().bind(onlineProperty.not());
 
         openWalletFile(new File("/Users/scy/.sparrow/wallets/sparta.json"));
+        openWalletFile(new File("/Users/scy/.sparrow/wallets/sparta-test.json"));
     }
 
     private ElectrumServer.ConnectionService createConnectionService() {

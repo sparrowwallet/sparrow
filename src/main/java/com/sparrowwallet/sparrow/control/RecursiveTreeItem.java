@@ -50,7 +50,11 @@ public class RecursiveTreeItem<T> extends TreeItem<T> {
             while(change.next()){
 
                 if(change.wasAdded()){
-                    change.getAddedSubList().forEach(t-> RecursiveTreeItem.this.getChildren().add(change.getFrom(), new RecursiveTreeItem<>(t, this.graphicsFactory, childrenFactory)));
+                    if(change.getFrom() >= RecursiveTreeItem.this.getChildren().size()) {
+                        change.getAddedSubList().forEach(t-> RecursiveTreeItem.this.getChildren().add(new RecursiveTreeItem<>(t, this.graphicsFactory, childrenFactory)));
+                    } else {
+                        change.getAddedSubList().forEach(t-> RecursiveTreeItem.this.getChildren().add(change.getFrom(), new RecursiveTreeItem<>(t, this.graphicsFactory, childrenFactory)));
+                    }
                 }
 
                 if(change.wasRemoved()){

@@ -43,8 +43,8 @@ public class AddressTreeTable extends TreeTableView<Entry> {
         labelCol.setSortable(false);
         getColumns().add(labelCol);
 
-        TreeTableColumn<Entry, Long> amountCol = new TreeTableColumn<>("Value");
-        amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Long> param) -> {
+        TreeTableColumn<Entry, Number> amountCol = new TreeTableColumn<>("Value");
+        amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getValue());
         });
         amountCol.setCellFactory(p -> new AmountCell());
@@ -53,6 +53,9 @@ public class AddressTreeTable extends TreeTableView<Entry> {
 
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+
+        addressCol.setSortType(TreeTableColumn.SortType.ASCENDING);
+        getSortOrder().add(addressCol);
 
         Integer highestUsedIndex = rootEntry.getNode().getHighestUsedIndex();
         if(highestUsedIndex != null) {
@@ -80,18 +83,29 @@ public class AddressTreeTable extends TreeTableView<Entry> {
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);
         rootItem.setExpanded(true);
+
+        if(getColumns().size() > 0 && getSortOrder().isEmpty()) {
+            TreeTableColumn<Entry, ?> addressCol = getColumns().get(0);
+            getSortOrder().add(addressCol);
+            addressCol.setSortType(TreeTableColumn.SortType.ASCENDING);
+        }
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
         NodeEntry rootEntry = (NodeEntry)getRoot().getValue();
 
         for(WalletNode updatedNode : updatedNodes) {
+            NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
+
             Optional<Entry> optEntry = rootEntry.getChildren().stream().filter(childEntry -> ((NodeEntry)childEntry).getNode().equals(updatedNode)).findFirst();
             if(optEntry.isPresent()) {
                 int index = rootEntry.getChildren().indexOf(optEntry.get());
-                NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
                 rootEntry.getChildren().set(index, nodeEntry);
+            } else {
+                rootEntry.getChildren().add(nodeEntry);
             }
         }
+
+        sort();
     }
 }

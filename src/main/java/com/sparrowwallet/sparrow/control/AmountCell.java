@@ -11,14 +11,14 @@ import javafx.scene.layout.Region;
 
 import java.util.Locale;
 
-class AmountCell extends TreeTableCell<Entry, Long> {
+class AmountCell extends TreeTableCell<Entry, Number> {
     public AmountCell() {
         super();
         getStyleClass().add("amount-cell");
     }
 
     @Override
-    protected void updateItem(Long amount, boolean empty) {
+    protected void updateItem(Number amount, boolean empty) {
         super.updateItem(amount, empty);
 
         if(empty || amount == null) {
@@ -28,7 +28,7 @@ class AmountCell extends TreeTableCell<Entry, Long> {
             Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
             EntryCell.applyRowStyles(this, entry);
 
-            String satsValue = String.format(Locale.ENGLISH, "%,d", amount);
+            String satsValue = String.format(Locale.ENGLISH, "%,d", amount.longValue());
             final String btcValue = CoinLabel.getBTCFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
 
             if(entry instanceof TransactionEntry) {
@@ -71,7 +71,6 @@ class AmountCell extends TreeTableCell<Entry, Long> {
             }
 
             setText(satsValue);
-
         }
     }
 }

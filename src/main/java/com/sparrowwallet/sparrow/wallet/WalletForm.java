@@ -90,6 +90,8 @@ public class WalletForm {
                 if(!currentNode.getTransactionOutputs().equals(previousNode.getTransactionOutputs())) {
                     changedNodes.add(currentNode);
                 }
+            } else {
+                changedNodes.add(currentNode);
             }
         }
 

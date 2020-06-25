@@ -9,7 +9,7 @@ import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 
 import java.util.stream.Collectors;
 
-public class NodeEntry extends Entry {
+public class NodeEntry extends Entry implements Comparable<NodeEntry> {
     private final Wallet wallet;
     private final WalletNode node;
 
@@ -55,5 +55,10 @@ public class NodeEntry extends Entry {
         }
 
         return node.getUnspentValue();
+    }
+
+    @Override
+    public int compareTo(NodeEntry other) {
+        return node.compareTo(other.node);
     }
 }

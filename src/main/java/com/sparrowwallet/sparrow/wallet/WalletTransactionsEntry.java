@@ -5,6 +5,8 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.LongPropertyBase;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,40 +17,42 @@ public class WalletTransactionsEntry extends Entry {
     public WalletTransactionsEntry(Wallet wallet) {
         super(wallet.getName(), getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
         this.wallet = wallet;
-        getChildren().forEach(entry -> ((TransactionEntry)entry).setParent(this));
+        calculateBalances();
     }
 
     @Override
     public Long getValue() {
-        return getBalance(null);
+        return getBalance();
     }
 
-    protected Long getBalance(TransactionEntry transactionEntry) {
+    protected void calculateBalances() {
         long balance = 0L;
-        for(Entry entry : getChildren()) {
-            balance += entry.getValue();
 
-            if(entry == transactionEntry) {
-                return balance;
-            }
+        //Note transaction entries must be in ascending order. This sorting is ultimately done according to BlockTransactions' comparator
+        getChildren().sort(Comparator.comparing(TransactionEntry.class::cast));
+
+        for(Entry entry : getChildren()) {
+            TransactionEntry transactionEntry = (TransactionEntry)entry;
+            balance += entry.getValue();
+            transactionEntry.setBalance(balance);
         }
 
-        return balance;
+        setBalance(balance);
     }
 
     public void updateTransactions() {
-        List<Entry> current = getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).peek(entry -> entry.setParent(this)).collect(Collectors.toList());
+        List<Entry> current = getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
-        for(Entry currentEntry : current) {
-            int index = previous.indexOf(currentEntry);
-            if (index > -1) {
-                getChildren().set(index, currentEntry);
-            } else {
-                getChildren().add(currentEntry);
-            }
-        }
 
-        getChildren().sort(Comparator.comparing(TransactionEntry.class::cast));
+        List<Entry> entriesAdded = new ArrayList<>(current);
+        entriesAdded.removeAll(previous);
+        getChildren().addAll(entriesAdded);
+
+        List<Entry> entriesRemoved = new ArrayList<>(previous);
+        entriesRemoved.removeAll(current);
+        getChildren().removeAll(entriesRemoved);
+
+        calculateBalances();
     }
 
     private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet) {
@@ -57,9 +61,7 @@ public class WalletTransactionsEntry extends Entry {
         getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.RECEIVE));
         getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.CHANGE));
 
-        List<WalletTransaction> walletTxList = new ArrayList<>(walletTransactionMap.values());
-        Collections.reverse(walletTxList);
-        return walletTxList;
+        return new ArrayList<>(walletTransactionMap.values());
     }
 
     private static void getWalletTransactions(Wallet wallet, Map<BlockTransaction, WalletTransaction> walletTransactionMap, WalletNode purposeNode) {
@@ -85,6 +87,39 @@ public class WalletTransactionsEntry extends Entry {
                 }
             }
         }
+    }
+
+    /**
+     * Defines the wallet balance in total.
+     */
+    private LongProperty balance;
+
+    public final void setBalance(long value) {
+        if(balance != null || value != 0) {
+            balanceProperty().set(value);
+        }
+    }
+
+    public final long getBalance() {
+        return balance == null ? 0L : balance.get();
+    }
+
+    public final LongProperty balanceProperty() {
+        if(balance == null) {
+            balance = new LongPropertyBase(0L) {
+
+                @Override
+                public Object getBean() {
+                    return WalletTransactionsEntry.this;
+                }
+
+                @Override
+                public String getName() {
+                    return "balance";
+                }
+            };
+        }
+        return balance;
     }
 
     private static class WalletTransaction {

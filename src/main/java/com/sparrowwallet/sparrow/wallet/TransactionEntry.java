@@ -10,6 +10,8 @@ import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.IntegerPropertyBase;
+import javafx.beans.property.LongProperty;
+import javafx.beans.property.LongPropertyBase;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,7 +22,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
     private final Wallet wallet;
     private final BlockTransaction blockTransaction;
-    private WalletTransactionsEntry parent;
 
     public TransactionEntry(Wallet wallet, BlockTransaction blockTransaction, Map<BlockTransactionHashIndex, KeyPurpose> inputs, Map<BlockTransactionHashIndex, KeyPurpose> outputs) {
         super(blockTransaction.getLabel(), createChildEntries(wallet, inputs, outputs));
@@ -42,10 +43,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         return wallet;
     }
 
-    void setParent(WalletTransactionsEntry walletTransactionsEntry) {
-        this.parent = walletTransactionsEntry;
-    }
-
     public BlockTransaction getBlockTransaction() {
         return blockTransaction;
     }
@@ -63,10 +60,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         }
 
         return value;
-    }
-
-    public Long getBalance() {
-        return parent.getBalance(this);
     }
 
     public boolean isConfirming() {
@@ -128,13 +121,12 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         if (o == null || getClass() != o.getClass()) return false;
         TransactionEntry that = (TransactionEntry) o;
         return wallet.equals(that.wallet) &&
-                blockTransaction.equals(that.blockTransaction) &&
-                parent.equals(that.parent);
+                blockTransaction.equals(that.blockTransaction);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(wallet, blockTransaction, parent);
+        return Objects.hash(wallet, blockTransaction);
     }
 
     @Override
@@ -173,6 +165,39 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             };
         }
         return confirmations;
+    }
+
+    /**
+     * Defines the wallet balance at the historical point of this transaction, as defined by BlockTransaction's compareTo method.
+     */
+    private LongProperty balance;
+
+    public final void setBalance(long value) {
+        if(balance != null || value != 0) {
+            balanceProperty().set(value);
+        }
+    }
+
+    public final long getBalance() {
+        return balance == null ? 0L : balance.get();
+    }
+
+    public final LongProperty balanceProperty() {
+        if(balance == null) {
+            balance = new LongPropertyBase(0L) {
+
+                @Override
+                public Object getBean() {
+                    return TransactionEntry.this;
+                }
+
+                @Override
+                public String getName() {
+                    return "balance";
+                }
+            };
+        }
+        return balance;
     }
 
     @Subscribe

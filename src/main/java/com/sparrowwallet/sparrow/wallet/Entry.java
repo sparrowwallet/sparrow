@@ -11,7 +11,7 @@ public abstract class Entry {
     private final ObservableList<Entry> children;
 
     public Entry(String label, List<Entry> entries) {
-        this.labelProperty = new SimpleStringProperty(label);
+        this.labelProperty = new SimpleStringProperty(this, "label", label);
         this.children = FXCollections.observableList(entries);
     }
 
