@@ -529,6 +529,8 @@ public class AppController implements Initializable {
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             tab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
+
+            //Note that only one WalletForm is created per wallet tab, and registered to listen for events. All wallet controllers (except SettingsController) share this instance.
             WalletForm walletForm = new WalletForm(storage, wallet);
             EventManager.get().register(walletForm);
             controller.setWalletForm(walletForm);

@@ -7,6 +7,10 @@ import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.IOException;
 
+/**
+ * This class extends WalletForm to allow rollback of wallet changes. It is used exclusively by SettingsController for this purpose.
+ * Note it should not be registered to listen for events - this will cause double wallet updates.
+ */
 public class SettingsWalletForm extends WalletForm {
     private Wallet walletCopy;
 

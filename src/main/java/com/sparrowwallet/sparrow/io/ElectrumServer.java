@@ -141,7 +141,9 @@ public class ElectrumServer {
         WalletNode purposeNode = wallet.getNode(keyPurpose);
         getHistory(wallet, purposeNode.getChildren(), nodeTransactionMap, 0);
 
+        //Because node children are added sequentially in WalletNode.fillToIndex, we can simply look at the number of children to determine the highest filled index
         int historySize = purposeNode.getChildren().size();
+        //The gap limit size takes the highest used index in the retrieved history and adds the gap limit (plus one to be comparable to the number of children since index is zero based)
         int gapLimitSize = getGapLimitSize(nodeTransactionMap);
         while(historySize < gapLimitSize) {
             purposeNode.fillToIndex(gapLimitSize - 1);
