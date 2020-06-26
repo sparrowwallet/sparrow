@@ -1,12 +1,14 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
+import org.controlsfx.glyphfont.Glyph;
 
 public class AddressCell extends TreeTableCell<Entry, Entry> {
     public AddressCell() {
@@ -32,10 +34,37 @@ public class AddressCell extends TreeTableCell<Entry, Entry> {
                 setText(address.toString());
                 setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor()));
                 Tooltip tooltip = new Tooltip();
-                tooltip.setText(utxoEntry.getNode().getDerivationPath());
+                tooltip.setText(getTooltipText(utxoEntry));
                 setTooltip(tooltip);
+
+                if(utxoEntry.isDuplicateAddress()) {
+                    setGraphic(getDuplicateGlyph());
+                } else {
+                    setGraphic(null);
+                }
+
+                utxoEntry.duplicateAddressProperty().addListener((observable, oldValue, newValue) -> {
+                    if(newValue) {
+                        setGraphic(getDuplicateGlyph());
+                        Tooltip tt = new Tooltip();
+                        tt.setText(getTooltipText(utxoEntry));
+                        setTooltip(tt);
+                    } else {
+                        setGraphic(null);
+                    }
+                });
             }
-            setGraphic(null);
         }
+    }
+
+    private String getTooltipText(UtxoEntry utxoEntry) {
+        return utxoEntry.getNode().getDerivationPath() + (utxoEntry.isDuplicateAddress() ? " (Duplicate address)" : "");
+    }
+
+    private static Glyph getDuplicateGlyph() {
+        Glyph duplicateGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+        duplicateGlyph.getStyleClass().add("duplicate-warning");
+        duplicateGlyph.setFontSize(12);
+        return duplicateGlyph;
     }
 }

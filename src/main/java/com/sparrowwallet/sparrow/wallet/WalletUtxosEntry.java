@@ -14,6 +14,7 @@ public class WalletUtxosEntry extends Entry {
     public WalletUtxosEntry(Wallet wallet) {
         super(wallet.getName(), getWalletUtxos(wallet).entrySet().stream().map(entry -> new UtxoEntry(wallet, entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
         this.wallet = wallet;
+        calculateDuplicates();
     }
 
     public Wallet getWallet() {
@@ -23,6 +24,23 @@ public class WalletUtxosEntry extends Entry {
     @Override
     public Long getValue() {
         return 0L;
+    }
+
+    protected void calculateDuplicates() {
+        Map<String, UtxoEntry> addressMap = new HashMap<>();
+
+        for(Entry entry : getChildren()) {
+            UtxoEntry utxoEntry = (UtxoEntry)entry;
+            String address = utxoEntry.getAddress().toString();
+
+            UtxoEntry duplicate = addressMap.get(address);
+            if(duplicate != null) {
+                duplicate.setDuplicateAddress(true);
+                utxoEntry.setDuplicateAddress(true);
+            } else {
+                addressMap.put(address, utxoEntry);
+            }
+        }
     }
 
     public void updateUtxos() {
@@ -36,6 +54,8 @@ public class WalletUtxosEntry extends Entry {
         List<Entry> entriesRemoved = new ArrayList<>(previous);
         entriesRemoved.removeAll(current);
         getChildren().removeAll(entriesRemoved);
+
+        calculateDuplicates();
     }
 
     private static Map<BlockTransactionHashIndex, WalletNode> getWalletUtxos(Wallet wallet) {

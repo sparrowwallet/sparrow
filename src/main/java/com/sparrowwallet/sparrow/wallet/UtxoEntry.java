@@ -4,6 +4,8 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.BooleanPropertyBase;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -40,5 +42,38 @@ public class UtxoEntry extends HashIndexEntry {
 
     public String getOutputDescriptor() {
         return getWallet().getOutputDescriptor(node);
+    }
+
+    /**
+     * Defines whether this utxo shares it's address with another utxo in the wallet
+     */
+    private BooleanProperty duplicateAddress;
+
+    public final void setDuplicateAddress(boolean value) {
+        if(duplicateAddress != null || value) {
+            duplicateAddressProperty().set(value);
+        }
+    }
+
+    public final boolean isDuplicateAddress() {
+        return duplicateAddress != null && duplicateAddress.get();
+    }
+
+    public final BooleanProperty duplicateAddressProperty() {
+        if(duplicateAddress == null) {
+            duplicateAddress = new BooleanPropertyBase(false) {
+
+                @Override
+                public Object getBean() {
+                    return UtxoEntry.this;
+                }
+
+                @Override
+                public String getName() {
+                    return "duplicate";
+                }
+            };
+        }
+        return duplicateAddress;
     }
 }

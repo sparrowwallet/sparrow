@@ -101,3 +101,7 @@
 .tree-table-row-cell:selected .entry-cell:hover .button .label .text {
     -fx-fill: white;
 }
+
+.duplicate-warning {
+    -fx-text-fill: rgb(202, 18, 67);
+}
