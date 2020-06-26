@@ -29,14 +29,6 @@ public class TransactionHashIndexEntry extends HashIndexEntry {
         }
     }
 
-    public BlockTransaction getSpentByTransaction() {
-        if(getHashIndex().getSpentBy() != null) {
-            return getWallet().getTransactions().get(getHashIndex().getSpentBy().getHash());
-        }
-
-        return null;
-    }
-
     @Override
     public boolean isSpent() {
         return false;

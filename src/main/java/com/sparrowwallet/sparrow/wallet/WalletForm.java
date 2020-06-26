@@ -20,6 +20,7 @@ public class WalletForm {
     protected Wallet wallet;
 
     private WalletTransactionsEntry walletTransactionsEntry;
+    private WalletUtxosEntry walletUtxosEntry;
     private final List<NodeEntry> accountEntries = new ArrayList<>();
 
     public WalletForm(Storage storage, Wallet currentWallet) {
@@ -136,6 +137,14 @@ public class WalletForm {
         return walletTransactionsEntry;
     }
 
+    public WalletUtxosEntry getWalletUtxosEntry() {
+        if(walletUtxosEntry == null) {
+            walletUtxosEntry = new WalletUtxosEntry(wallet);
+        }
+
+        return walletUtxosEntry;
+    }
+
     @Subscribe
     public void walletLabelChanged(WalletEntryLabelChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
@@ -164,6 +173,7 @@ public class WalletForm {
         if(event.getWalletFile().equals(storage.getWalletFile())) {
             wallet = event.getWallet();
             walletTransactionsEntry = null;
+            walletUtxosEntry = null;
             accountEntries.clear();
             EventManager.get().post(new WalletNodesChangedEvent(wallet));
             refreshHistory(AppController.getCurrentBlockHeight());

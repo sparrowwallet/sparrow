@@ -29,13 +29,7 @@
     -fx-background-color: -fx-background;
 }
 
-.address-treetable-label {
-    -fx-font-weight: bold;
-    -fx-font-size: 1.2em;
-    -fx-padding: 10 0 10 0;
-}
-
-.address-cell {
+.address-cell, .utxo-row.entry-cell {
     -fx-font-family: Courier;
 }
 

@@ -17,6 +17,7 @@ public class FontAwesome5 extends GlyphFont {
     public static enum Glyph implements INamedCharacter {
         CHECK_CIRCLE('\uf058'),
         CIRCLE('\uf111'),
+        COINS('\uf51e'),
         EXCLAMATION_CIRCLE('\uf06a'),
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),

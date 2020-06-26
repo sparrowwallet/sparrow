@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
+import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
@@ -51,6 +52,8 @@ class AmountCell extends TreeTableCell<Entry, Number> {
                 } else {
                     setGraphic(null);
                 }
+            } else if(entry instanceof UtxoEntry) {
+                setGraphic(null);
             } else if(entry instanceof HashIndexEntry) {
                 Region node = new Region();
                 node.setPrefWidth(10);

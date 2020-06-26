@@ -8,10 +8,7 @@ import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.wallet.Entry;
-import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
-import com.sparrowwallet.sparrow.wallet.NodeEntry;
-import com.sparrowwallet.sparrow.wallet.TransactionEntry;
+import com.sparrowwallet.sparrow.wallet.*;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -118,7 +115,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
             });
 
             MenuItem copyHeight = new MenuItem("Copy Block Height");
-            copyTxid.setOnAction(AE -> {
+            copyHeight.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
                 content.putString(Integer.toString(blockTransaction.getHeight()));
@@ -129,7 +126,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
         }
     }
 
-    private static class AddressContextMenu extends ContextMenu {
+    public static class AddressContextMenu extends ContextMenu {
         public AddressContextMenu(Address address, String outputDescriptor) {
             MenuItem copyAddress = new MenuItem("Copy Address");
             copyAddress.setOnAction(AE -> {
@@ -195,6 +192,8 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
             } else if(entry instanceof NodeEntry) {
                 cell.getStyleClass().add("node-row");
+            } else if(entry instanceof UtxoEntry) {
+                cell.getStyleClass().add("utxo-row");
             } else if(entry instanceof HashIndexEntry) {
                 cell.getStyleClass().add("hashindex-row");
                 HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;

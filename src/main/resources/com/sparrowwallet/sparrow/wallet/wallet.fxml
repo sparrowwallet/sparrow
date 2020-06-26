@@ -46,12 +46,12 @@
                     <Function fx:constant="ADDRESSES"/>
                 </userData>
             </ToggleButton>
-            <ToggleButton VBox.vgrow="ALWAYS" text="Policies" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+            <ToggleButton VBox.vgrow="ALWAYS" text="UTXOs" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="FILE_TEXT" fontSize="20" />
+                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="COINS" fontSize="20" />
                 </graphic>
                 <userData>
-                    <Function fx:constant="POLICIES"/>
+                    <Function fx:constant="UTXOS"/>
                 </userData>
             </ToggleButton>
             <ToggleButton VBox.vgrow="ALWAYS" text="Settings" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
