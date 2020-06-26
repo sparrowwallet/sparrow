@@ -288,13 +288,7 @@ public class ElectrumServer {
         }
 
         if(!transactionMap.equals(wallet.getTransactions())) {
-            for(BlockTransaction blockTx : transactionMap.values()) {
-                Optional<String> optionalLabel = wallet.getTransactions().values().stream().filter(oldBlTx -> oldBlTx.getHash().equals(blockTx.getHash())).map(BlockTransaction::getLabel).filter(Objects::nonNull).findFirst();
-                optionalLabel.ifPresent(blockTx::setLabel);
-            }
-
-            wallet.getTransactions().clear();
-            wallet.getTransactions().putAll(transactionMap);
+            wallet.updateTransactions(transactionMap);
         }
     }
 
@@ -481,13 +475,7 @@ public class ElectrumServer {
         }
 
         if(!transactionOutputs.equals(node.getTransactionOutputs())) {
-            for(BlockTransactionHashIndex txo : transactionOutputs) {
-                Optional<String> optionalLabel = node.getTransactionOutputs().stream().filter(oldTxo -> oldTxo.getHash().equals(txo.getHash()) && oldTxo.getIndex() == txo.getIndex() && oldTxo.getLabel() != null).map(BlockTransactionHash::getLabel).findFirst();
-                optionalLabel.ifPresent(txo::setLabel);
-            }
-
-            node.getTransactionOutputs().clear();
-            node.getTransactionOutputs().addAll(transactionOutputs);
+            node.updateTransactionOutputs(transactionOutputs);
         }
     }
 
