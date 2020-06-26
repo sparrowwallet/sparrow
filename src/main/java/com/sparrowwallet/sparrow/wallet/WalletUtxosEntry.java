@@ -39,6 +39,7 @@ public class WalletUtxosEntry extends Entry {
                 utxoEntry.setDuplicateAddress(true);
             } else {
                 addressMap.put(address, utxoEntry);
+                utxoEntry.setDuplicateAddress(false);
             }
         }
     }
