@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
 import javafx.fxml.FXML;
@@ -52,6 +53,14 @@ public class AddressesController extends WalletFormController implements Initial
             if(!changeNodes.isEmpty()) {
                 changeTable.updateHistory(changeNodes);
             }
+        }
+    }
+
+    @Subscribe
+    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            receiveTable.updateLabel(event.getEntry());
+            changeTable.updateLabel(event.getEntry());
         }
     }
 }

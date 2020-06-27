@@ -74,7 +74,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof HashIndexEntry)) return false;
         HashIndexEntry that = (HashIndexEntry) o;
         return wallet.equals(that.wallet) &&
                 hashIndex.equals(that.hashIndex) &&

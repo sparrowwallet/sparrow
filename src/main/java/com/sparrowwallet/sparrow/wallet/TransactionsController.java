@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
 import javafx.fxml.FXML;
@@ -39,6 +40,13 @@ public class TransactionsController extends WalletFormController implements Init
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             transactionsTable.updateHistory(event.getHistoryChangedNodes());
+        }
+    }
+
+    @Subscribe
+    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            transactionsTable.updateLabel(event.getEntry());
         }
     }
 

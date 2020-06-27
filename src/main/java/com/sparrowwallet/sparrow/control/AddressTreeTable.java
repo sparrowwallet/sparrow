@@ -109,4 +109,9 @@ public class AddressTreeTable extends TreeTableView<Entry> {
 
         sort();
     }
+
+    public void updateLabel(Entry entry) {
+        Entry rootEntry = getRoot().getValue();
+        rootEntry.updateLabel(entry);
+    }
 }

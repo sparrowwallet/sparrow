@@ -75,4 +75,9 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         rootEntry.updateTransactions();
         sort();
     }
+
+    public void updateLabel(Entry entry) {
+        Entry rootEntry = getRoot().getValue();
+        rootEntry.updateLabel(entry);
+    }
 }

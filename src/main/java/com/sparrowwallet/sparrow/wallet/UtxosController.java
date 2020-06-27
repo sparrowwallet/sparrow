@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.UtxosTreeTable;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
 import javafx.collections.ListChangeListener;
@@ -94,6 +95,13 @@ public class UtxosController extends WalletFormController implements Initializab
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             utxosTable.updateHistory(event.getHistoryChangedNodes());
+        }
+    }
+
+    @Subscribe
+    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            utxosTable.updateLabel(event.getEntry());
         }
     }
 

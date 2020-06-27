@@ -33,4 +33,14 @@ public abstract class Entry {
     }
 
     public abstract Long getValue();
+
+    public void updateLabel(Entry entry) {
+        if(this.equals(entry)) {
+            labelProperty.set(entry.getLabel());
+        }
+
+        for(Entry child : getChildren()) {
+            child.updateLabel(entry);
+        }
+    }
 }

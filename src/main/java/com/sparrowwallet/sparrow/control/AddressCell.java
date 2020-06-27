@@ -61,7 +61,7 @@ public class AddressCell extends TreeTableCell<Entry, Entry> {
         return utxoEntry.getNode().getDerivationPath() + (utxoEntry.isDuplicateAddress() ? " (Duplicate address)" : "");
     }
 
-    private static Glyph getDuplicateGlyph() {
+    public static Glyph getDuplicateGlyph() {
         Glyph duplicateGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
         duplicateGlyph.getStyleClass().add("duplicate-warning");
         duplicateGlyph.setFontSize(12);

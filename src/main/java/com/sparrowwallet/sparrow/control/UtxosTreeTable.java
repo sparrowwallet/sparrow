@@ -92,4 +92,9 @@ public class UtxosTreeTable extends TreeTableView<Entry> {
         rootEntry.updateUtxos();
         sort();
     }
+
+    public void updateLabel(Entry entry) {
+        Entry rootEntry = getRoot().getValue();
+        rootEntry.updateLabel(entry);
+    }
 }
