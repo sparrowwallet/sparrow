@@ -70,8 +70,8 @@ public class UtxosTreeTable extends TreeTableView<Entry> {
         setPlaceholder(new Label("No unspent outputs"));
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
-        dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
-        getSortOrder().add(dateCol);
+        amountCol.setSortType(TreeTableColumn.SortType.DESCENDING);
+        getSortOrder().add(amountCol);
     }
 
     public void updateAll(WalletUtxosEntry rootEntry) {
@@ -80,9 +80,9 @@ public class UtxosTreeTable extends TreeTableView<Entry> {
         rootItem.setExpanded(true);
 
         if(getColumns().size() > 0 && getSortOrder().isEmpty()) {
-            TreeTableColumn<Entry, ?> dateCol = getColumns().get(0);
-            getSortOrder().add(dateCol);
-            dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
+            TreeTableColumn<Entry, ?> amountCol = getColumns().get(getColumns().size() - 1);
+            getSortOrder().add(amountCol);
+            amountCol.setSortType(TreeTableColumn.SortType.DESCENDING);
         }
     }
 

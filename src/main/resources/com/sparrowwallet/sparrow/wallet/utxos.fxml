@@ -11,6 +11,8 @@
 <?import com.sparrowwallet.sparrow.control.UtxosTreeTable?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
+<?import com.sparrowwallet.sparrow.control.UtxosChart?>
+
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@utxos.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.UtxosController">
     <padding>
         <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
@@ -32,14 +34,14 @@
     </BorderPane>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
         <center>
-            <BarChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false">
+            <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false">
                 <xAxis>
                     <CategoryAxis side="BOTTOM" animated="false" />
                 </xAxis>
                 <yAxis>
                     <NumberAxis side="LEFT" />
                 </yAxis>
-            </BarChart>
+            </UtxosChart>
         </center>
     </BorderPane>
 </GridPane>

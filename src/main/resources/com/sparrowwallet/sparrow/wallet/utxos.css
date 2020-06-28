@@ -7,3 +7,7 @@
 .chart-bar {
     -fx-bar-fill: rgba(105, 108, 119, 0.6);
 }
+
+.chart-bar.selected {
+    -fx-bar-fill: rgba(30, 136, 207, 0.6);
+}
