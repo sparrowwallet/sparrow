@@ -164,7 +164,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            if(event.getHistoryChangedNodes().contains(currentEntry.getNode())) {
+            if(currentEntry != null && event.getHistoryChangedNodes().contains(currentEntry.getNode())) {
                 updateLastUsed();
             }
         }

@@ -11,3 +11,7 @@
     -fx-pref-width: 90px;
     -fx-pref-height: 25px;
 }
+
+#lastUsedField .input-container {
+    -fx-alignment: center-left;
+}
