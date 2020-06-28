@@ -21,7 +21,7 @@
     </rowConstraints>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
         <top>
-            <Label styleClass="addresses-treetable-label" text="Receiving Addresses:"/>
+            <Label styleClass="addresses-treetable-label" text="Receiving Addresses"/>
         </top>
         <center>
             <AddressTreeTable fx:id="receiveTable" />
@@ -29,7 +29,7 @@
     </BorderPane>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
         <top>
-            <Label styleClass="addresses-treetable-label" text="Change Addresses:"/>
+            <Label styleClass="addresses-treetable-label" text="Change Addresses"/>
         </top>
         <center>
             <AddressTreeTable fx:id="changeTable" />

@@ -26,7 +26,7 @@
     </rowConstraints>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
         <top>
-            <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs:"/>
+            <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
         </top>
         <center>
             <UtxosTreeTable fx:id="utxosTable" />
