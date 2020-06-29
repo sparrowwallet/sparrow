@@ -10,12 +10,12 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.AddressCell;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.CopyableTextField;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -23,6 +23,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import org.controlsfx.glyphfont.Glyph;
 import org.fxmisc.richtext.CodeArea;
 
 import java.io.ByteArrayInputStream;
@@ -97,12 +98,12 @@ public class ReceiveController extends WalletFormController implements Initializ
         Set<BlockTransactionHashIndex> currentOutputs = currentEntry.getNode().getTransactionOutputs();
         if(AppController.isOnline() && currentOutputs.isEmpty()) {
             lastUsed.setText("Never");
-            lastUsed.setGraphic(null);
+            lastUsed.setGraphic(getUnusedGlyph());
         } else if(!currentOutputs.isEmpty()) {
             long count = currentOutputs.size();
             BlockTransactionHashIndex lastUsedReference = currentOutputs.stream().skip(count - 1).findFirst().get();
             lastUsed.setText(DATE_FORMAT.format(lastUsedReference.getDate()));
-            lastUsed.setGraphic(AddressCell.getDuplicateGlyph());
+            lastUsed.setGraphic(getWarningGlyph());
         } else {
             lastUsed.setText("Unknown");
             lastUsed.setGraphic(null);
@@ -145,6 +146,20 @@ public class ReceiveController extends WalletFormController implements Initializ
         scriptPubKeyArea.clear();
         outputDescriptor.clear();
         this.currentEntry = null;
+    }
+
+    public static Glyph getUnusedGlyph() {
+        Glyph checkGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
+        checkGlyph.getStyleClass().add("unused-check");
+        checkGlyph.setFontSize(12);
+        return checkGlyph;
+    }
+
+    public static Glyph getWarningGlyph() {
+        Glyph duplicateGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+        duplicateGlyph.getStyleClass().add("duplicate-warning");
+        duplicateGlyph.setFontSize(12);
+        return duplicateGlyph;
     }
 
     @Subscribe
