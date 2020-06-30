@@ -1,0 +1,33 @@
+.form .fieldset:horizontal .field {
+    -fx-pref-height: 40px;
+}
+
+.send-form .form .fieldset:horizontal .label-container {
+    -fx-pref-width: 90px;
+}
+
+.amount-field {
+    -fx-max-width: 150px;
+}
+
+#feeRatesChart {
+    -fx-max-width: 350px;
+    -fx-max-height: 130px;
+}
+
+.default-color0.chart-series-line {
+    -fx-stroke: rgba(105, 108, 119, 0.6);
+    -fx-stroke-width: 1px;
+}
+
+.chart-line-symbol {
+    -fx-background-color: rgba(30, 136, 207, 0);
+}
+
+.chart-line-symbol.selected {
+    -fx-background-color: rgba(30, 136, 207, 0.6);
+}
+
+#feeRateField .input-container {
+    -fx-alignment: center-left;
+}

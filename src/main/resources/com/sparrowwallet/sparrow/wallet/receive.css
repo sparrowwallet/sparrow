@@ -1,15 +1,14 @@
-.address-text-field {
-    -fx-font-family: Courier;
+.form .fieldset:horizontal .field {
+    -fx-pref-height: 40px;
+}
+
+.receive-form .form .fieldset:horizontal .label-container {
+    -fx-pref-width: 90px;
 }
 
 .qr-code {
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);
     -fx-padding: 20;
-}
-
-.receive-form .form .fieldset:horizontal .label-container {
-    -fx-pref-width: 90px;
-    -fx-pref-height: 25px;
 }
 
 #lastUsedField .input-container {

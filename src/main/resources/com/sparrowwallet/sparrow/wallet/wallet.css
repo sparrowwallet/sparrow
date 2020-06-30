@@ -109,3 +109,7 @@
 .unused-check {
     -fx-text-fill: #50a14f;
 }
+
+.address-text-field {
+    -fx-font-family: Courier;
+}

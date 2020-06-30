@@ -16,7 +16,9 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
+import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
+import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
@@ -505,6 +507,23 @@ public class ElectrumServer {
         return transactionMap;
     }
 
+    public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks) throws ServerException {
+        JsonRpcClient client = new JsonRpcClient(getTransport());
+        BatchRequestBuilder<Integer, Double> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(Double.class);
+        for(Integer targetBlock : targetBlocks) {
+            batchRequest.add(targetBlock, "blockchain.estimatefee", targetBlock);
+        }
+
+        Map<Integer, Double> targetBlocksFeeRatesBtcKb = batchRequest.execute();
+
+        Map<Integer, Double> targetBlocksFeeRatesSats = new TreeMap<>();
+        for(Integer target : targetBlocksFeeRatesBtcKb.keySet()) {
+            targetBlocksFeeRatesSats.put(target, targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN / 1024);
+        }
+
+        return targetBlocksFeeRatesSats;
+    }
+
     private String getScriptHash(Wallet wallet, WalletNode node) {
         byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
@@ -802,15 +821,18 @@ public class ElectrumServer {
         }
     }
 
-    public static class ConnectionService extends ScheduledService<ConnectionEvent> implements Thread.UncaughtExceptionHandler {
+    public static class ConnectionService extends ScheduledService<FeeRatesUpdatedEvent> implements Thread.UncaughtExceptionHandler {
+        private static final int FEE_RATES_PERIOD = 5 * 60 * 1000;
+
         private boolean firstCall = true;
         private Thread reader;
         private Throwable lastReaderException;
+        private long feeRatesRetrievedAt;
 
         @Override
-        protected Task<ConnectionEvent> createTask() {
+        protected Task<FeeRatesUpdatedEvent> createTask() {
             return new Task<>() {
-                protected ConnectionEvent call() throws ServerException {
+                protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
                     if(firstCall) {
                         electrumServer.connect();
@@ -826,10 +848,20 @@ public class ElectrumServer {
                         BlockHeaderTip tip = electrumServer.subscribeBlockHeaders();
                         String banner = electrumServer.getServerBanner();
 
-                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader());
+                        Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                        feeRatesRetrievedAt = System.currentTimeMillis();
+
+                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates);
                     } else {
                         if(reader.isAlive()) {
                             electrumServer.ping();
+
+                            long elapsed = System.currentTimeMillis() - feeRatesRetrievedAt;
+                            if(elapsed > FEE_RATES_PERIOD) {
+                                Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                                feeRatesRetrievedAt = System.currentTimeMillis();
+                                return new FeeRatesUpdatedEvent(blockTargetFeeRates);
+                            }
                         } else {
                             firstCall = true;
                             throw new ServerException("Connection to server failed", lastReaderException);

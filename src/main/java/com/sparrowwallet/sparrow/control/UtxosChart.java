@@ -64,6 +64,11 @@ public class UtxosChart extends BarChart<String, Number> {
     }
 
     public void select(Entry entry) {
+        Node selectedBar = lookup(".chart-bar.selected");
+        if(selectedBar != null) {
+            selectedBar.getStyleClass().remove("selected");
+        }
+
         for(int i = 0; i < utxoSeries.getData().size(); i++) {
             XYChart.Data<String, Number> data = utxoSeries.getData().get(i);
             Node bar = lookup(".data" + i);
@@ -71,8 +76,6 @@ public class UtxosChart extends BarChart<String, Number> {
                 if(data.getExtraValue() != null && data.getExtraValue().equals(entry)) {
                     bar.getStyleClass().add("selected");
                     this.selectedEntry = entry;
-                } else {
-                    bar.getStyleClass().remove("selected");
                 }
             }
         }

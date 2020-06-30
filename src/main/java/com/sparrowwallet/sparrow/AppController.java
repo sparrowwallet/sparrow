@@ -88,9 +88,11 @@ public class AppController implements Initializable {
 
     private ElectrumServer.ConnectionService connectionService;
 
-    public static Integer currentBlockHeight;
+    private static Integer currentBlockHeight;
 
     public static boolean showTxHexProperty;
+
+    private static Map<Integer, Double> targetBlockFeeRates;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -340,6 +342,10 @@ public class AppController implements Initializable {
 
     public static Integer getCurrentBlockHeight() {
         return currentBlockHeight;
+    }
+
+    public static Map<Integer, Double> getTargetBlockFeeRates() {
+        return targetBlockFeeRates;
     }
 
     public static void showErrorDialog(String title, String content) {
@@ -764,6 +770,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
+        targetBlockFeeRates = event.getTargetBlockFeeRates();
         String banner = event.getServerBanner();
         String status = "Connected: " + (banner == null ? "Server" : banner.split(System.lineSeparator(), 2)[0]) + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));
@@ -781,6 +788,11 @@ public class AppController implements Initializable {
         currentBlockHeight = event.getHeight();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
+    }
+
+    @Subscribe
+    public void feesUpdated(FeeRatesUpdatedEvent event) {
+        targetBlockFeeRates = event.getTargetBlockFeeRates();
     }
 
     @Subscribe
