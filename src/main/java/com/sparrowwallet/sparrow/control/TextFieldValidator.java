@@ -10,7 +10,7 @@ import javafx.scene.control.TextFormatter.Change;
 public class TextFieldValidator {
 
     private static final String CURRENCY_SYMBOL   = DecimalFormatSymbols.getInstance().getCurrencySymbol();
-    private static final char   DECIMAL_SEPARATOR = DecimalFormatSymbols.getInstance().getDecimalSeparator();
+    private static final String DECIMAL_SEPARATOR = ".";
 
     private final Pattern       INPUT_PATTERN;
 
@@ -54,11 +54,11 @@ public class TextFieldValidator {
     }
 
     private static Pattern maxFractionPattern(int countOf) {
-        return Pattern.compile("\\d*(\\\\" + DECIMAL_SEPARATOR + "\\d{0," + countOf + "})?");
+        return Pattern.compile("\\d*(\\" + DECIMAL_SEPARATOR + "\\d{0," + countOf + "})?");
     }
 
     private static Pattern maxCurrencyFractionPattern(int countOf) {
-        return Pattern.compile("^\\\\" + CURRENCY_SYMBOL + "?\\s?\\d*(\\\\" + DECIMAL_SEPARATOR + "\\d{0," + countOf + "})?\\s?\\\\" + CURRENCY_SYMBOL + "?");
+        return Pattern.compile("^\\\\" + CURRENCY_SYMBOL + "?\\s?\\d*(\\" + DECIMAL_SEPARATOR + "\\d{0," + countOf + "})?\\s?\\\\" + CURRENCY_SYMBOL + "?");
     }
 
     private static Pattern maxIntegerPattern(int countOf) {

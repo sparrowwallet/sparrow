@@ -89,4 +89,17 @@
             </AnchorPane>
         </GridPane>
     </center>
+    <bottom>
+        <AnchorPane>
+            <padding>
+                <Insets left="25.0" right="25.0" bottom="25.0" />
+            </padding>
+            <HBox AnchorPane.rightAnchor="10">
+                <Button fx:id="clear" text="Clear" cancelButton="true" onAction="#clear" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="select" text="Select UTXOs" defaultButton="true" onAction="#selectUtxos" />
+                <Button fx:id="create" text="Create Transaction" defaultButton="true" onAction="#createTransaction" />
+            </HBox>
+        </AnchorPane>
+    </bottom>
 </BorderPane>
