@@ -3,18 +3,18 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.BitcoinUnit;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.control.CopyableTextField;
-import com.sparrowwallet.sparrow.control.FeeRatesChart;
-import com.sparrowwallet.sparrow.control.TextFieldValidator;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -27,10 +27,15 @@ import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.net.URL;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class SendController extends WalletFormController implements Initializable {
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
+
+    public static final double FALLBACK_FEE_RATE = 20000d / 1000;
 
     @FXML
     private CopyableTextField address;
@@ -60,15 +65,15 @@ public class SendController extends WalletFormController implements Initializabl
     private FeeRatesChart feeRatesChart;
 
     @FXML
-    private Button clear;
+    private TransactionDiagram transactionDiagram;
 
     @FXML
-    private Button select;
+    private Button clear;
 
     @FXML
     private Button create;
 
-    private ObservableList<BlockTransactionHashIndex> inputs;
+    private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
 
@@ -144,19 +149,16 @@ public class SendController extends WalletFormController implements Initializabl
             updateTransaction();
         });
 
-        select.managedProperty().bind(select.visibleProperty());
-        create.managedProperty().bind(create.visibleProperty());
-        if(inputs == null || inputs.isEmpty()) {
-            create.setVisible(false);
-        } else {
-            select.setVisible(false);
-        }
+        walletTransactionProperty.addListener((observable, oldValue, newValue) -> {
+            transactionDiagram.update(newValue);
+            create.setDisable(false);
+        });
     }
 
     private void addValidation() {
         ValidationSupport validationSupport = new ValidationSupport();
         validationSupport.registerValidator(address, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !isValidAddress())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !newValue.isEmpty() && !isValidAddress())
         ));
         validationSupport.registerValidator(amount, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get())
@@ -167,32 +169,22 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void updateTransaction() {
         try {
-            Address address = getAddress();
-            Long amount = getAmount();
-            if(amount != null) {
-                Collection<BlockTransactionHashIndex> selectedInputs = selectInputs(amount);
-
-                Transaction transaction = new Transaction();
+            Address recipientAddress = getAddress();
+            Long recipientAmount = getAmount();
+            if(recipientAmount != null) {
+                Wallet wallet = getWalletForm().getWallet();
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate());
+                walletTransactionProperty.setValue(walletTransaction);
+                insufficientInputsProperty.set(false);
+                return;
             }
         } catch (InvalidAddressException e) {
             //ignore
-        } catch (InvalidTransactionException.InsufficientInputsException e) {
+        } catch (InsufficientFundsException e) {
             insufficientInputsProperty.set(true);
         }
-    }
 
-    private Collection<BlockTransactionHashIndex> selectInputs(Long targetValue) throws InvalidTransactionException.InsufficientInputsException {
-        Set<BlockTransactionHashIndex> utxos = getWalletForm().getWallet().getWalletUtxos().keySet();
-
-        for(UtxoSelector utxoSelector : getUtxoSelectors()) {
-            Collection<BlockTransactionHashIndex> selectedInputs = utxoSelector.select(targetValue, utxos);
-            long total = selectedInputs.stream().mapToLong(BlockTransactionHashIndex::getValue).sum();
-            if(total > targetValue) {
-                return selectedInputs;
-            }
-        }
-
-        throw new InvalidTransactionException.InsufficientInputsException("Not enough inputs for output value " + targetValue);
+        walletTransactionProperty.setValue(null);
     }
 
     private List<UtxoSelector> getUtxoSelectors() {
@@ -225,8 +217,8 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Long getFee() {
-        BitcoinUnit bitcoinUnit = amountUnit.getSelectionModel().getSelectedItem();
-        if(amount.getText() != null && !amount.getText().isEmpty()) {
+        BitcoinUnit bitcoinUnit = feeAmountUnit.getSelectionModel().getSelectedItem();
+        if(fee.getText() != null && !fee.getText().isEmpty()) {
             Double fieldValue = Double.parseDouble(amount.getText());
             return bitcoinUnit.getSatsValue(fieldValue);
         }
@@ -246,7 +238,16 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Map<Integer, Double> getTargetBlocksFeeRates() {
-        return AppController.getTargetBlockFeeRates();
+        Map<Integer, Double> retrievedFeeRates = AppController.getTargetBlockFeeRates();
+        if(retrievedFeeRates == null) {
+            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> FALLBACK_FEE_RATE));
+        }
+
+        return  retrievedFeeRates;
+    }
+
+    private Double getFeeRate() {
+        return getTargetBlocksFeeRates().get(getTargetBlocks());
     }
 
     private void setFeeRate(Double feeRateAmt) {
@@ -254,6 +255,18 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void setMaxInput(ActionEvent event) {
+
+    }
+
+    public void clear(ActionEvent event) {
+        address.setText("");
+        label.setText("");
+        amount.setText("");
+        fee.setText("");
+        walletTransactionProperty.setValue(null);
+    }
+
+    public void createTransaction(ActionEvent event) {
 
     }
 

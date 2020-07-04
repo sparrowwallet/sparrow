@@ -31,3 +31,7 @@
 #feeRateField .input-container {
     -fx-alignment: center-left;
 }
+
+#transactionDiagram {
+    -fx-min-height: 230px;
+}

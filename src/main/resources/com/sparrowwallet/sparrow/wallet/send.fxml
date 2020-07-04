@@ -14,11 +14,12 @@
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import javafx.collections.FXCollections?>
-<?import com.sparrowwallet.drongo.policy.PolicyType?>
 <?import com.sparrowwallet.sparrow.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.control.FeeRatesChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
+<?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
+
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
         <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
@@ -87,6 +88,9 @@
                     </yAxis>
                 </FeeRatesChart>
             </AnchorPane>
+            <StackPane GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
+                <TransactionDiagram fx:id="transactionDiagram" />
+            </StackPane>
         </GridPane>
     </center>
     <bottom>
@@ -96,9 +100,8 @@
             </padding>
             <HBox AnchorPane.rightAnchor="10">
                 <Button fx:id="clear" text="Clear" cancelButton="true" onAction="#clear" />
-                <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="select" text="Select UTXOs" defaultButton="true" onAction="#selectUtxos" />
-                <Button fx:id="create" text="Create Transaction" defaultButton="true" onAction="#createTransaction" />
+                <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
+                <Button fx:id="create" text="Create Transaction" defaultButton="true" disable="true" onAction="#createTransaction" />
             </HBox>
         </AnchorPane>
     </bottom>
