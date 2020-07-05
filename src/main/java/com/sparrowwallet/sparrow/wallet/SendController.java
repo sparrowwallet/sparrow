@@ -15,10 +15,10 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
 import org.controlsfx.validation.ValidationResult;
@@ -27,6 +27,7 @@ import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.net.URL;
+import java.text.DecimalFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -73,9 +74,41 @@ public class SendController extends WalletFormController implements Initializabl
     @FXML
     private Button create;
 
+    private final BooleanProperty userFeeSet = new SimpleBooleanProperty(false);
+
     private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
+
+    private final ChangeListener<String> feeListener = new ChangeListener<>() {
+        @Override
+        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+            userFeeSet.set(true);
+            setTargetBlocks(getTargetBlocks());
+            updateTransaction();
+        }
+    };
+
+    private final ChangeListener<Number> targetBlocksListener = new ChangeListener<>() {
+        @Override
+        public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+            Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
+            Integer target = getTargetBlocks();
+
+            if(targetBlocksFeeRates != null) {
+                setFeeRate(targetBlocksFeeRates.get(target));
+                feeRatesChart.select(target);
+            } else {
+                feeRate.setText("Unknown");
+            }
+
+            Tooltip tooltip = new Tooltip("Target confirmation within " + target + " blocks");
+            targetBlocks.setTooltip(tooltip);
+
+            userFeeSet.set(false);
+            updateTransaction();
+        }
+    };
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -90,11 +123,21 @@ public class SendController extends WalletFormController implements Initializabl
             updateTransaction();
         });
 
-        amount.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_FRACTION_DIGITS, 15).getFormatter());
-        amountUnit.getSelectionModel().select(0);
+        amount.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_FRACTION_DIGITS, 8).getFormatter());
         amount.textProperty().addListener((observable, oldValue, newValue) -> {
             updateTransaction();
         });
+
+        amountUnit.getSelectionModel().select(1);
+        amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
+            Long value = getRecipientValueSats(oldValue);
+            if(value != null) {
+                DecimalFormat df = new DecimalFormat("#.#");
+                df.setMaximumFractionDigits(8);
+                amount.setText(df.format(newValue.getValue(value)));
+            }
+        });
+
         insufficientInputsProperty.addListener((observable, oldValue, newValue) -> {
             String amt = amount.getText();
             amount.setText(amt + " ");
@@ -116,24 +159,7 @@ public class SendController extends WalletFormController implements Initializabl
                 return (double)TARGET_BLOCKS_RANGE.indexOf(Integer.valueOf(string));
             }
         });
-        targetBlocks.valueProperty().addListener((observable, oldValue, newValue) -> {
-            Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
-            Integer target = getTargetBlocks();
-
-            if(targetBlocksFeeRates != null) {
-                setFeeRate(targetBlocksFeeRates.get(target));
-                feeRatesChart.select(target);
-            } else {
-                feeRate.setText("Unknown");
-            }
-
-            Tooltip tooltip = new Tooltip("Target confirmation within " + target + " blocks");
-            targetBlocks.setTooltip(tooltip);
-
-            //TODO: Set fee based on tx size
-        });
-
-        feeAmountUnit.getSelectionModel().select(1);
+        targetBlocks.valueProperty().addListener(targetBlocksListener);
 
         feeRatesChart.initialize();
         Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
@@ -145,23 +171,60 @@ public class SendController extends WalletFormController implements Initializabl
 
         setTargetBlocks(5);
 
-        fee.textProperty().addListener((observable, oldValue, newValue) -> {
-            updateTransaction();
+        fee.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_FRACTION_DIGITS, 8).getFormatter());
+        fee.textProperty().addListener(feeListener);
+
+        feeAmountUnit.getSelectionModel().select(1);
+        feeAmountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
+            Long value = getFeeValueSats(oldValue);
+            if(value != null) {
+                setFee(value);
+            }
         });
 
-        walletTransactionProperty.addListener((observable, oldValue, newValue) -> {
-            transactionDiagram.update(newValue);
-            create.setDisable(false);
+        userFeeSet.addListener((observable, oldValue, newValue) -> {
+            feeRatesChart.select(0);
+
+            Node thumb = getSliderThumb();
+            if(thumb != null) {
+                if(newValue) {
+                    thumb.getStyleClass().add("inactive");
+                } else {
+                    thumb.getStyleClass().remove("inactive");
+                }
+            }
         });
+
+        walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
+            if(walletTransaction != null) {
+                double feeRate = (double)walletTransaction.getFee() / walletTransaction.getTransaction().getVirtualSize();
+                if(userFeeSet.get()) {
+                    setTargetBlocks(getTargetBlocks(feeRate));
+                } else {
+                    setFee(walletTransaction.getFee());
+                }
+
+                setFeeRate(feeRate);
+            }
+
+            transactionDiagram.update(walletTransaction);
+            create.setDisable(walletTransaction == null);
+        });
+
+        address.setText("32YSPMaUePf511u5adEckiNq8QLec9ksXX");
     }
 
     private void addValidation() {
         ValidationSupport validationSupport = new ValidationSupport();
         validationSupport.registerValidator(address, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !newValue.isEmpty() && !isValidAddress())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !newValue.isEmpty() && !isValidRecipientAddress())
         ));
         validationSupport.registerValidator(amount, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get()),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() == 0)
+        ));
+        validationSupport.registerValidator(fee, Validator.combine(
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() != null && getFeeValueSats() == 0)
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
@@ -169,13 +232,14 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void updateTransaction() {
         try {
-            Address recipientAddress = getAddress();
-            Long recipientAmount = getAmount();
-            if(recipientAmount != null) {
+            Address recipientAddress = getRecipientAddress();
+            Long recipientAmount = getRecipientValueSats();
+            if(recipientAmount != null && recipientAmount != 0 && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate());
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), userFeeSet.get() ? getFeeValueSats() : null);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
+
                 return;
             }
         } catch (InvalidAddressException e) {
@@ -192,9 +256,9 @@ public class SendController extends WalletFormController implements Initializabl
         return List.of(priorityUtxoSelector);
     }
 
-    private boolean isValidAddress() {
+    private boolean isValidRecipientAddress() {
         try {
-            getAddress();
+            getRecipientAddress();
         } catch (InvalidAddressException e) {
             return false;
         }
@@ -202,24 +266,30 @@ public class SendController extends WalletFormController implements Initializabl
         return true;
     }
 
-    private Address getAddress() throws InvalidAddressException {
+    private Address getRecipientAddress() throws InvalidAddressException {
         return Address.fromString(address.getText());
     }
 
-    private Long getAmount() {
-        BitcoinUnit bitcoinUnit = amountUnit.getSelectionModel().getSelectedItem();
+    private Long getRecipientValueSats() {
+        return getRecipientValueSats(amountUnit.getSelectionModel().getSelectedItem());
+    }
+
+    private Long getRecipientValueSats(BitcoinUnit bitcoinUnit) {
         if(amount.getText() != null && !amount.getText().isEmpty()) {
-            Double fieldValue = Double.parseDouble(amount.getText());
+            double fieldValue = Double.parseDouble(amount.getText());
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 
         return null;
     }
 
-    private Long getFee() {
-        BitcoinUnit bitcoinUnit = feeAmountUnit.getSelectionModel().getSelectedItem();
+    private Long getFeeValueSats() {
+        return getFeeValueSats(feeAmountUnit.getSelectionModel().getSelectedItem());
+    }
+
+    private Long getFeeValueSats(BitcoinUnit bitcoinUnit) {
         if(fee.getText() != null && !fee.getText().isEmpty()) {
-            Double fieldValue = Double.parseDouble(amount.getText());
+            double fieldValue = Double.parseDouble(fee.getText());
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 
@@ -231,10 +301,26 @@ public class SendController extends WalletFormController implements Initializabl
         return TARGET_BLOCKS_RANGE.get(index);
     }
 
+    private Integer getTargetBlocks(double feeRate) {
+        Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
+        int maxTargetBlocks = 1;
+        for(Integer targetBlocks : targetBlocksFeeRates.keySet()) {
+            maxTargetBlocks = Math.max(maxTargetBlocks, targetBlocks);
+            Double candidate = targetBlocksFeeRates.get(targetBlocks);
+            if(feeRate > candidate) {
+                return targetBlocks;
+            }
+        }
+
+        return maxTargetBlocks;
+    }
+
     private void setTargetBlocks(Integer target) {
+        targetBlocks.valueProperty().removeListener(targetBlocksListener);
         int index = TARGET_BLOCKS_RANGE.indexOf(target);
         targetBlocks.setValue(index);
         feeRatesChart.select(target);
+        targetBlocks.valueProperty().addListener(targetBlocksListener);
     }
 
     private Map<Integer, Double> getTargetBlocksFeeRates() {
@@ -252,6 +338,18 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setFeeRate(Double feeRateAmt) {
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
+    }
+
+    private void setFee(long feeValue) {
+        fee.textProperty().removeListener(feeListener);
+        DecimalFormat df = new DecimalFormat("#.#");
+        df.setMaximumFractionDigits(8);
+        fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
+        fee.textProperty().addListener(feeListener);
+    }
+
+    private Node getSliderThumb() {
+        return targetBlocks.lookup(".thumb");
     }
 
     public void setMaxInput(ActionEvent event) {

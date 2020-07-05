@@ -23,9 +23,9 @@ public class TransactionHashIndexEntry extends HashIndexEntry {
     public String getDescription() {
         if(getType().equals(Type.INPUT)) {
             TransactionInput txInput = getBlockTransaction().getTransaction().getInputs().get((int)getHashIndex().getIndex());
-            return "Spent " + txInput.getOutpoint().getHash().toString().substring(0, 8) + "...:" + txInput.getOutpoint().getIndex();
+            return "Spent " + txInput.getOutpoint().getHash().toString().substring(0, 8) + "..:" + txInput.getOutpoint().getIndex();
         } else {
-            return (getKeyPurpose().equals(KeyPurpose.RECEIVE) ? "Received to " : "Change to ") + getHashIndex().getHash().toString().substring(0, 8) + "...:" + getHashIndex().getIndex();
+            return (getKeyPurpose().equals(KeyPurpose.RECEIVE) ? "Received to " : "Change to ") + getHashIndex().getHash().toString().substring(0, 8) + "..:" + getHashIndex().getIndex();
         }
     }
 

@@ -53,7 +53,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
 
     public String getDescription() {
         return (type.equals(Type.INPUT) ? "Spent by input " : "Received from output ") +
-                getHashIndex().getHash().toString().substring(0, 8) + "...:" +
+                getHashIndex().getHash().toString().substring(0, 8) + "..:" +
                 getHashIndex().getIndex() +
                 " on " + DateLabel.getShortDateFormat(getHashIndex().getDate());
     }

@@ -33,6 +33,10 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> {
 
     @Override
     public void commitEdit(String label) {
+        if(label != null) {
+            label = label.trim();
+        }
+
         // This block is necessary to support commit on losing focus, because
         // the baked-in mechanism sets our editing state to false before we can
         // intercept the loss of focus. The default commitEdit(...) method

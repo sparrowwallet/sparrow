@@ -21,6 +21,7 @@ public class FontAwesome5 extends GlyphFont {
         EXCLAMATION_CIRCLE('\uf06a'),
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
+        HAND_HOLDING('\uf4bd'),
         KEY('\uf084'),
         LAPTOP('\uf109'),
         LOCK('\uf023'),

@@ -38,8 +38,8 @@ public class TextFieldValidator {
         return new TextFieldValidator(integersOnlyPattern());
     }
 
-    public TextFormatter<Object> getFormatter() {
-        return new TextFormatter<>(this::validateChange);
+    public TextFormatter<String> getFormatter() {
+        return new TextFormatter<>(TextFormatter.IDENTITY_STRING_CONVERTER, "", this::validateChange);
     }
 
     private Change validateChange(Change c) {
