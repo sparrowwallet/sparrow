@@ -80,6 +80,13 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
 
+    private final ChangeListener<String> amountListener = new ChangeListener<String>() {
+        @Override
+        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+            updateTransaction();
+        }
+    };
+
     private final ChangeListener<String> feeListener = new ChangeListener<>() {
         @Override
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
@@ -124,9 +131,7 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         amount.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_FRACTION_DIGITS, 8).getFormatter());
-        amount.textProperty().addListener((observable, oldValue, newValue) -> {
-            updateTransaction();
-        });
+        amount.textProperty().addListener(amountListener);
 
         amountUnit.getSelectionModel().select(1);
         amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
@@ -139,9 +144,16 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         insufficientInputsProperty.addListener((observable, oldValue, newValue) -> {
+            amount.textProperty().removeListener(amountListener);
             String amt = amount.getText();
-            amount.setText(amt + " ");
+            amount.setText(amt + "0");
             amount.setText(amt);
+            amount.textProperty().addListener(amountListener);
+            fee.textProperty().removeListener(feeListener);
+            String feeAmt = fee.getText();
+            fee.setText(feeAmt + "0");
+            fee.setText(feeAmt);
+            fee.textProperty().addListener(feeListener);
         });
 
         targetBlocks.setMin(0);
@@ -224,6 +236,7 @@ public class SendController extends WalletFormController implements Initializabl
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() == 0)
         ));
         validationSupport.registerValidator(fee, Validator.combine(
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() != null && getFeeValueSats() == 0)
         ));
 
