@@ -76,6 +76,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final BooleanProperty userFeeSet = new SimpleBooleanProperty(false);
 
+    private final ObjectProperty<UtxoSelector> utxoSelectorProperty = new SimpleObjectProperty<>(null);
+
     private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
@@ -163,12 +165,13 @@ public class SendController extends WalletFormController implements Initializabl
         targetBlocks.setLabelFormatter(new StringConverter<Double>() {
             @Override
             public String toString(Double object) {
-                return Integer.toString(TARGET_BLOCKS_RANGE.get(object.intValue()));
+                String blocks = Integer.toString(TARGET_BLOCKS_RANGE.get(object.intValue()));
+                return (object.intValue() == TARGET_BLOCKS_RANGE.size() - 1) ? blocks + "+" : blocks;
             }
 
             @Override
             public Double fromString(String string) {
-                return (double)TARGET_BLOCKS_RANGE.indexOf(Integer.valueOf(string));
+                return (double)TARGET_BLOCKS_RANGE.indexOf(Integer.valueOf(string.replace("+", "")));
             }
         });
         targetBlocks.valueProperty().addListener(targetBlocksListener);
@@ -363,6 +366,10 @@ public class SendController extends WalletFormController implements Initializabl
 
     private Node getSliderThumb() {
         return targetBlocks.lookup(".thumb");
+    }
+
+    public void setUtxoSelector(UtxoSelector utxoSelector) {
+        utxoSelectorProperty.set(utxoSelector);
     }
 
     public void setMaxInput(ActionEvent event) {

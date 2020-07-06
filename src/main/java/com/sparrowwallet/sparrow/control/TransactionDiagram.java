@@ -320,7 +320,7 @@ public class TransactionDiagram extends GridPane {
 
         @Override
         public String getLabel() {
-            return additionalInputs.size() + " more";
+            return additionalInputs.size() + " more...";
         }
 
         public List<BlockTransactionHashIndex> getAdditionalInputs() {

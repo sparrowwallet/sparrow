@@ -6,6 +6,7 @@ import javafx.scene.chart.Axis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 
+import java.util.Iterator;
 import java.util.Map;
 
 public class FeeRatesChart extends LineChart<String, Number> {
@@ -24,8 +25,10 @@ public class FeeRatesChart extends LineChart<String, Number> {
     public void update(Map<Integer, Double> targetBlocksFeeRates) {
         feeRateSeries.getData().clear();
 
-        for(Integer targetBlocks : targetBlocksFeeRates.keySet()) {
-            XYChart.Data<String, Number> data = new XYChart.Data<>(Integer.toString(targetBlocks), targetBlocksFeeRates.get(targetBlocks));
+        for(Iterator<Integer> targetBlocksIter = targetBlocksFeeRates.keySet().iterator(); targetBlocksIter.hasNext(); ) {
+            Integer targetBlocks = targetBlocksIter.next();
+            String category = targetBlocks + (targetBlocksIter.hasNext() ? "" : "+");
+            XYChart.Data<String, Number> data = new XYChart.Data<>(category, targetBlocksFeeRates.get(targetBlocks));
             feeRateSeries.getData().add(data);
         }
 
@@ -44,7 +47,7 @@ public class FeeRatesChart extends LineChart<String, Number> {
             XYChart.Data<String, Number> data = feeRateSeries.getData().get(i);
             Node symbol = lookup(".chart-line-symbol.data" + i);
             if(symbol != null) {
-                if(data.getXValue().equals(targetBlocks.toString())) {
+                if(data.getXValue().replace("+", "").equals(targetBlocks.toString())) {
                     symbol.getStyleClass().add("selected");
                     selectedTargetBlocks = targetBlocks;
                 }

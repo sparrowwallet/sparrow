@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.Label;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
@@ -72,6 +73,8 @@ public class UtxosTreeTable extends TreeTableView<Entry> {
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         amountCol.setSortType(TreeTableColumn.SortType.DESCENDING);
         getSortOrder().add(amountCol);
+
+        getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     public void updateAll(WalletUtxosEntry rootEntry) {

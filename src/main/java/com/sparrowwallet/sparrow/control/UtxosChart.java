@@ -10,13 +10,15 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.XYChart;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UtxosChart extends BarChart<String, Number> {
     private static final int MAX_BARS = 8;
     private static final String OTHER_CATEGORY = "Other";
 
-    private Entry selectedEntry;
+    private List<Entry> selectedEntries;
+    private int totalUtxos;
 
     private XYChart.Series<String, Number> utxoSeries;
 
@@ -36,6 +38,7 @@ public class UtxosChart extends BarChart<String, Number> {
                 .sorted((o1, o2) -> (int) (o2.getYValue().longValue() - o1.getYValue().longValue()))
                 .collect(Collectors.toList());
 
+        totalUtxos = utxoDataList.size();
         if(utxoDataList.size() > MAX_BARS) {
             Long otherTotal = utxoDataList.subList(MAX_BARS - 1, utxoDataList.size()).stream().mapToLong(data -> data.getYValue().longValue()).sum();
             utxoDataList = utxoDataList.subList(0, MAX_BARS - 1);
@@ -58,14 +61,14 @@ public class UtxosChart extends BarChart<String, Number> {
             utxoSeries.getData().remove(utxoDataList.size() - 1, utxoSeries.getData().size());
         }
 
-        if(selectedEntry != null) {
-            select(selectedEntry);
+        if(selectedEntries != null) {
+            select(selectedEntries);
         }
     }
 
-    public void select(Entry entry) {
-        Node selectedBar = lookup(".chart-bar.selected");
-        if(selectedBar != null) {
+    public void select(List<Entry> entries) {
+        Set<Node> selectedBars = lookupAll(".chart-bar.selected");
+        for(Node selectedBar : selectedBars) {
             selectedBar.getStyleClass().remove("selected");
         }
 
@@ -73,11 +76,14 @@ public class UtxosChart extends BarChart<String, Number> {
             XYChart.Data<String, Number> data = utxoSeries.getData().get(i);
             Node bar = lookup(".data" + i);
             if(bar != null) {
-                if(data.getExtraValue() != null && data.getExtraValue().equals(entry)) {
+                if(data.getExtraValue() != null && entries.contains((Entry)data.getExtraValue())) {
                     bar.getStyleClass().add("selected");
-                    this.selectedEntry = entry;
+                } else if(data.getExtraValue() == null && entries.size() == totalUtxos) {
+                    bar.getStyleClass().add("selected");
                 }
             }
         }
+
+        this.selectedEntries = entries;
     }
 }

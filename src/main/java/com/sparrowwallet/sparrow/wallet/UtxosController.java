@@ -7,11 +7,14 @@ import com.sparrowwallet.sparrow.control.UtxosTreeTable;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class UtxosController extends WalletFormController implements Initializable {
 
@@ -31,9 +34,9 @@ public class UtxosController extends WalletFormController implements Initializab
         utxosTable.initialize(getWalletForm().getWalletUtxosEntry());
         utxosChart.initialize(getWalletForm().getWalletUtxosEntry());
 
-        utxosTable.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            Entry entry = newValue.getValue();
-            utxosChart.select(entry);
+        utxosTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
+            List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
+            utxosChart.select(selectedEntries);
         });
     }
 
