@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.BitcoinUnit;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
+import com.sparrowwallet.sparrow.event.SpendUtxoEvent;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -51,6 +52,9 @@ public class SendController extends WalletFormController implements Initializabl
     private ComboBox<BitcoinUnit> amountUnit;
 
     @FXML
+    private Button maxButton;
+
+    @FXML
     private Slider targetBlocks;
 
     @FXML
@@ -69,10 +73,10 @@ public class SendController extends WalletFormController implements Initializabl
     private TransactionDiagram transactionDiagram;
 
     @FXML
-    private Button clear;
+    private Button clearButton;
 
     @FXML
-    private Button create;
+    private Button createButton;
 
     private final BooleanProperty userFeeSet = new SimpleBooleanProperty(false);
 
@@ -129,6 +133,7 @@ public class SendController extends WalletFormController implements Initializabl
         addValidation();
 
         address.textProperty().addListener((observable, oldValue, newValue) -> {
+            maxButton.setDisable(!isValidRecipientAddress());
             updateTransaction();
         });
 
@@ -144,6 +149,8 @@ public class SendController extends WalletFormController implements Initializabl
                 amount.setText(df.format(newValue.getValue(value)));
             }
         });
+
+        maxButton.setDisable(!isValidRecipientAddress());
 
         insufficientInputsProperty.addListener((observable, oldValue, newValue) -> {
             amount.textProperty().removeListener(amountListener);
@@ -193,7 +200,7 @@ public class SendController extends WalletFormController implements Initializabl
         feeAmountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getFeeValueSats(oldValue);
             if(value != null) {
-                setFee(value);
+                setFeeValueSats(value);
             }
         });
 
@@ -210,20 +217,35 @@ public class SendController extends WalletFormController implements Initializabl
             }
         });
 
+        utxoSelectorProperty.addListener((observable, oldValue, utxoSelector) -> {
+            if(utxoSelector instanceof PresetUtxoSelector) {
+                PresetUtxoSelector presetUtxoSelector = (PresetUtxoSelector)utxoSelector;
+                int num = presetUtxoSelector.getPresetUtxos().size();
+                String selection = " (" + num + " UTXO" + (num > 1 ? "s" : "") + " selected)";
+                maxButton.setText("Max" + selection);
+                clearButton.setText("Clear" + selection);
+            } else {
+                maxButton.setText("Max");
+                clearButton.setText("Clear");
+            }
+        });
+
         walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
             if(walletTransaction != null) {
+                setRecipientValueSats(walletTransaction.getRecipientAmount());
+
                 double feeRate = (double)walletTransaction.getFee() / walletTransaction.getTransaction().getVirtualSize();
                 if(userFeeSet.get()) {
                     setTargetBlocks(getTargetBlocks(feeRate));
                 } else {
-                    setFee(walletTransaction.getFee());
+                    setFeeValueSats(walletTransaction.getFee());
                 }
 
                 setFeeRate(feeRate);
             }
 
             transactionDiagram.update(walletTransaction);
-            create.setDisable(walletTransaction == null);
+            createButton.setDisable(walletTransaction == null);
         });
 
         address.setText("32YSPMaUePf511u5adEckiNq8QLec9ksXX");
@@ -247,12 +269,17 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void updateTransaction() {
+        updateTransaction(false);
+    }
+
+    private void updateTransaction(boolean sendAll) {
         try {
             Address recipientAddress = getRecipientAddress();
-            Long recipientAmount = getRecipientValueSats();
+            Long recipientAmount = sendAll ? Long.valueOf(1L) : getRecipientValueSats();
             if(recipientAmount != null && recipientAmount != 0 && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), userFeeSet.get() ? getFeeValueSats() : null);
+                Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), userFee, sendAll);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 
@@ -268,6 +295,10 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private List<UtxoSelector> getUtxoSelectors() {
+        if(utxoSelectorProperty.get() != null) {
+            return List.of(utxoSelectorProperty.get());
+        }
+
         UtxoSelector priorityUtxoSelector = new PriorityUtxoSelector(AppController.getCurrentBlockHeight());
         return List.of(priorityUtxoSelector);
     }
@@ -299,6 +330,14 @@ public class SendController extends WalletFormController implements Initializabl
         return null;
     }
 
+    private void setRecipientValueSats(long recipientValue) {
+        amount.textProperty().removeListener(amountListener);
+        DecimalFormat df = new DecimalFormat("#.#");
+        df.setMaximumFractionDigits(8);
+        amount.setText(df.format(amountUnit.getValue().getValue(recipientValue)));
+        amount.textProperty().addListener(amountListener);
+    }
+
     private Long getFeeValueSats() {
         return getFeeValueSats(feeAmountUnit.getSelectionModel().getSelectedItem());
     }
@@ -310,6 +349,14 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         return null;
+    }
+
+    private void setFeeValueSats(long feeValue) {
+        fee.textProperty().removeListener(feeListener);
+        DecimalFormat df = new DecimalFormat("#.#");
+        df.setMaximumFractionDigits(8);
+        fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
+        fee.textProperty().addListener(feeListener);
     }
 
     private Integer getTargetBlocks() {
@@ -356,14 +403,6 @@ public class SendController extends WalletFormController implements Initializabl
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
     }
 
-    private void setFee(long feeValue) {
-        fee.textProperty().removeListener(feeListener);
-        DecimalFormat df = new DecimalFormat("#.#");
-        df.setMaximumFractionDigits(8);
-        fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
-        fee.textProperty().addListener(feeListener);
-    }
-
     private Node getSliderThumb() {
         return targetBlocks.lookup(".thumb");
     }
@@ -373,14 +412,30 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void setMaxInput(ActionEvent event) {
+        UtxoSelector utxoSelector = utxoSelectorProperty.get();
+        if(utxoSelector == null) {
+            MaxUtxoSelector maxUtxoSelector = new MaxUtxoSelector();
+            utxoSelectorProperty.set(maxUtxoSelector);
+        }
 
+        updateTransaction(true);
     }
 
     public void clear(ActionEvent event) {
         address.setText("");
         label.setText("");
+
+        amount.textProperty().removeListener(amountListener);
         amount.setText("");
+        amount.textProperty().addListener(amountListener);
+
+        fee.textProperty().removeListener(feeListener);
         fee.setText("");
+        fee.textProperty().addListener(feeListener);
+
+        userFeeSet.set(false);
+        targetBlocks.setValue(4);
+        utxoSelectorProperty.setValue(null);
         walletTransactionProperty.setValue(null);
     }
 
@@ -393,5 +448,14 @@ public class SendController extends WalletFormController implements Initializabl
         feeRatesChart.update(event.getTargetBlockFeeRates());
         feeRatesChart.select(getTargetBlocks());
         setFeeRate(event.getTargetBlockFeeRates().get(getTargetBlocks()));
+    }
+
+    @Subscribe
+    public void spendUtxos(SpendUtxoEvent event) {
+        if(!event.getUtxoEntries().isEmpty() && event.getUtxoEntries().get(0).getWallet().equals(getWalletForm().getWallet())) {
+            List<BlockTransactionHashIndex> utxos = event.getUtxoEntries().stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
+            setUtxoSelector(new PresetUtxoSelector(utxos));
+            updateTransaction(true);
+        }
     }
 }

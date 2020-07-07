@@ -4,9 +4,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
-import com.sparrowwallet.sparrow.event.ReceiveToEvent;
-import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.application.Platform;
@@ -14,11 +12,14 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.HBox;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.stream.Collectors;
 
 class EntryCell extends TreeTableCell<Entry, Entry> {
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -84,6 +85,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 tooltip.setText(hashIndexEntry.getHashIndex().toString());
                 setTooltip(tooltip);
 
+                HBox actionBox = new HBox();
                 Button viewTransactionButton = new Button("");
                 Glyph searchGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SEARCH);
                 searchGlyph.setFontSize(12);
@@ -91,7 +93,33 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 viewTransactionButton.setOnAction(event -> {
                     EventManager.get().post(new ViewTransactionEvent(hashIndexEntry.getBlockTransaction(), hashIndexEntry));
                 });
-                setGraphic(viewTransactionButton);
+                actionBox.getChildren().add(viewTransactionButton);
+
+                if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && !hashIndexEntry.isSpent()) {
+                    Button spendUtxoButton = new Button("");
+                    Glyph sendGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
+                    sendGlyph.setFontSize(12);
+                    spendUtxoButton.setGraphic(sendGlyph);
+                    spendUtxoButton.setOnAction(event -> {
+                        List<HashIndexEntry> utxoEntries = getTreeTableView().getSelectionModel().getSelectedCells().stream()
+                                .map(tp -> tp.getTreeItem().getValue())
+                                .filter(e -> e instanceof HashIndexEntry)
+                                .map(e -> (HashIndexEntry)e)
+                                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && !hashIndexEntry.isSpent())
+                                .collect(Collectors.toList());
+
+                        if(!utxoEntries.contains(hashIndexEntry)) {
+                            utxoEntries = List.of(hashIndexEntry);
+                        }
+
+                        final List<HashIndexEntry> spendingUtxoEntries = utxoEntries;
+                        EventManager.get().post(new SendActionEvent(utxoEntries));
+                        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(spendingUtxoEntries)));
+                    });
+                    actionBox.getChildren().add(spendUtxoButton);
+                }
+
+                setGraphic(actionBox);
             }
         }
     }

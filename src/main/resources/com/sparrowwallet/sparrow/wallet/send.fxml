@@ -99,9 +99,9 @@
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
             <HBox AnchorPane.rightAnchor="10">
-                <Button fx:id="clear" text="Clear" cancelButton="true" onAction="#clear" />
+                <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
                 <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
-                <Button fx:id="create" text="Create Transaction" defaultButton="true" disable="true" onAction="#createTransaction" />
+                <Button fx:id="createButton" text="Create Transaction" defaultButton="true" disable="true" onAction="#createTransaction" />
             </HBox>
         </AnchorPane>
     </bottom>

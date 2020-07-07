@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
+import com.sparrowwallet.sparrow.event.SendActionEvent;
 import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -111,6 +112,13 @@ public class WalletController extends WalletFormController implements Initializa
     public void receiveAction(ReceiveActionEvent event) {
         if(event.getReceiveEntry().getWallet().equals(walletForm.getWallet())) {
             selectFunction(Function.RECEIVE);
+        }
+    }
+
+    @Subscribe
+    public void sendAction(SendActionEvent event) {
+        if(!event.getUtxoEntries().isEmpty() && event.getUtxoEntries().get(0).getWallet().equals(walletForm.getWallet())) {
+            selectFunction(Function.SEND);
         }
     }
 }
