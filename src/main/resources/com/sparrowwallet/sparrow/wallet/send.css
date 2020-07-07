@@ -40,7 +40,7 @@
     -fx-min-height: 230px;
 }
 
-#transactionDiagram .y-axis {
+#transactionDiagram .boundary {
     -fx-stroke: transparent;
 }
 
@@ -52,8 +52,9 @@
     -fx-text-fill: rgb(202, 18, 67);
 }
 
-#transactionDiagram .input-line, #transactionDiagram .output-line {
+#transactionDiagram .inputs-type, #transactionDiagram .input-line, #transactionDiagram .output-line {
     -fx-fill: transparent;
+    -fx-text-fill: #696c77;
     -fx-stroke: #696c77;
     -fx-stroke-width: 1px;
 }

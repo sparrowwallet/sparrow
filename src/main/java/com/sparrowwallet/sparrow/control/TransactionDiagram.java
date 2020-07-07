@@ -5,9 +5,6 @@ import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -23,20 +20,10 @@ import org.controlsfx.glyphfont.Glyph;
 import java.util.*;
 
 public class TransactionDiagram extends GridPane {
-    private static final int MAX_UTXOS = 5;
+    private static final int MAX_UTXOS = 8;
+    private static final double DIAGRAM_HEIGHT = 230.0;
 
     private WalletTransaction walletTx;
-
-    public TransactionDiagram() {
-        int columns = 5;
-        double[] percentWidth = {20, 20, 10, 20, 30};
-
-        for(int i = 0; i < columns; i++) {
-            ColumnConstraints columnConstraints = new ColumnConstraints();
-            columnConstraints.setPercentWidth(percentWidth[i]);
-            getColumnConstraints().add(columnConstraints);
-        }
-    }
 
     public void update(WalletTransaction walletTx) {
         if(walletTx == null) {
@@ -50,23 +37,26 @@ public class TransactionDiagram extends GridPane {
     public void update() {
         Map<BlockTransactionHashIndex, WalletNode> displayedUtxos = getDisplayedUtxos();
 
-        Pane inputsPane = getInputsLabels(displayedUtxos);
-        GridPane.setConstraints(inputsPane, 0, 0);
+        Pane inputsTypePane = getInputsType(displayedUtxos);
+        GridPane.setConstraints(inputsTypePane, 0, 0);
 
-        Pane inputsLinesPane = getInputsLines(displayedUtxos);
-        GridPane.setConstraints(inputsLinesPane, 1, 0);
+        Pane inputsPane = getInputsLabels(displayedUtxos);
+        GridPane.setConstraints(inputsPane, 1, 0);
+
+        Node inputsLinesPane = getInputsLines(displayedUtxos);
+        GridPane.setConstraints(inputsLinesPane, 2, 0);
 
         Pane txPane = getTransactionPane();
-        GridPane.setConstraints(txPane, 2, 0);
+        GridPane.setConstraints(txPane, 3, 0);
 
         Pane outputsLinesPane = getOutputsLines();
-        GridPane.setConstraints(outputsLinesPane, 3, 0);
+        GridPane.setConstraints(outputsLinesPane, 4, 0);
 
         Pane outputsPane = getOutputsLabels();
-        GridPane.setConstraints(outputsPane, 4, 0);
+        GridPane.setConstraints(outputsPane, 5, 0);
 
         getChildren().clear();
-        getChildren().addAll(inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
+        getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
     }
 
     private Map<BlockTransactionHashIndex, WalletNode> getDisplayedUtxos() {
@@ -90,8 +80,64 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
+    private Pane getInputsType(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
+        StackPane stackPane = new StackPane();
+
+        if(walletTx.isCoinControlUsed()) {
+            VBox pane = new VBox();
+            double width = 22.0;
+            Group group = new Group();
+            VBox.setVgrow(group, Priority.ALWAYS);
+
+            Line widthLine = new Line();
+            widthLine.setStartX(0);
+            widthLine.setEndX(width);
+            widthLine.getStyleClass().add("boundary");
+
+            Line topYaxis = new Line();
+            topYaxis.setStartX(width * 0.5);
+            topYaxis.setStartY(DIAGRAM_HEIGHT * 0.5 - 20.0);
+            topYaxis.setEndX(width * 0.5);
+            topYaxis.setEndY(0);
+            topYaxis.getStyleClass().add("inputs-type");
+
+            Line topBracket = new Line();
+            topBracket.setStartX(width * 0.5);
+            topBracket.setStartY(0);
+            topBracket.setEndX(width);
+            topBracket.setEndY(0);
+            topBracket.getStyleClass().add("inputs-type");
+
+            Line bottomYaxis = new Line();
+            bottomYaxis.setStartX(width * 0.5);
+            bottomYaxis.setStartY(DIAGRAM_HEIGHT);
+            bottomYaxis.setEndX(width * 0.5);
+            bottomYaxis.setEndY(DIAGRAM_HEIGHT * 0.5 + 20.0);
+            bottomYaxis.getStyleClass().add("inputs-type");
+
+            Line bottomBracket = new Line();
+            bottomBracket.setStartX(width * 0.5);
+            bottomBracket.setStartY(DIAGRAM_HEIGHT);
+            bottomBracket.setEndX(width);
+            bottomBracket.setEndY(DIAGRAM_HEIGHT);
+            bottomBracket.getStyleClass().add("inputs-type");
+
+            group.getChildren().addAll(widthLine, topYaxis, topBracket, bottomYaxis, bottomBracket);
+            pane.getChildren().add(group);
+
+            Glyph lockGlyph = getLockGlyph();
+            lockGlyph.getStyleClass().add("inputs-type");
+            Tooltip tooltip = new Tooltip("Coin control active");
+            lockGlyph.setTooltip(tooltip);
+            stackPane.getChildren().addAll(pane, lockGlyph);
+        }
+
+        return stackPane;
+    }
+
     private Pane getInputsLabels(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
         VBox inputsBox = new VBox();
+        inputsBox.setMaxWidth(150);
         inputsBox.setPadding(new Insets(0, 10, 0, 10));
         inputsBox.minHeightProperty().bind(minHeightProperty());
         inputsBox.setAlignment(Pos.CENTER_RIGHT);
@@ -144,24 +190,28 @@ public class TransactionDiagram extends GridPane {
         yaxisLine.setStartX(0);
         yaxisLine.setStartY(0);
         yaxisLine.setEndX(0);
-        yaxisLine.endYProperty().bind(this.heightProperty());
-        yaxisLine.getStyleClass().add("y-axis");
+        yaxisLine.setEndY(DIAGRAM_HEIGHT);
+        yaxisLine.getStyleClass().add("boundary");
         group.getChildren().add(yaxisLine);
 
+        double width = 140.0;
         int numUtxos = displayedUtxos.size();
         for(int i = 1; i <= numUtxos; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("input-line");
 
             curve.setStartX(0);
-            curve.startYProperty().bind(getScaledProperty(this.heightProperty(), (double)i / (numUtxos + 1), 20));
-            curve.endXProperty().bind(pane.widthProperty());
-            curve.endYProperty().bind(getScaledProperty(this.heightProperty(), 0.5, 0));
+            double scaleFactor = (double)i / (numUtxos + 1);
+            int nodeHeight = 17;
+            double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
+            curve.setStartY(scale(DIAGRAM_HEIGHT, scaleFactor, additional));
+            curve.setEndX(width);
+            curve.setEndY(scale(DIAGRAM_HEIGHT, 0.5, 0));
 
-            curve.controlX1Property().bind(getScaledProperty(pane.widthProperty(), 0.2, 0));
-            curve.controlY1Property().bind(curve.startYProperty());
-            curve.controlX2Property().bind(getScaledProperty(pane.widthProperty(), 0.8, 0));
-            curve.controlY2Property().bind(curve.endYProperty());
+            curve.setControlX1(scale(width, 0.2, 0));
+            curve.setControlY1(curve.getStartY());
+            curve.setControlX2(scale(width, 0.8, 0));
+            curve.setControlY2(curve.getEndY());
 
             group.getChildren().add(curve);
         }
@@ -170,22 +220,8 @@ public class TransactionDiagram extends GridPane {
         return pane;
     }
 
-    private static DoubleProperty getScaledProperty(ReadOnlyDoubleProperty property, double scaleFactor, int nodeHeight) {
-        SimpleDoubleProperty scaledProperty = new SimpleDoubleProperty(scale(property.doubleValue(), scaleFactor, nodeHeight));
-        property.addListener((observable, oldValue, newValue) -> {
-            scaledProperty.set(scale(newValue.doubleValue(), scaleFactor, nodeHeight));
-        });
-
-        return scaledProperty;
-    }
-
-    private static double scale(Double value, double scaleFactor, int nodeHeight) {
-        double scaled = value * (1.0 - scaleFactor);
-        if(nodeHeight > 0) {
-            scaled += (0.5 - scaleFactor) * ( (double)nodeHeight );
-        }
-
-        return scaled;
+    private static double scale(Double value, double scaleFactor, double additional) {
+        return value * (1.0 - scaleFactor) + additional;
     }
 
     private Pane getOutputsLines() {
@@ -198,22 +234,26 @@ public class TransactionDiagram extends GridPane {
         yaxisLine.setStartY(0);
         yaxisLine.setEndX(0);
         yaxisLine.endYProperty().bind(this.heightProperty());
-        yaxisLine.getStyleClass().add("y-axis");
+        yaxisLine.getStyleClass().add("boundary");
         group.getChildren().add(yaxisLine);
 
+        double width = 140.0;
         int numOutputs = (walletTx.getChangeNode() == null ? 2 : 3);
         for(int i = 1; i <= numOutputs; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("output-line");
 
             curve.setStartX(0);
-            curve.startYProperty().bind(getScaledProperty(this.heightProperty(), 0.5, 0));
-            curve.endXProperty().bind(pane.widthProperty());
-            curve.endYProperty().bind(getScaledProperty(this.heightProperty(), (double)i / (numOutputs + 1), 20));
+            curve.setStartY(scale(DIAGRAM_HEIGHT, 0.5, 0));
+            curve.setEndX(width);
+            double scaleFactor = (double)i / (numOutputs + 1);
+            int nodeHeight = 20;
+            double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
+            curve.setEndY(scale(DIAGRAM_HEIGHT, scaleFactor, additional));
 
-            curve.controlX1Property().bind(getScaledProperty(pane.widthProperty(), 0.2, 0));
+            curve.setControlX1(scale(width, 0.2, 0));
             curve.controlY1Property().bind(curve.startYProperty());
-            curve.controlX2Property().bind(getScaledProperty(pane.widthProperty(), 0.8, 0));
+            curve.setControlX2(scale(width, 0.8, 0));
             curve.controlY2Property().bind(curve.endYProperty());
 
             group.getChildren().add(curve);
@@ -225,7 +265,8 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getOutputsLabels() {
         VBox outputsBox = new VBox();
-        outputsBox.setPadding(new Insets(0, 30, 0, 10));
+        outputsBox.setMaxWidth(150);
+        outputsBox.setPadding(new Insets(0, 20, 0, 10));
         outputsBox.setAlignment(Pos.CENTER_LEFT);
         outputsBox.getChildren().add(createSpacer());
 
@@ -248,7 +289,6 @@ public class TransactionDiagram extends GridPane {
         }
 
         boolean highFee = (walletTx.getFeePercentage() > 0.1);
-        String feeDesc = "Fee";
         Label feeLabel = highFee ? new Label("High Fee", getWarningGlyph()) : new Label("Fee", getFeeGlyph());
         feeLabel.getStyleClass().addAll("output-label", "fee-label");
         String percentage = String.format("%.2f", walletTx.getFeePercentage() * 100.0);
@@ -263,6 +303,7 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getTransactionPane() {
         VBox txPane = new VBox();
+        txPane.setPadding(new Insets(0, 10, 0, 10));
         txPane.setAlignment(Pos.CENTER);
         txPane.getChildren().add(createSpacer());
 
@@ -308,6 +349,13 @@ public class TransactionDiagram extends GridPane {
         feeWarningGlyph.getStyleClass().add("fee-warning-icon");
         feeWarningGlyph.setFontSize(12);
         return feeWarningGlyph;
+    }
+
+    private Glyph getLockGlyph() {
+        Glyph lockGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.LOCK);
+        lockGlyph.getStyleClass().add("lock-icon");
+        lockGlyph.setFontSize(12);
+        return lockGlyph;
     }
 
     private static class AdditionalBlockTransactionHashIndex extends BlockTransactionHashIndex {

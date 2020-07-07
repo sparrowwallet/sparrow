@@ -22,76 +22,78 @@
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
-        <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
-            <padding>
-                <Insets left="25.0" right="25.0" top="25.0" />
-            </padding>
-            <columnConstraints>
-                <ColumnConstraints percentWidth="50" />
-                <ColumnConstraints percentWidth="30" />
-                <ColumnConstraints percentWidth="20" />
-            </columnConstraints>
-            <rowConstraints>
-                <RowConstraints />
-            </rowConstraints>
-            <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
-                <Fieldset inputGrow="SOMETIMES" text="Send">
-                    <Field text="Pay to:">
-                        <CopyableTextField fx:id="address" styleClass="address-text-field"/>
-                    </Field>
-                    <Field text="Label:">
-                        <TextField fx:id="label" />
-                    </Field>
-                    <Field text="Amount:">
-                        <TextField fx:id="amount" styleClass="amount-field" />
-                        <ComboBox fx:id="amountUnit">
-                            <items>
-                                <FXCollections fx:factory="observableArrayList">
-                                    <BitcoinUnit fx:constant="BTC" />
-                                    <BitcoinUnit fx:constant="SATOSHIS" />
-                                </FXCollections>
-                            </items>
-                        </ComboBox>
-                        <Region style="-fx-pref-width: 20" />
-                        <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
-                    </Field>
-                </Fieldset>
-            </Form>
-            <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
-                <Fieldset inputGrow="SOMETIMES" text="Fee">
-                    <Field text="Block Target:">
-                        <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
-                    </Field>
-                    <Field fx:id="feeRateField" text="Rate:">
-                        <CopyableLabel fx:id="feeRate" />
-                    </Field>
-                    <Field text="Fee:">
-                        <TextField fx:id="fee" styleClass="amount-field"/>
-                        <ComboBox fx:id="feeAmountUnit">
-                            <items>
-                                <FXCollections fx:factory="observableArrayList">
-                                    <BitcoinUnit fx:constant="BTC" />
-                                    <BitcoinUnit fx:constant="SATOSHIS" />
-                                </FXCollections>
-                            </items>
-                        </ComboBox>
-                    </Field>
-                </Fieldset>
-            </Form>
-            <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2">
-                <FeeRatesChart fx:id="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
-                    <xAxis>
-                        <CategoryAxis side="BOTTOM" />
-                    </xAxis>
-                    <yAxis>
-                        <NumberAxis side="LEFT" />
-                    </yAxis>
-                </FeeRatesChart>
+        <VBox>
+            <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
+                <padding>
+                    <Insets left="25.0" right="25.0" top="25.0" />
+                </padding>
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" />
+                    <ColumnConstraints percentWidth="30" />
+                    <ColumnConstraints percentWidth="20" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                </rowConstraints>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
+                    <Fieldset inputGrow="SOMETIMES" text="Send">
+                        <Field text="Pay to:">
+                            <CopyableTextField fx:id="address" styleClass="address-text-field"/>
+                        </Field>
+                        <Field text="Label:">
+                            <TextField fx:id="label" />
+                        </Field>
+                        <Field text="Amount:">
+                            <TextField fx:id="amount" styleClass="amount-field" />
+                            <ComboBox fx:id="amountUnit">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <BitcoinUnit fx:constant="BTC" />
+                                        <BitcoinUnit fx:constant="SATOSHIS" />
+                                    </FXCollections>
+                                </items>
+                            </ComboBox>
+                            <Region style="-fx-pref-width: 20" />
+                            <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
+                        </Field>
+                    </Fieldset>
+                </Form>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Fieldset inputGrow="SOMETIMES" text="Fee">
+                        <Field text="Block Target:">
+                            <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
+                        </Field>
+                        <Field fx:id="feeRateField" text="Rate:">
+                            <CopyableLabel fx:id="feeRate" />
+                        </Field>
+                        <Field text="Fee:">
+                            <TextField fx:id="fee" styleClass="amount-field"/>
+                            <ComboBox fx:id="feeAmountUnit">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <BitcoinUnit fx:constant="BTC" />
+                                        <BitcoinUnit fx:constant="SATOSHIS" />
+                                    </FXCollections>
+                                </items>
+                            </ComboBox>
+                        </Field>
+                    </Fieldset>
+                </Form>
+                <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2">
+                    <FeeRatesChart fx:id="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
+                        <xAxis>
+                            <CategoryAxis side="BOTTOM" />
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis side="LEFT" />
+                        </yAxis>
+                    </FeeRatesChart>
+                </AnchorPane>
+            </GridPane>
+            <AnchorPane>
+                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" maxHeight="230" AnchorPane.rightAnchor="100" />
             </AnchorPane>
-            <StackPane GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="3">
-                <TransactionDiagram fx:id="transactionDiagram" />
-            </StackPane>
-        </GridPane>
+        </VBox>
     </center>
     <bottom>
         <AnchorPane>
