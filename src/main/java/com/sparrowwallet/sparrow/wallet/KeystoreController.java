@@ -32,6 +32,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     private StackPane selectSourcePane;
 
     @FXML
+    private ToggleGroup keystoreSourceToggleGroup;
+
+    @FXML
     private Label type;
 
     @FXML
@@ -71,6 +74,8 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         label.setText(keystore.getLabel());
 
+        derivation.setPromptText(getWalletForm().getWallet().getScriptType().getDefaultDerivationPath());
+
         if(keystore.getExtendedPublicKey() != null) {
             xpub.setText(keystore.getExtendedPublicKey().toString());
         }
@@ -105,6 +110,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     public void selectSource(ActionEvent event) {
+        keystoreSourceToggleGroup.selectToggle(null);
         ToggleButton sourceButton = (ToggleButton)event.getSource();
         KeystoreSource keystoreSource = (KeystoreSource)sourceButton.getUserData();
         if(keystoreSource != KeystoreSource.SW_WATCH) {
@@ -200,10 +206,13 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @Subscribe
     public void update(SettingsChangedEvent event) {
-        if(walletForm.getWallet().equals(event.getWallet()) && event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE) && !derivation.getText().isEmpty()) {
-            String derivationPath = derivation.getText();
-            derivation.setText(derivationPath + " ");
-            derivation.setText(derivationPath);
+        if(walletForm.getWallet().equals(event.getWallet()) && event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE)) {
+            derivation.setPromptText(event.getWallet().getScriptType().getDefaultDerivationPath());
+            if(!derivation.getText().isEmpty()) {
+                String derivationPath = derivation.getText();
+                derivation.setText(derivationPath + " ");
+                derivation.setText(derivationPath);
+            }
         }
     }
 }

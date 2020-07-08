@@ -42,7 +42,7 @@
                         <ComboBox fx:id="scriptType">
                             <items>
                                 <FXCollections fx:factory="observableArrayList">
-                                    <ScriptType fx:constant="P2PK" />
+                                    <!-- <ScriptType fx:constant="P2PK" /> -->
                                     <ScriptType fx:constant="P2PKH" />
                                     <ScriptType fx:constant="P2SH" />
                                     <ScriptType fx:constant="P2SH_P2WPKH" />
