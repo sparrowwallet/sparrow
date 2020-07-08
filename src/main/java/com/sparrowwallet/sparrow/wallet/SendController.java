@@ -86,9 +86,13 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
 
-    private final ChangeListener<String> amountListener = new ChangeListener<String>() {
+    private final ChangeListener<String> amountListener = new ChangeListener<>() {
         @Override
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+            if(utxoSelectorProperty.get() instanceof MaxUtxoSelector) {
+                utxoSelectorProperty.setValue(null);
+            }
+
             updateTransaction();
         }
     };
@@ -137,7 +141,7 @@ public class SendController extends WalletFormController implements Initializabl
             updateTransaction();
         });
 
-        amount.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_FRACTION_DIGITS, 8).getFormatter());
+        amount.setTextFormatter(new AmountFormatter());
         amount.textProperty().addListener(amountListener);
 
         amountUnit.getSelectionModel().select(1);
@@ -193,7 +197,7 @@ public class SendController extends WalletFormController implements Initializabl
 
         setTargetBlocks(5);
 
-        fee.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_FRACTION_DIGITS, 8).getFormatter());
+        fee.setTextFormatter(new AmountFormatter());
         fee.textProperty().addListener(feeListener);
 
         feeAmountUnit.getSelectionModel().select(1);
@@ -232,7 +236,9 @@ public class SendController extends WalletFormController implements Initializabl
 
         walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
             if(walletTransaction != null) {
-                setRecipientValueSats(walletTransaction.getRecipientAmount());
+                if(getRecipientValueSats() == null || walletTransaction.getRecipientAmount() != getRecipientValueSats()) {
+                    setRecipientValueSats(walletTransaction.getRecipientAmount());
+                }
 
                 double feeRate = (double)walletTransaction.getFee() / walletTransaction.getTransaction().getVirtualSize();
                 if(userFeeSet.get()) {
@@ -323,7 +329,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private Long getRecipientValueSats(BitcoinUnit bitcoinUnit) {
         if(amount.getText() != null && !amount.getText().isEmpty()) {
-            double fieldValue = Double.parseDouble(amount.getText());
+            double fieldValue = Double.parseDouble(amount.getText().replaceAll(",", ""));
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 
@@ -344,7 +350,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private Long getFeeValueSats(BitcoinUnit bitcoinUnit) {
         if(fee.getText() != null && !fee.getText().isEmpty()) {
-            double fieldValue = Double.parseDouble(fee.getText());
+            double fieldValue = Double.parseDouble(fee.getText().replaceAll(",", ""));
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 
