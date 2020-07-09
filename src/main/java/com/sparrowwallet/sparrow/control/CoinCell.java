@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
@@ -13,8 +14,11 @@ import javafx.scene.layout.Region;
 import java.util.Locale;
 
 class CoinCell extends TreeTableCell<Entry, Number> {
+    private final Tooltip tooltip;
+
     public CoinCell() {
         super();
+        tooltip = new Tooltip();
         getStyleClass().add("coin-cell");
     }
 
@@ -25,23 +29,33 @@ class CoinCell extends TreeTableCell<Entry, Number> {
         if(empty || amount == null) {
             setText(null);
             setGraphic(null);
+            setTooltip(null);
         } else {
             Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
             EntryCell.applyRowStyles(this, entry);
 
+            CoinTreeTable coinTreeTable = (CoinTreeTable)getTreeTableView();
+            BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
+
             String satsValue = String.format(Locale.ENGLISH, "%,d", amount.longValue());
-            final String btcValue = CoinLabel.getBTCFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+            final String btcValue = CoinLabel.getBTCFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
+
+            if(unit.equals(BitcoinUnit.BTC)) {
+                tooltip.setText(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());
+                setText(btcValue);
+            } else {
+                tooltip.setText(btcValue + " " + BitcoinUnit.BTC.getLabel());
+                setText(satsValue);
+            }
+            setTooltip(tooltip);
+            String tooltipValue = tooltip.getText();
 
             if(entry instanceof TransactionEntry) {
                 TransactionEntry transactionEntry = (TransactionEntry)entry;
-                Tooltip tooltip = new Tooltip();
-                tooltip.setText(btcValue + " (" + transactionEntry.getConfirmationsDescription() + ")");
-                setTooltip(tooltip);
+                tooltip.setText(tooltipValue + " (" + transactionEntry.getConfirmationsDescription() + ")");
 
                 transactionEntry.confirmationsProperty().addListener((observable, oldValue, newValue) -> {
-                    Tooltip newTooltip = new Tooltip();
-                    newTooltip.setText(btcValue + " (" + transactionEntry.getConfirmationsDescription() + ")");
-                    setTooltip(newTooltip);
+                    tooltip.setText(tooltipValue + " (" + transactionEntry.getConfirmationsDescription() + ")");
                 });
 
                 if(transactionEntry.isConfirming()) {
@@ -66,14 +80,6 @@ class CoinCell extends TreeTableCell<Entry, Number> {
             } else {
                 setGraphic(null);
             }
-
-            if(getTooltip() == null) {
-                Tooltip tooltip = new Tooltip();
-                tooltip.setText(btcValue);
-                setTooltip(tooltip);
-            }
-
-            setText(satsValue);
         }
     }
 }

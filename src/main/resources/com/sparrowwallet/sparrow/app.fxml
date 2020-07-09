@@ -6,6 +6,7 @@
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.shape.Rectangle?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
+<?import com.sparrowwallet.drongo.BitcoinUnit?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="750.0" prefWidth="1000.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
     <children>
@@ -34,8 +35,30 @@
                         <MenuItem styleClass="macHide" mnemonicParsing="false" text="Quit" onAction="#quit"/>
                     </items>
                 </Menu>
+                <fx:define>
+                    <ToggleGroup fx:id="bitcoinUnit"/>
+                </fx:define>
                 <Menu mnemonicParsing="false" text="View">
                     <items>
+                        <Menu mnemonicParsing="false" text="Bitcoin Unit">
+                            <items>
+                                <RadioMenuItem mnemonicParsing="false" text="Auto" toggleGroup="$bitcoinUnit" onAction="#setBitcoinUnit">
+                                    <userData>
+                                        <BitcoinUnit fx:constant="AUTO" />
+                                    </userData>
+                                </RadioMenuItem>
+                                <RadioMenuItem mnemonicParsing="false" text="BTC" toggleGroup="$bitcoinUnit" onAction="#setBitcoinUnit">
+                                    <userData>
+                                        <BitcoinUnit fx:constant="BTC" />
+                                    </userData>
+                                </RadioMenuItem>
+                                <RadioMenuItem mnemonicParsing="false" text="sats" toggleGroup="$bitcoinUnit" onAction="#setBitcoinUnit">
+                                    <userData>
+                                        <BitcoinUnit fx:constant="SATOSHIS" />
+                                    </userData>
+                                </RadioMenuItem>
+                            </items>
+                        </Menu>
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                     </items>
                 </Menu>

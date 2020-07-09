@@ -15,9 +15,10 @@ import javafx.scene.text.Font;
 import java.util.List;
 import java.util.Optional;
 
-public class AddressTreeTable extends TreeTableView<Entry> {
+public class AddressTreeTable extends CoinTreeTable {
     public void initialize(NodeEntry rootEntry) {
         getStyleClass().add("address-treetable");
+        setBitcoinUnit(rootEntry.getWallet());
 
         String address = rootEntry.getAddress().toString();
         updateAll(rootEntry);
@@ -80,6 +81,8 @@ public class AddressTreeTable extends TreeTableView<Entry> {
     }
 
     public void updateAll(NodeEntry rootEntry) {
+        setBitcoinUnit(rootEntry.getWallet());
+
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);
         rootItem.setExpanded(true);

@@ -8,11 +8,11 @@ import java.text.ParseException;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-public class CoinFormatter extends TextFormatter<String> {
+public class CoinTextFormatter extends TextFormatter<String> {
     private static final Pattern COIN_VALIDATION = Pattern.compile("[\\d,]*(\\.\\d{0,8})?");
-    private static final DecimalFormat COIN_FORMAT = new DecimalFormat("###,###.########");
+    public static final DecimalFormat COIN_FORMAT = new DecimalFormat("###,###.########");
 
-    public CoinFormatter() {
+    public CoinTextFormatter() {
         super(new CoinFilter());
     }
 

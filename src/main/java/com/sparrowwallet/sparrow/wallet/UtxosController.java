@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.UtxosChart;
 import com.sparrowwallet.sparrow.control.UtxosTreeTable;
+import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
@@ -62,5 +63,11 @@ public class UtxosController extends WalletFormController implements Initializab
             utxosTable.updateLabel(event.getEntry());
             utxosChart.update(getWalletForm().getWalletUtxosEntry());
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        utxosTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
+        utxosChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
     }
 }

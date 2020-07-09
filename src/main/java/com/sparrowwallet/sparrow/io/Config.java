@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
 
 import java.io.*;
@@ -10,6 +11,7 @@ public class Config {
     public static final String CONFIG_FILENAME = ".config";
 
     private Mode mode;
+    private BitcoinUnit bitcoinUnit;
     private Integer keyDerivationPeriod;
     private File hwi;
     private String electrumServer;
@@ -64,6 +66,15 @@ public class Config {
 
     public void setMode(Mode mode) {
         this.mode = mode;
+        flush();
+    }
+
+    public BitcoinUnit getBitcoinUnit() {
+        return bitcoinUnit;
+    }
+
+    public void setBitcoinUnit(BitcoinUnit bitcoinUnit) {
+        this.bitcoinUnit = bitcoinUnit;
         flush();
     }
 

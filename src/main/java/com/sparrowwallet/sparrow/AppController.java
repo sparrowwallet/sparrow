@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow;
 import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
@@ -63,6 +64,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem openTransactionIdItem;
+
+    @FXML
+    private ToggleGroup bitcoinUnit;
 
     @FXML
     private CheckMenuItem showTxHex;
@@ -145,6 +149,15 @@ public class AppController implements Initializable {
                 }
             }
         });
+
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        if(unit == null) {
+            unit = BitcoinUnit.AUTO;
+            Config.get().setBitcoinUnit(unit);
+        }
+        final BitcoinUnit selectedUnit = unit;
+        Optional<Toggle> selectedToggle = bitcoinUnit.getToggles().stream().filter(toggle -> selectedUnit.equals(toggle.getUserData())).findFirst();
+        selectedToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
 
         showTxHex.setSelected(true);
         showTxHexProperty = true;
@@ -372,6 +385,13 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         EventManager.get().post(new TransactionTabChangedEvent(tabs.getSelectionModel().getSelectedItem(), item.isSelected()));
         showTxHexProperty = item.isSelected();
+    }
+
+    public void setBitcoinUnit(ActionEvent event) {
+        MenuItem item = (MenuItem)event.getSource();
+        BitcoinUnit unit = (BitcoinUnit)item.getUserData();
+        Config.get().setBitcoinUnit(unit);
+        EventManager.get().post(new BitcoinUnitChangedEvent(unit));
     }
 
     public void newWallet(ActionEvent event) {

@@ -11,9 +11,10 @@ import javafx.scene.control.TreeTableView;
 
 import java.util.List;
 
-public class TransactionsTreeTable extends TreeTableView<Entry> {
+public class TransactionsTreeTable extends CoinTreeTable {
     public void initialize(WalletTransactionsEntry rootEntry) {
         getStyleClass().add("transactions-treetable");
+        setBitcoinUnit(rootEntry.getWallet());
 
         updateAll(rootEntry);
         setShowRoot(false);
@@ -58,6 +59,8 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
     }
 
     public void updateAll(WalletTransactionsEntry rootEntry) {
+        setBitcoinUnit(rootEntry.getWallet());
+
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);
         rootItem.setExpanded(true);

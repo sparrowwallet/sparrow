@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
+import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
@@ -62,5 +63,11 @@ public class AddressesController extends WalletFormController implements Initial
             receiveTable.updateLabel(event.getEntry());
             changeTable.updateLabel(event.getEntry());
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        receiveTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
+        changeTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
     }
 }

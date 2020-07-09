@@ -20,6 +20,10 @@ public class WalletTransactionsEntry extends Entry {
         calculateBalances();
     }
 
+    public Wallet getWallet() {
+        return wallet;
+    }
+
     @Override
     public Long getValue() {
         return getBalance();

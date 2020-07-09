@@ -10,9 +10,10 @@ import javafx.scene.control.TreeTableView;
 
 import java.util.List;
 
-public class UtxosTreeTable extends TreeTableView<Entry> {
+public class UtxosTreeTable extends CoinTreeTable {
     public void initialize(WalletUtxosEntry rootEntry) {
         getStyleClass().add("utxos-treetable");
+        setBitcoinUnit(rootEntry.getWallet());
 
         updateAll(rootEntry);
         setShowRoot(false);
@@ -78,6 +79,8 @@ public class UtxosTreeTable extends TreeTableView<Entry> {
     }
 
     public void updateAll(WalletUtxosEntry rootEntry) {
+        setBitcoinUnit(rootEntry.getWallet());
+
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);
         rootItem.setExpanded(true);

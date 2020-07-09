@@ -3,10 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
-import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.input.MouseEvent;
@@ -48,6 +45,11 @@ public class TransactionsController extends WalletFormController implements Init
         if(event.getWallet().equals(walletForm.getWallet())) {
             transactionsTable.updateLabel(event.getEntry());
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        transactionsTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
     }
 
     //TODO: Remove

@@ -8,8 +8,8 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.event.SpendUtxoEvent;
+import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -29,6 +29,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -141,10 +142,15 @@ public class SendController extends WalletFormController implements Initializabl
             updateTransaction();
         });
 
-        amount.setTextFormatter(new CoinFormatter());
+        amount.setTextFormatter(new CoinTextFormatter());
         amount.textProperty().addListener(amountListener);
 
-        amountUnit.getSelectionModel().select(1);
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = getWalletForm().getWallet().getAutoUnit();
+        }
+
+        amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
         amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getRecipientValueSats(oldValue);
             if(value != null) {
@@ -197,10 +203,10 @@ public class SendController extends WalletFormController implements Initializabl
 
         setTargetBlocks(5);
 
-        fee.setTextFormatter(new CoinFormatter());
+        fee.setTextFormatter(new CoinTextFormatter());
         fee.textProperty().addListener(feeListener);
 
-        feeAmountUnit.getSelectionModel().select(1);
+        feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
         feeAmountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getFeeValueSats(oldValue);
             if(value != null) {
@@ -305,7 +311,12 @@ public class SendController extends WalletFormController implements Initializabl
             return List.of(utxoSelectorProperty.get());
         }
 
-        UtxoSelector priorityUtxoSelector = new PriorityUtxoSelector(AppController.getCurrentBlockHeight());
+        Integer blockHeight = AppController.getCurrentBlockHeight();
+        if(blockHeight == null) {
+            blockHeight = getWalletForm().getWallet().getStoredBlockHeight();
+        }
+
+        UtxoSelector priorityUtxoSelector = new PriorityUtxoSelector(blockHeight);
         return List.of(priorityUtxoSelector);
     }
 
@@ -395,7 +406,9 @@ public class SendController extends WalletFormController implements Initializabl
     private Map<Integer, Double> getTargetBlocksFeeRates() {
         Map<Integer, Double> retrievedFeeRates = AppController.getTargetBlockFeeRates();
         if(retrievedFeeRates == null) {
-            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> FALLBACK_FEE_RATE));
+            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> FALLBACK_FEE_RATE,
+                    (u, v) -> { throw new IllegalStateException("Duplicate target blocks"); },
+                    LinkedHashMap::new));
         }
 
         return  retrievedFeeRates;
@@ -450,6 +463,27 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     @Subscribe
+    public void walletNodesChanged(WalletNodesChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            clear(null);
+        }
+    }
+
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            updateTransaction();
+        }
+    }
+
+    @Subscribe
+    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            updateTransaction();
+        }
+    }
+
+    @Subscribe
     public void feeRatesUpdated(FeeRatesUpdatedEvent event) {
         feeRatesChart.update(event.getTargetBlockFeeRates());
         feeRatesChart.select(getTargetBlocks());
@@ -463,5 +497,15 @@ public class SendController extends WalletFormController implements Initializabl
             setUtxoSelector(new PresetUtxoSelector(utxos));
             updateTransaction(true);
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        BitcoinUnit unit = event.getBitcoinUnit();
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = getWalletForm().getWallet().getAutoUnit();
+        }
+        amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
+        feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
     }
 }

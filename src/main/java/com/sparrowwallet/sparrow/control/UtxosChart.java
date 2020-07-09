@@ -1,13 +1,14 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.wallet.WalletUtxosEntry;
 import javafx.beans.NamedArg;
 import javafx.scene.Node;
-import javafx.scene.chart.Axis;
-import javafx.scene.chart.BarChart;
-import javafx.scene.chart.XYChart;
+import javafx.scene.chart.*;
 
 import java.util.List;
 import java.util.Set;
@@ -30,11 +31,14 @@ public class UtxosChart extends BarChart<String, Number> {
         utxoSeries = new XYChart.Series<>();
         getData().add(utxoSeries);
         update(walletUtxosEntry);
+
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        setBitcoinUnit(walletUtxosEntry.getWallet(), unit);
     }
 
     public void update(WalletUtxosEntry walletUtxosEntry) {
         List<Data<String, Number>> utxoDataList = walletUtxosEntry.getChildren().stream()
-                .map(entry -> new XYChart.Data<>(entry.getLabel() != null && !entry.getLabel().isEmpty() ? entry.getLabel() : ((UtxoEntry)entry).getDescription(), (Number)entry.getValue(), entry))
+                .map(entry -> new XYChart.Data<>(getCategoryName(entry), (Number)entry.getValue(), entry))
                 .sorted((o1, o2) -> (int) (o2.getYValue().longValue() - o1.getYValue().longValue()))
                 .collect(Collectors.toList());
 
@@ -66,6 +70,14 @@ public class UtxosChart extends BarChart<String, Number> {
         }
     }
 
+    private String getCategoryName(Entry entry) {
+        if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
+            return entry.getLabel().length() > 15 ? entry.getLabel().substring(0, 15) + "..." : entry.getLabel();
+        }
+
+        return ((UtxoEntry)entry).getDescription();
+    }
+
     public void select(List<Entry> entries) {
         Set<Node> selectedBars = lookupAll(".chart-bar.selected");
         for(Node selectedBar : selectedBars) {
@@ -85,5 +97,14 @@ public class UtxosChart extends BarChart<String, Number> {
         }
 
         this.selectedEntries = entries;
+    }
+
+    public void setBitcoinUnit(Wallet wallet, BitcoinUnit unit) {
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = wallet.getAutoUnit();
+        }
+
+        NumberAxis yaxis = (NumberAxis)getYAxis();
+        yaxis.setTickLabelFormatter(new CoinAxisFormatter(yaxis, unit));
     }
 }

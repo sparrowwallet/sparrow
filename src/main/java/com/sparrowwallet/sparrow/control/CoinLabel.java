@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.scene.control.ContextMenu;
@@ -14,8 +16,6 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 public class CoinLabel extends CopyableLabel {
-    public static final int MAX_SATS_SHOWN = 1000000;
-
     public static final DecimalFormat BTC_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
     private final LongProperty value = new SimpleLongProperty(-1);
@@ -52,7 +52,13 @@ public class CoinLabel extends CopyableLabel {
 
         String satsValue = String.format(Locale.ENGLISH, "%,d",value) + " sats";
         String btcValue = BTC_FORMAT.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
-        if(value > MAX_SATS_SHOWN) {
+
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = (value >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
+        }
+
+        if(unit.equals(BitcoinUnit.BTC)) {
             tooltip.setText(satsValue);
             setText(btcValue);
         } else {
