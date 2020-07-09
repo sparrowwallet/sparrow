@@ -14,11 +14,11 @@
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import javafx.collections.FXCollections?>
-<?import com.sparrowwallet.sparrow.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.control.FeeRatesChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
+<?import com.sparrowwallet.drongo.BitcoinUnit?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>

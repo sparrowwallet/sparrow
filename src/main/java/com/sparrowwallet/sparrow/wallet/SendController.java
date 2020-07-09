@@ -1,11 +1,11 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
-import com.sparrowwallet.sparrow.BitcoinUnit;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
