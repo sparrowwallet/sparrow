@@ -63,7 +63,7 @@ public class UtxosTreeTable extends TreeTableView<Entry> {
         amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getValue());
         });
-        amountCol.setCellFactory(p -> new AmountCell());
+        amountCol.setCellFactory(p -> new CoinCell());
         amountCol.setSortable(true);
         getColumns().add(amountCol);
         setTreeColumn(amountCol);

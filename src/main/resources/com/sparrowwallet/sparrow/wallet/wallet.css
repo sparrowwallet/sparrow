@@ -53,15 +53,15 @@
     -fx-padding: 0;
 }
 
-.amount-cell {
+.coin-cell {
     -fx-alignment: center-right;
 }
 
-.amount-cell.spent .text {
+.coin-cell.spent .text {
     -fx-strikethrough: true;
 }
 
-.amount-cell .confirmation-progress {
+.coin-cell .confirmation-progress {
     -fx-pref-width: 14;
     -fx-padding: 0 8 0 0;
 }

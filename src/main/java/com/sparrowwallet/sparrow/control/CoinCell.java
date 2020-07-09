@@ -12,10 +12,10 @@ import javafx.scene.layout.Region;
 
 import java.util.Locale;
 
-class AmountCell extends TreeTableCell<Entry, Number> {
-    public AmountCell() {
+class CoinCell extends TreeTableCell<Entry, Number> {
+    public CoinCell() {
         super();
-        getStyleClass().add("amount-cell");
+        getStyleClass().add("coin-cell");
     }
 
     @Override

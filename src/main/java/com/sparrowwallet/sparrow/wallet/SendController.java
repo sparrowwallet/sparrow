@@ -141,7 +141,7 @@ public class SendController extends WalletFormController implements Initializabl
             updateTransaction();
         });
 
-        amount.setTextFormatter(new AmountFormatter());
+        amount.setTextFormatter(new CoinFormatter());
         amount.textProperty().addListener(amountListener);
 
         amountUnit.getSelectionModel().select(1);
@@ -197,7 +197,7 @@ public class SendController extends WalletFormController implements Initializabl
 
         setTargetBlocks(5);
 
-        fee.setTextFormatter(new AmountFormatter());
+        fee.setTextFormatter(new CoinFormatter());
         fee.textProperty().addListener(feeListener);
 
         feeAmountUnit.getSelectionModel().select(1);

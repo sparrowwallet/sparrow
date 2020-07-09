@@ -8,15 +8,15 @@ import java.text.ParseException;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
-public class AmountFormatter extends TextFormatter<String> {
-    private static final Pattern AMOUNT_VALIDATION = Pattern.compile("[\\d,]*(\\.\\d{0,8})?");
-    private static final DecimalFormat AMOUNT_FORMAT = new DecimalFormat("###,###.########");
+public class CoinFormatter extends TextFormatter<String> {
+    private static final Pattern COIN_VALIDATION = Pattern.compile("[\\d,]*(\\.\\d{0,8})?");
+    private static final DecimalFormat COIN_FORMAT = new DecimalFormat("###,###.########");
 
-    public AmountFormatter() {
-        super(new AmountFilter());
+    public CoinFormatter() {
+        super(new CoinFilter());
     }
 
-    private static class AmountFilter implements UnaryOperator<Change> {
+    private static class CoinFilter implements UnaryOperator<Change> {
         @Override
         public Change apply(Change change) {
             String oldText = change.getControlText();
@@ -34,7 +34,7 @@ public class AmountFormatter extends TextFormatter<String> {
                 commasRemoved = newText.length() - noFractionCommaText.length();
             }
 
-            if(!AMOUNT_VALIDATION.matcher(noFractionCommaText).matches()) {
+            if(!COIN_VALIDATION.matcher(noFractionCommaText).matches()) {
                 return null;
             }
 
@@ -51,8 +51,8 @@ public class AmountFormatter extends TextFormatter<String> {
             }
 
             try {
-                Number value = AMOUNT_FORMAT.parse(noFractionCommaText);
-                String correct = AMOUNT_FORMAT.format(value.doubleValue());
+                Number value = COIN_FORMAT.parse(noFractionCommaText);
+                String correct = COIN_FORMAT.format(value.doubleValue());
 
                 String compare = newText;
                 if(compare.contains(".") && compare.endsWith("0")) {

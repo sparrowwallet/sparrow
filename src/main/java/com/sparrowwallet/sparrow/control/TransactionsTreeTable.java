@@ -38,7 +38,7 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getValue());
         });
-        amountCol.setCellFactory(p -> new AmountCell());
+        amountCol.setCellFactory(p -> new CoinCell());
         amountCol.setSortable(true);
         getColumns().add(amountCol);
 
@@ -46,7 +46,7 @@ public class TransactionsTreeTable extends TreeTableView<Entry> {
         balanceCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return param.getValue().getValue() instanceof TransactionEntry ? ((TransactionEntry)param.getValue().getValue()).balanceProperty() : new ReadOnlyObjectWrapper<>(null);
         });
-        balanceCol.setCellFactory(p -> new AmountCell());
+        balanceCol.setCellFactory(p -> new CoinCell());
         balanceCol.setSortable(true);
         getColumns().add(balanceCol);
 
