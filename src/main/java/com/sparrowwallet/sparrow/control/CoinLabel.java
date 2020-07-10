@@ -18,7 +18,7 @@ import java.util.Locale;
 public class CoinLabel extends CopyableLabel {
     public static final DecimalFormat BTC_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
-    private final LongProperty value = new SimpleLongProperty(-1);
+    private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final Tooltip tooltip;
     private final CoinContextMenu contextMenu;
 
@@ -35,15 +35,15 @@ public class CoinLabel extends CopyableLabel {
     }
 
     public final LongProperty valueProperty() {
-        return value;
+        return valueProperty;
     }
 
     public final long getValue() {
-        return value.get();
+        return valueProperty.get();
     }
 
     public final void setValue(long value) {
-        this.value.set(value);
+        this.valueProperty.set(value);
     }
 
     public void refresh() {

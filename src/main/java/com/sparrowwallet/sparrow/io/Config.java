@@ -6,12 +6,15 @@ import com.sparrowwallet.sparrow.Mode;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.util.Currency;
 
 public class Config {
     public static final String CONFIG_FILENAME = ".config";
 
     private Mode mode;
     private BitcoinUnit bitcoinUnit;
+    private Currency fiatCurrency;
+    private ExchangeSource exchangeSource;
     private Integer keyDerivationPeriod;
     private File hwi;
     private String electrumServer;
@@ -75,6 +78,24 @@ public class Config {
 
     public void setBitcoinUnit(BitcoinUnit bitcoinUnit) {
         this.bitcoinUnit = bitcoinUnit;
+        flush();
+    }
+
+    public Currency getFiatCurrency() {
+        return fiatCurrency;
+    }
+
+    public void setFiatCurrency(Currency fiatCurrency) {
+        this.fiatCurrency = fiatCurrency;
+        flush();
+    }
+
+    public ExchangeSource getExchangeSource() {
+        return exchangeSource;
+    }
+
+    public void setExchangeSource(ExchangeSource exchangeSource) {
+        this.exchangeSource = exchangeSource;
         flush();
     }
 

@@ -27,7 +27,7 @@ public class PreferencesDialog extends Dialog<Void> {
             if(initialGroup != null) {
                 preferencesController.selectGroup(initialGroup);
             } else {
-                preferencesController.selectGroup(PreferenceGroup.SERVER);
+                preferencesController.selectGroup(PreferenceGroup.GENERAL);
             }
 
             final ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);

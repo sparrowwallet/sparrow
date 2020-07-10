@@ -29,6 +29,7 @@ public class FontAwesome5 extends GlyphFont {
         QUESTION_CIRCLE('\uf059'),
         SD_CARD('\uf7c2'),
         SEARCH('\uf002'),
+        TOOLS('\uf7d9'),
         WALLET('\uf555');
 
         private final char ch;

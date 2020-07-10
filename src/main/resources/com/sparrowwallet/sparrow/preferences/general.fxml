@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.drongo.BitcoinUnit?>
+<?import com.sparrowwallet.sparrow.io.ExchangeSource?>
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.GeneralPreferencesController">
+    <padding>
+        <Insets left="25.0" right="25.0" top="25.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints percentWidth="100" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+    </rowConstraints>
+
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <Fieldset inputGrow="SOMETIMES" text="Bitcoin">
+            <Field text="Unit:">
+                <ComboBox fx:id="bitcoinUnit">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <BitcoinUnit fx:constant="AUTO" />
+                            <BitcoinUnit fx:constant="BTC" />
+                            <BitcoinUnit fx:constant="SATOSHIS" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </Field>
+        </Fieldset>
+        <Fieldset inputGrow="SOMETIMES" text="Fiat">
+            <Field text="Currency:">
+                <ComboBox fx:id="fiatCurrency" />
+            </Field>
+            <Field text="Source:">
+                <ComboBox fx:id="exchangeSource">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <ExchangeSource fx:constant="NONE" />
+                            <ExchangeSource fx:constant="COINBASE" />
+                            <ExchangeSource fx:constant="COINGECKO" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </Field>
+        </Fieldset>
+    </Form>
+</GridPane>

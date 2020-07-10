@@ -13,7 +13,7 @@
 <?import tornadofx.control.Fieldset?>
 <?import tornadofx.control.Field?>
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
-<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+<?import com.sparrowwallet.sparrow.control.FiatLabel?>
 
 <BorderPane stylesheets="@transactions.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.TransactionsController">
     <center>
@@ -35,7 +35,7 @@
                             <CoinLabel fx:id="balance"/>
                         </Field>
                         <Field text="Fiat balance:">
-                            <CopyableLabel fx:id="fiatBalance" />
+                            <FiatLabel fx:id="fiatBalance" />
                         </Field>
                         <Field text="Mempool:">
                             <CoinLabel fx:id="mempoolBalance" />

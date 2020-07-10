@@ -52,6 +52,10 @@ public class AppController implements Initializable {
     private static final int SERVER_PING_PERIOD = 10 * 1000;
     private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
 
+    private static final int RATES_PERIOD = 5 * 60 * 1000;
+    private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
+    private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
+
     public static final String DRAG_OVER_CLASS = "drag-over";
 
     private MainApp application;
@@ -90,6 +94,8 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
+    private ExchangeSource.RatesService ratesService;
+
     private ElectrumServer.ConnectionService connectionService;
 
     private static Integer currentBlockHeight;
@@ -97,6 +103,8 @@ public class AppController implements Initializable {
     public static boolean showTxHexProperty;
 
     private static Map<Integer, Double> targetBlockFeeRates;
+
+    private static Map<Currency, Double> fiatCurrencyExchangeRate;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -174,18 +182,34 @@ public class AppController implements Initializable {
                     if(!connectionService.isRunning()) {
                         connectionService.start();
                     }
+
+                    if(ratesService.getState() == Worker.State.CANCELLED) {
+                        ratesService.reset();
+                    }
+
+                    if(!ratesService.isRunning() && ratesService.getExchangeSource() != ExchangeSource.NONE) {
+                        ratesService.start();
+                    }
                 } else {
                     connectionService.cancel();
+                    ratesService.cancel();
                 }
             }
         });
 
         onlineProperty.bindBidirectional(serverToggle.selectedProperty());
 
-        connectionService = createConnectionService();
         Config config = Config.get();
+        connectionService = createConnectionService();
         if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
             connectionService.start();
+        }
+
+        ExchangeSource source = config.getExchangeSource() != null ? config.getExchangeSource() : DEFAULT_EXCHANGE_SOURCE;
+        Currency currency = config.getFiatCurrency() != null ? config.getFiatCurrency() : DEFAULT_FIAT_CURRENCY;
+        ratesService = createRatesService(source, currency);
+        if (config.getMode() == Mode.ONLINE && source != ExchangeSource.NONE) {
+            ratesService.start();
         }
 
         openTransactionIdItem.disableProperty().bind(onlineProperty.not());
@@ -217,6 +241,18 @@ public class AppController implements Initializable {
         });
 
         return connectionService;
+    }
+
+    private ExchangeSource.RatesService createRatesService(ExchangeSource exchangeSource, Currency currency) {
+        ExchangeSource.RatesService ratesService = new ExchangeSource.RatesService(exchangeSource, currency);
+        ratesService.setPeriod(new Duration(RATES_PERIOD));
+        ratesService.setRestartOnFailure(true);
+
+        ratesService.setOnSucceeded(successEvent -> {
+            EventManager.get().post(ratesService.getValue());
+        });
+
+        return ratesService;
     }
 
     public void setApplication(MainApp application) {
@@ -359,6 +395,10 @@ public class AppController implements Initializable {
 
     public static Map<Integer, Double> getTargetBlockFeeRates() {
         return targetBlockFeeRates;
+    }
+
+    public static Map<Currency, Double> getFiatCurrencyExchangeRate() {
+        return fiatCurrencyExchangeRate;
     }
 
     public static void showErrorDialog(String title, String content) {
@@ -819,5 +859,26 @@ public class AppController implements Initializable {
     public void viewTransaction(ViewTransactionEvent event) {
         Tab tab = addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
         tabs.getSelectionModel().select(tab);
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        Optional<Toggle> selectedToggle = bitcoinUnit.getToggles().stream().filter(toggle -> event.getBitcoinUnit().equals(toggle.getUserData())).findFirst();
+        selectedToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+    }
+
+    @Subscribe
+    public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
+        ratesService.cancel();
+
+        if (Config.get().getMode() != Mode.OFFLINE && event.getExchangeSource() != ExchangeSource.NONE) {
+            ratesService = createRatesService(event.getExchangeSource(), event.getCurrency());
+            ratesService.start();
+        }
+    }
+
+    @Subscribe
+    public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
+        fiatCurrencyExchangeRate = Map.of(event.getSelectedCurrency(), event.getRate());
     }
 }

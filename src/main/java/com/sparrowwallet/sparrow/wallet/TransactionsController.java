@@ -1,12 +1,14 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.BalanceChart;
 import com.sparrowwallet.sparrow.control.CoinLabel;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.control.FiatLabel;
 import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.ExchangeSource;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -14,6 +16,8 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.input.MouseEvent;
 
 import java.net.URL;
+import java.util.Currency;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class TransactionsController extends WalletFormController implements Initializable {
@@ -22,7 +26,7 @@ public class TransactionsController extends WalletFormController implements Init
     private CoinLabel balance;
 
     @FXML
-    private CopyableLabel fiatBalance;
+    private FiatLabel fiatBalance;
 
     @FXML
     private CoinLabel mempoolBalance;
@@ -45,6 +49,7 @@ public class TransactionsController extends WalletFormController implements Init
         transactionsTable.initialize(walletTransactionsEntry);
 
         balance.setValue(walletTransactionsEntry.getBalance());
+        setFiatBalance(AppController.getFiatCurrencyExchangeRate(), walletTransactionsEntry.getBalance());
         mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
         balanceChart.initialize(walletTransactionsEntry);
 
@@ -54,6 +59,16 @@ public class TransactionsController extends WalletFormController implements Init
                 balanceChart.select((TransactionEntry)selectedItem.getValue());
             }
         });
+    }
+
+    private void setFiatBalance(Map<Currency, Double> fiatCurrencyExchangeRate, long balance) {
+        if(fiatCurrencyExchangeRate != null && !fiatCurrencyExchangeRate.isEmpty()) {
+            Currency currency = fiatCurrencyExchangeRate.keySet().iterator().next();
+            Double rate = fiatCurrencyExchangeRate.get(currency);
+            if(rate != null) {
+                fiatBalance.set(currency, rate, balance);
+            }
+        }
     }
 
     @Subscribe
@@ -97,6 +112,20 @@ public class TransactionsController extends WalletFormController implements Init
         balanceChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
         balance.refresh(event.getBitcoinUnit());
         mempoolBalance.refresh(event.getBitcoinUnit());
+    }
+
+    @Subscribe
+    public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
+        if(event.getExchangeSource() == ExchangeSource.NONE) {
+            fiatBalance.setCurrency(null);
+            fiatBalance.setBtcRate(0.0);
+        }
+    }
+
+    @Subscribe
+    public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
+        Map<Currency, Double> fiatRate = Map.of(event.getSelectedCurrency(), event.getRate());
+        setFiatBalance(fiatRate, getWalletForm().getWalletTransactionsEntry().getBalance());
     }
 
     //TODO: Remove
