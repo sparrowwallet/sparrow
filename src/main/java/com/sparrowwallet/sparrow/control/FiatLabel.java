@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.CurrencyRate;
 import javafx.beans.property.*;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -68,6 +69,10 @@ public class FiatLabel extends CopyableLabel {
 
     public final void setCurrency(Currency currency) {
         this.currencyProperty.set(currency);
+    }
+
+    public final void set(CurrencyRate currencyRate, long value) {
+        set(currencyRate.getCurrency(), currencyRate.getBtcRate(), value);
     }
 
     public final void set(Currency currency, double btcRate, long value) {

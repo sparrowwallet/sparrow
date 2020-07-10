@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.BalanceChart;
 import com.sparrowwallet.sparrow.control.CoinLabel;
@@ -16,8 +17,6 @@ import javafx.scene.control.TreeItem;
 import javafx.scene.input.MouseEvent;
 
 import java.net.URL;
-import java.util.Currency;
-import java.util.Map;
 import java.util.ResourceBundle;
 
 public class TransactionsController extends WalletFormController implements Initializable {
@@ -61,13 +60,9 @@ public class TransactionsController extends WalletFormController implements Init
         });
     }
 
-    private void setFiatBalance(Map<Currency, Double> fiatCurrencyExchangeRate, long balance) {
-        if(fiatCurrencyExchangeRate != null && !fiatCurrencyExchangeRate.isEmpty()) {
-            Currency currency = fiatCurrencyExchangeRate.keySet().iterator().next();
-            Double rate = fiatCurrencyExchangeRate.get(currency);
-            if(rate != null) {
-                fiatBalance.set(currency, rate, balance);
-            }
+    private void setFiatBalance(CurrencyRate currencyRate, long balance) {
+        if(currencyRate != null && currencyRate.isAvailable()) {
+            fiatBalance.set(currencyRate, balance);
         }
     }
 
@@ -124,8 +119,7 @@ public class TransactionsController extends WalletFormController implements Init
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        Map<Currency, Double> fiatRate = Map.of(event.getSelectedCurrency(), event.getRate());
-        setFiatBalance(fiatRate, getWalletForm().getWalletTransactionsEntry().getBalance());
+        setFiatBalance(event.getCurrencyRate(), getWalletForm().getWalletTransactionsEntry().getBalance());
     }
 
     //TODO: Remove

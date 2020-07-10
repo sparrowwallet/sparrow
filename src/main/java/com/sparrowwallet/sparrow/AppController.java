@@ -104,7 +104,7 @@ public class AppController implements Initializable {
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
-    private static Map<Currency, Double> fiatCurrencyExchangeRate;
+    private static CurrencyRate fiatCurrencyExchangeRate;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -397,7 +397,7 @@ public class AppController implements Initializable {
         return targetBlockFeeRates;
     }
 
-    public static Map<Currency, Double> getFiatCurrencyExchangeRate() {
+    public static CurrencyRate getFiatCurrencyExchangeRate() {
         return fiatCurrencyExchangeRate;
     }
 
@@ -879,6 +879,6 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        fiatCurrencyExchangeRate = Map.of(event.getSelectedCurrency(), event.getRate());
+        fiatCurrencyExchangeRate = event.getCurrencyRate();
     }
 }
