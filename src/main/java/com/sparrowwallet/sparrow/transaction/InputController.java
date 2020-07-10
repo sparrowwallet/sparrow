@@ -9,10 +9,7 @@ import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
-import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
-import com.sparrowwallet.sparrow.event.TransactionLocktimeChangedEvent;
-import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
+import com.sparrowwallet.sparrow.event.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -497,5 +494,10 @@ public class InputController extends TransactionFormController implements Initia
         if(event.getTransaction().equals(inputForm.getTransaction())) {
             locktimeAbsolute.setText(Long.toString(event.getTransaction().getLocktime()));
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        spends.refresh(event.getBitcoinUnit());
     }
 }

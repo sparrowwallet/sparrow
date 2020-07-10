@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -159,5 +160,10 @@ public class InputsController extends TransactionFormController implements Initi
         if(event.getTxId().equals(inputsForm.getTransaction().getTxId()) && inputsForm.getPsbt() == null) {
             updateBlockTransactionInputs(event.getInputTransactions());
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        total.refresh(event.getBitcoinUnit());
     }
 }

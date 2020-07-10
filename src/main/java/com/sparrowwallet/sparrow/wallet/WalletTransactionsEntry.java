@@ -31,17 +31,24 @@ public class WalletTransactionsEntry extends Entry {
 
     protected void calculateBalances() {
         long balance = 0L;
+        long mempoolBalance = 0L;
 
         //Note transaction entries must be in ascending order. This sorting is ultimately done according to BlockTransactions' comparator
         getChildren().sort(Comparator.comparing(TransactionEntry.class::cast));
 
         for(Entry entry : getChildren()) {
             TransactionEntry transactionEntry = (TransactionEntry)entry;
-            balance += entry.getValue();
+            if(transactionEntry.getConfirmations() != 0) {
+                balance += entry.getValue();
+            } else {
+                mempoolBalance += entry.getValue();
+            }
+
             transactionEntry.setBalance(balance);
         }
 
         setBalance(balance);
+        setMempoolBalance(mempoolBalance);
     }
 
     public void updateTransactions() {
@@ -124,6 +131,39 @@ public class WalletTransactionsEntry extends Entry {
             };
         }
         return balance;
+    }
+
+    /**
+     * Defines the wallet balance in the mempool
+     */
+    private LongProperty mempoolBalance;
+
+    public final void setMempoolBalance(long value) {
+        if(mempoolBalance != null || value != 0) {
+            mempoolBalanceProperty().set(value);
+        }
+    }
+
+    public final long getMempoolBalance() {
+        return mempoolBalance == null ? 0L : mempoolBalance.get();
+    }
+
+    public final LongProperty mempoolBalanceProperty() {
+        if(mempoolBalance == null) {
+            mempoolBalance = new LongPropertyBase(0L) {
+
+                @Override
+                public Object getBean() {
+                    return WalletTransactionsEntry.this;
+                }
+
+                @Override
+                public String getName() {
+                    return "mempoolBalance";
+                }
+            };
+        }
+        return mempoolBalance;
     }
 
     private static class WalletTransaction {

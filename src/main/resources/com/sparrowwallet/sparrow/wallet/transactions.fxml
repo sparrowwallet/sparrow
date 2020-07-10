@@ -7,15 +7,51 @@
 <?import javafx.scene.layout.*?>
 <?import com.sparrowwallet.sparrow.control.TransactionsTreeTable?>
 <?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.BalanceChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 
 <BorderPane stylesheets="@transactions.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.TransactionsController">
-    <padding>
-        <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
-    </padding>
-    <top>
-        <Label styleClass="transactions-treetable-label" text="Transactions" /> <!-- onMouseClicked="#advanceBlock" -->
-    </top>
     <center>
-        <TransactionsTreeTable fx:id="transactionsTable" />
+        <VBox spacing="10">
+            <padding>
+                <Insets left="25.0" right="25.0" top="25.0" bottom="25.0" />
+            </padding>
+            <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" />
+                    <ColumnConstraints percentWidth="50" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                </rowConstraints>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Fieldset inputGrow="SOMETIMES" text="Transactions">
+                        <Field text="Balance:">
+                            <CoinLabel fx:id="balance"/>
+                        </Field>
+                        <Field text="Fiat balance:">
+                            <CopyableLabel fx:id="fiatBalance" />
+                        </Field>
+                        <Field text="Mempool:">
+                            <CoinLabel fx:id="mempoolBalance" />
+                        </Field>
+                    </Fieldset>
+                </Form>
+                <BalanceChart fx:id="balanceChart" animated="false" legendVisible="false" verticalGridLinesVisible="false" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <xAxis>
+                        <NumberAxis side="BOTTOM" forceZeroInRange="false" minorTickVisible="false" />
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis side="LEFT" />
+                    </yAxis>
+                </BalanceChart>
+            </GridPane>
+            <TransactionsTreeTable fx:id="transactionsTable" VBox.vgrow="ALWAYS" />
+        </VBox>
     </center>
 </BorderPane>

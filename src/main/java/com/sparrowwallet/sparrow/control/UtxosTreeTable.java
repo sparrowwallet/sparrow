@@ -93,9 +93,7 @@ public class UtxosTreeTable extends CoinTreeTable {
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
-        //Recalculate from scratch and update accordingly
-        WalletUtxosEntry rootEntry = (WalletUtxosEntry)getRoot().getValue();
-        rootEntry.updateUtxos();
+        //Utxo entries should have already been updated, so only a resort required
         sort();
     }
 

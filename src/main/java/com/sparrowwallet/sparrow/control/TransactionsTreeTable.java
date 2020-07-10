@@ -73,9 +73,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
-        //Recalculate from scratch and update accordingly - any changes may affect the balance of other transactions
-        WalletTransactionsEntry rootEntry = (WalletTransactionsEntry)getRoot().getValue();
-        rootEntry.updateTransactions();
+        //Transaction entries should have already been updated using WalletTransactionsEntry.updateHistory, so only a resort required
         sort();
     }
 

@@ -1,9 +1,12 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
@@ -25,7 +28,7 @@ public class OutputsController extends TransactionFormController implements Init
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-
+        EventManager.get().register(this);
     }
 
     public void setModel(OutputsForm form) {
@@ -46,5 +49,10 @@ public class OutputsController extends TransactionFormController implements Init
         if(totalAmt > 0) {
             addPieData(outputsPie, tx.getOutputs());
         }
+    }
+
+    @Subscribe
+    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
+        total.refresh(event.getBitcoinUnit());
     }
 }

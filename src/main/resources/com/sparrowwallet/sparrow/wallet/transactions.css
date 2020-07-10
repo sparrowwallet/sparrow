@@ -3,3 +3,23 @@
     -fx-font-size: 1.2em;
     -fx-padding: 10 0 10 0;
 }
+
+#balanceChart {
+    -fx-padding: 10 0 0 0;
+    -fx-max-width: 350px;
+    -fx-pref-width: 350px;
+    -fx-max-height: 150px;
+}
+
+.default-color0.chart-series-line {
+    -fx-stroke: rgba(105, 108, 119, 0.3);
+    -fx-stroke-width: 1px;
+}
+
+.chart-line-symbol {
+    -fx-background-color: rgba(105, 108, 119, 0.3);
+}
+
+.chart-line-symbol.selected {
+    -fx-background-color: rgba(30, 136, 207, 0.8);
+}

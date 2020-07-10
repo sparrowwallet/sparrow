@@ -2,10 +2,15 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.BalanceChart;
+import com.sparrowwallet.sparrow.control.CoinLabel;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
 import com.sparrowwallet.sparrow.event.*;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.TreeItem;
 import javafx.scene.input.MouseEvent;
 
 import java.net.URL;
@@ -14,7 +19,19 @@ import java.util.ResourceBundle;
 public class TransactionsController extends WalletFormController implements Initializable {
 
     @FXML
+    private CoinLabel balance;
+
+    @FXML
+    private CopyableLabel fiatBalance;
+
+    @FXML
+    private CoinLabel mempoolBalance;
+
+    @FXML
     private TransactionsTreeTable transactionsTable;
+
+    @FXML
+    private BalanceChart balanceChart;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -23,20 +40,46 @@ public class TransactionsController extends WalletFormController implements Init
 
     @Override
     public void initializeView() {
-        transactionsTable.initialize(getWalletForm().getWalletTransactionsEntry());
+        WalletTransactionsEntry walletTransactionsEntry = getWalletForm().getWalletTransactionsEntry();
+
+        transactionsTable.initialize(walletTransactionsEntry);
+
+        balance.setValue(walletTransactionsEntry.getBalance());
+        mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
+        balanceChart.initialize(walletTransactionsEntry);
+
+        transactionsTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
+            TreeItem<Entry> selectedItem = transactionsTable.getSelectionModel().getSelectedItem();
+            if(selectedItem != null && selectedItem.getValue() instanceof TransactionEntry) {
+                balanceChart.select((TransactionEntry)selectedItem.getValue());
+            }
+        });
     }
 
     @Subscribe
     public void walletNodesChanged(WalletNodesChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            transactionsTable.updateAll(getWalletForm().getWalletTransactionsEntry());
+            WalletTransactionsEntry walletTransactionsEntry = getWalletForm().getWalletTransactionsEntry();
+
+            transactionsTable.updateAll(walletTransactionsEntry);
+            balance.setValue(walletTransactionsEntry.getBalance());
+            mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
+            balanceChart.update(walletTransactionsEntry);
         }
     }
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
+            WalletTransactionsEntry walletTransactionsEntry = getWalletForm().getWalletTransactionsEntry();
+
+            //Will automatically update transactionsTable transactions and recalculate balances
+            walletTransactionsEntry.updateTransactions();
+
             transactionsTable.updateHistory(event.getHistoryChangedNodes());
+            balance.setValue(walletTransactionsEntry.getBalance());
+            mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
+            balanceChart.update(walletTransactionsEntry);
         }
     }
 
@@ -44,12 +87,16 @@ public class TransactionsController extends WalletFormController implements Init
     public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             transactionsTable.updateLabel(event.getEntry());
+            balanceChart.update(getWalletForm().getWalletTransactionsEntry());
         }
     }
 
     @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         transactionsTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
+        balanceChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
+        balance.refresh(event.getBitcoinUnit());
+        mempoolBalance.refresh(event.getBitcoinUnit());
     }
 
     //TODO: Remove

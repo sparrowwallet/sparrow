@@ -29,7 +29,7 @@ public class CoinLabel extends CopyableLabel {
     public CoinLabel(String text) {
         super(text);
         BTC_FORMAT.setMaximumFractionDigits(8);
-        valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue));
+        valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getBitcoinUnit()));
         tooltip = new Tooltip();
         contextMenu = new CoinContextMenu();
     }
@@ -46,14 +46,22 @@ public class CoinLabel extends CopyableLabel {
         this.value.set(value);
     }
 
-    private void setValueAsText(Long value) {
+    public void refresh() {
+        refresh(Config.get().getBitcoinUnit());
+    }
+
+    public void refresh(BitcoinUnit bitcoinUnit) {
+        setValueAsText(getValue(), bitcoinUnit);
+    }
+
+    private void setValueAsText(Long value, BitcoinUnit bitcoinUnit) {
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 
         String satsValue = String.format(Locale.ENGLISH, "%,d",value) + " sats";
         String btcValue = BTC_FORMAT.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
 
-        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        BitcoinUnit unit = bitcoinUnit;
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
             unit = (value >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
         }
