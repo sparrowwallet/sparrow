@@ -4,6 +4,9 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.address.P2PKHAddress;
+import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.CurrencyRate;
@@ -150,6 +153,7 @@ public class SendController extends WalletFormController implements Initializabl
         addValidation();
 
         address.textProperty().addListener((observable, oldValue, newValue) -> {
+            revalidate(amount, amountListener);
             maxButton.setDisable(!isValidRecipientAddress());
             updateTransaction();
         });
@@ -175,16 +179,8 @@ public class SendController extends WalletFormController implements Initializabl
         maxButton.setDisable(!isValidRecipientAddress());
 
         insufficientInputsProperty.addListener((observable, oldValue, newValue) -> {
-            amount.textProperty().removeListener(amountListener);
-            String amt = amount.getText();
-            amount.setText(amt + "0");
-            amount.setText(amt);
-            amount.textProperty().addListener(amountListener);
-            fee.textProperty().removeListener(feeListener);
-            String feeAmt = fee.getText();
-            fee.setText(feeAmt + "0");
-            fee.setText(feeAmt);
-            fee.textProperty().addListener(feeListener);
+            revalidate(amount, amountListener);
+            revalidate(fee, feeListener);
         });
 
         targetBlocks.setMin(0);
@@ -282,7 +278,7 @@ public class SendController extends WalletFormController implements Initializabl
         ));
         validationSupport.registerValidator(amount, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() == 0)
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() <= getMinimumRecipientAmount())
         ));
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
@@ -300,7 +296,7 @@ public class SendController extends WalletFormController implements Initializabl
         try {
             Address recipientAddress = getRecipientAddress();
             Long recipientAmount = sendAll ? Long.valueOf(1L) : getRecipientValueSats();
-            if(recipientAmount != null && recipientAmount != 0 && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
+            if(recipientAmount != null && recipientAmount > getMinimumRecipientAmount() && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), userFee, sendAll);
@@ -335,11 +331,10 @@ public class SendController extends WalletFormController implements Initializabl
     private boolean isValidRecipientAddress() {
         try {
             getRecipientAddress();
+            return true;
         } catch (InvalidAddressException e) {
             return false;
         }
-
-        return true;
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
@@ -458,6 +453,18 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    private long getMinimumRecipientAmount() {
+        Address address;
+        try {
+            address = getRecipientAddress();
+        } catch(InvalidAddressException e) {
+            address = new P2PKHAddress(new byte[20]);
+        }
+
+        TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
+        return address.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
+    }
+
     public void clear(ActionEvent event) {
         address.setText("");
         label.setText("");
@@ -474,6 +481,14 @@ public class SendController extends WalletFormController implements Initializabl
         targetBlocks.setValue(4);
         utxoSelectorProperty.setValue(null);
         walletTransactionProperty.setValue(null);
+    }
+
+    private void revalidate(TextField field, ChangeListener<String> listener) {
+        field.textProperty().removeListener(listener);
+        String amt = field.getText();
+        field.setText(amt + "0");
+        field.setText(amt);
+        field.textProperty().addListener(listener);
     }
 
     public void createTransaction(ActionEvent event) {
