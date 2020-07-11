@@ -6,10 +6,12 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.ExchangeSource;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -53,6 +55,9 @@ public class SendController extends WalletFormController implements Initializabl
     private ComboBox<BitcoinUnit> amountUnit;
 
     @FXML
+    private FiatLabel fiatAmount;
+
+    @FXML
     private Button maxButton;
 
     @FXML
@@ -92,6 +97,13 @@ public class SendController extends WalletFormController implements Initializabl
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
             if(utxoSelectorProperty.get() instanceof MaxUtxoSelector) {
                 utxoSelectorProperty.setValue(null);
+            }
+
+            Long recipientValueSats = getRecipientValueSats();
+            if(recipientValueSats != null) {
+                setFiatAmount(AppController.getFiatCurrencyExchangeRate(), recipientValueSats);
+            } else {
+                fiatAmount.setText("");
             }
 
             updateTransaction();
@@ -440,6 +452,12 @@ public class SendController extends WalletFormController implements Initializabl
         updateTransaction(true);
     }
 
+    private void setFiatAmount(CurrencyRate currencyRate, long amount) {
+        if(currencyRate != null && currencyRate.isAvailable()) {
+            fiatAmount.set(currencyRate, amount);
+        }
+    }
+
     public void clear(ActionEvent event) {
         address.setText("");
         label.setText("");
@@ -507,5 +525,18 @@ public class SendController extends WalletFormController implements Initializabl
         }
         amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
         feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
+    }
+
+    @Subscribe
+    public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
+        if(event.getExchangeSource() == ExchangeSource.NONE) {
+            fiatAmount.setCurrency(null);
+            fiatAmount.setBtcRate(0.0);
+        }
+    }
+
+    @Subscribe
+    public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
+        setFiatAmount(event.getCurrencyRate(), getRecipientValueSats());
     }
 }

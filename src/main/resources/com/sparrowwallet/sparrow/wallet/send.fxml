@@ -19,6 +19,7 @@
 <?import javafx.scene.chart.NumberAxis?>
 <?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
+<?import com.sparrowwallet.sparrow.control.FiatLabel?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
@@ -53,6 +54,8 @@
                                     </FXCollections>
                                 </items>
                             </ComboBox>
+                            <Region style="-fx-pref-width: 20" />
+                            <FiatLabel fx:id="fiatAmount" />
                             <Region style="-fx-pref-width: 20" />
                             <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
                         </Field>
