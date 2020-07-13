@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
@@ -34,14 +35,11 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.net.URL;
 import java.text.DecimalFormat;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SendController extends WalletFormController implements Initializable {
-    public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
+    public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50, 100, 500);
 
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
 
@@ -278,7 +276,7 @@ public class SendController extends WalletFormController implements Initializabl
         ));
         validationSupport.registerValidator(amount, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() <= getMinimumRecipientAmount())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() <= getRecipientDustThreshold())
         ));
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
@@ -296,10 +294,10 @@ public class SendController extends WalletFormController implements Initializabl
         try {
             Address recipientAddress = getRecipientAddress();
             Long recipientAmount = sendAll ? Long.valueOf(1L) : getRecipientValueSats();
-            if(recipientAmount != null && recipientAmount > getMinimumRecipientAmount() && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
+            if(recipientAmount != null && recipientAmount > getRecipientDustThreshold() && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), userFee, sendAll);
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, sendAll);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 
@@ -319,6 +317,26 @@ public class SendController extends WalletFormController implements Initializabl
             return List.of(utxoSelectorProperty.get());
         }
 
+        return getBnBSelector();
+    }
+
+    private List<UtxoSelector> getBnBSelector() {
+        try {
+            Transaction transaction = new Transaction();
+            if(Arrays.asList(ScriptType.WITNESS_TYPES).contains(getWalletForm().getWallet().getScriptType())) {
+                transaction.setSegwitVersion(0);
+            }
+            transaction.addOutput(getRecipientValueSats(), getRecipientAddress());
+            int noInputsWeightUnits = transaction.getWeightUnits();
+
+            UtxoSelector bnbSelector = new BnBUtxoSelector(getWalletForm().getWallet(), noInputsWeightUnits, getFeeRate(), getMinimumFeeRate());
+            return List.of(bnbSelector);
+        } catch(InvalidAddressException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private List<UtxoSelector> getPrioritySelector() {
         Integer blockHeight = AppController.getCurrentBlockHeight();
         if(blockHeight == null) {
             blockHeight = getWalletForm().getWallet().getStoredBlockHeight();
@@ -425,6 +443,12 @@ public class SendController extends WalletFormController implements Initializabl
         return getTargetBlocksFeeRates().get(getTargetBlocks());
     }
 
+    private Double getMinimumFeeRate() {
+        Optional<Double> optMinFeeRate = getTargetBlocksFeeRates().values().stream().min(Double::compareTo);
+        Double minRate = optMinFeeRate.orElse(FALLBACK_FEE_RATE);
+        return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
+    }
+
     private void setFeeRate(Double feeRateAmt) {
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
     }
@@ -453,7 +477,7 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
-    private long getMinimumRecipientAmount() {
+    private long getRecipientDustThreshold() {
         Address address;
         try {
             address = getRecipientAddress();
@@ -462,7 +486,7 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
-        return address.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
+        return address.getScriptType().getDustThreshold(txOutput, getFeeRate());
     }
 
     public void clear(ActionEvent event) {
