@@ -5,7 +5,6 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
-import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
@@ -207,7 +206,10 @@ public class SendController extends WalletFormController implements Initializabl
             feeRate.setText("Unknown");
         }
 
-        setTargetBlocks(5);
+        int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
+        int index = TARGET_BLOCKS_RANGE.indexOf(defaultTarget);
+        targetBlocks.setValue(index);
+        feeRatesChart.select(defaultTarget);
 
         fee.setTextFormatter(new CoinTextFormatter());
         fee.textProperty().addListener(feeListener);
@@ -293,8 +295,9 @@ public class SendController extends WalletFormController implements Initializabl
     private void updateTransaction(boolean sendAll) {
         try {
             Address recipientAddress = getRecipientAddress();
-            Long recipientAmount = sendAll ? Long.valueOf(1L) : getRecipientValueSats();
-            if(recipientAmount != null && recipientAmount > getRecipientDustThreshold() && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
+            long recipientDustThreshold = getRecipientDustThreshold();
+            Long recipientAmount = sendAll ? Long.valueOf(recipientDustThreshold + 1) : getRecipientValueSats();
+            if(recipientAmount != null && recipientAmount > recipientDustThreshold && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, sendAll);
@@ -317,33 +320,29 @@ public class SendController extends WalletFormController implements Initializabl
             return List.of(utxoSelectorProperty.get());
         }
 
-        return getBnBSelector();
+        return List.of(getBnBSelector(), getKnapsackSelector());
     }
 
-    private List<UtxoSelector> getBnBSelector() {
+    private UtxoSelector getBnBSelector() {
         try {
-            Transaction transaction = new Transaction();
-            if(Arrays.asList(ScriptType.WITNESS_TYPES).contains(getWalletForm().getWallet().getScriptType())) {
-                transaction.setSegwitVersion(0);
-            }
-            transaction.addOutput(getRecipientValueSats(), getRecipientAddress());
-            int noInputsWeightUnits = transaction.getWeightUnits();
-
-            UtxoSelector bnbSelector = new BnBUtxoSelector(getWalletForm().getWallet(), noInputsWeightUnits, getFeeRate(), getMinimumFeeRate());
-            return List.of(bnbSelector);
+            int noInputsWeightUnits = getWalletForm().getWallet().getNoInputsWeightUnits(getRecipientAddress());
+            return new BnBUtxoSelector(getWalletForm().getWallet(), noInputsWeightUnits, getFeeRate(), getMinimumFeeRate());
         } catch(InvalidAddressException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private List<UtxoSelector> getPrioritySelector() {
+    private UtxoSelector getKnapsackSelector() {
+        return new KnapsackUtxoSelector();
+    }
+
+    private UtxoSelector getPrioritySelector() {
         Integer blockHeight = AppController.getCurrentBlockHeight();
         if(blockHeight == null) {
             blockHeight = getWalletForm().getWallet().getStoredBlockHeight();
         }
 
-        UtxoSelector priorityUtxoSelector = new PriorityUtxoSelector(blockHeight);
-        return List.of(priorityUtxoSelector);
+        return new PriorityUtxoSelector(blockHeight);
     }
 
     private boolean isValidRecipientAddress() {
