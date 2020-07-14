@@ -315,34 +315,16 @@ public class SendController extends WalletFormController implements Initializabl
         walletTransactionProperty.setValue(null);
     }
 
-    private List<UtxoSelector> getUtxoSelectors() {
+    private List<UtxoSelector> getUtxoSelectors() throws InvalidAddressException {
         if(utxoSelectorProperty.get() != null) {
             return List.of(utxoSelectorProperty.get());
         }
 
-        return List.of(getBnBSelector(), getKnapsackSelector());
-    }
+        Wallet wallet = getWalletForm().getWallet();
+        long noInputsFee = wallet.getNoInputsFee(getRecipientAddress(), getFeeRate());
+        long costOfChange = wallet.getCostOfChange(getFeeRate(), getMinimumFeeRate());
 
-    private UtxoSelector getBnBSelector() {
-        try {
-            int noInputsWeightUnits = getWalletForm().getWallet().getNoInputsWeightUnits(getRecipientAddress());
-            return new BnBUtxoSelector(getWalletForm().getWallet(), noInputsWeightUnits, getFeeRate(), getMinimumFeeRate());
-        } catch(InvalidAddressException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private UtxoSelector getKnapsackSelector() {
-        return new KnapsackUtxoSelector();
-    }
-
-    private UtxoSelector getPrioritySelector() {
-        Integer blockHeight = AppController.getCurrentBlockHeight();
-        if(blockHeight == null) {
-            blockHeight = getWalletForm().getWallet().getStoredBlockHeight();
-        }
-
-        return new PriorityUtxoSelector(blockHeight);
+        return List.of(new BnBUtxoSelector(noInputsFee, costOfChange), new KnapsackUtxoSelector(noInputsFee));
     }
 
     private boolean isValidRecipientAddress() {
