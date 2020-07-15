@@ -15,6 +15,8 @@ public class Config {
     private BitcoinUnit bitcoinUnit;
     private Currency fiatCurrency;
     private ExchangeSource exchangeSource;
+    private boolean groupByAddress = true;
+    private boolean includeMempoolChange = true;
     private Integer keyDerivationPeriod;
     private File hwi;
     private String electrumServer;
@@ -96,6 +98,24 @@ public class Config {
 
     public void setExchangeSource(ExchangeSource exchangeSource) {
         this.exchangeSource = exchangeSource;
+        flush();
+    }
+
+    public boolean isGroupByAddress() {
+        return groupByAddress;
+    }
+
+    public void setGroupByAddress(boolean groupByAddress) {
+        this.groupByAddress = groupByAddress;
+        flush();
+    }
+
+    public boolean isIncludeMempoolChange() {
+        return includeMempoolChange;
+    }
+
+    public void setIncludeMempoolChange(boolean includeMempoolChange) {
+        this.includeMempoolChange = includeMempoolChange;
         flush();
     }
 

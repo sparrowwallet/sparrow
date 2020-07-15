@@ -300,7 +300,9 @@ public class SendController extends WalletFormController implements Initializabl
             if(recipientAmount != null && recipientAmount > recipientDustThreshold && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, sendAll);
+                boolean groupByAddress = Config.get().isGroupByAddress();
+                boolean includeMempoolChange = Config.get().isIncludeMempoolChange();
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, sendAll, groupByAddress, includeMempoolChange);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 

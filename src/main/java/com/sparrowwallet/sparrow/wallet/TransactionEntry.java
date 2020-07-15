@@ -71,7 +71,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     }
 
     public int calculateConfirmations() {
-        if(blockTransaction.getHeight() == 0) {
+        if(blockTransaction.getHeight() <= 0) {
             return 0;
         }
 

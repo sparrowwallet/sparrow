@@ -37,7 +37,8 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
                 setText(date);
                 setContextMenu(new DateContextMenu(date, utxoEntry.getHashIndex()));
                 Tooltip tooltip = new Tooltip();
-                tooltip.setText(Integer.toString(utxoEntry.getHashIndex().getHeight()));
+                int height = utxoEntry.getHashIndex().getHeight();
+                tooltip.setText(height > 0 ? Integer.toString(height) : "Mempool");
                 setTooltip(tooltip);
             }
             setGraphic(null);
@@ -58,7 +59,7 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
             copyHeight.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(Integer.toString(reference.getHeight()));
+                content.putString(reference.getHeight() > 0 ? Integer.toString(reference.getHeight()) : "Mempool");
                 Clipboard.getSystemClipboard().setContent(content);
             });
 

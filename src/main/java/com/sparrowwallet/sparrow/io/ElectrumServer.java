@@ -299,7 +299,9 @@ public class ElectrumServer {
         try {
             Set<Integer> blockHeights = new TreeSet<>();
             for(BlockTransactionHash reference : references) {
-                blockHeights.add(reference.getHeight());
+                if(reference.getHeight() > 0) {
+                    blockHeights.add(reference.getHeight());
+                }
             }
 
             JsonRpcClient client = new JsonRpcClient(getTransport());
@@ -378,14 +380,20 @@ public class ElectrumServer {
                 }
                 BlockTransactionHash reference = optionalReference.get();
 
-                BlockHeader blockHeader = blockHeaderMap.get(reference.getHeight());
-                if(blockHeader == null) {
-                    transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
-                    checkReferences.removeIf(ref -> ref.getHash().equals(hash));
-                    continue;
+                Date blockDate;
+                if(reference.getHeight() > 0) {
+                    BlockHeader blockHeader = blockHeaderMap.get(reference.getHeight());
+                    if(blockHeader == null) {
+                        transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
+                        checkReferences.removeIf(ref -> ref.getHash().equals(hash));
+                        continue;
+                    }
+                    blockDate = blockHeader.getTimeAsDate();
+                } else {
+                    blockDate = new Date();
                 }
 
-                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockHeader.getTimeAsDate(), reference.getFee(), transaction);
+                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockDate, reference.getFee(), transaction);
 
                 transactionMap.put(hash, blockchainTransaction);
                 checkReferences.remove(reference);

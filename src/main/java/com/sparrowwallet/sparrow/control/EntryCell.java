@@ -146,7 +146,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
             copyHeight.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(Integer.toString(blockTransaction.getHeight()));
+                content.putString(blockTransaction.getHeight() > 0 ? Integer.toString(blockTransaction.getHeight()) : "Mempool");
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
