@@ -862,6 +862,12 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void viewPSBT(ViewPSBTEvent event) {
+        Tab tab = addTransactionTab(event.getLabel(), event.getPsbt());
+        tabs.getSelectionModel().select(tab);
+    }
+
+    @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         Optional<Toggle> selectedToggle = bitcoinUnit.getToggles().stream().filter(toggle -> event.getBitcoinUnit().equals(toggle.getUserData())).findFirst();
         selectedToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));

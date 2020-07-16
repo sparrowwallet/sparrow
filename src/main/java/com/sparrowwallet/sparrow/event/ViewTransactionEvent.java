@@ -5,9 +5,9 @@ import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 
 public class ViewTransactionEvent {
-    public final BlockTransaction blockTransaction;
-    public final TransactionView initialView;
-    public final Integer initialIndex;
+    private final BlockTransaction blockTransaction;
+    private final TransactionView initialView;
+    private final Integer initialIndex;
 
     public ViewTransactionEvent(BlockTransaction blockTransaction) {
         this(blockTransaction, TransactionView.HEADERS, null);

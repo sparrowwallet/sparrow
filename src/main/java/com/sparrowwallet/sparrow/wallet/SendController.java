@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.CurrencyRate;
@@ -147,12 +148,14 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Override
     public void initializeView() {
-        addValidation();
-
         address.textProperty().addListener((observable, oldValue, newValue) -> {
             revalidate(amount, amountListener);
             maxButton.setDisable(!isValidRecipientAddress());
             updateTransaction();
+        });
+
+        label.textProperty().addListener((observable, oldValue, newValue) -> {
+            createButton.setDisable(walletTransactionProperty.get() == null || newValue == null || newValue.isEmpty());
         });
 
         amount.setTextFormatter(new CoinTextFormatter());
@@ -265,16 +268,21 @@ public class SendController extends WalletFormController implements Initializabl
             }
 
             transactionDiagram.update(walletTransaction);
-            createButton.setDisable(walletTransaction == null);
+            createButton.setDisable(walletTransaction == null || label.getText().isEmpty());
         });
 
         address.setText("32YSPMaUePf511u5adEckiNq8QLec9ksXX");
+
+        addValidation();
     }
 
     private void addValidation() {
         ValidationSupport validationSupport = new ValidationSupport();
         validationSupport.registerValidator(address, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !newValue.isEmpty() && !isValidRecipientAddress())
+        ));
+        validationSupport.registerValidator(label, Validator.combine(
+                Validator.createEmptyValidator("Label is required")
         ));
         validationSupport.registerValidator(amount, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get()),
@@ -499,7 +507,8 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void createTransaction(ActionEvent event) {
-
+        PSBT psbt = walletTransactionProperty.get().createPSBT();
+        EventManager.get().post(new ViewPSBTEvent(label.getText(), psbt));
     }
 
     @Subscribe
