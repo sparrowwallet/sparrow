@@ -9,6 +9,7 @@ import javafx.beans.NamedArg;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +40,21 @@ public class BalanceChart extends LineChart<Number, Number> {
                 .map(txEntry -> new XYChart.Data<>((Number)txEntry.getBlockTransaction().getDate().getTime(), (Number)txEntry.getBalance(), txEntry))
                 .collect(Collectors.toList());
 
+        int size = balanceDataList.size() * 2;
+        for(int i = 0; i < size; i+= 2) {
+            Data<Number, Number> data = balanceDataList.get(i);
+
+            if(i + 1 < balanceDataList.size()) {
+                Data<Number, Number> nextData = balanceDataList.get(i + 1);
+                Data<Number, Number> interstitialData = new Data<>(nextData.getXValue(), data.getYValue(), null);
+                balanceDataList.add(i + 1, interstitialData);
+            } else {
+                Date now = new Date();
+                Data<Number, Number> interstitialData = new Data<>(now.getTime(), data.getYValue(), null);
+                balanceDataList.add(interstitialData);
+            }
+        }
+
         if(!balanceDataList.isEmpty()) {
             long min = balanceDataList.stream().map(data -> data.getXValue().longValue()).min(Long::compare).get();
             long max = balanceDataList.stream().map(data -> data.getXValue().longValue()).max(Long::compare).get();
@@ -65,7 +81,7 @@ public class BalanceChart extends LineChart<Number, Number> {
             XYChart.Data<Number, Number> data = balanceSeries.getData().get(i);
             Node symbol = lookup(".chart-line-symbol.data" + i);
             if(symbol != null) {
-                if(data.getXValue().equals(transactionEntry.getBlockTransaction().getDate().getTime())) {
+                if(data.getXValue().equals(transactionEntry.getBlockTransaction().getDate().getTime()) && data.getExtraValue() != null) {
                     symbol.getStyleClass().add("selected");
                     selectedEntry = transactionEntry;
                 }

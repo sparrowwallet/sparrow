@@ -12,14 +12,14 @@
 }
 
 .default-color0.chart-series-line {
-    -fx-stroke: rgba(105, 108, 119, 0.3);
+    -fx-stroke: rgba(105, 108, 119, 0.6);
     -fx-stroke-width: 1px;
 }
 
 .chart-line-symbol {
-    -fx-background-color: rgba(105, 108, 119, 0.3);
+    -fx-background-color: rgba(105, 108, 119, 0);
 }
 
 .chart-line-symbol.selected {
-    -fx-background-color: rgba(30, 136, 207, 0.8);
+    -fx-background-color: rgba(30, 136, 207, 0.6);
 }
