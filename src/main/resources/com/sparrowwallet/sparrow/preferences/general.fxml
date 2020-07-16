@@ -13,6 +13,9 @@
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.io.ExchangeSource?>
+<?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
+<?import com.sparrowwallet.sparrow.control.HelpLabel?>
+
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.GeneralPreferencesController">
     <padding>
         <Insets left="25.0" right="25.0" top="25.0" />
@@ -25,8 +28,8 @@
     </rowConstraints>
 
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-        <Fieldset inputGrow="SOMETIMES" text="Bitcoin">
-            <Field text="Unit:">
+        <Fieldset inputGrow="SOMETIMES" text="Bitcoin" styleClass="wideLabelFieldSet">
+            <Field text="Display unit:">
                 <ComboBox fx:id="bitcoinUnit">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
@@ -36,13 +39,14 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
+                <HelpLabel helpText="Display unit for bitcoin amounts. Auto displays amounts over 1 BTC in BTC, and amounts under in satoshis"/>
             </Field>
         </Fieldset>
-        <Fieldset inputGrow="SOMETIMES" text="Fiat">
+        <Fieldset inputGrow="SOMETIMES" text="Fiat" styleClass="wideLabelFieldSet">
             <Field text="Currency:">
                 <ComboBox fx:id="fiatCurrency" />
             </Field>
-            <Field text="Source:">
+            <Field text="Exchange rate source:">
                 <ComboBox fx:id="exchangeSource">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
@@ -52,6 +56,16 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
+            </Field>
+        </Fieldset>
+        <Fieldset inputGrow="SOMETIMES" text="Coin Selection" styleClass="wideLabelFieldSet">
+            <Field text="Group by address:">
+                <UnlabeledToggleSwitch fx:id="groupByAddress" />
+                <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once"/>
+            </Field>
+            <Field text="Include mempool change:">
+                <UnlabeledToggleSwitch fx:id="includeMempoolChange" />
+                <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool where all their inputs are from that wallet"/>
             </Field>
         </Fieldset>
     </Form>

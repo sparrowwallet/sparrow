@@ -116,6 +116,15 @@ public class ElectrumServer {
         return client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(1).execute();
     }
 
+    public static synchronized boolean isConnected() {
+        if(transport != null) {
+            TcpTransport tcpTransport = (TcpTransport)transport;
+            return tcpTransport.isConnected();
+        }
+
+        return false;
+    }
+
     public static synchronized void closeActiveConnection() throws ServerException {
         try {
             if(transport != null) {
@@ -572,6 +581,10 @@ public class ElectrumServer {
         public String hex;
 
         public BlockHeader getBlockHeader() {
+            if(hex == null) {
+                return null;
+            }
+
             byte[] blockHeaderBytes = Utils.hexToBytes(hex);
             return new BlockHeader(blockHeaderBytes);
         }
@@ -715,6 +728,10 @@ public class ElectrumServer {
             }
         }
 
+        public boolean isConnected() {
+            return socket != null && running;
+        }
+
         protected Socket createSocket() throws IOException {
             return socketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
         }
@@ -832,10 +849,19 @@ public class ElectrumServer {
     public static class ConnectionService extends ScheduledService<FeeRatesUpdatedEvent> implements Thread.UncaughtExceptionHandler {
         private static final int FEE_RATES_PERIOD = 5 * 60 * 1000;
 
+        private final boolean subscribe;
         private boolean firstCall = true;
         private Thread reader;
         private Throwable lastReaderException;
         private long feeRatesRetrievedAt;
+
+        public ConnectionService() {
+            this(true);
+        }
+
+        public ConnectionService(boolean subscribe) {
+            this.subscribe = subscribe;
+        }
 
         @Override
         protected Task<FeeRatesUpdatedEvent> createTask() {
@@ -853,7 +879,13 @@ public class ElectrumServer {
                         List<String> serverVersion = electrumServer.getServerVersion();
                         firstCall = false;
 
-                        BlockHeaderTip tip = electrumServer.subscribeBlockHeaders();
+                        BlockHeaderTip tip;
+                        if(subscribe) {
+                            tip = electrumServer.subscribeBlockHeaders();
+                        } else {
+                            tip = new BlockHeaderTip();
+                        }
+
                         String banner = electrumServer.getServerBanner();
 
                         Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);

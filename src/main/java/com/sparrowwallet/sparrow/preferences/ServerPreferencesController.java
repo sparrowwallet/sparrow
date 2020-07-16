@@ -3,12 +3,13 @@ package com.sparrowwallet.sparrow.preferences;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
+import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
-import com.sparrowwallet.sparrow.io.ServerException;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
@@ -17,6 +18,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -123,40 +125,31 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
 
         testConnection.setOnAction(event -> {
-            try {
-                ElectrumServer.closeActiveConnection();
-            } catch (ServerException e) {
-                testResults.setText("Failed to disconnect:\n" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
-            }
-
-            ElectrumServer.ServerVersionService serverVersionService = new ElectrumServer.ServerVersionService();
-            serverVersionService.setOnSucceeded(successEvent -> {
-                List<String> serverVersion = serverVersionService.getValue();
-                testResults.setText("Connected to " + serverVersion.get(0) + " on protocol version " + serverVersion.get(1));
-                testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, Color.rgb(80, 161, 79)));
-
-                ElectrumServer.ServerBannerService serverBannerService = new ElectrumServer.ServerBannerService();
-                serverBannerService.setOnSucceeded(bannerSuccessEvent -> {
-                    testResults.setText(testResults.getText() + "\nServer Banner: " + serverBannerService.getValue());
-                });
-                serverBannerService.setOnFailed(bannerFailEvent -> {
-                    testResults.setText(testResults.getText() + "\nServer Banner: None");
-                });
-                serverBannerService.start();
-            });
-            serverVersionService.setOnFailed(failEvent -> {
-                Throwable e = failEvent.getSource().getException();
-                String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-                if(e.getCause() != null && e.getCause() instanceof SSLHandshakeException) {
-                    reason = "SSL Handshake Error\n" + reason;
-                }
-
-                testResults.setText("Could not connect:\n\n" + reason);
-                testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.EXCLAMATION_CIRCLE, Color.rgb(202, 18, 67)));
-            });
             testResults.setText("Connecting to " + config.getElectrumServer() + "...");
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
-            serverVersionService.start();
+
+            boolean existingConnection = ElectrumServer.isConnected();
+            if(existingConnection) {
+                ElectrumServer.ServerBannerService serverBannerService = new ElectrumServer.ServerBannerService();
+                serverBannerService.setOnSucceeded(successEvent -> {
+                    showConnectionSuccess(null, serverBannerService.getValue());
+                });
+                serverBannerService.setOnFailed(this::showConnectionFailure);
+                serverBannerService.start();
+            } else {
+                ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService(false);
+                connectionService.setPeriod(Duration.minutes(1));
+                connectionService.setOnSucceeded(successEvent -> {
+                    ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
+                    showConnectionSuccess(connectionEvent.getServerVersion(), connectionEvent.getServerBanner());
+                    connectionService.cancel();
+                });
+                connectionService.setOnFailed(workerStateEvent -> {
+                    showConnectionFailure(workerStateEvent);
+                    connectionService.cancel();
+                });
+                connectionService.start();
+            }
         });
 
         String electrumServer = config.getElectrumServer();
@@ -199,6 +192,27 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 proxyPort.setText(Integer.toString(server.getPort()));
             }
         }
+    }
+
+    private void showConnectionSuccess(List<String> serverVersion, String serverBanner) {
+        testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, Color.rgb(80, 161, 79)));
+        if(serverVersion != null) {
+            testResults.setText("Connected to " + serverVersion.get(0) + " on protocol version " + serverVersion.get(1));
+        }
+        if(serverBanner != null) {
+            testResults.setText(testResults.getText() + "\nServer Banner: " + serverBanner);
+        }
+    }
+
+    private void showConnectionFailure(WorkerStateEvent failEvent) {
+        Throwable e = failEvent.getSource().getException();
+        String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
+        if(e.getCause() != null && e.getCause() instanceof SSLHandshakeException) {
+            reason = "SSL Handshake Error\n" + reason;
+        }
+
+        testResults.setText("Could not connect:\n\n" + reason);
+        testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.EXCLAMATION_CIRCLE, Color.rgb(202, 18, 67)));
     }
 
     private void setupValidation() {

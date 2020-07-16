@@ -5,6 +5,11 @@
     -fx-padding: 5 0 5 0;
 }
 
+.form .wideLabelFieldSet.fieldset:horizontal .label-container {
+    -fx-pref-width: 160px;
+    -fx-pref-height: 25px;
+}
+
 .form .fieldset:horizontal .label-container {
     -fx-pref-width: 110px;
     -fx-pref-height: 25px;
@@ -112,4 +117,8 @@
 
 .copyable-text-field .copy-button:pressed > .graphic {
     -fx-background-color: #116a8d;
+}
+
+.help-label {
+    -fx-padding: 0 0 0 10;
 }

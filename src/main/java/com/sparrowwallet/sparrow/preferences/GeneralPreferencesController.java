@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.preferences;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.io.Config;
@@ -23,6 +24,12 @@ public class GeneralPreferencesController extends PreferencesDetailController {
 
     @FXML
     private ComboBox<ExchangeSource> exchangeSource;
+
+    @FXML
+    private UnlabeledToggleSwitch groupByAddress;
+
+    @FXML
+    private UnlabeledToggleSwitch includeMempoolChange;
 
     private final ChangeListener<Currency> fiatCurrencyListener = new ChangeListener<Currency>() {
         @Override
@@ -58,6 +65,15 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         });
 
         updateCurrencies(exchangeSource.getSelectionModel().getSelectedItem());
+
+        groupByAddress.setSelected(config.isGroupByAddress());
+        includeMempoolChange.setSelected(config.isIncludeMempoolChange());
+        groupByAddress.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setGroupByAddress(newValue);
+        });
+        includeMempoolChange.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setIncludeMempoolChange(newValue);
+        });
     }
 
     private void updateCurrencies(ExchangeSource exchangeSource) {
