@@ -454,8 +454,8 @@ public class SendController extends WalletFormController implements Initializabl
         updateTransaction(true);
     }
 
-    private void setFiatAmount(CurrencyRate currencyRate, long amount) {
-        if(currencyRate != null && currencyRate.isAvailable()) {
+    private void setFiatAmount(CurrencyRate currencyRate, Long amount) {
+        if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
             fiatAmount.set(currencyRate, amount);
         }
     }
