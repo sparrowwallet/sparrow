@@ -54,7 +54,7 @@
     </Form>
 
     <StackPane GridPane.columnIndex="0" GridPane.rowIndex="1">
-        <Button fx:id="testConnection" text="Test Connection">
+        <Button fx:id="testConnection" graphicTextGap="5" text="Test Connection">
             <graphic>
                 <Glyph fontFamily="FontAwesome" icon="QUESTION_CIRCLE" prefWidth="13" />
             </graphic>

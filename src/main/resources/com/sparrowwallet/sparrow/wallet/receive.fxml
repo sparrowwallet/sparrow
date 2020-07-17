@@ -85,7 +85,7 @@
             <padding>
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
-            <Button fx:id="nextAddress" text="Get Next Address" defaultButton="true" AnchorPane.rightAnchor="10" onAction="#getNewAddress">
+            <Button fx:id="nextAddress" graphicTextGap="5" text="Get Next Address" defaultButton="true" AnchorPane.rightAnchor="10" onAction="#getNewAddress">
                 <graphic>
                     <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" fontSize="12" />
                 </graphic>

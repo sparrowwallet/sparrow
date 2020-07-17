@@ -28,6 +28,7 @@ import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -155,6 +156,13 @@ public class AppController implements Initializable {
                     exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
                     showTxHex.setDisable(true);
                 }
+            }
+        });
+
+        tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
+        tabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
+            if(c.next() && (c.wasAdded() || c.wasRemoved())) {
+                EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
             }
         });
 
@@ -399,6 +407,20 @@ public class AppController implements Initializable {
 
     public static CurrencyRate getFiatCurrencyExchangeRate() {
         return fiatCurrencyExchangeRate;
+    }
+
+    public List<Wallet> getOpenWallets() {
+        List<Wallet> openWallets = new ArrayList<>();
+
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData.getType() == TabData.TabType.WALLET) {
+                WalletTabData walletTabData = (WalletTabData) tabData;
+                openWallets.add(walletTabData.getWallet());
+            }
+        }
+
+        return openWallets;
     }
 
     public static void showErrorDialog(String title, String content) {
@@ -886,5 +908,15 @@ public class AppController implements Initializable {
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         fiatCurrencyExchangeRate = event.getCurrencyRate();
+    }
+
+    @Subscribe
+    public void requestOpenWallets(RequestOpenWalletsEvent event) {
+        EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
+    }
+
+    @Subscribe
+    public void requestWalletOpen(RequestWalletOpenEvent event) {
+        openWallet(null);
     }
 }

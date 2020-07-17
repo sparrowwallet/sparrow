@@ -500,4 +500,17 @@ public class InputController extends TransactionFormController implements Initia
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         spends.refresh(event.getBitcoinUnit());
     }
+
+    @Subscribe
+    public void finalizePSBT(FinalizePSBTEvent event) {
+        if(inputForm.getPsbt() == event.getPsbt()) {
+            rbf.setDisable(true);
+            locktimeNoneType.setDisable(true);
+            locktimeAbsoluteType.setDisable(true);
+            locktimeRelativeType.setDisable(true);
+            locktimeRelativeBlocks.setDisable(true);
+            locktimeRelativeSeconds.setDisable(true);
+            locktimeRelativeCombo.setDisable(true);
+        }
+    }
 }

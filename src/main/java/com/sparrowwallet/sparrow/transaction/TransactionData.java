@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Wallet;
 
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,8 @@ public class TransactionData {
     private int maxInputFetched;
     private int minOutputFetched;
     private int maxOutputFetched;
+
+    private Wallet signingWallet;
 
     public TransactionData(PSBT psbt) {
         this.transaction = psbt.getTransaction();
@@ -108,5 +111,13 @@ public class TransactionData {
 
     public boolean allOutputsFetched() {
         return minOutputFetched == 0 && maxOutputFetched == transaction.getOutputs().size();
+    }
+
+    public Wallet getSigningWallet() {
+        return signingWallet;
+    }
+
+    public void setSigningWallet(Wallet signingWallet) {
+        this.signingWallet = signingWallet;
     }
 }

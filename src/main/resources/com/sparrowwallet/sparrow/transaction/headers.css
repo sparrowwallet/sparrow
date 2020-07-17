@@ -19,3 +19,17 @@
 .witness-data { -fx-fill: #a626a4 }
 
 .locktime { -fx-fill: #986801 }
+
+.signatures-button {
+    -fx-padding: 10 0 0 0;
+}
+
+#finalizeForm .input-container {
+    -fx-alignment: center-left;
+    -fx-pref-height: 30;
+}
+
+#noWalletsWarning .glyph-font {
+    -fx-text-fill: rgb(202, 18, 67);
+}
+

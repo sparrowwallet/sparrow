@@ -1,19 +1,17 @@
 package com.sparrowwallet.sparrow.transaction;
 
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionInput;
-import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.protocol.*;
+import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
-import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
-import com.sparrowwallet.sparrow.event.TransactionChangedEvent;
-import com.sparrowwallet.sparrow.event.TransactionLocktimeChangedEvent;
+import com.sparrowwallet.sparrow.event.*;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -29,8 +27,10 @@ import tornadofx.control.Form;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.*;
+import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class HeadersController extends TransactionFormController implements Initializable {
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
@@ -106,6 +106,30 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private IdLabel blockHash;
+
+    @FXML
+    private Form finalizeForm;
+
+    @FXML
+    private ComboBox<Wallet> signingWallet;
+
+    @FXML
+    private Label noWalletsWarning;
+
+    @FXML
+    private Hyperlink noWalletsWarningLink;
+
+    @FXML
+    private ComboBox<SigHash> sigHash;
+
+    @FXML
+    private Button finalizeTransaction;
+
+    @FXML
+    private Form signaturesForm;
+
+    @FXML
+    private Form broadcastForm;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -237,10 +261,49 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
+        finalizeForm.managedProperty().bind(finalizeForm.visibleProperty());
+        signaturesForm.managedProperty().bind(signaturesForm.visibleProperty());
+        broadcastForm.managedProperty().bind(broadcastForm.visibleProperty());
+
+        blockchainForm.setVisible(false);
+        finalizeForm.setVisible(false);
+        signaturesForm.setVisible(false);
+        broadcastForm.setVisible(false);
+
         if(headersForm.getBlockTransaction() != null) {
+            blockchainForm.setVisible(true);
             updateBlockchainForm(headersForm.getBlockTransaction());
-        } else {
-            blockchainForm.setVisible(false);
+        } else if(headersForm.getPsbt() != null) {
+            PSBT psbt = headersForm.getPsbt();
+
+            if(headersForm.isEditable()) {
+                finalizeForm.setVisible(true);
+            } else if(headersForm.getPsbt().isSigned()) {
+                broadcastForm.setVisible(true);
+            } else {
+                signaturesForm.setVisible(true);
+            }
+
+            signingWallet.valueProperty().addListener((observable, oldValue, newValue) -> headersForm.setSigningWallet(newValue));
+            EventManager.get().post(new RequestOpenWalletsEvent());
+
+            signingWallet.managedProperty().bind(signingWallet.visibleProperty());
+            noWalletsWarning.managedProperty().bind(noWalletsWarning.visibleProperty());
+            noWalletsWarningLink.managedProperty().bind(noWalletsWarningLink.visibleProperty());
+            noWalletsWarningLink.visibleProperty().bind(noWalletsWarning.visibleProperty());
+
+            SigHash psbtSigHash = SigHash.ALL;
+            for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
+                if(psbtInput.getSigHash() != null) {
+                    psbtSigHash = psbtInput.getSigHash();
+                }
+            }
+            sigHash.setValue(psbtSigHash);
+            sigHash.valueProperty().addListener((observable, oldValue, newValue) -> {
+                for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
+                    psbtInput.setSigHash(newValue);
+                }
+            });
         }
     }
 
@@ -331,6 +394,14 @@ public class HeadersController extends TransactionFormController implements Init
         Clipboard.getSystemClipboard().setContent(content);
     }
 
+    public void openWallet(ActionEvent event) {
+        EventManager.get().post(new RequestWalletOpenEvent());
+    }
+
+    public void finalizeTransaction(ActionEvent event) {
+        EventManager.get().post(new FinalizePSBTEvent(headersForm.getPsbt(), headersForm.getSigningWallet()));
+    }
+
     @Subscribe
     public void transactionChanged(TransactionChangedEvent event) {
         if(headersForm.getTransaction().equals(event.getTransaction())) {
@@ -361,5 +432,42 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         fee.refresh(event.getBitcoinUnit());
+    }
+
+    @Subscribe
+    public void openWallets(OpenWalletsEvent event) {
+        if(headersForm.getPsbt() != null && headersForm.isEditable()) {
+            List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).collect(Collectors.toList());
+            signingWallet.setItems(FXCollections.observableList(availableWallets));
+            if(!availableWallets.isEmpty()) {
+                if(availableWallets.contains(headersForm.getSigningWallet())) {
+                    signingWallet.setValue(headersForm.getSigningWallet());
+                } else {
+                    signingWallet.setValue(availableWallets.get(0));
+                }
+                noWalletsWarning.setVisible(false);
+                signingWallet.setVisible(true);
+                finalizeTransaction.setDisable(false);
+            } else {
+                noWalletsWarning.setVisible(true);
+                signingWallet.setVisible(false);
+                finalizeTransaction.setDisable(true);
+            }
+        }
+    }
+
+    @Subscribe
+    public void finalizePSBT(FinalizePSBTEvent event) {
+        if(headersForm.getPsbt() == event.getPsbt()) {
+            version.setDisable(true);
+            locktimeNoneType.setDisable(true);
+            locktimeBlockType.setDisable(true);
+            locktimeDateType.setDisable(true);
+            locktimeBlock.setDisable(true);
+            locktimeDate.setDisable(true);
+
+            finalizeForm.setVisible(false);
+            signaturesForm.setVisible(true);
+        }
     }
 }
