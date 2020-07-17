@@ -24,6 +24,10 @@
     -fx-padding: 10 0 0 0;
 }
 
+.unfinalized-psbt {
+    -fx-text-fill: #a0a1a7;
+}
+
 #finalizeForm .input-container {
     -fx-alignment: center-left;
     -fx-pref-height: 30;

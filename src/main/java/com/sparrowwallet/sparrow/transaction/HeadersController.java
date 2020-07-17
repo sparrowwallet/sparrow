@@ -284,7 +284,6 @@ public class HeadersController extends TransactionFormController implements Init
                 signaturesForm.setVisible(true);
             }
 
-            signingWallet.valueProperty().addListener((observable, oldValue, newValue) -> headersForm.setSigningWallet(newValue));
             EventManager.get().post(new RequestOpenWalletsEvent());
 
             signingWallet.managedProperty().bind(signingWallet.visibleProperty());
@@ -386,6 +385,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateTxId() {
         id.setText(headersForm.getTransaction().calculateTxId(false).toString());
+        if(headersForm.getPsbt() != null && headersForm.isEditable()) {
+            id.getStyleClass().add("unfinalized-psbt");
+        }
     }
 
     public void copyId(ActionEvent event) {
@@ -399,7 +401,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void finalizeTransaction(ActionEvent event) {
-        EventManager.get().post(new FinalizePSBTEvent(headersForm.getPsbt(), headersForm.getSigningWallet()));
+        EventManager.get().post(new FinalizePSBTEvent(headersForm.getPsbt(), signingWallet.getValue()));
     }
 
     @Subscribe
@@ -465,6 +467,9 @@ public class HeadersController extends TransactionFormController implements Init
             locktimeDateType.setDisable(true);
             locktimeBlock.setDisable(true);
             locktimeDate.setDisable(true);
+            id.getStyleClass().remove("unfinalized-psbt");
+
+            headersForm.setSigningWallet(event.getSigningWallet());
 
             finalizeForm.setVisible(false);
             signaturesForm.setVisible(true);
