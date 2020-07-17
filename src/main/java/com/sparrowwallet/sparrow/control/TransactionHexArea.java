@@ -68,7 +68,7 @@ public class TransactionHexArea extends CodeArea {
         //Version
         cursor = addSegment(segments, cursor, 8, "version");
 
-        if(transaction.hasWitnesses()) {
+        if(transaction.isSegwit()) {
             //Segwit marker
             cursor = addSegment(segments, cursor, 2, "segwit-marker");
             //Segwit flag
@@ -123,7 +123,7 @@ public class TransactionHexArea extends CodeArea {
         cursor = addSegment(segments, cursor, 8, "locktime");
 
         if(cursor != getLength()) {
-            //throw new IllegalStateException("Cursor position does not match transaction serialisation " + cursor + ": " + getLength());
+            throw new IllegalStateException("Cursor position does not match transaction serialisation " + cursor + ": " + getLength());
         }
 
         return segments;
