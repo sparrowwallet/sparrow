@@ -4,7 +4,10 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.ObservableList;
 import javafx.scene.Node;
 
 import java.io.IOException;
@@ -58,8 +61,16 @@ public abstract class TransactionForm {
         return txdata.getSigningWallet();
     }
 
+    public SimpleObjectProperty<Wallet> signingWalletProperty() {
+        return txdata.signingWalletProperty();
+    }
+
     public void setSigningWallet(Wallet signingWallet) {
         txdata.setSigningWallet(signingWallet);
+    }
+
+    public ObservableList<Keystore> getSignedKeystores() {
+        return txdata.getSignedKeystores();
     }
 
     public boolean isEditable() {

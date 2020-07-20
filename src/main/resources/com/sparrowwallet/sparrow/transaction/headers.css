@@ -37,3 +37,87 @@
     -fx-text-fill: rgb(202, 18, 67);
 }
 
+.signatures-buttons {
+    -fx-padding: 10 20 10 20;
+}
+
+.signatures-buttons .button {
+    -fx-pref-height: 75px;
+    -fx-max-width: Infinity;
+}
+
+.signatures-progress-bar {
+    -fx-padding: 10 0 10 0;
+}
+
+.signatures-progress-bar {
+    -fx-padding: 10 0 10 0;
+}
+
+.signatures-progress-bar > .segment {
+    -fx-background-color: transparent;
+}
+
+.signature-progress-segment-label {
+    -fx-text-fill: white;
+}
+
+.signatures-progress-bar > .only-segment {
+
+}
+
+.signatures-progress-bar > .first-segment {
+    -fx-padding: 0 3 0 0;
+}
+
+.signatures-progress-bar > .middle-segment {
+    -fx-padding: 0 3 0 3;
+}
+
+.signatures-progress-bar > .last-segment {
+    -fx-padding: 0 0 0 3;
+}
+
+.segment0 .progress-bar {
+    -fx-accent: CHART_COLOR_3;
+}
+
+.segment1 .progress-bar {
+    -fx-accent: CHART_COLOR_4;
+}
+
+.segment2 .progress-bar {
+    -fx-accent: CHART_COLOR_7;
+}
+
+.segment3 .progress-bar {
+    -fx-accent: CHART_COLOR_5;
+}
+
+.segment4 .progress-bar {
+    -fx-accent: CHART_COLOR_6;
+}
+
+.segment5 .progress-bar {
+    -fx-accent: CHART_COLOR_2;
+}
+
+.segment6 .progress-bar {
+    -fx-accent: CHART_COLOR_1;
+}
+
+.segment7 .progress-bar {
+    -fx-accent: CHART_COLOR_8;
+}
+
+.segment8 .progress-bar {
+    -fx-accent: #3DA0E3;
+}
+
+.segment9 .progress-bar {
+    -fx-accent: #f9c74f;
+}
+
+.segment10 .progress-bar {
+    -fx-accent: #f94144;
+}

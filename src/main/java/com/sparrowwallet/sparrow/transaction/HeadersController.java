@@ -4,13 +4,17 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.IdLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.control.SignaturesProgressBar;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -18,6 +22,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import org.controlsfx.glyphfont.Glyph;
 import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
@@ -27,9 +32,7 @@ import tornadofx.control.Form;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.*;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class HeadersController extends TransactionFormController implements Initializable {
@@ -127,6 +130,12 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private Form signaturesForm;
+
+    @FXML
+    private SignaturesProgressBar signaturesProgressBar;
+
+    @FXML
+    private Button signButton;
 
     @FXML
     private Form broadcastForm;
@@ -303,6 +312,17 @@ public class HeadersController extends TransactionFormController implements Init
                     psbtInput.setSigHash(newValue);
                 }
             });
+
+            headersForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
+                initializeSignButton(signingWallet);
+
+                Map<PSBTInput, List<Keystore>> signedKeystoresMap = signingWallet.getSignedKeystores(headersForm.getPsbt());
+                Optional<List<Keystore>> optSignedKeystores = signedKeystoresMap.values().stream().filter(list -> !list.isEmpty()).min(Comparator.comparingInt(List::size));
+                optSignedKeystores.ifPresent(keystores -> headersForm.getSignedKeystores().setAll(keystores));
+
+                int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
+                signaturesProgressBar.initialize(headersForm.getSignedKeystores(), threshold);
+            });
         }
     }
 
@@ -370,6 +390,18 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
+    private void initializeSignButton(Wallet signingWallet) {
+        Optional<Keystore> softwareKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.SW_SEED)).findAny();
+        Optional<Keystore> usbKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB)).findAny();
+        if(softwareKeystore.isEmpty() && usbKeystore.isEmpty()) {
+            signButton.setDisable(true);
+        } else if(softwareKeystore.isEmpty()) {
+            Glyph usbGlyph = new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
+            usbGlyph.setFontSize(20);
+            signButton.setGraphic(usbGlyph);
+        }
+    }
+
     private static class BlockHeightContextMenu extends ContextMenu {
         public BlockHeightContextMenu(Sha256Hash blockHash) {
             MenuItem copyBlockHash = new MenuItem("Copy Block Hash");
@@ -402,6 +434,18 @@ public class HeadersController extends TransactionFormController implements Init
 
     public void finalizeTransaction(ActionEvent event) {
         EventManager.get().post(new FinalizePSBTEvent(headersForm.getPsbt(), signingWallet.getValue()));
+    }
+
+    public void showPSBT(ActionEvent event) {
+
+    }
+
+    public void savePSBT(ActionEvent event) {
+
+    }
+
+    public void signPSBT(ActionEvent event) {
+        headersForm.getSignedKeystores().add(headersForm.getSigningWallet().getKeystores().get(0));
     }
 
     @Subscribe

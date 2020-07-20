@@ -21,6 +21,7 @@
 <?import javafx.collections.FXCollections?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Hyperlink?>
+<?import com.sparrowwallet.sparrow.control.SignaturesProgressBar?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -165,6 +166,28 @@
 
     <Form fx:id="signaturesForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
         <Fieldset text="Signatures" inputGrow="SOMETIMES">
+            <VBox>
+                <SignaturesProgressBar fx:id="signaturesProgressBar" />
+            </VBox>
+            <VBox>
+                <HBox styleClass="signatures-buttons" spacing="20">
+                    <Button HBox.hgrow="ALWAYS" text="Show QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showPSBT">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="QRCODE" />
+                        </graphic>
+                    </Button>
+                    <Button HBox.hgrow="ALWAYS" text="Save PSBT" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#savePSBT">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SD_CARD" />
+                        </graphic>
+                    </Button>
+                    <Button fx:id="signButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Sign" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#signPSBT">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="PEN_FANCY" />
+                        </graphic>
+                    </Button>
+                </HBox>
+            </VBox>
         </Fieldset>
     </Form>
 
