@@ -84,6 +84,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         importButton = new SplitMenuButton();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
+        importButton.getStyleClass().add("default-button");
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
             importKeystore(wallet.getScriptType().getDefaultDerivation(), false);
@@ -155,11 +156,13 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         });
         confirmButton.managedProperty().bind(confirmButton.visibleProperty());
         confirmButton.setVisible(false);
+        confirmButton.setDefaultButton(true);
         buttonPane.getChildren().add(confirmButton);
         AnchorPane.setRightAnchor(confirmButton, 0.0);
 
         verifyButton = new Button("Verify");
         verifyButton.setDisable(true);
+        verifyButton.setDefaultButton(true);
         verifyButton.setOnAction(event -> {
             prepareImport();
         });

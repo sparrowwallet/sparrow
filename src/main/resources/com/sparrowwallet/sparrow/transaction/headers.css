@@ -79,11 +79,11 @@
 }
 
 .segment0 .progress-bar {
-    -fx-accent: CHART_COLOR_3;
+
 }
 
 .segment1 .progress-bar {
-    -fx-accent: CHART_COLOR_4;
+    -fx-accent: CHART_COLOR_3;
 }
 
 .segment2 .progress-bar {

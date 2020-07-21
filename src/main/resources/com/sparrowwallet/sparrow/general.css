@@ -122,3 +122,7 @@
 .help-label {
     -fx-padding: 0 0 0 10;
 }
+
+.default-button {
+    -fx-base: -fx-default-button;
+}
