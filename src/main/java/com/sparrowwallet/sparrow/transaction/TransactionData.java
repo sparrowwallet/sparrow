@@ -6,9 +6,11 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableMap;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +27,7 @@ public class TransactionData {
     private int minOutputFetched;
     private int maxOutputFetched;
 
+    private final ObservableMap<Wallet, Storage> availableWallets = FXCollections.observableHashMap();
     private final SimpleObjectProperty<Wallet> signingWallet = new SimpleObjectProperty<>(this, "signingWallet", null);
     private final ObservableList<Keystore> signedKeystores = FXCollections.observableArrayList();
 
@@ -116,6 +119,10 @@ public class TransactionData {
 
     public boolean allOutputsFetched() {
         return minOutputFetched == 0 && maxOutputFetched == transaction.getOutputs().size();
+    }
+
+    public ObservableMap<Wallet, Storage> getAvailableWallets() {
+        return availableWallets;
     }
 
     public Wallet getSigningWallet() {

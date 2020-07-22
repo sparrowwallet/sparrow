@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -9,12 +10,10 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CoinLabel;
-import com.sparrowwallet.sparrow.control.IdLabel;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.control.SignaturesProgressBar;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
+import com.sparrowwallet.sparrow.io.Storage;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -29,6 +28,7 @@ import tornadofx.control.Fieldset;
 import com.google.common.eventbus.Subscribe;
 import tornadofx.control.Form;
 
+import java.io.File;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.*;
@@ -315,10 +315,7 @@ public class HeadersController extends TransactionFormController implements Init
 
             headersForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
                 initializeSignButton(signingWallet);
-
-                Map<PSBTInput, List<Keystore>> signedKeystoresMap = signingWallet.getSignedKeystores(headersForm.getPsbt());
-                Optional<List<Keystore>> optSignedKeystores = signedKeystoresMap.values().stream().filter(list -> !list.isEmpty()).min(Comparator.comparingInt(List::size));
-                optSignedKeystores.ifPresent(keystores -> headersForm.getSignedKeystores().setAll(keystores));
+                updateSignedKeystores(signingWallet);
 
                 int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
                 signaturesProgressBar.initialize(headersForm.getSignedKeystores(), threshold);
@@ -437,7 +434,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void showPSBT(ActionEvent event) {
-
+        headersForm.getSignedKeystores().add(headersForm.getSigningWallet().getKeystores().get(0));
     }
 
     public void savePSBT(ActionEvent event) {
@@ -445,7 +442,56 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void signPSBT(ActionEvent event) {
-        headersForm.getSignedKeystores().add(headersForm.getSigningWallet().getKeystores().get(0));
+        signSoftwareKeystores();
+    }
+
+    private void signSoftwareKeystores() {
+        if(headersForm.getSigningWallet().getKeystores().stream().noneMatch(Keystore::hasSeed)) {
+            return;
+        }
+
+        Wallet copy = headersForm.getSigningWallet().copy();
+        File file = headersForm.getAvailableWallets().get(headersForm.getSigningWallet()).getWalletFile();
+
+        if(copy.isEncrypted()) {
+            WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+            Optional<SecureString> password = dlg.showAndWait();
+            if(password.isPresent()) {
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
+                decryptWalletService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Done"));
+                    Wallet decryptedWallet = decryptWalletService.getValue();
+                    signUnencryptedKeystores(decryptedWallet);
+                });
+                decryptWalletService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Failed"));
+                    AppController.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                });
+                EventManager.get().post(new StorageEvent(file, TimedEvent.Action.START, "Decrypting wallet..."));
+                decryptWalletService.start();
+            }
+        } else {
+            signUnencryptedKeystores(copy);
+        }
+    }
+
+    private void signUnencryptedKeystores(Wallet unencryptedWallet) {
+        try {
+            unencryptedWallet.sign(headersForm.getPsbt());
+            updateSignedKeystores(headersForm.getSigningWallet());
+        } catch(Exception e) {
+            AppController.showErrorDialog("Failed to Sign", e.getMessage());
+        }
+    }
+
+    private void updateSignedKeystores(Wallet signingWallet) {
+        Map<PSBTInput, List<Keystore>> signedKeystoresMap = signingWallet.getSignedKeystores(headersForm.getPsbt());
+        Optional<List<Keystore>> optSignedKeystores = signedKeystoresMap.values().stream().filter(list -> !list.isEmpty()).min(Comparator.comparingInt(List::size));
+        optSignedKeystores.ifPresent(signedKeystores -> {
+            List<Keystore> newSignedKeystores = new ArrayList<>(signedKeystores);
+            newSignedKeystores.removeAll(headersForm.getSignedKeystores());
+            headersForm.getSignedKeystores().addAll(newSignedKeystores);
+        });
     }
 
     @Subscribe
@@ -484,6 +530,11 @@ public class HeadersController extends TransactionFormController implements Init
     public void openWallets(OpenWalletsEvent event) {
         if(headersForm.getPsbt() != null && headersForm.isEditable()) {
             List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).collect(Collectors.toList());
+            Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
+            availableWalletsMap.keySet().retainAll(availableWallets);
+            headersForm.getAvailableWallets().keySet().retainAll(availableWallets);
+            headersForm.getAvailableWallets().putAll(availableWalletsMap);
+
             signingWallet.setItems(FXCollections.observableList(availableWallets));
             if(!availableWallets.isEmpty()) {
                 if(availableWallets.contains(headersForm.getSigningWallet())) {

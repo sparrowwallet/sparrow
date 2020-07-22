@@ -409,14 +409,14 @@ public class AppController implements Initializable {
         return fiatCurrencyExchangeRate;
     }
 
-    public List<Wallet> getOpenWallets() {
-        List<Wallet> openWallets = new ArrayList<>();
+    public Map<Wallet, Storage> getOpenWallets() {
+        Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
 
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();
             if(tabData.getType() == TabData.TabType.WALLET) {
                 WalletTabData walletTabData = (WalletTabData) tabData;
-                openWallets.add(walletTabData.getWallet());
+                openWallets.put(walletTabData.getWallet(), walletTabData.getStorage());
             }
         }
 

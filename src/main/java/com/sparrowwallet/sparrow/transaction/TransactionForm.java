@@ -6,8 +6,10 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableMap;
 import javafx.scene.Node;
 
 import java.io.IOException;
@@ -55,6 +57,10 @@ public abstract class TransactionForm {
 
     public boolean allOutputsFetched() {
         return txdata.allOutputsFetched();
+    }
+
+    public ObservableMap<Wallet, Storage> getAvailableWallets() {
+        return txdata.getAvailableWallets();
     }
 
     public Wallet getSigningWallet() {
