@@ -56,17 +56,13 @@ public class InputsController extends TransactionFormController implements Initi
             boolean showDenominator = true;
 
             List<TransactionOutput> outputs = new ArrayList<>();
-            for(int i = 0; i < tx.getInputs().size(); i++) {
-                TransactionInput input = tx.getInputs().get(i);
-                PSBTInput psbtInput = inputsForm.getPsbt().getPsbtInputs().get(i);
-
-                if(psbtInput.getNonWitnessUtxo() != null) {
-                    outputs.add(psbtInput.getNonWitnessUtxo().getOutputs().get((int)input.getOutpoint().getIndex()));
-                } else if(psbtInput.getWitnessUtxo() != null) {
-                    outputs.add(psbtInput.getWitnessUtxo());
+            for(PSBTInput psbtInput : inputsForm.getPsbt().getPsbtInputs()) {
+                TransactionOutput output = psbtInput.getUtxo();
+                if(output != null) {
+                    outputs.add(output);
                 }
 
-                if((psbtInput.getNonWitnessUtxo() != null || psbtInput.getWitnessUtxo() != null) && psbtInput.getSigningScript() != null) {
+                if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
                     try {
                         reqSigs += psbtInput.getSigningScript().getNumRequiredSignatures();
                     } catch (NonStandardScriptException e) {

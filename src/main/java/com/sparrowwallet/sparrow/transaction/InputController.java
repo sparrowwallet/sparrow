@@ -156,13 +156,7 @@ public class InputController extends TransactionFormController implements Initia
 
         from.setVisible(false);
         if(psbtInput != null) {
-            TransactionOutput output = null;
-            if(psbtInput.getNonWitnessUtxo() != null) {
-                output = psbtInput.getNonWitnessUtxo().getOutputs().get(txInput.getIndex());
-            } else if(psbtInput.getWitnessUtxo() != null) {
-                output = psbtInput.getWitnessUtxo();
-            }
-
+            TransactionOutput output = psbtInput.getUtxo();
             updateSpends(output);
         } else if(inputForm.getInputTransactions() != null) {
             updateSpends(inputForm.getInputTransactions());
@@ -299,7 +293,7 @@ public class InputController extends TransactionFormController implements Initia
             PSBTInput psbtInput = inputForm.getPsbtInput();
 
             int reqSigs = -1;
-            if((psbtInput.getNonWitnessUtxo() != null || psbtInput.getWitnessUtxo() != null) && psbtInput.getSigningScript() != null) {
+            if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
                 try {
                     reqSigs = psbtInput.getSigningScript().getNumRequiredSignatures();
                 } catch (NonStandardScriptException e) {
