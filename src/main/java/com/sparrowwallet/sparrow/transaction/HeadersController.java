@@ -430,7 +430,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void finalizeTransaction(ActionEvent event) {
-        EventManager.get().post(new FinalizePSBTEvent(headersForm.getPsbt(), signingWallet.getValue()));
+        EventManager.get().post(new FinalizeTransactionEvent(headersForm.getPsbt(), signingWallet.getValue()));
     }
 
     public void showPSBT(ActionEvent event) {
@@ -554,7 +554,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     @Subscribe
-    public void finalizePSBT(FinalizePSBTEvent event) {
+    public void finalizeTransaction(FinalizeTransactionEvent event) {
         if(headersForm.getPsbt() == event.getPsbt()) {
             version.setDisable(true);
             locktimeNoneType.setDisable(true);

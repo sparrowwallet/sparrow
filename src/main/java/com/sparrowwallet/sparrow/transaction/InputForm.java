@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class InputForm extends IndexedTransactionForm {
     private final TransactionInput transactionInput;
-    private PSBTInput psbtInput;
+    private final PSBTInput psbtInput;
 
     public InputForm(TransactionData txdata, PSBTInput psbtInput) {
         super(txdata, txdata.getPsbt().getPsbtInputs().indexOf(psbtInput));
@@ -23,6 +23,7 @@ public class InputForm extends IndexedTransactionForm {
     public InputForm(TransactionData txdata, TransactionInput transactionInput) {
         super(txdata, txdata.getTransaction().getInputs().indexOf(transactionInput));
         this.transactionInput = transactionInput;
+        this.psbtInput = null;
     }
 
     public TransactionInput getTransactionInput() {

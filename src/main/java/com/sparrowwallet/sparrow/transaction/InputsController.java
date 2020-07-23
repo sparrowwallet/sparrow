@@ -2,13 +2,16 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.protocol.*;
+import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
@@ -51,52 +54,60 @@ public class InputsController extends TransactionFormController implements Initi
         signatures.setText("Unknown");
 
         if(inputsForm.getPsbt() != null) {
-            int reqSigs = 0;
-            int foundSigs = 0;
-            boolean showDenominator = true;
-
-            List<TransactionOutput> outputs = new ArrayList<>();
-            for(PSBTInput psbtInput : inputsForm.getPsbt().getPsbtInputs()) {
-                TransactionOutput output = psbtInput.getUtxo();
-                if(output != null) {
-                    outputs.add(output);
-                }
-
-                if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
-                    try {
-                        reqSigs += psbtInput.getSigningScript().getNumRequiredSignatures();
-                    } catch (NonStandardScriptException e) {
-                        showDenominator = false;
-                        //TODO: Handle unusual transaction sig
-                    }
-                } else {
-                    showDenominator = false;
-                }
-
-                if(psbtInput.getFinalScriptWitness() != null) {
-                    foundSigs += psbtInput.getFinalScriptWitness().getSignatures().size();
-                } else if(psbtInput.getFinalScriptSig() != null) {
-                    foundSigs += psbtInput.getFinalScriptSig().getSignatures().size();
-                } else {
-                    foundSigs += psbtInput.getPartialSignatures().size();
-                }
-            }
-
-            long totalAmt = 0;
-            for(TransactionOutput output : outputs) {
-                totalAmt += output.getValue();
-            }
-            total.setValue(totalAmt);
-            if(showDenominator) {
-                signatures.setText(foundSigs + "/" + reqSigs);
-            } else {
-                signatures.setText(foundSigs + "/?");
-            }
-
-            addPieData(inputsPie, outputs);
+            updatePSBTInputs(inputsForm.getPsbt());
+            inputsForm.getSignedKeystores().addListener((ListChangeListener<Keystore>) c -> {
+                updatePSBTInputs(inputsForm.getPsbt());
+            });
         } else if(inputsForm.getInputTransactions() != null) {
             updateBlockTransactionInputs(inputsForm.getInputTransactions());
         }
+    }
+
+    private void updatePSBTInputs(PSBT psbt) {
+        int reqSigs = 0;
+        int foundSigs = 0;
+        boolean showDenominator = true;
+
+        List<TransactionOutput> outputs = new ArrayList<>();
+        for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
+            TransactionOutput output = psbtInput.getUtxo();
+            if(output != null) {
+                outputs.add(output);
+            }
+
+            if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
+                try {
+                    reqSigs += psbtInput.getSigningScript().getNumRequiredSignatures();
+                } catch (NonStandardScriptException e) {
+                    showDenominator = false;
+                    //TODO: Handle unusual transaction sig
+                }
+            } else {
+                showDenominator = false;
+            }
+
+            if(psbtInput.getFinalScriptWitness() != null) {
+                foundSigs += psbtInput.getFinalScriptWitness().getSignatures().size();
+            } else if(psbtInput.getFinalScriptSig() != null) {
+                foundSigs += psbtInput.getFinalScriptSig().getSignatures().size();
+            } else {
+                foundSigs += psbtInput.getPartialSignatures().size();
+            }
+        }
+
+        long totalAmt = 0;
+        for(TransactionOutput output : outputs) {
+            totalAmt += output.getValue();
+        }
+        total.setValue(totalAmt);
+        if(showDenominator) {
+            signatures.setText(foundSigs + "/" + reqSigs);
+        } else {
+            signatures.setText(foundSigs + "/?");
+        }
+
+
+        addPieData(inputsPie, outputs);
     }
 
     private void updateBlockTransactionInputs(Map<Sha256Hash, BlockTransaction> inputTransactions) {

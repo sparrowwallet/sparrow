@@ -7,9 +7,11 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
@@ -130,6 +132,12 @@ public class InputController extends TransactionFormController implements Initia
         initializeScriptFields(txInput, psbtInput);
         initializeStatusFields(txInput);
         initializeLocktimeFields(txInput);
+
+        if(psbtInput != null) {
+            inputForm.getSignedKeystores().addListener((ListChangeListener<Keystore>) c -> {
+                updateSignatures();
+            });
+        }
     }
 
     private void initializeInputFields(TransactionInput txInput, PSBTInput psbtInput) {
@@ -288,28 +296,7 @@ public class InputController extends TransactionFormController implements Initia
     private void initializeStatusFields(TransactionInput txInput) {
         Transaction transaction = inputForm.getTransaction();
 
-        signatures.setText("Unknown");
-        if(inputForm.getPsbtInput() != null) {
-            PSBTInput psbtInput = inputForm.getPsbtInput();
-
-            int reqSigs = -1;
-            if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
-                try {
-                    reqSigs = psbtInput.getSigningScript().getNumRequiredSignatures();
-                } catch (NonStandardScriptException e) {
-                    //TODO: Handle unusual transaction sig
-                }
-            }
-
-            int foundSigs = psbtInput.getPartialSignatures().size();
-            if(psbtInput.getFinalScriptWitness() != null) {
-                foundSigs = psbtInput.getFinalScriptWitness().getSignatures().size();
-            } else if(psbtInput.getFinalScriptSig() != null) {
-                foundSigs = psbtInput.getFinalScriptSig().getSignatures().size();
-            }
-
-            signatures.setText(foundSigs + "/" + (reqSigs < 0 ? "?" : reqSigs));
-        }
+        updateSignatures();
 
         rbf.setSelected(txInput.isReplaceByFeeEnabled());
         rbf.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -334,6 +321,31 @@ public class InputController extends TransactionFormController implements Initia
             }
         });
         rbf.setDisable(!inputForm.isEditable());
+    }
+
+    private void updateSignatures() {
+        signatures.setText("Unknown");
+        if(inputForm.getPsbtInput() != null) {
+            PSBTInput psbtInput = inputForm.getPsbtInput();
+
+            int reqSigs = -1;
+            if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
+                try {
+                    reqSigs = psbtInput.getSigningScript().getNumRequiredSignatures();
+                } catch (NonStandardScriptException e) {
+                    //TODO: Handle unusual transaction sig
+                }
+            }
+
+            int foundSigs = psbtInput.getPartialSignatures().size();
+            if(psbtInput.getFinalScriptWitness() != null) {
+                foundSigs = psbtInput.getFinalScriptWitness().getSignatures().size();
+            } else if(psbtInput.getFinalScriptSig() != null) {
+                foundSigs = psbtInput.getFinalScriptSig().getSignatures().size();
+            }
+
+            signatures.setText(foundSigs + "/" + (reqSigs < 0 ? "?" : reqSigs));
+        }
     }
 
     private void initializeLocktimeFields(TransactionInput txInput) {
@@ -496,7 +508,7 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     @Subscribe
-    public void finalizePSBT(FinalizePSBTEvent event) {
+    public void finalizeTransaction(FinalizeTransactionEvent event) {
         if(inputForm.getPsbt() == event.getPsbt()) {
             rbf.setDisable(true);
             locktimeNoneType.setDisable(true);
