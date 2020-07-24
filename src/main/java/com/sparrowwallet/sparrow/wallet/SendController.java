@@ -137,6 +137,7 @@ public class SendController extends WalletFormController implements Initializabl
             targetBlocks.setTooltip(tooltip);
 
             userFeeSet.set(false);
+            revalidate(amount, amountListener);
             updateTransaction();
         }
     };

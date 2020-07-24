@@ -21,6 +21,8 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
 import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
@@ -29,7 +31,10 @@ import com.google.common.eventbus.Subscribe;
 import tornadofx.control.Form;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.*;
 import java.util.*;
@@ -434,11 +439,47 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void showPSBT(ActionEvent event) {
+        ToggleButton toggleButton = (ToggleButton)event.getSource();
+        toggleButton.setSelected(false);
+
         headersForm.getSignedKeystores().add(headersForm.getSigningWallet().getKeystores().get(0));
     }
 
-    public void savePSBT(ActionEvent event) {
+    public void scanPSBT(ActionEvent event) {
+        ToggleButton toggleButton = (ToggleButton)event.getSource();
+        toggleButton.setSelected(false);
+    }
 
+    public void savePSBT(ActionEvent event) {
+        ToggleButton toggleButton = (ToggleButton)event.getSource();
+        toggleButton.setSelected(false);
+
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save PSBT");
+
+        if(headersForm.getName() != null && !headersForm.getName().isEmpty()) {
+            fileChooser.setInitialFileName(headersForm.getName() + ".psbt");
+        }
+
+        File file = fileChooser.showSaveDialog(window);
+        if(file != null) {
+            try {
+                try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
+                    writer.print(headersForm.getPsbt().toBase64String());
+                }
+            } catch(IOException e) {
+                AppController.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());
+            }
+        }
+    }
+
+    public void loadPSBT(ActionEvent event) {
+        ToggleButton toggleButton = (ToggleButton)event.getSource();
+        toggleButton.setSelected(false);
+
+        EventManager.get().post(new RequestTransactionOpenEvent());
     }
 
     public void signPSBT(ActionEvent event) {
@@ -568,6 +609,13 @@ public class HeadersController extends TransactionFormController implements Init
 
             finalizeForm.setVisible(false);
             signaturesForm.setVisible(true);
+        }
+    }
+
+    @Subscribe
+    public void psbtCombined(PSBTCombinedEvent event) {
+        if(event.getPsbt().equals(headersForm.getPsbt()) && headersForm.getSigningWallet() != null) {
+            updateSignedKeystores(headersForm.getSigningWallet());
         }
     }
 }

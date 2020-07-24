@@ -41,7 +41,7 @@
     -fx-padding: 10 20 10 20;
 }
 
-.signatures-buttons .button {
+.signatures-buttons .segmented-button, .signatures-buttons .button, .signatures-buttons .toggle-button {
     -fx-pref-height: 75px;
     -fx-max-width: Infinity;
 }

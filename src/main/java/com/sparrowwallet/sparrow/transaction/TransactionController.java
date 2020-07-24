@@ -368,6 +368,10 @@ public class TransactionController implements Initializable {
         this.txdata = new TransactionData(transaction);
     }
 
+    public void setName(String name) {
+        this.txdata.setName(name);
+    }
+
     public PSBT getPSBT() {
         return txdata.getPsbt();
     }

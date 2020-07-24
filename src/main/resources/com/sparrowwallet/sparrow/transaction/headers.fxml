@@ -171,16 +171,34 @@
             </VBox>
             <VBox>
                 <HBox styleClass="signatures-buttons" spacing="20">
-                    <Button HBox.hgrow="ALWAYS" text="Show QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showPSBT">
-                        <graphic>
-                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="QRCODE" />
-                        </graphic>
-                    </Button>
-                    <Button HBox.hgrow="ALWAYS" text="Save PSBT" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#savePSBT">
-                        <graphic>
-                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SD_CARD" />
-                        </graphic>
-                    </Button>
+                    <SegmentedButton HBox.hgrow="ALWAYS">
+                        <buttons>
+                            <ToggleButton HBox.hgrow="ALWAYS" text="Show QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showPSBT">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="QRCODE" />
+                                </graphic>
+                            </ToggleButton>
+                            <ToggleButton HBox.hgrow="ALWAYS" text="Scan QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#scanPSBT">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="CAMERA" />
+                                </graphic>
+                            </ToggleButton>
+                        </buttons>
+                    </SegmentedButton>
+                    <SegmentedButton HBox.hgrow="ALWAYS">
+                        <buttons>
+                            <ToggleButton HBox.hgrow="ALWAYS" text="Save PSBT" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#savePSBT">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SD_CARD" />
+                                </graphic>
+                            </ToggleButton>
+                            <ToggleButton HBox.hgrow="ALWAYS" text="Load PSBT" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#loadPSBT">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="ARROW_UP" />
+                                </graphic>
+                            </ToggleButton>
+                        </buttons>
+                    </SegmentedButton>
                     <Button fx:id="signButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Sign" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#signPSBT">
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="PEN_FANCY" />

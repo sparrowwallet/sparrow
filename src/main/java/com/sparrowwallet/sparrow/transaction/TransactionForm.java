@@ -27,6 +27,10 @@ public abstract class TransactionForm {
         return txdata.getTransaction();
     }
 
+    public String getName() {
+        return txdata.getName();
+    }
+
     public PSBT getPsbt() {
         return txdata.getPsbt();
     }

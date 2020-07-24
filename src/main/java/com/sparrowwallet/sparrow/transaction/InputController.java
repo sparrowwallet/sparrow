@@ -14,17 +14,12 @@ import com.sparrowwallet.sparrow.event.*;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.control.Button;
 import org.controlsfx.control.ToggleSwitch;
-import org.controlsfx.control.decoration.Decorator;
-import org.controlsfx.control.decoration.GraphicDecoration;
+import org.fxmisc.flowless.VirtualizedScrollPane;
 import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
-import org.fxmisc.flowless.VirtualizedScrollPane;
 
 import java.net.URL;
 import java.time.Duration;
@@ -60,25 +55,25 @@ public class InputController extends TransactionFormController implements Initia
     private AddressLabel address;
 
     @FXML
-    private CodeArea scriptSigArea;
+    private ScriptArea scriptSigArea;
 
     @FXML
     private VirtualizedScrollPane<CodeArea> redeemScriptScroll;
 
     @FXML
-    private CodeArea redeemScriptArea;
+    private ScriptArea redeemScriptArea;
 
     @FXML
     private VirtualizedScrollPane<CodeArea> witnessScriptScroll;
 
     @FXML
-    private CodeArea witnessScriptArea;
+    private ScriptArea witnessScriptArea;
 
     @FXML
     private VirtualizedScrollPane<CodeArea> witnessesScroll;
 
     @FXML
-    private CodeArea witnessesArea;
+    private ScriptArea witnessesArea;
 
     @FXML
     private CopyableLabel signatures;
@@ -130,12 +125,12 @@ public class InputController extends TransactionFormController implements Initia
 
         initializeInputFields(txInput, psbtInput);
         initializeScriptFields(txInput, psbtInput);
-        initializeStatusFields(txInput);
+        initializeStatusFields(txInput, psbtInput);
         initializeLocktimeFields(txInput);
 
         if(psbtInput != null) {
             inputForm.getSignedKeystores().addListener((ListChangeListener<Keystore>) c -> {
-                updateSignatures();
+                updateSignatures(inputForm.getPsbtInput());
             });
         }
     }
@@ -223,6 +218,20 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     private void initializeScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
+        initializeScriptField(scriptSigArea);
+        initializeScriptField(redeemScriptArea);
+        initializeScriptField(witnessesArea);
+        initializeScriptField(witnessScriptArea);
+
+        updateScriptFields(txInput, psbtInput);
+    }
+
+    private void updateScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
+        scriptSigArea.clear();
+        redeemScriptArea.clear();
+        witnessesArea.clear();
+        witnessScriptArea.clear();
+
         //TODO: While we immediately check if the referenced transaction output is P2SH, where this is not present getting the first nested script is not safe
         Script redeemScript = txInput.getScriptSig().getFirstNestedScript();
         if(redeemScript != null && inputForm.getReferencedTransactionOutput() != null) {
@@ -233,31 +242,27 @@ public class InputController extends TransactionFormController implements Initia
         }
 
         if(redeemScript == null && psbtInput != null && psbtInput.getRedeemScript() != null) {
-            addPSBTDecoration(redeemScriptArea, "PSBT Redeem Script", "non-final");
+            redeemScriptArea.addPSBTDecoration("PSBT Redeem Script", "non-final");
             redeemScript = psbtInput.getRedeemScript();
         }
         if(redeemScript == null && psbtInput != null && psbtInput.getFinalScriptSig() != null) {
-            addPSBTDecoration(redeemScriptArea, "PSBT Final ScriptSig", "final");
+            redeemScriptArea.addPSBTDecoration("PSBT Final ScriptSig", "final");
             redeemScript = psbtInput.getFinalScriptSig().getFirstNestedScript();
         }
 
-        scriptSigArea.clear();
         if(txInput.getScriptSig().isEmpty() && psbtInput != null && psbtInput.getFinalScriptSig() != null) {
-            appendScript(scriptSigArea, psbtInput.getFinalScriptSig(), redeemScript, null);
-            addPSBTDecoration(scriptSigArea, "PSBT Final ScriptSig", "final");
+            scriptSigArea.appendScript(psbtInput.getFinalScriptSig(), redeemScript, null);
+            scriptSigArea.addPSBTDecoration("PSBT Final ScriptSig", "final");
         } else {
-            appendScript(scriptSigArea, txInput.getScriptSig(), redeemScript, null);
+            scriptSigArea.appendScript(txInput.getScriptSig(), redeemScript, null);
         }
 
-        redeemScriptArea.clear();
         if(redeemScript != null) {
-            appendScript(redeemScriptArea, redeemScript);
+            redeemScriptArea.appendScript(redeemScript);
         } else {
             redeemScriptScroll.setDisable(true);
         }
 
-        witnessesArea.clear();
-        witnessScriptArea.clear();
         Script witnesses = null;
         Script witnessScript = null;
 
@@ -268,36 +273,31 @@ public class InputController extends TransactionFormController implements Initia
             if(psbtInput.getFinalScriptWitness() != null) {
                 witnesses = new Script(psbtInput.getFinalScriptWitness().asScriptChunks());
                 witnessScript = psbtInput.getFinalScriptWitness().getWitnessScript();
-                addPSBTDecoration(witnessesArea, "PSBT Final ScriptWitness", "final");
-                addPSBTDecoration(witnessScriptArea, "PSBT Final ScriptWitness", "final");
+                witnessesArea.addPSBTDecoration("PSBT Final ScriptWitness", "final");
+                witnessScriptArea.addPSBTDecoration("PSBT Final ScriptWitness", "final");
             } else if(psbtInput.getWitnessScript() != null) {
                 witnessScript = psbtInput.getWitnessScript();
-                addPSBTDecoration(witnessScriptArea, "PSBT Witness Script", "non-final");
+                witnessScriptArea.addPSBTDecoration("PSBT Witness Script", "non-final");
             }
         }
 
         if(witnesses != null) {
-            appendScript(witnessesArea, witnesses, null, witnessScript);
+            witnessesArea.appendScript(witnesses, null, witnessScript);
         } else {
             witnessesScroll.setDisable(true);
         }
 
         if(witnessScript != null) {
-            appendScript(witnessScriptArea, witnessScript);
+            witnessScriptArea.appendScript(witnessScript);
         } else {
             witnessScriptScroll.setDisable(true);
         }
     }
 
-    private void addPSBTDecoration(Node target, String description, String styleClass) {
-        Decorator.addDecoration(target, new GraphicDecoration(new TextDecoration("PSBT", description, styleClass), Pos.TOP_RIGHT));
-    }
+    private void initializeStatusFields(TransactionInput txInput, PSBTInput psbtInput) {
+        updateSignatures(psbtInput);
 
-    private void initializeStatusFields(TransactionInput txInput) {
         Transaction transaction = inputForm.getTransaction();
-
-        updateSignatures();
-
         rbf.setSelected(txInput.isReplaceByFeeEnabled());
         rbf.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue) {
@@ -323,11 +323,9 @@ public class InputController extends TransactionFormController implements Initia
         rbf.setDisable(!inputForm.isEditable());
     }
 
-    private void updateSignatures() {
+    private void updateSignatures(PSBTInput psbtInput) {
         signatures.setText("Unknown");
         if(inputForm.getPsbtInput() != null) {
-            PSBTInput psbtInput = inputForm.getPsbtInput();
-
             int reqSigs = -1;
             if(psbtInput.getUtxo() != null && psbtInput.getSigningScript() != null) {
                 try {
@@ -517,6 +515,15 @@ public class InputController extends TransactionFormController implements Initia
             locktimeRelativeBlocks.setDisable(true);
             locktimeRelativeSeconds.setDisable(true);
             locktimeRelativeCombo.setDisable(true);
+        }
+    }
+
+    @Subscribe
+    public void psbtCombined(PSBTCombinedEvent event) {
+        if(event.getPsbt().equals(inputForm.getPsbt())) {
+            updateSpends(inputForm.getPsbtInput().getUtxo());
+            updateScriptFields(inputForm.getTransactionInput(), inputForm.getPsbtInput());
+            updateSignatures(inputForm.getPsbtInput());
         }
     }
 }

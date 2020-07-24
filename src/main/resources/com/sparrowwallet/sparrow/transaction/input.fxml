@@ -16,6 +16,7 @@
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
 <?import com.sparrowwallet.sparrow.control.AddressLabel?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
+<?import com.sparrowwallet.sparrow.control.ScriptArea?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" stylesheets="@input.css, @transaction.css, @../script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputController">
     <padding>
@@ -55,28 +56,28 @@
             <Field text="ScriptSig:">
                 <VirtualizedScrollPane>
                     <content>
-                        <CodeArea fx:id="scriptSigArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="scriptSigArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>
             <Field text="RedeemScript:">
                 <VirtualizedScrollPane fx:id="redeemScriptScroll">
                     <content>
-                        <CodeArea fx:id="redeemScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="redeemScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>
             <Field text="Witnesses:">
                 <VirtualizedScrollPane fx:id="witnessesScroll">
                     <content>
-                        <CodeArea fx:id="witnessesArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="witnessesArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>
             <Field text="WitnessScript:">
                 <VirtualizedScrollPane fx:id="witnessScriptScroll">
                     <content>
-                        <CodeArea fx:id="witnessScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="witnessScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>

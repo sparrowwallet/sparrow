@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressLabel;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.control.ScriptArea;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
@@ -54,7 +55,7 @@ public class OutputController extends TransactionFormController implements Initi
     private Hyperlink spentBy;
 
     @FXML
-    private CodeArea scriptPubKeyArea;
+    private ScriptArea scriptPubKeyArea;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -92,8 +93,9 @@ public class OutputController extends TransactionFormController implements Initi
             spent.setText("Unknown");
         }
 
+        initializeScriptField(scriptPubKeyArea);
         scriptPubKeyArea.clear();
-        appendScript(scriptPubKeyArea, txOutput.getScript(), null, null);
+        scriptPubKeyArea.appendScript(txOutput.getScript(), null, null);
     }
 
     private void updateSpent(List<BlockTransaction> outputTransactions) {

@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.CopyableTextField;
+import com.sparrowwallet.sparrow.control.ScriptArea;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
@@ -53,7 +54,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     private ImageView qrCode;
 
     @FXML
-    private CodeArea scriptPubKeyArea;
+    private ScriptArea scriptPubKeyArea;
 
     @FXML
     private CodeArea outputDescriptor;
@@ -67,7 +68,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     @Override
     public void initializeView() {
-
+        initializeScriptField(scriptPubKeyArea);
     }
 
     public void setNodeEntry(NodeEntry nodeEntry) {
@@ -88,7 +89,7 @@ public class ReceiveController extends WalletFormController implements Initializ
         }
 
         scriptPubKeyArea.clear();
-        appendScript(scriptPubKeyArea, nodeEntry.getOutputScript(), null, null);
+        scriptPubKeyArea.appendScript(nodeEntry.getOutputScript(), null, null);
 
         outputDescriptor.clear();
         outputDescriptor.appendText(nodeEntry.getOutputDescriptor());

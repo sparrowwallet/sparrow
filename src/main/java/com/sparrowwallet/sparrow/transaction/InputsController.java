@@ -11,6 +11,7 @@ import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
+import com.sparrowwallet.sparrow.event.PSBTCombinedEvent;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -106,7 +107,6 @@ public class InputsController extends TransactionFormController implements Initi
             signatures.setText(foundSigs + "/?");
         }
 
-
         addPieData(inputsPie, outputs);
     }
 
@@ -172,5 +172,12 @@ public class InputsController extends TransactionFormController implements Initi
     @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         total.refresh(event.getBitcoinUnit());
+    }
+
+    @Subscribe
+    public void psbtCombined(PSBTCombinedEvent event) {
+        if(event.getPsbt().equals(inputsForm.getPsbt())) {
+            updatePSBTInputs(inputsForm.getPsbt());
+        }
     }
 }

@@ -703,7 +703,15 @@ public class AppController implements Initializable {
             TabData tabData = (TabData)tab.getUserData();
             if(tabData instanceof TransactionTabData) {
                 TransactionTabData transactionTabData = (TransactionTabData)tabData;
-                if(transactionTabData.getTransaction().getTxId().equals(transaction.getTxId())) {
+
+                //If an exact match bytewise of an existing tab, return that tab
+                if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), transaction.bitcoinSerialize())) {
+                    //As per BIP174, combine PSBTs with matching transactions
+                    if(transactionTabData.getPsbt() != null && psbt != null) {
+                        transactionTabData.getPsbt().combine(psbt);
+                        EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
+                    }
+
                     return tab;
                 }
             }
@@ -717,7 +725,7 @@ public class AppController implements Initializable {
             }
 
             Tab tab = new Tab(tabName);
-            TabData tabData = new TransactionTabData(TabData.TabType.TRANSACTION, transaction);
+            TabData tabData = new TransactionTabData(TabData.TabType.TRANSACTION, transaction, psbt);
             tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
@@ -732,6 +740,8 @@ public class AppController implements Initializable {
             } else {
                 controller.setTransaction(transaction);
             }
+
+            controller.setName(name);
 
             if(initialView != null) {
                 controller.setInitialView(initialView, initialIndex);
@@ -918,5 +928,10 @@ public class AppController implements Initializable {
     @Subscribe
     public void requestWalletOpen(RequestWalletOpenEvent event) {
         openWallet(null);
+    }
+
+    @Subscribe
+    public void requestTransactionOpen(RequestTransactionOpenEvent event) {
+        openTransactionFromFile(null);
     }
 }

@@ -17,6 +17,7 @@ import java.util.Map;
 
 public class TransactionData {
     private final Transaction transaction;
+    private String name;
     private PSBT psbt;
     private BlockTransaction blockTransaction;
     private Map<Sha256Hash, BlockTransaction> inputTransactions;
@@ -47,6 +48,14 @@ public class TransactionData {
 
     public Transaction getTransaction() {
         return transaction;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public PSBT getPsbt() {
