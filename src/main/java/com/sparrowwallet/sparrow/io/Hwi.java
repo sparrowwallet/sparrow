@@ -3,6 +3,8 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
+import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
@@ -24,13 +26,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class Hwi {
+    private static boolean isPromptActive = false;
+
     public List<Device> enumerate(String passphrase) throws ImportException {
         try {
             List<String> command;
             if(passphrase != null) {
-                command = List.of(getHwiExecutable().getAbsolutePath(), "--password", passphrase, "enumerate");
+                command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), "--password", passphrase, Command.ENUMERATE.toString());
             } else {
-                command = List.of(getHwiExecutable().getAbsolutePath(), "enumerate");
+                command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), Command.ENUMERATE.toString());
             }
 
             String output = execute(command);
@@ -43,7 +47,8 @@ public class Hwi {
 
     public boolean promptPin(Device device) throws ImportException {
         try {
-            String output = execute(getDeviceCommand(device, "promptpin"));
+            String output = execute(getDeviceCommand(device, Command.PROMPT_PIN));
+            isPromptActive = true;
             return wasSuccessful(output);
         } catch(IOException e) {
             throw new ImportException(e);
@@ -52,7 +57,7 @@ public class Hwi {
 
     public boolean sendPin(Device device, String pin) throws ImportException {
         try {
-            String output = execute(getDeviceCommand(device, "sendpin", pin));
+            String output = execute(getDeviceCommand(device, Command.SEND_PIN, pin));
             return wasSuccessful(output);
         } catch(IOException e) {
             throw new ImportException(e);
@@ -63,9 +68,9 @@ public class Hwi {
         try {
             String output;
             if(passphrase != null && device.getModel().equals(WalletModel.TREZOR_1)) {
-                output = execute(getDeviceCommand(device, passphrase, "getxpub", derivationPath));
+                output = execute(getDeviceCommand(device, passphrase, Command.GET_XPUB, derivationPath));
             } else {
-                output = execute(getDeviceCommand(device, "getxpub", derivationPath));
+                output = execute(getDeviceCommand(device, Command.GET_XPUB, derivationPath));
             }
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
@@ -79,16 +84,49 @@ public class Hwi {
         }
     }
 
+    public PSBT signPSBT(Device device, String passphrase, PSBT psbt) throws SignTransactionException {
+        try {
+            String psbtBase64 = psbt.toBase64String();
+
+            String output;
+            if(passphrase != null && device.getModel().equals(WalletModel.TREZOR_1)) {
+                output = execute(getDeviceCommand(device, passphrase, Command.SIGN_TX, psbtBase64));
+            } else {
+                output = execute(getDeviceCommand(device, Command.SIGN_TX, psbtBase64));
+            }
+
+            JsonObject result = JsonParser.parseString(output).getAsJsonObject();
+            if(result.get("psbt") != null) {
+                String strPsbt = result.get("psbt").getAsString();
+                return PSBT.fromString(strPsbt);
+            } else {
+                JsonElement error = result.get("error");
+                if(error != null && error.getAsString().equals("sign_tx canceled")) {
+                    throw new SignTransactionException("Signing cancelled");
+                } else if(error != null) {
+                    throw new SignTransactionException("Error: " + error.getAsString());
+                } else {
+                    throw new SignTransactionException("Could not retrieve PSBT");
+                }
+            }
+        } catch(IOException e) {
+            throw new SignTransactionException("Could not sign PSBT", e);
+        } catch(PSBTParseException e) {
+            throw new SignTransactionException("Could not parsed signed PSBT", e);
+        }
+    }
+
     private String execute(List<String> command) throws IOException {
+        isPromptActive = false;
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         Process process = processBuilder.start();
         return CharStreams.toString(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
     }
 
-    private synchronized File getHwiExecutable() {
+    private synchronized File getHwiExecutable(Command command) {
         File hwiExecutable = Config.get().getHwi();
         if(hwiExecutable != null && hwiExecutable.exists()) {
-            if(!testHwi(hwiExecutable)) {
+            if(command.isTestFirst() && !testHwi(hwiExecutable)) {
                 if(Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
                     deleteDirectory(hwiExecutable.getParentFile());
                 } else {
@@ -203,16 +241,16 @@ public class Hwi {
         return result.get("success").getAsBoolean();
     }
 
-    private List<String> getDeviceCommand(Device device, String command) throws IOException {
-        return List.of(getHwiExecutable().getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command);
+    private List<String> getDeviceCommand(Device device, Command command) throws IOException {
+        return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString());
     }
 
-    private List<String> getDeviceCommand(Device device, String command, String data) throws IOException {
-        return List.of(getHwiExecutable().getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command, data);
+    private List<String> getDeviceCommand(Device device, Command command, String data) throws IOException {
+        return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString(), data);
     }
 
-    private List<String> getDeviceCommand(Device device, String passphrase, String command, String data) throws IOException {
-        return List.of(getHwiExecutable().getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command, data);
+    private List<String> getDeviceCommand(Device device, String passphrase, Command command, String data) throws IOException {
+        return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command.toString(), data);
     }
 
     public static class EnumerateService extends Service<List<Device>> {
@@ -244,15 +282,19 @@ public class Hwi {
         protected Task<List<Device>> createTask() {
             return new Task<>() {
                 protected List<Device> call() throws ImportException {
-                    Hwi hwi = new Hwi();
-                    return hwi.enumerate(passphrase);
+                    if(!isPromptActive) {
+                        Hwi hwi = new Hwi();
+                        return hwi.enumerate(passphrase);
+                    }
+
+                    return null;
                 }
             };
         }
     }
 
     public static class PromptPinService extends Service<Boolean> {
-        private Device device;
+        private final Device device;
 
         public PromptPinService(Device device) {
             this.device = device;
@@ -270,8 +312,8 @@ public class Hwi {
     }
 
     public static class SendPinService extends Service<Boolean> {
-        private Device device;
-        private String pin;
+        private final Device device;
+        private final String pin;
 
         public SendPinService(Device device, String pin) {
             this.device = device;
@@ -290,9 +332,9 @@ public class Hwi {
     }
 
     public static class GetXpubService extends Service<String> {
-        private Device device;
-        private String passphrase;
-        private String derivationPath;
+        private final Device device;
+        private final String passphrase;
+        private final String derivationPath;
 
         public GetXpubService(Device device, String passphrase, String derivationPath) {
             this.device = device;
@@ -306,6 +348,28 @@ public class Hwi {
                 protected String call() throws ImportException {
                     Hwi hwi = new Hwi();
                     return hwi.getXpub(device, passphrase, derivationPath);
+                }
+            };
+        }
+    }
+
+    public static class SignPSBTService extends Service<PSBT> {
+        private final Device device;
+        private final String passphrase;
+        private final PSBT psbt;
+
+        public SignPSBTService(Device device, String passphrase, PSBT psbt) {
+            this.device = device;
+            this.passphrase = passphrase;
+            this.psbt = psbt;
+        }
+
+        @Override
+        protected Task<PSBT> createTask() {
+            return new Task<>() {
+                protected PSBT call() throws SignTransactionException {
+                    Hwi hwi = new Hwi();
+                    return hwi.signPSBT(device, passphrase, psbt);
                 }
             };
         }
@@ -329,6 +393,35 @@ public class Hwi {
         @Override
         public WalletModel deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return WalletModel.valueOf(json.getAsJsonPrimitive().getAsString().toUpperCase());
+        }
+    }
+
+    private enum Command {
+        ENUMERATE("enumerate", true),
+        PROMPT_PIN("promptpin", true),
+        SEND_PIN("sendpin", false),
+        GET_XPUB("getxpub", true),
+        SIGN_TX("signtx", true);
+
+        private final String command;
+        private final boolean testFirst;
+
+        Command(String command, boolean testFirst) {
+            this.command = command;
+            this.testFirst = testFirst;
+        }
+
+        public String getCommand() {
+            return command;
+        }
+
+        public boolean isTestFirst() {
+            return testFirst;
+        }
+
+        @Override
+        public String toString() {
+            return command;
         }
     }
 }

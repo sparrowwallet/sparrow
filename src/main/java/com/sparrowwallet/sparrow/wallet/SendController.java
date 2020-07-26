@@ -272,7 +272,7 @@ public class SendController extends WalletFormController implements Initializabl
             createButton.setDisable(walletTransaction == null || label.getText().isEmpty());
         });
 
-        address.setText("32YSPMaUePf511u5adEckiNq8QLec9ksXX");
+        address.setText("19Sp9dLinHy3dKo2Xxj53ouuZWAoVGGhg8");
 
         addValidation();
     }
@@ -309,9 +309,10 @@ public class SendController extends WalletFormController implements Initializabl
             if(recipientAmount != null && recipientAmount > recipientDustThreshold && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
+                Integer currentBlockHeight = AppController.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolChange = Config.get().isIncludeMempoolChange();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, sendAll, groupByAddress, includeMempoolChange);
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, sendAll, groupByAddress, includeMempoolChange);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 

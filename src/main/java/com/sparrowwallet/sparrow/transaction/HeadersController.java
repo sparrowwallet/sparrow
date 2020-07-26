@@ -484,6 +484,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     public void signPSBT(ActionEvent event) {
         signSoftwareKeystores();
+        signUsbKeystores();
     }
 
     private void signSoftwareKeystores() {
@@ -522,6 +523,20 @@ public class HeadersController extends TransactionFormController implements Init
             updateSignedKeystores(headersForm.getSigningWallet());
         } catch(Exception e) {
             AppController.showErrorDialog("Failed to Sign", e.getMessage());
+        }
+    }
+
+    private void signUsbKeystores() {
+        if(headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
+            return;
+        }
+
+        DeviceSignDialog dlg = new DeviceSignDialog(headersForm.getPsbt());
+        Optional<PSBT> optionalSignedPsbt = dlg.showAndWait();
+        if(optionalSignedPsbt.isPresent()) {
+            PSBT signedPsbt = optionalSignedPsbt.get();
+            headersForm.getPsbt().combine(signedPsbt);
+            EventManager.get().post(new PSBTCombinedEvent(headersForm.getPsbt()));
         }
     }
 

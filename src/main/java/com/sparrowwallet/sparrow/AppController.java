@@ -48,6 +48,7 @@ import java.io.*;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class AppController implements Initializable {
     private static final int SERVER_PING_PERIOD = 10 * 1000;
@@ -106,6 +107,8 @@ public class AppController implements Initializable {
     private static Map<Integer, Double> targetBlockFeeRates;
 
     private static CurrencyRate fiatCurrencyExchangeRate;
+
+    private static List<Device> devices;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -409,6 +412,10 @@ public class AppController implements Initializable {
         return fiatCurrencyExchangeRate;
     }
 
+    public static List<Device> getDevices() {
+        return devices;
+    }
+
     public Map<Wallet, Storage> getOpenWallets() {
         Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
 
@@ -628,7 +635,15 @@ public class AppController implements Initializable {
                 enumerateService.setPeriod(new Duration(ENUMERATE_HW_PERIOD));
                 enumerateService.setOnSucceeded(workerStateEvent -> {
                     List<Device> devices = enumerateService.getValue();
-                    EventManager.get().post(new UsbDeviceEvent(devices));
+
+                    //Null devices are returned if the app is currently prompting for a pin. Otherwise, the enumerate clears the pin screen
+                    if(devices != null) {
+                        //If another instance of HWI is currently accessing the usb interface, HWI returns empty device models. Ignore this run if that happens
+                        List<Device> validDevices = devices.stream().filter(device -> device.getModel() != null).collect(Collectors.toList());
+                        if(validDevices.size() == devices.size()) {
+                            EventManager.get().post(new UsbDeviceEvent(devices));
+                        }
+                    }
                 });
                 enumerateService.start();
             }
@@ -836,6 +851,8 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void usbDevicesFound(UsbDeviceEvent event) {
+        devices = Collections.unmodifiableList(event.getDevices());
+
         UsbStatusButton usbStatus = null;
         for(Node node : statusBar.getRightItems()) {
             if(node instanceof UsbStatusButton) {

@@ -3,11 +3,13 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
+import com.sparrowwallet.sparrow.event.PSBTSignedEvent;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -32,6 +34,7 @@ import java.util.List;
 public class DevicePane extends TitledDescriptionPane {
     private final DeviceOperation deviceOperation;
     private final Wallet wallet;
+    private final PSBT psbt;
     private final Device device;
 
     private CustomPasswordField pinField;
@@ -39,6 +42,7 @@ public class DevicePane extends TitledDescriptionPane {
     private Button enterPinButton;
     private Button setPassphraseButton;
     private SplitMenuButton importButton;
+    private Button signButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
 
@@ -46,6 +50,7 @@ public class DevicePane extends TitledDescriptionPane {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = deviceOperation;
         this.wallet = wallet;
+        this.psbt = null;
         this.device = device;
 
         setDefaultStatus();
@@ -63,6 +68,30 @@ public class DevicePane extends TitledDescriptionPane {
         }
 
         buttonBox.getChildren().addAll(setPassphraseButton, importButton);
+    }
+
+    public DevicePane(DeviceOperation deviceOperation, PSBT psbt, Device device) {
+        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        this.deviceOperation = deviceOperation;
+        this.wallet = null;
+        this.psbt = psbt;
+        this.device = device;
+
+        setDefaultStatus();
+        showHideLink.setVisible(false);
+
+        createSetPassphraseButton();
+        createSignButton();
+
+        if (device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
+            unlockButton.setVisible(true);
+        } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
+            setPassphraseButton.setVisible(true);
+        } else {
+            showOperationButton();
+        }
+
+        buttonBox.getChildren().addAll(setPassphraseButton, signButton);
     }
 
     @Override
@@ -100,6 +129,7 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void createImportButton() {
         importButton = new SplitMenuButton();
+        importButton.getStyleClass().add("default-button");
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         importButton.setOnAction(event -> {
@@ -118,6 +148,18 @@ public class DevicePane extends TitledDescriptionPane {
         }
         importButton.managedProperty().bind(importButton.visibleProperty());
         importButton.setVisible(false);
+    }
+
+    private void createSignButton() {
+        signButton = new Button("Sign");
+        signButton.setDefaultButton(true);
+        signButton.setAlignment(Pos.CENTER_RIGHT);
+        signButton.setOnAction(event -> {
+            signButton.setDisable(true);
+            sign();
+        });
+        signButton.managedProperty().bind(signButton.visibleProperty());
+        signButton.setVisible(false);
     }
 
     private void unlock(Device device) {
@@ -227,7 +269,7 @@ public class DevicePane extends TitledDescriptionPane {
                 }
             } else {
                 setError("Incorrect PIN", null);
-                enterPinButton.setDisable(false);
+                unlockButton.setDisable(false);
                 if(pinField != null) {
                     pinField.setText("");
                 }
@@ -315,14 +357,28 @@ public class DevicePane extends TitledDescriptionPane {
         getXpubService.start();
     }
 
+    private void sign() {
+        Hwi.SignPSBTService signPSBTService = new Hwi.SignPSBTService(device, passphrase.get(), psbt);
+        signPSBTService.setOnSucceeded(workerStateEvent -> {
+            PSBT signedPsbt = signPSBTService.getValue();
+            EventManager.get().post(new PSBTSignedEvent(psbt, signedPsbt));
+        });
+        signPSBTService.setOnFailed(workerStateEvent -> {
+            setError(signPSBTService.getException().getMessage(), null);
+            signButton.setDisable(false);
+        });
+        signPSBTService.start();
+    }
+
     private void showOperationButton() {
         if(deviceOperation.equals(DeviceOperation.IMPORT)) {
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
             showHideLink.setVisible(true);
             setContent(getDerivationEntry(wallet.getScriptType().getDefaultDerivation()));
-        } else {
-            //TODO: Support further device operations such as signing
+        } else if(deviceOperation.equals(DeviceOperation.SIGN)) {
+            signButton.setVisible(true);
+            showHideLink.setVisible(false);
         }
     }
 
@@ -363,6 +419,6 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public enum DeviceOperation {
-        IMPORT;
+        IMPORT, SIGN;
     }
 }
