@@ -21,6 +21,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
@@ -116,7 +117,7 @@ public class HeadersController extends TransactionFormController implements Init
     private IdLabel blockHash;
 
     @FXML
-    private Form finalizeForm;
+    private Form signingWalletForm;
 
     @FXML
     private ComboBox<Wallet> signingWallet;
@@ -128,7 +129,13 @@ public class HeadersController extends TransactionFormController implements Init
     private Hyperlink noWalletsWarningLink;
 
     @FXML
+    private Form sigHashForm;
+
+    @FXML
     private ComboBox<SigHash> sigHash;
+
+    @FXML
+    private VBox finalizeButtonBox;
 
     @FXML
     private Button finalizeTransaction;
@@ -275,12 +282,18 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
-        finalizeForm.managedProperty().bind(finalizeForm.visibleProperty());
+
+        signingWalletForm.managedProperty().bind(signingWalletForm.visibleProperty());
+        sigHashForm.managedProperty().bind(sigHashForm.visibleProperty());
+        sigHashForm.visibleProperty().bind(signingWalletForm.visibleProperty());
+        finalizeButtonBox.managedProperty().bind(finalizeButtonBox.visibleProperty());
+        finalizeButtonBox.visibleProperty().bind(signingWalletForm.visibleProperty());
+
         signaturesForm.managedProperty().bind(signaturesForm.visibleProperty());
         broadcastForm.managedProperty().bind(broadcastForm.visibleProperty());
 
         blockchainForm.setVisible(false);
-        finalizeForm.setVisible(false);
+        signingWalletForm.setVisible(false);
         signaturesForm.setVisible(false);
         broadcastForm.setVisible(false);
 
@@ -291,7 +304,7 @@ public class HeadersController extends TransactionFormController implements Init
             PSBT psbt = headersForm.getPsbt();
 
             if(headersForm.isEditable()) {
-                finalizeForm.setVisible(true);
+                signingWalletForm.setVisible(true);
             } else if(headersForm.getPsbt().isSigned()) {
                 broadcastForm.setVisible(true);
             } else {
@@ -622,7 +635,7 @@ public class HeadersController extends TransactionFormController implements Init
 
             headersForm.setSigningWallet(event.getSigningWallet());
 
-            finalizeForm.setVisible(false);
+            signingWalletForm.setVisible(false);
             signaturesForm.setVisible(true);
         }
     }

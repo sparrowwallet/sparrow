@@ -129,7 +129,7 @@
         </Fieldset>
     </Form>
 
-    <Form fx:id="finalizeForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
+    <Form fx:id="signingWalletForm" GridPane.columnIndex="0" GridPane.rowIndex="6">
         <Fieldset text="Signatures" inputGrow="SOMETIMES">
             <Field text="Signing Wallet:">
                 <ComboBox fx:id="signingWallet" />
@@ -140,6 +140,11 @@
                 </Label>
                 <Hyperlink fx:id="noWalletsWarningLink" text="Open another wallet?" onAction="#openWallet" />
             </Field>
+        </Fieldset>
+    </Form>
+
+    <Form fx:id="sigHashForm" GridPane.columnIndex="1" GridPane.rowIndex="6">
+        <Fieldset text="" inputGrow="SOMETIMES">
             <Field text="Sighash:">
                 <ComboBox fx:id="sigHash">
                     <items>
@@ -155,14 +160,15 @@
                 </ComboBox>
             </Field>
         </Fieldset>
-        <StackPane styleClass="signatures-button">
-            <Button fx:id="finalizeTransaction" graphicTextGap="5" text="Finalize Transaction for Signing" prefWidth="Infinity" defaultButton="true" onAction="#finalizeTransaction">
-                <graphic>
-                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="10" icon="LOCK" />
-                </graphic>
-            </Button>
-        </StackPane>
     </Form>
+
+    <VBox fx:id="finalizeButtonBox" styleClass="signatures-buttons" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="7">
+        <Button fx:id="finalizeTransaction" graphicTextGap="5" text="Finalize Transaction for Signing" prefWidth="Infinity" defaultButton="true" onAction="#finalizeTransaction">
+            <graphic>
+                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="10" icon="LOCK" />
+            </graphic>
+        </Button>
+    </VBox>
 
     <Form fx:id="signaturesForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
         <Fieldset text="Signatures" inputGrow="SOMETIMES">

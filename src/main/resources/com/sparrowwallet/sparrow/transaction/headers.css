@@ -20,10 +20,6 @@
 
 .locktime { -fx-fill: #986801 }
 
-.signatures-button {
-    -fx-padding: 10 0 0 0;
-}
-
 .unfinalized-psbt {
     -fx-text-fill: #a0a1a7;
 }
@@ -37,17 +33,17 @@
     -fx-text-fill: rgb(202, 18, 67);
 }
 
+#finalizeButtonBox.signatures-buttons {
+    -fx-padding: 0 20 10 20;
+}
+
 .signatures-buttons {
     -fx-padding: 10 20 10 20;
 }
 
 .signatures-buttons .segmented-button, .signatures-buttons .button, .signatures-buttons .toggle-button {
-    -fx-pref-height: 75px;
+    -fx-pref-height: 65px;
     -fx-max-width: Infinity;
-}
-
-.signatures-progress-bar {
-    -fx-padding: 10 0 10 0;
 }
 
 .signatures-progress-bar {
