@@ -60,8 +60,7 @@ public class WalletForm {
         if(wallet.isValid() && AppController.isOnline()) {
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet);
             historyService.setOnSucceeded(workerStateEvent -> {
-                wallet.setStoredBlockHeight(blockHeight);
-                notifyIfChanged(previousWallet, blockHeight);
+                updateWallet(previousWallet, blockHeight);
             });
             historyService.setOnFailed(workerStateEvent -> {
                 workerStateEvent.getSource().getException().printStackTrace();
@@ -70,15 +69,32 @@ public class WalletForm {
         }
     }
 
+    private void updateWallet(Wallet previousWallet, Integer blockHeight) {
+        if(blockHeight != null) {
+            wallet.setStoredBlockHeight(blockHeight);
+        }
+
+        notifyIfChanged(previousWallet, blockHeight);
+    }
+
     private void notifyIfChanged(Wallet previousWallet, Integer blockHeight) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
+        boolean changed = false;
         if(!historyChangedNodes.isEmpty()) {
-            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, blockHeight, historyChangedNodes)));
-        } else if(blockHeight != null && !blockHeight.equals(previousWallet.getStoredBlockHeight())) {
+            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, historyChangedNodes)));
+            changed = true;
+        }
+
+        if(blockHeight != null && !blockHeight.equals(previousWallet.getStoredBlockHeight())) {
             Platform.runLater(() -> EventManager.get().post(new WalletBlockHeightChangedEvent(wallet, blockHeight)));
+            changed = true;
+        }
+
+        if(changed) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
         }
     }
 
@@ -146,20 +162,13 @@ public class WalletForm {
     }
 
     @Subscribe
-    public void walletLabelChanged(WalletEntryLabelChangedEvent event) {
+    public void walletDataChanged(WalletDataChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
-            backgroundSaveWallet(event);
+            backgroundSaveWallet();
         }
     }
 
-    @Subscribe
-    public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
-        if(event.getWallet().equals(wallet)) {
-            backgroundSaveWallet(event);
-        }
-    }
-
-    private void backgroundSaveWallet(WalletChangedEvent event) {
+    private void backgroundSaveWallet() {
         try {
             save();
         } catch (IOException e) {
@@ -182,11 +191,18 @@ public class WalletForm {
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
-        refreshHistory(event.getHeight());
+        updateWallet(wallet, event.getHeight());
     }
 
     @Subscribe
     public void connected(ConnectionEvent event) {
         refreshHistory(event.getBlockHeight());
+    }
+
+    @Subscribe
+    public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
+        if(event.getWalletNode(wallet) != null) {
+            refreshHistory(AppController.getCurrentBlockHeight());
+        }
     }
 }

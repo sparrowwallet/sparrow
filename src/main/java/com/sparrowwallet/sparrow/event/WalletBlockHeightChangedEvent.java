@@ -3,8 +3,8 @@ package com.sparrowwallet.sparrow.event;
 import com.sparrowwallet.drongo.wallet.Wallet;
 
 /**
- * This event is posted if the wallet block height has changed.
- * Note that it is not posted if the wallet history has also changed - this event is used mainly to ensure the new block height is saved
+ * This event is posted if the wallet's stored block height has changed.
+ *
  */
 public class WalletBlockHeightChangedEvent extends WalletChangedEvent {
     private final Integer blockHeight;

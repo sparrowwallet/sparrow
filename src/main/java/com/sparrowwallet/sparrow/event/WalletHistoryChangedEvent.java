@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
 
 /**
  * This is posted by WalletForm once the history of the wallet has been refreshed, and new transactions detected
- * Extends WalletChangedEvent so also saves the wallet.
+ *
  */
-public class WalletHistoryChangedEvent extends WalletBlockHeightChangedEvent {
+public class WalletHistoryChangedEvent extends WalletChangedEvent {
     private final List<WalletNode> historyChangedNodes;
 
-    public WalletHistoryChangedEvent(Wallet wallet, Integer blockHeight, List<WalletNode> historyChangedNodes) {
-        super(wallet, blockHeight);
+    public WalletHistoryChangedEvent(Wallet wallet, List<WalletNode> historyChangedNodes) {
+        super(wallet);
         this.historyChangedNodes = historyChangedNodes;
     }
 

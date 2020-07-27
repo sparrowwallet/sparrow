@@ -18,6 +18,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
+import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
 import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
@@ -37,6 +38,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,8 @@ public class ElectrumServer {
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
 
     private static Transport transport;
+
+    private static final Map<String, String> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
     private static synchronized Transport getTransport() throws ServerException {
         if(transport == null) {
@@ -171,6 +175,7 @@ public class ElectrumServer {
 
     public void getHistory(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
         getReferences(wallet, "blockchain.scripthash.get_history", nodes, nodeTransactionMap, startIndex);
+        subscribeWalletNodes(wallet, nodes, startIndex);
     }
 
     public void getMempool(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
@@ -222,6 +227,50 @@ public class ElectrumServer {
                             }
                         }
                     }
+                }
+            }
+        } catch (IllegalStateException e) {
+            throw new ServerException(e.getCause());
+        } catch (Exception e) {
+            throw new ServerException(e);
+        }
+    }
+
+    public void subscribeWalletNodes(Wallet wallet, Collection<WalletNode> nodes, int startIndex) throws ServerException {
+        try {
+            JsonRpcClient client = new JsonRpcClient(getTransport());
+            BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
+
+            Set<String> scriptHashes = new HashSet<>();
+            for(WalletNode node : nodes) {
+                if(node.getIndex() >= startIndex) {
+                    String scriptHash = getScriptHash(wallet, node);
+                    if(!subscribedScriptHashes.containsKey(scriptHash)) {
+                        scriptHashes.add(scriptHash);
+                        batchRequest.add(node.getDerivationPath(), "blockchain.scripthash.subscribe", scriptHash);
+                    }
+                }
+            }
+
+            if(scriptHashes.isEmpty()) {
+                return;
+            }
+
+            Map<String, String> result;
+            try {
+                result = batchRequest.execute();
+            } catch(JsonRpcBatchException e) {
+                //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
+                throw new IllegalStateException("Failed to subscribe for updates for paths: " + e.getErrors().keySet());
+            }
+
+            for(String path : result.keySet()) {
+                String status = result.get(path);
+
+                Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
+                if(optionalNode.isPresent()) {
+                    WalletNode node = optionalNode.get();
+                    subscribedScriptHashes.put(getScriptHash(wallet, node), status);
                 }
             }
         } catch (IllegalStateException e) {
@@ -545,7 +594,7 @@ public class ElectrumServer {
         return targetBlocksFeeRatesSats;
     }
 
-    private String getScriptHash(Wallet wallet, WalletNode node) {
+    public static String getScriptHash(Wallet wallet, WalletNode node) {
         byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);
@@ -629,6 +678,16 @@ public class ElectrumServer {
         @JsonRpcMethod("blockchain.headers.subscribe")
         public void newBlockHeaderTip(@JsonRpcParam("header") final BlockHeaderTip header) {
             Platform.runLater(() -> EventManager.get().post(new NewBlockEvent(header.height, header.getBlockHeader())));
+        }
+
+        @JsonRpcMethod("blockchain.scripthash.subscribe")
+        public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcParam("status") final String status) {
+            String oldStatus = subscribedScriptHashes.put(scriptHash, status);
+            if(Objects.equals(oldStatus, status)) {
+                System.out.println("Received script hash status update, but status has not changed");
+            }
+
+            Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash)));
         }
     }
 
@@ -886,6 +945,7 @@ public class ElectrumServer {
                         BlockHeaderTip tip;
                         if(subscribe) {
                             tip = electrumServer.subscribeBlockHeaders();
+                            subscribedScriptHashes.clear();
                         } else {
                             tip = new BlockHeaderTip();
                         }
