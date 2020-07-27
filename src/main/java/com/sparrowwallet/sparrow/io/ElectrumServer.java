@@ -313,6 +313,10 @@ public class ElectrumServer {
                 }
             }
 
+            if(blockHeights.isEmpty()) {
+                return Collections.emptyMap();
+            }
+
             JsonRpcClient client = new JsonRpcClient(getTransport());
             BatchRequestBuilder<Integer, String> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(String.class);
             for(Integer height : blockHeights) {

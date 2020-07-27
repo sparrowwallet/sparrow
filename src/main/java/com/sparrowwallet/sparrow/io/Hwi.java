@@ -103,8 +103,10 @@ public class Hwi {
                 JsonElement error = result.get("error");
                 if(error != null && error.getAsString().equals("sign_tx canceled")) {
                     throw new SignTransactionException("Signing cancelled");
+                } else if(error != null && error.getAsString().equals("open failed")) {
+                    throw new SignTransactionException("Please reconnect your USB device");
                 } else if(error != null) {
-                    throw new SignTransactionException("Error: " + error.getAsString());
+                    throw new SignTransactionException(error.getAsString());
                 } else {
                     throw new SignTransactionException("Could not retrieve PSBT");
                 }

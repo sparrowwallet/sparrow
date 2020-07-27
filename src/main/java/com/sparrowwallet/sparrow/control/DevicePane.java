@@ -129,7 +129,6 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void createImportButton() {
         importButton = new SplitMenuButton();
-        importButton.getStyleClass().add("default-button");
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         importButton.setOnAction(event -> {
@@ -279,6 +278,8 @@ public class DevicePane extends TitledDescriptionPane {
             setError(sendPinService.getException().getMessage(), null);
             enterPinButton.setDisable(false);
         });
+        setDescription("Unlocking...");
+        showHideLink.setVisible(false);
         sendPinService.start();
     }
 
@@ -354,6 +355,8 @@ public class DevicePane extends TitledDescriptionPane {
             setError(getXpubService.getException().getMessage(), null);
             importButton.setDisable(false);
         });
+        setDescription("Importing...");
+        showHideLink.setVisible(false);
         getXpubService.start();
     }
 
@@ -367,6 +370,8 @@ public class DevicePane extends TitledDescriptionPane {
             setError(signPSBTService.getException().getMessage(), null);
             signButton.setDisable(false);
         });
+        setDescription("Signing...");
+        showHideLink.setVisible(false);
         signPSBTService.start();
     }
 
