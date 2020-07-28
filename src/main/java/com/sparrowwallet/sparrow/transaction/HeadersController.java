@@ -646,4 +646,14 @@ public class HeadersController extends TransactionFormController implements Init
             updateSignedKeystores(headersForm.getSigningWallet());
         }
     }
+
+    @Subscribe
+    public void keystoreSigned(KeystoreSignedEvent event) {
+        if(headersForm.getSignedKeystores().contains(event.getKeystore()) && headersForm.getPsbt() != null) {
+            if(headersForm.getPsbt().isSigned()) {
+                headersForm.getSigningWallet().finalise(headersForm.getPsbt());
+                EventManager.get().post(new PSBTFinalizedEvent(headersForm.getPsbt()));
+            }
+        }
+    }
 }

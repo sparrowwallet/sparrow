@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.KeystoreSignedEvent;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -100,6 +102,10 @@ public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.Si
         public void setKeystore(Keystore keystore) {
             keystoreProperty.set(keystore);
         }
+
+        public void signatureCompleted() {
+            EventManager.get().post(new KeystoreSignedEvent(getKeystore()));
+        }
     }
 
     public static class SignatureProgressSegmentView extends StackPane {
@@ -126,7 +132,9 @@ public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.Si
                 if(oldValue == null && newValue != null) {
                     Timeline timeline = new Timeline(
                             new KeyFrame(Duration.ZERO, new KeyValue(progressBar.progressProperty(), 0)),
-                            new KeyFrame(Duration.millis(800), new KeyValue(progressBar.progressProperty(), 1))
+                            new KeyFrame(Duration.millis(800), e -> {
+                                segment.signatureCompleted();
+                            }, new KeyValue(progressBar.progressProperty(), 1))
                     );
                     timeline.setCycleCount(1);
                     timeline.play();

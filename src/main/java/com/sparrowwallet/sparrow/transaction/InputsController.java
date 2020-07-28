@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.PSBTCombinedEvent;
+import com.sparrowwallet.sparrow.event.PSBTFinalizedEvent;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -176,6 +177,13 @@ public class InputsController extends TransactionFormController implements Initi
 
     @Subscribe
     public void psbtCombined(PSBTCombinedEvent event) {
+        if(event.getPsbt().equals(inputsForm.getPsbt())) {
+            updatePSBTInputs(inputsForm.getPsbt());
+        }
+    }
+
+    @Subscribe
+    public void psbtFinalized(PSBTFinalizedEvent event) {
         if(event.getPsbt().equals(inputsForm.getPsbt())) {
             updatePSBTInputs(inputsForm.getPsbt());
         }

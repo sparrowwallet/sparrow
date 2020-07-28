@@ -526,4 +526,13 @@ public class InputController extends TransactionFormController implements Initia
             updateSignatures(inputForm.getPsbtInput());
         }
     }
+
+    @Subscribe
+    public void psbtFinalized(PSBTFinalizedEvent event) {
+        if(event.getPsbt().equals(inputForm.getPsbt())) {
+            updateSpends(inputForm.getPsbtInput().getUtxo());
+            updateScriptFields(inputForm.getTransactionInput(), inputForm.getPsbtInput());
+            updateSignatures(inputForm.getPsbtInput());
+        }
+    }
 }
