@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.protocol.Transaction;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 
@@ -8,6 +9,10 @@ import java.io.IOException;
 public class HeadersForm extends TransactionForm {
     public HeadersForm(TransactionData txdata) {
         super(txdata);
+    }
+
+    void setFinalTransaction(Transaction finalTransaction) {
+        txdata.setTransaction(finalTransaction);
     }
 
     @Override

@@ -21,6 +21,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -108,10 +109,19 @@ public class HeadersController extends TransactionFormController implements Init
     private CopyableLabel blockStatus;
 
     @FXML
+    private Field blockHeightField;
+
+    @FXML
     private CopyableLabel blockHeight;
 
     @FXML
+    private Field blockTimestampField;
+
+    @FXML
     private CopyableLabel blockTimestamp;
+
+    @FXML
+    private Field blockHashField;
 
     @FXML
     private IdLabel blockHash;
@@ -147,10 +157,13 @@ public class HeadersController extends TransactionFormController implements Init
     private SignaturesProgressBar signaturesProgressBar;
 
     @FXML
+    private HBox signButtonBox;
+
+    @FXML
     private Button signButton;
 
     @FXML
-    private Form broadcastForm;
+    private HBox broadcastButtonBox;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -290,12 +303,14 @@ public class HeadersController extends TransactionFormController implements Init
         finalizeButtonBox.visibleProperty().bind(signingWalletForm.visibleProperty());
 
         signaturesForm.managedProperty().bind(signaturesForm.visibleProperty());
-        broadcastForm.managedProperty().bind(broadcastForm.visibleProperty());
+        signButtonBox.managedProperty().bind(signButtonBox.visibleProperty());
+        broadcastButtonBox.managedProperty().bind(broadcastButtonBox.visibleProperty());
 
         blockchainForm.setVisible(false);
         signingWalletForm.setVisible(false);
         signaturesForm.setVisible(false);
-        broadcastForm.setVisible(false);
+        signButtonBox.setVisible(false);
+        broadcastButtonBox.setVisible(false);
 
         if(headersForm.getBlockTransaction() != null) {
             blockchainForm.setVisible(true);
@@ -306,9 +321,11 @@ public class HeadersController extends TransactionFormController implements Init
             if(headersForm.isEditable()) {
                 signingWalletForm.setVisible(true);
             } else if(headersForm.getPsbt().isSigned()) {
-                broadcastForm.setVisible(true);
+                signaturesForm.setVisible(true);
+                broadcastButtonBox.setVisible(true);
             } else {
                 signaturesForm.setVisible(true);
+                signButtonBox.setVisible(true);
             }
 
             EventManager.get().post(new RequestOpenWalletsEvent());
@@ -387,21 +404,32 @@ public class HeadersController extends TransactionFormController implements Init
             blockStatus.setText("Unknown");
         } else {
             int confirmations = currentHeight - blockTransaction.getHeight() + 1;
-            blockStatus.setText(confirmations + " Confirmations");
+            if(confirmations == 0) {
+                blockStatus.setText("Unconfirmed");
+            } else if(confirmations == 1) {
+                blockStatus.setText(confirmations + " Confirmation");
+            } else {
+                blockStatus.setText(confirmations + " Confirmations");
+            }
         }
 
-        blockHeight.setText(Integer.toString(blockTransaction.getHeight()));
+        blockHeightField.managedProperty().bind(blockHeightField.visibleProperty());
+        blockTimestampField.managedProperty().bind(blockTimestampField.visibleProperty());
+        blockHashField.managedProperty().bind(blockHashField.visibleProperty());
+        blockTimestampField.visibleProperty().bind(blockHeightField.visibleProperty());
+        blockHashField.visibleProperty().bind(blockHeightField.visibleProperty());
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat(BLOCK_TIMESTAMP_DATE_FORMAT);
-        blockTimestamp.setText(dateFormat.format(blockTransaction.getDate()));
-
-        blockHash.managedProperty().bind(blockHash.visibleProperty());
         if(blockTransaction.getBlockHash() != null) {
-            blockHash.setVisible(true);
+            blockHeightField.setVisible(true);
+            blockHeight.setText(Integer.toString(blockTransaction.getHeight()));
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat(BLOCK_TIMESTAMP_DATE_FORMAT);
+            blockTimestamp.setText(dateFormat.format(blockTransaction.getDate()));
+
             blockHash.setText(blockTransaction.getBlockHash().toString());
             blockHash.setContextMenu(new BlockHeightContextMenu(blockTransaction.getBlockHash()));
         } else {
-            blockHash.setVisible(false);
+            blockHeightField.setVisible(false);
         }
     }
 
@@ -563,6 +591,18 @@ public class HeadersController extends TransactionFormController implements Init
         });
     }
 
+    public void extractTransaction(ActionEvent event) {
+        Transaction finalTx = headersForm.getPsbt().extractTransaction();
+        headersForm.setFinalTransaction(finalTx);
+        EventManager.get().post(new TransactionExtractedEvent(headersForm.getPsbt(), finalTx));
+    }
+
+    public void broadcastTransaction(ActionEvent event) {
+        extractTransaction(event);
+
+
+    }
+
     @Subscribe
     public void transactionChanged(TransactionChangedEvent event) {
         if(headersForm.getTransaction().equals(event.getTransaction())) {
@@ -637,6 +677,7 @@ public class HeadersController extends TransactionFormController implements Init
 
             signingWalletForm.setVisible(false);
             signaturesForm.setVisible(true);
+            signButtonBox.setVisible(true);
         }
     }
 
@@ -644,6 +685,14 @@ public class HeadersController extends TransactionFormController implements Init
     public void psbtCombined(PSBTCombinedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt()) && headersForm.getSigningWallet() != null) {
             updateSignedKeystores(headersForm.getSigningWallet());
+        }
+    }
+
+    @Subscribe
+    public void psbtFinalized(PSBTFinalizedEvent event) {
+        if(event.getPsbt().equals(headersForm.getPsbt())) {
+            signButtonBox.setVisible(false);
+            broadcastButtonBox.setVisible(true);
         }
     }
 

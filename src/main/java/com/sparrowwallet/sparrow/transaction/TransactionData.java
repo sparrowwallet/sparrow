@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 public class TransactionData {
-    private final Transaction transaction;
+    private Transaction transaction;
     private String name;
     private PSBT psbt;
     private BlockTransaction blockTransaction;
@@ -48,6 +48,10 @@ public class TransactionData {
 
     public Transaction getTransaction() {
         return transaction;
+    }
+
+    public void setTransaction(Transaction transaction) {
+        this.transaction = transaction;
     }
 
     public String getName() {

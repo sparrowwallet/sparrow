@@ -490,4 +490,12 @@ public class TransactionController implements Initializable {
             txdata.updateOutputsFetchedRange(event.getPageStart(), event.getPageEnd());
         }
     }
+
+    @Subscribe
+    public void transactionExtracted(TransactionExtractedEvent event) {
+        if(event.getPsbt().equals(getPSBT())) {
+            txhex.setTransaction(getTransaction());
+            highlightTxHex();
+        }
+    }
 }

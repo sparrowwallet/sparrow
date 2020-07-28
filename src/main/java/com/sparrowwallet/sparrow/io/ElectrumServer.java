@@ -669,7 +669,7 @@ public class ElectrumServer {
         }
 
         public BlockTransaction getBlockTransaction() {
-            return new BlockTransaction(Sha256Hash.wrap(txid), getHeight(), getDate(), 0L, new Transaction(Utils.hexToBytes(hex)), Sha256Hash.wrap(blockhash));
+            return new BlockTransaction(Sha256Hash.wrap(txid), getHeight(), getDate(), 0L, new Transaction(Utils.hexToBytes(hex)), blockhash == null ? null : Sha256Hash.wrap(blockhash));
         }
     }
 

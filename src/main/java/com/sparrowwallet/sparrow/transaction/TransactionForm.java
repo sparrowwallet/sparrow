@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class TransactionForm {
-    private final TransactionData txdata;
+    protected final TransactionData txdata;
 
     public TransactionForm(TransactionData txdata) {
         this.txdata = txdata;

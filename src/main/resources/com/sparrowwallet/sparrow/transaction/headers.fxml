@@ -117,13 +117,13 @@
             <Field text="Status:">
                 <CopyableLabel fx:id="blockStatus" />
             </Field>
-            <Field text="Block Height:">
+            <Field fx:id="blockHeightField" text="Block Height:">
                 <CopyableLabel fx:id="blockHeight" />
             </Field>
-            <Field text="Timestamp:">
+            <Field fx:id="blockTimestampField" text="Timestamp:">
                 <CopyableLabel fx:id="blockTimestamp" />
             </Field>
-            <Field text="Block Hash:">
+            <Field fx:id="blockHashField" text="Block Hash:">
                 <IdLabel fx:id="blockHash" />
             </Field>
         </Fieldset>
@@ -176,7 +176,7 @@
                 <SignaturesProgressBar fx:id="signaturesProgressBar" />
             </VBox>
             <VBox>
-                <HBox styleClass="signatures-buttons" spacing="20">
+                <HBox fx:id="signButtonBox" styleClass="signatures-buttons" spacing="20">
                     <SegmentedButton HBox.hgrow="ALWAYS">
                         <buttons>
                             <ToggleButton HBox.hgrow="ALWAYS" text="Show QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showPSBT">
@@ -211,13 +211,19 @@
                         </graphic>
                     </Button>
                 </HBox>
+                <HBox fx:id="broadcastButtonBox" styleClass="signatures-buttons" spacing="20">
+                    <Button HBox.hgrow="ALWAYS" text="View Final Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#extractTransaction">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SEARCH" />
+                        </graphic>
+                    </Button>
+                    <Button defaultButton="true" HBox.hgrow="ALWAYS" text="Broadcast Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#broadcastTransaction">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SATELLITE_DISH" />
+                        </graphic>
+                    </Button>
+                </HBox>
             </VBox>
         </Fieldset>
     </Form>
-
-    <Form fx:id="broadcastForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
-        <Fieldset text="Send" inputGrow="SOMETIMES">
-        </Fieldset>
-    </Form>
-
 </GridPane>
