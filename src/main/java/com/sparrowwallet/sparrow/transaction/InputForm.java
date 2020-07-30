@@ -11,34 +11,27 @@ import javafx.scene.Node;
 import java.io.IOException;
 
 public class InputForm extends IndexedTransactionForm {
-    private final TransactionInput transactionInput;
-    private final PSBTInput psbtInput;
-
     public InputForm(TransactionData txdata, PSBTInput psbtInput) {
         super(txdata, txdata.getPsbt().getPsbtInputs().indexOf(psbtInput));
-        this.transactionInput = txdata.getPsbt().getTransaction().getInputs().get(txdata.getPsbt().getPsbtInputs().indexOf(psbtInput));
-        this.psbtInput = psbtInput;
     }
 
     public InputForm(TransactionData txdata, TransactionInput transactionInput) {
         super(txdata, txdata.getTransaction().getInputs().indexOf(transactionInput));
-        this.transactionInput = transactionInput;
-        this.psbtInput = null;
     }
 
     public TransactionInput getTransactionInput() {
-        return transactionInput;
+        return txdata.getTransaction().getInputs().get(getIndex());
     }
 
     public PSBTInput getPsbtInput() {
-        return psbtInput;
+        return txdata.getPsbt().getPsbtInputs().get(getIndex());
     }
 
     public TransactionOutput getReferencedTransactionOutput() {
         if(getInputTransactions() != null) {
-            BlockTransaction inputTransaction = getInputTransactions().get(transactionInput.getOutpoint().getHash());
+            BlockTransaction inputTransaction = getInputTransactions().get(getTransactionInput().getOutpoint().getHash());
             if(inputTransaction != null && !inputTransaction.equals(ElectrumServer.UNFETCHABLE_BLOCK_TRANSACTION)) {
-                return inputTransaction.getTransaction().getOutputs().get((int)transactionInput.getOutpoint().getIndex());
+                return inputTransaction.getTransaction().getOutputs().get((int)getTransactionInput().getOutpoint().getIndex());
             }
         }
 
@@ -61,6 +54,6 @@ public class InputForm extends IndexedTransactionForm {
     }
 
     public String toString() {
-        return "Input #" + transactionInput.getIndex();
+        return "Input #" + getIndex();
     }
 }

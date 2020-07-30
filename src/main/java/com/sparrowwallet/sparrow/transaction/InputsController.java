@@ -88,13 +88,7 @@ public class InputsController extends TransactionFormController implements Initi
                 showDenominator = false;
             }
 
-            if(psbtInput.getFinalScriptWitness() != null) {
-                foundSigs += psbtInput.getFinalScriptWitness().getSignatures().size();
-            } else if(psbtInput.getFinalScriptSig() != null) {
-                foundSigs += psbtInput.getFinalScriptSig().getSignatures().size();
-            } else {
-                foundSigs += psbtInput.getPartialSignatures().size();
-            }
+            foundSigs += psbtInput.getSignatures().size();
         }
 
         long totalAmt = 0;

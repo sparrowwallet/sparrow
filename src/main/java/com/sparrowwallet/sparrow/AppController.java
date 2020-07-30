@@ -165,7 +165,11 @@ public class AppController implements Initializable {
         tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
         tabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
             if(c.next() && (c.wasAdded() || c.wasRemoved())) {
-                EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
+                boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
+                boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
+                if(walletAdded || walletRemoved) {
+                    EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
+                }
             }
         });
 
@@ -721,9 +725,10 @@ public class AppController implements Initializable {
 
                 //If an exact match bytewise of an existing tab, return that tab
                 if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), transaction.bitcoinSerialize())) {
-                    //As per BIP174, combine PSBTs with matching transactions
-                    if(transactionTabData.getPsbt() != null && psbt != null) {
+                    //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
+                    if(transactionTabData.getPsbt() != null && psbt != null && !transactionTabData.getPsbt().isFinalized() && !psbt.isFinalized()) {
                         transactionTabData.getPsbt().combine(psbt);
+                        tab.setText(name);
                         EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
                     }
 

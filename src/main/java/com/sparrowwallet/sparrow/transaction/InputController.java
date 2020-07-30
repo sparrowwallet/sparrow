@@ -227,6 +227,11 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     private void updateScriptFields(TransactionInput txInput, PSBTInput psbtInput) {
+        //Don't use PSBT data if txInput has scriptSig or witness data. This happens when a tx has been extracted from a PSBT
+        if(txInput.getScriptBytes().length > 0 || txInput.hasWitness()) {
+            psbtInput = null;
+        }
+
         scriptSigArea.clear();
         redeemScriptArea.clear();
         witnessesArea.clear();
@@ -258,6 +263,7 @@ public class InputController extends TransactionFormController implements Initia
         }
 
         if(redeemScript != null) {
+            redeemScriptArea.setDisable(false);
             redeemScriptArea.appendScript(redeemScript);
         } else {
             redeemScriptScroll.setDisable(true);
@@ -282,12 +288,14 @@ public class InputController extends TransactionFormController implements Initia
         }
 
         if(witnesses != null) {
+            witnessesScroll.setDisable(false);
             witnessesArea.appendScript(witnesses, null, witnessScript);
         } else {
             witnessesScroll.setDisable(true);
         }
 
         if(witnessScript != null) {
+            witnessScriptScroll.setDisable(false);
             witnessScriptArea.appendScript(witnessScript);
         } else {
             witnessScriptScroll.setDisable(true);
@@ -335,13 +343,7 @@ public class InputController extends TransactionFormController implements Initia
                 }
             }
 
-            int foundSigs = psbtInput.getPartialSignatures().size();
-            if(psbtInput.getFinalScriptWitness() != null) {
-                foundSigs = psbtInput.getFinalScriptWitness().getSignatures().size();
-            } else if(psbtInput.getFinalScriptSig() != null) {
-                foundSigs = psbtInput.getFinalScriptSig().getSignatures().size();
-            }
-
+            int foundSigs = psbtInput.getSignatures().size();
             signatures.setText(foundSigs + "/" + (reqSigs < 0 ? "?" : reqSigs));
         }
     }

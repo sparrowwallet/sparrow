@@ -20,11 +20,11 @@
 
 .locktime { -fx-fill: #986801 }
 
-.unfinalized-psbt {
+.unfinalized-txid {
     -fx-text-fill: #a0a1a7;
 }
 
-#finalizeForm .input-container {
+#signingWalletForm .input-container {
     -fx-alignment: center-left;
     -fx-pref-height: 30;
 }

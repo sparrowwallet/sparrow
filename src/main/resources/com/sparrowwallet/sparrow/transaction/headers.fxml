@@ -133,12 +133,12 @@
         <Fieldset text="Signatures" inputGrow="SOMETIMES">
             <Field text="Signing Wallet:">
                 <ComboBox fx:id="signingWallet" />
-                <Label fx:id="noWalletsWarning" graphicTextGap="5" text="No open wallets can sign this PSBT. ">
+                <Label fx:id="noWalletsWarning" graphicTextGap="5" text="No open wallets can sign. ">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" />
                     </graphic>
                 </Label>
-                <Hyperlink fx:id="noWalletsWarningLink" text="Open another wallet?" onAction="#openWallet" />
+                <Hyperlink fx:id="noWalletsWarningLink" text="Open wallet?" onAction="#openWallet" />
             </Field>
         </Fieldset>
     </Form>

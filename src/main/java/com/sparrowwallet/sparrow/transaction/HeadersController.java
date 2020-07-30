@@ -4,10 +4,7 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -45,6 +42,7 @@ import java.util.stream.Collectors;
 public class HeadersController extends TransactionFormController implements Initializable {
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String BLOCK_TIMESTAMP_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss ZZZ";
+    public static final String UNFINALIZED_TXID_CLASS = "unfinalized-txid";
 
     private HeadersForm headersForm;
 
@@ -298,9 +296,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         signingWalletForm.managedProperty().bind(signingWalletForm.visibleProperty());
         sigHashForm.managedProperty().bind(sigHashForm.visibleProperty());
-        sigHashForm.visibleProperty().bind(signingWalletForm.visibleProperty());
         finalizeButtonBox.managedProperty().bind(finalizeButtonBox.visibleProperty());
-        finalizeButtonBox.visibleProperty().bind(signingWalletForm.visibleProperty());
 
         signaturesForm.managedProperty().bind(signaturesForm.visibleProperty());
         signButtonBox.managedProperty().bind(signButtonBox.visibleProperty());
@@ -308,6 +304,8 @@ public class HeadersController extends TransactionFormController implements Init
 
         blockchainForm.setVisible(false);
         signingWalletForm.setVisible(false);
+        sigHashForm.setVisible(false);
+        finalizeButtonBox.setVisible(false);
         signaturesForm.setVisible(false);
         signButtonBox.setVisible(false);
         broadcastButtonBox.setVisible(false);
@@ -320,15 +318,16 @@ public class HeadersController extends TransactionFormController implements Init
 
             if(headersForm.isEditable()) {
                 signingWalletForm.setVisible(true);
+                sigHashForm.setVisible(true);
+                finalizeButtonBox.setVisible(true);
             } else if(headersForm.getPsbt().isSigned()) {
                 signaturesForm.setVisible(true);
                 broadcastButtonBox.setVisible(true);
             } else {
-                signaturesForm.setVisible(true);
-                signButtonBox.setVisible(true);
+                signingWalletForm.setVisible(true);
+                finalizeButtonBox.setVisible(true);
+                finalizeTransaction.setText("Set Signing Wallet");
             }
-
-            EventManager.get().post(new RequestOpenWalletsEvent());
 
             signingWallet.managedProperty().bind(signingWallet.visibleProperty());
             noWalletsWarning.managedProperty().bind(noWalletsWarning.visibleProperty());
@@ -355,6 +354,8 @@ public class HeadersController extends TransactionFormController implements Init
                 int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
                 signaturesProgressBar.initialize(headersForm.getSignedKeystores(), threshold);
             });
+
+            EventManager.get().post(new RequestOpenWalletsEvent());
         }
     }
 
@@ -460,8 +461,12 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateTxId() {
         id.setText(headersForm.getTransaction().calculateTxId(false).toString());
-        if(headersForm.getPsbt() != null && headersForm.isEditable()) {
-            id.getStyleClass().add("unfinalized-psbt");
+        if(headersForm.getPsbt() != null && !(headersForm.getTransaction().hasScriptSigs() || headersForm.getTransaction().hasWitnesses())) {
+            if(!id.getStyleClass().contains(UNFINALIZED_TXID_CLASS)) {
+                id.getStyleClass().add(UNFINALIZED_TXID_CLASS);
+            }
+        } else {
+            id.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
         }
     }
 
@@ -591,7 +596,17 @@ public class HeadersController extends TransactionFormController implements Init
         });
     }
 
+    private void finalizePSBT() {
+        if(headersForm.getPsbt() != null && headersForm.getPsbt().isSigned() && !headersForm.getPsbt().isFinalized()) {
+            headersForm.getSigningWallet().finalise(headersForm.getPsbt());
+            EventManager.get().post(new PSBTFinalizedEvent(headersForm.getPsbt()));
+        }
+    }
+
     public void extractTransaction(ActionEvent event) {
+        Button viewFinalButton = (Button)event.getSource();
+        viewFinalButton.setDisable(true);
+
         Transaction finalTx = headersForm.getPsbt().extractTransaction();
         headersForm.setFinalTransaction(finalTx);
         EventManager.get().post(new TransactionExtractedEvent(headersForm.getPsbt(), finalTx));
@@ -637,27 +652,55 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        if(headersForm.getPsbt() != null && headersForm.isEditable()) {
+        if(headersForm.getPsbt() != null) {
             List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).collect(Collectors.toList());
             Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
             availableWalletsMap.keySet().retainAll(availableWallets);
             headersForm.getAvailableWallets().keySet().retainAll(availableWallets);
             headersForm.getAvailableWallets().putAll(availableWalletsMap);
-
             signingWallet.setItems(FXCollections.observableList(availableWallets));
+
             if(!availableWallets.isEmpty()) {
-                if(availableWallets.contains(headersForm.getSigningWallet())) {
-                    signingWallet.setValue(headersForm.getSigningWallet());
+                if(!headersForm.isEditable() && (availableWallets.size() == 1 || headersForm.getPsbt().isSigned())) {
+                    signingWalletForm.setVisible(false);
+                    sigHashForm.setVisible(false);
+                    finalizeButtonBox.setVisible(false);
+
+                    signaturesForm.setVisible(true);
+                    headersForm.setSigningWallet(availableWallets.get(0));
+
+                    if(headersForm.getPsbt().isSigned()) {
+                        finalizePSBT();
+                        broadcastButtonBox.setVisible(true);
+                    } else {
+                        signButtonBox.setVisible(true);
+                    }
                 } else {
-                    signingWallet.setValue(availableWallets.get(0));
+                    if(availableWallets.contains(headersForm.getSigningWallet())) {
+                        signingWallet.setValue(headersForm.getSigningWallet());
+                    } else {
+                        signingWallet.setValue(availableWallets.get(0));
+                    }
+                    noWalletsWarning.setVisible(false);
+                    signingWallet.setVisible(true);
+                    finalizeTransaction.setDisable(false);
                 }
-                noWalletsWarning.setVisible(false);
-                signingWallet.setVisible(true);
-                finalizeTransaction.setDisable(false);
             } else {
-                noWalletsWarning.setVisible(true);
-                signingWallet.setVisible(false);
-                finalizeTransaction.setDisable(true);
+                if(headersForm.getPsbt().isSigned()) {
+                    if(headersForm.getSigningWallet() == null) {
+                        //As no signing wallet is available, but we want to show the PSBT has been signed and automatically finalize it, construct a special wallet with default named keystores
+                        Wallet signedWallet = new FinalizingPSBTWallet(headersForm.getPsbt());
+                        headersForm.setSigningWallet(signedWallet);
+                    }
+
+                    //Finalize this PSBT if necessary as fully signed PSBTs are automatically finalized on once the signature threshold has been reached
+                    finalizePSBT();
+                    broadcastButtonBox.setVisible(true);
+                } else {
+                    noWalletsWarning.setVisible(true);
+                    signingWallet.setVisible(false);
+                    finalizeTransaction.setDisable(true);
+                }
             }
         }
     }
@@ -671,20 +714,34 @@ public class HeadersController extends TransactionFormController implements Init
             locktimeDateType.setDisable(true);
             locktimeBlock.setDisable(true);
             locktimeDate.setDisable(true);
-            id.getStyleClass().remove("unfinalized-psbt");
+            updateTxId();
 
             headersForm.setSigningWallet(event.getSigningWallet());
 
             signingWalletForm.setVisible(false);
+            sigHashForm.setVisible(false);
+            finalizeButtonBox.setVisible(false);
             signaturesForm.setVisible(true);
-            signButtonBox.setVisible(true);
+
+            if(event.getPsbt().isSigned()) {
+                broadcastButtonBox.setVisible(true);
+            } else {
+                signButtonBox.setVisible(true);
+            }
         }
     }
 
     @Subscribe
     public void psbtCombined(PSBTCombinedEvent event) {
-        if(event.getPsbt().equals(headersForm.getPsbt()) && headersForm.getSigningWallet() != null) {
-            updateSignedKeystores(headersForm.getSigningWallet());
+        if(event.getPsbt().equals(headersForm.getPsbt())) {
+            if(headersForm.getSigningWallet() != null) {
+                updateSignedKeystores(headersForm.getSigningWallet());
+            } else if(headersForm.getPsbt().isSigned()) {
+                Wallet signedWallet = new FinalizingPSBTWallet(headersForm.getPsbt());
+                headersForm.setSigningWallet(signedWallet);
+                finalizePSBT();
+                EventManager.get().post(new FinalizeTransactionEvent(headersForm.getPsbt(), signedWallet));
+            }
         }
     }
 
@@ -699,10 +756,14 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void keystoreSigned(KeystoreSignedEvent event) {
         if(headersForm.getSignedKeystores().contains(event.getKeystore()) && headersForm.getPsbt() != null) {
-            if(headersForm.getPsbt().isSigned()) {
-                headersForm.getSigningWallet().finalise(headersForm.getPsbt());
-                EventManager.get().post(new PSBTFinalizedEvent(headersForm.getPsbt()));
-            }
+            finalizePSBT();
+        }
+    }
+
+    @Subscribe
+    public void transactionExtracted(TransactionExtractedEvent event) {
+        if(event.getPsbt().equals(headersForm.getPsbt())) {
+            updateTxId();
         }
     }
 }
