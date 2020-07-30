@@ -24,6 +24,7 @@ public class BalanceChart extends LineChart<Number, Number> {
     }
 
     public void initialize(WalletTransactionsEntry walletTransactionsEntry) {
+        managedProperty().bind(visibleProperty());
         balanceSeries = new XYChart.Series<>();
         getData().add(balanceSeries);
         update(walletTransactionsEntry);
@@ -33,6 +34,10 @@ public class BalanceChart extends LineChart<Number, Number> {
     }
 
     public void update(WalletTransactionsEntry walletTransactionsEntry) {
+        if(walletTransactionsEntry.getChildren().isEmpty()) {
+            setVisible(false);
+        }
+
         balanceSeries.getData().clear();
 
         List<Data<Number, Number>> balanceDataList = walletTransactionsEntry.getChildren().stream()

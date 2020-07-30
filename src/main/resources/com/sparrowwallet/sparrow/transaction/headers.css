@@ -46,7 +46,7 @@
     -fx-max-width: Infinity;
 }
 
-.signatures-progress-bar {
+.signatures-progress-bar, #broadcastProgressBar {
     -fx-padding: 10 0 10 0;
 }
 

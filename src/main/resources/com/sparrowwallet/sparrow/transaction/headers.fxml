@@ -22,6 +22,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.Hyperlink?>
 <?import com.sparrowwallet.sparrow.control.SignaturesProgressBar?>
+<?import javafx.scene.control.ProgressBar?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -174,6 +175,7 @@
         <Fieldset text="Signatures" inputGrow="SOMETIMES">
             <VBox>
                 <SignaturesProgressBar fx:id="signaturesProgressBar" />
+                <ProgressBar fx:id="broadcastProgressBar" maxWidth="Infinity" prefHeight="50" />
             </VBox>
             <VBox>
                 <HBox fx:id="signButtonBox" styleClass="signatures-buttons" spacing="20">
@@ -212,12 +214,12 @@
                     </Button>
                 </HBox>
                 <HBox fx:id="broadcastButtonBox" styleClass="signatures-buttons" spacing="20">
-                    <Button HBox.hgrow="ALWAYS" text="View Final Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#extractTransaction">
+                    <Button fx:id="viewFinalButton" HBox.hgrow="ALWAYS" text="View Final Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#extractTransaction">
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SEARCH" />
                         </graphic>
                     </Button>
-                    <Button defaultButton="true" HBox.hgrow="ALWAYS" text="Broadcast Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#broadcastTransaction">
+                    <Button fx:id="broadcastButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Broadcast Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#broadcastTransaction">
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SATELLITE_DISH" />
                         </graphic>

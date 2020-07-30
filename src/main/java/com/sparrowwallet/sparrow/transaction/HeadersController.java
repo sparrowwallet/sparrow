@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
+import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -155,6 +156,9 @@ public class HeadersController extends TransactionFormController implements Init
     private SignaturesProgressBar signaturesProgressBar;
 
     @FXML
+    private ProgressBar broadcastProgressBar;
+
+    @FXML
     private HBox signButtonBox;
 
     @FXML
@@ -162,6 +166,12 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private HBox broadcastButtonBox;
+
+    @FXML
+    private Button viewFinalButton;
+
+    @FXML
+    private Button broadcastButton;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -302,6 +312,10 @@ public class HeadersController extends TransactionFormController implements Init
         signButtonBox.managedProperty().bind(signButtonBox.visibleProperty());
         broadcastButtonBox.managedProperty().bind(broadcastButtonBox.visibleProperty());
 
+        signaturesProgressBar.managedProperty().bind(signaturesProgressBar.visibleProperty());
+        broadcastProgressBar.managedProperty().bind(broadcastProgressBar.visibleProperty());
+        broadcastProgressBar.visibleProperty().bind(signaturesProgressBar.visibleProperty().not());
+
         blockchainForm.setVisible(false);
         signingWalletForm.setVisible(false);
         sigHashForm.setVisible(false);
@@ -312,7 +326,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         if(headersForm.getBlockTransaction() != null) {
             blockchainForm.setVisible(true);
-            updateBlockchainForm(headersForm.getBlockTransaction());
+            updateBlockchainForm(headersForm.getBlockTransaction(), AppController.getCurrentBlockHeight());
         } else if(headersForm.getPsbt() != null) {
             PSBT psbt = headersForm.getPsbt();
 
@@ -397,10 +411,9 @@ public class HeadersController extends TransactionFormController implements Init
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
     }
 
-    private void updateBlockchainForm(BlockTransaction blockTransaction) {
+    private void updateBlockchainForm(BlockTransaction blockTransaction, Integer currentHeight) {
         blockchainForm.setVisible(true);
 
-        Integer currentHeight = AppController.getCurrentBlockHeight();
         if(currentHeight == null) {
             blockStatus.setText("Unknown");
         } else {
@@ -604,7 +617,6 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void extractTransaction(ActionEvent event) {
-        Button viewFinalButton = (Button)event.getSource();
         viewFinalButton.setDisable(true);
 
         Transaction finalTx = headersForm.getPsbt().extractTransaction();
@@ -613,9 +625,22 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void broadcastTransaction(ActionEvent event) {
+        broadcastButton.setDisable(true);
         extractTransaction(event);
 
+        ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(headersForm.getTransaction());
+        broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
+            //Do nothing and wait for WalletNodeHistoryChangedEvent to indicate tx is in mempool
+        });
+        broadcastTransactionService.setOnFailed(workerStateEvent -> {
+            broadcastProgressBar.setProgress(0);
+            AppController.showErrorDialog("Error broadcasting transaction", workerStateEvent.getSource().getException().getMessage());
+            broadcastButton.setDisable(false);
+        });
 
+        signaturesProgressBar.setVisible(false);
+        broadcastProgressBar.setProgress(-1);
+        broadcastTransactionService.start();
     }
 
     @Subscribe
@@ -635,7 +660,7 @@ public class HeadersController extends TransactionFormController implements Init
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
         if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
             if(event.getBlockTransaction() != null) {
-                updateBlockchainForm(event.getBlockTransaction());
+                updateBlockchainForm(event.getBlockTransaction(), AppController.getCurrentBlockHeight());
             }
 
             Long feeAmt = calculateFee(event.getInputTransactions());
@@ -764,6 +789,31 @@ public class HeadersController extends TransactionFormController implements Init
     public void transactionExtracted(TransactionExtractedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt())) {
             updateTxId();
+        }
+    }
+
+    @Subscribe
+    public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
+        if(headersForm.getSigningWallet() != null && event.getWalletNode(headersForm.getSigningWallet()) != null) {
+            Sha256Hash txid = headersForm.getTransaction().getTxId();
+            ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid));
+            transactionReferenceService.setOnSucceeded(successEvent -> {
+                Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
+                BlockTransaction blockTransaction = transactionMap.get(txid);
+                if(blockTransaction != null) {
+                    headersForm.setBlockTransaction(blockTransaction);
+                    signaturesForm.setVisible(false);
+                    updateBlockchainForm(blockTransaction, AppController.getCurrentBlockHeight());
+                }
+            });
+            transactionReferenceService.start();
+        }
+    }
+
+    @Subscribe
+    public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
+        if(headersForm.getSigningWallet() != null && event.getWallet() == headersForm.getSigningWallet() && headersForm.getBlockTransaction() != null) {
+            updateBlockchainForm(headersForm.getBlockTransaction(), event.getBlockHeight());
         }
     }
 }

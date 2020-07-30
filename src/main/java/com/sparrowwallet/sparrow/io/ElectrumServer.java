@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.arteam.simplejsonrpc.client.*;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
+import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
@@ -594,6 +595,26 @@ public class ElectrumServer {
         return targetBlocksFeeRatesSats;
     }
 
+    public Sha256Hash broadcastTransaction(Transaction transaction) throws ServerException {
+        byte[] rawtxBytes = transaction.bitcoinSerialize();
+        String rawtxHex = Utils.bytesToHex(rawtxBytes);
+
+        JsonRpcClient client = new JsonRpcClient(getTransport());
+        try {
+            String strTxHash = client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(1).param("raw_tx", rawtxHex).execute();
+            Sha256Hash receivedTxid = Sha256Hash.wrap(strTxHash);
+            if(!receivedTxid.equals(transaction.getTxId())) {
+                throw new ServerException("Received txid was different (" + receivedTxid + ")");
+            }
+
+            return receivedTxid;
+        } catch(JsonRpcException e) {
+            throw new ServerException(e.getErrorMessage().getMessage());
+        } catch(IllegalStateException e) {
+            throw new ServerException(e.getMessage());
+        }
+    }
+
     public static String getScriptHash(Wallet wallet, WalletNode node) {
         byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
@@ -1134,6 +1155,24 @@ public class ElectrumServer {
                     }
 
                     return blockTransactions;
+                }
+            };
+        }
+    }
+
+    public static class BroadcastTransactionService extends Service<Sha256Hash> {
+        private final Transaction transaction;
+
+        public BroadcastTransactionService(Transaction transaction) {
+            this.transaction = transaction;
+        }
+
+        @Override
+        protected Task<Sha256Hash> createTask() {
+            return new Task<>() {
+                protected Sha256Hash call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    return electrumServer.broadcastTransaction(transaction);
                 }
             };
         }
