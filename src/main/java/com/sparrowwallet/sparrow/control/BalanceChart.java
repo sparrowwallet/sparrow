@@ -34,10 +34,7 @@ public class BalanceChart extends LineChart<Number, Number> {
     }
 
     public void update(WalletTransactionsEntry walletTransactionsEntry) {
-        if(walletTransactionsEntry.getChildren().isEmpty()) {
-            setVisible(false);
-        }
-
+        setVisible(!walletTransactionsEntry.getChildren().isEmpty());
         balanceSeries.getData().clear();
 
         List<Data<Number, Number>> balanceDataList = walletTransactionsEntry.getChildren().stream()

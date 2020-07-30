@@ -197,14 +197,7 @@ public class HeadersController extends TransactionFormController implements Init
         });
         version.setDisable(!headersForm.isEditable());
 
-        String type = "Legacy";
-        if(tx.isSegwit()) {
-            type = "Segwit";
-            if(tx.getSegwitVersion() == 2) {
-                type = "Taproot";
-            }
-        }
-        segwit.setText(type);
+        updateType();
 
         locktimeToggleGroup.selectedToggleProperty().addListener((ov, old_toggle, new_toggle) -> {
             if(locktimeToggleGroup.getSelectedToggle() != null) {
@@ -286,8 +279,7 @@ public class HeadersController extends TransactionFormController implements Init
         locktimeBlock.setDisable(!headersForm.isEditable());
         locktimeDate.setDisable(!headersForm.isEditable());
 
-        size.setText(tx.getSize() + " B");
-        virtualSize.setText(tx.getVirtualSize() + " vB");
+        updateSize();
 
         Long feeAmt = null;
         if(headersForm.getPsbt() != null) {
@@ -371,6 +363,22 @@ public class HeadersController extends TransactionFormController implements Init
 
             EventManager.get().post(new RequestOpenWalletsEvent());
         }
+    }
+
+    private void updateType() {
+        String type = "Legacy";
+        if(headersForm.getTransaction().isSegwit() || (headersForm.getPsbt() != null && headersForm.getPsbt().getPsbtInputs().stream().anyMatch(in -> in.getWitnessUtxo() != null))) {
+            type = "Segwit";
+            if(headersForm.getTransaction().getSegwitVersion() == 2) {
+                type = "Taproot";
+            }
+        }
+        segwit.setText(type);
+    }
+
+    private void updateSize() {
+        size.setText(headersForm.getTransaction().getSize() + " B");
+        virtualSize.setText(headersForm.getTransaction().getVirtualSize() + " vB");
     }
 
     private Long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
@@ -551,6 +559,10 @@ public class HeadersController extends TransactionFormController implements Init
             return;
         }
 
+        if(headersForm.getPsbt().isSigned()) {
+            return;
+        }
+
         Wallet copy = headersForm.getSigningWallet().copy();
         File file = headersForm.getAvailableWallets().get(headersForm.getSigningWallet()).getWalletFile();
 
@@ -587,6 +599,10 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void signUsbKeystores() {
         if(headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
+            return;
+        }
+
+        if(headersForm.getPsbt().isSigned()) {
             return;
         }
 
@@ -789,6 +805,9 @@ public class HeadersController extends TransactionFormController implements Init
     public void transactionExtracted(TransactionExtractedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt())) {
             updateTxId();
+            updateType();
+            updateSize();
+            updateFee(headersForm.getPsbt().getFee());
         }
     }
 

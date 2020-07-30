@@ -191,7 +191,7 @@ public class WalletForm {
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
-        updateWallet(wallet, event.getHeight());
+        updateWallet(wallet.copy(), event.getHeight());
     }
 
     @Subscribe
