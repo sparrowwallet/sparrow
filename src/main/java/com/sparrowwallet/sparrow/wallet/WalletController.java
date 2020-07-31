@@ -79,14 +79,18 @@ public class WalletController extends WalletFormController implements Initializa
         configure(walletForm.getWallet().isValid());
     }
 
-    public void configure(boolean isWalletValid) {
+    public void configure(boolean validWallet) {
         for(Toggle toggle : walletMenu.getToggles()) {
             if(toggle.getUserData().equals(Function.SETTINGS)) {
-                if(!isWalletValid) {
+                if(!validWallet) {
                     toggle.setSelected(true);
                 }
             } else {
-                ((ToggleButton)toggle).setDisable(!isWalletValid);
+                if(toggle.getUserData().equals(Function.TRANSACTIONS) && validWallet && walletMenu.getSelectedToggle() == null) {
+                    toggle.setSelected(true);
+                }
+
+                ((ToggleButton)toggle).setDisable(!validWallet);
             }
         }
     }

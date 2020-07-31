@@ -24,6 +24,18 @@
     -fx-text-fill: #a0a1a7;
 }
 
+#blockchainForm .input-container {
+    -fx-alignment: center-left;
+}
+
+.confirmation-progress-circle, .confirmation-progress-tick {
+    -fx-stroke: -fx-text-base-color;
+}
+
+.confirmation-progress-arc {
+    -fx-fill: -fx-text-base-color;
+}
+
 #signingWalletForm .input-container {
     -fx-alignment: center-left;
     -fx-pref-height: 30;

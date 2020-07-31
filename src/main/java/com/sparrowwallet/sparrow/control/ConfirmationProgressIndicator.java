@@ -50,7 +50,7 @@ public class ConfirmationProgressIndicator extends StackPane {
 
                 Timeline arcLengthTimeline = new Timeline();
                 KeyValue arcLengthValue = new KeyValue(arc.lengthProperty(), getDegrees(newValue.intValue()));
-                KeyFrame arcLengthFrame = new KeyFrame(Duration.millis(1000), arcLengthValue);
+                KeyFrame arcLengthFrame = new KeyFrame(Duration.millis(3000), arcLengthValue);
                 arcLengthTimeline.getKeyFrames().add(arcLengthFrame);
                 sequence.getChildren().add(arcLengthTimeline);
 
@@ -86,7 +86,7 @@ public class ConfirmationProgressIndicator extends StackPane {
                     upTickLineTimeline.getKeyFrames().add(upTickLineFrame);
                     sequence.getChildren().add(upTickLineTimeline);
 
-                    FadeTransition groupFadeOut = new FadeTransition(Duration.minutes(1), confirmationGroup);
+                    FadeTransition groupFadeOut = new FadeTransition(Duration.minutes(10), confirmationGroup);
                     groupFadeOut.setFromValue(1);
                     groupFadeOut.setToValue(0);
                     sequence.getChildren().add(groupFadeOut);

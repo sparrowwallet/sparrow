@@ -404,6 +404,8 @@ public class AppController implements Initializable {
         return onlineProperty.get();
     }
 
+    public static BooleanProperty onlineProperty() { return onlineProperty; }
+
     public static Integer getCurrentBlockHeight() {
         return currentBlockHeight;
     }

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -12,6 +13,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -105,7 +107,7 @@ public class HeadersController extends TransactionFormController implements Init
     private Form blockchainForm;
 
     @FXML
-    private CopyableLabel blockStatus;
+    private Label blockStatus;
 
     @FXML
     private Field blockHeightField;
@@ -172,6 +174,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private Button broadcastButton;
+
+    @FXML
+    private Button saveFinalButton;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -308,6 +313,11 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastProgressBar.managedProperty().bind(broadcastProgressBar.visibleProperty());
         broadcastProgressBar.visibleProperty().bind(signaturesProgressBar.visibleProperty().not());
 
+        broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
+        saveFinalButton.managedProperty().bind(saveFinalButton.visibleProperty());
+        saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
+        broadcastButton.visibleProperty().bind(AppController.onlineProperty());
+
         blockchainForm.setVisible(false);
         signingWalletForm.setVisible(false);
         sigHashForm.setVisible(false);
@@ -432,6 +442,17 @@ public class HeadersController extends TransactionFormController implements Init
                 blockStatus.setText(confirmations + " Confirmation");
             } else {
                 blockStatus.setText(confirmations + " Confirmations");
+            }
+
+            if(confirmations <= TransactionEntry.BLOCKS_TO_CONFIRM) {
+                ConfirmationProgressIndicator indicator;
+                if(blockStatus.getGraphic() == null) {
+                    indicator = new ConfirmationProgressIndicator(confirmations);
+                    blockStatus.setGraphic(indicator);
+                } else {
+                    indicator = (ConfirmationProgressIndicator)blockStatus.getGraphic();
+                    indicator.setConfirmations(confirmations);
+                }
             }
         }
 
@@ -644,6 +665,12 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastButton.setDisable(true);
         extractTransaction(event);
 
+        if(headersForm.getSigningWallet() instanceof FinalizingPSBTWallet) {
+            //Ensure the script hashes of the UTXOs in FinalizingPSBTWallet are subscribed to
+            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(headersForm.getSigningWallet());
+            historyService.start();
+        }
+
         ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(headersForm.getTransaction());
         broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
             //Do nothing and wait for WalletNodeHistoryChangedEvent to indicate tx is in mempool
@@ -657,6 +684,29 @@ public class HeadersController extends TransactionFormController implements Init
         signaturesProgressBar.setVisible(false);
         broadcastProgressBar.setProgress(-1);
         broadcastTransactionService.start();
+    }
+
+    public void saveFinalTransaction(ActionEvent event) {
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Final Transaction");
+
+        if(headersForm.getName() != null && !headersForm.getName().isEmpty()) {
+            fileChooser.setInitialFileName(headersForm.getName().replace(".psbt", "") + ".txn");
+        }
+
+        File file = fileChooser.showSaveDialog(window);
+        if(file != null) {
+            try {
+                try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
+                    Transaction finalTx = headersForm.getPsbt().extractTransaction();
+                    writer.print(Utils.bytesToHex(finalTx.bitcoinSerialize()));
+                }
+            } catch(IOException e) {
+                AppController.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
+            }
+        }
     }
 
     @Subscribe
@@ -830,9 +880,9 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     @Subscribe
-    public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
-        if(headersForm.getSigningWallet() != null && event.getWallet() == headersForm.getSigningWallet() && headersForm.getBlockTransaction() != null) {
-            updateBlockchainForm(headersForm.getBlockTransaction(), event.getBlockHeight());
+    public void newBlock(NewBlockEvent event) {
+        if(headersForm.getBlockTransaction() != null) {
+            updateBlockchainForm(headersForm.getBlockTransaction(), event.getHeight());
         }
     }
 }

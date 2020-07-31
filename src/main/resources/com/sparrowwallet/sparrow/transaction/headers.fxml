@@ -116,7 +116,7 @@
     <Form fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
         <Fieldset text="Blockchain" inputGrow="SOMETIMES">
             <Field text="Status:">
-                <CopyableLabel fx:id="blockStatus" />
+                <Label fx:id="blockStatus" contentDisplay="RIGHT" graphicTextGap="5" />
             </Field>
             <Field fx:id="blockHeightField" text="Block Height:">
                 <CopyableLabel fx:id="blockHeight" />
@@ -222,6 +222,11 @@
                     <Button fx:id="broadcastButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Broadcast Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#broadcastTransaction">
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SATELLITE_DISH" />
+                        </graphic>
+                    </Button>
+                    <Button fx:id="saveFinalButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Save Final Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#saveFinalTransaction">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="ARROW_DOWN" />
                         </graphic>
                     </Button>
                 </HBox>

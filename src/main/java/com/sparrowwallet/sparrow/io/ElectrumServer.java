@@ -246,8 +246,7 @@ public class ElectrumServer {
             for(WalletNode node : nodes) {
                 if(node.getIndex() >= startIndex) {
                     String scriptHash = getScriptHash(wallet, node);
-                    if(!subscribedScriptHashes.containsKey(scriptHash)) {
-                        scriptHashes.add(scriptHash);
+                    if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
                         batchRequest.add(node.getDerivationPath(), "blockchain.scripthash.subscribe", scriptHash);
                     }
                 }
