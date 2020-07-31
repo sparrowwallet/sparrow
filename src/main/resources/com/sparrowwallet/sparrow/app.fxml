@@ -24,6 +24,7 @@
                                 <MenuItem text="Examples" onAction="#openExamples"/>
                             </items>
                         </Menu>
+                        <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." onAction="#saveTransaction"/>
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
