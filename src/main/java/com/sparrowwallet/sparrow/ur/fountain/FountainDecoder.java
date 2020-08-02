@@ -10,6 +10,9 @@ import java.util.zip.CRC32;
 
 import static com.sparrowwallet.sparrow.ur.fountain.FountainUtils.chooseFragments;
 
+/**
+ * Ported from https://github.com/BlockchainCommons/URKit
+ */
 public class FountainDecoder {
     private final Set<Integer> recievedPartIndexes = new TreeSet<>();
     private Set<Integer> lastPartIndexes;

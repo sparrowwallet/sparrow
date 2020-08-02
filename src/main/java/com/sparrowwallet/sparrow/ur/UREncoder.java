@@ -6,6 +6,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 
+/**
+ * Ported from https://github.com/BlockchainCommons/URKit
+ */
 public class UREncoder {
     private final UR ur;
     private final FountainEncoder fountainEncoder;

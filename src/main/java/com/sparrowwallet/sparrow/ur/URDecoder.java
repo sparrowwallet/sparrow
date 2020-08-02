@@ -9,6 +9,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Ported from https://github.com/BlockchainCommons/URKit
+ */
 public class URDecoder {
     private static final Pattern SEQUENCE_COMPONENT_PATTERN = Pattern.compile("(\\d+)-(\\d+)");
 

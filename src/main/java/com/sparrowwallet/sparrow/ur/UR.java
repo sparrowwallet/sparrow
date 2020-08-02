@@ -3,6 +3,9 @@ package com.sparrowwallet.sparrow.ur;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Ported from https://github.com/BlockchainCommons/URKit
+ */
 public class UR {
     private final String type;
     private final byte[] data;
