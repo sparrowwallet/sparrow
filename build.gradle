@@ -37,6 +37,7 @@ dependencies {
     implementation('com.github.arteam:simple-json-rpc-server:1.0') {
         exclude group: 'org.slf4j'
     }
+    implementation('co.nstant.in:cbor:0.9')
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.0.1' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'
@@ -79,12 +80,12 @@ run {
 
 jlink {
     mergedModule {
-        requires 'javafx.graphics';
-        requires 'javafx.controls';
-        requires 'java.xml';
+        requires 'javafx.graphics'
+        requires 'javafx.controls'
+        requires 'java.xml'
         requires 'java.logging'
-        requires 'javafx.base';
-        requires 'com.fasterxml.jackson.databind';
+        requires 'javafx.base'
+        requires 'com.fasterxml.jackson.databind'
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png']
