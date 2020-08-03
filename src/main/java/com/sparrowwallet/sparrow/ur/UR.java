@@ -43,6 +43,14 @@ public class UR {
         return false;
     }
 
+    public static UR fromBytes(byte[] data) {
+        try {
+            return new UR("bytes", data);
+        } catch(UR.InvalidTypeException e) {
+            return null;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if(this == o) {

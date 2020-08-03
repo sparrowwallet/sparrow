@@ -31,8 +31,8 @@ public class FountainUtils {
 
     static int chooseDegree(int seqLen, RandomXoshiro256StarStar rng) {
         List<Double> degreeProbabilties = IntStream.range(1, seqLen + 1).mapToObj(i -> 1 / (double)i).collect(Collectors.toList());
-        AliasMethod degreeChooser = new AliasMethod(degreeProbabilties, rng);
-        return degreeChooser.next() + 1;
+        RandomSampler randomSampler = new RandomSampler(degreeProbabilties);
+        return randomSampler.next(rng) + 1;
     }
 
     static List<Integer> shuffled(List<Integer> indexes, RandomXoshiro256StarStar rng) {

@@ -530,7 +530,8 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
-        headersForm.getSignedKeystores().add(headersForm.getSigningWallet().getKeystores().get(0));
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(headersForm.getPsbt().serialize());
+        qrDisplayDialog.show();
     }
 
     public void scanPSBT(ActionEvent event) {
