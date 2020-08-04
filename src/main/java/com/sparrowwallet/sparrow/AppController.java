@@ -409,6 +409,28 @@ public class AppController implements Initializable {
         }
     }
 
+    public void openTransactionFromQR(ActionEvent event) {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.transaction != null) {
+                Tab tab = addTransactionTab(null, result.transaction);
+                tabs.getSelectionModel().select(tab);
+            }
+            if(result.psbt != null) {
+                Tab tab = addTransactionTab(null, result.psbt);
+                tabs.getSelectionModel().select(tab);
+            }
+            if(result.error != null) {
+                showErrorDialog("Invalid QR Code", result.error);
+            }
+            if(result.exception != null) {
+                showErrorDialog("Error opening webcam", result.exception.getMessage());
+            }
+        }
+    }
+
     public void saveTransaction(ActionEvent event) {
         Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
         TabData tabData = (TabData)selectedTab.getUserData();
@@ -784,7 +806,10 @@ public class AppController implements Initializable {
                     //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
                     if(transactionTabData.getPsbt() != null && psbt != null && !transactionTabData.getPsbt().isFinalized() && !psbt.isFinalized()) {
                         transactionTabData.getPsbt().combine(psbt);
-                        tab.setText(name);
+                        if(name != null && !name.isEmpty()) {
+                            tab.setText(name);
+                        }
+
                         EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
                     }
 
@@ -1011,5 +1036,10 @@ public class AppController implements Initializable {
     @Subscribe
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
         openTransactionFromFile(null);
+    }
+
+    @Subscribe
+    public void requestQRScan(RequestQRScanEvent event) {
+        openTransactionFromQR(null);
     }
 }

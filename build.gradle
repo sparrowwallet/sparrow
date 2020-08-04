@@ -12,6 +12,8 @@ sourceCompatibility = 1.9
 
 repositories {
     mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/groups/public' }
+    maven { url 'https://mymavenrepo.com/repo/29EACwkkGcoOKnbx3bxN/' }
 }
 
 javafx {
@@ -38,6 +40,10 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('co.nstant.in:cbor:0.9')
+    implementation('com.nativelibs4java:bridj:0.7-20200803')
+    implementation('com.github.sarxos:webcam-capture:0.3.13-SNAPSHOT') {
+        exclude group: 'com.nativelibs4java', module: 'bridj'
+    }
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.0.1' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'

@@ -53,7 +53,7 @@ public class UREncoder {
     }
 
     private static String encodeUR(String... pathComponents) {
-        return encodeURI("ur", pathComponents);
+        return encodeURI(UR.UR_PREFIX, pathComponents);
     }
 
     private static String encodeURI(String scheme, String... pathComponents) {

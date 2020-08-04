@@ -1,12 +1,25 @@
 package com.sparrowwallet.sparrow.ur;
 
+import co.nstant.in.cbor.CborBuilder;
+import co.nstant.in.cbor.CborDecoder;
+import co.nstant.in.cbor.CborEncoder;
+import co.nstant.in.cbor.CborException;
+import co.nstant.in.cbor.model.ByteString;
+import co.nstant.in.cbor.model.DataItem;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
  * Ported from https://github.com/BlockchainCommons/URKit
  */
 public class UR {
+    public static final String UR_PREFIX = "ur";
+    public static final String BYTES_TYPE = "bytes";
+
     private final String type;
     private final byte[] data;
 
@@ -27,6 +40,16 @@ public class UR {
         return data;
     }
 
+    public byte[] toBytes() throws InvalidTypeException, CborException {
+        if(!BYTES_TYPE.equals(getType())) {
+            throw new InvalidTypeException("Not a " + BYTES_TYPE + " type");
+        }
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(getCbor());
+        List<DataItem> dataItems = new CborDecoder(bais).decode();
+        return ((ByteString)dataItems.get(0)).getBytes();
+    }
+
     public static boolean isURType(String type) {
         for(char c : type.toCharArray()) {
             if('a' <= c && c <= 'z') {
@@ -45,8 +68,14 @@ public class UR {
 
     public static UR fromBytes(byte[] data) {
         try {
-            return new UR("bytes", data);
-        } catch(UR.InvalidTypeException e) {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            new CborEncoder(baos).encode(new CborBuilder()
+                    .add(data)
+                    .build());
+            byte[] cbor = baos.toByteArray();
+
+            return new UR("bytes", cbor);
+        } catch(InvalidTypeException | CborException e) {
             return null;
         }
     }

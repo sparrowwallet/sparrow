@@ -18,6 +18,7 @@ open module com.sparrowwallet.sparrow {
     requires org.jetbrains.annotations;
     requires com.fasterxml.jackson.databind;
     requires cbor;
+    requires webcam.capture;
     requires centerdevice.nsmenufx;
     requires javafx.swing;
 }

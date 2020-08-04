@@ -537,6 +537,8 @@ public class HeadersController extends TransactionFormController implements Init
     public void scanPSBT(ActionEvent event) {
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
+
+        EventManager.get().post(new RequestQRScanEvent());
     }
 
     public void savePSBT(ActionEvent event) {
