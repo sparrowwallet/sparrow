@@ -6,3 +6,4 @@ build
 out
 *.log
 build-*.sh
+.DS_Store
