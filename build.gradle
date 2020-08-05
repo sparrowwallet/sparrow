@@ -110,7 +110,8 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.controls/com.sun.javafx.scene.control=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.graphics/com.sun.javafx.menu=com.sparrowwallet.merged.module",
-                   "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
+                   "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module",
+                   "--add-reads=com.sparrowwallet.merged.module=java.desktop"]
     }
     addExtraDependencies("javafx")
     jpackage {
@@ -127,7 +128,7 @@ jlink {
         }
         if (org.gradle.internal.os.OperatingSystem.current().macOsX) {
             installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
-            imageOptions += ['--icon', 'src/main/deploy/package/macosx/sparrow.icns']
+            imageOptions += ['--icon', 'src/main/deploy/package/macosx/sparrow.icns', '--resource-dir', 'src/main/deploy/package/macosx/']
             installerType = "dmg"
         }
     }
