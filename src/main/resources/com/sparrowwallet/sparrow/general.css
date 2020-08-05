@@ -6,7 +6,7 @@
 }
 
 .form .wideLabelFieldSet.fieldset:horizontal .label-container {
-    -fx-pref-width: 160px;
+    -fx-pref-width: 170px;
     -fx-pref-height: 25px;
 }
 

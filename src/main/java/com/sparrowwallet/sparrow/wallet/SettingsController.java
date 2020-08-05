@@ -17,7 +17,6 @@ import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
-import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -28,6 +27,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.control.RangeSlider;
 import org.controlsfx.tools.Borders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tornadofx.control.Fieldset;
 
 import java.io.IOException;
@@ -39,6 +40,7 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class SettingsController extends WalletFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
 
     @FXML
     private ComboBox<PolicyType> policyType;
@@ -272,11 +274,24 @@ public class SettingsController extends WalletFormController implements Initiali
         WalletPasswordDialog dlg = new WalletPasswordDialog(requirement);
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
+            if(dlg.isBackupExisting()) {
+                try {
+                    walletForm.saveBackup();
+                } catch(IOException e) {
+                    log.error("Error saving wallet backup", e);
+                    AppController.showErrorDialog("Error saving wallet backup", e.getMessage());
+                    revert.setDisable(false);
+                    apply.setDisable(false);
+                    return;
+                }
+            }
+
             if(password.get().length() == 0) {
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
                 } catch (IOException e) {
+                    log.error("Error saving wallet", e);
                     AppController.showErrorDialog("Error saving wallet", e.getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
@@ -304,6 +319,7 @@ public class SettingsController extends WalletFormController implements Initiali
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();
                     } catch (Exception e) {
+                        log.error("Error saving wallet", e);
                         AppController.showErrorDialog("Error saving wallet", e.getMessage());
                         revert.setDisable(false);
                         apply.setDisable(false);

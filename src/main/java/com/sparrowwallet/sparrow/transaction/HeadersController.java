@@ -26,6 +26,8 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tornadofx.control.DateTimePicker;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
@@ -43,6 +45,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class HeadersController extends TransactionFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(HeadersController.class);
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String BLOCK_TIMESTAMP_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss ZZZ";
     public static final String UNFINALIZED_TXID_CLASS = "unfinalized-txid";
@@ -561,6 +564,7 @@ public class HeadersController extends TransactionFormController implements Init
                     writer.print(headersForm.getPsbt().toBase64String());
                 }
             } catch(IOException e) {
+                log.error("Error saving PSBT", e);
                 AppController.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());
             }
         }
@@ -617,6 +621,7 @@ public class HeadersController extends TransactionFormController implements Init
             unencryptedWallet.sign(headersForm.getPsbt());
             updateSignedKeystores(headersForm.getSigningWallet());
         } catch(Exception e) {
+            log.warn("Failed to Sign", e);
             AppController.showErrorDialog("Failed to Sign", e.getMessage());
         }
     }
@@ -707,6 +712,7 @@ public class HeadersController extends TransactionFormController implements Init
                     writer.print(Utils.bytesToHex(finalTx.bitcoinSerialize()));
                 }
             } catch(IOException e) {
+                log.error("Error saving transaction", e);
                 AppController.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
             }
         }

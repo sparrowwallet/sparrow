@@ -20,11 +20,13 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private final PasswordRequirement requirement;
     private final CustomPasswordField password;
     private final CustomPasswordField passwordConfirm;
+    private final CheckBox backupExisting;
 
     public WalletPasswordDialog(PasswordRequirement requirement) {
         this.requirement = requirement;
         this.password = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.passwordConfirm = (CustomPasswordField)TextFields.createClearablePasswordField();
+        this.backupExisting = new CheckBox("Backup existing wallet first");
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Wallet Password");
@@ -32,7 +34,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(380);
-        dialogPane.setPrefHeight(250);
+        dialogPane.setPrefHeight(260);
 
         Glyph lock = new Glyph("FontAwesome", FontAwesome.Glyph.LOCK);
         lock.setFontSize(50);
@@ -42,6 +44,11 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         content.setPrefHeight(100);
         content.getChildren().add(password);
         content.getChildren().add(passwordConfirm);
+
+        if(requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_SET) {
+            content.getChildren().add(backupExisting);
+            backupExisting.setSelected(true);
+        }
 
         dialogPane.setContent(content);
 
@@ -82,6 +89,10 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         passwordConfirm.setPromptText("Password Confirmation");
 
         setResultConverter(dialogButton -> dialogButton == okButtonType ? new SecureString(password.getText()) : null);
+    }
+
+    public boolean isBackupExisting() {
+        return backupExisting.isSelected();
     }
 
     public enum PasswordRequirement {

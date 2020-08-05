@@ -59,6 +59,10 @@ public class WalletForm {
         refreshHistory(AppController.getCurrentBlockHeight());
     }
 
+    public void saveBackup() throws IOException {
+        storage.backupWallet();
+    }
+
     public void refreshHistory(Integer blockHeight) {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppController.isOnline()) {

@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.google.common.io.Files;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.SecureString;
@@ -19,6 +20,8 @@ import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.zip.*;
 
@@ -27,8 +30,11 @@ import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
 public class Storage {
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
 
+    private static final DateFormat BACKUP_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+
     public static final String SPARROW_DIR = ".sparrow";
     public static final String WALLETS_DIR = "wallets";
+    public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String HEADER_MAGIC_1 = "SPRW1";
     private static final int BINARY_HEADER_LENGTH = 28;
 
@@ -157,6 +163,23 @@ public class Storage {
         outputStream.write(encoded);
     }
 
+    public void backupWallet() throws IOException {
+        File backupDir = getWalletsBackupDir();
+
+        Date backupDate = new Date();
+        String backupName = walletFile.getName();
+        String dateSuffix = "-" + BACKUP_DATE_FORMAT.format(backupDate);
+        int lastDot = backupName.lastIndexOf('.');
+        if(lastDot > 0) {
+            backupName = backupName.substring(0, lastDot) + dateSuffix + backupName.substring(lastDot);
+        } else {
+            backupName += dateSuffix;
+        }
+
+        File backupFile = new File(backupDir, backupName);
+        Files.copy(walletFile, backupFile);
+    }
+
     public ECKey getEncryptionPubKey() {
         return encryptionPubKey;
     }
@@ -226,6 +249,15 @@ public class Storage {
     public static File getWalletFile(String walletName) {
         //TODO: Check for existing file
         return new File(getWalletsDir(), walletName);
+    }
+
+    public static File getWalletsBackupDir() {
+        File walletsBackupDir = new File(getWalletsDir(), WALLETS_BACKUP_DIR);
+        if(!walletsBackupDir.exists()) {
+            walletsBackupDir.mkdirs();
+        }
+
+        return walletsBackupDir;
     }
 
     public static File getWalletsDir() {

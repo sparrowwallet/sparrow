@@ -430,6 +430,7 @@ public class AppController implements Initializable {
                 showErrorDialog("Invalid QR Code", result.error);
             }
             if(result.exception != null) {
+                log.error("Error opening webcam", result.exception);
                 showErrorDialog("Error opening webcam", result.exception.getMessage());
             }
         }
@@ -474,6 +475,7 @@ public class AppController implements Initializable {
                         }
                     }
                 } catch(IOException e) {
+                    log.error("Error saving transaction", e);
                     AppController.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
                 }
             }
@@ -610,6 +612,7 @@ public class AppController implements Initializable {
                     if(exception instanceof InvalidPasswordException) {
                         showErrorDialog("Invalid Password", "The wallet password was invalid.");
                     } else {
+                        log.error("Error Opening Wallet", exception);
                         showErrorDialog("Error Opening Wallet", exception.getMessage());
                     }
                 });
