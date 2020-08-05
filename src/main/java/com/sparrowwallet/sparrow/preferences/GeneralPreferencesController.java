@@ -11,11 +11,15 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Currency;
 import java.util.List;
 
 public class GeneralPreferencesController extends PreferencesDetailController {
+    private static final Logger log = LoggerFactory.getLogger(GeneralPreferencesController.class);
+
     @FXML
     private ComboBox<BitcoinUnit> bitcoinUnit;
 
@@ -80,6 +84,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         ExchangeSource.CurrenciesService currenciesService = new ExchangeSource.CurrenciesService(exchangeSource);
         currenciesService.setOnSucceeded(event -> {
             updateCurrencies(currenciesService.getValue());
+        });
+        currenciesService.setOnFailed(event -> {
+            log.error("Error retrieving currencies", event.getSource().getException());
         });
         currenciesService.start();
     }

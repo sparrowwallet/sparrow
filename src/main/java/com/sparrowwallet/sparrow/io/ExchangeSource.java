@@ -5,6 +5,8 @@ import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -51,6 +53,7 @@ public enum ExchangeSource {
                 Gson gson = new Gson();
                 return gson.fromJson(reader, CoinbaseRates.class);
             } catch (Exception e) {
+                log.error("Error retrieving currency rates", e);
                 return new CoinbaseRates();
             }
         }
@@ -80,10 +83,13 @@ public enum ExchangeSource {
                 Gson gson = new Gson();
                 return gson.fromJson(reader, CoinGeckoRates.class);
             } catch (Exception e) {
+                log.error("Error retrieving currency rates", e);
                 return new CoinGeckoRates();
             }
         }
     };
+
+    private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
 
     private final String name;
 

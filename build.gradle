@@ -92,6 +92,7 @@ jlink {
         requires 'java.logging'
         requires 'javafx.base'
         requires 'com.fasterxml.jackson.databind'
+        requires 'jdk.crypto.cryptoki'
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png']
