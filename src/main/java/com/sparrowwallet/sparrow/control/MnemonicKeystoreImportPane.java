@@ -55,6 +55,16 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         buttonBox.getChildren().add(importButton);
     }
 
+    public MnemonicKeystoreImportPane(Keystore keystore) {
+        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() ? "Passphrase enabled" : "Passphrase disabled", "", "image/" + WalletModel.SEED + ".png");
+        this.wallet = null;
+        this.importer = null;
+        showHideLink.setVisible(false);
+        buttonBox.getChildren().clear();
+
+        showWordList(keystore.getSeed());
+    }
+
     @Override
     protected Control createButton() {
         createEnterMnemonicButton();
@@ -108,11 +118,11 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         generatedMnemonicCode = null;
         setDescription("Enter mnemonic word list");
         showHideLink.setVisible(false);
-        setContent(getMnemonicWordsEntry(numWords));
+        setContent(getMnemonicWordsEntry(numWords, false));
         setExpanded(true);
     }
 
-    private Node getMnemonicWordsEntry(int numWords) {
+    private Node getMnemonicWordsEntry(int numWords, boolean displayWordsOnly) {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 
@@ -136,52 +146,54 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         vBox.getChildren().add(wordsPane);
 
-        PassphraseEntry passphraseEntry = new PassphraseEntry();
-        passphraseEntry.setPadding(new Insets(0, 32, 0, 10));
-        vBox.getChildren().add(passphraseEntry);
+        if(!displayWordsOnly) {
+            PassphraseEntry passphraseEntry = new PassphraseEntry();
+            passphraseEntry.setPadding(new Insets(0, 32, 0, 10));
+            vBox.getChildren().add(passphraseEntry);
 
-        AnchorPane buttonPane = new AnchorPane();
-        buttonPane.setPadding(new Insets(0, 32, 0, 10));
+            AnchorPane buttonPane = new AnchorPane();
+            buttonPane.setPadding(new Insets(0, 32, 0, 10));
 
-        Button generateButton = new Button("Generate New");
-        generateButton.setOnAction(event -> {
-            generateNew();
-        });
-        buttonPane.getChildren().add(generateButton);
-        AnchorPane.setLeftAnchor(generateButton, 0.0);
+            Button generateButton = new Button("Generate New");
+            generateButton.setOnAction(event -> {
+                generateNew();
+            });
+            buttonPane.getChildren().add(generateButton);
+            AnchorPane.setLeftAnchor(generateButton, 0.0);
 
-        confirmButton = new Button("Confirm Backup");
-        confirmButton.setOnAction(event -> {
-            confirmBackup();
-        });
-        confirmButton.managedProperty().bind(confirmButton.visibleProperty());
-        confirmButton.setVisible(false);
-        confirmButton.setDefaultButton(true);
-        buttonPane.getChildren().add(confirmButton);
-        AnchorPane.setRightAnchor(confirmButton, 0.0);
+            confirmButton = new Button("Confirm Backup");
+            confirmButton.setOnAction(event -> {
+                confirmBackup();
+            });
+            confirmButton.managedProperty().bind(confirmButton.visibleProperty());
+            confirmButton.setVisible(false);
+            confirmButton.setDefaultButton(true);
+            buttonPane.getChildren().add(confirmButton);
+            AnchorPane.setRightAnchor(confirmButton, 0.0);
 
-        verifyButton = new Button("Verify");
-        verifyButton.setDisable(true);
-        verifyButton.setDefaultButton(true);
-        verifyButton.setOnAction(event -> {
-            prepareImport();
-        });
-        verifyButton.managedProperty().bind(verifyButton.visibleProperty());
+            verifyButton = new Button("Verify");
+            verifyButton.setDisable(true);
+            verifyButton.setDefaultButton(true);
+            verifyButton.setOnAction(event -> {
+                prepareImport();
+            });
+            verifyButton.managedProperty().bind(verifyButton.visibleProperty());
 
-        wordEntriesProperty.addListener((ListChangeListener<String>) c -> {
-            for(String word : wordEntryList) {
-                if(!WordEntry.isValid(word)) {
-                    verifyButton.setDisable(true);
-                    return;
+            wordEntriesProperty.addListener((ListChangeListener<String>) c -> {
+                for(String word : wordEntryList) {
+                    if(!WordEntry.isValid(word)) {
+                        verifyButton.setDisable(true);
+                        return;
+                    }
                 }
-            }
 
-            verifyButton.setDisable(false);
-        });
-        buttonPane.getChildren().add(verifyButton);
-        AnchorPane.setRightAnchor(verifyButton, 0.0);
+                verifyButton.setDisable(false);
+            });
+            buttonPane.getChildren().add(verifyButton);
+            AnchorPane.setRightAnchor(verifyButton, 0.0);
 
-        vBox.getChildren().add(buttonPane);
+            vBox.getChildren().add(buttonPane);
+        }
 
         return vBox;
     }
@@ -212,7 +224,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private void confirmBackup() {
         setDescription("Confirm backup by re-entering words");
         showHideLink.setVisible(false);
-        setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size()));
+        setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size(), false));
         setExpanded(true);
     }
 
@@ -367,5 +379,17 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         contentBox.setPrefHeight(60);
 
         return contentBox;
+    }
+
+    private void showWordList(DeterministicSeed seed) {
+        List<String> words = seed.getMnemonicCode();
+        setContent(getMnemonicWordsEntry(words.size(), true));
+        setExpanded(true);
+
+        for (int i = 0; i < wordsPane.getChildren().size(); i++) {
+            WordEntry wordEntry = (WordEntry)wordsPane.getChildren().get(i);
+            wordEntry.getEditor().setText(words.get(i));
+            wordEntry.getEditor().setEditable(false);
+        }
     }
 }

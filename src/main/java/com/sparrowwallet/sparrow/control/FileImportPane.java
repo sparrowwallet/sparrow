@@ -2,13 +2,8 @@ package com.sparrowwallet.sparrow.control;
 
 import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.io.FileImport;
 import com.sparrowwallet.sparrow.io.ImportException;
-import com.sparrowwallet.sparrow.io.KeystoreFileImport;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,6 +16,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.control.textfield.TextFields;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -28,6 +25,8 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 
 public abstract class FileImportPane extends TitledDescriptionPane {
+    private static final Logger log = LoggerFactory.getLogger(FileImportPane.class);
+
     private final FileImport importer;
     private Button importButton;
     private final SimpleStringProperty password = new SimpleStringProperty("");
@@ -77,6 +76,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                     importFile(file.getName(), inputStream, password);
                 }
             } catch (Exception e) {
+                log.error("Error importing file", e);
                 String errorMessage = e.getMessage();
                 if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
                     errorMessage = e.getCause().getMessage();

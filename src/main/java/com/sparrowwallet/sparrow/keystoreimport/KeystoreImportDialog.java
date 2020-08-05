@@ -15,6 +15,7 @@ import javafx.scene.control.DialogPane;
 import org.controlsfx.tools.Borders;
 
 import java.io.IOException;
+import java.util.List;
 
 public class KeystoreImportDialog extends Dialog<Keystore> {
     private final KeystoreImportController keystoreImportController;
@@ -44,6 +45,10 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static List<KeystoreSource> getSupportedSources() {
+        return List.of(KeystoreSource.HW_USB, KeystoreSource.HW_AIRGAPPED, KeystoreSource.SW_SEED);
     }
 
     @Subscribe

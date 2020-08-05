@@ -752,7 +752,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        if(headersForm.getPsbt() != null) {
+        if(headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
             List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).collect(Collectors.toList());
             Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
             availableWalletsMap.keySet().retainAll(availableWallets);

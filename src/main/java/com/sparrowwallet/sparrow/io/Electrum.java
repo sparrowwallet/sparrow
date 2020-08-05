@@ -163,6 +163,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     private String decrypt(String encrypted, String password) {
+        if(encrypted == null) {
+            return null;
+        }
+
         KeyDeriver keyDeriver = new DoubleSha256KeyDeriver();
         Key key = keyDeriver.deriveKey(password);
         byte[] encryptedBytes = Base64.getDecoder().decode(encrypted);

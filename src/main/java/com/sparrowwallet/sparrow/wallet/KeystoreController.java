@@ -3,10 +3,19 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.SeedDisplayDialog;
+import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
+import com.sparrowwallet.sparrow.event.StorageEvent;
+import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import javafx.application.Platform;
@@ -14,7 +23,9 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -36,6 +47,9 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @FXML
     private Label type;
+
+    @FXML
+    private Button importButton;
 
     @FXML
     private TextField label;
@@ -156,6 +170,15 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     private void updateType() {
         type.setText(getTypeLabel(keystore));
+        if(keystore.getSource() == KeystoreSource.SW_SEED) {
+            Glyph searchGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE);
+            searchGlyph.setFontSize(12);
+            type.setGraphic(searchGlyph);
+        } else {
+            type.setGraphic(null);
+        }
+
+        importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Edit...");
 
         boolean editable = (keystore.getSource() == KeystoreSource.SW_WATCH);
         fingerprint.setEditable(editable);
@@ -178,7 +201,12 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     public void importKeystore(ActionEvent event) {
-        launchImportDialog(KeystoreSource.HW_USB);
+        KeystoreSource initialSource = keystore.getSource();
+        if(initialSource == null || !KeystoreImportDialog.getSupportedSources().contains(initialSource)) {
+            initialSource = KeystoreImportDialog.getSupportedSources().get(0);
+        }
+
+        launchImportDialog(initialSource);
     }
 
     private void launchImportDialog(KeystoreSource initialSource) {
@@ -202,6 +230,37 @@ public class KeystoreController extends WalletFormController implements Initiali
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
             xpub.setText(keystore.getExtendedPublicKey().toString());
         }
+    }
+
+    public void showSeed(MouseEvent event) {
+        int keystoreIndex = getWalletForm().getWallet().getKeystores().indexOf(keystore);
+        Wallet copy = getWalletForm().getWallet().copy();
+
+        if(copy.isEncrypted()) {
+            WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+            Optional<SecureString> password = dlg.showAndWait();
+            if(password.isPresent()) {
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
+                decryptWalletService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Done"));
+                    Wallet decryptedWallet = decryptWalletService.getValue();
+                    showSeed(decryptedWallet.getKeystores().get(keystoreIndex));
+                });
+                decryptWalletService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Failed"));
+                    AppController.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                });
+                EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
+                decryptWalletService.start();
+            }
+        } else {
+            showSeed(keystore);
+        }
+    }
+
+    private void showSeed(Keystore keystore) {
+        SeedDisplayDialog dlg = new SeedDisplayDialog(keystore);
+        dlg.showAndWait();
     }
 
     @Subscribe
