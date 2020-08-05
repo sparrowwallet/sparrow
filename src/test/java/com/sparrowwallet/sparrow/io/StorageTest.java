@@ -1,11 +1,9 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.crypto.ECIESKeyCrypter;
-import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.crypto.Pbkdf2KeyDeriver;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.Assert;
@@ -24,7 +22,23 @@ public class StorageTest extends IoTest {
     @Test
     public void loadSeedWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-seed-wallet"));
-        Wallet wallet = storage.loadWallet("pass").wallet;
+        Storage.WalletAndKey walletAndKey = storage.loadWallet("pass");
+        Wallet wallet = walletAndKey.wallet;
+        Wallet copy = wallet.copy();
+        copy.decrypt(walletAndKey.key);
+
+        for(int i = 0; i < wallet.getKeystores().size(); i++) {
+            Keystore keystore = wallet.getKeystores().get(i);
+            if(keystore.hasSeed()) {
+                Keystore copyKeystore = copy.getKeystores().get(i);
+                Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                copyKeystore.getSeed().clear();
+            }
+        }
+
         Assert.assertTrue(wallet.isValid());
 
         Assert.assertEquals("testd2", wallet.getName());
