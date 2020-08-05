@@ -121,12 +121,4 @@ public class TransactionsController extends WalletFormController implements Init
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         setFiatBalance(event.getCurrencyRate(), getWalletForm().getWalletTransactionsEntry().getBalance());
     }
-
-    //TODO: Remove
-    public void advanceBlock(MouseEvent event) {
-        Integer currentBlock = getWalletForm().getWallet().getStoredBlockHeight();
-        getWalletForm().getWallet().setStoredBlockHeight(currentBlock+1);
-        System.out.println("Advancing from " + currentBlock + " to " + getWalletForm().getWallet().getStoredBlockHeight());
-        EventManager.get().post(new WalletBlockHeightChangedEvent(getWalletForm().getWallet(), currentBlock+1));
-    }
 }

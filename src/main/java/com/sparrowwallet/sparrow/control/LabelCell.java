@@ -7,10 +7,14 @@ import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.util.converter.DefaultStringConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 
 class LabelCell extends TextFieldTreeTableCell<Entry, String> {
+    private static final Logger log = LoggerFactory.getLogger(LabelCell.class);
+
     public LabelCell() {
         super(new DefaultStringConverter());
         getStyleClass().add("label-cell");
@@ -71,7 +75,7 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> {
                 }
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Error starting edit", e);
         }
     }
 

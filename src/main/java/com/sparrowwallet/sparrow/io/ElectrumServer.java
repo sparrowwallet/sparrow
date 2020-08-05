@@ -26,6 +26,8 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.SocketFactory;
 import javax.net.ssl.*;
@@ -39,11 +41,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class ElectrumServer {
+    private static final Logger log = LoggerFactory.getLogger(ElectrumServer.class);
+
     private static final String[] SUPPORTED_VERSIONS = new String[]{"1.3", "1.4.2"};
 
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
@@ -388,7 +391,7 @@ public class ElectrumServer {
             }
 
             if(!blockHeights.isEmpty()) {
-                System.out.println("Could not retrieve " + blockHeights.size() + " blocks");
+                log.warn("Could not retrieve " + blockHeights.size() + " blocks");
             }
 
             return blockHeaderMap;
@@ -563,7 +566,7 @@ public class ElectrumServer {
         try {
             result = batchRequest.execute();
         } catch (JsonRpcBatchException e) {
-            System.out.println("Some errors retrieving transactions: " + e.getErrors());
+            log.warn("Some errors retrieving transactions: " + e.getErrors());
             result = (Map<String, VerboseTransaction>)e.getSuccesses();
         }
 
@@ -704,7 +707,7 @@ public class ElectrumServer {
         public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcParam("status") final String status) {
             String oldStatus = subscribedScriptHashes.put(scriptHash, status);
             if(Objects.equals(oldStatus, status)) {
-                System.out.println("Received script hash status update, but status has not changed");
+                log.warn("Received script hash status update, but status has not changed");
             }
 
             Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash)));
@@ -1002,7 +1005,7 @@ public class ElectrumServer {
             try {
                 closeActiveConnection();
             } catch (ServerException e) {
-                e.printStackTrace();
+                log.error("Eror closing connection", e);
             }
 
             return super.cancel();

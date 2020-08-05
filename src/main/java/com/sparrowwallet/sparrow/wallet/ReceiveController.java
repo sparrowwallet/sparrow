@@ -26,6 +26,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.controlsfx.glyphfont.Glyph;
 import org.fxmisc.richtext.CodeArea;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,6 +38,8 @@ import java.util.ResourceBundle;
 import java.util.Set;
 
 public class ReceiveController extends WalletFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(ReceiveController.class);
+
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     @FXML
@@ -122,7 +126,7 @@ public class ReceiveController extends WalletFormController implements Initializ
             ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
             return new Image(bais);
         } catch(Exception e) {
-            e.printStackTrace();
+            log.error("Error generating QR", e);
         }
 
         return null;

@@ -3,12 +3,16 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.Currency;
 
 public class Config {
+    private static final Logger log = LoggerFactory.getLogger(Config.class);
+
     public static final String CONFIG_FILENAME = ".config";
 
     private Mode mode;
@@ -49,7 +53,7 @@ public class Config {
                     return config;
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("Error opening " + configFile.getAbsolutePath(), e);
                 //Ignore and assume no config
             }
         }

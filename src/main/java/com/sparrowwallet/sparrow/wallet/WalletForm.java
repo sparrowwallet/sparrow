@@ -10,12 +10,16 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
 public class WalletForm {
+    private static final Logger log = LoggerFactory.getLogger(WalletForm.class);
+
     private final Storage storage;
     protected Wallet wallet;
 
@@ -173,7 +177,7 @@ public class WalletForm {
             save();
         } catch (IOException e) {
             //Background save failed
-            e.printStackTrace();
+            log.error("Background wallet save failed", e);
         }
     }
 

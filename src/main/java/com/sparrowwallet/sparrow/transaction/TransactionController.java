@@ -22,12 +22,15 @@ import javafx.scene.control.cell.TextFieldTreeCell;
 import javafx.scene.layout.Pane;
 import javafx.util.StringConverter;
 import org.controlsfx.control.MasterDetailPane;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
 public class TransactionController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
 
     @FXML
     private Node tabContent;
@@ -327,7 +330,7 @@ public class TransactionController implements Initializable {
 
                 references.remove(getTransaction().getTxId());
                 if (!references.isEmpty()) {
-                    System.out.println("Failed to retrieve all referenced input transactions, aborting transaction fetch");
+                    log.warn("Failed to retrieve all referenced input transactions, aborting transaction fetch");
                     return;
                 }
 

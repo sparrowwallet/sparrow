@@ -10,6 +10,8 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.controlsfx.tools.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -26,6 +28,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class Hwi {
+    private static final Logger log = LoggerFactory.getLogger(Hwi.class);
+
     private static boolean isPromptActive = false;
 
     public List<Device> enumerate(String passphrase) throws ImportException {
@@ -151,7 +155,7 @@ public class Hwi {
                     Path tempHwiDirPath = Files.createTempDirectory("hwi", PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
-                    //System.out.println(tempHwiDir.getAbsolutePath());
+                    log.debug("Using temp HWI path: " + tempHwiDir.getAbsolutePath());
 
                     File tempExec = null;
                     ZipInputStream zis = new ZipInputStream(inputStream);
@@ -188,7 +192,7 @@ public class Hwi {
                     hwiExecutable = tempExec;
                 }
             } catch(Exception e) {
-                e.printStackTrace();
+                log.error("Error initializing HWI", e);
             }
 
             Config.get().setHwi(hwiExecutable);

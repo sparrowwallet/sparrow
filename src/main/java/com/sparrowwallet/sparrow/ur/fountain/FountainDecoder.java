@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.ur.fountain;
 
 import com.sparrowwallet.sparrow.ur.ResultType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.util.*;
@@ -14,6 +16,8 @@ import static com.sparrowwallet.sparrow.ur.fountain.FountainUtils.chooseFragment
  * Ported from https://github.com/BlockchainCommons/URKit
  */
 public class FountainDecoder {
+    private static final Logger log = LoggerFactory.getLogger(FountainDecoder.class);
+
     private final Set<Integer> recievedPartIndexes = new TreeSet<>();
     private Set<Integer> lastPartIndexes;
     private int processedPartsCount = 0;
@@ -123,12 +127,12 @@ public class FountainDecoder {
 
     private void printPartEnd() {
         int percent = (int)Math.round(getEstimatedPercentComplete() * 100);
-        System.out.println("processed: " + processedPartsCount + " expected: " + getExpectedPartCount() + " received: " + recievedPartIndexes.size() + " percent: " + percent + "%");
+        log.debug("processed: " + processedPartsCount + " expected: " + getExpectedPartCount() + " received: " + recievedPartIndexes.size() + " percent: " + percent + "%");
     }
 
     private void printPart(Part part) {
         List<Integer> sorted = part.partIndexes.stream().sorted().collect(Collectors.toList());
-        System.out.println("part indexes: " + sorted);
+        log.debug("part indexes: " + sorted);
     }
 
     private void printState() {
@@ -138,7 +142,7 @@ public class FountainDecoder {
             return list;
         }).collect(Collectors.toList());
 
-        System.out.println("parts: " + getExpectedPartCount() + ", received: " + sortedReceived + ", mixed: " + mixed + ", queued: " + queuedParts.size() + ", result: " + result);
+        log.debug("parts: " + getExpectedPartCount() + ", received: " + sortedReceived + ", mixed: " + mixed + ", queued: " + queuedParts.size() + ", result: " + result);
     }
 
     private void processQueueItem() {

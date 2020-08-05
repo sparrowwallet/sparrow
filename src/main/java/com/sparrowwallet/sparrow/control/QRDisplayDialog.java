@@ -20,11 +20,15 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.controlsfx.tools.Borders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 public class QRDisplayDialog extends Dialog<UR> {
+    private static final Logger log = LoggerFactory.getLogger(QRDisplayDialog.class);
+
     private static final int MIN_FRAGMENT_LENGTH = 10;
     private static final int MAX_FRAGMENT_LENGTH = 100;
 
@@ -89,7 +93,7 @@ public class QRDisplayDialog extends Dialog<UR> {
             ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
             return new Image(bais);
         } catch(Exception e) {
-            e.printStackTrace();
+            log.error("Error generating QR", e);
         }
 
         return null;
