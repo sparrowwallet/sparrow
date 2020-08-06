@@ -218,7 +218,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     ek.pw_hash_version = 1;
                     if(keystore.getSeed().getType() == DeterministicSeed.Type.ELECTRUM) {
                         ek.seed = keystore.getSeed().getMnemonicString().asString();
-                        ek.passphrase = keystore.getSeed().getPassphrase();
+                        ek.passphrase = keystore.getSeed().getPassphrase() == null ? null : keystore.getSeed().getPassphrase().asString();
                     } else if(keystore.getSeed().getType() == DeterministicSeed.Type.BIP39) {
                         ew.seed_type = "bip39";
                     }
