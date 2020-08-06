@@ -34,14 +34,18 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +55,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class AppController implements Initializable {
@@ -153,6 +158,9 @@ public class AppController implements Initializable {
         rootStack.setOnDragExited(event -> {
             rootStack.getStyleClass().removeAll(DRAG_OVER_CLASS);
         });
+
+        Stage tabStage = (Stage)tabs.getScene().getWindow();
+        tabStage.getScene().getStylesheets().add(AppController.class.getResource("notificationpopup.css").toExternalForm());
 
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
             if(selectedTab != null) {
@@ -524,6 +532,18 @@ public class AppController implements Initializable {
         alert.setHeaderText(title);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    public void selectTab(Wallet wallet) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData) tab.getUserData();
+            if(tabData.getType() == TabData.TabType.WALLET) {
+                WalletTabData walletTabData = (WalletTabData) tabData;
+                if(walletTabData.getWallet() == wallet) {
+                    tabs.getSelectionModel().select(tab);
+                }
+            }
+        }
     }
 
     public void closeTab(ActionEvent event) {
@@ -902,6 +922,35 @@ public class AppController implements Initializable {
     @Subscribe
     public void walletSettingsChanged(WalletSettingsChangedEvent event) {
         exportWallet.setDisable(!event.getWallet().isValid());
+    }
+
+    @Subscribe
+    public void newWalletTransactions(NewWalletTransactionsEvent event) {
+        String text = "New " + (event.getBlockTransactions().size() > 1 ? "transactions: " : "transaction: ");
+
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = (event.getTotalValue() >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
+        }
+
+        if(unit == BitcoinUnit.BTC) {
+            text += CoinLabel.getBTCFormat().format((double)event.getTotalValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+        } else {
+            text += String.format(Locale.ENGLISH, "%,d", event.getTotalValue()) + " sats";
+        }
+
+        Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
+        Notifications notificationBuilder = Notifications.create()
+                .title("Sparrow - " + event.getWallet().getName())
+                .text(text)
+                .graphic(new ImageView(image))
+                .hideAfter(Duration.seconds(180))
+                .position(Pos.TOP_RIGHT)
+                .hideCloseButton()
+                .threshold(5, Notifications.create().title("Sparrow").text("Multiple new transactions").graphic(new ImageView(image)))
+                .onAction(e -> selectTab(event.getWallet()));
+
+        notificationBuilder.show();
     }
 
     @Subscribe

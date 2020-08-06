@@ -5,6 +5,8 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.NewWalletTransactionsEvent;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.LongPropertyBase;
 
@@ -64,6 +66,12 @@ public class WalletTransactionsEntry extends Entry {
         getChildren().removeAll(entriesRemoved);
 
         calculateBalances();
+
+        if(!entriesAdded.isEmpty()) {
+            List<BlockTransaction> blockTransactions = entriesAdded.stream().map(txEntry -> ((TransactionEntry)txEntry).getBlockTransaction()).collect(Collectors.toList());
+            long totalValue = entriesAdded.stream().mapToLong(Entry::getValue).sum();
+            EventManager.get().post(new NewWalletTransactionsEvent(wallet, blockTransactions, totalValue));
+        }
     }
 
     private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet) {
