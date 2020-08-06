@@ -436,9 +436,9 @@ public class HeadersController extends TransactionFormController implements Init
         blockchainForm.setVisible(true);
 
         if(currentHeight == null) {
-            blockStatus.setText(blockTransaction.getBlockHash() == null ? "Unconfirmed" : "Confirmed");
+            blockStatus.setText(blockTransaction.getHeight() > 0 ? "Confirmed" : "Unconfirmed");
         } else {
-            int confirmations = blockTransaction.getBlockHash() == null ? 0 : currentHeight - blockTransaction.getHeight() + 1;
+            int confirmations = blockTransaction.getHeight() > 0 ? currentHeight - blockTransaction.getHeight() + 1 : 0;
             if(confirmations == 0) {
                 blockStatus.setText("Unconfirmed");
             } else if(confirmations == 1) {

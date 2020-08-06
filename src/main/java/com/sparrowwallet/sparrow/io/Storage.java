@@ -46,7 +46,6 @@ public class Storage {
     public Storage(File walletFile) {
         this.walletFile = walletFile;
         this.gson = getGson();
-        this.encryptionPubKey = NO_PASSWORD_KEY;
     }
 
     public File getWalletFile() {

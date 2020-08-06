@@ -52,7 +52,7 @@ public class WalletNameDialog extends Dialog<String> {
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         BooleanBinding isInvalid = Bindings.createBooleanBinding(() ->
-                name.getText().length() == 0 || Storage.getWalletFile(name.getText()).exists(), name.textProperty());
+                name.getText().length() == 0 || Storage.walletExists(name.getText()), name.textProperty());
         okButton.disableProperty().bind(isInvalid);
 
         name.setPromptText("Wallet Name");

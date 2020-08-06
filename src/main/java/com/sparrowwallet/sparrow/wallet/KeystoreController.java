@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
@@ -47,6 +48,9 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @FXML
     private Label type;
+
+    @FXML
+    private Button viewSeedButton;
 
     @FXML
     private Button importButton;
@@ -83,6 +87,8 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(keystore.isValid()) {
             selectSourcePane.setVisible(false);
         }
+
+        viewSeedButton.managedProperty().bind(viewSeedButton.visibleProperty());
 
         updateType();
 
@@ -170,15 +176,10 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     private void updateType() {
         type.setText(getTypeLabel(keystore));
-        if(keystore.getSource() == KeystoreSource.SW_SEED) {
-            Glyph searchGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE);
-            searchGlyph.setFontSize(12);
-            type.setGraphic(searchGlyph);
-        } else {
-            type.setGraphic(null);
-        }
+        type.setGraphic(getTypeIcon(keystore));
+        viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED);
 
-        importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Edit...");
+        importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Replace...");
 
         boolean editable = (keystore.getSource() == KeystoreSource.SW_WATCH);
         fingerprint.setEditable(editable);
@@ -197,6 +198,20 @@ public class KeystoreController extends WalletFormController implements Initiali
             case SW_WATCH:
             default:
                 return "Watch Only Wallet";
+        }
+    }
+
+    private Glyph getTypeIcon(Keystore keystore) {
+        switch (keystore.getSource()) {
+            case HW_USB:
+                return new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
+            case HW_AIRGAPPED:
+                return new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SD_CARD);
+            case SW_SEED:
+                return new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LAPTOP);
+            case SW_WATCH:
+            default:
+                return new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE);
         }
     }
 
@@ -232,7 +247,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
     }
 
-    public void showSeed(MouseEvent event) {
+    public void showSeed(ActionEvent event) {
         int keystoreIndex = getWalletForm().getWallet().getKeystores().indexOf(keystore);
         Wallet copy = getWalletForm().getWallet().copy();
 

@@ -20,6 +20,7 @@ public class SeedDisplayDialog extends Dialog<Void> {
 
         AnchorPane anchorPane = new AnchorPane();
         ScrollPane scrollPane = new ScrollPane();
+        scrollPane.getStyleClass().add("edge-to-edge");
         scrollPane.setPrefHeight(74 + height);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -32,6 +33,7 @@ public class SeedDisplayDialog extends Dialog<Void> {
         scrollPane.setContent(keystoreAccordion);
 
         MnemonicKeystoreImportPane keystorePane = new MnemonicKeystoreImportPane(decryptedKeystore);
+        keystorePane.setAnimated(false);
         keystoreAccordion.getPanes().add(keystorePane);
 
         stackPane.getChildren().addAll(anchorPane);
