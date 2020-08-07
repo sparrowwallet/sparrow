@@ -21,6 +21,7 @@ public class Config {
     private ExchangeSource exchangeSource;
     private boolean groupByAddress = true;
     private boolean includeMempoolChange = true;
+    private boolean notifyNewTransactions = true;
     private Integer keyDerivationPeriod;
     private File hwi;
     private String electrumServer;
@@ -120,6 +121,15 @@ public class Config {
 
     public void setIncludeMempoolChange(boolean includeMempoolChange) {
         this.includeMempoolChange = includeMempoolChange;
+        flush();
+    }
+
+    public boolean isNotifyNewTransactions() {
+        return notifyNewTransactions;
+    }
+
+    public void setNotifyNewTransactions(boolean notifyNewTransactions) {
+        this.notifyNewTransactions = notifyNewTransactions;
         flush();
     }
 

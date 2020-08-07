@@ -35,6 +35,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
     @FXML
     private UnlabeledToggleSwitch includeMempoolChange;
 
+    @FXML
+    private UnlabeledToggleSwitch notifyNewTransactions;
+
     private final ChangeListener<Currency> fiatCurrencyListener = new ChangeListener<Currency>() {
         @Override
         public void changed(ObservableValue<? extends Currency> observable, Currency oldValue, Currency newValue) {
@@ -77,6 +80,11 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         });
         includeMempoolChange.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
             config.setIncludeMempoolChange(newValue);
+        });
+
+        notifyNewTransactions.setSelected(config.isNotifyNewTransactions());
+        notifyNewTransactions.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setNotifyNewTransactions(newValue);
         });
     }
 

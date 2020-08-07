@@ -68,5 +68,11 @@
                 <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool where all their inputs are from that wallet"/>
             </Field>
         </Fieldset>
+        <Fieldset inputGrow="SOMETIMES" text="Notifications" styleClass="wideLabelFieldSet">
+            <Field text="New transactions:">
+                <UnlabeledToggleSwitch fx:id="notifyNewTransactions" />
+                <HelpLabel helpText="Show system notifications on new wallet transactions"/>
+            </Field>
+        </Fieldset>
     </Form>
 </GridPane>

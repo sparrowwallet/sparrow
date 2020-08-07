@@ -926,30 +926,32 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void newWalletTransactions(NewWalletTransactionsEvent event) {
-        String text = "New " + (event.getBlockTransactions().size() > 1 ? "transactions: " : "transaction: ");
+        if(Config.get().isNotifyNewTransactions()) {
+            String text = "New " + (event.getBlockTransactions().size() > 1 ? "transactions: " : "transaction: ");
 
-        BitcoinUnit unit = Config.get().getBitcoinUnit();
-        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
-            unit = (event.getTotalValue() >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
+            BitcoinUnit unit = Config.get().getBitcoinUnit();
+            if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+                unit = (event.getTotalValue() >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
+            }
+
+            if(unit == BitcoinUnit.BTC) {
+                text += CoinLabel.getBTCFormat().format((double)event.getTotalValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+            } else {
+                text += String.format(Locale.ENGLISH, "%,d", event.getTotalValue()) + " sats";
+            }
+
+            Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
+            Notifications notificationBuilder = Notifications.create()
+                    .title("Sparrow - " + event.getWallet().getName())
+                    .text(text)
+                    .graphic(new ImageView(image))
+                    .hideAfter(Duration.seconds(180))
+                    .position(Pos.TOP_RIGHT)
+                    .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
+                    .onAction(e -> selectTab(event.getWallet()));
+
+            notificationBuilder.show();
         }
-
-        if(unit == BitcoinUnit.BTC) {
-            text += CoinLabel.getBTCFormat().format((double)event.getTotalValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
-        } else {
-            text += String.format(Locale.ENGLISH, "%,d", event.getTotalValue()) + " sats";
-        }
-
-        Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-        Notifications notificationBuilder = Notifications.create()
-                .title("Sparrow - " + event.getWallet().getName())
-                .text(text)
-                .graphic(new ImageView(image))
-                .hideAfter(Duration.seconds(180))
-                .position(Pos.TOP_RIGHT)
-                .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
-                .onAction(e -> selectTab(event.getWallet()));
-
-        notificationBuilder.show();
     }
 
     @Subscribe
