@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
 import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
@@ -43,6 +44,7 @@ import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -163,7 +165,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     private Image getQrCode(String address) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            BitMatrix qrMatrix = qrCodeWriter.encode(address, BarcodeFormat.QR_CODE, 150, 150);
+            BitMatrix qrMatrix = qrCodeWriter.encode(address, BarcodeFormat.QR_CODE, 130, 130, Map.of(EncodeHintType.MARGIN, 2));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MatrixToImageWriter.writeToStream(qrMatrix, "PNG", baos, new MatrixToImageConfig());

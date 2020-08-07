@@ -11,6 +11,6 @@
     -fx-padding: 20;
 }
 
-#lastUsedField .input-container {
+#lastUsedField .input-container, #derivationField .input-container {
     -fx-alignment: center-left;
 }

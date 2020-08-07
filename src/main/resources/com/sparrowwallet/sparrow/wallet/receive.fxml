@@ -26,21 +26,21 @@
                 <Insets left="25.0" right="25.0" top="25.0" />
             </padding>
             <columnConstraints>
-                <ColumnConstraints percentWidth="80" />
-                <ColumnConstraints percentWidth="20" />
+                <ColumnConstraints prefWidth="620" />
+                <ColumnConstraints prefWidth="150" />
             </columnConstraints>
             <rowConstraints>
                 <RowConstraints />
             </rowConstraints>
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-                <Fieldset inputGrow="SOMETIMES" text="Receive">
+                <Fieldset inputGrow="ALWAYS" text="Receive">
                     <Field text="Address:">
                         <CopyableTextField fx:id="address" styleClass="address-text-field" editable="false"/>
                     </Field>
                     <Field text="Label:">
                         <TextField fx:id="label" />
                     </Field>
-                    <Field text="Derivation:">
+                    <Field fx:id="derivationField" text="Derivation:">
                         <CopyableLabel fx:id="derivationPath" />
                     </Field>
                     <Field fx:id="lastUsedField" text="Last Used:">
@@ -72,7 +72,7 @@
                     <Field text="Descriptor:">
                         <VirtualizedScrollPane>
                             <content>
-                                <CodeArea fx:id="outputDescriptor" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                                <CodeArea fx:id="outputDescriptor" editable="false" wrapText="true" prefHeight="63" maxHeight="63" styleClass="uneditable-codearea" />
                             </content>
                         </VirtualizedScrollPane>
                     </Field>
