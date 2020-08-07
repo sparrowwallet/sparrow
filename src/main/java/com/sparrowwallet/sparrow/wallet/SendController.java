@@ -272,8 +272,6 @@ public class SendController extends WalletFormController implements Initializabl
             createButton.setDisable(walletTransaction == null || label.getText().isEmpty());
         });
 
-        address.setText("19Sp9dLinHy3dKo2Xxj53ouuZWAoVGGhg8");
-
         addValidation();
     }
 

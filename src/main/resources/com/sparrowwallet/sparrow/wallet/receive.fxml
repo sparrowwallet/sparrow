@@ -27,7 +27,7 @@
             </padding>
             <columnConstraints>
                 <ColumnConstraints prefWidth="620" />
-                <ColumnConstraints prefWidth="150" />
+                <ColumnConstraints prefWidth="140" />
             </columnConstraints>
             <rowConstraints>
                 <RowConstraints />

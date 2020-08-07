@@ -29,15 +29,15 @@
                     <Insets left="25.0" right="25.0" top="25.0" />
                 </padding>
                 <columnConstraints>
-                    <ColumnConstraints percentWidth="50" />
-                    <ColumnConstraints percentWidth="30" />
-                    <ColumnConstraints percentWidth="20" />
+                    <ColumnConstraints prefWidth="385" />
+                    <ColumnConstraints prefWidth="225" />
+                    <ColumnConstraints prefWidth="140" />
                 </columnConstraints>
                 <rowConstraints>
                     <RowConstraints />
                 </rowConstraints>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
-                    <Fieldset inputGrow="SOMETIMES" text="Send">
+                    <Fieldset inputGrow="ALWAYS" text="Send">
                         <Field text="Pay to:">
                             <CopyableTextField fx:id="address" styleClass="address-text-field"/>
                         </Field>

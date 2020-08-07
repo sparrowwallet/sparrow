@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.Currency;
+import java.util.List;
 
 public class Config {
     private static final Logger log = LoggerFactory.getLogger(Config.class);
@@ -22,6 +23,7 @@ public class Config {
     private boolean groupByAddress = true;
     private boolean includeMempoolChange = true;
     private boolean notifyNewTransactions = true;
+    private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
     private String electrumServer;
@@ -130,6 +132,15 @@ public class Config {
 
     public void setNotifyNewTransactions(boolean notifyNewTransactions) {
         this.notifyNewTransactions = notifyNewTransactions;
+        flush();
+    }
+
+    public List<File> getRecentWalletFiles() {
+        return recentWalletFiles;
+    }
+
+    public void setRecentWalletFiles(List<File> recentWalletFiles) {
+        this.recentWalletFiles = recentWalletFiles;
         flush();
     }
 

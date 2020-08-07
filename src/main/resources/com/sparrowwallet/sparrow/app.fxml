@@ -22,7 +22,7 @@
                                 <MenuItem fx:id="openTransactionIdItem" text="From ID..." onAction="#openTransactionFromId"/>
                                 <MenuItem text="From Text..." onAction="#openTransactionFromText"/>
                                 <MenuItem text="From QR..." onAction="#openTransactionFromQR"/>
-                                <MenuItem text="Examples" onAction="#openExamples"/>
+                                <!-- <MenuItem text="Examples" onAction="#openExamples"/> -->
                             </items>
                         </Menu>
                         <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." onAction="#saveTransaction"/>
