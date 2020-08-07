@@ -29,6 +29,7 @@ import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
+    private static final String TEMP_FILE_PREFIX = "hwi-1.1.2-";
 
     private static boolean isPromptActive = false;
 
@@ -163,7 +164,7 @@ public class Hwi {
     private synchronized File getHwiExecutable(Command command) {
         File hwiExecutable = Config.get().getHwi();
         if(hwiExecutable != null && hwiExecutable.exists()) {
-            if(command.isTestFirst() && !testHwi(hwiExecutable)) {
+            if(command.isTestFirst() && (!hwiExecutable.getAbsolutePath().contains(TEMP_FILE_PREFIX) || !testHwi(hwiExecutable))) {
                 if(Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
                     deleteDirectory(hwiExecutable.getParentFile());
                 } else {
@@ -182,8 +183,8 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform.getPlatformId().toLowerCase().equals("mac")) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi-1.1.0-mac-amd64-signed.zip");
-                    Path tempHwiDirPath = Files.createTempDirectory("hwi", PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi-1.1.2-mac-amd64-signed.zip");
+                    Path tempHwiDirPath = Files.createTempDirectory(TEMP_FILE_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
                     log.debug("Using temp HWI path: " + tempHwiDir.getAbsolutePath());
@@ -211,7 +212,7 @@ public class Hwi {
                     hwiExecutable = tempExec;
                 } else {
                     InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
-                    Path tempExecPath = Files.createTempFile("hwi", null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    Path tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempExec = tempExecPath.toFile();
                     //tempExec.deleteOnExit();
                     OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
