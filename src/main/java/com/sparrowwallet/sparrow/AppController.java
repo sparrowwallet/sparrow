@@ -946,8 +946,7 @@ public class AppController implements Initializable {
                 .graphic(new ImageView(image))
                 .hideAfter(Duration.seconds(180))
                 .position(Pos.TOP_RIGHT)
-                .hideCloseButton()
-                .threshold(5, Notifications.create().title("Sparrow").text("Multiple new transactions").graphic(new ImageView(image)))
+                .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
                 .onAction(e -> selectTab(event.getWallet()));
 
         notificationBuilder.show();

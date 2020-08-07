@@ -3,10 +3,8 @@
     -fx-padding: 0 7 7 7;
 }
 
-.notification-bar > .close-button {
-    -fx-min-height: 27;
-    -fx-padding: 10 0 0 0;
-    -fx-translate-y: 10;
+.notification-bar .close-button {
+    -fx-translate-y: 7;
 }
 
 .notification-bar > .pane .label.title {
