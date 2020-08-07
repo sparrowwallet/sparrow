@@ -235,7 +235,7 @@ public class Hwi {
 
     private boolean testHwi(File hwiExecutable) {
         try {
-            List<String> command = List.of(hwiExecutable.getAbsolutePath(), "enumerate");
+            List<String> command = List.of(hwiExecutable.getAbsolutePath(), "--version");
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             Process process = processBuilder.start();
             int exitValue = process.waitFor();
