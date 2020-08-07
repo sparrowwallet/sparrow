@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
+import java.util.Objects;
+
 public class Device {
     private String type;
     private String path;
@@ -60,5 +62,23 @@ public class Device {
 
     public String toString() {
         return getModel() + ":" + getPath();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Device device = (Device) o;
+        return Objects.equals(type, device.type) &&
+                Objects.equals(path, device.path);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, path);
     }
 }

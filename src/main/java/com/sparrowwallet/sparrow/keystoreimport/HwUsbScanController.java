@@ -1,7 +1,10 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.UsbDeviceEvent;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -33,6 +36,7 @@ public class HwUsbScanController extends KeystoreImportDetailController {
             } else {
                 getMasterController().showUsbDevices(devices);
             }
+            Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));
         });
         enumerateService.setOnFailed(workerStateEvent -> {
             getMasterController().showUsbError(enumerateService.getException().getMessage());

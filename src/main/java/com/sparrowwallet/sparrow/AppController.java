@@ -113,6 +113,8 @@ public class AppController implements Initializable {
 
     private ElectrumServer.ConnectionService connectionService;
 
+    private Hwi.ScheduledEnumerateService deviceEnumerateService;
+
     private static Integer currentBlockHeight;
 
     public static boolean showTxHexProperty;
@@ -289,6 +291,25 @@ public class AppController implements Initializable {
         });
 
         return ratesService;
+    }
+
+    private Hwi.ScheduledEnumerateService createDeviceEnumerateService() {
+        Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
+        enumerateService.setPeriod(new Duration(ENUMERATE_HW_PERIOD));
+        enumerateService.setOnSucceeded(workerStateEvent -> {
+            List<Device> devices = enumerateService.getValue();
+
+            //Null devices are returned if the app is currently prompting for a pin. Otherwise, the enumerate clears the pin screen
+            if(devices != null) {
+                //If another instance of HWI is currently accessing the usb interface, HWI returns empty device models. Ignore this run if that happens
+                List<Device> validDevices = devices.stream().filter(device -> device.getModel() != null).collect(Collectors.toList());
+                if(validDevices.size() == devices.size()) {
+                    Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));
+                }
+            }
+        });
+
+        return enumerateService;
     }
 
     public void setApplication(MainApp application) {
@@ -509,7 +530,7 @@ public class AppController implements Initializable {
     }
 
     public static List<Device> getDevices() {
-        return devices;
+        return devices == null ? new ArrayList<>() : devices;
     }
 
     public Map<Wallet, Storage> getOpenWallets() {
@@ -738,24 +759,6 @@ public class AppController implements Initializable {
             WalletForm walletForm = new WalletForm(storage, wallet);
             EventManager.get().register(walletForm);
             controller.setWalletForm(walletForm);
-
-            if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
-                Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
-                enumerateService.setPeriod(new Duration(ENUMERATE_HW_PERIOD));
-                enumerateService.setOnSucceeded(workerStateEvent -> {
-                    List<Device> devices = enumerateService.getValue();
-
-                    //Null devices are returned if the app is currently prompting for a pin. Otherwise, the enumerate clears the pin screen
-                    if(devices != null) {
-                        //If another instance of HWI is currently accessing the usb interface, HWI returns empty device models. Ignore this run if that happens
-                        List<Device> validDevices = devices.stream().filter(device -> device.getModel() != null).collect(Collectors.toList());
-                        if(validDevices.size() == devices.size()) {
-                            EventManager.get().post(new UsbDeviceEvent(devices));
-                        }
-                    }
-                });
-                enumerateService.start();
-            }
 
             tabs.getTabs().add(tab);
             return tab;
@@ -1078,6 +1081,36 @@ public class AppController implements Initializable {
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         fiatCurrencyExchangeRate = event.getCurrencyRate();
+    }
+
+    @Subscribe
+    public void openWallets(OpenWalletsEvent event) {
+        boolean usbWallet = false;
+        for(Map.Entry<Wallet, Storage> entry : event.getWalletsMap().entrySet()) {
+            Wallet wallet = entry.getKey();
+            Storage storage = entry.getValue();
+
+            if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
+                usbWallet = true;
+
+                if(deviceEnumerateService == null) {
+                    deviceEnumerateService = createDeviceEnumerateService();
+                }
+
+                if(deviceEnumerateService.getState() == Worker.State.CANCELLED) {
+                    deviceEnumerateService.reset();
+                }
+
+                if(!deviceEnumerateService.isRunning()) {
+                    deviceEnumerateService.start();
+                }
+            }
+        }
+
+        if(!usbWallet && deviceEnumerateService != null && deviceEnumerateService.isRunning()) {
+            deviceEnumerateService.cancel();
+            EventManager.get().post(new UsbDeviceEvent(Collections.emptyList()));
+        }
     }
 
     @Subscribe

@@ -14,7 +14,7 @@ public class HwUsbDevicesController extends KeystoreImportDetailController {
 
     public void initializeView(List<Device> devices) {
         for(Device device : devices) {
-            DevicePane devicePane = new DevicePane(DevicePane.DeviceOperation.IMPORT, getMasterController().getWallet(), device);
+            DevicePane devicePane = new DevicePane(getMasterController().getWallet(), device);
             deviceAccordion.getPanes().add(devicePane);
         }
     }

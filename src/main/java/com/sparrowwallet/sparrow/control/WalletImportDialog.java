@@ -51,6 +51,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
 
     @Subscribe
     public void walletImported(WalletImportEvent event) {
+        EventManager.get().unregister(this);
         wallet = event.getWallet();
         setResult(wallet);
         this.close();

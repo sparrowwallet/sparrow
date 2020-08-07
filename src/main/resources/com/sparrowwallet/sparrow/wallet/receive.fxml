@@ -86,11 +86,19 @@
             <padding>
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
-            <Button fx:id="nextAddress" graphicTextGap="5" text="Get Next Address" defaultButton="true" AnchorPane.rightAnchor="10" onAction="#getNewAddress">
-                <graphic>
-                    <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" fontSize="12" />
-                </graphic>
-            </Button>
+            <HBox AnchorPane.rightAnchor="10">
+                <Button fx:id="displayAddress" graphicTextGap="5" text="Display Address" AnchorPane.rightAnchor="10" onAction="#displayAddress">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Brands Regular" fontSize="12" icon="USB" />
+                    </graphic>
+                </Button>
+                <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
+                <Button fx:id="nextAddress" graphicTextGap="5" text="Get Next Address" defaultButton="true" AnchorPane.rightAnchor="10" onAction="#getNewAddress">
+                    <graphic>
+                        <Glyph fontFamily="FontAwesome" icon="ARROW_DOWN" fontSize="12" />
+                    </graphic>
+                </Button>
+            </HBox>
         </AnchorPane>
     </bottom>
 </BorderPane>

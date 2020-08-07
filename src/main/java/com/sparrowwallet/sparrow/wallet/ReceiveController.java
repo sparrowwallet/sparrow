@@ -6,20 +6,28 @@ import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.control.CopyableTextField;
-import com.sparrowwallet.sparrow.control.ScriptArea;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
+import com.sparrowwallet.sparrow.event.UsbDeviceEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Device;
+import com.sparrowwallet.sparrow.io.Hwi;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
@@ -34,8 +42,10 @@ import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ReceiveController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(ReceiveController.class);
@@ -63,6 +73,9 @@ public class ReceiveController extends WalletFormController implements Initializ
     @FXML
     private CodeArea outputDescriptor;
 
+    @FXML
+    private Button displayAddress;
+
     private NodeEntry currentEntry;
 
     @Override
@@ -73,6 +86,9 @@ public class ReceiveController extends WalletFormController implements Initializ
     @Override
     public void initializeView() {
         initializeScriptField(scriptPubKeyArea);
+
+        displayAddress.managedProperty().bind(displayAddress.visibleProperty());
+        displayAddress.setVisible(false);
     }
 
     public void setNodeEntry(NodeEntry nodeEntry) {
@@ -97,6 +113,8 @@ public class ReceiveController extends WalletFormController implements Initializ
 
         outputDescriptor.clear();
         outputDescriptor.appendText(nodeEntry.getOutputDescriptor());
+
+        updateDisplayAddress(AppController.getDevices());
     }
 
     private void updateLastUsed() {
@@ -113,6 +131,33 @@ public class ReceiveController extends WalletFormController implements Initializ
             lastUsed.setText("Unknown");
             lastUsed.setGraphic(null);
         }
+    }
+
+    private void updateDisplayAddress(List<Device> devices) {
+        //Can only display address for single sig wallets. See https://github.com/bitcoin-core/HWI/issues/224
+        Wallet wallet = getWalletForm().getWallet();
+        if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
+            List<Device> addressDevices = devices.stream().filter(device -> wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint().equals(device.getFingerprint())).collect(Collectors.toList());
+            if(addressDevices.isEmpty()) {
+                addressDevices = devices.stream().filter(device -> device.getNeedsPinSent() || device.getNeedsPassphraseSent()).collect(Collectors.toList());
+            }
+
+            if(!addressDevices.isEmpty()) {
+                if(currentEntry != null) {
+                    displayAddress.setVisible(true);
+                }
+
+                displayAddress.setUserData(addressDevices);
+                return;
+            } else if(currentEntry != null && wallet.getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
+                displayAddress.setVisible(true);
+                displayAddress.setUserData(null);
+                return;
+            }
+        }
+
+        displayAddress.setVisible(false);
+        displayAddress.setUserData(null);
     }
 
     private Image getQrCode(String address) {
@@ -135,6 +180,36 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void getNewAddress(ActionEvent event) {
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
         setNodeEntry(freshEntry);
+    }
+
+    @SuppressWarnings("unchecked")
+    public void displayAddress(ActionEvent event) {
+        Wallet wallet = getWalletForm().getWallet();
+        if(wallet.getPolicyType() == PolicyType.SINGLE && currentEntry != null) {
+            Keystore keystore = wallet.getKeystores().get(0);
+            KeyDerivation fullDerivation = keystore.getKeyDerivation().extend(currentEntry.getNode().getDerivation());
+
+            List<Device> possibleDevices = (List<Device>)displayAddress.getUserData();
+            if(possibleDevices != null && !possibleDevices.isEmpty()) {
+                if(possibleDevices.size() > 1 || possibleDevices.get(0).getNeedsPinSent() || possibleDevices.get(0).getNeedsPassphraseSent()) {
+                    DeviceAddressDialog dlg = new DeviceAddressDialog(possibleDevices.size() == 1 ? List.of(possibleDevices.get(0)) : null, wallet, fullDerivation);
+                    dlg.showAndWait();
+                } else {
+                    Device actualDevice = possibleDevices.get(0);
+                    Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(actualDevice, "", wallet.getScriptType(), fullDerivation.getDerivationPath());
+                    displayAddressService.setOnFailed(failedEvent -> {
+                        Platform.runLater(() -> {
+                            DeviceAddressDialog dlg = new DeviceAddressDialog(null, wallet, fullDerivation);
+                            dlg.showAndWait();
+                        });
+                    });
+                    displayAddressService.start();
+                }
+            } else {
+                DeviceAddressDialog dlg = new DeviceAddressDialog(null, wallet, fullDerivation);
+                dlg.showAndWait();
+            }
+        }
     }
 
     public void clear() {
@@ -188,5 +263,10 @@ public class ReceiveController extends WalletFormController implements Initializ
                 updateLastUsed();
             }
         }
+    }
+
+    @Subscribe
+    public void usbDevicesFound(UsbDeviceEvent event) {
+        updateDisplayAddress(event.getDevices());
     }
 }

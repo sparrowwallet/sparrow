@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -20,9 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -85,6 +85,37 @@ public class Hwi {
             }
         } catch(IOException e) {
             throw new ImportException(e);
+        }
+    }
+
+    public String displayAddress(Device device, String passphrase, ScriptType scriptType, String derivationPath) throws DisplayAddressException {
+        try {
+            if(!List.of(ScriptType.P2PKH, ScriptType.P2SH_P2WPKH, ScriptType.P2WPKH).contains(scriptType)) {
+                throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single sig types supported");
+            }
+
+            String type = null;
+            if(scriptType == ScriptType.P2SH_P2WPKH) {
+                type = "--sh_wpkh";
+            } else if(scriptType == ScriptType.P2WPKH) {
+                type = "--wpkh";
+            }
+
+            String output;
+            if(passphrase != null && device.getModel().equals(WalletModel.TREZOR_1)) {
+                output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
+            } else {
+                output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
+            }
+
+            JsonObject result = JsonParser.parseString(output).getAsJsonObject();
+            if(result.get("address") != null) {
+                return result.get("address").getAsString();
+            } else {
+                throw new DisplayAddressException("Could not retrieve address");
+            }
+        } catch(IOException e) {
+            throw new DisplayAddressException(e);
         }
     }
 
@@ -251,12 +282,16 @@ public class Hwi {
         return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString());
     }
 
-    private List<String> getDeviceCommand(Device device, Command command, String data) throws IOException {
-        return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString(), data);
+    private List<String> getDeviceCommand(Device device, Command command, String... commandData) throws IOException {
+        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
+        elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
+        return elements;
     }
 
-    private List<String> getDeviceCommand(Device device, String passphrase, Command command, String data) throws IOException {
-        return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command.toString(), data);
+    private List<String> getDeviceCommand(Device device, String passphrase, Command command, String... commandData) throws IOException {
+        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command.toString()));
+        elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
+        return elements;
     }
 
     public static class EnumerateService extends Service<List<Device>> {
@@ -337,6 +372,30 @@ public class Hwi {
         }
     }
 
+    public static class DisplayAddressService extends Service<String> {
+        private final Device device;
+        private final String passphrase;
+        private final ScriptType scriptType;
+        private final String derivationPath;
+
+        public DisplayAddressService(Device device, String passphrase, ScriptType scriptType, String derivationPath) {
+            this.device = device;
+            this.passphrase = passphrase;
+            this.scriptType = scriptType;
+            this.derivationPath = derivationPath;
+        }
+
+        @Override
+        protected Task<String> createTask() {
+            return new Task<>() {
+                protected String call() throws DisplayAddressException {
+                    Hwi hwi = new Hwi();
+                    return hwi.displayAddress(device, passphrase, scriptType, derivationPath);
+                }
+            };
+        }
+    }
+
     public static class GetXpubService extends Service<String> {
         private final Device device;
         private final String passphrase;
@@ -406,6 +465,7 @@ public class Hwi {
         ENUMERATE("enumerate", true),
         PROMPT_PIN("promptpin", true),
         SEND_PIN("sendpin", false),
+        DISPLAY_ADDRESS("displayaddress", true),
         GET_XPUB("getxpub", true),
         SIGN_TX("signtx", true);
 

@@ -47,8 +47,6 @@ public class QRDisplayDialog extends Dialog<UR> {
         this.ur = ur;
         this.encoder = new UREncoder(ur, MAX_FRAGMENT_LENGTH, MIN_FRAGMENT_LENGTH, 0);
 
-        EventManager.get().register(this);
-
         final DialogPane dialogPane = getDialogPane();
 
         StackPane stackPane = new StackPane();

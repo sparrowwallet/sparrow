@@ -11,6 +11,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
+import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
@@ -627,15 +628,21 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void signUsbKeystores() {
-        if(headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
-            return;
-        }
-
         if(headersForm.getPsbt().isSigned()) {
             return;
         }
 
-        DeviceSignDialog dlg = new DeviceSignDialog(headersForm.getPsbt());
+        List<String> fingerprints = headersForm.getSigningWallet().getKeystores().stream().map(keystore -> keystore.getKeyDerivation().getMasterFingerprint()).collect(Collectors.toList());
+        List<Device> signingDevices = AppController.getDevices().stream().filter(device -> fingerprints.contains(device.getFingerprint())).collect(Collectors.toList());
+        if(signingDevices.isEmpty() && headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
+            return;
+        }
+
+        if(signingDevices.isEmpty()) {
+            signingDevices = AppController.getDevices().stream().filter(device -> device.getNeedsPinSent() || device.getNeedsPassphraseSent()).collect(Collectors.toList());
+        }
+
+        DeviceSignDialog dlg = new DeviceSignDialog(signingDevices.isEmpty() ? null : signingDevices, headersForm.getPsbt());
         Optional<PSBT> optionalSignedPsbt = dlg.showAndWait();
         if(optionalSignedPsbt.isPresent()) {
             PSBT signedPsbt = optionalSignedPsbt.get();
