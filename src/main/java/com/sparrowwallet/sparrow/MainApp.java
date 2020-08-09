@@ -31,6 +31,7 @@ public class MainApp extends Application {
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
 
+        boolean createNewWallet = false;
         Mode mode = Config.get().getMode();
         if(mode == null) {
             WelcomeDialog welcomeDialog = new WelcomeDialog(getHostServices());
@@ -40,8 +41,9 @@ public class MainApp extends Application {
                 Config.get().setMode(mode);
 
                 if(mode.equals(Mode.ONLINE)) {
-                    PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER);
-                    preferencesDialog.showAndWait();
+                    PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER, true);
+                    Optional<Boolean> optNewWallet = preferencesDialog.showAndWait();
+                    createNewWallet = optNewWallet.isPresent() && optNewWallet.get();
                 }
             }
         }
@@ -63,6 +65,10 @@ public class MainApp extends Application {
         appController.initializeView();
 
         stage.show();
+
+        if(createNewWallet) {
+            appController.newWallet(null);
+        }
 
         List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
         if(recentWalletFiles != null) {

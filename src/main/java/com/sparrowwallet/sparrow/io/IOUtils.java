@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 
 public class IOUtils {
@@ -9,6 +8,19 @@ public class IOUtils {
         try {
             String type = Files.probeContentType(file.toPath());
             if (type == null) {
+                if(file.getName().toLowerCase().endsWith("txn") || file.getName().toLowerCase().endsWith("psbt")) {
+                    return FileType.TEXT;
+                }
+
+                if(file.exists()) {
+                    try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
+                        String line = br.readLine();
+                        if(line.startsWith("01000000") || line.startsWith("cHNid")) {
+                            return FileType.TEXT;
+                        }
+                    }
+                }
+
                 return FileType.BINARY;
             } else if (type.equals("application/json")) {
                 return FileType.JSON;

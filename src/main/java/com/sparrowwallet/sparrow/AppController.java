@@ -146,7 +146,11 @@ public class AppController implements Initializable {
             boolean success = false;
             if(db.hasFiles()) {
                 for(File file : db.getFiles()) {
-                    openTransactionFile(file);
+                    if(isWalletFile(file)) {
+                        openWalletFile(file);
+                    } else {
+                        openTransactionFile(file);
+                    }
                 }
                 success = true;
             }
@@ -180,6 +184,11 @@ public class AppController implements Initializable {
                 boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 if(walletAdded || walletRemoved) {
                     EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
+                }
+
+                if(tabs.getTabs().isEmpty()) {
+                    Stage tabStage = (Stage)tabs.getScene().getWindow();
+                    tabStage.setTitle("Sparrow");
                 }
             }
         });
@@ -581,6 +590,11 @@ public class AppController implements Initializable {
         BitcoinUnit unit = (BitcoinUnit)item.getUserData();
         Config.get().setBitcoinUnit(unit);
         EventManager.get().post(new BitcoinUnitChangedEvent(unit));
+    }
+
+    private boolean isWalletFile(File file) {
+        FileType fileType = IOUtils.getFileType(file);
+        return FileType.JSON.equals(fileType) || FileType.BINARY.equals(fileType);
     }
 
     public void newWallet(ActionEvent event) {

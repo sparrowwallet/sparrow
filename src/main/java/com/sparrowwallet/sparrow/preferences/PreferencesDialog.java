@@ -11,12 +11,16 @@ import org.controlsfx.tools.Borders;
 
 import java.io.IOException;
 
-public class PreferencesDialog extends Dialog<Void> {
+public class PreferencesDialog extends Dialog<Boolean> {
     public PreferencesDialog() {
         this(null);
     }
 
     public PreferencesDialog(PreferenceGroup initialGroup) {
+        this(initialGroup, false);
+    }
+
+    public PreferencesDialog(PreferenceGroup initialGroup, boolean initialSetup) {
         final DialogPane dialogPane = getDialogPane();
 
         try {
@@ -32,8 +36,16 @@ public class PreferencesDialog extends Dialog<Void> {
 
             final ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
             dialogPane.getButtonTypes().addAll(closeButtonType);
+
+            final ButtonType newWalletButtonType = new javafx.scene.control.ButtonType("Create New Wallet", ButtonBar.ButtonData.OK_DONE);
+            if(initialSetup) {
+                dialogPane.getButtonTypes().addAll(newWalletButtonType);
+            }
+
             dialogPane.setPrefWidth(650);
             dialogPane.setPrefHeight(500);
+
+            setResultConverter(dialogButton -> dialogButton == newWalletButtonType ? Boolean.TRUE : null);
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
