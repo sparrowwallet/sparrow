@@ -25,6 +25,7 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
@@ -643,6 +644,10 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         DeviceSignDialog dlg = new DeviceSignDialog(signingDevices.isEmpty() ? null : signingDevices, headersForm.getPsbt());
+        dlg.initModality(Modality.NONE);
+        Stage stage = (Stage)dlg.getDialogPane().getScene().getWindow();
+        stage.setAlwaysOnTop(true);
+
         Optional<PSBT> optionalSignedPsbt = dlg.showAndWait();
         if(optionalSignedPsbt.isPresent()) {
             PSBT signedPsbt = optionalSignedPsbt.get();
