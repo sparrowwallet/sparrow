@@ -40,6 +40,9 @@ public class OutputController extends TransactionFormController implements Initi
     private CopyableLabel to;
 
     @FXML
+    private CopyableLabel change;
+
+    @FXML
     private AddressLabel address;
 
     @FXML
@@ -80,6 +83,12 @@ public class OutputController extends TransactionFormController implements Initi
         } catch(NonStandardScriptException e) {
             //ignore
         }
+
+        change.managedProperty().bind(change.visibleProperty());
+        change.setVisible(false);
+        outputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
+            change.setVisible(signingWallet != null && signingWallet.isWalletOutputScript(txOutput.getScript()));
+        });
 
         spentField.managedProperty().bind(spentField.visibleProperty());
         spentByField.managedProperty().bind(spentByField.visibleProperty());
