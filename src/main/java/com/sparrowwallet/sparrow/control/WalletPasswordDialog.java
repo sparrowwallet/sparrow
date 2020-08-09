@@ -23,14 +23,18 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private final CheckBox backupExisting;
 
     public WalletPasswordDialog(PasswordRequirement requirement) {
+        this(null, requirement);
+    }
+
+    public WalletPasswordDialog(String walletName, PasswordRequirement requirement) {
         this.requirement = requirement;
         this.password = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.passwordConfirm = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.backupExisting = new CheckBox("Backup existing wallet first");
 
         final DialogPane dialogPane = getDialogPane();
-        setTitle("Wallet Password");
-        dialogPane.setHeaderText(requirement.description);
+        setTitle("Wallet Password" + (walletName != null ? " - " + walletName : ""));
+        dialogPane.setHeaderText(walletName != null ? requirement.description.substring(0, requirement.description.length() - 1) + " for " + walletName + ":" : requirement.description);
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(380);
@@ -85,7 +89,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         }
 
         password.setPromptText("Password");
-        password.requestFocus();
+        Platform.runLater(password::requestFocus);
         passwordConfirm.setPromptText("Password Confirmation");
 
         setResultConverter(dialogButton -> dialogButton == okButtonType ? new SecureString(password.getText()) : null);

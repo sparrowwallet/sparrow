@@ -617,7 +617,7 @@ public class AppController implements Initializable {
                 Tab tab = addWalletTab(storage, wallet);
                 tabs.getSelectionModel().select(tab);
             } else if(FileType.BINARY.equals(fileType)) {
-                WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+                WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
                 if(optionalPassword.isEmpty()) {
                     return;
@@ -666,7 +666,7 @@ public class AppController implements Initializable {
             for(Keystore copyKeystore : copy.getKeystores()) {
                 if(copyKeystore.hasSeed()) {
                     if(copyKeystore.getSeed().needsPassphrase()) {
-                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(copyKeystore);
+                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getName(), copyKeystore);
                         Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
                         if(optionalPassphrase.isPresent()) {
                             copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
