@@ -449,7 +449,7 @@ public class HeadersController extends TransactionFormController implements Init
                 blockStatus.setText(confirmations + " Confirmations");
             }
 
-            if(confirmations <= TransactionEntry.BLOCKS_TO_CONFIRM) {
+            if(confirmations <= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
                 ConfirmationProgressIndicator indicator;
                 if(blockStatus.getGraphic() == null) {
                     indicator = new ConfirmationProgressIndicator(confirmations);

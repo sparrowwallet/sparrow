@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -14,6 +15,8 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
 
+import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 public class MainApp extends Application {
@@ -60,6 +63,15 @@ public class MainApp extends Application {
         appController.initializeView();
 
         stage.show();
+
+        List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
+        if(recentWalletFiles != null) {
+            for(File walletFile : recentWalletFiles) {
+                if(walletFile.exists()) {
+                    Platform.runLater(() -> appController.openWalletFile(walletFile));
+                }
+            }
+        }
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.wallet.TransactionEntry;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import javafx.animation.*;
 import javafx.beans.property.*;
 import javafx.geometry.Pos;
@@ -54,7 +54,7 @@ public class ConfirmationProgressIndicator extends StackPane {
                 arcLengthTimeline.getKeyFrames().add(arcLengthFrame);
                 sequence.getChildren().add(arcLengthTimeline);
 
-                if(newValue.intValue() == TransactionEntry.BLOCKS_TO_CONFIRM) {
+                if(newValue.intValue() == BlockTransactionHash.BLOCKS_TO_CONFIRM) {
                     Timeline arcRadiusTimeline = new Timeline();
                     KeyValue arcRadiusXValue = new KeyValue(arc.radiusXProperty(), 0.0);
                     KeyValue arcRadiusYValue = new KeyValue(arc.radiusYProperty(), 0.0);
@@ -98,7 +98,7 @@ public class ConfirmationProgressIndicator extends StackPane {
     }
 
     private static double getDegrees(int confirmations) {
-        int requiredConfirmations = TransactionEntry.BLOCKS_TO_CONFIRM;
+        int requiredConfirmations = BlockTransactionHash.BLOCKS_TO_CONFIRM;
         return ((double)Math.min(confirmations, requiredConfirmations)/ requiredConfirmations) * -360d;
     }
 

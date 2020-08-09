@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -17,9 +18,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TransactionEntry extends Entry implements Comparable<TransactionEntry> {
-    public static final int BLOCKS_TO_CONFIRM = 6;
-    public static final int BLOCKS_TO_FULLY_CONFIRM = 100;
-
     private final Wallet wallet;
     private final BlockTransaction blockTransaction;
 
@@ -63,29 +61,25 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     }
 
     public boolean isConfirming() {
-        return getConfirmations() < BLOCKS_TO_CONFIRM;
+        return getConfirmations() < BlockTransactionHash.BLOCKS_TO_CONFIRM;
     }
 
     public boolean isFullyConfirming() {
-        return getConfirmations() < BLOCKS_TO_FULLY_CONFIRM;
+        return getConfirmations() < BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM;
     }
 
     public int calculateConfirmations() {
-        if(blockTransaction.getHeight() <= 0) {
-            return 0;
-        }
-
-        return wallet.getStoredBlockHeight() - blockTransaction.getHeight() + 1;
+        return blockTransaction.getConfirmations(wallet.getStoredBlockHeight());
     }
 
     public String getConfirmationsDescription() {
         int confirmations = getConfirmations();
         if(confirmations == 0) {
             return "Unconfirmed in mempool";
-        } else if(confirmations < BLOCKS_TO_FULLY_CONFIRM) {
+        } else if(confirmations < BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM) {
             return confirmations + " confirmation" + (confirmations == 1 ? "" : "s");
         } else {
-            return BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
+            return BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
         }
     }
 

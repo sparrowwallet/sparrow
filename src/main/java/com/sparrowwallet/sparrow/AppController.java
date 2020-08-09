@@ -44,6 +44,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
@@ -161,9 +162,6 @@ public class AppController implements Initializable {
             rootStack.getStyleClass().removeAll(DRAG_OVER_CLASS);
         });
 
-        Stage tabStage = (Stage)tabs.getScene().getWindow();
-        tabStage.getScene().getStylesheets().add(AppController.class.getResource("notificationpopup.css").toExternalForm());
-
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
             if(selectedTab != null) {
                 TabData tabData = (TabData)selectedTab.getUserData();
@@ -241,15 +239,6 @@ public class AppController implements Initializable {
         }
 
         openTransactionIdItem.disableProperty().bind(onlineProperty.not());
-
-        List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
-        if(recentWalletFiles != null) {
-            for(File walletFile : recentWalletFiles) {
-                if(walletFile.exists()) {
-                    openWalletFile(walletFile);
-                }
-            }
-        }
     }
 
     private ElectrumServer.ConnectionService createConnectionService() {
@@ -618,7 +607,7 @@ public class AppController implements Initializable {
         }
     }
 
-    private void openWalletFile(File file) {
+    public void openWalletFile(File file) {
         try {
             Storage storage = new Storage(file);
             FileType fileType = IOUtils.getFileType(file);
@@ -959,25 +948,46 @@ public class AppController implements Initializable {
     @Subscribe
     public void newWalletTransactions(NewWalletTransactionsEvent event) {
         if(Config.get().isNotifyNewTransactions()) {
-            String text = "New " + (event.getBlockTransactions().size() > 1 ? "transactions: " : "transaction: ");
+            String text;
+            if(event.getBlockTransactions().size() == 1) {
+                BlockTransaction blockTransaction = event.getBlockTransactions().get(0);
+                if(blockTransaction.getHeight() == 0) {
+                    text = "New mempool transaction: ";
+                } else {
+                    int confirmations = blockTransaction.getConfirmations(getCurrentBlockHeight());
+                    if(confirmations == 1) {
+                        text = "First transaction confirmation: ";
+                    } else if(confirmations <= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+                        text = "Confirming transaction: ";
+                    } else {
+                        text = "Confirmed transaction: ";
+                    }
+                }
 
-            BitcoinUnit unit = Config.get().getBitcoinUnit();
-            if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
-                unit = (event.getTotalValue() >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
-            }
-
-            if(unit == BitcoinUnit.BTC) {
-                text += CoinLabel.getBTCFormat().format((double)event.getTotalValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+                text += event.getValueAsText(event.getTotalValue());
             } else {
-                text += String.format(Locale.ENGLISH, "%,d", event.getTotalValue()) + " sats";
+                if(event.getTotalBlockchainValue() > 0 && event.getTotalMempoolValue() > 0) {
+                    text = "New transactions: " + event.getValueAsText(event.getTotalValue()) + " (" + event.getValueAsText(event.getTotalMempoolValue())  + " in mempool)";
+                } else if(event.getTotalMempoolValue() > 0) {
+                    text = "New mempool transactions: " + event.getValueAsText(event.getTotalMempoolValue());
+                } else {
+                    text = "New transactions: " + event.getValueAsText(event.getTotalValue());
+                }
             }
+
+            Window.getWindows().forEach(window -> {
+                String notificationStyles = AppController.class.getResource("notificationpopup.css").toExternalForm();
+                if(!window.getScene().getStylesheets().contains(notificationStyles)) {
+                    window.getScene().getStylesheets().add(notificationStyles);
+                }
+            });
 
             Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
             Notifications notificationBuilder = Notifications.create()
                     .title("Sparrow - " + event.getWallet().getName())
                     .text(text)
                     .graphic(new ImageView(image))
-                    .hideAfter(Duration.seconds(180))
+                    .hideAfter(Duration.seconds(5))
                     .position(Pos.TOP_RIGHT)
                     .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
                     .onAction(e -> selectTab(event.getWallet()));
