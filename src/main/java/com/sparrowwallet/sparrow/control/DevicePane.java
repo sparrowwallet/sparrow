@@ -399,7 +399,7 @@ public class DevicePane extends TitledDescriptionPane {
             EventManager.get().post(new KeystoreImportEvent(keystore));
         });
         getXpubService.setOnFailed(workerStateEvent -> {
-            setError(getXpubService.getException().getMessage(), null);
+            setError("Could not retrieve xpub", getXpubService.getException().getMessage());
             importButton.setDisable(false);
         });
         setDescription("Importing...");
@@ -414,7 +414,7 @@ public class DevicePane extends TitledDescriptionPane {
             EventManager.get().post(new PSBTSignedEvent(psbt, signedPsbt));
         });
         signPSBTService.setOnFailed(workerStateEvent -> {
-            setError(signPSBTService.getException().getMessage(), null);
+            setError("Signing Error", signPSBTService.getException().getMessage());
             signButton.setDisable(false);
         });
         setDescription("Signing...");
@@ -429,7 +429,7 @@ public class DevicePane extends TitledDescriptionPane {
             EventManager.get().post(new AddressDisplayedEvent(address));
         });
         displayAddressService.setOnFailed(failedEvent -> {
-            setError(displayAddressService.getException().getMessage(), null);
+            setError("Could not display address", displayAddressService.getException().getMessage());
             displayAddressButton.setDisable(false);
         });
         setDescription("Check device for address");

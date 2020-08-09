@@ -20,11 +20,19 @@ public class InputForm extends IndexedTransactionForm {
     }
 
     public TransactionInput getTransactionInput() {
-        return txdata.getTransaction().getInputs().get(getIndex());
+        if(txdata.getTransaction() != null) {
+            return txdata.getTransaction().getInputs().get(getIndex());
+        }
+
+        return null;
     }
 
     public PSBTInput getPsbtInput() {
-        return txdata.getPsbt().getPsbtInputs().get(getIndex());
+        if(txdata.getPsbt() != null) {
+            return txdata.getPsbt().getPsbtInputs().get(getIndex());
+        }
+
+        return null;
     }
 
     public TransactionOutput getReferencedTransactionOutput() {

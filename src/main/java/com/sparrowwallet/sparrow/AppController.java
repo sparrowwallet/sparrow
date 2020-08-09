@@ -168,19 +168,9 @@ public class AppController implements Initializable {
             if(selectedTab != null) {
                 TabData tabData = (TabData)selectedTab.getUserData();
                 if(tabData.getType() == TabData.TabType.TRANSACTION) {
-                    TransactionTabData transactionTabData = (TransactionTabData)tabData;
                     EventManager.get().post(new TransactionTabSelectedEvent(selectedTab));
-                    saveTransaction.setDisable(false);
-                    saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().isFinalized() ? "Transaction..." : "PSBT..."));
-                    exportWallet.setDisable(true);
-                    showTxHex.setDisable(false);
                 } else if(tabData.getType() == TabData.TabType.WALLET) {
-                    WalletTabData walletTabData = (WalletTabData)tabData;
                     EventManager.get().post(new WalletTabSelectedEvent(selectedTab));
-                    saveTransaction.setDisable(true);
-                    saveTransaction.setText("Save Transaction...");
-                    exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
-                    showTxHex.setDisable(true);
                 }
             }
         });
@@ -492,6 +482,12 @@ public class AppController implements Initializable {
 
             String fileName = selectedTab.getText();
             if(fileName != null && !fileName.isEmpty()) {
+                if(transactionTabData.getPsbt() != null && !fileName.endsWith(".psbt")) {
+                    fileName += ".psbt";
+                } else if(!fileName.endsWith(".txn")) {
+                    fileName += ".txn";
+                }
+
                 if(saveTx && fileName.endsWith(".psbt")) {
                     fileName = fileName.replace(".psbt", "") + ".txn";
                 }
@@ -919,12 +915,39 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void tabSelected(TabSelectedEvent event) {
-        Tab selectedTab = event.getTab();
-
-        String tabName = selectedTab.getText();
+        String tabName = event.getTabName();
         if(tabs.getScene() != null) {
             Stage tabStage = (Stage)tabs.getScene().getWindow();
             tabStage.setTitle("Sparrow - " + tabName);
+        }
+
+        if(event instanceof TransactionTabSelectedEvent) {
+            TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
+            TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
+            saveTransaction.setDisable(false);
+            saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().isFinalized() ? "Transaction..." : "PSBT..."));
+            exportWallet.setDisable(true);
+            showTxHex.setDisable(false);
+        } else if(event instanceof WalletTabSelectedEvent) {
+            WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
+            WalletTabData walletTabData = walletTabEvent.getWalletTabData();
+            saveTransaction.setDisable(true);
+            saveTransaction.setText("Save Transaction...");
+            exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
+            showTxHex.setDisable(true);
+        }
+    }
+
+    @Subscribe
+    public void psbtFinalizedEvent(PSBTFinalizedEvent event) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData) tab.getUserData();
+            if(tabData instanceof TransactionTabData) {
+                TransactionTabData transactionTabData = (TransactionTabData)tabData;
+                if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), event.getPsbt().getTransaction().bitcoinSerialize())) {
+                    saveTransaction.setText("Save Transaction...");
+                }
+            }
         }
     }
 
@@ -1113,6 +1136,8 @@ public class AppController implements Initializable {
                 if(!deviceEnumerateService.isRunning()) {
                     deviceEnumerateService.start();
                 }
+
+                break;
             }
         }
 

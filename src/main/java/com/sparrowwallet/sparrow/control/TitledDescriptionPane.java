@@ -12,6 +12,9 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.util.Arrays;
+import java.util.OptionalDouble;
+
 public class TitledDescriptionPane extends TitledPane {
     private Label descriptionLabel;
     protected Hyperlink showHideLink;
@@ -123,6 +126,13 @@ public class TitledDescriptionPane extends TitledPane {
 
         double width = TextUtils.computeTextWidth(details.getFont(), message, 0.0D);
         double numLines = Math.max(1, width / 400);
+
+        //Handle long words like txids
+        OptionalDouble maxWordLength = Arrays.stream(message.split(" ")).mapToDouble(word -> TextUtils.computeTextWidth(details.getFont(), message, 0.0D)).max();
+        if(maxWordLength.isPresent() && maxWordLength.getAsDouble() > 300.0) {
+            numLines += 1.0;
+        }
+
         double height = Math.max(60, numLines * 40);
         contentBox.setPrefHeight(height);
 
