@@ -14,7 +14,7 @@ import java.util.List;
 public class Config {
     private static final Logger log = LoggerFactory.getLogger(Config.class);
 
-    public static final String CONFIG_FILENAME = ".config";
+    public static final String CONFIG_FILENAME = "config";
 
     private Mode mode;
     private BitcoinUnit bitcoinUnit;

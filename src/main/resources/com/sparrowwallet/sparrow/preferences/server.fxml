@@ -33,7 +33,7 @@
                 <UnlabeledToggleSwitch fx:id="useSsl"/>
             </Field>
             <Field text="Certificate:" styleClass="label-button">
-                <TextField fx:id="certificate" editable="false" promptText="Optional server certificate (.crt)"/>
+                <TextField fx:id="certificate" promptText="Optional server certificate (.crt)"/>
                 <Button fx:id="certificateSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />

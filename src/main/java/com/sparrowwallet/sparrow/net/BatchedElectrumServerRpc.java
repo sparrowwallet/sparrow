@@ -30,7 +30,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", "Sparrow").param("protocol_version", supportedVersions).execute();
+            return client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", clientName).param("protocol_version", supportedVersions).execute();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException("Error getting server version", e);
         }
@@ -190,7 +190,11 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             batchRequest.add(targetBlock, "blockchain.estimatefee", targetBlock);
         }
 
-        return batchRequest.execute();
+        try {
+            return batchRequest.execute();
+        } catch(JsonRpcBatchException e) {
+            throw new ElectrumServerRpcException("Error getting fee estimates", e);
+        }
     }
 
     @Override

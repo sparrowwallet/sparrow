@@ -14,11 +14,9 @@ import org.controlsfx.control.ToggleSwitch;
 
 public class WelcomeDialog extends Dialog<Mode> {
     private static final String[] ELECTRUM_SERVERS = new String[]{
-            "ElectrumX", "https://github.com/spesmilo/electrumx",
+            "ElectrumX (Recommended)", "https://github.com/spesmilo/electrumx",
             "electrs", "https://github.com/romanz/electrs",
-            "esplora-electrs", "https://github.com/Blockstream/electrs",
-            "Electrum Personal Server", "https://github.com/chris-belcher/electrum-personal-server",
-            "Bitcoin Wallet Tracker", "https://github.com/shesek/bwt"};
+            "esplora-electrs", "https://github.com/Blockstream/electrs"};
 
     private final HostServices hostServices;
 
@@ -31,7 +29,7 @@ public class WelcomeDialog extends Dialog<Mode> {
         dialogPane.setHeaderText("Welcome to Sparrow!");
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         dialogPane.setPrefWidth(600);
-        dialogPane.setPrefHeight(500);
+        dialogPane.setPrefHeight(450);
 
         Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
         if (!image.isError()) {

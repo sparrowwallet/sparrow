@@ -125,6 +125,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         });
 
+        testConnection.setDisable(ElectrumServer.isConnected());
         testConnection.setOnAction(event -> {
             testResults.setText("Connecting to " + config.getElectrumServer() + "...");
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
@@ -199,6 +200,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
         testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, Color.rgb(80, 161, 79)));
         if(serverVersion != null) {
             testResults.setText("Connected to " + serverVersion.get(0) + " on protocol version " + serverVersion.get(1));
+            if(ElectrumServer.supportsBatching(serverVersion)) {
+                testResults.setText(testResults.getText() + "\nBatched RPC enabled.");
+            }
         }
         if(serverBanner != null) {
             testResults.setText(testResults.getText() + "\nServer Banner: " + serverBanner);

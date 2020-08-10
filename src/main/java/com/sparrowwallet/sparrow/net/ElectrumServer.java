@@ -31,7 +31,7 @@ public class ElectrumServer {
 
     private static final Map<String, String> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
-    private ElectrumServerRpc electrumServerRpc = new BatchedElectrumServerRpc();
+    private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static synchronized Transport getTransport() throws ServerException {
         if(transport == null) {
@@ -88,7 +88,6 @@ public class ElectrumServer {
 
     public List<String> getServerVersion() throws ServerException {
         return electrumServerRpc.getServerVersion(getTransport(), "Sparrow", SUPPORTED_VERSIONS);
-        //return client.createRequest().returnAsList(String.class).method("server.version").id(1).params("Sparrow", "1.4").execute();
     }
 
     public String getServerBanner() throws ServerException {
@@ -480,7 +479,6 @@ public class ElectrumServer {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Map<Sha256Hash, BlockTransaction> getReferencedTransactions(Set<Sha256Hash> references) throws ServerException {
         Set<String> txids = new LinkedHashSet<>(references.size());
         for(Sha256Hash reference : references) {
@@ -500,14 +498,18 @@ public class ElectrumServer {
     }
 
     public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks) throws ServerException {
-        Map<Integer, Double> targetBlocksFeeRatesBtcKb = electrumServerRpc.getFeeEstimates(getTransport(), targetBlocks);
+        try {
+            Map<Integer, Double> targetBlocksFeeRatesBtcKb = electrumServerRpc.getFeeEstimates(getTransport(), targetBlocks);
 
-        Map<Integer, Double> targetBlocksFeeRatesSats = new TreeMap<>();
-        for(Integer target : targetBlocksFeeRatesBtcKb.keySet()) {
-            targetBlocksFeeRatesSats.put(target, targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN / 1024);
+            Map<Integer, Double> targetBlocksFeeRatesSats = new TreeMap<>();
+            for(Integer target : targetBlocksFeeRatesBtcKb.keySet()) {
+                targetBlocksFeeRatesSats.put(target, targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN / 1024);
+            }
+
+            return targetBlocksFeeRatesSats;
+        } catch(ElectrumServerRpcException e) {
+            throw new ServerException(e.getMessage(), e);
         }
-
-        return targetBlocksFeeRatesSats;
     }
 
     public Sha256Hash broadcastTransaction(Transaction transaction) throws ServerException {
@@ -523,7 +525,7 @@ public class ElectrumServer {
 
             return receivedTxid;
         } catch(ElectrumServerRpcException | IllegalStateException e) {
-            throw new ServerException(e.getMessage());
+            throw new ServerException(e.getMessage(), e);
         }
     }
 
@@ -541,6 +543,10 @@ public class ElectrumServer {
 
     static Map<String, String> getSubscribedScriptHashes() {
         return subscribedScriptHashes;
+    }
+
+    public static boolean supportsBatching(List<String> serverVersion) {
+        return serverVersion.size() > 0 && serverVersion.get(0).toLowerCase().contains("electrumx");
     }
 
     public static class ServerVersionService extends Service<List<String>> {
@@ -599,6 +605,14 @@ public class ElectrumServer {
 
                         List<String> serverVersion = electrumServer.getServerVersion();
                         firstCall = false;
+
+                        //If electrumx is detected, we can upgrade to batched RPC. Electrs/EPS do not support batching.
+                        if(supportsBatching(serverVersion)) {
+                            log.debug("Upgrading to batched JSON-RPC");
+                            electrumServerRpc = new BatchedElectrumServerRpc();
+                        } else {
+                            electrumServerRpc = new SimpleElectrumServerRpc();
+                        }
 
                         BlockHeaderTip tip;
                         if(subscribe) {
