@@ -464,20 +464,28 @@ public class HeadersController extends TransactionFormController implements Init
         blockHeightField.managedProperty().bind(blockHeightField.visibleProperty());
         blockTimestampField.managedProperty().bind(blockTimestampField.visibleProperty());
         blockHashField.managedProperty().bind(blockHashField.visibleProperty());
-        blockTimestampField.visibleProperty().bind(blockHeightField.visibleProperty());
-        blockHashField.visibleProperty().bind(blockHeightField.visibleProperty());
 
-        if(blockTransaction.getBlockHash() != null) {
+        if(blockTransaction.getHeight() > 0) {
             blockHeightField.setVisible(true);
             blockHeight.setText(Integer.toString(blockTransaction.getHeight()));
+        } else {
+            blockHeightField.setVisible(false);
+        }
 
+        if(blockTransaction.getDate() != null) {
+            blockTimestampField.setVisible(true);
             SimpleDateFormat dateFormat = new SimpleDateFormat(BLOCK_TIMESTAMP_DATE_FORMAT);
             blockTimestamp.setText(dateFormat.format(blockTransaction.getDate()));
+        } else {
+            blockTimestampField.setVisible(false);
+        }
 
+        if(blockTransaction.getBlockHash() != null) {
+            blockHashField.setVisible(true);
             blockHash.setText(blockTransaction.getBlockHash().toString());
             blockHash.setContextMenu(new BlockHeightContextMenu(blockTransaction.getBlockHash()));
         } else {
-            blockHeightField.setVisible(false);
+            blockHashField.setVisible(false);
         }
     }
 

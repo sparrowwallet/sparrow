@@ -111,6 +111,7 @@ public class ElectrumServer {
 
     public List<String> getServerVersion() throws ServerException {
         JsonRpcClient client = new JsonRpcClient(getTransport());
+        //return client.createRequest().returnAsList(String.class).method("server.version").id(1).params("Sparrow", "1.4").execute();
         return client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", "Sparrow").param("protocol_version", SUPPORTED_VERSIONS).execute();
     }
 
