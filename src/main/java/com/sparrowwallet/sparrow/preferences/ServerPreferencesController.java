@@ -6,7 +6,8 @@ import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.Protocol;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.concurrent.WorkerStateEvent;
@@ -154,10 +155,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         String electrumServer = config.getElectrumServer();
         if(electrumServer != null) {
-            ElectrumServer.Protocol protocol = ElectrumServer.Protocol.getProtocol(electrumServer);
+            Protocol protocol = Protocol.getProtocol(electrumServer);
 
             if(protocol != null) {
-                boolean ssl = protocol.equals(ElectrumServer.Protocol.SSL);
+                boolean ssl = protocol.equals(Protocol.SSL);
                 useSsl.setSelected(ssl);
                 certificate.setDisable(!ssl);
                 certificateSelect.setDisable(!ssl);
@@ -270,8 +271,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         };
     }
 
-    private ElectrumServer.Protocol getProtocol() {
-        return (useSsl.isSelected() ? ElectrumServer.Protocol.SSL : ElectrumServer.Protocol.TCP);
+    private Protocol getProtocol() {
+        return (useSsl.isSelected() ? Protocol.SSL : Protocol.TCP);
     }
 
     private String getHost(String text) {

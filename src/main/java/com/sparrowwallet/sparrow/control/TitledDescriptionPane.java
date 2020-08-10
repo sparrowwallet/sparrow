@@ -140,13 +140,17 @@ public class TitledDescriptionPane extends TitledPane {
     }
 
     private void removeArrow() {
+        removeArrow(0);
+    }
+
+    private void removeArrow(int count) {
         Platform.runLater(() -> {
             Node arrow = this.lookup(".arrow");
             if (arrow != null) {
                 arrow.setVisible(false);
                 arrow.setManaged(false);
-            } else {
-                removeArrow();
+            } else if(count < 20) {
+                removeArrow(count+1);
             }
         });
     }

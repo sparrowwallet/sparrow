@@ -14,12 +14,11 @@ import com.sparrowwallet.sparrow.control.ScriptArea;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
-import com.sparrowwallet.sparrow.io.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
-import org.fxmisc.richtext.CodeArea;
 import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
 

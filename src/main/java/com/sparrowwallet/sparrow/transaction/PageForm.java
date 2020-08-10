@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
-import com.sparrowwallet.sparrow.io.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.scene.Node;
 
 import java.io.IOException;

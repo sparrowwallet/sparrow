@@ -3,7 +3,7 @@ package com.sparrowwallet.sparrow.event;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
-import com.sparrowwallet.sparrow.io.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 
 import java.util.List;
 

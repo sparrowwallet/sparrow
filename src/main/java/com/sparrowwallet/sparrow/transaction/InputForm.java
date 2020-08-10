@@ -4,7 +4,7 @@ import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.sparrow.io.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 

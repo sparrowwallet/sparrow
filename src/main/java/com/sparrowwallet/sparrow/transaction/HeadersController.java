@@ -12,9 +12,8 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Device;
-import com.sparrowwallet.sparrow.io.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -647,9 +646,7 @@ public class HeadersController extends TransactionFormController implements Init
             return;
         }
 
-        if(signingDevices.isEmpty()) {
-            signingDevices = AppController.getDevices().stream().filter(device -> device.getNeedsPinSent() || device.getNeedsPassphraseSent()).collect(Collectors.toList());
-        }
+        signingDevices.addAll(AppController.getDevices().stream().filter(device -> device.getNeedsPinSent() || device.getNeedsPassphraseSent()).collect(Collectors.toList()));
 
         DeviceSignDialog dlg = new DeviceSignDialog(signingDevices.isEmpty() ? null : signingDevices, headersForm.getPsbt());
         dlg.initModality(Modality.NONE);

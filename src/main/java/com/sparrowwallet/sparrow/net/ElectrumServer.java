@@ -1,47 +1,27 @@
-package com.sparrowwallet.sparrow.io;
+package com.sparrowwallet.sparrow.net;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.github.arteam.simplejsonrpc.client.*;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
-import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
-import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
-import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
-import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.AppController;
-import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.event.NewBlockEvent;
-import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
+import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.ServerException;
 import com.sparrowwallet.sparrow.wallet.SendController;
-import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.SocketFactory;
-import javax.net.ssl.*;
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.Socket;
-import java.security.*;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class ElectrumServer {
@@ -630,283 +610,8 @@ public class ElectrumServer {
         return Utils.bytesToHex(reversed);
     }
 
-    private static class ScriptHashTx {
-        public static final ScriptHashTx ERROR_TX = new ScriptHashTx() {
-            @Override
-            public BlockTransactionHash getBlockchainTransactionHash() {
-                return UNFETCHABLE_BLOCK_TRANSACTION;
-            }
-        };
-
-        public int height;
-        public String tx_hash;
-        public long fee;
-
-        public BlockTransactionHash getBlockchainTransactionHash() {
-            Sha256Hash hash = Sha256Hash.wrap(tx_hash);
-            return new BlockTransaction(hash, height, null, fee, null);
-        }
-
-        @Override
-        public String toString() {
-            return "ScriptHashTx{height=" + height + ", tx_hash='" + tx_hash + '\'' + ", fee=" + fee + '}';
-        }
-    }
-
-    private static class BlockHeaderTip {
-        public int height;
-        public String hex;
-
-        public BlockHeader getBlockHeader() {
-            if(hex == null) {
-                return null;
-            }
-
-            byte[] blockHeaderBytes = Utils.hexToBytes(hex);
-            return new BlockHeader(blockHeaderBytes);
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown=true)
-    private static class VerboseTransaction {
-        public String blockhash;
-        public long blocktime;
-        public int confirmations;
-        public String hash;
-        public String hex;
-        public int locktime;
-        public long size;
-        public String txid;
-        public int version;
-
-        public int getHeight() {
-            Integer currentHeight = AppController.getCurrentBlockHeight();
-            if(currentHeight != null) {
-                return currentHeight - confirmations + 1;
-            }
-
-            return -1;
-        }
-
-        public Date getDate() {
-            return new Date(blocktime * 1000);
-        }
-
-        public BlockTransaction getBlockTransaction() {
-            return new BlockTransaction(Sha256Hash.wrap(txid), getHeight(), getDate(), 0L, new Transaction(Utils.hexToBytes(hex)), blockhash == null ? null : Sha256Hash.wrap(blockhash));
-        }
-    }
-
-    @JsonRpcService
-    public static class SubscriptionService {
-        @JsonRpcMethod("blockchain.headers.subscribe")
-        public void newBlockHeaderTip(@JsonRpcParam("header") final BlockHeaderTip header) {
-            Platform.runLater(() -> EventManager.get().post(new NewBlockEvent(header.height, header.getBlockHeader())));
-        }
-
-        @JsonRpcMethod("blockchain.scripthash.subscribe")
-        public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcParam("status") final String status) {
-            String oldStatus = subscribedScriptHashes.put(scriptHash, status);
-            if(Objects.equals(oldStatus, status)) {
-                log.warn("Received script hash status update, but status has not changed");
-            }
-
-            Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash)));
-        }
-    }
-
-    public static class TcpTransport implements Transport, Closeable {
-        public static final int DEFAULT_PORT = 50001;
-
-        protected final HostAndPort server;
-        protected final SocketFactory socketFactory;
-
-        private Socket socket;
-
-        private String response;
-
-        private final ReentrantLock clientRequestLock = new ReentrantLock();
-        private boolean running = false;
-        private boolean reading = true;
-
-        private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
-        private final SubscriptionService subscriptionService = new SubscriptionService();
-
-        public TcpTransport(HostAndPort server) {
-            this.server = server;
-            this.socketFactory = SocketFactory.getDefault();
-        }
-
-        @Override
-        public @NotNull String pass(@NotNull String request) throws IOException {
-            clientRequestLock.lock();
-            try {
-                writeRequest(request);
-                return readResponse();
-            } finally {
-                clientRequestLock.unlock();
-            }
-        }
-
-        private void writeRequest(String request) throws IOException {
-            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
-            out.println(request);
-            out.flush();
-        }
-
-        private synchronized String readResponse() {
-            while(reading) {
-                try {
-                    wait();
-                } catch (InterruptedException e) {
-                    //Restore interrupt status and continue
-                    Thread.currentThread().interrupt();
-                }
-            }
-
-            reading = true;
-
-            notifyAll();
-            return response;
-        }
-
-        public synchronized void readInputLoop() throws ServerException {
-            while(running) {
-                try {
-                    String received = readInputStream();
-                    if(received.contains("method")) {
-                        //Handle subscription notification
-                        jsonRpcServer.handle(received, subscriptionService);
-                    } else {
-                        //Handle client's response
-                        response = received;
-                        reading = false;
-                        notifyAll();
-                        wait();
-                    }
-                } catch(InterruptedException e) {
-                    //Restore interrupt status and continue
-                    Thread.currentThread().interrupt();
-                } catch(IOException e) {
-                    if(running) {
-                        throw new ServerException(e);
-                    }
-                }
-            }
-        }
-
-        protected String readInputStream() throws IOException {
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            String response = in.readLine();
-
-            if(response == null) {
-                throw new IOException("Could not connect to server at " + Config.get().getElectrumServer());
-            }
-
-            return response;
-        }
-
-        public void connect() throws ServerException {
-            try {
-                socket = createSocket();
-                running = true;
-            } catch (IOException e) {
-                throw new ServerException(e);
-            }
-        }
-
-        public boolean isConnected() {
-            return socket != null && running;
-        }
-
-        protected Socket createSocket() throws IOException {
-            return socketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
-        }
-
-        @Override
-        public void close() throws IOException {
-            if(socket != null) {
-                running = false;
-                socket.close();
-            }
-        }
-    }
-
-    public static class TcpOverTlsTransport extends TcpTransport {
-        public static final int DEFAULT_PORT = 50002;
-
-        protected final SSLSocketFactory sslSocketFactory;
-
-        public TcpOverTlsTransport(HostAndPort server) throws NoSuchAlgorithmException, KeyManagementException {
-            super(server);
-
-            TrustManager[] trustAllCerts = new TrustManager[]{
-                new X509TrustManager() {
-                    public X509Certificate[] getAcceptedIssuers() {
-                        return new X509Certificate[0];
-                    }
-                    public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                    public void checkServerTrusted(X509Certificate[] certs, String authType) {}
-                }
-            };
-
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, new SecureRandom());
-
-            this.sslSocketFactory = sslContext.getSocketFactory();
-        }
-
-        public TcpOverTlsTransport(HostAndPort server, File crtFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-            super(server);
-
-            Certificate certificate = CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(crtFile));
-
-            KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-            keyStore.load(null, null);
-            keyStore.setCertificateEntry("electrumx", certificate);
-
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-            trustManagerFactory.init(keyStore);
-
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
-
-            sslSocketFactory = sslContext.getSocketFactory();
-        }
-
-        protected Socket createSocket() throws IOException {
-            SSLSocket sslSocket = (SSLSocket)sslSocketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
-            sslSocket.startHandshake();
-
-            return sslSocket;
-        }
-    }
-
-    public static class ProxyTcpOverTlsTransport extends TcpOverTlsTransport {
-        public static final int DEFAULT_PROXY_PORT = 1080;
-
-        private final HostAndPort proxy;
-
-        public ProxyTcpOverTlsTransport(HostAndPort server, HostAndPort proxy) throws KeyManagementException, NoSuchAlgorithmException {
-            super(server);
-            this.proxy = proxy;
-        }
-
-        public ProxyTcpOverTlsTransport(HostAndPort server, File crtFile, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-            super(server, crtFile);
-            this.proxy = proxy;
-        }
-
-        @Override
-        protected Socket createSocket() throws IOException {
-            InetSocketAddress proxyAddr = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT));
-            Socket underlying = new Socket(new Proxy(Proxy.Type.SOCKS, proxyAddr));
-            underlying.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
-            SSLSocket sslSocket = (SSLSocket)sslSocketFactory.createSocket(underlying, proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT), true);
-            sslSocket.startHandshake();
-
-            return sslSocket;
-        }
+    static Map<String, String> getSubscribedScriptHashes() {
+        return subscribedScriptHashes;
     }
 
     public static class ServerVersionService extends Service<List<String>> {
@@ -1178,90 +883,6 @@ public class ElectrumServer {
                     return electrumServer.broadcastTransaction(transaction);
                 }
             };
-        }
-    }
-
-    public enum Protocol {
-        TCP {
-            @Override
-            public Transport getTransport(HostAndPort server) {
-                return new TcpTransport(server);
-            }
-
-            @Override
-            public Transport getTransport(HostAndPort server, File serverCert) {
-                return new TcpTransport(server);
-            }
-
-            @Override
-            public Transport getTransport(HostAndPort server, HostAndPort proxy) {
-                throw new UnsupportedOperationException("TCP protocol does not support proxying");
-            }
-
-            @Override
-            public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
-                throw new UnsupportedOperationException("TCP protocol does not support proxying");
-            }
-        },
-        SSL{
-            @Override
-            public Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException {
-                return new TcpOverTlsTransport(server);
-            }
-
-            @Override
-            public Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-                return new TcpOverTlsTransport(server, serverCert);
-            }
-
-            @Override
-            public Transport getTransport(HostAndPort server, HostAndPort proxy) throws NoSuchAlgorithmException, KeyManagementException {
-                return new ProxyTcpOverTlsTransport(server, proxy);
-            }
-
-            @Override
-            public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
-                return new ProxyTcpOverTlsTransport(server, serverCert, proxy);
-            }
-        };
-
-        public abstract Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException;
-
-        public abstract Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
-
-        public abstract Transport getTransport(HostAndPort server, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
-
-        public abstract Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
-
-        public HostAndPort getServerHostAndPort(String url) {
-            return HostAndPort.fromString(url.substring(this.toUrlString().length()));
-        }
-
-        public String toUrlString() {
-            return toString().toLowerCase() + "://";
-        }
-
-        public String toUrlString(String host) {
-            return toUrlString(HostAndPort.fromHost(host));
-        }
-
-        public String toUrlString(String host, int port) {
-            return toUrlString(HostAndPort.fromParts(host, port));
-        }
-
-        public String toUrlString(HostAndPort hostAndPort) {
-            return toUrlString() + hostAndPort.toString();
-        }
-
-        public static Protocol getProtocol(String url) {
-            if(url.startsWith("tcp://")) {
-                return TCP;
-            }
-            if(url.startsWith("ssl://")) {
-                return SSL;
-            }
-
-            return null;
         }
     }
 }
