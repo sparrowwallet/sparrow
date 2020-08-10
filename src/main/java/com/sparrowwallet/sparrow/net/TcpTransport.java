@@ -4,7 +4,6 @@ import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.ServerException;
 import org.jetbrains.annotations.NotNull;
 
 import javax.net.SocketFactory;

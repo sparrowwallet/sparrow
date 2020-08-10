@@ -1,9 +1,6 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.github.arteam.simplejsonrpc.client.*;
-import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
-import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
-import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.github.arteam.simplejsonrpc.client.Transport;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
@@ -12,7 +9,6 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.ServerException;
 import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
@@ -34,6 +30,8 @@ public class ElectrumServer {
     private static Transport transport;
 
     private static final Map<String, String> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
+
+    private ElectrumServerRpc electrumServerRpc = new BatchedElectrumServerRpc();
 
     private static synchronized Transport getTransport() throws ServerException {
         if(transport == null) {
@@ -85,24 +83,20 @@ public class ElectrumServer {
     }
 
     public void ping() throws ServerException {
-        JsonRpcClient client = new JsonRpcClient(getTransport());
-        client.createRequest().method("server.ping").id(1).executeNullable();
+        electrumServerRpc.ping(getTransport());
     }
 
     public List<String> getServerVersion() throws ServerException {
-        JsonRpcClient client = new JsonRpcClient(getTransport());
+        return electrumServerRpc.getServerVersion(getTransport(), "Sparrow", SUPPORTED_VERSIONS);
         //return client.createRequest().returnAsList(String.class).method("server.version").id(1).params("Sparrow", "1.4").execute();
-        return client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", "Sparrow").param("protocol_version", SUPPORTED_VERSIONS).execute();
     }
 
     public String getServerBanner() throws ServerException {
-        JsonRpcClient client = new JsonRpcClient(getTransport());
-        return client.createRequest().returnAs(String.class).method("server.banner").id(1).execute();
+        return electrumServerRpc.getServerBanner(getTransport());
     }
 
     public BlockHeaderTip subscribeBlockHeaders() throws ServerException {
-        JsonRpcClient client = new JsonRpcClient(getTransport());
-        return client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(1).execute();
+        return electrumServerRpc.subscribeBlockHeaders(getTransport());
     }
 
     public static synchronized boolean isConnected() {
@@ -169,22 +163,15 @@ public class ElectrumServer {
 
     public void getReferences(Wallet wallet, String method, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
         try {
-            JsonRpcClient client = new JsonRpcClient(getTransport());
-            BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
-
+            Map<String, String> pathScriptHashes = new LinkedHashMap<>(nodes.size());
             for(WalletNode node : nodes) {
                 if(node.getIndex() >= startIndex) {
-                    batchRequest.add(node.getDerivationPath(), method, getScriptHash(wallet, node));
+                    pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
                 }
             }
 
-            Map<String, ScriptHashTx[]> result;
-            try {
-                result = batchRequest.execute();
-            } catch (JsonRpcBatchException e) {
-                //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed.
-                throw new IllegalStateException("Failed to retrieve references for paths: " + e.getErrors().keySet());
-            }
+            //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed if that's the case.
+            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), pathScriptHashes, true);
 
             for(String path : result.keySet()) {
                 ScriptHashTx[] txes = result.get(path);
@@ -214,8 +201,8 @@ public class ElectrumServer {
                     }
                 }
             }
-        } catch (IllegalStateException e) {
-            throw new ServerException(e.getCause());
+        } catch (ElectrumServerRpcException e) {
+            throw new ServerException(e.getMessage(), e.getCause());
         } catch (Exception e) {
             throw new ServerException(e);
         }
@@ -223,30 +210,22 @@ public class ElectrumServer {
 
     public void subscribeWalletNodes(Wallet wallet, Collection<WalletNode> nodes, int startIndex) throws ServerException {
         try {
-            JsonRpcClient client = new JsonRpcClient(getTransport());
-            BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
-
             Set<String> scriptHashes = new HashSet<>();
+            Map<String, String> pathScriptHashes = new LinkedHashMap<>();
             for(WalletNode node : nodes) {
                 if(node.getIndex() >= startIndex) {
                     String scriptHash = getScriptHash(wallet, node);
                     if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
-                        batchRequest.add(node.getDerivationPath(), "blockchain.scripthash.subscribe", scriptHash);
+                        pathScriptHashes.put(node.getDerivationPath(), scriptHash);
                     }
                 }
             }
 
-            if(scriptHashes.isEmpty()) {
+            if(pathScriptHashes.isEmpty()) {
                 return;
             }
 
-            Map<String, String> result;
-            try {
-                result = batchRequest.execute();
-            } catch(JsonRpcBatchException e) {
-                //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
-                throw new IllegalStateException("Failed to subscribe for updates for paths: " + e.getErrors().keySet());
-            }
+            Map<String, String> result = electrumServerRpc.subscribeScriptHashes(getTransport(), pathScriptHashes);
 
             for(String path : result.keySet()) {
                 String status = result.get(path);
@@ -257,40 +236,29 @@ public class ElectrumServer {
                     subscribedScriptHashes.put(getScriptHash(wallet, node), status);
                 }
             }
-        } catch (IllegalStateException e) {
-            throw new ServerException(e.getCause());
+        } catch (ElectrumServerRpcException e) {
+            throw new ServerException(e.getMessage(), e.getCause());
         } catch (Exception e) {
             throw new ServerException(e);
         }
     }
 
-    @SuppressWarnings("unchecked")
     public List<Set<BlockTransactionHash>> getOutputTransactionReferences(Transaction transaction, int indexStart, int indexEnd) throws ServerException {
         try {
-            JsonRpcClient client = new JsonRpcClient(getTransport());
-            BatchRequestBuilder<Integer, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(ScriptHashTx[].class);
+            Map<String, String> pathScriptHashes = new LinkedHashMap<>();
             for(int i = indexStart; i < transaction.getOutputs().size() && i < indexEnd; i++) {
                 TransactionOutput output = transaction.getOutputs().get(i);
-                batchRequest.add(i, "blockchain.scripthash.get_history", getScriptHash(output));
+                pathScriptHashes.put(Integer.toString(i), getScriptHash(output));
             }
 
-            Map<Integer, ScriptHashTx[]> result;
-            try {
-                result = batchRequest.execute();
-            } catch (JsonRpcBatchException e) {
-                result = (Map<Integer, ScriptHashTx[]>)e.getSuccesses();
-                for(Object index : e.getErrors().keySet()) {
-                    Integer i = (Integer)index;
-                    result.put(i, new ScriptHashTx[] {ScriptHashTx.ERROR_TX});
-                }
-            }
+            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), pathScriptHashes, false);
 
             List<Set<BlockTransactionHash>> blockTransactionHashes = new ArrayList<>(transaction.getOutputs().size());
             for(int i = 0; i < transaction.getOutputs().size(); i++) {
                 blockTransactionHashes.add(null);
             }
 
-            for(Integer index : result.keySet()) {
+            for(String index : result.keySet()) {
                 ScriptHashTx[] txes = result.get(index);
 
                 int txBlockHeight = 0;
@@ -308,7 +276,7 @@ public class ElectrumServer {
                         .filter(ref -> !ref.getHash().equals(transaction.getTxId()) && ref.getHeight() >= minBlockHeight)
                         .collect(Collectors.toCollection(TreeSet::new));
 
-                blockTransactionHashes.set(index, references);
+                blockTransactionHashes.set(Integer.parseInt(index), references);
             }
 
             return blockTransactionHashes;
@@ -336,7 +304,6 @@ public class ElectrumServer {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Map<Integer, BlockHeader> getBlockHeaders(Set<BlockTransactionHash> references) throws ServerException {
         try {
             Set<Integer> blockHeights = new TreeSet<>();
@@ -350,18 +317,7 @@ public class ElectrumServer {
                 return Collections.emptyMap();
             }
 
-            JsonRpcClient client = new JsonRpcClient(getTransport());
-            BatchRequestBuilder<Integer, String> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(String.class);
-            for(Integer height : blockHeights) {
-                batchRequest.add(height, "blockchain.block.header", height);
-            }
-
-            Map<Integer, String> result;
-            try {
-                result = batchRequest.execute();
-            } catch (JsonRpcBatchException e) {
-                result = (Map<Integer, String>)e.getSuccesses();
-            }
+            Map<Integer, String> result = electrumServerRpc.getBlockHeaders(getTransport(), blockHeights);
 
             Map<Integer, BlockHeader> blockHeaderMap = new TreeMap<>();
             for(Integer height : result.keySet()) {
@@ -383,29 +339,18 @@ public class ElectrumServer {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Map<Sha256Hash, BlockTransaction> getTransactions(Set<BlockTransactionHash> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
         try {
             Set<BlockTransactionHash> checkReferences = new TreeSet<>(references);
 
-            JsonRpcClient client = new JsonRpcClient(getTransport());
-            BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
+            Set<String> txids = new LinkedHashSet<>(references.size());
             for(BlockTransactionHash reference : references) {
-                batchRequest.add(reference.getHashAsString(), "blockchain.transaction.get", reference.getHashAsString());
+                txids.add(reference.getHashAsString());
             }
+
+            Map<String, String> result = electrumServerRpc.getTransactions(getTransport(), txids);
 
             String strErrorTx = Sha256Hash.ZERO_HASH.toString();
-            Map<String, String> result;
-            try {
-                result = batchRequest.execute();
-            } catch (JsonRpcBatchException e) {
-                result = (Map<String, String>)e.getSuccesses();
-                for(Object hash : e.getErrors().keySet()) {
-                    String txhash = (String)hash;
-                    result.put(txhash, strErrorTx);
-                }
-            }
-
             Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
             for(String txid : result.keySet()) {
                 Sha256Hash hash = Sha256Hash.wrap(txid);
@@ -537,19 +482,12 @@ public class ElectrumServer {
 
     @SuppressWarnings("unchecked")
     public Map<Sha256Hash, BlockTransaction> getReferencedTransactions(Set<Sha256Hash> references) throws ServerException {
-        JsonRpcClient client = new JsonRpcClient(getTransport());
-        BatchRequestBuilder<String, VerboseTransaction> batchRequest = client.createBatchRequest().keysType(String.class).returnType(VerboseTransaction.class);
+        Set<String> txids = new LinkedHashSet<>(references.size());
         for(Sha256Hash reference : references) {
-            batchRequest.add(reference.toString(), "blockchain.transaction.get", reference.toString(), true);
+            txids.add(reference.toString());
         }
 
-        Map<String, VerboseTransaction> result;
-        try {
-            result = batchRequest.execute();
-        } catch (JsonRpcBatchException e) {
-            log.warn("Some errors retrieving transactions: " + e.getErrors());
-            result = (Map<String, VerboseTransaction>)e.getSuccesses();
-        }
+        Map<String, VerboseTransaction> result = electrumServerRpc.getVerboseTransactions(getTransport(), txids);
 
         Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
         for(String txid : result.keySet()) {
@@ -562,13 +500,7 @@ public class ElectrumServer {
     }
 
     public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks) throws ServerException {
-        JsonRpcClient client = new JsonRpcClient(getTransport());
-        BatchRequestBuilder<Integer, Double> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(Double.class);
-        for(Integer targetBlock : targetBlocks) {
-            batchRequest.add(targetBlock, "blockchain.estimatefee", targetBlock);
-        }
-
-        Map<Integer, Double> targetBlocksFeeRatesBtcKb = batchRequest.execute();
+        Map<Integer, Double> targetBlocksFeeRatesBtcKb = electrumServerRpc.getFeeEstimates(getTransport(), targetBlocks);
 
         Map<Integer, Double> targetBlocksFeeRatesSats = new TreeMap<>();
         for(Integer target : targetBlocksFeeRatesBtcKb.keySet()) {
@@ -582,18 +514,15 @@ public class ElectrumServer {
         byte[] rawtxBytes = transaction.bitcoinSerialize();
         String rawtxHex = Utils.bytesToHex(rawtxBytes);
 
-        JsonRpcClient client = new JsonRpcClient(getTransport());
         try {
-            String strTxHash = client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(1).param("raw_tx", rawtxHex).execute();
+            String strTxHash = electrumServerRpc.broadcastTransaction(getTransport(), rawtxHex);
             Sha256Hash receivedTxid = Sha256Hash.wrap(strTxHash);
             if(!receivedTxid.equals(transaction.getTxId())) {
                 throw new ServerException("Received txid was different (" + receivedTxid + ")");
             }
 
             return receivedTxid;
-        } catch(JsonRpcException e) {
-            throw new ServerException(e.getErrorMessage().getMessage());
-        } catch(IllegalStateException e) {
+        } catch(ElectrumServerRpcException | IllegalStateException e) {
             throw new ServerException(e.getMessage());
         }
     }

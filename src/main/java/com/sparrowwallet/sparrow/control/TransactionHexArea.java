@@ -123,7 +123,8 @@ public class TransactionHexArea extends CodeArea {
         cursor = addSegment(segments, cursor, 8, "locktime");
 
         if(cursor != getLength()) {
-            throw new IllegalStateException("Cursor position does not match transaction serialisation " + cursor + ": " + getLength());
+            //While this is normally a good sanity check, the truncation applied means it may fail, so it is left commented out
+            //throw new IllegalStateException("Cursor position does not match transaction serialisation " + cursor + ": " + getLength());
         }
 
         return segments;

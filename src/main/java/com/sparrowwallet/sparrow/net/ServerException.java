@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.io;
+package com.sparrowwallet.sparrow.net;
 
 public class ServerException extends Exception {
     public ServerException() {
