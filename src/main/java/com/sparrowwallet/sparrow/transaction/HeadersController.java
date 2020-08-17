@@ -693,6 +693,9 @@ public class HeadersController extends TransactionFormController implements Init
         if(headersForm.getSigningWallet() instanceof FinalizingPSBTWallet) {
             //Ensure the script hashes of the UTXOs in FinalizingPSBTWallet are subscribed to
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(headersForm.getSigningWallet());
+            historyService.setOnFailed(workerStateEvent -> {
+                log.error("Error subscribing FinalizingPSBTWallet script hashes", workerStateEvent.getSource().getException());
+            });
             historyService.start();
         }
 
@@ -702,6 +705,7 @@ public class HeadersController extends TransactionFormController implements Init
         });
         broadcastTransactionService.setOnFailed(workerStateEvent -> {
             broadcastProgressBar.setProgress(0);
+            log.error("Error broadcasting transaction", workerStateEvent.getSource().getException());
             AppController.showErrorDialog("Error broadcasting transaction", workerStateEvent.getSource().getException().getMessage());
             broadcastButton.setDisable(false);
         });
@@ -900,6 +904,9 @@ public class HeadersController extends TransactionFormController implements Init
                     signaturesForm.setVisible(false);
                     updateBlockchainForm(blockTransaction, AppController.getCurrentBlockHeight());
                 }
+            });
+            transactionReferenceService.setOnSucceeded(failEvent -> {
+                log.error("Could not update block transaction", failEvent.getSource().getException());
             });
             transactionReferenceService.start();
         }

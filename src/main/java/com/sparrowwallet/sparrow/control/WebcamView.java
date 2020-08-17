@@ -4,8 +4,12 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WebcamView {
+    private static final Logger log = LoggerFactory.getLogger(WebcamView.class);
+
     private final ImageView imageView;
     private final WebcamService service;
     private final Region view;
@@ -47,7 +51,7 @@ public class WebcamView {
                             imageView.imageProperty().unbind();
                             statusPlaceholder.setText("Error");
                             getChildren().setAll(statusPlaceholder);
-                            service.getException().printStackTrace();
+                            log.error("Failed to start web cam", service.getException());
                             break;
                         case SUCCEEDED:
                             // unreachable...

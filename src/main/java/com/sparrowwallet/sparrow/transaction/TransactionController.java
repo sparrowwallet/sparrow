@@ -340,7 +340,7 @@ public class TransactionController implements Initializable {
                 });
             });
             transactionReferenceService.setOnFailed(failedEvent -> {
-                failedEvent.getSource().getException().printStackTrace();
+                log.error("Error fetching transaction or input references", failedEvent.getSource().getException());
             });
             transactionReferenceService.start();
         }
@@ -357,7 +357,7 @@ public class TransactionController implements Initializable {
                 });
             });
             transactionOutputsReferenceService.setOnFailed(failedEvent -> {
-                failedEvent.getSource().getException().printStackTrace();
+                log.error("Error fetching transaction output references", failedEvent.getSource().getException());
             });
             transactionOutputsReferenceService.start();
         }

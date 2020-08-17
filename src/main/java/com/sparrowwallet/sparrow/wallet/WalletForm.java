@@ -71,7 +71,7 @@ public class WalletForm {
                 updateWallet(previousWallet, blockHeight);
             });
             historyService.setOnFailed(workerStateEvent -> {
-                workerStateEvent.getSource().getException().printStackTrace();
+                log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
             });
             historyService.start();
         }
