@@ -14,7 +14,6 @@ import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TreeItem;
-import javafx.scene.input.MouseEvent;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -47,8 +46,10 @@ public class TransactionsController extends WalletFormController implements Init
 
         transactionsTable.initialize(walletTransactionsEntry);
 
+        balance.valueProperty().addListener((observable, oldValue, newValue) -> {
+            setFiatBalance(AppController.getFiatCurrencyExchangeRate(), newValue.longValue());
+        });
         balance.setValue(walletTransactionsEntry.getBalance());
-        setFiatBalance(AppController.getFiatCurrencyExchangeRate(), walletTransactionsEntry.getBalance());
         mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
         balanceChart.initialize(walletTransactionsEntry);
 

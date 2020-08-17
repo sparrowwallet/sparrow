@@ -62,7 +62,7 @@ public class UtxosChart extends BarChart<String, Number> {
         }
 
         if(utxoSeries.getData().size() > utxoDataList.size()) {
-            utxoSeries.getData().remove(utxoDataList.size() - 1, utxoSeries.getData().size());
+            utxoSeries.getData().remove(Math.max(0, utxoDataList.size() - 1), utxoSeries.getData().size());
         }
 
         if(selectedEntries != null) {
