@@ -40,6 +40,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
     private TilePane wordsPane;
     private Button verifyButton;
+    private Button backButton;
     private Button confirmButton;
     private List<String> generatedMnemonicCode;
 
@@ -148,7 +149,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         if(!displayWordsOnly) {
             PassphraseEntry passphraseEntry = new PassphraseEntry();
-            passphraseEntry.setPadding(new Insets(0, 32, 0, 10));
+            passphraseEntry.setPadding(new Insets(0, 32, 10, 10));
             vBox.getChildren().add(passphraseEntry);
 
             AnchorPane buttonPane = new AnchorPane();
@@ -158,16 +159,18 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             generateButton.setOnAction(event -> {
                 generateNew();
             });
+            generateButton.setTooltip(new Tooltip("Generate a unique set of words that provide the seed for your wallet"));
             buttonPane.getChildren().add(generateButton);
             AnchorPane.setLeftAnchor(generateButton, 0.0);
 
-            confirmButton = new Button("Confirm Backup");
+            confirmButton = new Button("Confirm Written Backup");
             confirmButton.setOnAction(event -> {
                 confirmBackup();
             });
             confirmButton.managedProperty().bind(confirmButton.visibleProperty());
             confirmButton.setVisible(false);
             confirmButton.setDefaultButton(true);
+            confirmButton.setTooltip(new Tooltip("Write down the words above as a backup - you will need to re-enter them to confirm your backup is correct"));
             buttonPane.getChildren().add(confirmButton);
             AnchorPane.setRightAnchor(confirmButton, 0.0);
 
@@ -178,6 +181,15 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
                 prepareImport();
             });
             verifyButton.managedProperty().bind(verifyButton.visibleProperty());
+            verifyButton.setTooltip(new Tooltip("Enter the words you have just written down to confirm the backup is correct"));
+
+            backButton = new Button("Back");
+            backButton.setOnAction(event -> {
+                displayMnemonicCode();
+            });
+            backButton.managedProperty().bind(backButton.visibleProperty());
+            backButton.setTooltip(new Tooltip("Go back to the generated word list"));
+            backButton.setVisible(false);
 
             wordEntriesProperty.addListener((ListChangeListener<String>) c -> {
                 for(String word : wordEntryList) {
@@ -189,8 +201,13 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
                 verifyButton.setDisable(false);
             });
-            buttonPane.getChildren().add(verifyButton);
-            AnchorPane.setRightAnchor(verifyButton, 0.0);
+
+            HBox rightBox = new HBox();
+            rightBox.setSpacing(10);
+            rightBox.getChildren().addAll(backButton, verifyButton);
+
+            buttonPane.getChildren().add(rightBox);
+            AnchorPane.setRightAnchor(rightBox, 0.0);
 
             vBox.getChildren().add(buttonPane);
         }
@@ -199,14 +216,19 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     }
 
     private void generateNew() {
-        setDescription("Write down word list to confirm backup");
-        showHideLink.setVisible(false);
-
         int mnemonicSeedLength = wordEntriesProperty.get().size() * 11;
         int entropyLength = mnemonicSeedLength - (mnemonicSeedLength/33);
 
         DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), entropyLength, "");
         generatedMnemonicCode = deterministicSeed.getMnemonicCode();
+
+        displayMnemonicCode();
+    }
+
+    private void displayMnemonicCode() {
+        setDescription("Write down word list to confirm backup");
+        showHideLink.setVisible(false);
+
         if(generatedMnemonicCode.size() != wordsPane.getChildren().size()) {
             throw new IllegalStateException("Generated mnemonic words list not same size as displayed words list");
         }
@@ -219,6 +241,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         verifyButton.setVisible(false);
         confirmButton.setVisible(true);
+        backButton.setVisible(false);
     }
 
     private void confirmBackup() {
@@ -226,6 +249,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         showHideLink.setVisible(false);
         setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size(), false));
         setExpanded(true);
+        backButton.setVisible(true);
     }
 
     private void prepareImport() {
@@ -341,7 +365,11 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             passphraseProperty.bind(passphraseField.textProperty());
             passphraseField.setPromptText("Leave blank for none");
 
-            getChildren().addAll(passphraseLabel, passphraseField);
+            HelpLabel helpLabel = new HelpLabel();
+            helpLabel.setStyle("-fx-padding: 0 0 0 0");
+            helpLabel.setHelpText("A passphrase provides optional added security - it is not stored so it must be remembered!");
+
+            getChildren().addAll(passphraseLabel, passphraseField, helpLabel);
         }
     }
 
