@@ -535,13 +535,13 @@ public class ElectrumServer {
         return Utils.bytesToHex(reversed);
     }
 
-    private String getScriptHash(TransactionOutput output) {
+    public static String getScriptHash(TransactionOutput output) {
         byte[] hash = Sha256Hash.hash(output.getScript().getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);
     }
 
-    static Map<String, String> getSubscribedScriptHashes() {
+    public static Map<String, String> getSubscribedScriptHashes() {
         return subscribedScriptHashes;
     }
 

@@ -1007,6 +1007,11 @@ public class AppController implements Initializable {
                     .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
                     .onAction(e -> selectTab(event.getWallet()));
 
+            //If controlsfx can't find our window, we must set the window ourselves (unfortunately notification is then shown within this window)
+            if(org.controlsfx.tools.Utils.getWindow(null) == null) {
+                notificationBuilder.owner(tabs.getScene().getWindow());
+            }
+
             notificationBuilder.show();
         }
     }
