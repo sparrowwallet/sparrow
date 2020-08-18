@@ -7,11 +7,18 @@
 }
 
 .amount-field {
-    -fx-max-width: 150px;
+    -fx-pref-width: 145px;
+    -fx-min-width: 145px;
+    -fx-max-width: 145px;
+}
+
+.amount-unit {
+    -fx-min-width: 70px;
+    -fx-max-width: 70px;
 }
 
 #feeRatesChart {
-    -fx-max-width: 350px;
+    -fx-max-width: 335px;
     -fx-max-height: 130px;
 }
 

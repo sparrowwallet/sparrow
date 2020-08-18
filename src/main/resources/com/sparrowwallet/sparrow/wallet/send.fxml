@@ -29,8 +29,8 @@
                     <Insets left="25.0" right="25.0" top="25.0" />
                 </padding>
                 <columnConstraints>
-                    <ColumnConstraints prefWidth="385" />
-                    <ColumnConstraints prefWidth="225" />
+                    <ColumnConstraints prefWidth="410" />
+                    <ColumnConstraints prefWidth="200" />
                     <ColumnConstraints prefWidth="140" />
                 </columnConstraints>
                 <rowConstraints>
@@ -46,7 +46,7 @@
                         </Field>
                         <Field text="Amount:">
                             <TextField fx:id="amount" styleClass="amount-field" />
-                            <ComboBox fx:id="amountUnit">
+                            <ComboBox fx:id="amountUnit" styleClass="amount-unit">
                                 <items>
                                     <FXCollections fx:factory="observableArrayList">
                                         <BitcoinUnit fx:constant="BTC" />
@@ -54,7 +54,7 @@
                                     </FXCollections>
                                 </items>
                             </ComboBox>
-                            <Region style="-fx-pref-width: 20" />
+                            <Label style="-fx-pref-width: 15" />
                             <FiatLabel fx:id="fiatAmount" />
                             <Region style="-fx-pref-width: 20" />
                             <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
@@ -71,7 +71,7 @@
                         </Field>
                         <Field text="Fee:">
                             <TextField fx:id="fee" styleClass="amount-field"/>
-                            <ComboBox fx:id="feeAmountUnit">
+                            <ComboBox fx:id="feeAmountUnit" styleClass="amount-unit">
                                 <items>
                                     <FXCollections fx:factory="observableArrayList">
                                         <BitcoinUnit fx:constant="BTC" />
@@ -79,6 +79,8 @@
                                     </FXCollections>
                                 </items>
                             </ComboBox>
+                            <Label style="-fx-pref-width: 15" />
+                            <FiatLabel fx:id="fiatFeeAmount" />
                         </Field>
                     </Fieldset>
                 </Form>

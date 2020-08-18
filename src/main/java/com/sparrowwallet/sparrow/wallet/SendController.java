@@ -74,6 +74,9 @@ public class SendController extends WalletFormController implements Initializabl
     private ComboBox<BitcoinUnit> feeAmountUnit;
 
     @FXML
+    private FiatLabel fiatFeeAmount;
+
+    @FXML
     private FeeRatesChart feeRatesChart;
 
     @FXML
@@ -115,6 +118,12 @@ public class SendController extends WalletFormController implements Initializabl
         @Override
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
             userFeeSet.set(true);
+            if(newValue.isEmpty()) {
+                fiatFeeAmount.setText("");
+            } else {
+                setFiatFeeAmount(AppController.getFiatCurrencyExchangeRate(), getFeeValueSats());
+            }
+
             setTargetBlocks(getTargetBlocks());
             updateTransaction();
         }
@@ -390,6 +399,7 @@ public class SendController extends WalletFormController implements Initializabl
         df.setMaximumFractionDigits(8);
         fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
         fee.textProperty().addListener(feeListener);
+        setFiatFeeAmount(AppController.getFiatCurrencyExchangeRate(), feeValue);
     }
 
     private Integer getTargetBlocks() {
@@ -465,6 +475,12 @@ public class SendController extends WalletFormController implements Initializabl
     private void setFiatAmount(CurrencyRate currencyRate, Long amount) {
         if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
             fiatAmount.set(currencyRate, amount);
+        }
+    }
+
+    private void setFiatFeeAmount(CurrencyRate currencyRate, Long amount) {
+        if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
+            fiatFeeAmount.set(currencyRate, amount);
         }
     }
 
@@ -569,5 +585,6 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         setFiatAmount(event.getCurrencyRate(), getRecipientValueSats());
+        setFiatFeeAmount(event.getCurrencyRate(), getFeeValueSats());
     }
 }
