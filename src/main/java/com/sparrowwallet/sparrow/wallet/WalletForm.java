@@ -199,7 +199,10 @@ public class WalletForm {
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
-        updateWallet(wallet.copy(), event.getHeight());
+        //Check if wallet is valid to avoid saving wallets in initial setup
+        if(wallet.isValid()) {
+            updateWallet(wallet.copy(), event.getHeight());
+        }
     }
 
     @Subscribe

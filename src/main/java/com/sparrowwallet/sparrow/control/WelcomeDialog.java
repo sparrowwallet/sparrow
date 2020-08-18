@@ -29,7 +29,7 @@ public class WelcomeDialog extends Dialog<Mode> {
         dialogPane.setHeaderText("Welcome to Sparrow!");
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         dialogPane.setPrefWidth(600);
-        dialogPane.setPrefHeight(450);
+        dialogPane.setPrefHeight(480);
 
         Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
         if (!image.isError()) {

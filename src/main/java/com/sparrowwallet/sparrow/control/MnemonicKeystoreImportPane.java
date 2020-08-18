@@ -155,11 +155,11 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         if(!displayWordsOnly) {
             PassphraseEntry passphraseEntry = new PassphraseEntry();
-            passphraseEntry.setPadding(new Insets(0, 32, 10, 10));
+            passphraseEntry.setPadding(new Insets(0, 26, 10, 10));
             vBox.getChildren().add(passphraseEntry);
 
             AnchorPane buttonPane = new AnchorPane();
-            buttonPane.setPadding(new Insets(0, 32, 0, 10));
+            buttonPane.setPadding(new Insets(0, 26, 0, 10));
 
             generateButton = new Button("Generate New");
             generateButton.setOnAction(event -> {
@@ -345,7 +345,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
             setSpacing(10);
             Label label = new Label((wordNumber+1) + ".");
-            label.setPrefWidth(20);
+            label.setPrefWidth(22);
             label.setAlignment(Pos.CENTER_RIGHT);
             wordField = new TextField();
             wordField.setMaxWidth(100);
