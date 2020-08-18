@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -21,6 +22,7 @@ import javafx.util.Callback;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.controlsfx.control.textfield.TextFields;
+import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -29,6 +31,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
@@ -39,7 +42,10 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private SplitMenuButton importButton;
 
     private TilePane wordsPane;
-    private Button verifyButton;
+    private Button generateButton;
+    private Label validLabel;
+    private Label invalidLabel;
+    private Button calculateButton;
     private Button backButton;
     private Button confirmButton;
     private List<String> generatedMnemonicCode;
@@ -155,13 +161,32 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             AnchorPane buttonPane = new AnchorPane();
             buttonPane.setPadding(new Insets(0, 32, 0, 10));
 
-            Button generateButton = new Button("Generate New");
+            generateButton = new Button("Generate New");
             generateButton.setOnAction(event -> {
                 generateNew();
             });
+            generateButton.managedProperty().bind(generateButton.visibleProperty());
             generateButton.setTooltip(new Tooltip("Generate a unique set of words that provide the seed for your wallet"));
             buttonPane.getChildren().add(generateButton);
             AnchorPane.setLeftAnchor(generateButton, 0.0);
+
+            validLabel = new Label("Valid checksum", getValidGlyph());
+            validLabel.setContentDisplay(ContentDisplay.LEFT);
+            validLabel.setGraphicTextGap(5.0);
+            validLabel.managedProperty().bind(validLabel.visibleProperty());
+            validLabel.setVisible(false);
+            buttonPane.getChildren().add(validLabel);
+            AnchorPane.setTopAnchor(validLabel, 5.0);
+            AnchorPane.setLeftAnchor(validLabel, 0.0);
+
+            invalidLabel = new Label("Invalid checksum", getInvalidGlyph());
+            invalidLabel.setContentDisplay(ContentDisplay.LEFT);
+            invalidLabel.setGraphicTextGap(5.0);
+            invalidLabel.managedProperty().bind(invalidLabel.visibleProperty());
+            invalidLabel.setVisible(false);
+            buttonPane.getChildren().add(invalidLabel);
+            AnchorPane.setTopAnchor(invalidLabel, 5.0);
+            AnchorPane.setLeftAnchor(invalidLabel, 0.0);
 
             confirmButton = new Button("Confirm Written Backup");
             confirmButton.setOnAction(event -> {
@@ -174,14 +199,14 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             buttonPane.getChildren().add(confirmButton);
             AnchorPane.setRightAnchor(confirmButton, 0.0);
 
-            verifyButton = new Button("Verify");
-            verifyButton.setDisable(true);
-            verifyButton.setDefaultButton(true);
-            verifyButton.setOnAction(event -> {
+            calculateButton = new Button("Calculate Seed");
+            calculateButton.setDisable(true);
+            calculateButton.setDefaultButton(true);
+            calculateButton.setOnAction(event -> {
                 prepareImport();
             });
-            verifyButton.managedProperty().bind(verifyButton.visibleProperty());
-            verifyButton.setTooltip(new Tooltip("Enter the words you have just written down to confirm the backup is correct"));
+            calculateButton.managedProperty().bind(calculateButton.visibleProperty());
+            calculateButton.setTooltip(new Tooltip("Calculate the seed from the provided word list"));
 
             backButton = new Button("Back");
             backButton.setOnAction(event -> {
@@ -192,19 +217,37 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             backButton.setVisible(false);
 
             wordEntriesProperty.addListener((ListChangeListener<String>) c -> {
+                boolean empty = true;
+                boolean validWords = true;
+                boolean validChecksum = false;
                 for(String word : wordEntryList) {
+                    if(!word.isEmpty()) {
+                        empty = false;
+                    }
+
                     if(!WordEntry.isValid(word)) {
-                        verifyButton.setDisable(true);
-                        return;
+                        validWords = false;
                     }
                 }
 
-                verifyButton.setDisable(false);
+                if(!empty && validWords) {
+                    try {
+                        importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
+                        validChecksum = true;
+                    } catch(ImportException e) {
+                        //ignore
+                    }
+                }
+
+                generateButton.setVisible(empty && generatedMnemonicCode == null);
+                calculateButton.setDisable(!validChecksum);
+                validLabel.setVisible(validChecksum);
+                invalidLabel.setVisible(!validChecksum && !empty);
             });
 
             HBox rightBox = new HBox();
             rightBox.setSpacing(10);
-            rightBox.getChildren().addAll(backButton, verifyButton);
+            rightBox.getChildren().addAll(backButton, calculateButton);
 
             buttonPane.getChildren().add(rightBox);
             AnchorPane.setRightAnchor(rightBox, 0.0);
@@ -229,6 +272,10 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         setDescription("Write down word list to confirm backup");
         showHideLink.setVisible(false);
 
+        calculateButton.setVisible(false);
+        confirmButton.setVisible(true);
+        backButton.setVisible(false);
+
         if(generatedMnemonicCode.size() != wordsPane.getChildren().size()) {
             throw new IllegalStateException("Generated mnemonic words list not same size as displayed words list");
         }
@@ -238,10 +285,6 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             wordEntry.getEditor().setText(generatedMnemonicCode.get(i));
             wordEntry.getEditor().setEditable(false);
         }
-
-        verifyButton.setVisible(false);
-        confirmButton.setVisible(true);
-        backButton.setVisible(false);
     }
 
     private void confirmBackup() {
@@ -250,6 +293,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size(), false));
         setExpanded(true);
         backButton.setVisible(true);
+        generateButton.setVisible(false);
     }
 
     private void prepareImport() {
@@ -259,7 +303,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         }
 
         if(importKeystore(wallet.getScriptType().getDefaultDerivation(), true)) {
-            setExpanded(false);
+            setExpanded(true);
             enterMnemonicButton.setVisible(false);
             importButton.setVisible(true);
             importButton.setDisable(false);
@@ -307,7 +351,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             wordField.setMaxWidth(100);
 
             wordList = Bip39MnemonicCode.INSTANCE.getWordList();
-            TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));
+            AutoCompletionBinding<String> autoCompletionBinding = TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));
+            autoCompletionBinding.setDelay(50);
 
             ValidationSupport validationSupport = new ValidationSupport();
             validationSupport.registerValidator(wordField, Validator.combine(
@@ -344,6 +389,10 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             List<String> suggestions = new ArrayList<>();
             if(!request.getUserText().isEmpty()) {
                 for(String word : wordList) {
+                    if(word.equals(request.getUserText())) {
+                        return Collections.emptyList();
+                    }
+
                     if(word.startsWith(request.getUserText())) {
                         suggestions.add(word);
                     }
@@ -419,5 +468,19 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             wordEntry.getEditor().setText(words.get(i));
             wordEntry.getEditor().setEditable(false);
         }
+    }
+
+    public static Glyph getValidGlyph() {
+        Glyph validGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
+        validGlyph.getStyleClass().add("valid-checksum");
+        validGlyph.setFontSize(12);
+        return validGlyph;
+    }
+
+    public static Glyph getInvalidGlyph() {
+        Glyph invalidGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+        invalidGlyph.getStyleClass().add("invalid-checksum");
+        invalidGlyph.setFontSize(12);
+        return invalidGlyph;
     }
 }
