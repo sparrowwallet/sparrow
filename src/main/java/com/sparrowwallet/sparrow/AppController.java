@@ -234,6 +234,7 @@ public class AppController implements Initializable {
         });
 
         onlineProperty.bindBidirectional(serverToggle.selectedProperty());
+        onlineProperty().addListener((observable, oldValue, newValue) -> serverToggle.setTooltip(new Tooltip(newValue ? "Connected to " + Config.get().getElectrumServer() : "Disconnected")));
 
         Config config = Config.get();
         connectionService = createConnectionService();

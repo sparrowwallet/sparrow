@@ -76,7 +76,11 @@
 
         <StatusBar fx:id="statusBar" text="" minHeight="36">
             <rightItems>
-                <UnlabeledToggleSwitch fx:id="serverToggle" />
+                <UnlabeledToggleSwitch fx:id="serverToggle">
+                    <tooltip>
+                        <Tooltip text="Disconnected" />
+                    </tooltip>
+                </UnlabeledToggleSwitch>
             </rightItems>
         </StatusBar>
     </children>
