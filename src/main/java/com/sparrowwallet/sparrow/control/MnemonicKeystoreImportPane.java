@@ -81,7 +81,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private void createEnterMnemonicButton() {
         enterMnemonicButton = new SplitMenuButton();
         enterMnemonicButton.setAlignment(Pos.CENTER_RIGHT);
-        enterMnemonicButton.setText("Enter Mnemonic");
+        enterMnemonicButton.setText("Set Words Length");
         enterMnemonicButton.setOnAction(event -> {
             enterMnemonic(24);
         });

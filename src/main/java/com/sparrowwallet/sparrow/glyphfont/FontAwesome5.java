@@ -23,6 +23,7 @@ public class FontAwesome5 extends GlyphFont {
         CIRCLE('\uf111'),
         COINS('\uf51e'),
         EXCLAMATION_CIRCLE('\uf06a'),
+        EXTERNAL_LINK_ALT('\uf35d'),
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
         HAND_HOLDING('\uf4bd'),
@@ -37,6 +38,7 @@ public class FontAwesome5 extends GlyphFont {
         SD_CARD('\uf7c2'),
         SEARCH('\uf002'),
         TOOLS('\uf7d9'),
+        UNDO('\uf0e2'),
         WALLET('\uf555');
 
         private final char ch;
