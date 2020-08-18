@@ -180,6 +180,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED);
 
         importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Replace...");
+        importButton.setTooltip(new Tooltip(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import a keystore from an external source" : "Replace this keystore with another source"));
 
         boolean editable = (keystore.getSource() == KeystoreSource.SW_WATCH);
         fingerprint.setEditable(editable);
