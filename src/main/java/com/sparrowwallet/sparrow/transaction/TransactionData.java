@@ -32,17 +32,18 @@ public class TransactionData {
     private final SimpleObjectProperty<Wallet> signingWallet = new SimpleObjectProperty<>(this, "signingWallet", null);
     private final ObservableList<Keystore> signedKeystores = FXCollections.observableArrayList();
 
-    public TransactionData(PSBT psbt) {
-        this.transaction = psbt.getTransaction();
+    public TransactionData(String name, PSBT psbt) {
+        this(name, psbt.getTransaction());
         this.psbt = psbt;
     }
 
-    public TransactionData(BlockTransaction blockTransaction) {
-        this.transaction = blockTransaction.getTransaction();
+    public TransactionData(String name, BlockTransaction blockTransaction) {
+        this(name, blockTransaction.getTransaction());
         this.blockTransaction = blockTransaction;
     }
 
-    public TransactionData(Transaction transaction) {
+    public TransactionData(String name, Transaction transaction) {
+        this.name = name;
         this.transaction = transaction;
     }
 
@@ -56,10 +57,6 @@ public class TransactionData {
 
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public PSBT getPsbt() {

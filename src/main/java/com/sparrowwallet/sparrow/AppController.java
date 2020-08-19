@@ -21,6 +21,7 @@ import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
+import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
@@ -468,13 +469,9 @@ public class AppController implements Initializable {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
             Transaction transaction = transactionTabData.getTransaction();
 
-            //Note the transactionTabData's transaction does not change even once the final tx is extracted, so extract it here if possible
-            if(transactionTabData.getPsbt() != null && transactionTabData.getPsbt().isFinalized()) {
-                transaction = transactionTabData.getPsbt().extractTransaction();
-            }
-
-            //Save a transaction if the PSBT is null or finalized (a finalized PSBT is less useful than a broadcastable tx)
-            boolean saveTx = (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().isFinalized());
+            //Save a transaction if the PSBT is null or transaction has already been extracted, otherwise save PSBT
+            //The PSBT's transaction is not altered with transaction extraction, but the extracted transaction is stored in TransactionData
+            boolean saveTx = (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transaction);
 
             Stage window = new Stage();
             FileChooser fileChooser = new FileChooser();
@@ -754,8 +751,6 @@ public class AppController implements Initializable {
                 name = name.substring(0, name.lastIndexOf('.'));
             }
             Tab tab = new Tab(name);
-            TabData tabData = new WalletTabData(TabData.TabType.WALLET, wallet, storage);
-            tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
@@ -766,6 +761,9 @@ public class AppController implements Initializable {
             WalletForm walletForm = new WalletForm(storage, wallet);
             EventManager.get().register(walletForm);
             controller.setWalletForm(walletForm);
+
+            TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
+            tab.setUserData(tabData);
 
             tabs.getTabs().add(tab);
             return tab;
@@ -863,29 +861,30 @@ public class AppController implements Initializable {
             }
 
             Tab tab = new Tab(tabName);
-            TabData tabData = new TransactionTabData(TabData.TabType.TRANSACTION, transaction, psbt);
-            tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("transaction/transaction.fxml"));
             tab.setContent(transactionLoader.load());
             TransactionController controller = transactionLoader.getController();
 
+            TransactionData transactionData;
             if(psbt != null) {
-                controller.setPSBT(psbt);
+                transactionData = new TransactionData(name, psbt);
             } else if(blockTransaction != null) {
-                controller.setBlockTransaction(blockTransaction);
+                transactionData = new TransactionData(name, blockTransaction);
             } else {
-                controller.setTransaction(transaction);
+                transactionData = new TransactionData(name, transaction);
             }
 
-            controller.setName(name);
-
+            controller.setTransactionData(transactionData);
             if(initialView != null) {
                 controller.setInitialView(initialView, initialIndex);
             }
-
             controller.initializeView();
+
+            TabData tabData = new TransactionTabData(TabData.TabType.TRANSACTION, transactionData);
+            tab.setUserData(tabData);
+
             tabs.getTabs().add(tab);
 
             return tab;
@@ -930,7 +929,7 @@ public class AppController implements Initializable {
             TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
             TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
             saveTransaction.setDisable(false);
-            saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().isFinalized() ? "Transaction..." : "PSBT..."));
+            saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction() ? "Transaction..." : "PSBT..."));
             exportWallet.setDisable(true);
             showTxHex.setDisable(false);
         } else if(event instanceof WalletTabSelectedEvent) {
@@ -944,12 +943,12 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void psbtFinalizedEvent(PSBTFinalizedEvent event) {
+    public void transactionExtractedEvent(TransactionExtractedEvent event) {
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData) tab.getUserData();
             if(tabData instanceof TransactionTabData) {
                 TransactionTabData transactionTabData = (TransactionTabData)tabData;
-                if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), event.getPsbt().getTransaction().bitcoinSerialize())) {
+                if(transactionTabData.getTransaction() == event.getFinalTransaction()) {
                     saveTransaction.setText("Save Transaction...");
                 }
             }

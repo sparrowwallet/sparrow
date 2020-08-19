@@ -363,32 +363,20 @@ public class TransactionController implements Initializable {
         }
     }
 
+    public void setTransactionData(TransactionData transactionData) {
+        this.txdata = transactionData;
+    }
+
     public Transaction getTransaction() {
         return txdata.getTransaction();
-    }
-
-    public void setTransaction(Transaction transaction) {
-        this.txdata = new TransactionData(transaction);
-    }
-
-    public void setName(String name) {
-        this.txdata.setName(name);
     }
 
     public PSBT getPSBT() {
         return txdata.getPsbt();
     }
 
-    public void setPSBT(PSBT psbt) {
-        this.txdata = new TransactionData(psbt);
-    }
-
     public BlockTransaction getBlockTransaction() {
         return txdata.getBlockTransaction();
-    }
-
-    public void setBlockTransaction(BlockTransaction blockTransaction) {
-        this.txdata = new TransactionData(blockTransaction);
     }
 
     public void setInitialView(TransactionView initialView, Integer initialIndex) {

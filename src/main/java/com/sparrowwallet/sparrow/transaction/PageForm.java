@@ -13,7 +13,7 @@ public class PageForm extends IndexedTransactionForm {
     private final int pageEnd;
 
     public PageForm(TransactionView view, int pageStart, int pageEnd) {
-        super(new TransactionData(ElectrumServer.UNFETCHABLE_BLOCK_TRANSACTION), pageStart);
+        super(new TransactionData(pageStart + "-" + pageEnd, ElectrumServer.UNFETCHABLE_BLOCK_TRANSACTION), pageStart);
         this.view = view;
         this.pageStart = pageStart;
         this.pageEnd = pageEnd;

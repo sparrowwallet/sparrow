@@ -1,34 +1,22 @@
 package com.sparrowwallet.sparrow;
 
-import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.wallet.WalletForm;
 
 public class WalletTabData extends TabData {
-    private Wallet wallet;
-    private final Storage storage;
+    private final WalletForm walletForm;
 
-    public WalletTabData(TabType type, Wallet wallet, Storage storage) {
+    public WalletTabData(TabType type, WalletForm walletForm) {
         super(type);
-        this.wallet = wallet;
-        this.storage = storage;
-
-        EventManager.get().register(this);
+        this.walletForm = walletForm;
     }
 
     public Wallet getWallet() {
-        return wallet;
+        return walletForm.getWallet();
     }
 
     public Storage getStorage() {
-        return storage;
-    }
-
-    @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
-        if(event.getWalletFile().equals(storage.getWalletFile())) {
-            wallet = event.getWallet();
-        }
+        return walletForm.getStorage();
     }
 }
