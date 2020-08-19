@@ -22,6 +22,10 @@ class VerboseTransaction {
     public int version;
 
     public int getHeight() {
+        if(confirmations <= 0) {
+            return 0;
+        }
+
         Integer currentHeight = AppController.getCurrentBlockHeight();
         if(currentHeight != null) {
             return currentHeight - confirmations + 1;
@@ -31,6 +35,11 @@ class VerboseTransaction {
     }
 
     public Date getDate() {
+        if(blocktime == 0) {
+            //Ok to return as null here as date inspection for verbose txes is only done by HeadersController, which checks for null values
+            return null;
+        }
+
         return new Date(blocktime * 1000);
     }
 

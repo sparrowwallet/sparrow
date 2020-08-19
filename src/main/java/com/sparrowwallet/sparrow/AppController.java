@@ -967,7 +967,7 @@ public class AppController implements Initializable {
             String text;
             if(event.getBlockTransactions().size() == 1) {
                 BlockTransaction blockTransaction = event.getBlockTransactions().get(0);
-                if(blockTransaction.getHeight() == 0) {
+                if(blockTransaction.getHeight() <= 0) {
                     text = "New mempool transaction: ";
                 } else {
                     int confirmations = blockTransaction.getConfirmations(getCurrentBlockHeight());
@@ -1003,7 +1003,7 @@ public class AppController implements Initializable {
                     .title("Sparrow - " + event.getWallet().getName())
                     .text(text)
                     .graphic(new ImageView(image))
-                    .hideAfter(Duration.seconds(5))
+                    .hideAfter(Duration.seconds(15))
                     .position(Pos.TOP_RIGHT)
                     .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
                     .onAction(e -> selectTab(event.getWallet()));

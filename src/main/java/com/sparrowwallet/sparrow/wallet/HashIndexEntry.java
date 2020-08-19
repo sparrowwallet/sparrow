@@ -94,7 +94,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         }
 
         if(getHashIndex().getHeight() != o.getHashIndex().getHeight()) {
-            return (o.getHashIndex().getHeight() > 0 ? o.getHashIndex().getHeight() : Integer.MAX_VALUE) - (getHashIndex().getHeight() > 0 ? getHashIndex().getHeight() : Integer.MAX_VALUE);
+            return o.getHashIndex().getComparisonHeight() - getHashIndex().getComparisonHeight();
         }
 
         return (int)o.getHashIndex().getIndex() - (int)getHashIndex().getIndex();
