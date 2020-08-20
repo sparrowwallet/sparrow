@@ -504,9 +504,13 @@ public class SendController extends WalletFormController implements Initializabl
         amount.setText("");
         amount.textProperty().addListener(amountListener);
 
+        fiatAmount.setText("");
+
         fee.textProperty().removeListener(feeListener);
         fee.setText("");
         fee.textProperty().addListener(feeListener);
+
+        fiatFeeAmount.setText("");
 
         userFeeSet.set(false);
         targetBlocks.setValue(4);
