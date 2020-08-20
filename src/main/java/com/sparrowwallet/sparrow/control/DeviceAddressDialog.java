@@ -32,6 +32,5 @@ public class DeviceAddressDialog extends DeviceDialog<String> {
     @Subscribe
     public void addressDisplayed(AddressDisplayedEvent event) {
         setResult(event.getAddress());
-        this.close();
     }
 }

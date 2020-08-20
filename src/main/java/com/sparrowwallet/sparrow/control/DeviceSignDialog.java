@@ -30,7 +30,6 @@ public class DeviceSignDialog extends DeviceDialog<PSBT> {
     public void psbtSigned(PSBTSignedEvent event) {
         if(psbt == event.getPsbt()) {
             setResult(event.getSignedPsbt());
-            this.close();
         }
     }
 }

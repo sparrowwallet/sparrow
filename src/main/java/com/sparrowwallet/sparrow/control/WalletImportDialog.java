@@ -56,6 +56,5 @@ public class WalletImportDialog extends Dialog<Wallet> {
     public void walletImported(WalletImportEvent event) {
         wallet = event.getWallet();
         setResult(wallet);
-        this.close();
     }
 }

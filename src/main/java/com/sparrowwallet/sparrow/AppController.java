@@ -495,8 +495,10 @@ public class AppController implements Initializable {
 
             String fileName = selectedTab.getText();
             if(fileName != null && !fileName.isEmpty()) {
-                if(transactionTabData.getPsbt() != null && !fileName.endsWith(".psbt")) {
-                    fileName += ".psbt";
+                if(transactionTabData.getPsbt() != null) {
+                    if(!fileName.endsWith(".psbt")) {
+                        fileName += ".psbt";
+                    }
                 } else if(!fileName.endsWith(".txn")) {
                     fileName += ".txn";
                 }

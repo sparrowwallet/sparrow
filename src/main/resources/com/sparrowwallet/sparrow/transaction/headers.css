@@ -20,6 +20,15 @@
 
 .locktime { -fx-fill: #986801 }
 
+#locktimeCurrentHeight {
+    -fx-padding: 0 0 0 12;
+}
+
+.future-warning {
+    -fx-text-fill: rgb(238, 210, 2);
+    -fx-padding: 0 0 0 12;
+}
+
 .unfinalized-txid {
     -fx-text-fill: #a0a1a7;
 }

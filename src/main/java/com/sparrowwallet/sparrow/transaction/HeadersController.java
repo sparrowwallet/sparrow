@@ -97,7 +97,16 @@ public class HeadersController extends TransactionFormController implements Init
     private Spinner<Integer> locktimeBlock;
 
     @FXML
+    private Hyperlink locktimeCurrentHeight;
+
+    @FXML
+    private Label futureBlockWarning;
+
+    @FXML
     private DateTimePicker locktimeDate;
+
+    @FXML
+    private Label futureDateWarning;
 
     @FXML
     private CopyableLabel size;
@@ -236,6 +245,8 @@ public class HeadersController extends TransactionFormController implements Init
                     locktimeFieldset.getChildren().add(locktimeBlockField);
                     Integer block = locktimeBlock.getValue();
                     if(block != null) {
+                        locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppController.getCurrentBlockHeight() != null && block < AppController.getCurrentBlockHeight());
+                        futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && block > AppController.getCurrentBlockHeight());
                         tx.setLocktime(block);
                         if(old_toggle != null) {
                             EventManager.get().post(new TransactionChangedEvent(tx));
@@ -249,6 +260,7 @@ public class HeadersController extends TransactionFormController implements Init
                     LocalDateTime date = locktimeDate.getDateTimeValue();
                     if(date != null) {
                         locktimeDate.setDateTimeValue(date);
+                        futureDateWarning.setVisible(date.isAfter(LocalDateTime.now()));
                         tx.setLocktime(date.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
                         if(old_toggle != null) {
                             EventManager.get().post(new TransactionChangedEvent(tx));
@@ -257,6 +269,13 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             }
         });
+
+        locktimeCurrentHeight.managedProperty().bind(locktimeCurrentHeight.visibleProperty());
+        locktimeCurrentHeight.setVisible(false);
+        futureBlockWarning.managedProperty().bind(futureBlockWarning.visibleProperty());
+        futureBlockWarning.setVisible(false);
+        futureDateWarning.managedProperty().bind(futureDateWarning.visibleProperty());
+        futureDateWarning.setVisible(false);
 
         locktimeNone.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, 0));
         if(tx.getLocktime() < Transaction.MAX_BLOCK_LOCKTIME) {
@@ -277,6 +296,8 @@ public class HeadersController extends TransactionFormController implements Init
 
         locktimeBlock.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue);
+            locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppController.getCurrentBlockHeight() != null && newValue < AppController.getCurrentBlockHeight());
+            futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && newValue > AppController.getCurrentBlockHeight());
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
                 EventManager.get().post(new TransactionLocktimeChangedEvent(tx));
@@ -286,6 +307,7 @@ public class HeadersController extends TransactionFormController implements Init
         locktimeDate.setFormat(LOCKTIME_DATE_FORMAT);
         locktimeDate.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
+            futureDateWarning.setVisible(newValue.isAfter(LocalDateTime.now()));
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
             }
@@ -296,6 +318,7 @@ public class HeadersController extends TransactionFormController implements Init
         locktimeDateType.setDisable(!headersForm.isEditable());
         locktimeBlock.setDisable(!headersForm.isEditable());
         locktimeDate.setDisable(!headersForm.isEditable());
+        locktimeCurrentHeight.setDisable(!headersForm.isEditable());
 
         updateSize();
 
@@ -539,6 +562,13 @@ public class HeadersController extends TransactionFormController implements Init
         Clipboard.getSystemClipboard().setContent(content);
     }
 
+    public void setLocktimeToCurrentHeight(ActionEvent event) {
+        if(AppController.getCurrentBlockHeight() != null && locktimeBlock.isEditable()) {
+            locktimeBlock.getValueFactory().setValue(AppController.getCurrentBlockHeight());
+            Platform.runLater(() -> locktimeBlockType.requestFocus());
+        }
+    }
+
     public void openWallet(ActionEvent event) {
         EventManager.get().post(new RequestWalletOpenEvent());
     }
@@ -758,6 +788,7 @@ public class HeadersController extends TransactionFormController implements Init
             locktimeBlock.setDisable(!locktimeEnabled);
             locktimeDateType.setDisable(!locktimeEnabled);
             locktimeDate.setDisable(!locktimeEnabled);
+            locktimeCurrentHeight.setDisable(!locktimeEnabled);
         }
     }
 
@@ -844,6 +875,7 @@ public class HeadersController extends TransactionFormController implements Init
             locktimeDateType.setDisable(true);
             locktimeBlock.setDisable(true);
             locktimeDate.setDisable(true);
+            locktimeCurrentHeight.setVisible(false);
             updateTxId();
 
             headersForm.setSigningWallet(event.getSigningWallet());
@@ -952,6 +984,9 @@ public class HeadersController extends TransactionFormController implements Init
     public void newBlock(NewBlockEvent event) {
         if(headersForm.getBlockTransaction() != null) {
             updateBlockchainForm(headersForm.getBlockTransaction(), event.getHeight());
+        }
+        if(futureBlockWarning.isVisible()) {
+            futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && locktimeBlock.getValue() > event.getHeight());
         }
     }
 }

@@ -69,6 +69,5 @@ public class WalletExportDialog extends Dialog<Wallet> {
     public void walletExported(WalletExportEvent event) {
         wallet = event.getWallet();
         setResult(wallet);
-        this.close();
     }
 }

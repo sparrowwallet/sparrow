@@ -59,6 +59,5 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     public void keystoreImported(KeystoreImportEvent event) {
         this.keystore = event.getKeystore();
         setResult(keystore);
-        this.close();
     }
 }
