@@ -72,6 +72,11 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     }
 
     @Override
+    public String getExportFileExtension() {
+        return "txt";
+    }
+
+    @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         Wallet wallet = new Wallet();
         wallet.setPolicyType(PolicyType.MULTI);

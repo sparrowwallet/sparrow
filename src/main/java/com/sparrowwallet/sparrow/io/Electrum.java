@@ -185,6 +185,11 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
+    public String getExportFileExtension() {
+        return "json";
+    }
+
+    @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
             ElectrumJsonWallet ew = new ElectrumJsonWallet();

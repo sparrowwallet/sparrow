@@ -44,6 +44,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
+        fileChooser.setInitialFileName(wallet.getName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase() + "." + exporter.getExportFileExtension());
 
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
