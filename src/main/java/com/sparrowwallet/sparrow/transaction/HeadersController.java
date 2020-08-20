@@ -313,12 +313,13 @@ public class HeadersController extends TransactionFormController implements Init
             }
         });
 
-        locktimeNoneType.setDisable(!headersForm.isEditable());
-        locktimeBlockType.setDisable(!headersForm.isEditable());
-        locktimeDateType.setDisable(!headersForm.isEditable());
-        locktimeBlock.setDisable(!headersForm.isEditable());
-        locktimeDate.setDisable(!headersForm.isEditable());
-        locktimeCurrentHeight.setDisable(!headersForm.isEditable());
+        boolean locktimeEnabled = headersForm.getTransaction().isLocktimeSequenceEnabled();
+        locktimeNoneType.setDisable(!headersForm.isEditable() || !locktimeEnabled);
+        locktimeBlockType.setDisable(!headersForm.isEditable() || !locktimeEnabled);
+        locktimeDateType.setDisable(!headersForm.isEditable() || !locktimeEnabled);
+        locktimeBlock.setDisable(!headersForm.isEditable() || !locktimeEnabled);
+        locktimeDate.setDisable(!headersForm.isEditable() || !locktimeEnabled);
+        locktimeCurrentHeight.setDisable(!headersForm.isEditable() || !locktimeEnabled);
 
         updateSize();
 
