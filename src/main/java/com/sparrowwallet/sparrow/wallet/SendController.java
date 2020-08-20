@@ -496,6 +496,25 @@ public class SendController extends WalletFormController implements Initializabl
         return address.getScriptType().getDustThreshold(txOutput, getFeeRate());
     }
 
+    public void scanQrAddress(ActionEvent event) {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.uri != null) {
+                if(result.uri.getAddress() != null) {
+                    address.setText(result.uri.getAddress().toString());
+                }
+                if(result.uri.getLabel() != null) {
+                    label.setText(result.uri.getLabel());
+                }
+                if(result.uri.getAmount() != null) {
+                    setRecipientValueSats(result.uri.getAmount());
+                }
+            }
+        }
+    }
+
     public void clear(ActionEvent event) {
         address.setText("");
         label.setText("");

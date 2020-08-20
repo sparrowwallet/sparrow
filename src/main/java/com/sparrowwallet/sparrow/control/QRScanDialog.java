@@ -2,9 +2,11 @@ package com.sparrowwallet.sparrow.control;
 
 import com.github.sarxos.webcam.WebcamResolution;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Base43;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.sparrow.ur.ResultType;
 import com.sparrowwallet.sparrow.ur.UR;
 import com.sparrowwallet.sparrow.ur.URDecoder;
@@ -99,6 +101,24 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             } else {
                 PSBT psbt;
                 Transaction transaction;
+                BitcoinURI bitcoinURI;
+                Address address;
+                try {
+                    bitcoinURI = new BitcoinURI(qrtext);
+                    result = new Result(bitcoinURI);
+                    return;
+                } catch(Exception e) {
+                    //Ignore, not an BIP 21 URI
+                }
+
+                try {
+                    address = Address.fromString(qrtext);
+                    result = new Result(address);
+                    return;
+                } catch(Exception e) {
+                    //Ignore, not an address
+                }
+
                 try {
                     psbt = PSBT.fromString(qrtext);
                     result = new Result(psbt);
@@ -132,9 +152,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 //Try Base43 used by Electrum
-                byte[] base43 = Base43.decode(qrResult.getText());
                 try {
-                    psbt = new PSBT(base43);
+                    psbt = new PSBT(Base43.decode(qrResult.getText()));
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -142,14 +161,14 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 try {
-                    transaction = new Transaction(base43);
+                    transaction = new Transaction(Base43.decode(qrResult.getText()));
                     result = new Result(transaction);
                     return;
                 } catch(Exception e) {
                     //Ignore, not parseable as base43 decoded bytes
                 }
 
-                result = new Result("Cannot parse QR code into a PSBT or transaction");
+                result = new Result("Cannot parse QR code into a PSBT, transaction or address");
             }
         }
     }
@@ -157,12 +176,14 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
     public static class Result {
         public final Transaction transaction;
         public final PSBT psbt;
+        public final BitcoinURI uri;
         public final String error;
         public final Throwable exception;
 
         public Result(Transaction transaction) {
             this.transaction = transaction;
             this.psbt = null;
+            this.uri = null;
             this.error = null;
             this.exception = null;
         }
@@ -170,6 +191,23 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public Result(PSBT psbt) {
             this.transaction = null;
             this.psbt = psbt;
+            this.uri = null;
+            this.error = null;
+            this.exception = null;
+        }
+
+        public Result(BitcoinURI uri) {
+            this.transaction = null;
+            this.psbt = null;
+            this.uri = uri;
+            this.error = null;
+            this.exception = null;
+        }
+
+        public Result(Address address) {
+            this.transaction = null;
+            this.psbt = null;
+            this.uri = BitcoinURI.fromAddress(address);
             this.error = null;
             this.exception = null;
         }
@@ -177,6 +215,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public Result(String error) {
             this.transaction = null;
             this.psbt = null;
+            this.uri = null;
             this.error = error;
             this.exception = null;
         }
@@ -184,6 +223,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public Result(Throwable exception) {
             this.transaction = null;
             this.psbt = null;
+            this.uri = null;
             this.error = null;
             this.exception = exception;
         }
