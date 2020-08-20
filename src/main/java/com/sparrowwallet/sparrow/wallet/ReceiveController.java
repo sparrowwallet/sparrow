@@ -101,7 +101,7 @@ public class ReceiveController extends WalletFormController implements Initializ
         this.currentEntry = nodeEntry;
         address.setText(nodeEntry.getAddress().toString());
         label.textProperty().bindBidirectional(nodeEntry.labelProperty());
-        derivationPath.setText(nodeEntry.getNode().getDerivationPath());
+        updateDerivationPath(nodeEntry);
 
         updateLastUsed();
 
@@ -117,6 +117,23 @@ public class ReceiveController extends WalletFormController implements Initializ
         outputDescriptor.appendText(nodeEntry.getOutputDescriptor());
 
         updateDisplayAddress(AppController.getDevices());
+    }
+
+    private void updateDerivationPath(NodeEntry nodeEntry) {
+        KeyDerivation firstDerivation = getWalletForm().getWallet().getKeystores().get(0).getKeyDerivation();
+        boolean singleDerivationPath = true;
+        for(Keystore keystore : getWalletForm().getWallet().getKeystores()) {
+            if(!keystore.getKeyDerivation().getDerivationPath().equals(firstDerivation.getDerivationPath())) {
+                singleDerivationPath = false;
+                break;
+            }
+        }
+
+        if(singleDerivationPath) {
+            derivationPath.setText(firstDerivation.extend(nodeEntry.getNode().getDerivation()).getDerivationPath());
+        } else {
+            derivationPath.setText(nodeEntry.getNode().getDerivationPath().replace("m", "multi"));
+        }
     }
 
     private void updateLastUsed() {
