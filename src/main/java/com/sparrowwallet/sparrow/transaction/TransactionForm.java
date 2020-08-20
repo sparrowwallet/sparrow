@@ -23,6 +23,10 @@ public abstract class TransactionForm {
         this.txdata = txdata;
     }
 
+    public TransactionData getTransactionData() {
+        return txdata;
+    }
+
     public Transaction getTransaction() {
         return txdata.getTransaction();
     }

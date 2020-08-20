@@ -7,8 +7,10 @@ import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletTabsClosedEvent;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.IntegerPropertyBase;
 import javafx.beans.property.LongProperty;
@@ -200,6 +202,15 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             setConfirmations(calculateConfirmations());
 
             if(!isFullyConfirming()) {
+                EventManager.get().unregister(this);
+            }
+        }
+    }
+
+    @Subscribe
+    public void walletTabsClosed(WalletTabsClosedEvent event) {
+        for(WalletTabData tabData : event.getClosedWalletTabData()) {
+            if(tabData.getWalletForm().getWallet() == wallet) {
                 EventManager.get().unregister(this);
             }
         }

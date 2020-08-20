@@ -21,6 +21,9 @@ public class WalletExportDialog extends Dialog<Wallet> {
 
     public WalletExportDialog(Wallet wallet) {
         EventManager.get().register(this);
+        setOnCloseRequest(event -> {
+            EventManager.get().unregister(this);
+        });
 
         final DialogPane dialogPane = getDialogPane();
 
@@ -64,7 +67,6 @@ public class WalletExportDialog extends Dialog<Wallet> {
 
     @Subscribe
     public void walletExported(WalletExportEvent event) {
-        EventManager.get().unregister(this);
         wallet = event.getWallet();
         setResult(wallet);
         this.close();

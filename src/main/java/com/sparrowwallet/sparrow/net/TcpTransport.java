@@ -28,6 +28,8 @@ public class TcpTransport implements Transport, Closeable {
     private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
     private final SubscriptionService subscriptionService = new SubscriptionService();
 
+    private Exception lastException;
+
     public TcpTransport(HostAndPort server) {
         this.server = server;
         this.socketFactory = SocketFactory.getDefault();
@@ -50,7 +52,7 @@ public class TcpTransport implements Transport, Closeable {
         out.flush();
     }
 
-    private synchronized String readResponse() {
+    private synchronized String readResponse() throws IOException {
         while(reading) {
             try {
                 wait();
@@ -58,6 +60,10 @@ public class TcpTransport implements Transport, Closeable {
                 //Restore interrupt status and continue
                 Thread.currentThread().interrupt();
             }
+        }
+
+        if(lastException != null) {
+            throw new IOException("Error reading response", lastException);
         }
 
         reading = true;
@@ -83,8 +89,12 @@ public class TcpTransport implements Transport, Closeable {
             } catch(InterruptedException e) {
                 //Restore interrupt status and continue
                 Thread.currentThread().interrupt();
-            } catch(IOException e) {
+            } catch(Exception e) {
                 if(running) {
+                    lastException = e;
+                    reading = false;
+                    notifyAll();
+                    //Allow this thread to terminate as we will need to reconnect with a new transport anyway
                     throw new ServerException(e);
                 }
             }

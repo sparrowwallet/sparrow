@@ -16,6 +16,9 @@ public class WalletImportDialog extends Dialog<Wallet> {
 
     public WalletImportDialog() {
         EventManager.get().register(this);
+        setOnCloseRequest(event -> {
+            EventManager.get().unregister(this);
+        });
 
         final DialogPane dialogPane = getDialogPane();
 
@@ -51,7 +54,6 @@ public class WalletImportDialog extends Dialog<Wallet> {
 
     @Subscribe
     public void walletImported(WalletImportEvent event) {
-        EventManager.get().unregister(this);
         wallet = event.getWallet();
         setResult(wallet);
         this.close();

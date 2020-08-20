@@ -51,6 +51,11 @@ public class OutputsController extends TransactionFormController implements Init
         }
     }
 
+    @Override
+    protected TransactionForm getTransactionForm() {
+        return outputsForm;
+    }
+
     @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         total.refresh(event.getBitcoinUnit());

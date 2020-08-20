@@ -15,6 +15,9 @@ public class DeviceSignDialog extends DeviceDialog<PSBT> {
         super(devices);
         this.psbt = psbt;
         EventManager.get().register(this);
+        setOnCloseRequest(event -> {
+            EventManager.get().unregister(this);
+        });
         setResultConverter(dialogButton -> dialogButton.getButtonData().isCancelButton() ? null : psbt);
     }
 
@@ -26,7 +29,6 @@ public class DeviceSignDialog extends DeviceDialog<PSBT> {
     @Subscribe
     public void psbtSigned(PSBTSignedEvent event) {
         if(psbt == event.getPsbt()) {
-            EventManager.get().unregister(this);
             setResult(event.getSignedPsbt());
             this.close();
         }

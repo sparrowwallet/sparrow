@@ -19,6 +19,9 @@ public class DeviceAddressDialog extends DeviceDialog<String> {
         this.keyDerivation = keyDerivation;
 
         EventManager.get().register(this);
+        setOnCloseRequest(event -> {
+            EventManager.get().unregister(this);
+        });
     }
 
     @Override
@@ -28,7 +31,6 @@ public class DeviceAddressDialog extends DeviceDialog<String> {
 
     @Subscribe
     public void addressDisplayed(AddressDisplayedEvent event) {
-        EventManager.get().unregister(this);
         setResult(event.getAddress());
         this.close();
     }

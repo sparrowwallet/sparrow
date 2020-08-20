@@ -188,6 +188,18 @@ public class AppController implements Initializable {
                     EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
                 }
 
+                List<WalletTabData> closedWalletTabs = c.getRemoved().stream().map(tab -> (TabData)tab.getUserData())
+                        .filter(tabData -> tabData.getType() == TabData.TabType.WALLET).map(tabData -> (WalletTabData)tabData).collect(Collectors.toList());
+                if(!closedWalletTabs.isEmpty()) {
+                    EventManager.get().post(new WalletTabsClosedEvent(closedWalletTabs));
+                }
+
+                List<TransactionTabData> closedTransactionTabs = c.getRemoved().stream().map(tab -> (TabData)tab.getUserData())
+                        .filter(tabData -> tabData.getType() == TabData.TabType.TRANSACTION).map(tabData -> (TransactionTabData)tabData).collect(Collectors.toList());
+                if(!closedTransactionTabs.isEmpty()) {
+                    EventManager.get().post(new TransactionTabsClosedEvent(closedTransactionTabs));
+                }
+
                 if(tabs.getTabs().isEmpty()) {
                     Stage tabStage = (Stage)tabs.getScene().getWindow();
                     tabStage.setTitle("Sparrow");
@@ -268,10 +280,14 @@ public class AppController implements Initializable {
             }
         });
         connectionService.setOnFailed(failEvent -> {
+            //Close connection here to create a new transport next time we try
+            connectionService.resetConnection();
+
             changeMode = false;
             onlineProperty.setValue(false);
             changeMode = true;
 
+            log.debug("Connection failed", failEvent.getSource().getException());
             EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
         });
 

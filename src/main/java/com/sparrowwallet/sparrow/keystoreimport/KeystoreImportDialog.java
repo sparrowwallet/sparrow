@@ -27,6 +27,10 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
     public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource) {
         EventManager.get().register(this);
+        setOnCloseRequest(event -> {
+            EventManager.get().unregister(this);
+        });
+
         final DialogPane dialogPane = getDialogPane();
 
         try {

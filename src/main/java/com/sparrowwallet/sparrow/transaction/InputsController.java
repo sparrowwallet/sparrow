@@ -49,6 +49,11 @@ public class InputsController extends TransactionFormController implements Initi
         initialiseView();
     }
 
+    @Override
+    protected TransactionForm getTransactionForm() {
+        return inputsForm;
+    }
+
     private void initialiseView() {
         Transaction tx = inputsForm.getTransaction();
         count.setText(Integer.toString(tx.getInputs().size()));

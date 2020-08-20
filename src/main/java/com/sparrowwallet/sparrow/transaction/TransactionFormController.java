@@ -1,9 +1,13 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.sparrow.BaseController;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.event.TransactionTabsClosedEvent;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.PieChart;
@@ -17,6 +21,8 @@ import java.util.List;
 
 public abstract class TransactionFormController extends BaseController {
     private static final int MAX_PIE_SEGMENTS = 200;
+
+    protected abstract TransactionForm getTransactionForm();
 
     protected void addPieData(PieChart pie, List<TransactionOutput> outputs) {
         ObservableList<PieChart.Data> outputsPieData = FXCollections.observableArrayList();
@@ -62,6 +68,15 @@ public abstract class TransactionFormController extends BaseController {
             Tooltip.install(data.getNode(), tooltip);
             data.pieValueProperty().addListener((observable, oldValue, newValue) -> tooltip.setText(newValue + "%"));
         });
+    }
+
+    @Subscribe
+    public void transactionTabsClosed(TransactionTabsClosedEvent event) {
+        for(TransactionTabData tabData : event.getClosedTransactionTabData()) {
+            if(tabData.getTransactionData() == getTransactionForm().getTransactionData()) {
+                EventManager.get().unregister(this);
+            }
+        }
     }
 
     public static class TransactionReferenceContextMenu extends ContextMenu {

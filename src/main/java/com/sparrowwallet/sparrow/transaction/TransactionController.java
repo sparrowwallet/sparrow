@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.TransactionTabData;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -487,6 +488,15 @@ public class TransactionController implements Initializable {
         if(event.getPsbt().equals(getPSBT())) {
             txhex.setTransaction(getTransaction());
             highlightTxHex();
+        }
+    }
+
+    @Subscribe
+    public void transactionTabsClosed(TransactionTabsClosedEvent event) {
+        for(TransactionTabData tabData : event.getClosedTransactionTabData()) {
+            if(tabData.getTransactionData() == txdata) {
+                EventManager.get().unregister(this);
+            }
         }
     }
 }

@@ -579,7 +579,6 @@ public class ElectrumServer {
         private final boolean subscribe;
         private boolean firstCall = true;
         private Thread reader;
-        private Throwable lastReaderException;
         private long feeRatesRetrievedAt;
 
         public ConnectionService() {
@@ -598,7 +597,7 @@ public class ElectrumServer {
                     if(firstCall) {
                         electrumServer.connect();
 
-                        reader = new Thread(new ReadRunnable());
+                        reader = new Thread(new ReadRunnable(), "ElectrumServerReadThread");
                         reader.setDaemon(true);
                         reader.setUncaughtExceptionHandler(ConnectionService.this);
                         reader.start();
@@ -639,8 +638,7 @@ public class ElectrumServer {
                                 return new FeeRatesUpdatedEvent(blockTargetFeeRates);
                             }
                         } else {
-                            firstCall = true;
-                            throw new ServerException("Connection to server failed", lastReaderException);
+                            resetConnection();
                         }
                     }
 
@@ -649,12 +647,21 @@ public class ElectrumServer {
             };
         }
 
+        public void resetConnection() {
+            try {
+                closeActiveConnection();
+                firstCall = true;
+            } catch (ServerException e) {
+                log.error("Error closing connection during connection reset", e);
+            }
+        }
+
         @Override
         public boolean cancel() {
             try {
                 closeActiveConnection();
             } catch (ServerException e) {
-                log.error("Eror closing connection", e);
+                log.error("Error closing connection", e);
             }
 
             return super.cancel();
@@ -664,12 +671,11 @@ public class ElectrumServer {
         public void reset() {
             super.reset();
             firstCall = true;
-            lastReaderException = null;
         }
 
         @Override
         public void uncaughtException(Thread t, Throwable e) {
-            this.lastReaderException = e;
+            log.error("Uncaught error in ConnectionService", e);
         }
     }
 
@@ -679,8 +685,9 @@ public class ElectrumServer {
             try {
                 TcpTransport tcpTransport = (TcpTransport)getTransport();
                 tcpTransport.readInputLoop();
-            } catch (ServerException e) {
-                throw new RuntimeException(e.getCause() != null ? e.getCause() : e);
+            } catch(ServerException e) {
+                //Only debug logging here as the exception has been passed on to the ConnectionService thread via TcpTransport
+                log.debug("Read thread terminated", e);
             }
         }
     }

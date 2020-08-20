@@ -147,6 +147,11 @@ public class OutputController extends TransactionFormController implements Initi
         initializeView();
     }
 
+    @Override
+    protected TransactionForm getTransactionForm() {
+        return outputForm;
+    }
+
     @Subscribe
     public void blockTransactionOutputsFetched(BlockTransactionOutputsFetchedEvent event) {
         if(event.getTxId().equals(outputForm.getTransaction().getTxId()) && outputForm.getPsbt() == null && outputForm.getIndex() >= event.getPageStart() && outputForm.getIndex() < event.getPageEnd()) {

@@ -12,6 +12,10 @@ public class WalletTabData extends TabData {
         this.walletForm = walletForm;
     }
 
+    public WalletForm getWalletForm() {
+        return walletForm;
+    }
+
     public Wallet getWallet() {
         return walletForm.getWallet();
     }

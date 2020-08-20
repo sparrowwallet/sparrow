@@ -462,6 +462,11 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     @Override
+    protected TransactionForm getTransactionForm() {
+        return inputForm;
+    }
+
+    @Override
     protected String describeScriptChunk(ScriptChunk chunk) {
         String chunkString = super.describeScriptChunk(chunk);
 

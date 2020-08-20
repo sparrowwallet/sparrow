@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
@@ -214,6 +215,15 @@ public class WalletForm {
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
         if(event.getWalletNode(wallet) != null) {
             refreshHistory(AppController.getCurrentBlockHeight());
+        }
+    }
+
+    @Subscribe
+    public void walletTabsClosed(WalletTabsClosedEvent event) {
+        for(WalletTabData tabData : event.getClosedWalletTabData()) {
+            if(tabData.getWalletForm() == this) {
+                EventManager.get().unregister(this);
+            }
         }
     }
 }

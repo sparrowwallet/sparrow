@@ -196,6 +196,11 @@ public class HeadersController extends TransactionFormController implements Init
         initializeView();
     }
 
+    @Override
+    protected TransactionForm getTransactionForm() {
+        return headersForm;
+    }
+
     private void initializeView() {
         Transaction tx = headersForm.getTransaction();
 
