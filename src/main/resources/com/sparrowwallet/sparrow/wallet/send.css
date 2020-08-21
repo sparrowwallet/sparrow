@@ -7,9 +7,9 @@
 }
 
 .amount-field {
-    -fx-pref-width: 145px;
-    -fx-min-width: 145px;
-    -fx-max-width: 145px;
+    -fx-pref-width: 140px;
+    -fx-min-width: 140px;
+    -fx-max-width: 140px;
 }
 
 .amount-unit {

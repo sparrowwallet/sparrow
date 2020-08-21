@@ -1,0 +1,15 @@
+.title-area {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-padding: 10 25 10 25;
+    -fx-border-width: 0px 0px 1px 0px;
+    -fx-border-color: #e5e5e6;
+}
+
+.title-label {
+    -fx-font-size: 20px;
+}
+
+.content-area, .button-area {
+    -fx-padding: 10 25 25 25;
+}
+

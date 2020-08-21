@@ -38,6 +38,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -46,6 +48,7 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
@@ -334,7 +337,7 @@ public class AppController implements Initializable {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
-            Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(MainApp.APP_NAME, null), new SeparatorMenuItem(),
+            Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(MainApp.APP_NAME, getAboutStage()), new SeparatorMenuItem(),
                     preferences, new SeparatorMenuItem(),
                     tk.createHideMenuItem(MainApp.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
                     tk.createQuitMenuItem(MainApp.APP_NAME));
@@ -342,6 +345,27 @@ public class AppController implements Initializable {
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("macHide"));
         }
+    }
+
+    private Stage getAboutStage() {
+        try {
+            FXMLLoader loader = new FXMLLoader(AppController.class.getResource("about.fxml"));
+            Parent root = loader.load();
+            AboutController controller = loader.getController();
+
+            Stage stage = new Stage();
+            stage.setTitle("About Sparrow");
+            stage.initStyle(StageStyle.UNDECORATED);
+            stage.setResizable(false);
+            stage.setScene(new Scene(root));
+            controller.setStage(stage);
+
+            return stage;
+        } catch(IOException e) {
+            log.error("Error loading about stage", e);
+        }
+
+        return null;
     }
 
     public void openTransactionFromFile(ActionEvent event) {
