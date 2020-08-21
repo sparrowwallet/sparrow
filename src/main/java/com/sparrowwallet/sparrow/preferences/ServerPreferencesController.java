@@ -1,9 +1,11 @@
 package com.sparrowwallet.sparrow.preferences;
 
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
+import com.sparrowwallet.sparrow.event.RequestDisconnectEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -60,6 +62,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
     @FXML
     private Button testConnection;
+
+    @FXML
+    private Button editConnection;
 
     @FXML
     private TextArea testResults;
@@ -125,33 +130,36 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         });
 
-        testConnection.setDisable(ElectrumServer.isConnected());
+        boolean isConnected = ElectrumServer.isConnected();
+        setFieldsEditable(!isConnected);
+
+        testConnection.managedProperty().bind(testConnection.visibleProperty());
+        testConnection.setVisible(!isConnected);
         testConnection.setOnAction(event -> {
             testResults.setText("Connecting to " + config.getElectrumServer() + "...");
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
 
-            boolean existingConnection = ElectrumServer.isConnected();
-            if(existingConnection) {
-                ElectrumServer.ServerBannerService serverBannerService = new ElectrumServer.ServerBannerService();
-                serverBannerService.setOnSucceeded(successEvent -> {
-                    showConnectionSuccess(null, serverBannerService.getValue());
-                });
-                serverBannerService.setOnFailed(this::showConnectionFailure);
-                serverBannerService.start();
-            } else {
-                ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService(false);
-                connectionService.setPeriod(Duration.minutes(1));
-                connectionService.setOnSucceeded(successEvent -> {
-                    ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
-                    showConnectionSuccess(connectionEvent.getServerVersion(), connectionEvent.getServerBanner());
-                    connectionService.cancel();
-                });
-                connectionService.setOnFailed(workerStateEvent -> {
-                    showConnectionFailure(workerStateEvent);
-                    connectionService.cancel();
-                });
-                connectionService.start();
-            }
+            ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService(false);
+            connectionService.setPeriod(Duration.minutes(1));
+            connectionService.setOnSucceeded(successEvent -> {
+                ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
+                showConnectionSuccess(connectionEvent.getServerVersion(), connectionEvent.getServerBanner());
+                connectionService.cancel();
+            });
+            connectionService.setOnFailed(workerStateEvent -> {
+                showConnectionFailure(workerStateEvent);
+                connectionService.cancel();
+            });
+            connectionService.start();
+        });
+
+        editConnection.managedProperty().bind(editConnection.visibleProperty());
+        editConnection.setVisible(isConnected);
+        editConnection.setOnAction(event -> {
+            EventManager.get().post(new RequestDisconnectEvent());
+            setFieldsEditable(true);
+            editConnection.setVisible(false);
+            testConnection.setVisible(true);
         });
 
         String electrumServer = config.getElectrumServer();
@@ -194,6 +202,17 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 proxyPort.setText(Integer.toString(server.getPort()));
             }
         }
+    }
+
+    private void setFieldsEditable(boolean editable) {
+        host.setEditable(editable);
+        port.setEditable(editable);
+        useSsl.setDisable(!editable);
+        certificate.setEditable(editable);
+        certificateSelect.setDisable(!editable);
+        useProxy.setDisable(!editable);
+        proxyHost.setEditable(editable);
+        proxyPort.setEditable(editable);
     }
 
     private void showConnectionSuccess(List<String> serverVersion, String serverBanner) {

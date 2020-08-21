@@ -532,6 +532,14 @@ public class AppController implements Initializable {
         return onlineProperty.get();
     }
 
+    public void connect() {
+        serverToggle.selectedProperty().set(true);
+    }
+
+    public void disconnect() {
+        serverToggle.selectedProperty().set(false);
+    }
+
     public static BooleanProperty onlineProperty() { return onlineProperty; }
 
     public static Integer getCurrentBlockHeight() {
@@ -1213,5 +1221,15 @@ public class AppController implements Initializable {
     @Subscribe
     public void requestQRScan(RequestQRScanEvent event) {
         openTransactionFromQR(null);
+    }
+
+    @Subscribe
+    public void requestConnect(RequestConnectEvent event) {
+        connect();
+    }
+
+    @Subscribe
+    public void requestDisconnect(RequestDisconnectEvent event) {
+        disconnect();
     }
 }

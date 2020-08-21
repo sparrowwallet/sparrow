@@ -1,7 +1,10 @@
 package com.sparrowwallet.sparrow.preferences;
 
 import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.RequestConnectEvent;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -12,6 +15,8 @@ import org.controlsfx.tools.Borders;
 import java.io.IOException;
 
 public class PreferencesDialog extends Dialog<Boolean> {
+    private final boolean existingConnection;
+
     public PreferencesDialog() {
         this(null);
     }
@@ -44,6 +49,13 @@ public class PreferencesDialog extends Dialog<Boolean> {
 
             dialogPane.setPrefWidth(650);
             dialogPane.setPrefHeight(500);
+
+            existingConnection = ElectrumServer.isConnected();
+            setOnCloseRequest(event -> {
+                if(existingConnection && !ElectrumServer.isConnected()) {
+                    EventManager.get().post(new RequestConnectEvent());
+                }
+            });
 
             setResultConverter(dialogButton -> dialogButton == newWalletButtonType ? Boolean.TRUE : null);
         } catch(IOException e) {

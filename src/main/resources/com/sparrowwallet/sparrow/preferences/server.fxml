@@ -59,6 +59,11 @@
                 <Glyph fontFamily="FontAwesome" icon="QUESTION_CIRCLE" prefWidth="13" />
             </graphic>
         </Button>
+        <Button fx:id="editConnection" graphicTextGap="5" text="Edit Existing Connection">
+            <graphic>
+                <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />
+            </graphic>
+        </Button>
     </StackPane>
 
     <StackPane GridPane.columnIndex="0" GridPane.rowIndex="2">
