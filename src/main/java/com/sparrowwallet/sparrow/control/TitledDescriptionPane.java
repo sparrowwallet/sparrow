@@ -125,7 +125,7 @@ public class TitledDescriptionPane extends TitledPane {
         contentBox.setPadding(new Insets(10, 30, 10, 30));
 
         double width = TextUtils.computeTextWidth(details.getFont(), message, 0.0D);
-        double numLines = Math.max(1, width / 400);
+        double numLines = Math.max(1, Math.ceil(width / 400d));
 
         //Handle long words like txids
         OptionalDouble maxWordLength = Arrays.stream(message.split(" ")).mapToDouble(word -> TextUtils.computeTextWidth(details.getFont(), message, 0.0D)).max();

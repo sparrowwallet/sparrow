@@ -7,7 +7,7 @@ public class IOUtils {
     public static FileType getFileType(File file) {
         try {
             String type = Files.probeContentType(file.toPath());
-            if (type == null) {
+            if(type == null) {
                 if(file.getName().toLowerCase().endsWith("txn") || file.getName().toLowerCase().endsWith("psbt")) {
                     return FileType.TEXT;
                 }
@@ -17,6 +17,8 @@ public class IOUtils {
                         String line = br.readLine();
                         if(line.startsWith("01000000") || line.startsWith("cHNid")) {
                             return FileType.TEXT;
+                        } else if(line.startsWith("{")) {
+                            return FileType.JSON;
                         }
                     }
                 }

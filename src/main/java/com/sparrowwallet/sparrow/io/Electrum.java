@@ -266,20 +266,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
     @Override
     public boolean isEncrypted(File file) {
-        if(FileType.BINARY.equals(IOUtils.getFileType(file))) {
-            try {
-                try(Scanner s = new Scanner(file))  {
-                    if(s.hasNextLine() && s.nextLine().equals("{")) {
-                        return false;
-                    }
-                }
-                return true;
-            } catch(FileNotFoundException e) {
-                //Can't happen
-            }
-        }
-
-        return false;
+        return (FileType.BINARY.equals(IOUtils.getFileType(file)));
     }
 
     @Override
