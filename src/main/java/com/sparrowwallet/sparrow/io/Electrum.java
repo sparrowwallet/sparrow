@@ -14,10 +14,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.InflaterInputStream;
 
 public class Electrum implements KeystoreFileImport, WalletImport, WalletExport {
@@ -33,7 +30,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import a single keystore from an Electrum wallet (use File > Import > Electrum to import a multisig wallet)";
+        return "Import a single keystore from an Electrum wallet (use File > Import > Electrum to import a multisig wallet).";
     }
 
     @Override
@@ -46,7 +43,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
         if(!wallet.getScriptType().equals(scriptType)) {
             //TODO: Derive appropriate ScriptType keystore from xprv if present
-            throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType() + ", and the correct script type cannot be derived without the master private key");
+            throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType() + ", and the correct script type cannot be derived without the master private key.");
         }
 
         return wallet.getKeystores().get(0);
@@ -105,11 +102,12 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     keystore.setSource(KeystoreSource.HW_USB);
                     keystore.setWalletModel(WalletModel.fromType(ek.hw_type));
                     if(keystore.getWalletModel() == null) {
-                        throw new ImportException("Wallet has keystore of unknown hardware wallet type \"" + ek.hw_type + "\"");
+                        throw new ImportException("Wallet has keystore of unknown hardware wallet type \"" + ek.hw_type + "\".");
                     }
                 } else if("bip32".equals(ek.type)) {
                     if(ek.xprv != null && ek.seed == null) {
-                        throw new ImportException("Electrum does not support exporting BIP39 derived seeds.");
+                        throw new ImportException("Electrum does not support exporting BIP39 derived seeds, as it does not store the mnemonic words. Only seeds created with its native Electrum Seed Version System are exportable. " +
+                                "If you have the mnemonic words, create a new wallet with a BIP39 keystore.");
                     } else if(ek.seed != null) {
                         keystore.setSource(KeystoreSource.SW_SEED);
                         String mnemonic = ek.seed;
@@ -181,7 +179,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
     @Override
     public String getWalletImportDescription() {
-        return "Import an Electrum wallet";
+        return "Import an Electrum wallet.";
     }
 
     @Override
@@ -268,12 +266,25 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
     @Override
     public boolean isEncrypted(File file) {
-        return FileType.BINARY.equals(IOUtils.getFileType(file));
+        if(FileType.BINARY.equals(IOUtils.getFileType(file))) {
+            try {
+                try(Scanner s = new Scanner(file))  {
+                    if(s.hasNextLine() && s.nextLine().equals("{")) {
+                        return false;
+                    }
+                }
+                return true;
+            } catch(FileNotFoundException e) {
+                //Can't happen
+            }
+        }
+
+        return false;
     }
 
     @Override
     public String getWalletExportDescription() {
-        return "Export this wallet as an Electrum wallet file";
+        return "Export this wallet as an Electrum wallet file.";
     }
 
     private static class ElectrumJsonWallet {

@@ -133,7 +133,7 @@ public class TitledDescriptionPane extends TitledPane {
             numLines += 1.0;
         }
 
-        double height = Math.max(60, numLines * 40);
+        double height = Math.max(60, numLines * 20);
         contentBox.setPrefHeight(height);
 
         return contentBox;

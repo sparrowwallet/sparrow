@@ -21,7 +21,7 @@ public class Bip39 implements KeystoreMnemonicImport {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import or generate your 12 to 24 word mnemonic and optional passphrase";
+        return "Import or generate your 12 to 24 word mnemonic and optional passphrase.";
     }
 
     @Override

@@ -68,7 +68,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import file created by using the Settings > Multisig Wallets > Export XPUB feature on your Coldcard";
+        return "Import file created by using the Settings > Multisig Wallets > Export XPUB feature on your Coldcard.";
     }
 
     @Override
@@ -143,7 +143,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public String getWalletImportDescription() {
-        return "Import file created by using the Settings > Multisig Wallets > [Wallet Detail] > Coldcard Export feature on your Coldcard";
+        return "Import file created by using the Settings > Multisig Wallets > [Wallet Detail] > Coldcard Export feature on your Coldcard.";
     }
 
     @Override
@@ -196,7 +196,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public String getWalletExportDescription() {
-        return "Export file that can be read by your Coldcard using the Settings > Multisig Wallets > Import from SD feature";
+        return "Export file that can be read by your Coldcard using the Settings > Multisig Wallets > Import from SD feature.";
     }
 
     @Override
