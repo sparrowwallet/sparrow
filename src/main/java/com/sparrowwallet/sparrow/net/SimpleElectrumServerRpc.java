@@ -1,10 +1,12 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.AppController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +19,7 @@ import static com.sparrowwallet.drongo.protocol.Transaction.DUST_RELAY_TX_FEE;
 
 public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(SimpleElectrumServerRpc.class);
+    private static final int MAX_TARGET_BLOCKS = 25;
 
     @Override
     public void ping(Transport transport) {
@@ -156,7 +159,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids) {
+    public Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash) {
         JsonRpcClient client = new JsonRpcClient(transport);
 
         Map<String, VerboseTransaction> result = new LinkedHashMap<>();
@@ -166,6 +169,27 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 result.put(txid, verboseTransaction);
             } catch(IllegalStateException | IllegalArgumentException e) {
                 log.warn("Error retrieving transaction: " + txid + " (" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + ")");
+                String rawTxHex = client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(txid).params(txid).execute();
+                Transaction tx = new Transaction(Utils.hexToBytes(rawTxHex));
+                String id = tx.getTxId().toString();
+                int height = 0;
+
+                if(scriptHash != null) {
+                    ScriptHashTx[] scriptHashTxes = client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(id).params(scriptHash).execute();
+                    for(ScriptHashTx scriptHashTx : scriptHashTxes) {
+                        if(scriptHashTx.tx_hash.equals(id)) {
+                            height = scriptHashTx.height;
+                            break;
+                        }
+                    }
+                }
+
+                VerboseTransaction verboseTransaction = new VerboseTransaction();
+                verboseTransaction.txid = id;
+                verboseTransaction.hex = rawTxHex;
+                verboseTransaction.confirmations = (height <= 0 ? 0 : AppController.getCurrentBlockHeight() - height + 1);
+                verboseTransaction.blockhash = Sha256Hash.ZERO_HASH.toString();
+                result.put(txid, verboseTransaction);
             } catch(JsonRpcException e) {
                 log.warn("Error retrieving transaction: " + txid + " (" + e.getErrorMessage() + ")");
             }
@@ -180,14 +204,18 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<Integer, Double> result = new LinkedHashMap<>();
         for(Integer targetBlock : targetBlocks) {
-            try {
-                Double targetBlocksFeeRateBtcKb = client.createRequest().returnAs(Double.class).method("blockchain.estimatefee").id(targetBlock).params(targetBlock).execute();
-                result.put(targetBlock, targetBlocksFeeRateBtcKb);
-            } catch(IllegalStateException | IllegalArgumentException e) {
-                log.warn("Failed to retrieve fee rate for target blocks: " + targetBlock + " (" + e.getMessage() + ")");
-                result.put(targetBlock, DUST_RELAY_TX_FEE);
-            } catch(JsonRpcException e) {
-                throw new ElectrumServerRpcException("Failed to retrieve fee rate for target blocks: " + targetBlock, e);
+            if(targetBlock <= MAX_TARGET_BLOCKS) {
+                try {
+                    Double targetBlocksFeeRateBtcKb = client.createRequest().returnAs(Double.class).method("blockchain.estimatefee").id(targetBlock).params(targetBlock).execute();
+                    result.put(targetBlock, targetBlocksFeeRateBtcKb);
+                } catch(IllegalStateException | IllegalArgumentException e) {
+                    log.warn("Failed to retrieve fee rate for target blocks: " + targetBlock + " (" + e.getMessage() + ")");
+                    result.put(targetBlock, 1d);
+                } catch(JsonRpcException e) {
+                    throw new ElectrumServerRpcException("Failed to retrieve fee rate for target blocks: " + targetBlock, e);
+                }
+            } else {
+                result.put(targetBlock, 1d);
             }
         }
 

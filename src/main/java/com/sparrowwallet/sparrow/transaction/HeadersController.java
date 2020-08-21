@@ -469,7 +469,10 @@ public class HeadersController extends TransactionFormController implements Init
     private void updateBlockchainForm(BlockTransaction blockTransaction, Integer currentHeight) {
         blockchainForm.setVisible(true);
 
-        if(currentHeight == null) {
+        if(Sha256Hash.ZERO_HASH.equals(blockTransaction.getBlockHash()) && blockTransaction.getHeight() == 0 && headersForm.getSigningWallet() == null) {
+            //A zero block hash indicates that this blocktransaction is incomplete and the height is likely incorrect if we are not sending a tx
+            blockStatus.setText("Unknown");
+        } else if(currentHeight == null) {
             blockStatus.setText(blockTransaction.getHeight() > 0 ? "Confirmed" : "Unconfirmed");
         } else {
             int confirmations = blockTransaction.getHeight() > 0 ? currentHeight - blockTransaction.getHeight() + 1 : 0;
@@ -512,7 +515,7 @@ public class HeadersController extends TransactionFormController implements Init
             blockTimestampField.setVisible(false);
         }
 
-        if(blockTransaction.getBlockHash() != null) {
+        if(blockTransaction.getBlockHash() != null && !blockTransaction.getBlockHash().equals(Sha256Hash.ZERO_HASH)) {
             blockHashField.setVisible(true);
             blockHash.setText(blockTransaction.getBlockHash().toString());
             blockHash.setContextMenu(new BlockHeightContextMenu(blockTransaction.getBlockHash()));
@@ -796,7 +799,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
         if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
-            if(event.getBlockTransaction() != null) {
+            if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || headersForm.getBlockTransaction() == null)) {
                 updateBlockchainForm(event.getBlockTransaction(), AppController.getCurrentBlockHeight());
             }
 
@@ -937,7 +940,7 @@ public class HeadersController extends TransactionFormController implements Init
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
         if(headersForm.getSigningWallet() != null && event.getWalletNode(headersForm.getSigningWallet()) != null) {
             Sha256Hash txid = headersForm.getTransaction().getTxId();
-            ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid));
+            ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid), event.getScriptHash());
             transactionReferenceService.setOnSucceeded(successEvent -> {
                 Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
                 BlockTransaction blockTransaction = transactionMap.get(txid);

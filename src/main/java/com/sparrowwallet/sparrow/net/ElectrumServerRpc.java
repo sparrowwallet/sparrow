@@ -25,7 +25,7 @@ public interface ElectrumServerRpc {
 
     Map<String, String> getTransactions(Transport transport, Set<String> txids);
 
-    Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids);
+    Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash);
 
     Map<Integer, Double> getFeeEstimates(Transport transport, List<Integer> targetBlocks);
 

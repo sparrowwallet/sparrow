@@ -319,9 +319,9 @@ public class TransactionController implements Initializable {
                 Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
                 BlockTransaction thisBlockTx = null;
                 Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
-                for (Sha256Hash txid : transactionMap.keySet()) {
+                for(Sha256Hash txid : transactionMap.keySet()) {
                     BlockTransaction blockTx = transactionMap.get(txid);
-                    if (txid.equals(getTransaction().getTxId())) {
+                    if(txid.equals(getTransaction().getTxId())) {
                         thisBlockTx = blockTx;
                     } else {
                         inputTransactions.put(txid, blockTx);
@@ -456,7 +456,9 @@ public class TransactionController implements Initializable {
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
         if(event.getTxId().equals(getTransaction().getTxId())) {
-            txdata.setBlockTransaction(event.getBlockTransaction());
+            if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || txdata.getBlockTransaction() == null)) {
+                txdata.setBlockTransaction(event.getBlockTransaction());
+            }
             if(txdata.getInputTransactions() == null) {
                 txdata.setInputTransactions(event.getInputTransactions());
             } else {

@@ -40,4 +40,8 @@ public class WalletNodeHistoryChangedEvent {
 
         return null;
     }
+
+    public String getScriptHash() {
+        return scriptHash;
+    }
 }

@@ -13,8 +13,8 @@
 }
 
 .amount-unit {
-    -fx-min-width: 70px;
-    -fx-max-width: 70px;
+    -fx-min-width: 75px;
+    -fx-max-width: 75px;
 }
 
 #feeRatesChart {

@@ -5,6 +5,8 @@ import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.sparrow.io.Config;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.SocketFactory;
 import java.io.*;
@@ -12,6 +14,8 @@ import java.net.Socket;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class TcpTransport implements Transport, Closeable {
+    private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
+
     public static final int DEFAULT_PORT = 50001;
 
     protected final HostAndPort server;
@@ -24,6 +28,7 @@ public class TcpTransport implements Transport, Closeable {
     private final ReentrantLock clientRequestLock = new ReentrantLock();
     private boolean running = false;
     private boolean reading = true;
+    private boolean firstRead = true;
 
     private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
     private final SubscriptionService subscriptionService = new SubscriptionService();
@@ -53,6 +58,11 @@ public class TcpTransport implements Transport, Closeable {
     }
 
     private synchronized String readResponse() throws IOException {
+        if(firstRead) {
+            notifyAll();
+            firstRead = false;
+        }
+
         while(reading) {
             try {
                 wait();
@@ -63,7 +73,7 @@ public class TcpTransport implements Transport, Closeable {
         }
 
         if(lastException != null) {
-            throw new IOException("Error reading response", lastException);
+            throw new IOException("Error reading response: " + lastException.getMessage(), lastException);
         }
 
         reading = true;
@@ -73,6 +83,13 @@ public class TcpTransport implements Transport, Closeable {
     }
 
     public synchronized void readInputLoop() throws ServerException {
+        try {
+            //Don't start reading until first RPC request is sent
+            wait();
+        } catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
         while(running) {
             try {
                 String received = readInputStream();
@@ -95,7 +112,7 @@ public class TcpTransport implements Transport, Closeable {
                     reading = false;
                     notifyAll();
                     //Allow this thread to terminate as we will need to reconnect with a new transport anyway
-                    throw new ServerException(e);
+                    running = false;
                 }
             }
         }

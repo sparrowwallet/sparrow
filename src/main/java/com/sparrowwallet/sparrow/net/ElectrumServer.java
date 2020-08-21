@@ -479,13 +479,13 @@ public class ElectrumServer {
         }
     }
 
-    public Map<Sha256Hash, BlockTransaction> getReferencedTransactions(Set<Sha256Hash> references) throws ServerException {
+    public Map<Sha256Hash, BlockTransaction> getReferencedTransactions(Set<Sha256Hash> references, String scriptHash) throws ServerException {
         Set<String> txids = new LinkedHashSet<>(references.size());
         for(Sha256Hash reference : references) {
             txids.add(reference.toString());
         }
 
-        Map<String, VerboseTransaction> result = electrumServerRpc.getVerboseTransactions(getTransport(), txids);
+        Map<String, VerboseTransaction> result = electrumServerRpc.getVerboseTransactions(getTransport(), txids, scriptHash);
 
         Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
         for(String txid : result.keySet()) {
@@ -715,6 +715,7 @@ public class ElectrumServer {
 
     public static class TransactionReferenceService extends Service<Map<Sha256Hash, BlockTransaction>> {
         private final Set<Sha256Hash> references;
+        private String scriptHash;
 
         public TransactionReferenceService(Transaction transaction) {
             references = new HashSet<>();
@@ -722,6 +723,11 @@ public class ElectrumServer {
             for(TransactionInput input : transaction.getInputs()) {
                 references.add(input.getOutpoint().getHash());
             }
+        }
+
+        public TransactionReferenceService(Set<Sha256Hash> references, String scriptHash) {
+            this(references);
+            this.scriptHash = scriptHash;
         }
 
         public TransactionReferenceService(Set<Sha256Hash> references) {
@@ -733,7 +739,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected Map<Sha256Hash, BlockTransaction> call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    return electrumServer.getReferencedTransactions(references);
+                    return electrumServer.getReferencedTransactions(references, scriptHash);
                 }
             };
         }

@@ -73,7 +73,7 @@
                 </Form>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
                     <Fieldset inputGrow="SOMETIMES" text="Fee">
-                        <Field text="Block target:">
+                        <Field text="Block target">
                             <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">

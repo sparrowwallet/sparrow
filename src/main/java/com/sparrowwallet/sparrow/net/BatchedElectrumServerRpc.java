@@ -167,7 +167,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids) {
+    public Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, VerboseTransaction> batchRequest = client.createBatchRequest().keysType(String.class).returnType(VerboseTransaction.class);
         for(String txid : txids) {

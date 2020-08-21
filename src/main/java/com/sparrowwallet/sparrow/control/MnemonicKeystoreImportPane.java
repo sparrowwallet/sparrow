@@ -63,7 +63,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     }
 
     public MnemonicKeystoreImportPane(Keystore keystore) {
-        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() ? "Passphrase enabled" : "Passphrase disabled", "", "image/" + WalletModel.SEED + ".png");
+        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() ? "Passphrase enabled" : "Passphrase disabled", "", "image/" + WalletModel.SEED.getType() + ".png");
         this.wallet = null;
         this.importer = null;
         showHideLink.setVisible(false);

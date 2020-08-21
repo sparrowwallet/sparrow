@@ -54,7 +54,7 @@ public class ConfirmationProgressIndicator extends StackPane {
                 arcLengthTimeline.getKeyFrames().add(arcLengthFrame);
                 sequence.getChildren().add(arcLengthTimeline);
 
-                if(newValue.intValue() == BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+                if(newValue.intValue() >= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
                     Timeline arcRadiusTimeline = new Timeline();
                     KeyValue arcRadiusXValue = new KeyValue(arc.radiusXProperty(), 0.0);
                     KeyValue arcRadiusYValue = new KeyValue(arc.radiusYProperty(), 0.0);
