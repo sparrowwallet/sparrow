@@ -39,6 +39,7 @@ public class BalanceChart extends LineChart<Number, Number> {
 
         List<Data<Number, Number>> balanceDataList = walletTransactionsEntry.getChildren().stream()
                 .map(entry -> (TransactionEntry)entry)
+                .filter(txEntry -> txEntry.getBlockTransaction().getHeight() > 0)
                 .map(txEntry -> new XYChart.Data<>((Number)txEntry.getBlockTransaction().getDate().getTime(), (Number)txEntry.getBalance(), txEntry))
                 .collect(Collectors.toList());
 
@@ -83,7 +84,7 @@ public class BalanceChart extends LineChart<Number, Number> {
             XYChart.Data<Number, Number> data = balanceSeries.getData().get(i);
             Node symbol = lookup(".chart-line-symbol.data" + i);
             if(symbol != null) {
-                if(data.getXValue().equals(transactionEntry.getBlockTransaction().getDate().getTime()) && data.getExtraValue() != null) {
+                if(transactionEntry.getBlockTransaction().getDate() != null && data.getXValue().equals(transactionEntry.getBlockTransaction().getDate().getTime()) && data.getExtraValue() != null) {
                     symbol.getStyleClass().add("selected");
                     selectedEntry = transactionEntry;
                 }

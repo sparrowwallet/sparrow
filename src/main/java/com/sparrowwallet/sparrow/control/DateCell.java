@@ -33,9 +33,14 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
         } else {
             if(entry instanceof UtxoEntry) {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
-                String date = DATE_FORMAT.format(utxoEntry.getHashIndex().getDate());
-                setText(date);
-                setContextMenu(new DateContextMenu(date, utxoEntry.getHashIndex()));
+                if(utxoEntry.getHashIndex().getHeight() <= 0) {
+                    setText("Unconfirmed");
+                } else {
+                    String date = DATE_FORMAT.format(utxoEntry.getHashIndex().getDate());
+                    setText(date);
+                    setContextMenu(new DateContextMenu(date, utxoEntry.getHashIndex()));
+                }
+
                 Tooltip tooltip = new Tooltip();
                 int height = utxoEntry.getHashIndex().getHeight();
                 tooltip.setText(height > 0 ? Integer.toString(height) : "Mempool");

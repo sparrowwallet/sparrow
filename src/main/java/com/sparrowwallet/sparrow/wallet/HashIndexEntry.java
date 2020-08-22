@@ -55,11 +55,15 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         return (type.equals(Type.INPUT) ? "Spent by input " : "Received from output ") +
                 getHashIndex().getHash().toString().substring(0, 8) + "..:" +
                 getHashIndex().getIndex() +
-                " on " + DateLabel.getShortDateFormat(getHashIndex().getDate());
+                (getHashIndex().getHeight() <= 0 ? " (Unconfirmed)" : " on " + DateLabel.getShortDateFormat(getHashIndex().getDate()));
     }
 
     public boolean isSpent() {
         return getType().equals(HashIndexEntry.Type.INPUT) || getHashIndex().getSpentBy() != null;
+    }
+
+    public boolean isSpendable() {
+        return !isSpent() && (hashIndex.getHeight() > 0 || wallet.allInputsFromWallet(hashIndex.getHash()));
     }
 
     @Override

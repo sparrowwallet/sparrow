@@ -210,12 +210,12 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                     result.put(targetBlock, targetBlocksFeeRateBtcKb);
                 } catch(IllegalStateException | IllegalArgumentException e) {
                     log.warn("Failed to retrieve fee rate for target blocks: " + targetBlock + " (" + e.getMessage() + ")");
-                    result.put(targetBlock, 1d);
+                    result.put(targetBlock, 0.0001d);
                 } catch(JsonRpcException e) {
                     throw new ElectrumServerRpcException("Failed to retrieve fee rate for target blocks: " + targetBlock, e);
                 }
             } else {
-                result.put(targetBlock, 1d);
+                result.put(targetBlock, 0.0001d);
             }
         }
 

@@ -370,7 +370,7 @@ public class ElectrumServer {
                 }
                 BlockTransactionHash reference = optionalReference.get();
 
-                Date blockDate;
+                Date blockDate = null;
                 if(reference.getHeight() > 0) {
                     BlockHeader blockHeader = blockHeaderMap.get(reference.getHeight());
                     if(blockHeader == null) {
@@ -379,8 +379,6 @@ public class ElectrumServer {
                         continue;
                     }
                     blockDate = blockHeader.getTimeAsDate();
-                } else {
-                    blockDate = new Date();
                 }
 
                 BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockDate, reference.getFee(), transaction);

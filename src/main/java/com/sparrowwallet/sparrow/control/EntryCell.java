@@ -43,9 +43,18 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
         } else {
             if(entry instanceof TransactionEntry) {
                 TransactionEntry transactionEntry = (TransactionEntry)entry;
-                String date = DATE_FORMAT.format(transactionEntry.getBlockTransaction().getDate());
-                setText(date);
-                setContextMenu(new TransactionContextMenu(date, transactionEntry.getBlockTransaction()));
+                if(transactionEntry.getBlockTransaction().getHeight() == -1) {
+                    setText("Unconfirmed Parent");
+                    setContextMenu(new UnconfirmedTransactionContextMenu(transactionEntry.getBlockTransaction()));
+                } else if(transactionEntry.getBlockTransaction().getHeight() == 0) {
+                    setText("Unconfirmed");
+                    setContextMenu(new UnconfirmedTransactionContextMenu(transactionEntry.getBlockTransaction()));
+                } else {
+                    String date = DATE_FORMAT.format(transactionEntry.getBlockTransaction().getDate());
+                    setText(date);
+                    setContextMenu(new TransactionContextMenu(date, transactionEntry.getBlockTransaction()));
+                }
+
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(transactionEntry.getBlockTransaction().getHash().toString());
                 setTooltip(tooltip);
@@ -95,7 +104,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 });
                 actionBox.getChildren().add(viewTransactionButton);
 
-                if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && !hashIndexEntry.isSpent()) {
+                if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && hashIndexEntry.isSpendable()) {
                     Button spendUtxoButton = new Button("");
                     Glyph sendGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
                     sendGlyph.setFontSize(12);
@@ -105,7 +114,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                                 .map(tp -> tp.getTreeItem().getValue())
                                 .filter(e -> e instanceof HashIndexEntry)
                                 .map(e -> (HashIndexEntry)e)
-                                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && !hashIndexEntry.isSpent())
+                                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
                                 .collect(Collectors.toList());
 
                         if(!utxoEntries.contains(hashIndexEntry)) {
@@ -121,6 +130,20 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
 
                 setGraphic(actionBox);
             }
+        }
+    }
+
+    private static class UnconfirmedTransactionContextMenu extends ContextMenu {
+        public UnconfirmedTransactionContextMenu(BlockTransaction blockTransaction) {
+            MenuItem copyTxid = new MenuItem("Copy Transaction ID");
+            copyTxid.setOnAction(AE -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(blockTransaction.getHashAsString());
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+
+            getItems().addAll(copyTxid);
         }
     }
 

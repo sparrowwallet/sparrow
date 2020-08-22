@@ -144,7 +144,7 @@ public class ReceiveController extends WalletFormController implements Initializ
         } else if(!currentOutputs.isEmpty()) {
             long count = currentOutputs.size();
             BlockTransactionHashIndex lastUsedReference = currentOutputs.stream().skip(count - 1).findFirst().get();
-            lastUsed.setText(DATE_FORMAT.format(lastUsedReference.getDate()));
+            lastUsed.setText(lastUsedReference.getHeight() <= 0 ? "Unconfirmed Transaction" : DATE_FORMAT.format(lastUsedReference.getDate()));
             lastUsed.setGraphic(getWarningGlyph());
         } else {
             lastUsed.setText("Unknown");
