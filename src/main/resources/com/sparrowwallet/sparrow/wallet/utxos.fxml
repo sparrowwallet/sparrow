@@ -12,36 +12,51 @@
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import com.sparrowwallet.sparrow.control.UtxosChart?>
+<?import org.controlsfx.glyphfont.Glyph?>
 
-<GridPane hgap="10.0" vgap="10.0" stylesheets="@utxos.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.UtxosController">
+<BorderPane stylesheets="@utxos.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.UtxosController">
     <padding>
         <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
     </padding>
-    <columnConstraints>
-        <ColumnConstraints percentWidth="100.0" />
-    </columnConstraints>
-    <rowConstraints>
-        <RowConstraints percentHeight="50" />
-        <RowConstraints percentHeight="50" />
-    </rowConstraints>
-    <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
-        <top>
-            <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
-        </top>
-        <center>
-            <UtxosTreeTable fx:id="utxosTable" />
-        </center>
-    </BorderPane>
-    <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
-        <center>
-            <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false">
-                <xAxis>
-                    <CategoryAxis side="BOTTOM" animated="false" />
-                </xAxis>
-                <yAxis>
-                    <NumberAxis side="LEFT" />
-                </yAxis>
-            </UtxosChart>
-        </center>
-    </BorderPane>
-</GridPane>
+    <center>
+        <GridPane hgap="10.0" vgap="10.0">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="100.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints percentHeight="60" />
+                <RowConstraints percentHeight="40" />
+            </rowConstraints>
+            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <top>
+                    <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
+                </top>
+                <center>
+                    <UtxosTreeTable fx:id="utxosTable" />
+                </center>
+                <bottom>
+                    <HBox styleClass="utxos-buttons-box" spacing="20" alignment="BOTTOM_RIGHT">
+                        <Button text="Clear" onAction="#clear"/>
+                        <Button fx:id="sendSelected" text="Send Selected" graphicTextGap="5" onAction="#sendSelected">
+                            <graphic>
+                                <Glyph fontFamily="FontAwesome" icon="SEND" fontSize="12" />
+                            </graphic>
+                        </Button>
+                    </HBox>
+                </bottom>
+            </BorderPane>
+            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+                <center>
+                    <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false">
+                        <xAxis>
+                            <CategoryAxis side="BOTTOM" animated="false" />
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis side="LEFT" />
+                        </yAxis>
+                    </UtxosChart>
+                </center>
+            </BorderPane>
+        </GridPane>
+    </center>
+</BorderPane>

@@ -45,6 +45,18 @@
     -fx-text-fill: #696c77;
 }
 
+.utxo-row.unspendable {
+    -fx-text-fill: #a0a1a7;
+}
+
+.tree-table-row-cell:selected .utxo-row.unspendable {
+    -fx-text-fill: #696c77;
+}
+
+.tree-table-view:focused:row-selection .tree-table-row-cell:selected .utxo-row.unspendable {
+    -fx-text-fill: derive(white, -15%);
+}
+
 .tree-table-row-cell:selected .hashindex-row, .tree-table-row-cell:selected .transaction-row {
     -fx-text-fill: white;
 }

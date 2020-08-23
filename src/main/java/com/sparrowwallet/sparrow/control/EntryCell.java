@@ -225,9 +225,11 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
     public static void applyRowStyles(TreeTableCell<?, ?> cell, Entry entry) {
         cell.getStyleClass().remove("transaction-row");
         cell.getStyleClass().remove("node-row");
+        cell.getStyleClass().remove("utxo-row");
         cell.getStyleClass().remove("address-cell");
         cell.getStyleClass().remove("hashindex-row");
         cell.getStyleClass().remove("spent");
+        cell.getStyleClass().remove("unspendable");
 
         if(entry != null) {
             if(entry instanceof TransactionEntry) {
@@ -245,6 +247,10 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 cell.getStyleClass().add("node-row");
             } else if(entry instanceof UtxoEntry) {
                 cell.getStyleClass().add("utxo-row");
+                UtxoEntry utxoEntry = (UtxoEntry)entry;
+                if(!utxoEntry.isSpendable()) {
+                    cell.getStyleClass().add("unspendable");
+                }
             } else if(entry instanceof HashIndexEntry) {
                 cell.getStyleClass().add("hashindex-row");
                 HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;

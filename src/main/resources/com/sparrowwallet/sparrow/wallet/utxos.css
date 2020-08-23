@@ -4,6 +4,10 @@
     -fx-padding: 10 0 10 0;
 }
 
+.utxos-buttons-box {
+    -fx-padding: 15 0 0 0;
+}
+
 .chart-bar {
     -fx-bar-fill: rgba(105, 108, 119, 0.6);
 }

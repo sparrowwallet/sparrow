@@ -58,7 +58,7 @@ public class CoinLabel extends CopyableLabel {
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 
-        String satsValue = String.format(Locale.ENGLISH, "%,d",value) + " sats";
+        String satsValue = String.format(Locale.ENGLISH, "%,d", value) + " sats";
         String btcValue = BTC_FORMAT.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
 
         BitcoinUnit unit = bitcoinUnit;
