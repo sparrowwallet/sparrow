@@ -5,8 +5,10 @@ plugins {
     id 'org.beryx.jlink' version '2.17.4'
 }
 
-group 'com.sparrowwallet'
-version '1.0-SNAPSHOT'
+def sparrowVersion = '0.9.1'
+
+group "com.sparrowwallet"
+version "${sparrowVersion}"
 
 sourceCompatibility = 1.9
 
@@ -14,6 +16,11 @@ repositories {
     mavenCentral()
     maven { url 'https://oss.sonatype.org/content/groups/public' }
     maven { url 'https://mymavenrepo.com/repo/29EACwkkGcoOKnbx3bxN/' }
+}
+
+tasks.withType(AbstractArchiveTask) {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
 }
 
 javafx {
@@ -118,7 +125,7 @@ jlink {
     jpackage {
         imageName = "Sparrow"
         installerName = "Sparrow"
-        appVersion = "0.9.1"
+        appVersion = "${sparrowVersion}"
         skipInstaller = true
         imageOptions = []
         installerOptions = [

@@ -64,7 +64,8 @@
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                     </items>
                 </Menu>
-                <Menu mnemonicParsing="false" text="Help">
+                <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
+                    <MenuItem styleClass="macHide" mnemonicParsing="false" text="About Sparrow" onAction="#showAbout"/>
                 </Menu>
             </menus>
         </MenuBar>

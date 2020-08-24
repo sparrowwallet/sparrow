@@ -88,6 +88,9 @@ public class AppController implements Initializable {
     private Menu fileMenu;
 
     @FXML
+    private Menu helpMenu;
+
+    @FXML
     private MenuItem openTransactionIdItem;
 
     @FXML
@@ -344,7 +347,13 @@ public class AppController implements Initializable {
             tk.setApplicationMenu(defaultApplicationMenu);
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("macHide"));
+            helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("macHide"));
         }
+    }
+
+    public void showAbout(ActionEvent event) {
+        Stage aboutStage = getAboutStage();
+        aboutStage.show();
     }
 
     private Stage getAboutStage() {
@@ -354,11 +363,12 @@ public class AppController implements Initializable {
             AboutController controller = loader.getController();
 
             Stage stage = new Stage();
-            stage.setTitle("About Sparrow");
+            stage.setTitle("About " + MainApp.APP_NAME);
             stage.initStyle(StageStyle.UNDECORATED);
             stage.setResizable(false);
             stage.setScene(new Scene(root));
             controller.setStage(stage);
+            controller.initializeView();
 
             return stage;
         } catch(IOException e) {

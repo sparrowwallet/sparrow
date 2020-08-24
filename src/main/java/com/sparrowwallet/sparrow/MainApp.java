@@ -22,6 +22,7 @@ import java.util.Optional;
 
 public class MainApp extends Application {
     public static final String APP_NAME = "Sparrow";
+    public static final String APP_VERSION = "0.9.1";
 
     private Stage mainStage;
 

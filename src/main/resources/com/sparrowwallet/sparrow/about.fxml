@@ -12,7 +12,7 @@
     <VBox spacing="20">
         <HBox styleClass="title-area">
             <HBox alignment="CENTER_LEFT">
-                <Label text="Sparrow 0.9.1" styleClass="title-label" />
+                <Label fx:id="title" text="Sparrow" styleClass="title-label" />
             </HBox>
             <Region HBox.hgrow="ALWAYS"/>
             <ImageView AnchorPane.rightAnchor="0">
