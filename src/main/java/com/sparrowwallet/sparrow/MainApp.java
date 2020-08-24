@@ -14,6 +14,7 @@ import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
@@ -23,6 +24,12 @@ public class MainApp extends Application {
     public static final String APP_NAME = "Sparrow";
 
     private Stage mainStage;
+
+    @Override
+    public void init() throws Exception {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> LoggerFactory.getLogger(MainApp.class).error("Exception in thread \"" + t.getName() + "\"", e));
+        super.init();
+    }
 
     @Override
     public void start(Stage stage) throws Exception {
