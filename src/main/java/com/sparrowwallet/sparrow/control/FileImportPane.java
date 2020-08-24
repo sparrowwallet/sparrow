@@ -28,7 +28,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(FileImportPane.class);
 
     private final FileImport importer;
-    private Button importButton;
+    protected Button importButton;
     private final SimpleStringProperty password = new SimpleStringProperty("");
 
     public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl) {

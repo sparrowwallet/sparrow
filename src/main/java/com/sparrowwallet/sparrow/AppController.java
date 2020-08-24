@@ -770,6 +770,18 @@ public class AppController implements Initializable {
         if(optionalWallet.isPresent()) {
             Wallet wallet = optionalWallet.get();
             File walletFile = Storage.getWalletFile(wallet.getName());
+
+            if(walletFile.exists()) {
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Existing wallet found");
+                alert.setHeaderText("Replace existing wallet?");
+                alert.setContentText("Wallet file " + wallet.getName() + " already exists");
+                Optional<ButtonType> result = alert.showAndWait();
+                if(result.isPresent() && result.get() == ButtonType.CANCEL) {
+                    return;
+                }
+            }
+
             Storage storage = new Storage(walletFile);
             Tab tab = addWalletTab(storage, wallet);
             tabs.getSelectionModel().select(tab);
