@@ -98,7 +98,7 @@
     </Form>
 
     <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
-        <Fieldset fx:id="locktimeFieldset" text="Locktime" inputGrow="SOMETIMES">
+        <Fieldset fx:id="locktimeFieldset" text="Locktime (nSequence)" inputGrow="SOMETIMES">
             <Field text="Type:">
                 <SegmentedButton>
                     <toggleGroup>

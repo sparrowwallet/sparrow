@@ -98,6 +98,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         if(keystore.getExtendedPublicKey() != null) {
             xpub.setText(keystore.getExtendedPublicKey().toString());
+            setXpubTooltip(keystore.getExtendedPublicKey());
         }
 
         if(keystore.getKeyDerivation() != null) {
@@ -123,10 +124,24 @@ public class KeystoreController extends WalletFormController implements Initiali
         });
         xpub.textProperty().addListener((observable, oldValue, newValue) -> {
             if(ExtendedKey.isValid(newValue)) {
-                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(newValue));
+                ExtendedKey extendedKey = ExtendedKey.fromDescriptor(newValue);
+                setXpubTooltip(extendedKey);
+                keystore.setExtendedPublicKey(extendedKey);
                 EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
+            } else {
+                xpub.setTooltip(null);
             }
         });
+    }
+
+    private void setXpubTooltip(ExtendedKey extendedKey) {
+        ExtendedKey.Header header = ExtendedKey.Header.fromScriptType(walletForm.getWallet().getScriptType(), false);
+        if(header != ExtendedKey.Header.xpub) {
+            Tooltip tooltip = new Tooltip(extendedKey.getExtendedKey(header));
+            xpub.setTooltip(tooltip);
+        } else {
+            xpub.setTooltip(null);
+        }
     }
 
     public void selectSource(ActionEvent event) {
@@ -287,6 +302,9 @@ public class KeystoreController extends WalletFormController implements Initiali
                 String derivationPath = derivation.getText();
                 derivation.setText(derivationPath + " ");
                 derivation.setText(derivationPath);
+            }
+            if(keystore.getExtendedPublicKey() != null) {
+                setXpubTooltip(keystore.getExtendedPublicKey());
             }
         }
     }
