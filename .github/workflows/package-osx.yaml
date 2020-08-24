@@ -1,6 +1,6 @@
 name: OSX Package
 
-on: [workflow-dispatch]
+on: workflow-dispatch
 
 jobs:
   build:
