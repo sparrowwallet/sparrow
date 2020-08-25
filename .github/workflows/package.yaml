@@ -4,7 +4,10 @@ on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: [macos-latest, windows-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
         with:
