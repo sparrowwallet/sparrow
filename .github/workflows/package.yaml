@@ -1,10 +1,10 @@
-name: OSX Package
+name: Package
 
 on: workflow_dispatch
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: [macos-latest, windows-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -26,5 +26,5 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
-          name: Sparrow OSX Build
+          name: Sparrow Build - ${{ runner.os }}
           path: build/jpackage/*
