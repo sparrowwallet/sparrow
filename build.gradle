@@ -145,6 +145,11 @@ jlink {
         if(os.windows) {
             installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-shortcut']
             imageOptions += ['--icon', 'src/main/deploy/package/windows/sparrow.ico']
+            installerType = "exe"
+        }
+        if(os.linux) {
+            installerOptions += ['--linux-shortcut']
+            imageOptions += ['--icon', 'src/main/deploy/package/linux/sparrow.png']
         }
         if(os.macOsX) {
             installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']

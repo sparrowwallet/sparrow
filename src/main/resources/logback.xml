@@ -5,8 +5,12 @@
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamOpenTask" level="OFF"/>
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamCloseTask" level="OFF"/>
 
+    <define name="appDir" class="com.sparrowwallet.drongo.PropertyDefiner">
+        <application>sparrow</application>
+    </define>
+
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>${user.home}/.sparrow/sparrow.log</file>
+        <file>${appDir}/sparrow.log</file>
         <encoder>
             <pattern>%date %level [%thread] %logger{10} [%file:%line] %msg%n</pattern>
         </encoder>

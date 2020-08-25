@@ -212,17 +212,19 @@ public class Hwi {
                     hwiExecutable = tempExec;
                 } else {
                     InputStream inputStream;
+                    Path tempExecPath;
                     if(platform == Platform.WINDOWS) {
                         inputStream = Hwi.class.getResourceAsStream("/external/windows/hwi.exe");
+                        tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null);
                     } else {
                         inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
+                        tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     }
 
-                    Path tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempExec = tempExecPath.toFile();
-                    //tempExec.deleteOnExit();
+                    tempExec.deleteOnExit();
                     OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
-                    ByteStreams.copy(new GZIPInputStream(inputStream), tempExecStream);
+                    ByteStreams.copy(inputStream, tempExecStream);
                     inputStream.close();
                     tempExecStream.flush();
                     tempExecStream.close();

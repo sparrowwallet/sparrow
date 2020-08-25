@@ -20,7 +20,7 @@
     -fx-fill: #383a42;
 }
 
-.status-bar .status-label {
+.status-bar, .status-bar .status-label {
     -fx-alignment: center-left;
 }
 
