@@ -13,6 +13,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 14.0.2
+      - name: Show Java Version
+        run: java -version
       - name: Cache Gradle packages
         uses: actions/cache@v2
         with:

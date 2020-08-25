@@ -10,8 +10,6 @@ def sparrowVersion = '0.9.1'
 group "com.sparrowwallet"
 version "${sparrowVersion}"
 
-sourceCompatibility = 1.9
-
 repositories {
     mavenCentral()
     maven { url 'https://oss.sonatype.org/content/groups/public' }
