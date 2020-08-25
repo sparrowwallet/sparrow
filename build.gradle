@@ -137,7 +137,7 @@ jlink {
         imageName = "Sparrow"
         installerName = "Sparrow"
         appVersion = "${sparrowVersion}"
-        skipInstaller = true
+        skipInstaller = os.macOsX
         imageOptions = []
         installerOptions = [
                 '--file-associations', 'src/main/resources/associations.properties',

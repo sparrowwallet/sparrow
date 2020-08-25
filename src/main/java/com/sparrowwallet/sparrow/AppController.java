@@ -336,7 +336,7 @@ public class AppController implements Initializable {
     }
 
     private void setOsxApplicationMenu() {
-        if(org.controlsfx.tools.Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
+        if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX) {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
@@ -364,7 +364,7 @@ public class AppController implements Initializable {
 
             Stage stage = new Stage();
             stage.setTitle("About " + MainApp.APP_NAME);
-            stage.initStyle(StageStyle.UNDECORATED);
+            stage.initStyle(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? StageStyle.UNDECORATED : StageStyle.DECORATED);
             stage.setResizable(false);
             stage.setScene(new Scene(root));
             controller.setStage(stage);
