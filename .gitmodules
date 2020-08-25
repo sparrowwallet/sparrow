@@ -1,3 +1,3 @@
 [submodule "drongo"]
 	path = drongo
-	url = git@github.com:craigraw/drongo.git
+	url = git@github.com:sparrowwallet/drongo.git
