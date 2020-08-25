@@ -182,8 +182,8 @@ public class Hwi {
                 //To avoid doing these with every invocation, use a --onedir packaging and expand into a temp folder on OSX
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
-                if(platform.getPlatformId().toLowerCase().equals("mac")) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi-1.1.2-mac-amd64-signed.zip");
+                if(platform == Platform.OSX) {
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/mac/hwi-1.1.2-mac-amd64-signed.zip");
                     Path tempHwiDirPath = Files.createTempDirectory(TEMP_FILE_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
@@ -211,7 +211,13 @@ public class Hwi {
 
                     hwiExecutable = tempExec;
                 } else {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
+                    InputStream inputStream;
+                    if(platform == Platform.WINDOWS) {
+                        inputStream = Hwi.class.getResourceAsStream("/external/windows/hwi.exe");
+                    } else {
+                        inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
+                    }
+
                     Path tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempExec = tempExecPath.toFile();
                     //tempExec.deleteOnExit();

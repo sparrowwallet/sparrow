@@ -14,6 +14,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.controlsfx.tools.Platform;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -33,6 +34,7 @@ public class Storage {
     private static final DateFormat BACKUP_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
 
     public static final String SPARROW_DIR = ".sparrow";
+    public static final String WINDOWS_SPARROW_DIR = "Sparrow";
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String HEADER_MAGIC_1 = "SPRW1";
@@ -269,10 +271,18 @@ public class Storage {
     }
 
     static File getSparrowDir() {
+        if(Platform.getCurrent() == Platform.WINDOWS) {
+            return new File(getHomeDir(), WINDOWS_SPARROW_DIR);
+        }
+
         return new File(getHomeDir(), SPARROW_DIR);
     }
 
     static File getHomeDir() {
+        if(Platform.getCurrent() == Platform.WINDOWS) {
+            return new File(System.getenv("APPDATA"));
+        }
+
         return new File(System.getProperty("user.home"));
     }
 
