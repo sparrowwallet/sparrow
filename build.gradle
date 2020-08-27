@@ -85,8 +85,7 @@ processResources {
 }
 
 run {
-    applicationDefaultJvmArgs = ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png",
-                                 "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
+    applicationDefaultJvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                                  "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls",
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control.inputmap=org.controlsfx.controls",
@@ -100,6 +99,10 @@ run {
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
+
+    if(os.macOsX) {
+        applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png"]
+    }
 }
 
 jlink {
