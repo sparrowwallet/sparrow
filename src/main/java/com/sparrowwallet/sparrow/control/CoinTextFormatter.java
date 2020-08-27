@@ -7,6 +7,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
 import java.util.Locale;
+import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 
 public class CoinTextFormatter extends TextFormatter<String> {
