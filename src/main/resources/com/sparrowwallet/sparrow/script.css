@@ -27,8 +27,9 @@
     -fx-translate-y: 2;
 }
 
-.uneditable-codearea {
-    -fx-font: 14px Courier;
+.virtualized-scroll-pane .code-area, .uneditable-codearea {
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
     -fx-padding: 4;
 }
 

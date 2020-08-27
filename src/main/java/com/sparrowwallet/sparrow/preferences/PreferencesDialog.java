@@ -27,6 +27,7 @@ public class PreferencesDialog extends Dialog<Boolean> {
 
     public PreferencesDialog(PreferenceGroup initialGroup, boolean initialSetup) {
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         try {
             FXMLLoader preferencesLoader = new FXMLLoader(AppController.class.getResource("preferences/preferences.fxml"));

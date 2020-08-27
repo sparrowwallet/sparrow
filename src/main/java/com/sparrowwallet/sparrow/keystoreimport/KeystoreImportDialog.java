@@ -32,6 +32,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
         });
 
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         try {
             FXMLLoader ksiLoader = new FXMLLoader(AppController.class.getResource("keystoreimport/keystoreimport.fxml"));

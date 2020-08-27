@@ -12,6 +12,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class MainApp extends Application {
 
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
+        Font.loadFont(AppController.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
 
         boolean createNewWallet = false;
         Mode mode = Config.get().getMode();

@@ -30,7 +30,8 @@
 }
 
 .address-cell, .utxo-row.entry-cell {
-    -fx-font-family: Courier;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
 }
 
 .hashindex-row {
@@ -123,5 +124,6 @@
 }
 
 .address-text-field {
-    -fx-font-family: Courier;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
 }

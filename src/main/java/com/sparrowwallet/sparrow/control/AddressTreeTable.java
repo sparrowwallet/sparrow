@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
@@ -10,7 +11,6 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
-import javafx.scene.text.Font;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +33,7 @@ public class AddressTreeTable extends CoinTreeTable {
         getColumns().add(addressCol);
 
         if(address != null) {
-            addressCol.setMinWidth(TextUtils.computeTextWidth(Font.font("Courier"), address, 0.0));
+            addressCol.setMinWidth(TextUtils.computeTextWidth(AppController.getMonospaceFont(), address, 0.0));
         }
 
         TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>("Label");

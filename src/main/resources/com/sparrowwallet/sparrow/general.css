@@ -28,7 +28,8 @@
 }
 
 .id {
-    -fx-font-family: Courier;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
 }
 
 .form-separator {

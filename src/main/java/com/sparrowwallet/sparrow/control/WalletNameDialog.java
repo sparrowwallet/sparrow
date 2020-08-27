@@ -22,6 +22,7 @@ public class WalletNameDialog extends Dialog<String> {
     public WalletNameDialog() {
         this.name = (CustomTextField)TextFields.createClearableTextField();
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         setTitle("Wallet Name");
         dialogPane.setHeaderText("Enter a name for this wallet:");

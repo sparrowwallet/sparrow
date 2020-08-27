@@ -56,28 +56,28 @@
             <Field text="ScriptSig:">
                 <VirtualizedScrollPane>
                     <content>
-                        <ScriptArea fx:id="scriptSigArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="scriptSigArea" editable="false" wrapText="true" prefHeight="47" maxHeight="47" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>
             <Field text="RedeemScript:">
                 <VirtualizedScrollPane fx:id="redeemScriptScroll">
                     <content>
-                        <ScriptArea fx:id="redeemScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="redeemScriptArea" editable="false" wrapText="true" prefHeight="47" maxHeight="47" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>
             <Field text="Witnesses:">
                 <VirtualizedScrollPane fx:id="witnessesScroll">
                     <content>
-                        <ScriptArea fx:id="witnessesArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="witnessesArea" editable="false" wrapText="true" prefHeight="47" maxHeight="47" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>
             <Field text="WitnessScript:">
                 <VirtualizedScrollPane fx:id="witnessScriptScroll">
                     <content>
-                        <ScriptArea fx:id="witnessScriptArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="witnessScriptArea" editable="false" wrapText="true" prefHeight="47" maxHeight="47" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>

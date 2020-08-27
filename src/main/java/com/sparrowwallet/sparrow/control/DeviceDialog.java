@@ -32,6 +32,7 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
 
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

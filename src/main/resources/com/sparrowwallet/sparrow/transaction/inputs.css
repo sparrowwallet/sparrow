@@ -20,8 +20,9 @@
 
 .locktime { -fx-fill: #e5e5e6 }
 
-.chart-legend-item{
-    -fx-font-family: Courier;
+.chart-legend-item {
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
 }
 
 .default-color0.chart-pie { -fx-pie-color: #ca1243 }

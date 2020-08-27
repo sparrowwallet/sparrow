@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import javafx.scene.text.Font;
+import com.sparrowwallet.sparrow.AppController;
 
 public class IdLabel extends CopyableLabel {
     public IdLabel() {
@@ -9,6 +9,6 @@ public class IdLabel extends CopyableLabel {
 
     public IdLabel(String text) {
         super(text);
-        setFont(Font.font("Courier"));
+        setFont(AppController.getMonospaceFont());
     }
 }

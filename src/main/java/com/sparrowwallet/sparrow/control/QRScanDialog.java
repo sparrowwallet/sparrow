@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.protocol.Base43;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.ur.ResultType;
 import com.sparrowwallet.sparrow.ur.UR;
 import com.sparrowwallet.sparrow.ur.URDecoder;
@@ -34,6 +35,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         WebcamView webcamView = new WebcamView(webcamService);
 
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         stackPane.getChildren().add(webcamView.getView());

@@ -26,6 +26,7 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         setTitle("Keystore Passphrase" + (walletName != null ? " - " + walletName : ""));
         dialogPane.setHeaderText("Please enter the passphrase for keystore: \n" + keystore.getLabel());
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         dialogPane.setPrefWidth(380);
         dialogPane.setPrefHeight(200);

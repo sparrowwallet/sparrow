@@ -23,8 +23,9 @@ public class TransactionIdDialog extends Dialog<Sha256Hash> {
 
     public TransactionIdDialog() {
         this.txid = (CustomTextField) TextFields.createClearableTextField();
-        txid.setFont(Font.font ("Courier", txid.getFont().getSize()));
+        txid.setFont(AppController.getMonospaceFont());
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         setTitle("Load Transaction");
         dialogPane.setHeaderText("Enter the transaction ID:");

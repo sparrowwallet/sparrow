@@ -52,7 +52,8 @@
 }
 
 #transactionDiagram .input-label, #transactionDiagram .recipient-label, #transactionDiagram .change-label, #transactionDiagram .fee-tooltip {
-    -fx-font-family: Courier;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
 }
 
 #transactionDiagram .fee-warning-icon {

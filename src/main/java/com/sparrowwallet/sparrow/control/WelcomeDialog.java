@@ -28,6 +28,7 @@ public class WelcomeDialog extends Dialog<Mode> {
         setTitle("Welcome to Sparrow");
         dialogPane.setHeaderText("Welcome to Sparrow!");
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setPrefWidth(600);
         dialogPane.setPrefHeight(480);
 

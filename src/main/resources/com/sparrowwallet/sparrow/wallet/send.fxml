@@ -63,8 +63,8 @@
                     </Fieldset>
                 </Form>
                 <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
-                    <Fieldset inputGrow="SOMETIMES" text="">
-                        <Button text="Scan QR" onAction="#scanQrAddress">
+                    <Fieldset inputGrow="SOMETIMES" text="" style="-fx-padding: 2 0 0 0">
+                        <Button text="Scan QR" onAction="#scanQrAddress" prefHeight="30">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                             </graphic>
@@ -106,7 +106,7 @@
                 </AnchorPane>
             </GridPane>
             <AnchorPane>
-                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" maxHeight="230" AnchorPane.leftAnchor="60" />
+                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" maxHeight="230" AnchorPane.leftAnchor="100" />
             </AnchorPane>
         </VBox>
     </center>

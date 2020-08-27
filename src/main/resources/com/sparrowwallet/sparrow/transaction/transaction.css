@@ -1,6 +1,7 @@
 #txhex {
     -fx-background-color: #ffffff;
-    -fx-font: 14px Courier;
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
     -fx-padding: 2;
 }
 

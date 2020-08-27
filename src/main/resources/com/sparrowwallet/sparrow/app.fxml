@@ -8,7 +8,7 @@
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="750.0" prefWidth="1000.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1000.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
     <children>
         <MenuBar useSystemMenuBar="true">
             <menus>
@@ -33,7 +33,6 @@
                         <MenuItem styleClass="macHide" mnemonicParsing="false" text="Preferences..." onAction="#openPreferences"/>
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Close Tab" onAction="#closeTab"/>
-                        <SeparatorMenuItem styleClass="macHide" />
                         <MenuItem styleClass="macHide" mnemonicParsing="false" text="Quit" onAction="#quit"/>
                     </items>
                 </Menu>

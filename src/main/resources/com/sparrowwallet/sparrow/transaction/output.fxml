@@ -52,7 +52,7 @@
             <Field text="ScriptPubKey:">
                 <VirtualizedScrollPane>
                     <content>
-                        <ScriptArea fx:id="scriptPubKeyArea" editable="false" wrapText="true" prefHeight="42" maxHeight="42" styleClass="uneditable-codearea" />
+                        <ScriptArea fx:id="scriptPubKeyArea" editable="false" wrapText="true" prefHeight="47" maxHeight="47" styleClass="uneditable-codearea" />
                     </content>
                 </VirtualizedScrollPane>
             </Field>

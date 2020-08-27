@@ -3,13 +3,12 @@ package com.sparrowwallet.sparrow.control;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
-import com.sparrowwallet.sparrow.event.WalletImportEvent;
 import com.sparrowwallet.sparrow.io.ColdcardMultisig;
 import com.sparrowwallet.sparrow.io.Electrum;
 import com.sparrowwallet.sparrow.io.WalletExport;
-import com.sparrowwallet.sparrow.io.WalletImport;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
@@ -26,6 +25,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
         });
 
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

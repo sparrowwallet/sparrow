@@ -46,6 +46,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -185,7 +186,8 @@ public class AppController implements Initializable {
             }
         });
 
-        tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
+        //Draggle tabs introduce unwanted movement when selecting between them
+        //tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
         tabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
             if(c.next() && (c.wasAdded() || c.wasRemoved())) {
                 boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
@@ -365,6 +367,7 @@ public class AppController implements Initializable {
             Stage stage = new Stage();
             stage.setTitle("About " + MainApp.APP_NAME);
             stage.initStyle(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? StageStyle.UNDECORATED : StageStyle.DECORATED);
+            setStageIcon(stage);
             stage.setResizable(false);
             stage.setScene(new Scene(root));
             controller.setStage(stage);
@@ -608,10 +611,20 @@ public class AppController implements Initializable {
 
     public static void showErrorDialog(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
+        setStageIcon(alert.getDialogPane().getScene().getWindow());
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    public static void setStageIcon(Window window) {
+        Stage stage = (Stage)window;
+        stage.getIcons().add(new Image(AppController.class.getResourceAsStream("/image/sparrow.png")));
+    }
+
+    public static Font getMonospaceFont() {
+        return Font.font("Roboto Mono", 13);
     }
 
     public void selectTab(Wallet wallet) {
@@ -1158,7 +1171,7 @@ public class AppController implements Initializable {
         currentBlockHeight = event.getBlockHeight();
         targetBlockFeeRates = event.getTargetBlockFeeRates();
         String banner = event.getServerBanner();
-        String status = "Connected: " + (banner == null ? "Server" : banner.split(System.lineSeparator(), 2)[0]) + " at height " + event.getBlockHeight();
+        String status = "Connected: " + (banner == null ? "Server" : banner.split("\\R", 2)[0]) + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));
     }
 

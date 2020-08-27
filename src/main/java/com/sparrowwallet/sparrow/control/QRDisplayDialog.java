@@ -5,7 +5,7 @@ import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
-import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.sparrow.ur.UR;
 import com.sparrowwallet.sparrow.ur.UREncoder;
@@ -48,6 +48,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         this.encoder = new UREncoder(ur, MAX_FRAGMENT_LENGTH, MIN_FRAGMENT_LENGTH, 0);
 
         final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();
