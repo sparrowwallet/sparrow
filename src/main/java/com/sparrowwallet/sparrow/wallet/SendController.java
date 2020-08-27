@@ -35,6 +35,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
 import java.net.URL;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -180,7 +181,7 @@ public class SendController extends WalletFormController implements Initializabl
         amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getRecipientValueSats(oldValue);
             if(value != null) {
-                DecimalFormat df = new DecimalFormat("#.#");
+                DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
                 df.setMaximumFractionDigits(8);
                 amount.setText(df.format(newValue.getValue(value)));
             }
@@ -374,7 +375,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setRecipientValueSats(long recipientValue) {
         amount.textProperty().removeListener(amountListener);
-        DecimalFormat df = new DecimalFormat("#.#");
+        DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
         df.setMaximumFractionDigits(8);
         amount.setText(df.format(amountUnit.getValue().getValue(recipientValue)));
         amount.textProperty().addListener(amountListener);
@@ -395,7 +396,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setFeeValueSats(long feeValue) {
         fee.textProperty().removeListener(feeListener);
-        DecimalFormat df = new DecimalFormat("#.#");
+        DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
         df.setMaximumFractionDigits(8);
         fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
         fee.textProperty().addListener(feeListener);

@@ -36,7 +36,7 @@ public class Hwi {
     public List<Device> enumerate(String passphrase) throws ImportException {
         try {
             List<String> command;
-            if(passphrase != null) {
+            if(passphrase != null && !passphrase.isEmpty()) {
                 command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), "--password", passphrase, Command.ENUMERATE.toString());
             } else {
                 command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), Command.ENUMERATE.toString());
@@ -72,7 +72,7 @@ public class Hwi {
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
         try {
             String output;
-            if(passphrase != null && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
                 output = execute(getDeviceCommand(device, passphrase, Command.GET_XPUB, derivationPath));
             } else {
                 output = execute(getDeviceCommand(device, Command.GET_XPUB, derivationPath));
@@ -103,7 +103,7 @@ public class Hwi {
             }
 
             String output;
-            if(passphrase != null && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
                 output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
             } else {
                 output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
@@ -125,7 +125,7 @@ public class Hwi {
             String psbtBase64 = psbt.toBase64String();
 
             String output;
-            if(passphrase != null && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
                 output = execute(getDeviceCommand(device, passphrase, Command.SIGN_TX, psbtBase64));
             } else {
                 output = execute(getDeviceCommand(device, Command.SIGN_TX, psbtBase64));

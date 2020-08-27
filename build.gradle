@@ -97,11 +97,11 @@ run {
                                  "--add-opens=javafx.graphics/com.sun.javafx.tk.quantum=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.glass.ui=centerdevice.nsmenufx",
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
-                                 "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
-                                 "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
+                                 "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx"]
 
     if(os.macOsX) {
-        applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png"]
+        applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png",
+                                      "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
     }
 }
 

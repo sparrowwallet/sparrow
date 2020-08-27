@@ -11,10 +11,12 @@ import javafx.scene.input.ClipboardContent;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Currency;
+import java.util.Locale;
 
 public class FiatLabel extends CopyableLabel {
-    private static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,##0.00");
+    private static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final DoubleProperty btcRateProperty = new SimpleDoubleProperty(0.0);

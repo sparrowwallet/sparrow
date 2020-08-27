@@ -4,13 +4,14 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputControl;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
-import java.util.function.UnaryOperator;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class CoinTextFormatter extends TextFormatter<String> {
     private static final Pattern COIN_VALIDATION = Pattern.compile("[\\d,]*(\\.\\d{0,8})?");
-    public static final DecimalFormat COIN_FORMAT = new DecimalFormat("###,###.########");
+    public static final DecimalFormat COIN_FORMAT = new DecimalFormat("###,###.########", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
     public CoinTextFormatter() {
         super(new CoinFilter());
