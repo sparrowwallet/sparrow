@@ -217,7 +217,7 @@ public class Hwi {
                         inputStream = Hwi.class.getResourceAsStream("/external/windows/hwi.exe");
                         tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null);
                     } else {
-                        inputStream = Hwi.class.getResourceAsStream("/external/" + platform.getPlatformId().toLowerCase() + "/hwi");
+                        inputStream = Hwi.class.getResourceAsStream("/external/linux/hwi");
                         tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     }
 
