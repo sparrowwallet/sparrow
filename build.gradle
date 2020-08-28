@@ -142,9 +142,7 @@ jlink {
         appVersion = "${sparrowVersion}"
         skipInstaller = os.macOsX
         imageOptions = []
-        installerOptions = [
-                '--file-associations', 'src/main/deploy/associations.properties',
-        ]
+        installerOptions = ['--file-associations', 'src/main/deploy/associations.properties', '--license-file', 'LICENSE']
         if(os.windows) {
             installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-shortcut']
             imageOptions += ['--icon', 'src/main/deploy/package/windows/sparrow.ico']
@@ -152,7 +150,7 @@ jlink {
         }
         if(os.linux) {
             installerOptions += ['--linux-shortcut']
-            imageOptions += ['--icon', 'src/main/deploy/package/linux/sparrow.png']
+            imageOptions += ['--icon', 'src/main/deploy/package/linux/sparrow.png', '--linux-rpm-license-type', 'ASL 2.0']
         }
         if(os.macOsX) {
             installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
