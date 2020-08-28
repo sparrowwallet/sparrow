@@ -149,9 +149,8 @@ jlink {
             installerType = "exe"
         }
         if(os.linux) {
-            installerOptions += ['--linux-shortcut']
-            imageOptions += ['--icon', 'src/main/deploy/package/linux/sparrow.png']
-            installerOptions += ['--linux-rpm-license-type', 'ASL 2.0', '--linux-app-release', "${sparrowVersion}"]
+            installerOptions += ['--linux-shortcut', '--linux-rpm-license-type', 'ASL 2.0']
+            imageOptions += ['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/']
         }
         if(os.macOsX) {
             installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
