@@ -63,6 +63,7 @@ public class Hwi {
     public boolean sendPin(Device device, String pin) throws ImportException {
         try {
             String output = execute(getDeviceCommand(device, Command.SEND_PIN, pin));
+            isPromptActive = false;
             return wasSuccessful(output);
         } catch(IOException e) {
             throw new ImportException(e);
@@ -78,6 +79,7 @@ public class Hwi {
                 output = execute(getDeviceCommand(device, Command.GET_XPUB, derivationPath));
             }
 
+            isPromptActive = false;
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
             if(result.get("xpub") != null) {
                 return result.get("xpub").getAsString();
@@ -102,6 +104,7 @@ public class Hwi {
                 type = "--wpkh";
             }
 
+            isPromptActive = false;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
                 output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
@@ -124,12 +127,14 @@ public class Hwi {
         try {
             String psbtBase64 = psbt.toBase64String();
 
+            isPromptActive = true;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
                 output = execute(getDeviceCommand(device, passphrase, Command.SIGN_TX, psbtBase64));
             } else {
                 output = execute(getDeviceCommand(device, Command.SIGN_TX, psbtBase64));
             }
+            isPromptActive = false;
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
             if(result.get("psbt") != null) {
@@ -155,7 +160,6 @@ public class Hwi {
     }
 
     private String execute(List<String> command) throws IOException {
-        isPromptActive = false;
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         Process process = processBuilder.start();
         return CharStreams.toString(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
