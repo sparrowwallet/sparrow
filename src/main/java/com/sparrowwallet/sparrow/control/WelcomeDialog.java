@@ -15,8 +15,8 @@ import org.controlsfx.control.ToggleSwitch;
 public class WelcomeDialog extends Dialog<Mode> {
     private static final String[] ELECTRUM_SERVERS = new String[]{
             "ElectrumX (Recommended)", "https://github.com/spesmilo/electrumx",
-            "electrs", "https://github.com/romanz/electrs",
-            "esplora-electrs", "https://github.com/Blockstream/electrs"};
+            "electrs (Experimental)", "https://github.com/romanz/electrs",
+            "esplora-electrs (Experimental)", "https://github.com/Blockstream/electrs"};
 
     private final HostServices hostServices;
 
@@ -71,7 +71,8 @@ public class WelcomeDialog extends Dialog<Mode> {
     }
 
     private HyperlinkLabel createBulletedLink(String name, String url) {
-        HyperlinkLabel label = new HyperlinkLabel(" \u2022 [" + name + "]");
+        String[] nameParts = name.split(" ");
+        HyperlinkLabel label = new HyperlinkLabel(" \u2022 [" + nameParts[0] + "] " + (nameParts.length > 1 ? nameParts[1] : ""));
         label.setOnAction(event -> {
             hostServices.showDocument(url);
         });
