@@ -88,7 +88,7 @@ public class TitledDescriptionPane extends TitledPane {
 
         this.layoutBoundsProperty().addListener((observable, oldValue, newValue) -> {
             //Hack to force listItem to expand to full available width less border
-            listItem.setPrefWidth(newValue.getWidth() - 2);
+            listItem.setPrefWidth(newValue.getWidth() - 3);
         });
 
         return listItem;
