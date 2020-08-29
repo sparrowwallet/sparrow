@@ -72,7 +72,9 @@ mainClassName = 'com.sparrowwallet.sparrow/com.sparrowwallet.sparrow.MainApp'
 compileJava {
     options.with {
         fork = true
-        compilerArgs.addAll(["--add-exports", "org.controlsfx.controls/impl.org.controlsfx.skin=com.sparrowwallet.sparrow"])
+        compilerArgs.addAll(["--add-exports", "org.controlsfx.controls/impl.org.controlsfx.skin=com.sparrowwallet.sparrow",
+                             "--add-exports", "javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
+                             "--add-exports", "javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow"])
     }
 }
 
@@ -97,7 +99,9 @@ run {
                                  "--add-opens=javafx.graphics/com.sun.javafx.tk.quantum=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.glass.ui=centerdevice.nsmenufx",
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
-                                 "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx"]
+                                 "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
+                                 "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
+                                 "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow"]
 
     if(os.macOsX) {
         applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png",
@@ -132,7 +136,9 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.controls/com.sun.javafx.scene.control=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.graphics/com.sun.javafx.menu=com.sparrowwallet.merged.module",
+                   "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
                    "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module",
+                   "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop"]
     }
     addExtraDependencies("javafx")

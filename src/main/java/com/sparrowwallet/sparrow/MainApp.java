@@ -96,6 +96,6 @@ public class MainApp extends Application {
     }
 
     public static void main(String[] args) {
-        launch(args);
+        com.sun.javafx.application.LauncherImpl.launchApplication(MainApp.class, MainAppPreloader.class, args);
     }
 }
