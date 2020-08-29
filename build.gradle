@@ -155,7 +155,7 @@ jlink {
             installerType = "exe"
         }
         if(os.linux) {
-            installerOptions += ['--linux-shortcut', '--linux-rpm-license-type', 'ASL 2.0']
+            installerOptions += ['--resource-dir', 'src/main/deploy/package/linux/', '--linux-shortcut', '--linux-rpm-license-type', 'ASL 2.0']
             imageOptions += ['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/']
         }
         if(os.macOsX) {
