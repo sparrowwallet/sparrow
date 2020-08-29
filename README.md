@@ -34,7 +34,7 @@ Windows  | %APPDATA%/Sparrow
 
 ## Reporting Issues
 
-Please use the Issues tab above to report an issue. If possible, look in the sparrow.log file in the configuration directory for information helpful in debugging. 
+Please use the [Issues](https://github.com/sparrowwallet/sparrow/issues) tab above to report an issue. If possible, look in the sparrow.log file in the configuration directory for information helpful in debugging. 
 
 ## License
 

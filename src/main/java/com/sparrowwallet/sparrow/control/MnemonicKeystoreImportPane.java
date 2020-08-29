@@ -54,7 +54,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private final SimpleStringProperty passphraseProperty = new SimpleStringProperty();
 
     public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer) {
-        super(importer.getName(), "Mnemonic import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Seed import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
         this.wallet = wallet;
         this.importer = importer;
 
