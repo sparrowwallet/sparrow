@@ -4,6 +4,8 @@ import com.sparrowwallet.sparrow.control.WelcomeDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.FileType;
+import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import javafx.application.Application;
@@ -18,8 +20,11 @@ import org.controlsfx.glyphfont.GlyphFontRegistry;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class MainApp extends Application {
     public static final String APP_NAME = "Sparrow";
@@ -82,7 +87,14 @@ public class MainApp extends Application {
 
         List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
         if(recentWalletFiles != null) {
-            for(File walletFile : recentWalletFiles) {
+            //Resort to preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
+            List<File> encryptedWalletFiles = recentWalletFiles.stream().filter(file -> FileType.BINARY.equals(IOUtils.getFileType(file))).collect(Collectors.toList());
+            Collections.reverse(encryptedWalletFiles);
+            List<File> sortedWalletFiles = new ArrayList<>(recentWalletFiles);
+            sortedWalletFiles.removeAll(encryptedWalletFiles);
+            sortedWalletFiles.addAll(encryptedWalletFiles);
+
+            for(File walletFile : sortedWalletFiles) {
                 if(walletFile.exists()) {
                     Platform.runLater(() -> appController.openWalletFile(walletFile));
                 }

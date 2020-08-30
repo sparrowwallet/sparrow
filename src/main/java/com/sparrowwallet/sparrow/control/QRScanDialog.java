@@ -75,7 +75,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 if(decoder.getResult() != null) {
                     URDecoder.Result urResult = decoder.getResult();
                     if(urResult.type == ResultType.SUCCESS) {
-                        if(urResult.ur.getType().equals(UR.BYTES_TYPE)) {
+                        //TODO: Confirm once UR type registry is updated
+                        if(urResult.ur.getType().contains(UR.BYTES_TYPE) || urResult.ur.getType().equals(UR.CRYPTO_PSBT_TYPE)) {
                             try {
                                 PSBT psbt = new PSBT(urResult.ur.toBytes());
                                 result = new Result(psbt);

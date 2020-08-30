@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
@@ -31,10 +32,51 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void saveAndRefresh() throws IOException {
-        //TODO: Detect trivial changes and don't clear everything
-        walletCopy.clearNodes();
+        boolean refreshAll = changesScriptHashes(wallet, walletCopy);
+        if(refreshAll) {
+            walletCopy.clearNodes();
+        }
+
         wallet = walletCopy.copy();
         save();
-        EventManager.get().post(new WalletSettingsChangedEvent(wallet, getWalletFile()));
+
+        if(refreshAll) {
+            EventManager.get().post(new WalletSettingsChangedEvent(wallet, getWalletFile()));
+        }
+    }
+
+    private boolean changesScriptHashes(Wallet original, Wallet changed) {
+        if(!original.isValid() || !changed.isValid()) {
+            return true;
+        }
+
+        if(original.getPolicyType() != changed.getPolicyType()) {
+            return true;
+        }
+
+        if(original.getScriptType() != changed.getScriptType()) {
+            return true;
+        }
+
+        //TODO: Determine if Miniscript has changed for custom policies
+
+        if(original.getKeystores().size() != changed.getKeystores().size()) {
+            return true;
+        }
+
+        for(int i = 0; i < original.getKeystores().size(); i++) {
+            Keystore originalKeystore = original.getKeystores().get(i);
+            Keystore changedKeystore = changed.getKeystores().get(i);
+
+            if(!originalKeystore.getKeyDerivation().equals(changedKeystore.getKeyDerivation())) {
+                return true;
+            }
+
+            if(!originalKeystore.getExtendedPublicKey().equals(changedKeystore.getExtendedPublicKey())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

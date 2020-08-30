@@ -43,9 +43,6 @@ public class InputController extends TransactionFormController implements Initia
     private Hyperlink linkedOutpoint;
 
     @FXML
-    private Button outpointSelect;
-
-    @FXML
     private CoinLabel spends;
 
     @FXML
@@ -143,7 +140,6 @@ public class InputController extends TransactionFormController implements Initia
 
         if(txInput.isCoinBase()) {
             outpoint.setText("Coinbase");
-            outpointSelect.setVisible(false);
             long totalAmt = 0;
             for(TransactionOutput output : inputForm.getTransaction().getOutputs()) {
                 totalAmt += output.getValue();
@@ -164,9 +160,6 @@ public class InputController extends TransactionFormController implements Initia
         } else if(inputForm.getInputTransactions() != null) {
             updateSpends(inputForm.getInputTransactions());
         }
-
-        //TODO: Enable select outpoint when wallet present
-        outpointSelect.setDisable(true);
     }
 
     private void updateOutpoint(Map<Sha256Hash, BlockTransaction> inputTransactions) {

@@ -1067,11 +1067,11 @@ public class AppController implements Initializable {
                 text += event.getValueAsText(event.getTotalValue());
             } else {
                 if(event.getTotalBlockchainValue() > 0 && event.getTotalMempoolValue() > 0) {
-                    text = "New transactions: " + event.getValueAsText(event.getTotalValue()) + " (" + event.getValueAsText(event.getTotalMempoolValue())  + " in mempool)";
+                    text = "New transactions: " + event.getValueAsText(event.getTotalValue()) + " total (" + event.getValueAsText(event.getTotalMempoolValue())  + " in mempool)";
                 } else if(event.getTotalMempoolValue() > 0) {
-                    text = "New mempool transactions: " + event.getValueAsText(event.getTotalMempoolValue());
+                    text = "New mempool transactions: " + event.getValueAsText(event.getTotalMempoolValue()) + " total";
                 } else {
-                    text = "New transactions: " + event.getValueAsText(event.getTotalValue());
+                    text = "New transactions: " + event.getValueAsText(event.getTotalValue()) + " total";
                 }
             }
 

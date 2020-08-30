@@ -19,6 +19,7 @@ import java.util.Objects;
 public class UR {
     public static final String UR_PREFIX = "ur";
     public static final String BYTES_TYPE = "bytes";
+    public static final String CRYPTO_PSBT_TYPE = "crypto-psbt";
 
     private final String type;
     private final byte[] data;

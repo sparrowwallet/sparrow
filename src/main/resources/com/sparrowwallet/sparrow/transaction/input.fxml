@@ -35,11 +35,6 @@
             <Field text="Outpoint:" styleClass="label-button">
                 <IdLabel fx:id="outpoint" />
                 <Hyperlink fx:id="linkedOutpoint" styleClass="id" visible="false" />
-                <Button fx:id="outpointSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
-                    <graphic>
-                        <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />
-                    </graphic>
-                </Button>
             </Field>
             <Field text="Spends:">
                 <CoinLabel fx:id="spends" />
