@@ -255,7 +255,9 @@ public class AppController implements Initializable {
         });
 
         onlineProperty.bindBidirectional(serverToggle.selectedProperty());
-        onlineProperty().addListener((observable, oldValue, newValue) -> serverToggle.setTooltip(new Tooltip(newValue ? "Connected to " + Config.get().getElectrumServer() : "Disconnected")));
+        onlineProperty().addListener((observable, oldValue, newValue) ->  {
+            Platform.runLater(this::setServerToggleTooltip);
+        });
 
         Config config = Config.get();
         connectionService = createConnectionService();
@@ -668,6 +670,10 @@ public class AppController implements Initializable {
     private boolean isWalletFile(File file) {
         FileType fileType = IOUtils.getFileType(file);
         return FileType.JSON.equals(fileType) || FileType.BINARY.equals(fileType);
+    }
+
+    private void setServerToggleTooltip() {
+        serverToggle.setTooltip(new Tooltip(isOnline() ? "Connected to " + Config.get().getElectrumServer() + (getCurrentBlockHeight() != null ? " at height " + getCurrentBlockHeight() : "") : "Disconnected"));
     }
 
     public void newWallet(ActionEvent event) {
@@ -1172,7 +1178,7 @@ public class AppController implements Initializable {
         currentBlockHeight = event.getBlockHeight();
         targetBlockFeeRates = event.getTargetBlockFeeRates();
         String banner = event.getServerBanner();
-        String status = "Connected: " + (banner == null ? "Server" : banner.split("\\R", 2)[0]) + " at height " + event.getBlockHeight();
+        String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));
     }
 
@@ -1186,6 +1192,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void newBlock(NewBlockEvent event) {
         currentBlockHeight = event.getHeight();
+        setServerToggleTooltip();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
     }
