@@ -167,31 +167,37 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 VerboseTransaction verboseTransaction = client.createRequest().returnAs(VerboseTransaction.class).method("blockchain.transaction.get").id(txid).params(txid, true).execute();
                 result.put(txid, verboseTransaction);
-            } catch(IllegalStateException | IllegalArgumentException e) {
-                log.warn("Error retrieving transaction: " + txid + " (" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + ")");
-                String rawTxHex = client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(txid).params(txid).execute();
-                Transaction tx = new Transaction(Utils.hexToBytes(rawTxHex));
-                String id = tx.getTxId().toString();
-                int height = 0;
+            } catch(Exception e) {
+                //electrs does not currently support the verbose parameter, so try to fetch an incomplete VerboseTransaction without it
+                //Note that without the script hash associated with the transaction, we can't get a block height as there is no way in the Electrum RPC protocol to do this
+                //We mark this VerboseTransaction as incomplete by assigning it a Sha256Hash.ZERO_HASH blockhash
+                log.debug("Error retrieving transaction: " + txid + " (" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + ")");
 
-                if(scriptHash != null) {
-                    ScriptHashTx[] scriptHashTxes = client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(id).params(scriptHash).execute();
-                    for(ScriptHashTx scriptHashTx : scriptHashTxes) {
-                        if(scriptHashTx.tx_hash.equals(id)) {
-                            height = scriptHashTx.height;
-                            break;
+                try {
+                    String rawTxHex = client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(txid).params(txid).execute();
+                    Transaction tx = new Transaction(Utils.hexToBytes(rawTxHex));
+                    String id = tx.getTxId().toString();
+                    int height = 0;
+
+                    if(scriptHash != null) {
+                        ScriptHashTx[] scriptHashTxes = client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(id).params(scriptHash).execute();
+                        for(ScriptHashTx scriptHashTx : scriptHashTxes) {
+                            if(scriptHashTx.tx_hash.equals(id)) {
+                                height = scriptHashTx.height;
+                                break;
+                            }
                         }
                     }
-                }
 
-                VerboseTransaction verboseTransaction = new VerboseTransaction();
-                verboseTransaction.txid = id;
-                verboseTransaction.hex = rawTxHex;
-                verboseTransaction.confirmations = (height <= 0 ? 0 : AppController.getCurrentBlockHeight() - height + 1);
-                verboseTransaction.blockhash = Sha256Hash.ZERO_HASH.toString();
-                result.put(txid, verboseTransaction);
-            } catch(JsonRpcException e) {
-                log.warn("Error retrieving transaction: " + txid + " (" + e.getErrorMessage() + ")");
+                    VerboseTransaction verboseTransaction = new VerboseTransaction();
+                    verboseTransaction.txid = id;
+                    verboseTransaction.hex = rawTxHex;
+                    verboseTransaction.confirmations = (height <= 0 ? 0 : AppController.getCurrentBlockHeight() - height + 1);
+                    verboseTransaction.blockhash = Sha256Hash.ZERO_HASH.toString();
+                    result.put(txid, verboseTransaction);
+                } catch(Exception ex) {
+                    throw new ElectrumServerRpcException("Error retrieving transaction: ", ex);
+                }
             }
         }
 

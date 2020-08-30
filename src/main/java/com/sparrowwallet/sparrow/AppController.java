@@ -485,7 +485,8 @@ public class AppController implements Initializable {
             transactionReferenceService.setOnFailed(failEvent -> {
                 Platform.runLater(() -> {
                     Throwable e = failEvent.getSource().getException();
-                    showErrorDialog("Error fetching transaction", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+                    log.error("Error fetching transaction " + txId.toString(), e);
+                    showErrorDialog("Error fetching transaction", "The server returned an error when fetching the transaction. The server response is contained in sparrow.log");
                 });
             });
             transactionReferenceService.start();

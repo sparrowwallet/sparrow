@@ -749,7 +749,7 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastTransactionService.setOnFailed(workerStateEvent -> {
             broadcastProgressBar.setProgress(0);
             log.error("Error broadcasting transaction", workerStateEvent.getSource().getException());
-            AppController.showErrorDialog("Error broadcasting transaction", workerStateEvent.getSource().getException().getMessage());
+            AppController.showErrorDialog("Error broadcasting transaction", "The server returned an error when broadcasting the transaction. The server response is contained in sparrow.log");
             broadcastButton.setDisable(false);
         });
 
