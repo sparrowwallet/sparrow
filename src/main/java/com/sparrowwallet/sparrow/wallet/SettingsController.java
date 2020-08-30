@@ -286,7 +286,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 }
             }
 
-            if(password.get().length() == 0) {
+            if(password.get().length() == 0 && requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
@@ -339,6 +339,9 @@ public class SettingsController extends WalletFormController implements Initiali
                 EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.START, "Encrypting wallet..."));
                 keyDerivationService.start();
             }
+        } else {
+            revert.setDisable(false);
+            apply.setDisable(false);
         }
     }
 }
