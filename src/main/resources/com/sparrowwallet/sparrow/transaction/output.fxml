@@ -34,7 +34,7 @@
                 <CoinLabel fx:id="value"/>
                 <CopyableLabel fx:id="to" text="to" />
                 <AddressLabel fx:id="address" />
-                <CopyableLabel fx:id="change" text="(Change)" />
+                <CopyableLabel fx:id="walletType" />
             </Field>
             <Field fx:id="spentField" text="Spent?">
                 <Label fx:id="spent" />

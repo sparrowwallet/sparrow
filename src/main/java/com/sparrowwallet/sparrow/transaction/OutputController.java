@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
@@ -39,7 +40,7 @@ public class OutputController extends TransactionFormController implements Initi
     private CopyableLabel to;
 
     @FXML
-    private CopyableLabel change;
+    private CopyableLabel walletType;
 
     @FXML
     private AddressLabel address;
@@ -83,10 +84,21 @@ public class OutputController extends TransactionFormController implements Initi
             //ignore
         }
 
-        change.managedProperty().bind(change.visibleProperty());
-        change.setVisible(false);
+        walletType.managedProperty().bind(walletType.visibleProperty());
+        walletType.setVisible(false);
         outputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
-            change.setVisible(signingWallet != null && signingWallet.isWalletOutputScript(txOutput.getScript()));
+            if(signingWallet != null) {
+                walletType.setVisible(true);
+                if(signingWallet.getWalletOutputScripts(KeyPurpose.RECEIVE).containsKey(txOutput.getScript())) {
+                    walletType.setText("(Consolidation)");
+                } else if(signingWallet.getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(txOutput.getScript())) {
+                    walletType.setText("(Change)");
+                } else {
+                    walletType.setText("(Payment)");
+                }
+            } else {
+                walletType.setVisible(false);
+            }
         });
 
         spentField.managedProperty().bind(spentField.visibleProperty());
