@@ -689,9 +689,7 @@ public class HeadersController extends TransactionFormController implements Init
             return;
         }
 
-        signingDevices.addAll(AppController.getDevices().stream().filter(device -> device.getNeedsPinSent() || device.getNeedsPassphraseSent()).collect(Collectors.toList()));
-
-        DeviceSignDialog dlg = new DeviceSignDialog(signingDevices.isEmpty() ? null : signingDevices, headersForm.getPsbt());
+        DeviceSignDialog dlg = new DeviceSignDialog(fingerprints, headersForm.getPsbt());
         dlg.initModality(Modality.NONE);
         Stage stage = (Stage)dlg.getDialogPane().getScene().getWindow();
         stage.setAlwaysOnTop(true);

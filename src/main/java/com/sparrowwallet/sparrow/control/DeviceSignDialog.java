@@ -11,8 +11,8 @@ import java.util.List;
 public class DeviceSignDialog extends DeviceDialog<PSBT> {
     private final PSBT psbt;
 
-    public DeviceSignDialog(List<Device> devices, PSBT psbt) {
-        super(devices);
+    public DeviceSignDialog(List<String> operationFingerprints, PSBT psbt) {
+        super(operationFingerprints);
         this.psbt = psbt;
         EventManager.get().register(this);
         setOnCloseRequest(event -> {

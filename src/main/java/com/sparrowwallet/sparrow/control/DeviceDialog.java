@@ -15,10 +15,12 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.controlsfx.glyphfont.Glyph;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class DeviceDialog<R> extends Dialog<R> {
-    private final List<Device> operationDevices;
+    private final List<String> operationFingerprints;
     private final Accordion deviceAccordion;
     private final VBox scanBox;
     private final Label scanLabel;
@@ -27,8 +29,8 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         this(null);
     }
 
-    public DeviceDialog(List<Device> operationDevices) {
-        this.operationDevices = operationDevices;
+    public DeviceDialog(List<String> operationFingerprints) {
+        this.operationFingerprints = operationFingerprints;
 
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
@@ -104,16 +106,20 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
     }
 
     protected void setDevices(List<Device> devices) {
-        List<Device> dialogDevices = devices;
-        if(operationDevices != null && dialogDevices.containsAll(operationDevices)) {
-            dialogDevices = operationDevices;
+        List<Device> dialogDevices = new ArrayList<>(devices);
+        dialogDevices.removeIf(Objects::isNull);
+
+        if(operationFingerprints != null) {
+            dialogDevices.removeIf(device -> {
+                return device.getFingerprint() != null && !operationFingerprints.contains(device.getFingerprint()) && !(device.getNeedsPinSent() || device.getNeedsPassphraseSent());
+            });
         }
 
         deviceAccordion.getPanes().clear();
 
         if(dialogDevices.isEmpty()) {
             scanBox.setVisible(true);
-            scanLabel.setText("No devices found");
+            scanLabel.setText("No matching devices found");
         } else {
             scanBox.setVisible(false);
             for(Device device : dialogDevices) {

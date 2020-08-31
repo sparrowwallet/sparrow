@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -273,6 +274,8 @@ public class DevicePane extends TitledDescriptionPane {
         contentBox.getChildren().add(sendPassphraseButton);
         contentBox.setPadding(new Insets(10, 30, 10, 30));
 
+        Platform.runLater(passphraseField::requestFocus);
+
         return contentBox;
     }
 
@@ -342,8 +345,7 @@ public class DevicePane extends TitledDescriptionPane {
 
             if(device.getFingerprint() != null) {
                 setPassphraseButton.setVisible(false);
-                device.setNeedsPassphraseSent(false);
-                setDefaultStatus();
+                setDescription("Passphrase sent");
                 showOperationButton();
             } else {
                 setError("Passphrase send failed", null);

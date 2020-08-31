@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressLabel;
 import com.sparrowwallet.sparrow.control.CoinLabel;
@@ -87,19 +88,9 @@ public class OutputController extends TransactionFormController implements Initi
         walletType.managedProperty().bind(walletType.visibleProperty());
         walletType.setVisible(false);
         outputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
-            if(signingWallet != null) {
-                walletType.setVisible(true);
-                if(signingWallet.getWalletOutputScripts(KeyPurpose.RECEIVE).containsKey(txOutput.getScript())) {
-                    walletType.setText("(Consolidation)");
-                } else if(signingWallet.getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(txOutput.getScript())) {
-                    walletType.setText("(Change)");
-                } else {
-                    walletType.setText("(Payment)");
-                }
-            } else {
-                walletType.setVisible(false);
-            }
+            updateWalletType(txOutput, signingWallet);
         });
+        updateWalletType(txOutput, outputForm.getSigningWallet());
 
         spentField.managedProperty().bind(spentField.visibleProperty());
         spentByField.managedProperty().bind(spentByField.visibleProperty());
@@ -116,6 +107,21 @@ public class OutputController extends TransactionFormController implements Initi
         initializeScriptField(scriptPubKeyArea);
         scriptPubKeyArea.clear();
         scriptPubKeyArea.appendScript(txOutput.getScript(), null, null);
+    }
+
+    private void updateWalletType(TransactionOutput txOutput, Wallet signingWallet) {
+        if(signingWallet != null) {
+            walletType.setVisible(true);
+            if(signingWallet.getWalletOutputScripts(KeyPurpose.RECEIVE).containsKey(txOutput.getScript())) {
+                walletType.setText("(Consolidation)");
+            } else if(signingWallet.getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(txOutput.getScript())) {
+                walletType.setText("(Change)");
+            } else {
+                walletType.setText("(Payment)");
+            }
+        } else {
+            walletType.setVisible(false);
+        }
     }
 
     private void updateSpent(List<BlockTransaction> outputTransactions) {

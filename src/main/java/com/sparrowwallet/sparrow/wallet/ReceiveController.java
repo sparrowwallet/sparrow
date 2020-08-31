@@ -211,21 +211,21 @@ public class ReceiveController extends WalletFormController implements Initializ
             List<Device> possibleDevices = (List<Device>)displayAddress.getUserData();
             if(possibleDevices != null && !possibleDevices.isEmpty()) {
                 if(possibleDevices.size() > 1 || possibleDevices.get(0).getNeedsPinSent() || possibleDevices.get(0).getNeedsPassphraseSent()) {
-                    DeviceAddressDialog dlg = new DeviceAddressDialog(possibleDevices.size() == 1 ? List.of(possibleDevices.get(0)) : null, wallet, fullDerivation);
+                    DeviceAddressDialog dlg = new DeviceAddressDialog(List.of(keystore.getKeyDerivation().getMasterFingerprint()), wallet, fullDerivation);
                     dlg.showAndWait();
                 } else {
                     Device actualDevice = possibleDevices.get(0);
                     Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(actualDevice, "", wallet.getScriptType(), fullDerivation.getDerivationPath());
                     displayAddressService.setOnFailed(failedEvent -> {
                         Platform.runLater(() -> {
-                            DeviceAddressDialog dlg = new DeviceAddressDialog(null, wallet, fullDerivation);
+                            DeviceAddressDialog dlg = new DeviceAddressDialog(List.of(keystore.getKeyDerivation().getMasterFingerprint()), wallet, fullDerivation);
                             dlg.showAndWait();
                         });
                     });
                     displayAddressService.start();
                 }
             } else {
-                DeviceAddressDialog dlg = new DeviceAddressDialog(null, wallet, fullDerivation);
+                DeviceAddressDialog dlg = new DeviceAddressDialog(List.of(keystore.getKeyDerivation().getMasterFingerprint()), wallet, fullDerivation);
                 dlg.showAndWait();
             }
         }

@@ -13,8 +13,8 @@ public class DeviceAddressDialog extends DeviceDialog<String> {
     private final Wallet wallet;
     private final KeyDerivation keyDerivation;
 
-    public DeviceAddressDialog(List<Device> devices, Wallet wallet, KeyDerivation keyDerivation) {
-        super(devices);
+    public DeviceAddressDialog(List<String> operationFingerprints, Wallet wallet, KeyDerivation keyDerivation) {
+        super(operationFingerprints);
         this.wallet = wallet;
         this.keyDerivation = keyDerivation;
 
