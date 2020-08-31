@@ -810,6 +810,18 @@ public class AppController implements Initializable {
                 if(result.isPresent() && result.get() == ButtonType.CANCEL) {
                     return;
                 }
+
+                //Close existing wallet first if open
+                for(Iterator<Tab> iter = tabs.getTabs().iterator(); iter.hasNext(); ) {
+                    Tab tab = iter.next();
+                    TabData tabData = (TabData)tab.getUserData();
+                    if(tabData.getType() == TabData.TabType.WALLET) {
+                        WalletTabData walletTabData = (WalletTabData) tabData;
+                        if(walletTabData.getStorage().getWalletFile().equals(walletFile)) {
+                            iter.remove();
+                        }
+                    }
+                }
             }
 
             Storage storage = new Storage(walletFile);
@@ -837,6 +849,16 @@ public class AppController implements Initializable {
     }
 
     public Tab addWalletTab(Storage storage, Wallet wallet) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData.getType() == TabData.TabType.WALLET) {
+                WalletTabData walletTabData = (WalletTabData) tabData;
+                if(storage.getWalletFile().equals(walletTabData.getStorage().getWalletFile())) {
+                    return tab;
+                }
+            }
+        }
+
         try {
             String name = storage.getWalletFile().getName();
             if(name.endsWith(".json")) {
