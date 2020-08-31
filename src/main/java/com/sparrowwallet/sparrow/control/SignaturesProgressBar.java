@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.protocol.TransactionSignature;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreSignedEvent;
@@ -7,8 +8,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
+import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableMap;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -18,6 +19,9 @@ import javafx.scene.layout.StackPane;
 import javafx.util.Duration;
 import org.controlsfx.control.SegmentedBar;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.SignatureProgressSegment> {
     public SignaturesProgressBar() {
         setOrientation(Orientation.HORIZONTAL);
@@ -25,10 +29,11 @@ public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.Si
         setInfoNodeFactory(segment -> segment.getKeystore() == null ? null : new SignatureProgressSegmentLabel(segment.getKeystore().getLabel()));
     }
 
-    public void initialize(ObservableList<Keystore> signedKeystores, int threshold) {
+    public void initialize(ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap, int threshold) {
         getStyleClass().add("signatures-progress-bar");
         getSegments().clear();
 
+        List<Keystore> signedKeystores = new ArrayList<>(signatureKeystoreMap.values());
         int numSegments = Math.max(threshold, signedKeystores.size());
         double segmentSize = 100d / numSegments;
         for(int i = 0; i < numSegments; i++) {
@@ -39,19 +44,20 @@ public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.Si
             }
         }
 
-        signedKeystores.addListener((ListChangeListener<Keystore>) c -> {
-            int numSegments1 = Math.max(threshold, c.getList().size());
-            double newSegmentSize = 100d / numSegments1;
+        signatureKeystoreMap.addListener((MapChangeListener<TransactionSignature, Keystore>) c -> {
+            List<Keystore> newSignedKeystores = new ArrayList<>(c.getMap().values());
+            int newNumSegments = Math.max(threshold, newSignedKeystores.size());
+            double newSegmentSize = 100d / newNumSegments;
 
-            for(int i = 0; i < numSegments1; i++) {
+            for(int i = 0; i < newNumSegments; i++) {
                 SignatureProgressSegment segment = null;
                 if(i < getSegments().size()) {
                     segment = getSegments().get(i);
                 }
 
                 Keystore signedKeystore = null;
-                if(i < signedKeystores.size()) {
-                    signedKeystore = signedKeystores.get(i);
+                if(i < newSignedKeystores.size()) {
+                    signedKeystore = newSignedKeystores.get(i);
                 }
 
                 if(segment != null) {

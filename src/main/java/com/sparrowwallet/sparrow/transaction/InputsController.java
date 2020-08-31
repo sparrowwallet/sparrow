@@ -13,7 +13,7 @@ import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionFetchedEvent;
 import com.sparrowwallet.sparrow.event.PSBTCombinedEvent;
 import com.sparrowwallet.sparrow.event.PSBTFinalizedEvent;
-import javafx.collections.ListChangeListener;
+import javafx.collections.MapChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
@@ -62,7 +62,7 @@ public class InputsController extends TransactionFormController implements Initi
 
         if(inputsForm.getPsbt() != null) {
             updatePSBTInputs(inputsForm.getPsbt());
-            inputsForm.getSignedKeystores().addListener((ListChangeListener<Keystore>) c -> {
+            inputsForm.getSignatureKeystoreMap().addListener((MapChangeListener<TransactionSignature, Keystore>) c -> {
                 updatePSBTInputs(inputsForm.getPsbt());
             });
         } else if(inputsForm.getInputTransactions() != null) {

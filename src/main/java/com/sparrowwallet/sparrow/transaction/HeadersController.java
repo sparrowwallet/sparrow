@@ -405,7 +405,7 @@ public class HeadersController extends TransactionFormController implements Init
                 updateSignedKeystores(signingWallet);
 
                 int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
-                signaturesProgressBar.initialize(headersForm.getSignedKeystores(), threshold);
+                signaturesProgressBar.initialize(headersForm.getSignatureKeystoreMap(), threshold);
             });
 
             EventManager.get().post(new RequestOpenWalletsEvent());
@@ -705,12 +705,11 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void updateSignedKeystores(Wallet signingWallet) {
-        Map<PSBTInput, List<Keystore>> signedKeystoresMap = signingWallet.getSignedKeystores(headersForm.getPsbt());
-        Optional<List<Keystore>> optSignedKeystores = signedKeystoresMap.values().stream().filter(list -> !list.isEmpty()).min(Comparator.comparingInt(List::size));
+        Map<PSBTInput, Map<TransactionSignature, Keystore>> signedKeystoresMap = signingWallet.getSignedKeystores(headersForm.getPsbt());
+        Optional<Map<TransactionSignature, Keystore>> optSignedKeystores = signedKeystoresMap.values().stream().filter(map -> !map.isEmpty()).min(Comparator.comparingInt(Map::size));
         optSignedKeystores.ifPresent(signedKeystores -> {
-            List<Keystore> newSignedKeystores = new ArrayList<>(signedKeystores);
-            newSignedKeystores.removeAll(headersForm.getSignedKeystores());
-            headersForm.getSignedKeystores().addAll(newSignedKeystores);
+            headersForm.getSignatureKeystoreMap().keySet().retainAll(signedKeystores.keySet());
+            headersForm.getSignatureKeystoreMap().putAll(signedKeystores);
         });
     }
 
@@ -922,6 +921,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void keystoreSigned(KeystoreSignedEvent event) {
         if(headersForm.getSignedKeystores().contains(event.getKeystore()) && headersForm.getPsbt() != null) {
+            //Attempt to finalize PSBT - will do nothing if all inputs are not signed
             finalizePSBT();
         }
     }

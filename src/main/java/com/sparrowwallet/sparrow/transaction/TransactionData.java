@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionSignature;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
@@ -9,9 +10,10 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,7 +32,7 @@ public class TransactionData {
 
     private final ObservableMap<Wallet, Storage> availableWallets = FXCollections.observableHashMap();
     private final SimpleObjectProperty<Wallet> signingWallet = new SimpleObjectProperty<>(this, "signingWallet", null);
-    private final ObservableList<Keystore> signedKeystores = FXCollections.observableArrayList();
+    private final ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap = FXCollections.observableMap(new LinkedHashMap<>());
 
     public TransactionData(String name, PSBT psbt) {
         this(name, psbt.getTransaction());
@@ -147,7 +149,11 @@ public class TransactionData {
         this.signingWallet.set(wallet);
     }
 
-    public ObservableList<Keystore> getSignedKeystores() {
-        return signedKeystores;
+    public ObservableMap<TransactionSignature, Keystore> getSignatureKeystoreMap() {
+        return signatureKeystoreMap;
+    }
+
+    public Collection<Keystore> getSignedKeystores() {
+        return signatureKeystoreMap.values();
     }
 }

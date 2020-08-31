@@ -2,17 +2,18 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionSignature;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.ObservableList;
 import javafx.collections.ObservableMap;
 import javafx.scene.Node;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -83,7 +84,11 @@ public abstract class TransactionForm {
         txdata.setSigningWallet(signingWallet);
     }
 
-    public ObservableList<Keystore> getSignedKeystores() {
+    public ObservableMap<TransactionSignature, Keystore> getSignatureKeystoreMap() {
+        return txdata.getSignatureKeystoreMap();
+    }
+
+    public Collection<Keystore> getSignedKeystores() {
         return txdata.getSignedKeystores();
     }
 

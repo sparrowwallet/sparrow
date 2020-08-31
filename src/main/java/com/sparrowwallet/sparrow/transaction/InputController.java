@@ -11,7 +11,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
-import javafx.collections.ListChangeListener;
+import javafx.collections.MapChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
@@ -126,7 +126,7 @@ public class InputController extends TransactionFormController implements Initia
         initializeLocktimeFields(txInput);
 
         if(psbtInput != null) {
-            inputForm.getSignedKeystores().addListener((ListChangeListener<Keystore>) c -> {
+            inputForm.getSignatureKeystoreMap().addListener((MapChangeListener<TransactionSignature, Keystore>) c -> {
                 updateSignatures(inputForm.getPsbtInput());
             });
         }
