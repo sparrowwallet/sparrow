@@ -10,10 +10,7 @@ import com.sparrowwallet.sparrow.AppController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static com.sparrowwallet.drongo.protocol.Transaction.DUST_RELAY_TX_FEE;
 
@@ -216,12 +213,12 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                     result.put(targetBlock, targetBlocksFeeRateBtcKb);
                 } catch(IllegalStateException | IllegalArgumentException e) {
                     log.warn("Failed to retrieve fee rate for target blocks: " + targetBlock + " (" + e.getMessage() + ")");
-                    result.put(targetBlock, 0.0001d);
+                    result.put(targetBlock, result.values().stream().mapToDouble(v -> v).min().orElse(0.0001d));
                 } catch(JsonRpcException e) {
                     throw new ElectrumServerRpcException("Failed to retrieve fee rate for target blocks: " + targetBlock, e);
                 }
             } else {
-                result.put(targetBlock, 0.0001d);
+                result.put(targetBlock, result.values().stream().mapToDouble(v -> v).min().orElse(0.0001d));
             }
         }
 
