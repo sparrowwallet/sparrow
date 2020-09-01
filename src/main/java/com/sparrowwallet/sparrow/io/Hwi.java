@@ -44,7 +44,7 @@ public class Hwi {
 
             String output = execute(command);
             Device[] devices = getGson().fromJson(output, Device[].class);
-            return Arrays.asList(devices);
+            return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
             throw new ImportException(e);
         }
