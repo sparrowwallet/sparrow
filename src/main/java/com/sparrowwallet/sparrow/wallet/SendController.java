@@ -266,6 +266,7 @@ public class SendController extends WalletFormController implements Initializabl
             if(walletTransaction != null) {
                 if(getRecipientValueSats() == null || walletTransaction.getRecipientAmount() != getRecipientValueSats()) {
                     setRecipientValueSats(walletTransaction.getRecipientAmount());
+                    setFiatAmount(AppController.getFiatCurrencyExchangeRate(), walletTransaction.getRecipientAmount());
                 }
 
                 double feeRate = (double)walletTransaction.getFee() / walletTransaction.getTransaction().getVirtualSize();

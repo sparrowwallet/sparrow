@@ -90,6 +90,8 @@ public class WelcomeDialog extends Dialog<Mode> {
 
     private ToggleSwitch createToggle(StatusBar statusBar, ButtonType onlineButtonType, ButtonType offlineButtonType) {
         ToggleSwitch toggleSwitch = new UnlabeledToggleSwitch();
+        toggleSwitch.setStyle("-fx-padding: 1px 0 0 0");
+
         toggleSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> {
             Button onlineButton = (Button) getDialogPane().lookupButton(onlineButtonType);
             onlineButton.setDefaultButton(newValue);
