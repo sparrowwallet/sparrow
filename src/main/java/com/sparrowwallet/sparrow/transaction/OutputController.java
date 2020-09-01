@@ -9,10 +9,7 @@ import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.AddressLabel;
-import com.sparrowwallet.sparrow.control.CoinLabel;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.control.ScriptArea;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
@@ -41,9 +38,6 @@ public class OutputController extends TransactionFormController implements Initi
     private CopyableLabel to;
 
     @FXML
-    private CopyableLabel walletType;
-
-    @FXML
     private AddressLabel address;
 
     @FXML
@@ -69,7 +63,10 @@ public class OutputController extends TransactionFormController implements Initi
     public void initializeView() {
         TransactionOutput txOutput = outputForm.getTransactionOutput();
 
-        outputFieldset.setText("Output #" + txOutput.getIndex());
+        outputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
+            updateOutputLegendFromWallet(txOutput, signingWallet);
+        });
+        updateOutputLegendFromWallet(txOutput, outputForm.getSigningWallet());
 
         value.setValue(txOutput.getValue());
         to.setVisible(false);
@@ -84,13 +81,6 @@ public class OutputController extends TransactionFormController implements Initi
         } catch(NonStandardScriptException e) {
             //ignore
         }
-
-        walletType.managedProperty().bind(walletType.visibleProperty());
-        walletType.setVisible(false);
-        outputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
-            updateWalletType(txOutput, signingWallet);
-        });
-        updateWalletType(txOutput, outputForm.getSigningWallet());
 
         spentField.managedProperty().bind(spentField.visibleProperty());
         spentByField.managedProperty().bind(spentByField.visibleProperty());
@@ -109,18 +99,26 @@ public class OutputController extends TransactionFormController implements Initi
         scriptPubKeyArea.appendScript(txOutput.getScript(), null, null);
     }
 
-    private void updateWalletType(TransactionOutput txOutput, Wallet signingWallet) {
+    private String getLegendText(TransactionOutput txOutput) {
+        return "Output #" + txOutput.getIndex();
+    }
+
+    private void updateOutputLegendFromWallet(TransactionOutput txOutput, Wallet signingWallet) {
+        String baseText = getLegendText(txOutput);
         if(signingWallet != null) {
-            walletType.setVisible(true);
             if(signingWallet.getWalletOutputScripts(KeyPurpose.RECEIVE).containsKey(txOutput.getScript())) {
-                walletType.setText("(Consolidation)");
+                outputFieldset.setText(baseText + " - Consolidation");
+                outputFieldset.setIcon(TransactionDiagram.getConsolidationGlyph());
             } else if(signingWallet.getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(txOutput.getScript())) {
-                walletType.setText("(Change)");
+                outputFieldset.setText(baseText + " - Change");
+                outputFieldset.setIcon(TransactionDiagram.getChangeGlyph());
             } else {
-                walletType.setText("(Payment)");
+                outputFieldset.setText(baseText + " - Payment");
+                outputFieldset.setIcon(TransactionDiagram.getPaymentGlyph());
             }
         } else {
-            walletType.setVisible(false);
+            outputFieldset.setText(baseText);
+            outputFieldset.setIcon(null);
         }
     }
 

@@ -270,10 +270,11 @@ public class TransactionDiagram extends GridPane {
         outputsBox.setAlignment(Pos.CENTER_LEFT);
         outputsBox.getChildren().add(createSpacer());
 
+        boolean isConsolidation = walletTx.isConsolidationSend();
         String recipientDesc = walletTx.getRecipientAddress().toString().substring(0, 8) + "...";
-        Label recipientLabel = new Label(recipientDesc, getSendGlyph());
+        Label recipientLabel = new Label(recipientDesc, isConsolidation ? getConsolidationGlyph() : getPaymentGlyph());
         recipientLabel.getStyleClass().addAll("output-label", "recipient-label");
-        Tooltip recipientTooltip = new Tooltip("Send " + getSatsValue(walletTx.getRecipientAmount()) + " sats to\n" + walletTx.getRecipientAddress().toString());
+        Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(walletTx.getRecipientAmount()) + " sats to\n" + walletTx.getRecipientAddress().toString());
         recipientLabel.setTooltip(recipientTooltip);
         outputsBox.getChildren().add(recipientLabel);
         outputsBox.getChildren().add(createSpacer());
@@ -323,14 +324,21 @@ public class TransactionDiagram extends GridPane {
         return spacer;
     }
 
-    private Glyph getSendGlyph() {
-        Glyph sendGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
-        sendGlyph.getStyleClass().add("send-icon");
-        sendGlyph.setFontSize(12);
-        return sendGlyph;
+    public static Glyph getPaymentGlyph() {
+        Glyph paymentGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
+        paymentGlyph.getStyleClass().add("payment-icon");
+        paymentGlyph.setFontSize(12);
+        return paymentGlyph;
     }
 
-    private Glyph getChangeGlyph() {
+    public static Glyph getConsolidationGlyph() {
+        Glyph consolidationGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.REPLY_ALL);
+        consolidationGlyph.getStyleClass().add("consolidation-icon");
+        consolidationGlyph.setFontSize(12);
+        return consolidationGlyph;
+    }
+
+    public static Glyph getChangeGlyph() {
         Glyph changeGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.COINS);
         changeGlyph.getStyleClass().add("change-icon");
         changeGlyph.setFontSize(12);

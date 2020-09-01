@@ -29,3 +29,8 @@
 #spentByField .input-container {
     -fx-alignment: center-left;
 }
+
+.legend {
+    -fx-content-display: RIGHT;
+    -fx-graphic-text-gap: 5px;
+}
