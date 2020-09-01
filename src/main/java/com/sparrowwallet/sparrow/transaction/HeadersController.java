@@ -830,6 +830,7 @@ public class HeadersController extends TransactionFormController implements Init
 
                     signaturesForm.setVisible(true);
                     headersForm.setSigningWallet(availableWallets.get(0));
+                    signButton.setDisable(false);
 
                     if(headersForm.getPsbt().isSigned()) {
                         finalizePSBT();
@@ -846,6 +847,7 @@ public class HeadersController extends TransactionFormController implements Init
                     noWalletsWarning.setVisible(false);
                     signingWallet.setVisible(true);
                     finalizeTransaction.setDisable(false);
+                    signButton.setDisable(false);
                 }
             } else {
                 if(headersForm.getPsbt().isSigned()) {
@@ -862,6 +864,7 @@ public class HeadersController extends TransactionFormController implements Init
                     noWalletsWarning.setVisible(true);
                     signingWallet.setVisible(false);
                     finalizeTransaction.setDisable(true);
+                    signButton.setDisable(true);
                 }
             }
         }
