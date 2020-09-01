@@ -211,7 +211,11 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm().getWallet() == wallet) {
-                EventManager.get().unregister(this);
+                try {
+                    EventManager.get().unregister(this);
+                } catch(IllegalArgumentException e) {
+                    //Safe to ignore
+                }
             }
         }
     }
