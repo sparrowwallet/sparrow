@@ -269,7 +269,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     }
 
     private void displayMnemonicCode() {
-        setDescription("Write down word list to confirm backup");
+        setDescription("Write down words before confirming");
         showHideLink.setVisible(false);
 
         calculateButton.setVisible(false);

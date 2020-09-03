@@ -71,7 +71,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 NodeEntry nodeEntry = (NodeEntry)entry;
                 Address address = nodeEntry.getAddress();
                 setText(address.toString());
-                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
+                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), null));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(nodeEntry.getNode().getDerivationPath());
                 setTooltip(tooltip);
@@ -98,6 +98,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                         messageSignDialog.showAndWait();
                     });
                     actionBox.getChildren().add(signMessageButton);
+                    setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
                 }
 
                 setGraphic(actionBox);

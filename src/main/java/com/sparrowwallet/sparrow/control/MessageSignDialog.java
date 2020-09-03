@@ -5,6 +5,8 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
@@ -221,7 +223,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             //Note we can expect a single keystore due to the check above
             Keystore keystore = decryptedWallet.getKeystores().get(0);
             ECKey privKey = keystore.getKey(walletNode);
-            String signatureText = privKey.signMessage(message.getText(), null);
+            String signatureText = privKey.signMessage(message.getText().trim(), decryptedWallet.getScriptType(), null);
             signature.clear();
             signature.appendText(signatureText);
         } catch(Exception e) {
@@ -234,29 +236,53 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         try {
             //Find ECKey from message and signature
             //http://www.secg.org/download/aid-780/sec1-v2.pdf section 4.1.6
-
-            ECKey signedMessageKey = ECKey.signedMessageToKey(message.getText(), signature.getText());
-            Address address = getAddress();
-
-            byte[] pubKeyHash = address.getOutputScriptData();
-            byte[] signedKeyHash = signedMessageKey.getPubKeyHash();
-
-            if(!Arrays.equals(pubKeyHash, signedKeyHash)) {
-                throw new SignatureException("Address pubkey hash did not match signed pubkey hash");
+            boolean verified = false;
+            try {
+                ECKey signedMessageKey = ECKey.signedMessageToKey(message.getText().trim(), signature.getText().trim(), false);
+                verified = verifyMessage(signedMessageKey);
+            } catch(SignatureException e) {
+                //ignore
             }
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            setStageIcon(alert.getDialogPane().getScene().getWindow());
-            alert.setTitle("Verification Succeeded");
-            alert.setHeaderText("Verification Succeeded");
-            alert.setContentText("The signature verified against the message.");
-            alert.showAndWait();
-        } catch(SignatureException e) {
-            AppController.showErrorDialog("Verification failed", "The provided signature did not match the message for this address.");
+            if(!verified) {
+                try {
+                    ECKey electrumSignedMessageKey = ECKey.signedMessageToKey(message.getText(), signature.getText(), true);
+                    verified = verifyMessage(electrumSignedMessageKey);
+                } catch(SignatureException e) {
+                    //ignore
+                }
+            }
+
+            if(verified) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                setStageIcon(alert.getDialogPane().getScene().getWindow());
+                alert.setTitle("Verification Succeeded");
+                alert.setHeaderText("Verification Succeeded");
+                alert.setContentText("The signature verified against the message.");
+                alert.showAndWait();
+            } else {
+                AppController.showErrorDialog("Verification failed", "The provided signature did not match the message for this address.");
+            }
+        } catch(IllegalArgumentException e) {
+            AppController.showErrorDialog("Could not verify message", e.getMessage());
         } catch(Exception e) {
             log.error("Could not verify message", e);
             AppController.showErrorDialog("Could not verify message", e.getMessage());
         }
+    }
+
+    private boolean verifyMessage(ECKey signedMessageKey) throws InvalidAddressException, SignatureException {
+        Address providedAddress = getAddress();
+        ScriptType scriptType = providedAddress.getScriptType();
+        if(scriptType == ScriptType.P2SH) {
+            scriptType = ScriptType.P2SH_P2WPKH;
+        }
+        if(!ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE).contains(scriptType)) {
+            throw new IllegalArgumentException("Only single signature P2PKH, P2SH-P2WPKH or P2WPKH addresses can verify messages.");
+        }
+
+        Address signedMessageAddress = scriptType.getAddress(signedMessageKey);
+        return providedAddress.equals(signedMessageAddress);
     }
 
     @Subscribe
