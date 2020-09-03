@@ -188,7 +188,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             AnchorPane.setTopAnchor(invalidLabel, 5.0);
             AnchorPane.setLeftAnchor(invalidLabel, 0.0);
 
-            confirmButton = new Button("Confirm Written Backup");
+            confirmButton = new Button("Re-enter Words...");
             confirmButton.setOnAction(event -> {
                 confirmBackup();
             });
@@ -269,7 +269,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     }
 
     private void displayMnemonicCode() {
-        setDescription("Write down words before confirming");
+        setDescription("Write down words before re-entering");
         showHideLink.setVisible(false);
 
         calculateButton.setVisible(false);
