@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
@@ -8,6 +9,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppController;
@@ -32,7 +34,7 @@ import tornadofx.control.Fieldset;
 import tornadofx.control.Form;
 
 import java.security.SignatureException;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static com.sparrowwallet.sparrow.AppController.setStageIcon;
@@ -73,8 +75,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             if(wallet.getKeystores().size() != 1) {
                 throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
             }
-            if(!wallet.getKeystores().get(0).hasSeed()) {
-                throw new IllegalArgumentException("Cannot sign messages using a wallet without a seed");
+            if(!wallet.getKeystores().get(0).hasSeed() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
+                throw new IllegalArgumentException("Cannot sign messages using a wallet without a seed or USB keystore");
             }
         }
 
@@ -211,10 +213,14 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             return;
         }
 
-        if(wallet.isEncrypted()) {
-            EventManager.get().post(new RequestOpenWalletsEvent());
-        } else {
-            signUnencryptedKeystore(wallet);
+        if(wallet.containsSeeds()) {
+            if(wallet.isEncrypted()) {
+                EventManager.get().post(new RequestOpenWalletsEvent());
+            } else {
+                signUnencryptedKeystore(wallet);
+            }
+        } else if(wallet.containsSource(KeystoreSource.HW_USB)) {
+            signUsbKeystore(wallet);
         }
     }
 
@@ -229,6 +235,17 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         } catch(Exception e) {
             log.error("Could not sign message", e);
             AppController.showErrorDialog("Could not sign message", e.getMessage());
+        }
+    }
+
+    private void signUsbKeystore(Wallet usbWallet) {
+        List<String> fingerprints = List.of(usbWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
+        KeyDerivation fullDerivation = usbWallet.getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
+        DeviceSignMessageDialog deviceSignMessageDialog = new DeviceSignMessageDialog(fingerprints, usbWallet, message.getText().trim(), fullDerivation);
+        Optional<String> optSignature = deviceSignMessageDialog.showAndWait();
+        if(optSignature.isPresent()) {
+            signature.clear();
+            signature.appendText(optSignature.get());
         }
     }
 

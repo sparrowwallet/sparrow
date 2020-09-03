@@ -854,7 +854,8 @@ public class AppController implements Initializable {
         if(tab != null && tab.getUserData() instanceof WalletTabData) {
             WalletTabData walletTabData = (WalletTabData)tab.getUserData();
             Wallet wallet = walletTabData.getWallet();
-            if(wallet.getKeystores().size() == 1 && wallet.getKeystores().get(0).hasSeed()) {
+            if(wallet.getKeystores().size() == 1 &&
+                    (wallet.getKeystores().get(0).hasSeed() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
                 //Can sign and verify
                 messageSignDialog = new MessageSignDialog(wallet);
             }

@@ -116,10 +116,41 @@ public class Hwi {
             if(result.get("address") != null) {
                 return result.get("address").getAsString();
             } else {
-                throw new DisplayAddressException("Could not retrieve address");
+                JsonElement error = result.get("error");
+                if(error != null) {
+                    throw new DisplayAddressException(error.getAsString());
+                } else {
+                    throw new DisplayAddressException("Could not retrieve address");
+                }
             }
         } catch(IOException e) {
             throw new DisplayAddressException(e);
+        }
+    }
+
+    public String signMessage(Device device, String passphrase, String message, String derivationPath) throws SignMessageException {
+        try {
+            isPromptActive = false;
+            String output;
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
+                output = execute(getDeviceCommand(device, passphrase, Command.SIGN_MESSAGE, message, derivationPath));
+            } else {
+                output = execute(getDeviceCommand(device, Command.SIGN_MESSAGE, message, derivationPath));
+            }
+
+            JsonObject result = JsonParser.parseString(output).getAsJsonObject();
+            if(result.get("signature") != null) {
+                return result.get("signature").getAsString();
+            } else {
+                JsonElement error = result.get("error");
+                if(error != null) {
+                    throw new SignMessageException(error.getAsString());
+                } else {
+                    throw new SignMessageException("Could not sign message");
+                }
+            }
+        } catch(IOException e) {
+            throw new SignMessageException(e);
         }
     }
 
@@ -409,6 +440,30 @@ public class Hwi {
         }
     }
 
+    public static class SignMessageService extends Service<String> {
+        private final Device device;
+        private final String passphrase;
+        private final String message;
+        private final String derivationPath;
+
+        public SignMessageService(Device device, String passphrase, String message, String derivationPath) {
+            this.device = device;
+            this.passphrase = passphrase;
+            this.message = message;
+            this.derivationPath = derivationPath;
+        }
+
+        @Override
+        protected Task<String> createTask() {
+            return new Task<>() {
+                protected String call() throws SignMessageException {
+                    Hwi hwi = new Hwi();
+                    return hwi.signMessage(device, passphrase, message, derivationPath);
+                }
+            };
+        }
+    }
+
     public static class GetXpubService extends Service<String> {
         private final Device device;
         private final String passphrase;
@@ -479,6 +534,7 @@ public class Hwi {
         PROMPT_PIN("promptpin", true),
         SEND_PIN("sendpin", false),
         DISPLAY_ADDRESS("displayaddress", true),
+        SIGN_MESSAGE("signmessage", true),
         GET_XPUB("getxpub", true),
         SIGN_TX("signtx", true);
 

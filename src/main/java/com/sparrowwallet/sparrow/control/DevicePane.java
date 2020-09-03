@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.AddressDisplayedEvent;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
+import com.sparrowwallet.sparrow.event.MessageSignedEvent;
 import com.sparrowwallet.sparrow.event.PSBTSignedEvent;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
@@ -38,6 +39,7 @@ public class DevicePane extends TitledDescriptionPane {
     private final Wallet wallet;
     private final PSBT psbt;
     private final KeyDerivation keyDerivation;
+    private final String message;
     private final Device device;
 
     private CustomPasswordField pinField;
@@ -47,6 +49,7 @@ public class DevicePane extends TitledDescriptionPane {
     private SplitMenuButton importButton;
     private Button signButton;
     private Button displayAddressButton;
+    private Button signMessageButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
 
@@ -56,6 +59,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = wallet;
         this.psbt = null;
         this.keyDerivation = null;
+        this.message = null;
         this.device = device;
 
         setDefaultStatus();
@@ -81,6 +85,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = null;
         this.psbt = psbt;
         this.keyDerivation = null;
+        this.message = null;
         this.device = device;
 
         setDefaultStatus();
@@ -106,6 +111,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = wallet;
         this.psbt = null;
         this.keyDerivation = keyDerivation;
+        this.message = null;
         this.device = device;
 
         setDefaultStatus();
@@ -123,6 +129,32 @@ public class DevicePane extends TitledDescriptionPane {
         }
 
         buttonBox.getChildren().addAll(setPassphraseButton, displayAddressButton);
+    }
+
+    public DevicePane(Wallet wallet, String message, KeyDerivation keyDerivation, Device device) {
+        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        this.deviceOperation = DeviceOperation.SIGN_MESSAGE;
+        this.wallet = wallet;
+        this.psbt = null;
+        this.keyDerivation = keyDerivation;
+        this.message = message;
+        this.device = device;
+
+        setDefaultStatus();
+        showHideLink.setVisible(false);
+
+        createSetPassphraseButton();
+        createSignMessageButton();
+
+        if (device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
+            unlockButton.setVisible(true);
+        } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
+            setPassphraseButton.setVisible(true);
+        } else {
+            showOperationButton();
+        }
+
+        buttonBox.getChildren().addAll(setPassphraseButton, signMessageButton);
     }
 
     @Override
@@ -206,6 +238,22 @@ public class DevicePane extends TitledDescriptionPane {
 
         if(device.getFingerprint() != null && !device.getFingerprint().equals(keyDerivation.getMasterFingerprint())) {
             displayAddressButton.setDisable(true);
+        }
+    }
+
+    private void createSignMessageButton() {
+        signMessageButton = new Button("Sign Message");
+        signMessageButton.setDefaultButton(true);
+        signMessageButton.setAlignment(Pos.CENTER_RIGHT);
+        signMessageButton.setOnAction(event -> {
+            signMessageButton.setDisable(true);
+            signMessage();
+        });
+        signMessageButton.managedProperty().bind(signMessageButton.visibleProperty());
+        signMessageButton.setVisible(false);
+
+        if(device.getFingerprint() != null && !device.getFingerprint().equals(keyDerivation.getMasterFingerprint())) {
+            signMessageButton.setDisable(true);
         }
     }
 
@@ -438,6 +486,20 @@ public class DevicePane extends TitledDescriptionPane {
         displayAddressService.start();
     }
 
+    private void signMessage() {
+        Hwi.SignMessageService signMessageService = new Hwi.SignMessageService(device, passphrase.get(), message, keyDerivation.getDerivationPath());
+        signMessageService.setOnSucceeded(successEvent -> {
+            String signature = signMessageService.getValue();
+            EventManager.get().post(new MessageSignedEvent(wallet, signature));
+        });
+        signMessageService.setOnFailed(failedEvent -> {
+            setError("Could not sign message", signMessageService.getException().getMessage());
+            signMessageButton.setDisable(false);
+        });
+        setDescription("Signing message...");
+        signMessageService.start();
+    }
+
     private void showOperationButton() {
         if(deviceOperation.equals(DeviceOperation.IMPORT)) {
             importButton.setVisible(true);
@@ -449,6 +511,9 @@ public class DevicePane extends TitledDescriptionPane {
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.DISPLAY_ADDRESS)) {
             displayAddressButton.setVisible(true);
+            showHideLink.setVisible(false);
+        } else if(deviceOperation.equals(DeviceOperation.SIGN_MESSAGE)) {
+            signMessageButton.setVisible(true);
             showHideLink.setVisible(false);
         }
     }
@@ -490,6 +555,6 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public enum DeviceOperation {
-        IMPORT, SIGN, DISPLAY_ADDRESS;
+        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE;
     }
 }

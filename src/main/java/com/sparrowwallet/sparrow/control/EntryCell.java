@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -88,7 +89,8 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 });
                 actionBox.getChildren().add(receiveButton);
 
-                if(nodeEntry.getWallet().getKeystores().size() == 1 && nodeEntry.getWallet().getKeystores().get(0).hasSeed()) {
+                if(nodeEntry.getWallet().getKeystores().size() == 1 &&
+                        (nodeEntry.getWallet().getKeystores().get(0).hasSeed() || nodeEntry.getWallet().getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
                     Button signMessageButton = new Button("");
                     Glyph signMessageGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.PEN_FANCY);
                     signMessageGlyph.setFontSize(12);
