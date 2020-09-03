@@ -848,6 +848,26 @@ public class AppController implements Initializable {
         preferencesDialog.showAndWait();
     }
 
+    public void signVerifyMessage(ActionEvent event) {
+        MessageSignDialog messageSignDialog = null;
+        Tab tab = tabs.getSelectionModel().getSelectedItem();
+        if(tab != null && tab.getUserData() instanceof WalletTabData) {
+            WalletTabData walletTabData = (WalletTabData)tab.getUserData();
+            Wallet wallet = walletTabData.getWallet();
+            if(wallet.getKeystores().size() == 1 && wallet.getKeystores().get(0).hasSeed()) {
+                //Can sign and verify
+                messageSignDialog = new MessageSignDialog(wallet);
+            }
+        }
+
+        if(messageSignDialog == null) {
+            //Can verify only
+            messageSignDialog = new MessageSignDialog();
+        }
+
+        messageSignDialog.showAndWait();
+    }
+
     public Tab addWalletTab(Storage storage, Wallet wallet) {
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();

@@ -71,12 +71,13 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 NodeEntry nodeEntry = (NodeEntry)entry;
                 Address address = nodeEntry.getAddress();
                 setText(address.toString());
-                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor()));
+                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(nodeEntry.getNode().getDerivationPath());
                 setTooltip(tooltip);
                 getStyleClass().add("address-cell");
 
+                HBox actionBox = new HBox();
                 Button receiveButton = new Button("");
                 Glyph receiveGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.ARROW_DOWN);
                 receiveGlyph.setFontSize(12);
@@ -85,7 +86,21 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                     EventManager.get().post(new ReceiveActionEvent(nodeEntry));
                     Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
                 });
-                setGraphic(receiveButton);
+                actionBox.getChildren().add(receiveButton);
+
+                if(nodeEntry.getWallet().getKeystores().size() == 1 && nodeEntry.getWallet().getKeystores().get(0).hasSeed()) {
+                    Button signMessageButton = new Button("");
+                    Glyph signMessageGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.PEN_FANCY);
+                    signMessageGlyph.setFontSize(12);
+                    signMessageButton.setGraphic(signMessageGlyph);
+                    signMessageButton.setOnAction(event -> {
+                        MessageSignDialog messageSignDialog = new MessageSignDialog(nodeEntry.getWallet(), nodeEntry.getNode());
+                        messageSignDialog.showAndWait();
+                    });
+                    actionBox.getChildren().add(signMessageButton);
+                }
+
+                setGraphic(actionBox);
             } else if(entry instanceof HashIndexEntry) {
                 HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                 setText(hashIndexEntry.getDescription());
@@ -178,7 +193,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
     }
 
     public static class AddressContextMenu extends ContextMenu {
-        public AddressContextMenu(Address address, String outputDescriptor) {
+        public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry) {
             MenuItem copyAddress = new MenuItem("Copy Address");
             copyAddress.setOnAction(AE -> {
                 hide();
@@ -204,6 +219,17 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
             });
 
             getItems().addAll(copyAddress, copyHex, copyOutputDescriptor);
+
+            if(nodeEntry != null) {
+                MenuItem signVerifyMessage = new MenuItem("Sign/Verify Message");
+                signVerifyMessage.setOnAction(AE -> {
+                    hide();
+                    MessageSignDialog messageSignDialog = new MessageSignDialog(nodeEntry.getWallet(), nodeEntry.getNode());
+                    messageSignDialog.showAndWait();
+                });
+
+                getItems().add(signVerifyMessage);
+            }
         }
     }
 

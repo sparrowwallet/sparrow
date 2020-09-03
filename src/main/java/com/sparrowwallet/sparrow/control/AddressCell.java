@@ -32,7 +32,7 @@ public class AddressCell extends TreeTableCell<Entry, Entry> {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
                 Address address = utxoEntry.getAddress();
                 setText(address.toString());
-                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor()));
+                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), null));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(getTooltipText(utxoEntry));
                 setTooltip(tooltip);
