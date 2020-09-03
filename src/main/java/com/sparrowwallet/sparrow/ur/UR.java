@@ -81,6 +81,10 @@ public class UR {
         }
     }
 
+    public String toString() {
+        return UREncoder.encode(this);
+    }
+
     @Override
     public boolean equals(Object o) {
         if(this == o) {
