@@ -1,17 +1,16 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogPane;
+import javafx.scene.control.*;
 import org.controlsfx.tools.Borders;
 
 import java.io.IOException;
@@ -41,12 +40,13 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
             keystoreImportController.initializeView(wallet);
             keystoreImportController.selectSource(initialSource);
 
+            final ButtonType watchOnlyButtonType = new javafx.scene.control.ButtonType("xPub / Watch Only Wallet", ButtonBar.ButtonData.LEFT);
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            dialogPane.getButtonTypes().addAll(cancelButtonType);
+            dialogPane.getButtonTypes().addAll(watchOnlyButtonType, cancelButtonType);
             dialogPane.setPrefWidth(650);
             dialogPane.setPrefHeight(620);
 
-            setResultConverter(dialogButton -> dialogButton != cancelButtonType ? keystore : null);
+            setResultConverter(dialogButton -> dialogButton != cancelButtonType ? getWatchOnlyKeystore() : null);
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
@@ -54,6 +54,14 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
     public static List<KeystoreSource> getSupportedSources() {
         return List.of(KeystoreSource.HW_USB, KeystoreSource.HW_AIRGAPPED, KeystoreSource.SW_SEED);
+    }
+
+    private Keystore getWatchOnlyKeystore() {
+        this.keystore = new Keystore();
+        keystore.setSource(KeystoreSource.SW_WATCH);
+        keystore.setWalletModel(WalletModel.SPARROW);
+        keystore.setKeyDerivation(new KeyDerivation("",""));
+        return keystore;
     }
 
     @Subscribe

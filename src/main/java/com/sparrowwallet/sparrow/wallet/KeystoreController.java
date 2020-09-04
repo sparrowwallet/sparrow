@@ -243,7 +243,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     private void launchImportDialog(KeystoreSource initialSource) {
         KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource);
         Optional<Keystore> result = dlg.showAndWait();
-        if (result.isPresent()) {
+        if(result.isPresent()) {
             selectSourcePane.setVisible(false);
 
             Keystore importedKeystore = result.get();
@@ -259,7 +259,12 @@ public class KeystoreController extends WalletFormController implements Initiali
             label.setText(keystore.getLabel());
             fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
-            xpub.setText(keystore.getExtendedPublicKey().toString());
+
+            if(keystore.getExtendedPublicKey() != null) {
+                xpub.setText(keystore.getExtendedPublicKey().toString());
+            } else {
+                xpub.setText("");
+            }
         }
     }
 
