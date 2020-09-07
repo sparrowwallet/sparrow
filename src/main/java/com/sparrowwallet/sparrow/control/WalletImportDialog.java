@@ -31,7 +31,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         stackPane.getChildren().add(anchorPane);
 
         ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setPrefHeight(320);
+        scrollPane.setPrefHeight(400);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         anchorPane.getChildren().add(scrollPane);
         scrollPane.setFitToWidth(true);
@@ -45,7 +45,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
             importAccordion.getPanes().add(importPane);
         }
 
-        List<WalletImport> walletImporters = List.of(new ColdcardMultisig(), new Electrum());
+        List<WalletImport> walletImporters = List.of(new ColdcardMultisig(), new Electrum(), new Specter());
         for(WalletImport importer : walletImporters) {
             FileWalletImportPane importPane = new FileWalletImportPane(importer);
             importAccordion.getPanes().add(importPane);
@@ -55,7 +55,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
         dialogPane.setPrefWidth(500);
-        dialogPane.setPrefHeight(400);
+        dialogPane.setPrefHeight(480);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);
     }

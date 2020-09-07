@@ -8,6 +8,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
 import com.sparrowwallet.sparrow.io.ColdcardMultisig;
 import com.sparrowwallet.sparrow.io.Electrum;
+import com.sparrowwallet.sparrow.io.Specter;
 import com.sparrowwallet.sparrow.io.WalletExport;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
@@ -43,9 +44,9 @@ public class WalletExportDialog extends Dialog<Wallet> {
 
         List<WalletExport> exporters;
         if(wallet.getPolicyType() == PolicyType.SINGLE) {
-            exporters = List.of(new Electrum());
+            exporters = List.of(new Electrum(), new Specter());
         } else if(wallet.getPolicyType() == PolicyType.MULTI) {
-            exporters = List.of(new ColdcardMultisig(), new Electrum());
+            exporters = List.of(new ColdcardMultisig(), new Electrum(), new Specter());
         } else {
             throw new UnsupportedOperationException("Cannot export wallet with policy type " + wallet.getPolicyType());
         }
