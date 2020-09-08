@@ -22,7 +22,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(trezortest)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("sh(wpkh(trezortest))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("ab543c67", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/49'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -42,7 +42,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(trezortest)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("sh(wpkh(trezortest))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("ab543c67", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/49'/0'/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -56,7 +56,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("multi(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("6ba6cfd0", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -78,7 +78,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("multi(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("6ba6cfd0", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -96,7 +96,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("wpkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("f881eac5", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub69iSRreMB6fu24sU8Tdxv7yYGqzPkDwPkwqUfKJTxW3p8afW7XvTewVCapuX3dQjdD197iF65WcjYaNpFbwWT3RyuZ1KJ3ToJNVWKWyAJ6f", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -116,7 +116,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("wpkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("59c5474f", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub68YmVxWbxqjpxbUqqaPrgkBQPBSJuq6gEaL22uuytSEojtS2x5eLPN2uspUuyigtnMkoHrFSF1KwoXPwjzuaUjErUwztxfHquAwuaQhSd9J", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
