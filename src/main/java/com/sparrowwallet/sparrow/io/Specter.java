@@ -19,7 +19,7 @@ public class Specter implements WalletImport, WalletExport {
             SpecterWallet specterWallet = new SpecterWallet();
             specterWallet.label = wallet.getName();
             specterWallet.blockheight = wallet.getStoredBlockHeight();
-            specterWallet.descriptor = OutputDescriptor.getOutputDescriptor(wallet).toString();
+            specterWallet.descriptor = OutputDescriptor.getOutputDescriptor(wallet).toString(true);
 
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             String json = gson.toJson(specterWallet);
@@ -67,7 +67,7 @@ public class Specter implements WalletImport, WalletExport {
             throw new ImportException(e);
         }
 
-        throw new ImportException("Could not import Specter wallet");
+        throw new ImportException("File was not a valid Specter wallet");
     }
 
     @Override
