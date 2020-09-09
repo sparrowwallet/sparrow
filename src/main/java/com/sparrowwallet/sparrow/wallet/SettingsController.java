@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.control.DescriptorArea;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
@@ -46,7 +47,7 @@ public class SettingsController extends WalletFormController implements Initiali
     private ComboBox<PolicyType> policyType;
 
     @FXML
-    private TextField spendingMiniscript;
+    private DescriptorArea descriptor;
 
     @FXML
     private ComboBox<ScriptType> scriptType;
@@ -160,6 +161,8 @@ public class SettingsController extends WalletFormController implements Initiali
             }
         });
 
+        initializeDescriptorField(descriptor);
+
         revert.setOnAction(event -> {
             keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
             totalKeystores.unbind();
@@ -224,6 +227,7 @@ public class SettingsController extends WalletFormController implements Initiali
             KeystoreController controller = keystoreLoader.getController();
             controller.setKeystore(getWalletForm(), keystore);
             tab.textProperty().bind(controller.getLabel().textProperty());
+            tab.setUserData(keystore);
 
             controller.getValidationSupport().validationResultProperty().addListener((o, oldValue, result) -> {
                 if(result.getErrors().isEmpty()) {
@@ -243,6 +247,19 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
+    @Override
+    protected String describeKeystore(Keystore keystore) {
+        if(!keystore.isValid()) {
+            for(Tab tab : keystoreTabs.getTabs()) {
+                if(tab.getUserData() == keystore && tab.getTooltip() != null) {
+                    return tab.getTooltip().getText();
+                }
+            }
+        }
+
+        return super.describeKeystore(keystore);
+    }
+
     @Subscribe
     public void update(SettingsChangedEvent event) {
         Wallet wallet = event.getWallet();
@@ -253,7 +270,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), (int)multisigControl.getLowValue()));
             }
 
-            spendingMiniscript.setText(wallet.getDefaultPolicy().getMiniscript().getScript());
+            descriptor.setWallet(wallet);
             revert.setDisable(false);
             apply.setDisable(!wallet.isValid());
         }

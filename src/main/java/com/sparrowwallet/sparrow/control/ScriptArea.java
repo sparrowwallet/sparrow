@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptChunk;
-import com.sparrowwallet.sparrow.transaction.ScriptContextMenu;
 import javafx.geometry.Pos;
 import org.controlsfx.control.decoration.Decorator;
 import org.controlsfx.control.decoration.GraphicDecoration;

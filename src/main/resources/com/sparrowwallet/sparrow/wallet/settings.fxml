@@ -9,8 +9,10 @@
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.drongo.policy.PolicyType?>
 <?import com.sparrowwallet.drongo.protocol.ScriptType?>
+<?import com.sparrowwallet.sparrow.control.DescriptorArea?>
+<?import org.fxmisc.flowless.VirtualizedScrollPane?>
 
-<BorderPane stylesheets="@settings.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
+<BorderPane stylesheets="@settings.css, @wallet.css, @../script.css, @../descriptor.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
     <center>
         <GridPane hgap="10.0" vgap="10.0">
             <padding>
@@ -59,7 +61,7 @@
             <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
                 <Fieldset inputGrow="SOMETIMES" text="" fx:id="multisigFieldset">
                     <Field text="Cosigners:">
-                        <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="2" max="9" lowValue="2" highValue="3" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
+                        <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="1" max="9" highValue="3" lowValue="2" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
                     </Field>
                     <Field text="M of N:">
                         <CopyableLabel fx:id="multisigLowLabel" />
@@ -70,9 +72,13 @@
             </Form>
 
             <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1">
-                <Fieldset inputGrow="SOMETIMES" text="Spending Policy">
-                    <Field text="Miniscript:">
-                        <TextField fx:id="spendingMiniscript" editable="false" />
+                <Fieldset inputGrow="SOMETIMES" text="Script Policy">
+                    <Field text="Descriptor:">
+                        <VirtualizedScrollPane hbarPolicy="NEVER" vbarPolicy="NEVER">
+                            <content>
+                                <DescriptorArea fx:id="descriptor" editable="false" styleClass="uneditable-codearea" prefHeight="27" maxHeight="27" />
+                            </content>
+                        </VirtualizedScrollPane>
                     </Field>
                 </Fieldset>
             </Form>

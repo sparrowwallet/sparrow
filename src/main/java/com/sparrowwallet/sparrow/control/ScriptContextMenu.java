@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.transaction;
+package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptChunk;
@@ -33,7 +33,7 @@ public class ScriptContextMenu extends ContextMenu {
         });
 
         getItems().add(copyvalue);
-        this.setStyle("-fx-background-color: -fx-color; -fx-font-family: sans-serif; -fx-font-size: 1em;");
+        this.setStyle("-fx-background-color: -fx-color; -fx-font-family: System; -fx-font-size: 1em;");
 
         area.addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
             hoverChunk = null;
