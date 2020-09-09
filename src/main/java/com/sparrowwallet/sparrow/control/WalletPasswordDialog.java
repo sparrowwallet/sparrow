@@ -21,6 +21,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private final CustomPasswordField password;
     private final CustomPasswordField passwordConfirm;
     private final CheckBox backupExisting;
+    private final CheckBox changePassword;
 
     public WalletPasswordDialog(PasswordRequirement requirement) {
         this(null, requirement);
@@ -31,6 +32,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         this.password = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.passwordConfirm = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.backupExisting = new CheckBox("Backup existing wallet first");
+        this.changePassword = new CheckBox("Change password");
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Wallet Password" + (walletName != null ? " - " + walletName : ""));
@@ -55,6 +57,10 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
             backupExisting.setSelected(true);
         }
 
+        if(requirement == PasswordRequirement.UPDATE_SET) {
+            content.getChildren().add(changePassword);
+        }
+
         dialogPane.setContent(content);
 
         ValidationSupport validationSupport = new ValidationSupport();
@@ -70,12 +76,12 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> passwordConfirm.isVisible() && !password.getText().equals(passwordConfirm.getText()), password.textProperty(), passwordConfirm.textProperty());
         okButton.disableProperty().bind(isInvalid);
 
-        if(requirement != PasswordRequirement.UPDATE_NEW) {
+        if(requirement != PasswordRequirement.UPDATE_NEW && requirement != PasswordRequirement.UPDATE_CHANGE) {
             passwordConfirm.setVisible(false);
             passwordConfirm.setManaged(false);
         }
 
-        if(requirement == PasswordRequirement.UPDATE_NEW || requirement == PasswordRequirement.UPDATE_EMPTY) {
+        if(requirement == PasswordRequirement.UPDATE_NEW || requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_CHANGE) {
             password.textProperty().addListener((observable, oldValue, newValue) -> {
                 if(newValue.isEmpty()) {
                     okButton.setText("No Password");
@@ -100,11 +106,16 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         return backupExisting.isSelected();
     }
 
+    public boolean isChangePassword() {
+        return changePassword.isSelected();
+    }
+
     public enum PasswordRequirement {
         LOAD("Please enter the wallet password:", "Unlock"),
         UPDATE_NEW("Add a password to the wallet?\nLeave empty for none:", "No Password"),
         UPDATE_EMPTY("This wallet has no password.\nAdd a password to the wallet?\nLeave empty for none:", "No Password"),
-        UPDATE_SET("Please re-enter the wallet password:", "Verify Password");
+        UPDATE_SET("Please re-enter the wallet password:", "Verify Password"),
+        UPDATE_CHANGE("Enter the new wallet password.\nLeave empty for none:", "No Password");
 
         private final String description;
         private final String okButtonText;

@@ -84,6 +84,7 @@ public class Storage {
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
 
+        encryptionPubKey = NO_PASSWORD_KEY;
         return wallet;
     }
 

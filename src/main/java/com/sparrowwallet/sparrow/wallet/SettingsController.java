@@ -176,7 +176,7 @@ public class SettingsController extends WalletFormController implements Initiali
         apply.setOnAction(event -> {
             revert.setDisable(true);
             apply.setDisable(true);
-            saveWallet();
+            saveWallet(false);
         });
 
         setFieldsFromWallet(walletForm.getWallet());
@@ -282,12 +282,16 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
-    private void saveWallet() {
+    private void saveWallet(boolean changePassword) {
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         WalletPasswordDialog.PasswordRequirement requirement;
         if(existingPubKey == null) {
-            requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
+            if(changePassword) {
+                requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_CHANGE;
+            } else {
+                requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
+            }
         } else if(Storage.NO_PASSWORD_KEY.equals(existingPubKey)) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY;
         } else {
@@ -333,6 +337,12 @@ public class SettingsController extends WalletFormController implements Initiali
                             AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
                             revert.setDisable(false);
                             apply.setDisable(false);
+                            return;
+                        }
+
+                        if(dlg.isChangePassword()) {
+                            walletForm.getStorage().setEncryptionPubKey(null);
+                            saveWallet(true);
                             return;
                         }
 
