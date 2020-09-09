@@ -95,8 +95,11 @@
             <padding>
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
-            <Button fx:id="apply" text="Apply" defaultButton="true" AnchorPane.rightAnchor="10" />
-            <Button fx:id="revert" text="Revert" cancelButton="true" AnchorPane.rightAnchor="80" />
+            <HBox AnchorPane.rightAnchor="10" spacing="20">
+                <Button text="Advanced..." onAction="#showAdvanced" />
+                <Button fx:id="revert" text="Revert" cancelButton="true" />
+                <Button fx:id="apply" text="Apply" defaultButton="true" />
+            </HBox>
         </AnchorPane>
     </bottom>
 </BorderPane>

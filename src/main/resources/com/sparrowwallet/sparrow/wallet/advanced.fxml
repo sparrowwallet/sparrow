@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import com.sparrowwallet.sparrow.control.HelpLabel?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane stylesheets="@../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.AdvancedController">
+    <center>
+        <GridPane hgap="10.0" vgap="10.0">
+        <padding>
+            <Insets left="25.0" right="25.0" top="25.0" />
+        </padding>
+        <columnConstraints>
+            <ColumnConstraints percentWidth="100" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints />
+        </rowConstraints>
+
+        <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+            <Fieldset inputGrow="SOMETIMES" text="Advanced Settings" styleClass="wideLabelFieldSet">
+                <Field text="Gap limit:">
+                    <Spinner fx:id="gapLimit" editable="true" prefWidth="90" />
+                    <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs"/>
+                </Field>
+            </Fieldset>
+        </Form>
+        </GridPane>
+    </center>
+</BorderPane>
+

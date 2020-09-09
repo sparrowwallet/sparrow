@@ -77,6 +77,10 @@ public class SettingsWalletForm extends WalletForm {
             }
         }
 
+        if(original.getGapLimit() != changed.getGapLimit()) {
+            return true;
+        }
+
         return false;
     }
 }

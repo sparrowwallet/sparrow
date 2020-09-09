@@ -21,6 +21,7 @@ import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -245,6 +246,11 @@ public class SettingsController extends WalletFormController implements Initiali
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void showAdvanced(ActionEvent event) {
+        AdvancedDialog advancedDialog = new AdvancedDialog(walletForm.getWallet());
+        advancedDialog.showAndWait();
     }
 
     @Override
