@@ -258,7 +258,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void unlock(Device device) {
-        if(device.getModel().equals(WalletModel.TREZOR_1)) {
+        if(device.getModel().requiresPinPrompt()) {
             promptPin();
         }
     }

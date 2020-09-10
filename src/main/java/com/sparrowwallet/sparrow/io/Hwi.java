@@ -73,7 +73,7 @@ public class Hwi {
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
         try {
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.GET_XPUB, derivationPath));
             } else {
                 output = execute(getDeviceCommand(device, Command.GET_XPUB, derivationPath));
@@ -106,7 +106,7 @@ public class Hwi {
 
             isPromptActive = false;
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
             } else {
                 output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
@@ -132,7 +132,7 @@ public class Hwi {
         try {
             isPromptActive = false;
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.SIGN_MESSAGE, message, derivationPath));
             } else {
                 output = execute(getDeviceCommand(device, Command.SIGN_MESSAGE, message, derivationPath));
@@ -160,7 +160,7 @@ public class Hwi {
 
             isPromptActive = true;
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().equals(WalletModel.TREZOR_1)) {
+            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.SIGN_TX, psbtBase64));
             } else {
                 output = execute(getDeviceCommand(device, Command.SIGN_TX, psbtBase64));
