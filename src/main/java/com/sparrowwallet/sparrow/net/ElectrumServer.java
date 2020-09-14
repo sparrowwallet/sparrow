@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
+import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
@@ -8,8 +9,11 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
+import com.sparrowwallet.sparrow.event.TorStatusEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.SendController;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -578,6 +582,7 @@ public class ElectrumServer {
         private boolean firstCall = true;
         private Thread reader;
         private long feeRatesRetrievedAt;
+        private StringProperty statusProperty = new SimpleStringProperty();
 
         public ConnectionService() {
             this(true);
@@ -674,6 +679,15 @@ public class ElectrumServer {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
             log.error("Uncaught error in ConnectionService", e);
+        }
+
+        @Subscribe
+        public void torStatus(TorStatusEvent event) {
+            statusProperty.set(event.getStatus());
+        }
+
+        public StringProperty statusProperty() {
+            return statusProperty;
         }
     }
 

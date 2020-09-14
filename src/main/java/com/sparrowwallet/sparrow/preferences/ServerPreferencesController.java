@@ -28,6 +28,8 @@ import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLHandshakeException;
 import java.io.File;
@@ -36,6 +38,8 @@ import java.security.cert.CertificateFactory;
 import java.util.List;
 
 public class ServerPreferencesController extends PreferencesDetailController {
+    private static final Logger log = LoggerFactory.getLogger(ServerPreferencesController.class);
+
     @FXML
     private TextField host;
 
@@ -140,13 +144,20 @@ public class ServerPreferencesController extends PreferencesDetailController {
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
 
             ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService(false);
-            connectionService.setPeriod(Duration.minutes(1));
+            connectionService.setPeriod(Duration.ZERO);
+            EventManager.get().register(connectionService);
+            connectionService.statusProperty().addListener((observable, oldValue, newValue) -> {
+                testResults.setText(testResults.getText() + "\n" + newValue);
+            });
+
             connectionService.setOnSucceeded(successEvent -> {
+                EventManager.get().unregister(connectionService);
                 ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
                 showConnectionSuccess(connectionEvent.getServerVersion(), connectionEvent.getServerBanner());
                 connectionService.cancel();
             });
             connectionService.setOnFailed(workerStateEvent -> {
+                EventManager.get().unregister(connectionService);
                 showConnectionFailure(workerStateEvent);
                 connectionService.cancel();
             });
@@ -230,6 +241,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
     private void showConnectionFailure(WorkerStateEvent failEvent) {
         Throwable e = failEvent.getSource().getException();
+        log.error("Connection error", e);
         String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
         if(e.getCause() != null && e.getCause() instanceof SSLHandshakeException) {
             reason = "SSL Handshake Error\n" + reason;

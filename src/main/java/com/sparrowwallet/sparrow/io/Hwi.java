@@ -23,7 +23,6 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -200,7 +199,7 @@ public class Hwi {
         File hwiExecutable = Config.get().getHwi();
         if(hwiExecutable != null && hwiExecutable.exists()) {
             if(command.isTestFirst() && (!hwiExecutable.getAbsolutePath().contains(TEMP_FILE_PREFIX) || !testHwi(hwiExecutable))) {
-                if(Platform.getCurrent().getPlatformId().toLowerCase().equals("mac")) {
+                if(Platform.getCurrent() == Platform.OSX) {
                     deleteDirectory(hwiExecutable.getParentFile());
                 } else {
                     hwiExecutable.delete();
@@ -218,7 +217,7 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/external/mac/hwi-1.1.2-mac-amd64-signed.zip");
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/hwi-1.1.2-mac-amd64-signed.zip");
                     Path tempHwiDirPath = Files.createTempDirectory(TEMP_FILE_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
@@ -249,10 +248,10 @@ public class Hwi {
                     InputStream inputStream;
                     Path tempExecPath;
                     if(platform == Platform.WINDOWS) {
-                        inputStream = Hwi.class.getResourceAsStream("/external/windows/hwi.exe");
+                        inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
                         tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null);
                     } else {
-                        inputStream = Hwi.class.getResourceAsStream("/external/linux/hwi");
+                        inputStream = Hwi.class.getResourceAsStream("/native/linux/x64/hwi");
                         tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     }
 

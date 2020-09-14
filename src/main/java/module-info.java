@@ -20,6 +20,7 @@ open module com.sparrowwallet.sparrow {
     requires com.fasterxml.jackson.databind;
     requires cbor;
     requires webcam.capture;
+    requires netlayer.jpms;
     requires centerdevice.nsmenufx;
     requires slf4j.api;
 }

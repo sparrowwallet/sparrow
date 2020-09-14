@@ -14,12 +14,16 @@ public enum Protocol {
     TCP {
         @Override
         public Transport getTransport(HostAndPort server) {
+            if(isOnionAddress(server)) {
+                return new TorTcpTransport(server);
+            }
+
             return new TcpTransport(server);
         }
 
         @Override
         public Transport getTransport(HostAndPort server, File serverCert) {
-            return new TcpTransport(server);
+            return getTransport(server);
         }
 
         @Override
@@ -35,11 +39,19 @@ public enum Protocol {
     SSL {
         @Override
         public Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException {
+            if(isOnionAddress(server)) {
+                return new TorTcpOverTlsTransport(server);
+            }
+
             return new TcpOverTlsTransport(server);
         }
 
         @Override
         public Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+            if(isOnionAddress(server)) {
+                return new TorTcpOverTlsTransport(server, serverCert);
+            }
+
             return new TcpOverTlsTransport(server, serverCert);
         }
 
@@ -80,6 +92,10 @@ public enum Protocol {
 
     public String toUrlString(HostAndPort hostAndPort) {
         return toUrlString() + hostAndPort.toString();
+    }
+
+    public boolean isOnionAddress(HostAndPort server) {
+        return server.getHost().toLowerCase().endsWith(".onion");
     }
 
     public static Protocol getProtocol(String url) {

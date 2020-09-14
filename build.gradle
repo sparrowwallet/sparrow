@@ -9,7 +9,7 @@ def sparrowVersion = '0.9.3'
 def os = org.gradle.internal.os.OperatingSystem.current()
 def osName = os.getFamilyName()
 if(os.macOsX) {
-    osName = "mac"
+    osName = "osx"
 }
 
 group "com.sparrowwallet"
@@ -19,6 +19,7 @@ repositories {
     mavenCentral()
     maven { url 'https://oss.sonatype.org/content/groups/public' }
     maven { url 'https://mymavenrepo.com/repo/29EACwkkGcoOKnbx3bxN/' }
+    maven { url 'https://jitpack.io' }
 }
 
 tasks.withType(AbstractArchiveTask) {
@@ -54,6 +55,7 @@ dependencies {
     implementation('com.github.sarxos:webcam-capture:0.3.13-SNAPSHOT') {
         exclude group: 'com.nativelibs4java', module: 'bridj'
     }
+    implementation("com.sparrowwallet:netlayer-jpms-${osName}:0.6.8")
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.0.2' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'
@@ -80,8 +82,8 @@ compileJava {
 
 processResources {
     doLast {
-        delete fileTree("$buildDir/resources/main/external").matching {
-            exclude "$osName/**"
+        delete fileTree("$buildDir/resources/main/native").matching {
+            exclude "${osName}/**"
         }
     }
 }
@@ -101,7 +103,8 @@ run {
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
-                                 "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow"]
+                                 "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
+                                 "--add-opens=java.base/java.net=com.sparrowwallet.sparrow"]
 
     if(os.macOsX) {
         applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png",
@@ -118,6 +121,7 @@ jlink {
         requires 'javafx.base'
         requires 'com.fasterxml.jackson.databind'
         requires 'jdk.crypto.cryptoki'
+        requires 'java.management'
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png']
@@ -139,6 +143,7 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
                    "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
+                   "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop"]
     }
     addExtraDependencies("javafx")
@@ -160,7 +165,7 @@ jlink {
         }
         if(os.macOsX) {
             installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
-            imageOptions += ['--icon', 'src/main/deploy/package/mac/sparrow.icns', '--resource-dir', 'src/main/deploy/package/mac/']
+            imageOptions += ['--icon', 'src/main/deploy/package/osx/sparrow.icns', '--resource-dir', 'src/main/deploy/package/osx/']
             installerType = "dmg"
         }
     }

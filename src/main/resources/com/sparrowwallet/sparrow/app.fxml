@@ -29,11 +29,11 @@
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
-                        <SeparatorMenuItem styleClass="macHide" />
-                        <MenuItem styleClass="macHide" mnemonicParsing="false" text="Preferences..." onAction="#openPreferences"/>
+                        <SeparatorMenuItem styleClass="osxHide" />
+                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Preferences..." onAction="#openPreferences"/>
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Close Tab" onAction="#closeTab"/>
-                        <MenuItem styleClass="macHide" mnemonicParsing="false" text="Quit" onAction="#quit"/>
+                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Quit" onAction="#quit"/>
                     </items>
                 </Menu>
                 <fx:define>
@@ -67,7 +67,7 @@
                     <MenuItem mnemonicParsing="false" text="Sign/Verify Message" onAction="#signVerifyMessage"/>
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
-                    <MenuItem styleClass="macHide" mnemonicParsing="false" text="About Sparrow" onAction="#showAbout"/>
+                    <MenuItem styleClass="osxHide" mnemonicParsing="false" text="About Sparrow" onAction="#showAbout"/>
                 </Menu>
             </menus>
         </MenuBar>

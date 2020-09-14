@@ -280,6 +280,13 @@ public class AppController implements Initializable {
         connectionService.setPeriod(new Duration(SERVER_PING_PERIOD));
         connectionService.setRestartOnFailure(true);
 
+        EventManager.get().register(connectionService);
+        connectionService.statusProperty().addListener((observable, oldValue, newValue) -> {
+            if(connectionService.isRunning()) {
+                EventManager.get().post(new StatusEvent(newValue));
+            }
+        });
+
         connectionService.setOnSucceeded(successEvent -> {
             changeMode = false;
             onlineProperty.setValue(true);
@@ -350,8 +357,8 @@ public class AppController implements Initializable {
                     tk.createQuitMenuItem(MainApp.APP_NAME));
             tk.setApplicationMenu(defaultApplicationMenu);
 
-            fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("macHide"));
-            helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("macHide"));
+            fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
+            helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
         }
     }
 
@@ -1155,7 +1162,7 @@ public class AppController implements Initializable {
     public void statusUpdated(StatusEvent event) {
         statusBar.setText(event.getStatus());
 
-        PauseTransition wait = new PauseTransition(Duration.seconds(10));
+        PauseTransition wait = new PauseTransition(Duration.seconds(20));
         wait.setOnFinished((e) -> {
             if(statusBar.getText().equals(event.getStatus())) {
                 statusBar.setText("");
