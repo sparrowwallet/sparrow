@@ -605,6 +605,9 @@ public class ElectrumServer {
                         reader.setUncaughtExceptionHandler(ConnectionService.this);
                         reader.start();
 
+                        //Start with simple RPC for maximum compatibility
+                        electrumServerRpc = new SimpleElectrumServerRpc();
+
                         List<String> serverVersion = electrumServer.getServerVersion();
                         firstCall = false;
 
@@ -612,8 +615,6 @@ public class ElectrumServer {
                         if(supportsBatching(serverVersion)) {
                             log.debug("Upgrading to batched JSON-RPC");
                             electrumServerRpc = new BatchedElectrumServerRpc();
-                        } else {
-                            electrumServerRpc = new SimpleElectrumServerRpc();
                         }
 
                         BlockHeaderTip tip;
