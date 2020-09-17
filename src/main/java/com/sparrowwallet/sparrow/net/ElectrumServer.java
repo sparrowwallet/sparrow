@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
+import com.google.common.collect.Iterables;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -33,7 +34,7 @@ public class ElectrumServer {
 
     private static Transport transport;
 
-    private static final Map<String, String> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, Set<String>> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
@@ -134,9 +135,18 @@ public class ElectrumServer {
         return receiveTransactionMap;
     }
 
+    public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet, WalletNode walletNode) throws ServerException {
+        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
+        Collection<WalletNode> nodes = Set.of(walletNode);
+        subscribeWalletNodes(wallet, nodes, nodeTransactionMap, 0);
+        getReferences(wallet, nodes, nodeTransactionMap);
+
+        return nodeTransactionMap;
+    }
+
     public void getHistory(Wallet wallet, KeyPurpose keyPurpose, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         WalletNode purposeNode = wallet.getNode(keyPurpose);
-        getHistory(wallet, purposeNode.getChildren(), nodeTransactionMap, 0);
+        subscribeWalletNodes(wallet, purposeNode.getChildren(), nodeTransactionMap, 0);
 
         //Because node children are added sequentially in WalletNode.fillToIndex, we can simply look at the number of children to determine the highest filled index
         int historySize = purposeNode.getChildren().size();
@@ -144,10 +154,18 @@ public class ElectrumServer {
         int gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
         while(historySize < gapLimitSize) {
             purposeNode.fillToIndex(gapLimitSize - 1);
-            getHistory(wallet, purposeNode.getChildren(), nodeTransactionMap, historySize);
+            subscribeWalletNodes(wallet, purposeNode.getChildren(), nodeTransactionMap, historySize);
             historySize = purposeNode.getChildren().size();
             gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
         }
+
+        //All WalletNode keys in nodeTransactionMap with non-null values need to have their history fetched
+        Collection<WalletNode> usedNodes = nodeTransactionMap.entrySet().stream().filter(entry -> entry.getValue() != null).map(Map.Entry::getKey).collect(Collectors.toList());
+        log.debug("Retrieving history for " + usedNodes.stream().map(WalletNode::getDerivationPath).collect(Collectors.joining(", ")));
+        getReferences(wallet, usedNodes, nodeTransactionMap);
+
+        //Set the remaining WalletNode keys to empty sets to indicate no history
+        nodeTransactionMap.entrySet().stream().filter(entry -> entry.getValue() == null).forEach(entry -> entry.setValue(Collections.emptySet()));
     }
 
     private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
@@ -155,22 +173,11 @@ public class ElectrumServer {
         return highestIndex + wallet.getGapLimit() + 1;
     }
 
-    public void getHistory(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
-        getReferences(wallet, "blockchain.scripthash.get_history", nodes, nodeTransactionMap, startIndex);
-        subscribeWalletNodes(wallet, nodes, startIndex);
-    }
-
-    public void getMempool(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
-        getReferences(wallet, "blockchain.scripthash.get_mempool", nodes, nodeTransactionMap, startIndex);
-    }
-
-    public void getReferences(Wallet wallet, String method, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
+    public void getReferences(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         try {
             Map<String, String> pathScriptHashes = new LinkedHashMap<>(nodes.size());
             for(WalletNode node : nodes) {
-                if(node.getIndex() >= startIndex) {
-                    pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
-                }
+                pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
             }
 
             //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed if that's the case.
@@ -211,14 +218,18 @@ public class ElectrumServer {
         }
     }
 
-    public void subscribeWalletNodes(Wallet wallet, Collection<WalletNode> nodes, int startIndex) throws ServerException {
+    public void subscribeWalletNodes(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
         try {
             Set<String> scriptHashes = new HashSet<>();
             Map<String, String> pathScriptHashes = new LinkedHashMap<>();
             for(WalletNode node : nodes) {
                 if(node.getIndex() >= startIndex) {
                     String scriptHash = getScriptHash(wallet, node);
-                    if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
+                    if(getSubscribedScriptHashStatus(scriptHash) != null) {
+                        //Already subscribed, but still need to fetch history from a used node
+                        nodeTransactionMap.put(node, new TreeSet<>());
+                    } else if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
+                        //Unique script hash we are not yet subscribed to
                         pathScriptHashes.put(node.getDerivationPath(), scriptHash);
                     }
                 }
@@ -236,7 +247,15 @@ public class ElectrumServer {
                 Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
                 if(optionalNode.isPresent()) {
                     WalletNode node = optionalNode.get();
-                    subscribedScriptHashes.put(getScriptHash(wallet, node), status);
+                    String scriptHash = getScriptHash(wallet, node);
+
+                    //Check if there is history for this script hash
+                    if(status != null) {
+                        //Set the value for this node to be an empty set to mark it as requiring a get_history RPC call for this wallet
+                        nodeTransactionMap.put(node, new TreeSet<>());
+                    }
+
+                    updateSubscribedScriptHashStatus(scriptHash, status);
                 }
             }
         } catch (ElectrumServerRpcException e) {
@@ -543,8 +562,22 @@ public class ElectrumServer {
         return Utils.bytesToHex(reversed);
     }
 
-    public static Map<String, String> getSubscribedScriptHashes() {
+    public static Map<String, Set<String>> getSubscribedScriptHashes() {
         return subscribedScriptHashes;
+    }
+
+    public static String getSubscribedScriptHashStatus(String scriptHash) {
+        Set<String> existingStatuses = subscribedScriptHashes.get(scriptHash);
+        if(existingStatuses != null) {
+            return Iterables.getLast(existingStatuses);
+        }
+
+        return null;
+    }
+
+    public static void updateSubscribedScriptHashStatus(String scriptHash, String status) {
+        Set<String> existingStatuses = subscribedScriptHashes.computeIfAbsent(scriptHash, k -> new LinkedHashSet<>());
+        existingStatuses.add(status);
     }
 
     public static boolean supportsBatching(List<String> serverVersion) {
@@ -707,9 +740,16 @@ public class ElectrumServer {
 
     public static class TransactionHistoryService extends Service<Boolean> {
         private final Wallet wallet;
+        private final WalletNode node;
 
         public TransactionHistoryService(Wallet wallet) {
             this.wallet = wallet;
+            this.node = null;
+        }
+
+        public TransactionHistoryService(Wallet wallet, WalletNode node) {
+            this.wallet = wallet;
+            this.node = node;
         }
 
         @Override
@@ -717,7 +757,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected Boolean call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = electrumServer.getHistory(wallet);
+                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (node == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, node));
                     electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
                     electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
                     return true;

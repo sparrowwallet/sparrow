@@ -108,8 +108,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
         Map<String, String> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
             try {
-                client.createRequest().method("blockchain.scripthash.subscribe").id(path).params(pathScriptHashes.get(path)).executeNullable();
-                result.put(path, "");
+                String scriptHash = client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(path).params(pathScriptHashes.get(path)).executeNullable();
+                result.put(path, scriptHash);
             } catch(JsonRpcException | IllegalStateException | IllegalArgumentException e) {
                 //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
                 throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);

@@ -89,21 +89,26 @@ public class WalletTransactionsEntry extends Entry {
         for(WalletNode addressNode : purposeNode.getChildren()) {
             for(BlockTransactionHashIndex hashIndex : addressNode.getTransactionOutputs()) {
                 BlockTransaction inputTx = wallet.getTransactions().get(hashIndex.getHash());
-                WalletTransaction inputWalletTx = walletTransactionMap.get(inputTx);
-                if(inputWalletTx == null) {
-                    inputWalletTx = new WalletTransaction(wallet, inputTx);
-                    walletTransactionMap.put(inputTx, inputWalletTx);
-                }
-                inputWalletTx.incoming.put(hashIndex, keyPurpose);
-
-                if(hashIndex.getSpentBy() != null) {
-                    BlockTransaction outputTx = wallet.getTransactions().get(hashIndex.getSpentBy().getHash());
-                    WalletTransaction outputWalletTx = walletTransactionMap.get(outputTx);
-                    if(outputWalletTx == null) {
-                        outputWalletTx = new WalletTransaction(wallet, outputTx);
-                        walletTransactionMap.put(outputTx, outputWalletTx);
+                //A null inputTx here means the wallet is still updating - ignore as the WalletHistoryChangedEvent will run this again
+                if(inputTx != null) {
+                    WalletTransaction inputWalletTx = walletTransactionMap.get(inputTx);
+                    if(inputWalletTx == null) {
+                        inputWalletTx = new WalletTransaction(wallet, inputTx);
+                        walletTransactionMap.put(inputTx, inputWalletTx);
                     }
-                    outputWalletTx.outgoing.put(hashIndex.getSpentBy(), keyPurpose);
+                    inputWalletTx.incoming.put(hashIndex, keyPurpose);
+
+                    if(hashIndex.getSpentBy() != null) {
+                        BlockTransaction outputTx = wallet.getTransactions().get(hashIndex.getSpentBy().getHash());
+                        if(outputTx != null) {
+                            WalletTransaction outputWalletTx = walletTransactionMap.get(outputTx);
+                            if(outputWalletTx == null) {
+                                outputWalletTx = new WalletTransaction(wallet, outputTx);
+                                walletTransactionMap.put(outputTx, outputWalletTx);
+                            }
+                            outputWalletTx.outgoing.put(hashIndex.getSpentBy(), keyPurpose);
+                        }
+                    }
                 }
             }
         }

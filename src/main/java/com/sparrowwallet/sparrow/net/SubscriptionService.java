@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.net;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
+import com.google.common.collect.Iterables;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
 import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
@@ -10,7 +11,7 @@ import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
+import java.util.Set;
 
 @JsonRpcService
 public class SubscriptionService {
@@ -23,9 +24,17 @@ public class SubscriptionService {
 
     @JsonRpcMethod("blockchain.scripthash.subscribe")
     public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcParam("status") final String status) {
-        String oldStatus = ElectrumServer.getSubscribedScriptHashes().put(scriptHash, status);
-        if(Objects.equals(oldStatus, status)) {
+        Set<String> existingStatuses = ElectrumServer.getSubscribedScriptHashes().get(scriptHash);
+        if(existingStatuses == null) {
+            log.warn("Received script hash status update for unsubscribed script hash: " + scriptHash);
+            ElectrumServer.updateSubscribedScriptHashStatus(scriptHash, status);
+        } else if(existingStatuses.contains(status)) {
             log.warn("Received script hash status update, but status has not changed");
+            return;
+        } else {
+            String oldStatus = Iterables.getLast(existingStatuses);
+            log.debug("Status updated for script hash " + scriptHash + ", was " + oldStatus + " now " + status);
+            existingStatuses.add(status);
         }
 
         Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash)));

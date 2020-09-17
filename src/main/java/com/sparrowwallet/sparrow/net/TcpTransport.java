@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import javax.net.SocketFactory;
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class TcpTransport implements Transport, Closeable {
@@ -24,6 +26,9 @@ public class TcpTransport implements Transport, Closeable {
     private Socket socket;
 
     private String response;
+
+    private final ReentrantLock readLock = new ReentrantLock();
+    private final Condition readingCondition = readLock.newCondition();
 
     private final ReentrantLock clientRequestLock = new ReentrantLock();
     private boolean running = false;
@@ -57,64 +62,83 @@ public class TcpTransport implements Transport, Closeable {
         out.flush();
     }
 
-    private synchronized String readResponse() throws IOException {
-        if(firstRead) {
-            notifyAll();
-            firstRead = false;
-        }
-
-        while(reading) {
-            try {
-                wait();
-            } catch(InterruptedException e) {
-                //Restore interrupt status and continue
-                Thread.currentThread().interrupt();
+    private String readResponse() throws IOException {
+        try {
+            if(!readLock.tryLock(60, TimeUnit.SECONDS)) {
+                throw new IOException("No response from server");
             }
+        } catch(InterruptedException e) {
+            throw new IOException("Read thread interrupted");
         }
 
-        if(lastException != null) {
-            throw new IOException("Error reading response: " + lastException.getMessage(), lastException);
+        try {
+            if(firstRead) {
+                readingCondition.signal();
+                firstRead = false;
+            }
+
+            while(reading) {
+                try {
+                    readingCondition.await();
+                } catch(InterruptedException e) {
+                    //Restore interrupt status and continue
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            if(lastException != null) {
+                throw new IOException("Error reading response: " + lastException.getMessage(), lastException);
+            }
+
+            reading = true;
+
+            readingCondition.signal();
+            return response;
+        } finally {
+            readLock.unlock();
         }
-
-        reading = true;
-
-        notifyAll();
-        return response;
     }
 
-    public synchronized void readInputLoop() throws ServerException {
-        try {
-            //Don't start reading until first RPC request is sent
-            wait();
-        } catch(InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    public void readInputLoop() throws ServerException {
+        readLock.lock();
 
-        while(running) {
+        try {
             try {
-                String received = readInputStream();
-                if(received.contains("method")) {
-                    //Handle subscription notification
-                    jsonRpcServer.handle(received, subscriptionService);
-                } else {
-                    //Handle client's response
-                    response = received;
-                    reading = false;
-                    notifyAll();
-                    wait();
-                }
+                //Don't start reading until first RPC request is sent
+                readingCondition.await();
             } catch(InterruptedException e) {
-                //Restore interrupt status and continue
                 Thread.currentThread().interrupt();
-            } catch(Exception e) {
-                if(running) {
-                    lastException = e;
-                    reading = false;
-                    notifyAll();
-                    //Allow this thread to terminate as we will need to reconnect with a new transport anyway
-                    running = false;
+            }
+
+            while(running) {
+                try {
+                    String received = readInputStream();
+                    if(received.contains("method")) {
+                        //Handle subscription notification
+                        jsonRpcServer.handle(received, subscriptionService);
+                    } else {
+                        //Handle client's response
+                        response = received;
+                        reading = false;
+                        readingCondition.signal();
+                        readingCondition.await();
+                    }
+                } catch(InterruptedException e) {
+                    //Restore interrupt status and continue
+                    Thread.currentThread().interrupt();
+                } catch(Exception e) {
+                    log.debug("Connection error while reading", e);
+                    if(running) {
+                        lastException = e;
+                        reading = false;
+                        readingCondition.signal();
+                        //Allow this thread to terminate as we will need to reconnect with a new transport anyway
+                        running = false;
+                    }
                 }
             }
+        } finally {
+            readLock.unlock();
         }
     }
 
