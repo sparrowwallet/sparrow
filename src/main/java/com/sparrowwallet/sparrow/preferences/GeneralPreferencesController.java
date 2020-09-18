@@ -5,6 +5,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
+import com.sparrowwallet.sparrow.event.VersionCheckStatusEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ExchangeSource;
 import javafx.beans.value.ChangeListener;
@@ -37,6 +38,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
 
     @FXML
     private UnlabeledToggleSwitch notifyNewTransactions;
+
+    @FXML
+    private UnlabeledToggleSwitch checkNewVersions;
 
     private final ChangeListener<Currency> fiatCurrencyListener = new ChangeListener<Currency>() {
         @Override
@@ -85,6 +89,12 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         notifyNewTransactions.setSelected(config.isNotifyNewTransactions());
         notifyNewTransactions.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
             config.setNotifyNewTransactions(newValue);
+        });
+
+        checkNewVersions.setSelected(config.isCheckNewVersions());
+        checkNewVersions.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setCheckNewVersions(newValue);
+            EventManager.get().post(new VersionCheckStatusEvent(newValue));
         });
     }
 

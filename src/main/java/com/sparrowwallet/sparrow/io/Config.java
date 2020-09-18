@@ -23,6 +23,7 @@ public class Config {
     private boolean groupByAddress = true;
     private boolean includeMempoolChange = true;
     private boolean notifyNewTransactions = true;
+    private boolean checkNewVersions = true;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -132,6 +133,15 @@ public class Config {
 
     public void setNotifyNewTransactions(boolean notifyNewTransactions) {
         this.notifyNewTransactions = notifyNewTransactions;
+        flush();
+    }
+
+    public boolean isCheckNewVersions() {
+        return checkNewVersions;
+    }
+
+    public void setCheckNewVersions(boolean checkNewVersions) {
+        this.checkNewVersions = checkNewVersions;
         flush();
     }
 

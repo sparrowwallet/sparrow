@@ -73,6 +73,10 @@
                 <UnlabeledToggleSwitch fx:id="notifyNewTransactions" />
                 <HelpLabel helpText="Show system notifications on new wallet transactions"/>
             </Field>
+            <Field text="Software updates:">
+                <UnlabeledToggleSwitch fx:id="checkNewVersions" />
+                <HelpLabel helpText="Check for updates to Sparrow"/>
+            </Field>
         </Fieldset>
     </Form>
 </GridPane>

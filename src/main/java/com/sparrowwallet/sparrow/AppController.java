@@ -19,6 +19,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.VersionCheckService;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
@@ -70,8 +71,8 @@ public class AppController implements Initializable {
 
     private static final int SERVER_PING_PERIOD = 10 * 1000;
     private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
-
     private static final int RATES_PERIOD = 5 * 60 * 1000;
+    private static final int VERSION_CHECK_PERIOD_HOURS = 24;
     private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
     private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
 
@@ -124,6 +125,8 @@ public class AppController implements Initializable {
     private ElectrumServer.ConnectionService connectionService;
 
     private Hwi.ScheduledEnumerateService deviceEnumerateService;
+
+    private VersionCheckService versionCheckService;
 
     private static Integer currentBlockHeight;
 
@@ -247,9 +250,18 @@ public class AppController implements Initializable {
                     if(!ratesService.isRunning() && ratesService.getExchangeSource() != ExchangeSource.NONE) {
                         ratesService.start();
                     }
+
+                    if(versionCheckService.getState() == Worker.State.CANCELLED) {
+                        versionCheckService.reset();
+                    }
+
+                    if(!versionCheckService.isRunning() && Config.get().isCheckNewVersions()) {
+                        versionCheckService.start();
+                    }
                 } else {
                     connectionService.cancel();
                     ratesService.cancel();
+                    versionCheckService.cancel();
                 }
             }
         });
@@ -268,8 +280,13 @@ public class AppController implements Initializable {
         ExchangeSource source = config.getExchangeSource() != null ? config.getExchangeSource() : DEFAULT_EXCHANGE_SOURCE;
         Currency currency = config.getFiatCurrency() != null ? config.getFiatCurrency() : DEFAULT_FIAT_CURRENCY;
         ratesService = createRatesService(source, currency);
-        if (config.getMode() == Mode.ONLINE && source != ExchangeSource.NONE) {
+        if(config.getMode() == Mode.ONLINE && source != ExchangeSource.NONE) {
             ratesService.start();
+        }
+
+        versionCheckService = createVersionCheckService();
+        if(config.getMode() == Mode.ONLINE && config.isCheckNewVersions()) {
+            versionCheckService.start();
         }
 
         openTransactionIdItem.disableProperty().bind(onlineProperty.not());
@@ -321,6 +338,22 @@ public class AppController implements Initializable {
         });
 
         return ratesService;
+    }
+
+    private VersionCheckService createVersionCheckService() {
+        VersionCheckService versionCheckService = new VersionCheckService();
+        versionCheckService.setDelay(Duration.seconds(10));
+        versionCheckService.setPeriod(Duration.hours(VERSION_CHECK_PERIOD_HOURS));
+        versionCheckService.setRestartOnFailure(true);
+
+        versionCheckService.setOnSucceeded(successEvent -> {
+            VersionUpdatedEvent event = versionCheckService.getValue();
+            if(event != null) {
+                EventManager.get().post(event);
+            }
+        });
+
+        return versionCheckService;
     }
 
     private Hwi.ScheduledEnumerateService createDeviceEnumerateService() {
@@ -1172,6 +1205,20 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void versionUpdated(VersionUpdatedEvent event) {
+        Hyperlink versionUpdateLabel = new Hyperlink("Sparrow " + event.getVersion() + " available");
+        versionUpdateLabel.setOnAction(event1 -> {
+            application.getHostServices().showDocument("https://www.sparrowwallet.com/download");
+        });
+
+        if(statusBar.getRightItems().size() > 0 && statusBar.getRightItems().get(0) instanceof Hyperlink) {
+            statusBar.getRightItems().remove(0);
+        }
+
+        statusBar.getRightItems().add(0, versionUpdateLabel);
+    }
+
+    @Subscribe
     public void timedWorker(TimedEvent event) {
         if(event.getTimeMills() == 0) {
             if(statusTimeline != null && statusTimeline.getStatus() == Animation.Status.RUNNING) {
@@ -1214,7 +1261,7 @@ public class AppController implements Initializable {
         } else {
             if(usbStatus == null) {
                 usbStatus = new UsbStatusButton();
-                statusBar.getRightItems().add(0, usbStatus);
+                statusBar.getRightItems().add(Math.max(statusBar.getRightItems().size() - 1, 0), usbStatus);
             } else {
                 usbStatus.getItems().remove(0, usbStatus.getItems().size());
             }
@@ -1283,6 +1330,16 @@ public class AppController implements Initializable {
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         fiatCurrencyExchangeRate = event.getCurrencyRate();
+    }
+
+    @Subscribe
+    public void versionCheckStatus(VersionCheckStatusEvent event) {
+        versionCheckService.cancel();
+
+        if(Config.get().getMode() != Mode.OFFLINE && event.isEnabled()) {
+            versionCheckService = createVersionCheckService();
+            versionCheckService.start();
+        }
     }
 
     @Subscribe
