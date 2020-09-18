@@ -9,6 +9,8 @@ import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
 
 import java.io.*;
@@ -81,6 +83,38 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     }
                     ew.keystores.put(key, ek);
                 }
+
+                if(key.equals("labels")) {
+                    JsonObject jsonObject = (JsonObject)map.get(key);
+                    for(String labelKey : jsonObject.keySet()) {
+                        ew.labels.put(labelKey, jsonObject.get(labelKey).getAsString());
+                    }
+                }
+
+                if(key.equals("verified_tx3")) {
+                    JsonObject jsonObject = (JsonObject)map.get(key);
+                    for(String txKey : jsonObject.keySet()) {
+                        Sha256Hash txHash = Sha256Hash.wrap(txKey);
+                        JsonArray array = jsonObject.getAsJsonArray(txKey);
+                        if(array != null && array.size() > 3) {
+                            int height = array.get(0).getAsInt();
+                            Date date = new Date(array.get(1).getAsLong() * 1000);
+                            long fee = array.get(2).getAsLong();
+                            Sha256Hash blockHash = Sha256Hash.wrap(array.get(3).getAsString());
+
+                            JsonObject transactions = (JsonObject)map.get("transactions");
+                            if(transactions != null) {
+                                String txhex = transactions.get(txKey).getAsString();
+                                if(txhex != null) {
+                                    Transaction transaction = new Transaction(Utils.hexToBytes(txhex));
+
+                                    BlockTransaction blockTransaction = new BlockTransaction(txHash, height, date, fee, transaction, blockHash);
+                                    ew.transactions.put(txHash, blockTransaction);
+                                }
+                            }
+                        }
+                    }
+                }
             }
 
             Wallet wallet = new Wallet();
@@ -149,6 +183,20 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             } else {
                 throw new ImportException("Unknown Electrum wallet type of " + ew.wallet_type);
             }
+
+            for(String key : ew.labels.keySet()) {
+                try {
+                    Sha256Hash txHash = Sha256Hash.wrap(key);
+                    BlockTransaction blockTransaction = ew.transactions.get(txHash);
+                    if(blockTransaction != null) {
+                        blockTransaction.setLabel(ew.labels.get(key));
+                    }
+                } catch(IllegalArgumentException e) {
+                    //not a tx, probably an address
+                }
+            }
+
+            wallet.updateTransactions(ew.transactions);
 
             if(!wallet.isValid()) {
                 throw new IllegalStateException("Electrum wallet is in an inconsistent state.");
@@ -279,6 +327,8 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         public String wallet_type;
         public String seed_type;
         public Boolean use_encryption;
+        public Map<String, String> labels = new LinkedHashMap<>();
+        public Map<Sha256Hash, BlockTransaction> transactions = new HashMap<>();
     }
 
     public static class ElectrumKeystore {
