@@ -6,6 +6,8 @@ import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Map<String, String> pathScriptHashes, boolean failOnError) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
+        EventManager.get().post(new WalletHistoryStatusEvent(false, "Loading transactions"));
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.get_history", pathScriptHashes.get(path));
@@ -112,6 +115,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<String, String> subscribeScriptHashes(Transport transport, Map<String, String> pathScriptHashes) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
+        EventManager.get().post(new WalletHistoryStatusEvent(false, "Finding transactions"));
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.subscribe", pathScriptHashes.get(path));
@@ -130,6 +134,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<Integer, String> getBlockHeaders(Transport transport, Set<Integer> blockHeights) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<Integer, String> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(String.class);
+        EventManager.get().post(new WalletHistoryStatusEvent(false, "Retrieving blocks"));
+
         for(Integer height : blockHeights) {
             batchRequest.add(height, "blockchain.block.header", height);
         }
@@ -146,6 +152,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<String, String> getTransactions(Transport transport, Set<String> txids) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
+        EventManager.get().post(new WalletHistoryStatusEvent(false, "Retrieving transactions"));
+
         for(String txid : txids) {
             batchRequest.add(txid, "blockchain.transaction.get", txid);
         }

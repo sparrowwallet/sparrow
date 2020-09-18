@@ -5,10 +5,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
-import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletNodesChangedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 

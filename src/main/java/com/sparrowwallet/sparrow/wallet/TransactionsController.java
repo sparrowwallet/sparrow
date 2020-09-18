@@ -122,4 +122,9 @@ public class TransactionsController extends WalletFormController implements Init
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         setFiatBalance(event.getCurrencyRate(), getWalletForm().getWalletTransactionsEntry().getBalance());
     }
+
+    @Subscribe
+    public void walletHistoryStatus(WalletHistoryStatusEvent event) {
+        transactionsTable.updateHistoryStatus(event);
+    }
 }

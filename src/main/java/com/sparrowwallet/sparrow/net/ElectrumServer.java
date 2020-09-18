@@ -180,6 +180,10 @@ public class ElectrumServer {
                 pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
             }
 
+            if(pathScriptHashes.isEmpty()) {
+                return;
+            }
+
             //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed if that's the case.
             Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), pathScriptHashes, true);
 

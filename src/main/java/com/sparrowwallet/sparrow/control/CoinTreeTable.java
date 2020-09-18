@@ -2,8 +2,11 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import javafx.application.Platform;
+import javafx.scene.control.Label;
 import javafx.scene.control.TreeTableView;
 
 public class CoinTreeTable extends TreeTableView<Entry> {
@@ -32,5 +35,21 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         if(changed && !getChildren().isEmpty()) {
             refresh();
         }
+    }
+
+    public void updateHistoryStatus(WalletHistoryStatusEvent event) {
+        Platform.runLater(() -> {
+            if(event.getErrorMessage() != null) {
+                setPlaceholder(new Label("Error loading transactions: " + event.getErrorMessage()));
+            } else if(event.isLoading()) {
+                if(event.getStatusMessage() != null) {
+                    setPlaceholder(new Label(event.getStatusMessage() + "..."));
+                } else {
+                    setPlaceholder(new Label("Loading transactions..."));
+                }
+            } else {
+                setPlaceholder(new Label("No transactions"));
+            }
+        });
     }
 }

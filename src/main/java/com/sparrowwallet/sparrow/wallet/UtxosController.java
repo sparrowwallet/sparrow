@@ -125,4 +125,9 @@ public class UtxosController extends WalletFormController implements Initializab
         utxosChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
         updateSendSelected(event.getBitcoinUnit());
     }
+
+    @Subscribe
+    public void walletHistoryStatus(WalletHistoryStatusEvent event) {
+        utxosTable.updateHistoryStatus(event);
+    }
 }

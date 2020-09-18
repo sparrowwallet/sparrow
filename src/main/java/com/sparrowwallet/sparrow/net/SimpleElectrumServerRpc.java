@@ -7,12 +7,12 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-
-import static com.sparrowwallet.drongo.protocol.Transaction.DUST_RELAY_TX_FEE;
 
 public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(SimpleElectrumServerRpc.class);
@@ -65,6 +65,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<String, ScriptHashTx[]> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
+            EventManager.get().post(new WalletHistoryStatusEvent(false, "Loading transactions for " + path));
             try {
                 ScriptHashTx[] scriptHashTxes = client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(path).params(pathScriptHashes.get(path)).execute();
                 result.put(path, scriptHashTxes);
@@ -107,6 +108,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<String, String> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
+            EventManager.get().post(new WalletHistoryStatusEvent(false, "Finding transactions for " + path));
             try {
                 String scriptHash = client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(path).params(pathScriptHashes.get(path)).executeNullable();
                 result.put(path, scriptHash);
@@ -125,6 +127,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<Integer, String> result = new LinkedHashMap<>();
         for(Integer blockHeight : blockHeights) {
+            EventManager.get().post(new WalletHistoryStatusEvent(false, "Retrieving block at height " + blockHeight));
             try {
                 String blockHeader = client.createRequest().returnAs(String.class).method("blockchain.block.header").id(blockHeight).params(blockHeight).execute();
                 result.put(blockHeight, blockHeader);
@@ -144,6 +147,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<String, String> result = new LinkedHashMap<>();
         for(String txid : txids) {
+            EventManager.get().post(new WalletHistoryStatusEvent(false, "Retrieving transaction [" + txid.substring(0, 6) + "]"));
             try {
                 String rawTxHex = client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(txid).params(txid).execute();
                 result.put(txid, rawTxHex);
