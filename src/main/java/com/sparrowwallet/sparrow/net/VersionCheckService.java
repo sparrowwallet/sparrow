@@ -54,6 +54,11 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
     private boolean verifySignature(VersionCheck versionCheck) {
         try {
             for(String addressString : versionCheck.signatures.keySet()) {
+                if(!addressString.equals("1LiJx1HQ49L2LzhBwbgwXdHiGodvPg5YaV")) {
+                    log.warn("Invalid address for version check " + addressString);
+                    continue;
+                }
+
                 String signature = versionCheck.signatures.get(addressString);
                 ECKey signedMessageKey = ECKey.signedMessageToKey(versionCheck.version, signature, false);
                 Address providedAddress = Address.fromString(addressString);
