@@ -11,7 +11,7 @@
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <?import javafx.geometry.Insets?>
 
-<BorderPane stylesheets="@../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.AdvancedController">
+<BorderPane stylesheets="@../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.AdvancedController">
     <center>
         <GridPane hgap="10.0" vgap="10.0">
         <padding>

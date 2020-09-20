@@ -18,7 +18,7 @@
 <?import com.sparrowwallet.sparrow.control.CopyableTextField?>
 <?import com.sparrowwallet.sparrow.control.ScriptArea?>
 
-<BorderPane stylesheets="@receive.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.ReceiveController">
+<BorderPane stylesheets="@receive.css, @wallet.css, @../script.css, @../descriptor.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.ReceiveController">
     <center>
 
         <GridPane styleClass="receive-form" hgap="10.0" vgap="10.0">

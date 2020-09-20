@@ -88,7 +88,7 @@ public class SettingsController extends WalletFormController implements Initiali
     @Override
     public void initializeView() {
         keystoreTabs = new TabPane();
-        keystoreTabsPane.getChildren().add(Borders.wrap(keystoreTabs).etchedBorder().outerPadding(10, 5, 0 ,0).innerPadding(0).raised().buildAll());
+        keystoreTabsPane.getChildren().add(keystoreTabs);
 
         policyType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, policyType) -> {
             walletForm.getWallet().setPolicyType(policyType);

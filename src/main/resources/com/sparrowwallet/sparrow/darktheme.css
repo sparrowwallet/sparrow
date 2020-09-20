@@ -1,0 +1,146 @@
+.root {
+    -fx-accent: #1e88cf;
+    -fx-focus-color: -fx-accent;
+    -fx-base: #373e43;
+    -fx-control-inner-background: derive(-fx-base, 35%);
+    -fx-control-inner-background-alt: -fx-control-inner-background ;
+}
+
+.label{
+    -fx-text-fill: lightgray;
+}
+
+.text-field {
+    -fx-prompt-text-fill: gray;
+}
+
+.titulo{
+    -fx-font-weight: bold;
+    -fx-font-size: 18px;
+}
+
+.button{
+    -fx-focus-traversable: false;
+}
+
+.button:hover{
+    -fx-text-fill: white;
+}
+
+.separator *.line {
+    -fx-background-color: #3C3C3C;
+    -fx-border-style: solid;
+    -fx-border-width: 1px;
+}
+
+.scroll-bar{
+    -fx-background-color: derive(-fx-base,45%)
+}
+
+.button:default {
+    -fx-base: -fx-accent ;
+}
+
+.table-view{
+    /*-fx-background-color: derive(-fx-base, 10%);*/
+    -fx-selection-bar-non-focused: derive(-fx-base, 50%);
+}
+
+.table-view .column-header .label{
+    -fx-alignment: CENTER_LEFT;
+    -fx-font-weight: none;
+}
+
+.list-cell:even,
+.list-cell:odd,
+.table-row-cell:even,
+.table-row-cell:odd{
+    -fx-control-inner-background: derive(-fx-base, 15%);
+}
+
+.list-cell:empty,
+.table-row-cell:empty {
+    -fx-background-color: transparent;
+}
+
+.list-cell,
+.table-row-cell{
+    -fx-border-color: transparent;
+    -fx-table-cell-border-color:transparent;
+}
+
+.status-bar {
+    -fx-background-color: black, -fx-body-color;
+}
+
+.chart .default-color0.chart-series-line {
+    -fx-stroke: rgba(125, 128, 139, 0.6);
+}
+
+.chart .chart-bar {
+    -fx-bar-fill: rgba(135, 138, 149, 0.5);
+}
+
+#inputsPie .default-color0.chart-pie {
+    -fx-pie-color: #e06c75;
+}
+
+#outputsPie .default-color3.chart-pie {
+    -fx-pie-color: #e06c75
+}
+
+.root .etched-raised-border {
+    -fx-border-color: #ffffff, #000000;
+    -fx-border-style: solid, solid;
+    -fx-border-width: 1px, 1px;
+}
+
+.root .line-border {
+    -fx-border-color: #000000;
+    -fx-border-style: solid;
+    -fx-border-width: 1px;
+}
+
+.root .duplicate-warning {
+    -fx-text-fill: #e06c75;
+}
+
+.root .unused-check {
+    -fx-text-fill: #98c379;
+}
+
+.root .script-nest { -fx-fill: #565c64 }
+.root .script-opcode { -fx-fill: #56b6c2 }
+.root .script-hash { -fx-fill: #d19a66 }
+.root .script-signature { -fx-fill: #98c379 }
+.root .script-pubkey { -fx-fill: #c678dd }
+.root .script-redeem { -fx-fill: #e06c75 }
+.root .script-other { -fx-fill: #b6bdca }
+
+.root #txhex {
+    color-0: #e06c75;
+    color-1: #e5c07b;
+    color-2: #d19a66;
+    color-3: #98c379;
+    color-4: #61afef;
+    color-5: #56b6c2;
+    color-6: #c678dd;
+    color-7: #be5046;
+    color-8: #000000;
+    color-grey: #565c64;
+}
+
+.root .success {
+    -fx-text-fill: #98c379;
+}
+
+.root .failure {
+    -fx-text-fill: #e06c75;
+}
+
+.root .titled-description-pane > .title {
+    -fx-background-color: derive(-fx-base, 10%);
+    -fx-padding: 0;
+    -fx-border-color: derive(-fx-base, -2%);
+    /*-fx-border-width: 1;*/
+}

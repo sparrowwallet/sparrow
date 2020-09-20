@@ -35,31 +35,27 @@
 }
 
 .hashindex-row {
-    -fx-text-fill: #696c77;
+    -fx-opacity: 0.7;
 }
 
 .hashindex-row.spent {
-    -fx-text-fill: #a0a1a7;
+    -fx-opacity: 0.4;
 }
 
 .transaction-row.confirming {
-    -fx-text-fill: #696c77;
+    -fx-opacity: 0.7;
 }
 
 .utxo-row.unspendable {
-    -fx-text-fill: #a0a1a7;
+    -fx-opacity: 0.4;
 }
 
 .tree-table-row-cell:selected .utxo-row.unspendable {
-    -fx-text-fill: #696c77;
+    -fx-opacity: 0.7;
 }
 
 .tree-table-view:focused:row-selection .tree-table-row-cell:selected .utxo-row.unspendable {
     -fx-text-fill: derive(white, -15%);
-}
-
-.tree-table-row-cell:selected .hashindex-row, .tree-table-row-cell:selected .transaction-row {
-    -fx-text-fill: white;
 }
 
 .label-cell .text-field {

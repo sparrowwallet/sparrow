@@ -40,7 +40,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         StackPane stackPane = new StackPane();
         stackPane.getChildren().add(webcamView.getView());
 
-        dialogPane.setContent(Borders.wrap(stackPane).lineBorder().outerPadding(0).innerPadding(0).buildAll());
+        dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
 
         webcamService.resultProperty().addListener(new QRResultListener());
         webcamService.setOnFailed(failedEvent -> {

@@ -31,7 +31,7 @@ public class PreferencesDialog extends Dialog<Boolean> {
 
         try {
             FXMLLoader preferencesLoader = new FXMLLoader(AppController.class.getResource("preferences/preferences.fxml"));
-            dialogPane.setContent(Borders.wrap(preferencesLoader.load()).lineBorder().outerPadding(0).innerPadding(0).buildAll());
+            dialogPane.setContent(Borders.wrap(preferencesLoader.load()).emptyBorder().buildAll());
             PreferencesController preferencesController = preferencesLoader.getController();
             preferencesController.initializeView(Config.get());
             if(initialGroup != null) {

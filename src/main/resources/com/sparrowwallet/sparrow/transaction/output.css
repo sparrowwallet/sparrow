@@ -1,26 +1,26 @@
-.version { -fx-fill: #e5e5e6 }
-.segwit-marker { -fx-fill: #e5e5e6 }
-.segwit-flag { -fx-fill: #e5e5e6 }
+.version { -fx-fill: color-grey }
+.segwit-marker { -fx-fill: color-grey }
+.segwit-flag { -fx-fill: color-grey }
 
-.num-inputs { -fx-fill: #e5e5e6 }
-.input-hash { -fx-fill: #e5e5e6  }
-.input-index { -fx-fill: #e5e5e6 }
-.input-sigscript-length { -fx-fill: #e5e5e6 }
-.input-sigscript { -fx-fill: #e5e5e6 }
-.input-sequence { -fx-fill: #e5e5e6 }
+.num-inputs { -fx-fill: color-grey }
+.input-hash { -fx-fill: color-grey  }
+.input-index { -fx-fill: color-grey }
+.input-sigscript-length { -fx-fill: color-grey }
+.input-sigscript { -fx-fill: color-grey }
+.input-sequence { -fx-fill: color-grey }
 
-.num-outputs { -fx-fill: #e5e5e6 }
-.output-other { -fx-fill: #e5e5e6 }
+.num-outputs { -fx-fill: color-grey }
+.output-other { -fx-fill: color-grey }
 
-.output-value { -fx-fill: #000000 }
-.output-pubkeyscript-length { -fx-fill: #a626a4 }
-.output-pubkeyscript { -fx-fill: #50a14f }
+.output-value { -fx-fill: color-8 }
+.output-pubkeyscript-length { -fx-fill: color-6 }
+.output-pubkeyscript { -fx-fill: color-3 }
 
-.witness-count { -fx-fill: #e5e5e6 }
-.witness-length { -fx-fill: #e5e5e6 }
-.witness-data { -fx-fill: #e5e5e6 }
+.witness-count { -fx-fill: color-grey }
+.witness-length { -fx-fill: color-grey }
+.witness-data { -fx-fill: color-grey }
 
-.locktime { -fx-fill: #e5e5e6 }
+.locktime { -fx-fill: color-grey }
 
 #spentField .input-container {
     -fx-alignment: center-left;

@@ -9,7 +9,7 @@
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.preferences.PreferenceGroup?>
 <?import org.controlsfx.glyphfont.Glyph?>
-<BorderPane stylesheets="@../general.css, @preferences.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.preferences.PreferencesController">
+<BorderPane stylesheets="@../general.css, @preferences.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.preferences.PreferencesController">
     <left>
         <VBox styleClass="list-menu">
             <ToggleButton VBox.vgrow="ALWAYS" text="General" wrapText="true" textAlignment="CENTER" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$preferencesMenu">

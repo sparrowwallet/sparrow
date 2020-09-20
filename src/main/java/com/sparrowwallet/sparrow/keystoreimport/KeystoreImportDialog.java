@@ -35,7 +35,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
         try {
             FXMLLoader ksiLoader = new FXMLLoader(AppController.class.getResource("keystoreimport/keystoreimport.fxml"));
-            dialogPane.setContent(Borders.wrap(ksiLoader.load()).lineBorder().outerPadding(0).innerPadding(0).buildAll());
+            dialogPane.setContent(Borders.wrap(ksiLoader.load()).emptyBorder().buildAll());
             keystoreImportController = ksiLoader.getController();
             keystoreImportController.initializeView(wallet);
             keystoreImportController.selectSource(initialSource);

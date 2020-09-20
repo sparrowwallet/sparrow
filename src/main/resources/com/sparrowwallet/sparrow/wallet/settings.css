@@ -10,4 +10,9 @@
     -fx-alignment: center-left;
 }
 
+.keystore-padding-border {
+    -fx-border-color: #00000000;
+    -fx-border-style: none;
+    -fx-border-width: 10 5 0 0;
+}
 

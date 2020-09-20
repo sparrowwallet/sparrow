@@ -85,7 +85,11 @@
 
             <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
                 <Fieldset inputGrow="SOMETIMES" text="Keystores">
-                    <StackPane fx:id="keystoreTabsPane"  />
+                        <StackPane styleClass="keystore-padding-border">
+                            <StackPane styleClass="etched-raised-border">
+                                <StackPane fx:id="keystoreTabsPane"/>
+                            </StackPane>
+                        </StackPane>
                 </Fieldset>
             </Form>
         </GridPane>

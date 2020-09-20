@@ -183,7 +183,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         validationSupport.registerValidator(fingerprint, Validator.combine(
                 Validator.createEmptyValidator("Master fingerprint is required"),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Master fingerprint is invalid", (newValue.length() != 8 || !Utils.isHex(newValue)))
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Master fingerprint is invalid", (newValue == null || newValue.length() != 8 || !Utils.isHex(newValue)))
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());

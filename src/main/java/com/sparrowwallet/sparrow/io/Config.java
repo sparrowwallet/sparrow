@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
+import com.sparrowwallet.sparrow.Theme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +25,7 @@ public class Config {
     private boolean includeMempoolChange = true;
     private boolean notifyNewTransactions = true;
     private boolean checkNewVersions = true;
+    private Theme theme;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -142,6 +144,15 @@ public class Config {
 
     public void setCheckNewVersions(boolean checkNewVersions) {
         this.checkNewVersions = checkNewVersions;
+        flush();
+    }
+
+    public Theme getTheme() {
+        return theme;
+    }
+
+    public void setTheme(Theme theme) {
+        this.theme = theme;
         flush();
     }
 

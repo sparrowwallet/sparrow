@@ -18,7 +18,7 @@ public class AdvancedDialog extends Dialog<Void> {
 
         try {
             FXMLLoader advancedLoader = new FXMLLoader(AppController.class.getResource("wallet/advanced.fxml"));
-            dialogPane.setContent(Borders.wrap(advancedLoader.load()).lineBorder().outerPadding(0).innerPadding(0).buildAll());
+            dialogPane.setContent(Borders.wrap(advancedLoader.load()).emptyBorder().buildAll());
             AdvancedController settingsAdvancedController = advancedLoader.getController();
             settingsAdvancedController.initializeView(wallet);
 

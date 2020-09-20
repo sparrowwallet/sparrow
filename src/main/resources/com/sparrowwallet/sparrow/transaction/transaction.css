@@ -1,8 +1,18 @@
 #txhex {
-    -fx-background-color: #ffffff;
+    -fx-background-color: -fx-control-inner-background;
     -fx-font-size: 13px;
     -fx-font-family: 'Roboto Mono';
     -fx-padding: 2;
+    color-0: #ca1243;
+    color-1: #d75f00;
+    color-2: #c18401;
+    color-3: #50a14f;
+    color-4: #0184bc;
+    color-5: #4078f2;
+    color-6: #a626a4;
+    color-7: #986801;
+    color-8: #000000;
+    color-grey: #e5e5e6;
 }
 
 .tx-pane {

@@ -127,3 +127,27 @@
 .default-button {
     -fx-base: -fx-default-button;
 }
+
+.etched-raised-border {
+    -fx-border-color: #ffffff, #a9a9a9;
+    -fx-border-style: solid, solid;
+    -fx-border-width: 1px, 1px;
+}
+
+.line-border {
+    -fx-border-color: #a9a9a9;
+    -fx-border-style: solid;
+    -fx-border-width: 1px;
+}
+
+.success {
+    -fx-text-fill: rgb(80, 161, 79);
+}
+
+.failure {
+    -fx-text-fill: rgb(202, 18, 67);
+}
+
+.root .header-panel {
+    -fx-background-color: -fx-box-border, derive(-fx-background, 10%);
+}

@@ -99,6 +99,9 @@ public class AppController implements Initializable {
     private ToggleGroup bitcoinUnit;
 
     @FXML
+    private ToggleGroup theme;
+
+    @FXML
     private CheckMenuItem showTxHex;
 
     @FXML
@@ -224,8 +227,18 @@ public class AppController implements Initializable {
             Config.get().setBitcoinUnit(unit);
         }
         final BitcoinUnit selectedUnit = unit;
-        Optional<Toggle> selectedToggle = bitcoinUnit.getToggles().stream().filter(toggle -> selectedUnit.equals(toggle.getUserData())).findFirst();
-        selectedToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+        Optional<Toggle> selectedUnitToggle = bitcoinUnit.getToggles().stream().filter(toggle -> selectedUnit.equals(toggle.getUserData())).findFirst();
+        selectedUnitToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+
+        Theme configTheme = Config.get().getTheme();
+        if(configTheme == null) {
+            configTheme = Theme.LIGHT;
+            Config.get().setTheme(Theme.LIGHT);
+        }
+        final Theme selectedTheme = configTheme;
+        Optional<Toggle> selectedThemeToggle = theme.getToggles().stream().filter(toggle -> selectedTheme.equals(toggle.getUserData())).findFirst();
+        selectedThemeToggle.ifPresent(toggle -> theme.selectToggle(toggle));
+        setTheme(null);
 
         showTxHex.setSelected(true);
         showTxHexProperty = true;
@@ -409,11 +422,11 @@ public class AppController implements Initializable {
             Stage stage = new Stage();
             stage.setTitle("About " + MainApp.APP_NAME);
             stage.initStyle(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? StageStyle.UNDECORATED : StageStyle.DECORATED);
-            setStageIcon(stage);
             stage.setResizable(false);
             stage.setScene(new Scene(root));
             controller.setStage(stage);
             controller.initializeView();
+            setStageIcon(stage);
 
             return stage;
         } catch(IOException e) {
@@ -655,6 +668,7 @@ public class AppController implements Initializable {
     public static void showErrorDialog(String title, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         setStageIcon(alert.getDialogPane().getScene().getWindow());
+        alert.getDialogPane().getScene().getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
         alert.setHeaderText(title);
         alert.setContentText(content);
@@ -664,6 +678,10 @@ public class AppController implements Initializable {
     public static void setStageIcon(Window window) {
         Stage stage = (Stage)window;
         stage.getIcons().add(new Image(AppController.class.getResourceAsStream("/image/sparrow.png")));
+
+        if(stage.getScene() != null && Config.get().getTheme() == Theme.DARK) {
+            stage.getScene().getStylesheets().add(AppController.class.getResource("darktheme.css").toExternalForm());
+        }
     }
 
     public static Font getMonospaceFont() {
@@ -1090,6 +1108,19 @@ public class AppController implements Initializable {
 
         contextMenu.getItems().addAll(close, closeOthers, closeAll);
         return contextMenu;
+    }
+
+    public void setTheme(ActionEvent event) {
+        Theme selectedTheme = (Theme)theme.getSelectedToggle().getUserData();
+        if(Config.get().getTheme() != selectedTheme) {
+            Config.get().setTheme(selectedTheme);
+        }
+
+        if(selectedTheme == Theme.DARK) {
+            tabs.getScene().getStylesheets().add(getClass().getResource("darktheme.css").toExternalForm());
+        } else {
+            tabs.getScene().getStylesheets().remove(getClass().getResource("darktheme.css").toExternalForm());
+        }
     }
 
     @Subscribe

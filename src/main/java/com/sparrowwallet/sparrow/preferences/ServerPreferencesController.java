@@ -227,7 +227,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private void showConnectionSuccess(List<String> serverVersion, String serverBanner) {
-        testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, Color.rgb(80, 161, 79)));
+        testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, "success"));
         if(serverVersion != null) {
             testResults.setText("Connected to " + serverVersion.get(0) + " on protocol version " + serverVersion.get(1));
             if(ElectrumServer.supportsBatching(serverVersion)) {
@@ -248,7 +248,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         }
 
         testResults.setText("Could not connect:\n\n" + reason);
-        testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.EXCLAMATION_CIRCLE, Color.rgb(202, 18, 67)));
+        testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.EXCLAMATION_CIRCLE, "failure"));
     }
 
     private void setupValidation() {
@@ -340,11 +340,11 @@ public class ServerPreferencesController extends PreferencesDetailController {
         }
     }
 
-    private Glyph getGlyph(FontAwesome5.Glyph glyphName, Color color) {
+    private Glyph getGlyph(FontAwesome5.Glyph glyphName, String styleClass) {
         Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
-        glyph.setFontSize(13);
-        if(color != null) {
-            glyph.setColor(color);
+        glyph.setFontSize(12);
+        if(styleClass != null) {
+            glyph.getStyleClass().add(styleClass);
         }
 
         return glyph;

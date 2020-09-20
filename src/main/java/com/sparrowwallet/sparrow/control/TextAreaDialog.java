@@ -26,6 +26,7 @@ public class TextAreaDialog extends Dialog<String> {
         this.defaultValue = defaultValue;
 
         dialogPane.setContent(hbox);
+        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
         AppController.setStageIcon(dialogPane.getScene().getWindow());
 
         dialogPane.getStyleClass().add("text-input-dialog");

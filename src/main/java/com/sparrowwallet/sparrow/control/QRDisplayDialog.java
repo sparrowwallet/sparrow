@@ -54,7 +54,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         qrImageView = new ImageView();
         stackPane.getChildren().add(qrImageView);
 
-        dialogPane.setContent(Borders.wrap(stackPane).lineBorder().outerPadding(0).innerPadding(0).buildAll());
+        dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
 
         nextPart();
         if(encoder.isSinglePart()) {

@@ -7,6 +7,7 @@
 <?import javafx.scene.shape.Rectangle?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
+<?import com.sparrowwallet.sparrow.Theme?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1000.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
     <children>
@@ -39,6 +40,9 @@
                 <fx:define>
                     <ToggleGroup fx:id="bitcoinUnit"/>
                 </fx:define>
+                <fx:define>
+                    <ToggleGroup fx:id="theme"/>
+                </fx:define>
                 <Menu mnemonicParsing="false" text="View">
                     <items>
                         <Menu mnemonicParsing="false" text="Bitcoin Unit">
@@ -56,6 +60,20 @@
                                 <RadioMenuItem mnemonicParsing="false" text="sats" toggleGroup="$bitcoinUnit" onAction="#setBitcoinUnit">
                                     <userData>
                                         <BitcoinUnit fx:constant="SATOSHIS" />
+                                    </userData>
+                                </RadioMenuItem>
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Theme">
+                            <items>
+                                <RadioMenuItem mnemonicParsing="false" text="Light" toggleGroup="$theme" onAction="#setTheme">
+                                    <userData>
+                                        <Theme fx:constant="LIGHT" />
+                                    </userData>
+                                </RadioMenuItem>
+                                <RadioMenuItem mnemonicParsing="false" text="Dark" toggleGroup="$theme" onAction="#setTheme">
+                                    <userData>
+                                        <Theme fx:constant="DARK" />
                                     </userData>
                                 </RadioMenuItem>
                             </items>

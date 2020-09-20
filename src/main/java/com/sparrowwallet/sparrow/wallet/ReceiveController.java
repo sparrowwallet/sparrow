@@ -114,7 +114,7 @@ public class ReceiveController extends WalletFormController implements Initializ
         scriptPubKeyArea.appendScript(nodeEntry.getOutputScript(), null, null);
 
         outputDescriptor.clear();
-        outputDescriptor.appendText(nodeEntry.getOutputDescriptor());
+        outputDescriptor.append(nodeEntry.getOutputDescriptor(), "descriptor-text");
 
         updateDisplayAddress(AppController.getDevices());
     }
