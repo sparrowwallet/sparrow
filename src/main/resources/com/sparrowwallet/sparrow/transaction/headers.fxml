@@ -24,6 +24,7 @@
 <?import com.sparrowwallet.sparrow.control.SignaturesProgressBar?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.Tooltip?>
+<?import com.sparrowwallet.sparrow.control.DynamicForm?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -131,7 +132,7 @@
 
     <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <Form fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
+    <DynamicForm fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
         <Fieldset text="Blockchain" inputGrow="SOMETIMES">
             <Field text="Status:">
                 <Label fx:id="blockStatus" contentDisplay="RIGHT" graphicTextGap="5" />
@@ -146,7 +147,7 @@
                 <IdLabel fx:id="blockHash" />
             </Field>
         </Fieldset>
-    </Form>
+    </DynamicForm>
 
     <Form fx:id="signingWalletForm" GridPane.columnIndex="0" GridPane.rowIndex="6">
         <Fieldset text="Signatures" inputGrow="SOMETIMES">

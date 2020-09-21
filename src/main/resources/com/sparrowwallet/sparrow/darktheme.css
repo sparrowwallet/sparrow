@@ -74,7 +74,7 @@
 }
 
 .chart .default-color0.chart-series-line {
-    -fx-stroke: rgba(125, 128, 139, 0.6);
+    -fx-stroke: rgba(135, 138, 149, 0.6);
 }
 
 .chart .chart-bar {
@@ -114,10 +114,11 @@
 .root .script-hash { -fx-fill: #d19a66 }
 .root .script-signature { -fx-fill: #98c379 }
 .root .script-pubkey { -fx-fill: #c678dd }
-.root .script-redeem { -fx-fill: #e06c75 }
-.root .script-other { -fx-fill: #b6bdca }
+.root .script-redeem { -fx-fill: derive(#e06c75, 20%) }
+.root .script-other { -fx-fill: #c8ccd4 }
 
 .root #txhex {
+    -fx-background-color: derive(-fx-control-inner-background, -50%);
     color-0: #e06c75;
     color-1: #e5c07b;
     color-2: #d19a66;
@@ -126,7 +127,7 @@
     color-5: #56b6c2;
     color-6: #c678dd;
     color-7: #be5046;
-    color-8: #000000;
+    color-8: #c8ccd4;
     color-grey: #565c64;
 }
 

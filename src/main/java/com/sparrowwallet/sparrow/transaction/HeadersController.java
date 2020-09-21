@@ -49,7 +49,7 @@ import java.time.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class HeadersController extends TransactionFormController implements Initializable {
+public class HeadersController extends TransactionFormController implements Initializable, DynamicUpdate {
     private static final Logger log = LoggerFactory.getLogger(HeadersController.class);
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String BLOCK_TIMESTAMP_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss ZZZ";
@@ -121,7 +121,7 @@ public class HeadersController extends TransactionFormController implements Init
     private CopyableLabel feeRate;
 
     @FXML
-    private Form blockchainForm;
+    private DynamicForm blockchainForm;
 
     @FXML
     private Label blockStatus;
@@ -410,6 +410,8 @@ public class HeadersController extends TransactionFormController implements Init
 
             EventManager.get().post(new RequestOpenWalletsEvent());
         }
+
+        blockchainForm.setDynamicUpdate(this);
     }
 
     private void updateType() {
@@ -493,6 +495,8 @@ public class HeadersController extends TransactionFormController implements Init
                     indicator = (ConfirmationProgressIndicator)blockStatus.getGraphic();
                     indicator.setConfirmations(confirmations);
                 }
+            } else {
+                blockStatus.setGraphic(null);
             }
         }
 
@@ -776,6 +780,19 @@ public class HeadersController extends TransactionFormController implements Init
                 log.error("Error saving transaction", e);
                 AppController.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
             }
+        }
+    }
+
+    @Override
+    public void update() {
+        BlockTransaction blockTransaction = headersForm.getBlockTransaction();
+        Sha256Hash txId = headersForm.getTransaction().getTxId();
+        if(headersForm.getSigningWallet() != null && headersForm.getSigningWallet().getTransactions().containsKey(txId)) {
+            blockTransaction = headersForm.getSigningWallet().getTransactions().get(txId);
+        }
+
+        if(blockTransaction != null && AppController.getCurrentBlockHeight() != null) {
+            updateBlockchainForm(blockTransaction, AppController.getCurrentBlockHeight());
         }
     }
 

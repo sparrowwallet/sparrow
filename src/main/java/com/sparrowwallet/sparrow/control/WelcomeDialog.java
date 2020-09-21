@@ -15,8 +15,8 @@ import org.controlsfx.control.ToggleSwitch;
 public class WelcomeDialog extends Dialog<Mode> {
     private static final String[] ELECTRUM_SERVERS = new String[]{
             "ElectrumX (Recommended)", "https://github.com/spesmilo/electrumx",
-            "electrs (Experimental)", "https://github.com/romanz/electrs",
-            "esplora-electrs (Experimental)", "https://github.com/Blockstream/electrs"};
+            "electrs", "https://github.com/romanz/electrs",
+            "esplora-electrs", "https://github.com/Blockstream/electrs"};
 
     private final HostServices hostServices;
 

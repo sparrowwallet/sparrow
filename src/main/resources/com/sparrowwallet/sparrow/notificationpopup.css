@@ -9,14 +9,14 @@
 
 .notification-bar > .pane .label.title {
     -fx-font-size: 15px;
-    -fx-text-fill: #292929;
+    -fx-text-fill: -fx-text-inner-color;
     -fx-padding: 5 0 0 68;
     -fx-translate-y: 10;
 }
 
 .notification-bar > .pane .label {
     -fx-font-size: 1em;
-    -fx-text-fill: #292929;
+    -fx-text-fill: -fx-text-inner-color;
     -fx-alignment: top-left;
     -fx-padding: 0 0 0 10;
     -fx-graphic-text-gap: 8;
