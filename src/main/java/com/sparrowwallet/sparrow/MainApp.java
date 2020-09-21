@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class MainApp extends Application {
     public static final String APP_NAME = "Sparrow";
-    public static final String APP_VERSION = "0.9.3";
+    public static final String APP_VERSION = "0.9.4";
 
     private Stage mainStage;
 
