@@ -528,13 +528,23 @@ public class ElectrumServer {
 
             Map<Integer, Double> targetBlocksFeeRatesSats = new TreeMap<>();
             for(Integer target : targetBlocksFeeRatesBtcKb.keySet()) {
-                targetBlocksFeeRatesSats.put(target, targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN / 1024);
+                targetBlocksFeeRatesSats.put(target, targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN / 1000);
             }
 
             return targetBlocksFeeRatesSats;
         } catch(ElectrumServerRpcException e) {
             throw new ServerException(e.getMessage(), e);
         }
+    }
+
+    public Double getMinimumRelayFee() throws ServerException {
+        Double minFeeRateBtcKb = electrumServerRpc.getMinimumRelayFee(getTransport());
+        if(minFeeRateBtcKb != null) {
+            long minFeeRateSatsKb = (long)(minFeeRateBtcKb * Transaction.SATOSHIS_PER_BITCOIN);
+            return minFeeRateSatsKb / 1000d;
+        }
+
+        return Transaction.DEFAULT_MIN_RELAY_FEE;
     }
 
     public Sha256Hash broadcastTransaction(Transaction transaction) throws ServerException {
@@ -667,7 +677,12 @@ public class ElectrumServer {
                         Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
                         feeRatesRetrievedAt = System.currentTimeMillis();
 
-                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates);
+                        Double minimumRelayFeeRate = electrumServer.getMinimumRelayFee();
+                        for(Integer blockTarget : blockTargetFeeRates.keySet()) {
+                            blockTargetFeeRates.computeIfPresent(blockTarget, (blocks, feeRate) -> feeRate < minimumRelayFeeRate ? minimumRelayFeeRate : feeRate);
+                        }
+
+                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates, minimumRelayFeeRate);
                     } else {
                         if(reader.isAlive()) {
                             electrumServer.ping();

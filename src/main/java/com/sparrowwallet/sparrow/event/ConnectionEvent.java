@@ -10,13 +10,15 @@ public class ConnectionEvent extends FeeRatesUpdatedEvent {
     private final String serverBanner;
     private final int blockHeight;
     private final BlockHeader blockHeader;
+    private final Double minimumRelayFeeRate;
 
-    public ConnectionEvent(List<String> serverVersion, String serverBanner, int blockHeight, BlockHeader blockHeader, Map<Integer, Double> targetBlockFeeRates) {
+    public ConnectionEvent(List<String> serverVersion, String serverBanner, int blockHeight, BlockHeader blockHeader, Map<Integer, Double> targetBlockFeeRates, Double minimumRelayFeeRate) {
         super(targetBlockFeeRates);
         this.serverVersion = serverVersion;
         this.serverBanner = serverBanner;
         this.blockHeight = blockHeight;
         this.blockHeader = blockHeader;
+        this.minimumRelayFeeRate = minimumRelayFeeRate;
     }
 
     public List<String> getServerVersion() {
@@ -33,5 +35,9 @@ public class ConnectionEvent extends FeeRatesUpdatedEvent {
 
     public BlockHeader getBlockHeader() {
         return blockHeader;
+    }
+
+    public Double getMinimumRelayFeeRate() {
+        return minimumRelayFeeRate;
     }
 }

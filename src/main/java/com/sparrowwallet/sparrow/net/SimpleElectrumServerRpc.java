@@ -230,6 +230,16 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
+    public Double getMinimumRelayFee(Transport transport) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            return client.createRequest().returnAs(Double.class).method("blockchain.relayfee").id(1).execute();
+        } catch(JsonRpcException e) {
+            throw new ElectrumServerRpcException("Error getting minimum relay fee", e);
+        }
+    }
+
+    @Override
     public String broadcastTransaction(Transport transport, String txHex) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);

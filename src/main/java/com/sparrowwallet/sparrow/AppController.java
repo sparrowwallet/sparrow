@@ -137,6 +137,8 @@ public class AppController implements Initializable {
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
+    private static Double minimumRelayFeeRate;
+
     private static CurrencyRate fiatCurrencyExchangeRate;
 
     private static List<Device> devices;
@@ -641,6 +643,10 @@ public class AppController implements Initializable {
 
     public static Map<Integer, Double> getTargetBlockFeeRates() {
         return targetBlockFeeRates;
+    }
+
+    public static Double getMinimumRelayFeeRate() {
+        return minimumRelayFeeRate;
     }
 
     public static CurrencyRate getFiatCurrencyExchangeRate() {
@@ -1305,6 +1311,7 @@ public class AppController implements Initializable {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         targetBlockFeeRates = event.getTargetBlockFeeRates();
+        minimumRelayFeeRate = event.getMinimumRelayFeeRate();
         String banner = event.getServerBanner();
         String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));

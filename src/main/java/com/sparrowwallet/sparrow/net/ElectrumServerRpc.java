@@ -29,5 +29,7 @@ public interface ElectrumServerRpc {
 
     Map<Integer, Double> getFeeEstimates(Transport transport, List<Integer> targetBlocks);
 
+    Double getMinimumRelayFee(Transport transport);
+
     String broadcastTransaction(Transport transport, String txHex);
 }
