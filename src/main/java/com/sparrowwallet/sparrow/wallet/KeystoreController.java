@@ -24,7 +24,8 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -98,7 +99,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         if(keystore.getExtendedPublicKey() != null) {
             xpub.setText(keystore.getExtendedPublicKey().toString());
-            setXpubTooltip(keystore.getExtendedPublicKey());
+            setXpubContext(keystore.getExtendedPublicKey());
         }
 
         if(keystore.getKeyDerivation() != null) {
@@ -125,23 +126,47 @@ public class KeystoreController extends WalletFormController implements Initiali
         xpub.textProperty().addListener((observable, oldValue, newValue) -> {
             if(ExtendedKey.isValid(newValue)) {
                 ExtendedKey extendedKey = ExtendedKey.fromDescriptor(newValue);
-                setXpubTooltip(extendedKey);
+                setXpubContext(extendedKey);
                 keystore.setExtendedPublicKey(extendedKey);
                 EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
             } else {
                 xpub.setTooltip(null);
+                xpub.setContextMenu(null);
             }
         });
     }
 
-    private void setXpubTooltip(ExtendedKey extendedKey) {
+    private void setXpubContext(ExtendedKey extendedKey) {
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem copyXPub = new MenuItem("Copy xPub");
+        copyXPub.setOnAction(AE -> {
+            contextMenu.hide();
+            ClipboardContent content = new ClipboardContent();
+            content.putString(extendedKey.toString());
+            Clipboard.getSystemClipboard().setContent(content);
+        });
+        contextMenu.getItems().add(copyXPub);
+
         ExtendedKey.Header header = ExtendedKey.Header.fromScriptType(walletForm.getWallet().getScriptType(), false);
         if(header != ExtendedKey.Header.xpub) {
-            Tooltip tooltip = new Tooltip(extendedKey.getExtendedKey(header));
+            String otherPub = extendedKey.getExtendedKey(header);
+
+            MenuItem copyOtherPub = new MenuItem("Copy " + header.getName().replace('p', 'P'));
+            copyOtherPub.setOnAction(AE -> {
+                contextMenu.hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(otherPub);
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+            contextMenu.getItems().add(copyOtherPub);
+
+            Tooltip tooltip = new Tooltip(otherPub);
             xpub.setTooltip(tooltip);
         } else {
             xpub.setTooltip(null);
         }
+
+        xpub.setContextMenu(contextMenu);
     }
 
     public void selectSource(ActionEvent event) {
@@ -309,7 +334,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 derivation.setText(derivationPath);
             }
             if(keystore.getExtendedPublicKey() != null) {
-                setXpubTooltip(keystore.getExtendedPublicKey());
+                setXpubContext(keystore.getExtendedPublicKey());
             }
         }
     }
