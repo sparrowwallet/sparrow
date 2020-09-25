@@ -172,7 +172,7 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
-            createButton.setDisable(walletTransactionProperty.get() == null || newValue == null || newValue.isEmpty());
+            createButton.setDisable(walletTransactionProperty.get() == null || newValue == null || newValue.isEmpty() || isInsufficientFeeRate());
         });
 
         amount.setTextFormatter(new CoinTextFormatter());
@@ -275,7 +275,7 @@ public class SendController extends WalletFormController implements Initializabl
                     setFiatAmount(AppController.getFiatCurrencyExchangeRate(), walletTransaction.getRecipientAmount());
                 }
 
-                double feeRate = (double)walletTransaction.getFee() / walletTransaction.getTransaction().getVirtualSize();
+                double feeRate = walletTransaction.getFeeRate();
                 if(userFeeSet.get()) {
                     setTargetBlocks(getTargetBlocks(feeRate));
                 } else {
@@ -286,7 +286,7 @@ public class SendController extends WalletFormController implements Initializabl
             }
 
             transactionDiagram.update(walletTransaction);
-            createButton.setDisable(walletTransaction == null || label.getText().isEmpty());
+            createButton.setDisable(walletTransaction == null || label.getText().isEmpty() || isInsufficientFeeRate());
         });
 
         addValidation();
@@ -307,8 +307,7 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() != null && getFeeValueSats() == 0),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee Rate", walletTransactionProperty.get() != null &&
-                        (double)walletTransactionProperty.get().getFee() / walletTransactionProperty.get().getTransaction().getVirtualSize() < AppController.getMinimumRelayFeeRate())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee Rate", isInsufficientFeeRate())
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
@@ -458,6 +457,10 @@ public class SendController extends WalletFormController implements Initializabl
         Optional<Double> optMinFeeRate = getTargetBlocksFeeRates().values().stream().min(Double::compareTo);
         Double minRate = optMinFeeRate.orElse(FALLBACK_FEE_RATE);
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
+    }
+
+    private boolean isInsufficientFeeRate() {
+        return walletTransactionProperty.get() != null && walletTransactionProperty.get().getFeeRate() < AppController.getMinimumRelayFeeRate();
     }
 
     private void setFeeRate(Double feeRateAmt) {
