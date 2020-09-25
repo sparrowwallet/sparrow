@@ -152,6 +152,8 @@ public class SendController extends WalletFormController implements Initializabl
         }
     };
 
+    private ValidationSupport validationSupport;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -163,6 +165,10 @@ public class SendController extends WalletFormController implements Initializabl
             revalidate(amount, amountListener);
             maxButton.setDisable(!isValidRecipientAddress());
             updateTransaction();
+
+            if(validationSupport != null) {
+                validationSupport.setErrorDecorationEnabled(true);
+            }
         });
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -287,7 +293,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void addValidation() {
-        ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport = new ValidationSupport();
         validationSupport.registerValidator(address, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !newValue.isEmpty() && !isValidRecipientAddress())
         ));
@@ -537,6 +543,8 @@ public class SendController extends WalletFormController implements Initializabl
         targetBlocks.setValue(4);
         utxoSelectorProperty.setValue(null);
         walletTransactionProperty.setValue(null);
+
+        validationSupport.setErrorDecorationEnabled(false);
     }
 
     private void revalidate(TextField field, ChangeListener<String> listener) {
