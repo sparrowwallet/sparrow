@@ -27,7 +27,7 @@
     -fx-padding: 3 5;
 }
 
-.id {
+.id, .fixed-width {
     -fx-font-size: 13px;
     -fx-font-family: 'Roboto Mono';
 }

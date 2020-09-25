@@ -46,6 +46,10 @@ public class WalletForm {
         return storage.getWalletFile();
     }
 
+    public void setWallet(Wallet wallet) {
+        throw new UnsupportedOperationException("Only SettingsWalletForm supports setWallet");
+    }
+
     public void revert() {
         throw new UnsupportedOperationException("Only SettingsWalletForm supports revert");
     }

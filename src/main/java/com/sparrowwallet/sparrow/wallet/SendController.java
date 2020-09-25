@@ -562,8 +562,32 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            updateTransaction();
+            if(walletTransactionProperty.get() != null && walletTransactionProperty.get().getSelectedUtxos() != null && allSelectedUtxosSpent(event.getHistoryChangedNodes())) {
+                clear(null);
+            } else {
+                updateTransaction();
+            }
         }
+    }
+
+    private boolean allSelectedUtxosSpent(List<WalletNode> historyChangedNodes) {
+        Set<BlockTransactionHashIndex> unspentUtxos = new HashSet<>(walletTransactionProperty.get().getSelectedUtxos().keySet());
+
+        for(Map.Entry<BlockTransactionHashIndex, WalletNode> selectedUtxoEntry : walletTransactionProperty.get().getSelectedUtxos().entrySet()) {
+            BlockTransactionHashIndex utxo = selectedUtxoEntry.getKey();
+            WalletNode utxoWalletNode = selectedUtxoEntry.getValue();
+
+            for(WalletNode changedNode : historyChangedNodes) {
+                if(utxoWalletNode.equals(changedNode)) {
+                    Optional<BlockTransactionHashIndex> spentTxo = changedNode.getTransactionOutputs().stream().filter(txo -> txo.getHash().equals(utxo.getHash()) && txo.getIndex() == utxo.getIndex() && txo.isSpent()).findAny();
+                    if(spentTxo.isPresent()) {
+                        unspentUtxos.remove(utxo);
+                    }
+                }
+            }
+        }
+
+        return unspentUtxos.isEmpty();
     }
 
     @Subscribe

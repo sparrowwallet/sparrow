@@ -79,6 +79,7 @@
                                 <DescriptorArea fx:id="descriptor" editable="false" styleClass="uneditable-codearea" prefHeight="27" maxHeight="27" />
                             </content>
                         </VirtualizedScrollPane>
+                        <Button text="Edit..." onAction="#editDescriptor" />
                     </Field>
                 </Fieldset>
             </Form>

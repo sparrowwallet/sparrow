@@ -101,7 +101,7 @@
     -fx-border-width: 1px;
 }
 
-.root .duplicate-warning {
+.root .duplicate-warning, .root #transactionDiagram .fee-warning-icon {
     -fx-text-fill: #e06c75;
 }
 

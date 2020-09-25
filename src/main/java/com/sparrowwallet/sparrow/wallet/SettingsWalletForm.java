@@ -26,6 +26,11 @@ public class SettingsWalletForm extends WalletForm {
     }
 
     @Override
+    public void setWallet(Wallet wallet) {
+        this.walletCopy = wallet;
+    }
+
+    @Override
     public void revert() {
         this.walletCopy = super.getWallet().copy();
     }

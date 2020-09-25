@@ -84,7 +84,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         Platform.runLater(this::setupValidation);
 
         selectSourcePane.managedProperty().bind(selectSourcePane.visibleProperty());
-        if(keystore.isValid()) {
+        if(keystore.isValid() || keystore.getExtendedPublicKey() != null) {
             selectSourcePane.setVisible(false);
         }
 
@@ -303,7 +303,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     public void update(SettingsChangedEvent event) {
         if(walletForm.getWallet().equals(event.getWallet()) && event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE)) {
             derivation.setPromptText(event.getWallet().getScriptType().getDefaultDerivationPath());
-            if(!derivation.getText().isEmpty()) {
+            if(derivation.getText() != null && !derivation.getText().isEmpty()) {
                 String derivationPath = derivation.getText();
                 derivation.setText(derivationPath + " ");
                 derivation.setText(derivationPath);

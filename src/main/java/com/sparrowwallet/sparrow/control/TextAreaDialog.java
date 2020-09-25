@@ -5,6 +5,7 @@ import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 
 public class TextAreaDialog extends Dialog<String> {
     private final TextArea textArea;
@@ -21,7 +22,9 @@ public class TextAreaDialog extends Dialog<String> {
         this.textArea = new TextArea(defaultValue);
         this.textArea.setMaxWidth(Double.MAX_VALUE);
         this.textArea.setWrapText(true);
+        this.textArea.getStyleClass().add("fixed-width");
         hbox.getChildren().add(textArea);
+        HBox.setHgrow(this.textArea, Priority.ALWAYS);
 
         this.defaultValue = defaultValue;
 
@@ -38,6 +41,9 @@ public class TextAreaDialog extends Dialog<String> {
             ButtonBar.ButtonData data = dialogButton == null ? null : dialogButton.getButtonData();
             return data == ButtonBar.ButtonData.OK_DONE ? textArea.getText() : null;
         });
+
+        dialogPane.setPrefWidth(700);
+        dialogPane.setPrefHeight(400);
     }
 
     public final TextArea getEditor() {

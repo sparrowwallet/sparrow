@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
@@ -14,6 +15,7 @@ import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.DescriptorArea;
+import com.sparrowwallet.sparrow.control.TextAreaDialog;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
@@ -245,6 +247,34 @@ public class SettingsController extends WalletFormController implements Initiali
             return tab;
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void editDescriptor(ActionEvent event) {
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet());
+        String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
+
+        TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString);
+        dialog.setTitle("Edit wallet output descriptor");
+        dialog.getDialogPane().setHeaderText("Wallet output descriptor:");
+        Optional<String> text = dialog.showAndWait();
+        if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
+            try {
+                OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.get());
+                Wallet editedWallet = editedOutputDescriptor.toWallet();
+
+                editedWallet.setName(getWalletForm().getWallet().getName());
+                keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
+                totalKeystores.unbind();
+                totalKeystores.setValue(0);
+                walletForm.setWallet(editedWallet);
+                initialising = true;
+                setFieldsFromWallet(editedWallet);
+
+                EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
+            } catch(Exception e) {
+                AppController.showErrorDialog("Invalid output descriptor", e.getMessage());
+            }
         }
     }
 
