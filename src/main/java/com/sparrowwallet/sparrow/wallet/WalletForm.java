@@ -225,9 +225,11 @@ public class WalletForm {
 
     @Subscribe
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
-        WalletNode walletNode = event.getWalletNode(wallet);
-        if(walletNode != null) {
-            refreshHistory(AppController.getCurrentBlockHeight(), walletNode);
+        if(wallet.isValid()) {
+            WalletNode walletNode = event.getWalletNode(wallet);
+            if(walletNode != null) {
+                refreshHistory(AppController.getCurrentBlockHeight(), walletNode);
+            }
         }
     }
 
