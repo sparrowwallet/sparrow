@@ -18,6 +18,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 
@@ -26,6 +27,7 @@ import java.util.*;
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
     private static final double DIAGRAM_HEIGHT = 230.0;
+    private static final int TOOLTIP_SHOW_DELAY = 50;
 
     private WalletTransaction walletTx;
 
@@ -164,10 +166,10 @@ public class TransactionDiagram extends GridPane {
             Tooltip tooltip = new Tooltip();
             if(walletNode != null) {
                 tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + walletNode.getDerivationPath() + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                tooltip.getStyleClass().add("input-label");
+
                 if(input.getLabel() == null || input.getLabel().isEmpty()) {
                     label.getStyleClass().add("input-label");
-                } else {
-                    tooltip.getStyleClass().add("input-label");
                 }
             } else {
                 AdditionalBlockTransactionHashIndex additionalReference = (AdditionalBlockTransactionHashIndex)input;
@@ -178,6 +180,7 @@ public class TransactionDiagram extends GridPane {
                 tooltip.setText(joiner.toString());
                 tooltip.getStyleClass().add("input-label");
             }
+            tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             label.setTooltip(tooltip);
 
             inputsBox.getChildren().add(label);
@@ -289,6 +292,8 @@ public class TransactionDiagram extends GridPane {
         Label recipientLabel = new Label(recipientDesc, isConsolidation ? getConsolidationGlyph() : getPaymentGlyph());
         recipientLabel.getStyleClass().addAll("output-label", "recipient-label");
         Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(walletTx.getRecipientAmount()) + " sats to\n" + walletTx.getRecipientAddress().toString());
+        recipientTooltip.getStyleClass().add("recipient-label");
+        recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         recipientLabel.setTooltip(recipientTooltip);
         outputsBox.getChildren().add(recipientLabel);
         outputsBox.getChildren().add(createSpacer());
@@ -298,6 +303,8 @@ public class TransactionDiagram extends GridPane {
             Label changeLabel = new Label(changeDesc, getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
             Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + walletTx.getChangeNode().getDerivationPath() + "\n" + walletTx.getChangeAddress().toString());
+            changeTooltip.getStyleClass().add("change-label");
+            changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeLabel.setTooltip(changeTooltip);
             outputsBox.getChildren().add(changeLabel);
             outputsBox.getChildren().add(createSpacer());
@@ -309,6 +316,7 @@ public class TransactionDiagram extends GridPane {
         String percentage = String.format("%.2f", walletTx.getFeePercentage() * 100.0);
         Tooltip feeTooltip = new Tooltip("Fee of " + getSatsValue(walletTx.getFee()) + " sats (" + percentage + "%)");
         feeTooltip.getStyleClass().add("fee-tooltip");
+        feeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         feeLabel.setTooltip(feeTooltip);
         outputsBox.getChildren().add(feeLabel);
         outputsBox.getChildren().add(createSpacer());
