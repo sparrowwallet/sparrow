@@ -4,11 +4,15 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
@@ -146,6 +150,16 @@ public class TransactionDiagram extends GridPane {
             WalletNode walletNode = displayedUtxos.get(input);
             String desc = getInputDescription(input);
             Label label = new Label(desc);
+            label.getStyleClass().add("utxo-label");
+
+            Button excludeUtxoButton = new Button("");
+            excludeUtxoButton.setGraphic(getExcludeGlyph());
+            excludeUtxoButton.setOnAction(event -> {
+                EventManager.get().post(new ExcludeUtxoEvent(walletTx, input));
+            });
+
+            label.setGraphic(excludeUtxoButton);
+            label.setContentDisplay(ContentDisplay.LEFT);
 
             Tooltip tooltip = new Tooltip();
             if(walletNode != null) {
@@ -324,6 +338,13 @@ public class TransactionDiagram extends GridPane {
         return spacer;
     }
 
+    public static Glyph getExcludeGlyph() {
+        Glyph excludeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.TIMES_CIRCLE);
+        excludeGlyph.getStyleClass().add("exclude-utxo");
+        excludeGlyph.setFontSize(12);
+        return excludeGlyph;
+    }
+
     public static Glyph getPaymentGlyph() {
         Glyph paymentGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
         paymentGlyph.getStyleClass().add("payment-icon");
@@ -332,35 +353,35 @@ public class TransactionDiagram extends GridPane {
     }
 
     public static Glyph getConsolidationGlyph() {
-        Glyph consolidationGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.REPLY_ALL);
+        Glyph consolidationGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.REPLY_ALL);
         consolidationGlyph.getStyleClass().add("consolidation-icon");
         consolidationGlyph.setFontSize(12);
         return consolidationGlyph;
     }
 
     public static Glyph getChangeGlyph() {
-        Glyph changeGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.COINS);
+        Glyph changeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.COINS);
         changeGlyph.getStyleClass().add("change-icon");
         changeGlyph.setFontSize(12);
         return changeGlyph;
     }
 
     private Glyph getFeeGlyph() {
-        Glyph feeGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.HAND_HOLDING);
+        Glyph feeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HAND_HOLDING);
         feeGlyph.getStyleClass().add("fee-icon");
         feeGlyph.setFontSize(12);
         return feeGlyph;
     }
 
     private Glyph getWarningGlyph() {
-        Glyph feeWarningGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+        Glyph feeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
         feeWarningGlyph.getStyleClass().add("fee-warning-icon");
         feeWarningGlyph.setFontSize(12);
         return feeWarningGlyph;
     }
 
     private Glyph getLockGlyph() {
-        Glyph lockGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.LOCK);
+        Glyph lockGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LOCK);
         lockGlyph.getStyleClass().add("lock-icon");
         lockGlyph.setFontSize(12);
         return lockGlyph;

@@ -93,6 +93,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final ObjectProperty<UtxoSelector> utxoSelectorProperty = new SimpleObjectProperty<>(null);
 
+    private final ObjectProperty<UtxoFilter> utxoFilterProperty = new SimpleObjectProperty<>(null);
+
     private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
@@ -256,16 +258,11 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         utxoSelectorProperty.addListener((observable, oldValue, utxoSelector) -> {
-            if(utxoSelector instanceof PresetUtxoSelector) {
-                PresetUtxoSelector presetUtxoSelector = (PresetUtxoSelector)utxoSelector;
-                int num = presetUtxoSelector.getPresetUtxos().size();
-                String selection = " (" + num + " UTXO" + (num > 1 ? "s" : "") + " selected)";
-                maxButton.setText("Max" + selection);
-                clearButton.setText("Clear" + selection);
-            } else {
-                maxButton.setText("Max");
-                clearButton.setText("Clear");
-            }
+            updateMaxClearButtons(utxoSelector, utxoFilterProperty.get());
+        });
+
+        utxoFilterProperty.addListener((observable, oldValue, utxoFilter) -> {
+            updateMaxClearButtons(utxoSelectorProperty.get(), utxoFilter);
         });
 
         walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
@@ -328,7 +325,7 @@ public class SendController extends WalletFormController implements Initializabl
                 Integer currentBlockHeight = AppController.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolChange = Config.get().isIncludeMempoolChange();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, sendAll, groupByAddress, includeMempoolChange);
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, sendAll, groupByAddress, includeMempoolChange);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 
@@ -353,6 +350,15 @@ public class SendController extends WalletFormController implements Initializabl
         long costOfChange = wallet.getCostOfChange(getFeeRate(), getMinimumFeeRate());
 
         return List.of(new BnBUtxoSelector(noInputsFee, costOfChange), new KnapsackUtxoSelector(noInputsFee));
+    }
+
+    private List<UtxoFilter> getUtxoFilters() {
+        UtxoFilter utxoFilter = utxoFilterProperty.get();
+        if(utxoFilter != null) {
+            return List.of(utxoFilter);
+        }
+
+        return Collections.emptyList();
     }
 
     private boolean isValidRecipientAddress() {
@@ -471,10 +477,6 @@ public class SendController extends WalletFormController implements Initializabl
         return targetBlocks.lookup(".thumb");
     }
 
-    public void setUtxoSelector(UtxoSelector utxoSelector) {
-        utxoSelectorProperty.set(utxoSelector);
-    }
-
     public void setMaxInput(ActionEvent event) {
         UtxoSelector utxoSelector = utxoSelectorProperty.get();
         if(utxoSelector == null) {
@@ -507,6 +509,25 @@ public class SendController extends WalletFormController implements Initializabl
 
         TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
         return address.getScriptType().getDustThreshold(txOutput, getFeeRate());
+    }
+
+    private void updateMaxClearButtons(UtxoSelector utxoSelector, UtxoFilter utxoFilter) {
+        if(utxoSelector instanceof PresetUtxoSelector) {
+            PresetUtxoSelector presetUtxoSelector = (PresetUtxoSelector)utxoSelector;
+            int num = presetUtxoSelector.getPresetUtxos().size();
+            String selection = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " selected)";
+            maxButton.setText("Max" + selection);
+            clearButton.setText("Clear" + selection);
+        } else if(utxoFilter instanceof ExcludeUtxoFilter) {
+            ExcludeUtxoFilter excludeUtxoFilter = (ExcludeUtxoFilter)utxoFilter;
+            int num = excludeUtxoFilter.getExcludedUtxos().size();
+            String exclusion = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " excluded)";
+            maxButton.setText("Max" + exclusion);
+            clearButton.setText("Clear" + exclusion);
+        } else {
+            maxButton.setText("Max");
+            clearButton.setText("Clear");
+        }
     }
 
     public void scanQrAddress(ActionEvent event) {
@@ -547,6 +568,7 @@ public class SendController extends WalletFormController implements Initializabl
         userFeeSet.set(false);
         targetBlocks.setValue(4);
         utxoSelectorProperty.setValue(null);
+        utxoFilterProperty.setValue(null);
         walletTransactionProperty.setValue(null);
 
         validationSupport.setErrorDecorationEnabled(false);
@@ -621,7 +643,8 @@ public class SendController extends WalletFormController implements Initializabl
     public void spendUtxos(SpendUtxoEvent event) {
         if(!event.getUtxoEntries().isEmpty() && event.getUtxoEntries().get(0).getWallet().equals(getWalletForm().getWallet())) {
             List<BlockTransactionHashIndex> utxos = event.getUtxoEntries().stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
-            setUtxoSelector(new PresetUtxoSelector(utxos));
+            utxoSelectorProperty.set(new PresetUtxoSelector(utxos));
+            utxoFilterProperty.set(null);
             updateTransaction(true);
         }
     }
@@ -648,5 +671,38 @@ public class SendController extends WalletFormController implements Initializabl
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         setFiatAmount(event.getCurrencyRate(), getRecipientValueSats());
         setFiatFeeAmount(event.getCurrencyRate(), getFeeValueSats());
+    }
+
+    @Subscribe
+    public void excludeUtxo(ExcludeUtxoEvent event) {
+        if(event.getWalletTransaction() == walletTransactionProperty.get()) {
+            UtxoSelector utxoSelector = utxoSelectorProperty.get();
+            if(utxoSelector instanceof MaxUtxoSelector) {
+                Collection<BlockTransactionHashIndex> utxos = walletForm.getWallet().getWalletUtxos().keySet();
+                utxos.remove(event.getUtxo());
+                if(utxoFilterProperty.get() instanceof ExcludeUtxoFilter) {
+                    ExcludeUtxoFilter existingUtxoFilter = (ExcludeUtxoFilter)utxoFilterProperty.get();
+                    utxos.removeAll(existingUtxoFilter.getExcludedUtxos());
+                }
+                PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(utxos);
+                utxoSelectorProperty.set(presetUtxoSelector);
+                updateTransaction(true);
+            } else if(utxoSelector instanceof PresetUtxoSelector) {
+                PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(((PresetUtxoSelector)utxoSelector).getPresetUtxos());
+                presetUtxoSelector.getPresetUtxos().remove(event.getUtxo());
+                utxoSelectorProperty.set(presetUtxoSelector);
+                updateTransaction(true);
+            } else {
+                ExcludeUtxoFilter utxoFilter = new ExcludeUtxoFilter();
+                if(utxoFilterProperty.get() instanceof ExcludeUtxoFilter) {
+                    ExcludeUtxoFilter existingUtxoFilter = (ExcludeUtxoFilter)utxoFilterProperty.get();
+                    utxoFilter.getExcludedUtxos().addAll(existingUtxoFilter.getExcludedUtxos());
+                }
+
+                utxoFilter.getExcludedUtxos().add(event.getUtxo());
+                utxoFilterProperty.set(utxoFilter);
+                updateTransaction();
+            }
+        }
     }
 }

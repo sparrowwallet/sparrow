@@ -66,3 +66,19 @@
     -fx-stroke: #696c77;
     -fx-stroke-width: 1px;
 }
+
+#transactionDiagram .utxo-label .button {
+    -fx-padding: 0;
+    -fx-pref-height: 18;
+    -fx-pref-width: 18;
+    -fx-border-width: 0;
+    -fx-background-color: -fx-background;
+}
+
+#transactionDiagram .utxo-label .button .label .text {
+    -fx-fill: -fx-background;
+}
+
+#transactionDiagram .utxo-label:hover .button .label .text {
+    -fx-fill: -fx-text-base-color;
+}
