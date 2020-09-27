@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
@@ -53,7 +54,8 @@ public class Specter implements WalletImport, WalletExport {
             SpecterWallet specterWallet = gson.fromJson(new InputStreamReader(inputStream), SpecterWallet.class);
 
             if(specterWallet.descriptor != null) {
-                OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(specterWallet.descriptor);
+                //TODO: get from settings or user input
+                OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(Network.BITCOIN, specterWallet.descriptor);
                 Wallet wallet = outputDescriptor.toWallet();
                 wallet.setName(specterWallet.label);
 

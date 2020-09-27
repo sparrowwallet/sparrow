@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
@@ -78,7 +79,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
-        Wallet wallet = new Wallet();
+        //TODO: get from settings or user input
+        Wallet wallet = new Wallet(Network.BITCOIN);
         wallet.setPolicyType(PolicyType.MULTI);
 
         int threshold = 2;

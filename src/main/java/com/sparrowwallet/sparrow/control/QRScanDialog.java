@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Base43;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.sparrow.AppController;
@@ -22,13 +23,15 @@ import javafx.scene.layout.StackPane;
 import org.controlsfx.tools.Borders;
 
 public class QRScanDialog extends Dialog<QRScanDialog.Result> {
+    private final Network network;
     private final URDecoder decoder;
     private final WebcamService webcamService;
 
     private boolean isUr;
     private QRScanDialog.Result result;
 
-    public QRScanDialog() {
+    public QRScanDialog(Network network) {
+        this.network = network;
         this.decoder = new URDecoder();
 
         this.webcamService = new WebcamService(WebcamResolution.VGA);
@@ -78,7 +81,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         //TODO: Confirm once UR type registry is updated
                         if(urResult.ur.getType().contains(UR.BYTES_TYPE) || urResult.ur.getType().equals(UR.CRYPTO_PSBT_TYPE)) {
                             try {
-                                PSBT psbt = new PSBT(urResult.ur.toBytes());
+                                PSBT psbt = new PSBT(network, urResult.ur.toBytes());
                                 result = new Result(psbt);
                                 return;
                             } catch(Exception e) {
@@ -107,7 +110,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 BitcoinURI bitcoinURI;
                 Address address;
                 try {
-                    bitcoinURI = new BitcoinURI(qrtext);
+                    bitcoinURI = new BitcoinURI(network, qrtext);
                     result = new Result(bitcoinURI);
                     return;
                 } catch(Exception e) {
@@ -115,15 +118,15 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 try {
-                    address = Address.fromString(qrtext);
-                    result = new Result(address);
+                    address = Address.fromString(network, qrtext);
+                    result = new Result(network, address);
                     return;
                 } catch(Exception e) {
                     //Ignore, not an address
                 }
 
                 try {
-                    psbt = PSBT.fromString(qrtext);
+                    psbt = PSBT.fromString(network, qrtext);
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -131,7 +134,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 try {
-                    psbt = new PSBT(qrResult.getRawBytes());
+                    psbt = new PSBT(network, qrResult.getRawBytes());
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -156,7 +159,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
                 //Try Base43 used by Electrum
                 try {
-                    psbt = new PSBT(Base43.decode(qrResult.getText()));
+                    psbt = new PSBT(network, Base43.decode(qrResult.getText()));
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -207,10 +210,10 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.exception = null;
         }
 
-        public Result(Address address) {
+        public Result(Network network, Address address) {
             this.transaction = null;
             this.psbt = null;
-            this.uri = BitcoinURI.fromAddress(address);
+            this.uri = BitcoinURI.fromAddress(network, address);
             this.error = null;
             this.exception = null;
         }

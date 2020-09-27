@@ -71,7 +71,7 @@ public class OutputController extends TransactionFormController implements Initi
         value.setValue(txOutput.getValue());
         to.setVisible(false);
         try {
-            Address[] addresses = txOutput.getScript().getToAddresses();
+            Address[] addresses = txOutput.getScript().getToAddresses(getTransactionForm().getSigningWallet().getNetwork());
             to.setVisible(true);
             if(addresses.length == 1) {
                 address.setAddress(addresses[0]);

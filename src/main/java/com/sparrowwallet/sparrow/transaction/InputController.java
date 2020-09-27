@@ -197,7 +197,7 @@ public class InputController extends TransactionFormController implements Initia
         if (output != null) {
             spends.setValue(output.getValue());
             try {
-                Address[] addresses = output.getScript().getToAddresses();
+                Address[] addresses = output.getScript().getToAddresses(getTransactionForm().getSigningWallet().getNetwork());
                 from.setVisible(true);
                 if (addresses.length == 1) {
                     address.setAddress(addresses[0]);

@@ -70,6 +70,8 @@ public class Hwi {
     }
 
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
+        //TODO: use --testnet if using testnet
+        
         try {
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
@@ -91,6 +93,7 @@ public class Hwi {
     }
 
     public String displayAddress(Device device, String passphrase, ScriptType scriptType, String derivationPath) throws DisplayAddressException {
+        //TODO: use --testnet if using testnet
         try {
             if(!List.of(ScriptType.P2PKH, ScriptType.P2SH_P2WPKH, ScriptType.P2WPKH).contains(scriptType)) {
                 throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single sig types supported");
@@ -169,7 +172,7 @@ public class Hwi {
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
             if(result.get("psbt") != null) {
                 String strPsbt = result.get("psbt").getAsString();
-                return PSBT.fromString(strPsbt);
+                return PSBT.fromString(psbt.getNetwork(), strPsbt);
             } else {
                 JsonElement error = result.get("error");
                 if(error != null && error.getAsString().equals("sign_tx canceled")) {

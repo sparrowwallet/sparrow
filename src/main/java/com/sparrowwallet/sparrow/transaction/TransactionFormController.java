@@ -32,7 +32,7 @@ public abstract class TransactionFormController extends BaseController {
             TransactionOutput output = outputs.get(i);
             String name = "#" + i;
             try {
-                Address[] addresses = output.getScript().getToAddresses();
+                Address[] addresses = output.getScript().getToAddresses(getTransactionForm().getSigningWallet().getNetwork());
                 if(addresses.length == 1) {
                     name = name + " " + addresses[0].getAddress();
                 } else {

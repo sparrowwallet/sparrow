@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
@@ -45,6 +46,9 @@ import java.util.stream.Collectors;
 
 public class SettingsController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
+
+    @FXML
+    private ComboBox<Network> network;
 
     @FXML
     private ComboBox<PolicyType> policyType;
@@ -91,6 +95,12 @@ public class SettingsController extends WalletFormController implements Initiali
     public void initializeView() {
         keystoreTabs = new TabPane();
         keystoreTabsPane.getChildren().add(keystoreTabs);
+
+        network.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, network) -> {
+            walletForm.getWallet().setNetwork(network);
+
+            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.NETWORK));
+        });
 
         policyType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, policyType) -> {
             walletForm.getWallet().setPolicyType(policyType);
@@ -190,6 +200,8 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     private void setFieldsFromWallet(Wallet wallet) {
+        network.getSelectionModel().select(walletForm.getWallet().getNetwork());
+
         if(wallet.getPolicyType() == null) {
             wallet.setPolicyType(PolicyType.SINGLE);
             wallet.setScriptType(ScriptType.P2WPKH);
@@ -260,7 +272,7 @@ public class SettingsController extends WalletFormController implements Initiali
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
             try {
-                OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.get());
+                OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet().getNetwork(), text.get());
                 Wallet editedWallet = editedOutputDescriptor.toWallet();
 
                 editedWallet.setName(getWalletForm().getWallet().getName());

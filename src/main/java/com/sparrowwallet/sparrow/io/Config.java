@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import org.slf4j.Logger;
@@ -17,6 +18,7 @@ public class Config {
 
     public static final String CONFIG_FILENAME = "config";
 
+    private Network network = Network.BITCOIN;
     private Mode mode;
     private BitcoinUnit bitcoinUnit;
     private Currency fiatCurrency;
@@ -73,6 +75,10 @@ public class Config {
         }
 
         return INSTANCE;
+    }
+    
+    public Network getNetwork() {
+        return network;
     }
 
     public Mode getMode() {

@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -57,7 +58,8 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes);
         Keystore keystore = importer.getKeystore(scriptType, bais, "");
 
-        Wallet wallet = new Wallet();
+        //TODO: use user input here
+        Wallet wallet = new Wallet(Network.BITCOIN);
         wallet.setName(fileName);
         wallet.setPolicyType(PolicyType.SINGLE);
         wallet.setScriptType(scriptType);

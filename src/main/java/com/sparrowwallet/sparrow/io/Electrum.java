@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -117,7 +118,8 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                 }
             }
 
-            Wallet wallet = new Wallet();
+            //TODO: get from settings or user input
+            Wallet wallet = new Wallet(Network.BITCOIN);
             ScriptType scriptType = null;
 
             for(ElectrumKeystore ek : ew.keystores.values()) {

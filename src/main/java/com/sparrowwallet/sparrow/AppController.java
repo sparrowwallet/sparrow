@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -551,7 +552,8 @@ public class AppController implements Initializable {
     }
 
     public void openTransactionFromQR(ActionEvent event) {
-        QRScanDialog qrScanDialog = new QRScanDialog();
+        //TODO: is wallet always valid???
+        QRScanDialog qrScanDialog = new QRScanDialog(getWalletForCurrentTab().getNetwork());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
@@ -746,7 +748,8 @@ public class AppController implements Initializable {
         if(walletName.isPresent()) {
             File walletFile = Storage.getWalletFile(walletName.get());
             Storage storage = new Storage(walletFile);
-            Wallet wallet = new Wallet(walletName.get(), PolicyType.SINGLE, ScriptType.P2WPKH);
+            //TODO: get from settings or user input
+            Wallet wallet = new Wallet(Network.BITCOIN, walletName.get(), PolicyType.SINGLE, ScriptType.P2WPKH);
             Tab tab = addWalletTab(storage, wallet);
             tabs.getSelectionModel().select(tab);
         }
@@ -911,18 +914,23 @@ public class AppController implements Initializable {
         PreferencesDialog preferencesDialog = new PreferencesDialog();
         preferencesDialog.showAndWait();
     }
-
-    public void signVerifyMessage(ActionEvent event) {
-        MessageSignDialog messageSignDialog = null;
+    
+    public Wallet getWalletForCurrentTab() {
         Tab tab = tabs.getSelectionModel().getSelectedItem();
         if(tab != null && tab.getUserData() instanceof WalletTabData) {
             WalletTabData walletTabData = (WalletTabData)tab.getUserData();
-            Wallet wallet = walletTabData.getWallet();
-            if(wallet.getKeystores().size() == 1 &&
-                    (wallet.getKeystores().get(0).hasSeed() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
-                //Can sign and verify
-                messageSignDialog = new MessageSignDialog(wallet);
-            }
+            return walletTabData.getWallet();
+        }
+        return null;
+    }
+
+    public void signVerifyMessage(ActionEvent event) {
+        MessageSignDialog messageSignDialog = null;
+        Wallet wallet = getWalletForCurrentTab();
+        if(wallet != null && wallet.getKeystores().size() == 1 &&
+            (wallet.getKeystores().get(0).hasSeed() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
+            //Can sign and verify
+            messageSignDialog = new MessageSignDialog(wallet);
         }
 
         if(messageSignDialog == null) {
@@ -1001,7 +1009,9 @@ public class AppController implements Initializable {
 
     private Tab addTransactionTab(String name, byte[] bytes) throws PSBTParseException, ParseException, TransactionParseException {
         if(PSBT.isPSBT(bytes)) {
-            PSBT psbt = new PSBT(bytes);
+            //TODO: test this is called from a wallet tab
+            Wallet wallet = getWalletForCurrentTab();
+            PSBT psbt = new PSBT(wallet.getNetwork(), bytes);
             return addTransactionTab(name, psbt);
         }
 

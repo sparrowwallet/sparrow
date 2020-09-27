@@ -870,7 +870,7 @@ public class HeadersController extends TransactionFormController implements Init
                 if(headersForm.getPsbt().isSigned()) {
                     if(headersForm.getSigningWallet() == null) {
                         //As no signing wallet is available, but we want to show the PSBT has been signed and automatically finalize it, construct a special wallet with default named keystores
-                        Wallet signedWallet = new FinalizingPSBTWallet(headersForm.getPsbt());
+                        Wallet signedWallet = new FinalizingPSBTWallet(getTransactionForm().getSigningWallet().getNetwork(), headersForm.getPsbt());
                         headersForm.setSigningWallet(signedWallet);
                     }
 
@@ -920,7 +920,7 @@ public class HeadersController extends TransactionFormController implements Init
             if(headersForm.getSigningWallet() != null) {
                 updateSignedKeystores(headersForm.getSigningWallet());
             } else if(headersForm.getPsbt().isSigned()) {
-                Wallet signedWallet = new FinalizingPSBTWallet(headersForm.getPsbt());
+                Wallet signedWallet = new FinalizingPSBTWallet(getTransactionForm().getSigningWallet().getNetwork(), headersForm.getPsbt());
                 headersForm.setSigningWallet(signedWallet);
                 finalizePSBT();
                 EventManager.get().post(new FinalizeTransactionEvent(headersForm.getPsbt(), signedWallet));

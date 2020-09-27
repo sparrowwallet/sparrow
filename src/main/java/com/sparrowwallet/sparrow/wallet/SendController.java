@@ -371,7 +371,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
-        return Address.fromString(address.getText());
+        return Address.fromString(getWalletForm().getWallet().getNetwork(), address.getText());
     }
 
     private Long getRecipientValueSats() {
@@ -504,7 +504,7 @@ public class SendController extends WalletFormController implements Initializabl
         try {
             address = getRecipientAddress();
         } catch(InvalidAddressException e) {
-            address = new P2PKHAddress(new byte[20]);
+            address = new P2PKHAddress(getWalletForm().getWallet().getNetwork(), new byte[20]);
         }
 
         TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
@@ -531,7 +531,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void scanQrAddress(ActionEvent event) {
-        QRScanDialog qrScanDialog = new QRScanDialog();
+        QRScanDialog qrScanDialog = new QRScanDialog(getWalletForm().getWallet().getNetwork());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
