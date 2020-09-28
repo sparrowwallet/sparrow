@@ -1,10 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.drongo.ExtendedKey;
-import com.sparrowwallet.drongo.KeyDerivation;
-import com.sparrowwallet.drongo.SecureString;
-import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -148,7 +145,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         contextMenu.getItems().add(copyXPub);
 
         ExtendedKey.Header header = ExtendedKey.Header.fromScriptType(walletForm.getWallet().getScriptType(), false);
-        if(header != ExtendedKey.Header.xpub) {
+        if(header != Network.get().getXpubHeader()) {
             String otherPub = extendedKey.getExtendedKey(header);
 
             MenuItem copyOtherPub = new MenuItem("Copy " + header.getName().replace('p', 'P'));

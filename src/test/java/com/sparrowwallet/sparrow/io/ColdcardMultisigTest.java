@@ -2,10 +2,12 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.ByteStreams;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -14,6 +16,7 @@ import java.io.*;
 public class ColdcardMultisigTest extends IoTest {
     @Test
     public void importKeystore1() throws ImportException {
+        Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Keystore keystore = ccMultisig.getKeystore(ScriptType.P2SH_P2WSH, getInputStream("cc-multisig-keystore-1.json"), null);
         Assert.assertEquals("Coldcard", keystore.getLabel());
@@ -31,6 +34,7 @@ public class ColdcardMultisigTest extends IoTest {
 
     @Test
     public void importKeystore2() throws ImportException {
+        Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Keystore keystore = ccMultisig.getKeystore(ScriptType.P2SH, getInputStream("cc-multisig-keystore-2.json"), null);
         Assert.assertEquals("Coldcard", keystore.getLabel());
@@ -42,6 +46,7 @@ public class ColdcardMultisigTest extends IoTest {
 
     @Test
     public void importKeystore2b() throws ImportException {
+        Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Keystore keystore = ccMultisig.getKeystore(ScriptType.P2WSH, getInputStream("cc-multisig-keystore-2.json"), null);
         Assert.assertEquals("Coldcard", keystore.getLabel());
@@ -65,6 +70,7 @@ public class ColdcardMultisigTest extends IoTest {
 
     @Test
     public void importWallet2() throws ImportException {
+        Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("cc-multisig-export-2.txt"), null);
         Assert.assertEquals("CC-2-of-4", wallet.getName());
@@ -116,5 +122,10 @@ public class ColdcardMultisigTest extends IoTest {
         String original = new String(walletBytes);
         String exported = new String(exportedBytes);
         Assert.assertEquals(original.replaceAll("Exported from Electrum", ""), exported.replace("Coldcard Multisig setup file (created by Sparrow)\n#", ""));
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        Network.set(null);
     }
 }

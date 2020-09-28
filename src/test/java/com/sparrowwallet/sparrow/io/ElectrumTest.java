@@ -1,11 +1,13 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.ByteStreams;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -50,6 +52,7 @@ public class ElectrumTest extends IoTest {
 
     @Test
     public void testMultisigImport() throws ImportException {
+        Network.set(Network.TESTNET);
         Electrum electrum = new Electrum();
         Wallet wallet = electrum.importWallet(getInputStream("electrum-multisig-wallet.json"), null);
 
@@ -59,7 +62,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("6ba6cfd0", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
-        Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+        Assert.assertEquals("tpubDFcrvj5n7gyatVbr8dHCUfHT4CGvL8hREBjtxc4ge7HZgqNuPhFimPRtVg6fRRwfXiQthV9EBjNbwbpgV2VoQeL1ZNXoAWXxP2L9vMtRjax", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assert.assertEquals("7bb026be", wallet.getKeystores().get(2).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(2).getKeyDerivation().getDerivationPath());
         Assert.assertTrue(wallet.isValid());
@@ -67,6 +70,7 @@ public class ElectrumTest extends IoTest {
 
     @Test
     public void testMultisigExport() throws ImportException, ExportException, IOException {
+        Network.set(Network.TESTNET);
         Electrum electrum = new Electrum();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-multisig-wallet.json"));
         Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
@@ -81,7 +85,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("6ba6cfd0", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
-        Assert.assertEquals("xpub6FFEQVG6QR28chQzgSJ7Gjx5j5BGLkCMgZ9bc41YJCXfwYiCKUQdcwm4Fe1stvzRjosz5udMedYZFRL56AeZXCsiVmnVUysio4jkAKTukmN", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+        Assert.assertEquals("tpubDFcrvj5n7gyatVbr8dHCUfHT4CGvL8hREBjtxc4ge7HZgqNuPhFimPRtVg6fRRwfXiQthV9EBjNbwbpgV2VoQeL1ZNXoAWXxP2L9vMtRjax", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assert.assertEquals("7bb026be", wallet.getKeystores().get(2).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(2).getKeyDerivation().getDerivationPath());
     }
@@ -122,5 +126,10 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals("xpub68YmVxWbxqjpxbUqqaPrgkBQPBSJuq6gEaL22uuytSEojtS2x5eLPN2uspUuyigtnMkoHrFSF1KwoXPwjzuaUjErUwztxfHquAwuaQhSd9J", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assert.assertEquals(wallet.getKeystores().get(0).getSeed().getMnemonicString().asString(), "coach fan denial rifle frost rival join install one wasp cool antique");
         Assert.assertEquals("e14c40c638e2c83d1f20e5ee9cd744bc2ba1ef64fa939926f3778fc8735e891f56852f687b32bbd044f272d2831137e3eeba61fd1f285fa73dcc97d9f2be3cd1", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getSeedBytes()));
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        Network.set(null);
     }
 }
