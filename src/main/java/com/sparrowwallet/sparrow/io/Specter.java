@@ -48,14 +48,13 @@ public class Specter implements WalletImport, WalletExport {
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+    public Wallet importWallet(Network network, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
             SpecterWallet specterWallet = gson.fromJson(new InputStreamReader(inputStream), SpecterWallet.class);
 
             if(specterWallet.descriptor != null) {
-                //TODO: get from settings or user input
-                OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(Network.BITCOIN, specterWallet.descriptor);
+                OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(network, specterWallet.descriptor);
                 Wallet wallet = outputDescriptor.toWallet();
                 wallet.setName(specterWallet.label);
 

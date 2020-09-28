@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -19,8 +20,8 @@ public class FileKeystoreImportPane extends FileImportPane {
         this.importer = importer;
     }
 
-    protected void importFile(String fileName, InputStream inputStream, String password) throws ImportException {
-        Keystore keystore = importer.getKeystore(wallet.getScriptType(), inputStream, password);
+    protected void importFile(Network network, String fileName, InputStream inputStream, String password) throws ImportException {
+        Keystore keystore = importer.getKeystore(network, wallet.getScriptType(), inputStream, password);
         EventManager.get().post(new KeystoreImportEvent(keystore));
     }
 }

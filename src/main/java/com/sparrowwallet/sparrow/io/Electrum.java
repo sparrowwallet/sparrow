@@ -37,8 +37,8 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
-        Wallet wallet = importWallet(inputStream, password);
+    public Keystore getKeystore(Network network, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = importWallet(network, inputStream, password);
 
         if(!wallet.getPolicyType().equals(PolicyType.SINGLE) || wallet.getKeystores().size() != 1) {
             throw new ImportException("Multisig wallet detected - import it using File > Import Wallet");
@@ -53,7 +53,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+    public Wallet importWallet(Network network, InputStream inputStream, String password) throws ImportException {
         Reader reader;
         if(password != null) {
             ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password);
@@ -118,8 +118,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                 }
             }
 
-            //TODO: get from settings or user input
-            Wallet wallet = new Wallet(Network.BITCOIN);
+            Wallet wallet = new Wallet(network);
             ScriptType scriptType = null;
 
             for(ElectrumKeystore ek : ew.keystores.values()) {

@@ -191,8 +191,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private Address getAddress()throws InvalidAddressException {
-        //TODO: is wallet always valid???
-        return Address.fromString(wallet.getNetwork(), address.getText());
+        return Address.fromStringAnyNetwork(address.getText());
     }
 
     private boolean isValidAddress() {
@@ -299,8 +298,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             throw new IllegalArgumentException("Only single signature P2PKH, P2SH-P2WPKH or P2WPKH addresses can verify messages.");
         }
 
-        //TODO: wallet is not always valid!!!
-        Address signedMessageAddress = scriptType.getAddress(wallet.getNetwork(), signedMessageKey);
+        Address signedMessageAddress = scriptType.getAddress(providedAddress.getNetwork(), signedMessageKey);
         return providedAddress.equals(signedMessageAddress);
     }
 

@@ -33,7 +33,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(Network network, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         InputStreamReader reader = new InputStreamReader(inputStream);
         ColdcardKeystore cck = Storage.getGson().fromJson(reader, ColdcardKeystore.class);
 
@@ -78,9 +78,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     }
 
     @Override
-    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
-        //TODO: get from settings or user input
-        Wallet wallet = new Wallet(Network.BITCOIN);
+    public Wallet importWallet(Network network, InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = new Wallet(network);
         wallet.setPolicyType(PolicyType.MULTI);
 
         int threshold = 2;

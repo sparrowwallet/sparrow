@@ -1,11 +1,11 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.wallet.Keystore;
 
-import java.io.File;
 import java.io.InputStream;
 
 public interface KeystoreFileImport extends KeystoreImport, FileImport {
-    Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException;
+    Keystore getKeystore(Network network, ScriptType scriptType, InputStream inputStream, String password) throws ImportException;
 }

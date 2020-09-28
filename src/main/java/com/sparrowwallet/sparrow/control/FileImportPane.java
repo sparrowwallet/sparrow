@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.sparrow.io.FileImport;
 import com.sparrowwallet.sparrow.io.ImportException;
 import javafx.beans.property.SimpleStringProperty;
@@ -23,6 +24,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.Optional;
 
 public abstract class FileImportPane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(FileImportPane.class);
@@ -49,6 +51,13 @@ public abstract class FileImportPane extends TitledDescriptionPane {
     private void importFile() {
         Stage window = new Stage();
 
+        //TODO:TESTNET - it would be nice to integrate this with the file select dialog
+        NetworkDialog dlg = new NetworkDialog();
+        Optional<Network> network = dlg.showAndWait();
+        if (network.isEmpty()) {
+            return;
+        }
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open " + importer.getWalletModel().toDisplayString() + " File");
         fileChooser.getExtensionFilters().addAll(
@@ -58,22 +67,22 @@ public abstract class FileImportPane extends TitledDescriptionPane {
 
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
-            importFile(file, null);
+            importFile(network.get(), file, null);
         }
     }
 
-    private void importFile(File file, String password) {
+    private void importFile(Network network, File file, String password) {
         if(file.exists()) {
             try {
                 if(importer.isEncrypted(file) && password == null) {
                     setDescription("Password Required");
                     showHideLink.setVisible(false);
-                    setContent(getPasswordEntry(file));
+                    setContent(getPasswordEntry(network, file));
                     importButton.setDisable(true);
                     setExpanded(true);
                 } else {
                     InputStream inputStream = new BufferedInputStream(new FileInputStream(file));
-                    importFile(file.getName(), inputStream, password);
+                    importFile(network, file.getName(), inputStream, password);
                 }
             } catch (Exception e) {
                 log.error("Error importing file", e);
@@ -93,9 +102,9 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         }
     }
 
-    protected abstract void importFile(String fileName, InputStream inputStream, String password) throws ImportException;
+    protected abstract void importFile(Network network, String fileName, InputStream inputStream, String password) throws ImportException;
 
-    private Node getPasswordEntry(File file) {
+    private Node getPasswordEntry(Network network, File file) {
         CustomPasswordField passwordField = (CustomPasswordField) TextFields.createClearablePasswordField();
         passwordField.setPromptText("Wallet password");
         password.bind(passwordField.textProperty());
@@ -105,7 +114,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         importEncryptedButton.setOnAction(event -> {
             showHideLink.setVisible(true);
             setExpanded(false);
-            importFile(file, password.get());
+            importFile(network, file, password.get());
         });
 
         HBox contentBox = new HBox();

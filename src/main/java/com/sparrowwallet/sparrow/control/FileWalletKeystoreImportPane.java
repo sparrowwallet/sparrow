@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 
 public class FileWalletKeystoreImportPane extends FileImportPane {
     private static final Logger log = LoggerFactory.getLogger(FileWalletKeystoreImportPane.class);
@@ -41,7 +42,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         this.importer = importer;
     }
 
-    protected void importFile(String fileName, InputStream inputStream, String password) throws ImportException {
+    protected void importFile(Network network, String fileName, InputStream inputStream, String password) throws ImportException {
         this.fileName = fileName;
         try {
             fileBytes = ByteStreams.toByteArray(inputStream);
@@ -49,17 +50,16 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
             throw new ImportException("Could not read file", e);
         }
 
-        setContent(getScriptTypeEntry());
+        setContent(getScriptTypeEntry(network));
         setExpanded(true);
         importButton.setDisable(true);
     }
 
-    private void importWallet(ScriptType scriptType) throws ImportException {
+    private void importWallet(Network network, ScriptType scriptType) throws ImportException { 
         ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes);
-        Keystore keystore = importer.getKeystore(scriptType, bais, "");
+        Keystore keystore = importer.getKeystore(network, scriptType, bais, "");
 
-        //TODO: use user input here
-        Wallet wallet = new Wallet(Network.BITCOIN);
+        Wallet wallet = new Wallet(network);
         wallet.setName(fileName);
         wallet.setPolicyType(PolicyType.SINGLE);
         wallet.setScriptType(scriptType);
@@ -69,7 +69,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         EventManager.get().post(new WalletImportEvent(wallet));
     }
 
-    private Node getScriptTypeEntry() {
+    private Node getScriptTypeEntry(Network network) {
         Label label = new Label("Script Type:");
         ComboBox<ScriptType> scriptTypeComboBox = new ComboBox<>(FXCollections.observableArrayList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE)));
         scriptTypeComboBox.setValue(ScriptType.P2WPKH);
@@ -82,7 +82,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
             showHideLink.setVisible(true);
             setExpanded(false);
             try {
-                importWallet(scriptTypeComboBox.getValue());
+                importWallet(network, scriptTypeComboBox.getValue());
             } catch(ImportException e) {
                 log.error("Error importing file", e);
                 String errorMessage = e.getMessage();

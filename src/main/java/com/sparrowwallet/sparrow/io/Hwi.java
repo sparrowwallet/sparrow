@@ -70,7 +70,7 @@ public class Hwi {
     }
 
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
-        //TODO: use --testnet if using testnet
+        //TODO:TESTNET use --testnet if using testnet
         
         try {
             String output;
@@ -93,7 +93,7 @@ public class Hwi {
     }
 
     public String displayAddress(Device device, String passphrase, ScriptType scriptType, String derivationPath) throws DisplayAddressException {
-        //TODO: use --testnet if using testnet
+        //TODO:TESTNET use --testnet if using testnet
         try {
             if(!List.of(ScriptType.P2PKH, ScriptType.P2SH_P2WPKH, ScriptType.P2WPKH).contains(scriptType)) {
                 throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single sig types supported");

@@ -31,7 +31,7 @@
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <Fieldset inputGrow="SOMETIMES" text="Settings">
                     <Field text="Network:">
-                        <ComboBox fx:id="network">
+                        <ComboBox fx:id="network" disable="true">
                             <items>
                                 <FXCollections fx:factory="observableArrayList">
                                     <Network fx:constant="BITCOIN" />

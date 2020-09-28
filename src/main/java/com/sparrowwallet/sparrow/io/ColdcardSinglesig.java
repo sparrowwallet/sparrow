@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
@@ -38,7 +39,7 @@ public class ColdcardSinglesig implements KeystoreFileImport {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(Network network, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
             Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {

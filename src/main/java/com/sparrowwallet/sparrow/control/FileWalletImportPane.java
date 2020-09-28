@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.protocol.Network;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletImportEvent;
@@ -17,8 +18,8 @@ public class FileWalletImportPane extends FileImportPane {
     }
 
     @Override
-    protected void importFile(String fileName, InputStream inputStream, String password) throws ImportException {
-        Wallet wallet = importer.importWallet(inputStream, password);
+    protected void importFile(Network network, String fileName, InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = importer.importWallet(network, inputStream, password);
         if(wallet.getName() == null) {
             wallet.setName(fileName);
         }
