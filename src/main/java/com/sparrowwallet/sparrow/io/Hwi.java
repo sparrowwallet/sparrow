@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
@@ -322,17 +323,27 @@ public class Hwi {
     }
 
     private List<String> getDeviceCommand(Device device, Command command) throws IOException {
-        return List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString());
+        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
+        if(Network.get() != Network.MAINNET) {
+            elements.add(elements.size() - 1, "--testnet");
+        }
+        return elements;
     }
 
     private List<String> getDeviceCommand(Device device, Command command, String... commandData) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
+        if(Network.get() != Network.MAINNET) {
+            elements.add(elements.size() - 1, "--testnet");
+        }
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
     }
 
     private List<String> getDeviceCommand(Device device, String passphrase, Command command, String... commandData) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command.toString()));
+        if(Network.get() != Network.MAINNET) {
+            elements.add(elements.size() - 1, "--testnet");
+        }
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
     }

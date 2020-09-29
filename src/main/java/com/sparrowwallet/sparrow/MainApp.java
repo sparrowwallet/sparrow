@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow;
 
+import com.beust.jcommander.JCommander;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.control.WelcomeDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
@@ -17,18 +19,20 @@ import javafx.scene.image.Image;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MainApp extends Application {
+    private static final Logger log = LoggerFactory.getLogger(MainApp.class);
+
     public static final String APP_NAME = "Sparrow";
     public static final String APP_VERSION = "0.9.4";
+    public static final String APP_HOME_PROPERTY = "sparrow.home";
+    public static final String NETWORK_ENV_PROPERTY = "SPARROW_NETWORK";
 
     private Stage mainStage;
 
@@ -107,7 +111,37 @@ public class MainApp extends Application {
         mainStage.close();
     }
 
-    public static void main(String[] args) {
-        com.sun.javafx.application.LauncherImpl.launchApplication(MainApp.class, MainAppPreloader.class, args);
+    public static void main(String[] argv) {
+        Args args = new Args();
+        JCommander jCommander = JCommander.newBuilder().addObject(args).programName(APP_NAME.toLowerCase()).acceptUnknownOptions(true).build();
+        jCommander.parse(argv);
+        if(args.help) {
+            jCommander.usage();
+            System.exit(0);
+        }
+
+        if(args.dir != null) {
+            log.info("Using configured Sparrow home folder of " + args.dir);
+            System.setProperty(APP_HOME_PROPERTY, args.dir);
+        }
+
+        if(args.network != null) {
+            Network.set(args.network);
+        } else {
+            String envNetwork = System.getenv(NETWORK_ENV_PROPERTY);
+            if(envNetwork != null) {
+                try {
+                    Network.set(Network.valueOf(envNetwork.toUpperCase()));
+                } catch(Exception e) {
+                    log.warn("Invalid " + NETWORK_ENV_PROPERTY + " property: " + envNetwork);
+                }
+            }
+        }
+
+        if(Network.get() != Network.MAINNET) {
+            log.info("Using " + Network.get() + " configuration");
+        }
+
+        com.sun.javafx.application.LauncherImpl.launchApplication(MainApp.class, MainAppPreloader.class, argv);
     }
 }

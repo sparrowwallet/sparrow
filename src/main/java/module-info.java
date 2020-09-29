@@ -22,5 +22,6 @@ open module com.sparrowwallet.sparrow {
     requires webcam.capture;
     requires netlayer.jpms;
     requires centerdevice.nsmenufx;
+    requires jcommander;
     requires slf4j.api;
 }

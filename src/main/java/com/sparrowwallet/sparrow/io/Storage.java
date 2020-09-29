@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.io.Files;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
@@ -12,6 +13,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.MainApp;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.controlsfx.tools.Platform;
@@ -272,6 +274,18 @@ public class Storage {
     }
 
     static File getSparrowDir() {
+        if(Network.get() != Network.MAINNET) {
+            return new File(getSparrowHome(), Network.get().getName());
+        }
+
+        return getSparrowHome();
+    }
+
+    static File getSparrowHome() {
+        if(System.getProperty(MainApp.APP_HOME_PROPERTY) != null) {
+            return new File(System.getProperty(MainApp.APP_HOME_PROPERTY));
+        }
+
         if(Platform.getCurrent() == Platform.WINDOWS) {
             return new File(getHomeDir(), WINDOWS_SPARROW_DIR);
         }

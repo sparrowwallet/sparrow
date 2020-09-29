@@ -17,6 +17,7 @@ import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.control.DescriptorArea;
 import com.sparrowwallet.sparrow.control.TextAreaDialog;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
+import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
@@ -347,6 +348,9 @@ public class SettingsController extends WalletFormController implements Initiali
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
+                    if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW) {
+                        EventManager.get().post(new RequestOpenWalletsEvent());
+                    }
                 } catch (IOException e) {
                     log.error("Error saving wallet", e);
                     AppController.showErrorDialog("Error saving wallet", e.getMessage());
@@ -381,6 +385,9 @@ public class SettingsController extends WalletFormController implements Initiali
 
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();
+                        if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW) {
+                            EventManager.get().post(new RequestOpenWalletsEvent());
+                        }
                     } catch (Exception e) {
                         log.error("Error saving wallet", e);
                         AppController.showErrorDialog("Error saving wallet", e.getMessage());

@@ -97,6 +97,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
+    private final ObjectProperty<WalletTransaction> createdWalletTransactionProperty = new SimpleObjectProperty<>(null);
+
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
 
     private final ChangeListener<String> amountListener = new ChangeListener<>() {
@@ -570,6 +572,7 @@ public class SendController extends WalletFormController implements Initializabl
         utxoSelectorProperty.setValue(null);
         utxoFilterProperty.setValue(null);
         walletTransactionProperty.setValue(null);
+        createdWalletTransactionProperty.set(null);
 
         validationSupport.setErrorDecorationEnabled(false);
     }
@@ -583,6 +586,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void createTransaction(ActionEvent event) {
+        createdWalletTransactionProperty.set(walletTransactionProperty.get());
         PSBT psbt = walletTransactionProperty.get().createPSBT();
         EventManager.get().post(new ViewPSBTEvent(label.getText(), psbt));
     }
@@ -596,8 +600,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        if(event.getWallet().equals(walletForm.getWallet())) {
-            if(walletTransactionProperty.get() != null && walletTransactionProperty.get().getSelectedUtxos() != null && allSelectedUtxosSpent(event.getHistoryChangedNodes())) {
+        if(event.getWallet().equals(walletForm.getWallet()) && createdWalletTransactionProperty.get() != null) {
+            if(createdWalletTransactionProperty.get().getSelectedUtxos() != null && allSelectedUtxosSpent(event.getHistoryChangedNodes())) {
                 clear(null);
             } else {
                 updateTransaction();
@@ -606,9 +610,9 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private boolean allSelectedUtxosSpent(List<WalletNode> historyChangedNodes) {
-        Set<BlockTransactionHashIndex> unspentUtxos = new HashSet<>(walletTransactionProperty.get().getSelectedUtxos().keySet());
+        Set<BlockTransactionHashIndex> unspentUtxos = new HashSet<>(createdWalletTransactionProperty.get().getSelectedUtxos().keySet());
 
-        for(Map.Entry<BlockTransactionHashIndex, WalletNode> selectedUtxoEntry : walletTransactionProperty.get().getSelectedUtxos().entrySet()) {
+        for(Map.Entry<BlockTransactionHashIndex, WalletNode> selectedUtxoEntry : createdWalletTransactionProperty.get().getSelectedUtxos().entrySet()) {
             BlockTransactionHashIndex utxo = selectedUtxoEntry.getKey();
             WalletNode utxoWalletNode = selectedUtxoEntry.getValue();
 

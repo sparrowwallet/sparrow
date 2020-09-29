@@ -44,7 +44,12 @@ public class Config {
     }
 
     private static File getConfigFile() {
-        return new File(Storage.getSparrowDir(), CONFIG_FILENAME);
+        File sparrowDir = Storage.getSparrowDir();
+        if(!sparrowDir.exists()) {
+            sparrowDir.mkdirs();
+        }
+
+        return new File(sparrowDir, CONFIG_FILENAME);
     }
 
     private static Config load() {

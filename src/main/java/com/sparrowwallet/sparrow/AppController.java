@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
@@ -770,6 +771,7 @@ public class AppController implements Initializable {
             FileType fileType = IOUtils.getFileType(file);
             if(FileType.JSON.equals(fileType)) {
                 Wallet wallet = storage.loadWallet();
+                checkWalletNetwork(wallet);
                 restorePublicKeysFromSeed(wallet, null);
                 Tab tab = addWalletTab(storage, wallet);
                 tabs.getSelectionModel().select(tab);
@@ -786,10 +788,11 @@ public class AppController implements Initializable {
                     EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
                     Storage.WalletAndKey walletAndKey = loadWalletService.getValue();
                     try {
+                        checkWalletNetwork(walletAndKey.wallet);
                         restorePublicKeysFromSeed(walletAndKey.wallet, walletAndKey.key);
                         Tab tab = addWalletTab(storage, walletAndKey.wallet);
                         tabs.getSelectionModel().select(tab);
-                    } catch(MnemonicException e) {
+                    } catch(Exception e) {
                         showErrorDialog("Error Opening Wallet", e.getMessage());
                     } finally {
                         walletAndKey.key.clear();
@@ -813,6 +816,12 @@ public class AppController implements Initializable {
         } catch(Exception e) {
             log.error("Error opening wallet", e);
             showErrorDialog("Error Opening Wallet", e.getMessage());
+        }
+    }
+
+    private void checkWalletNetwork(Wallet wallet) {
+        if(wallet.getNetwork() != null && wallet.getNetwork() != Network.get()) {
+            throw new IllegalStateException("Provided " + wallet.getNetwork() + " wallet is invalid on a " + Network.get() + " network. Use a " + wallet.getNetwork() + " configuration to load this wallet.");
         }
     }
 
@@ -1382,7 +1391,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        List<File> walletFiles = event.getWalletsMap().values().stream().map(storage -> storage.getWalletFile()).collect(Collectors.toList());
+        List<File> walletFiles = event.getWalletsMap().values().stream().map(Storage::getWalletFile).collect(Collectors.toList());
         Config.get().setRecentWalletFiles(walletFiles);
 
         boolean usbWallet = false;
