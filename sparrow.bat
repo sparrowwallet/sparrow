@@ -1,7 +1,8 @@
+@echo off
 set ARGS=%*
 
-if "%ARGS%" != "" (
-    gradlew.bat run --args="%ARGS%"
+if "%ARGS%" == "" (
+    gradlew.bat run    
 ) else (
-    gradlew.bat run
+	gradlew.bat run --args="%ARGS%"
 )
