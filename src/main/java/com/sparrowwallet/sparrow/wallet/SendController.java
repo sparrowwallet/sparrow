@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ExchangeSource;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -32,14 +33,19 @@ import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SendController extends WalletFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(SendController.class);
+
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50, 100, 500);
 
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
@@ -586,6 +592,15 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void createTransaction(ActionEvent event) {
+        if(log.isDebugEnabled()) {
+            Map<WalletNode, String> nodeHashes = walletTransactionProperty.get().getSelectedUtxos().values().stream().collect(Collectors.toMap(Function.identity(), node -> ElectrumServer.getScriptHash(walletForm.getWallet(), node)));
+            Map<WalletNode, String> changeHash = Collections.emptyMap();
+            if(walletTransactionProperty.get().getChangeNode() != null) {
+                changeHash = Map.of(walletTransactionProperty.get().getChangeNode(), ElectrumServer.getScriptHash(walletForm.getWallet(), walletTransactionProperty.get().getChangeNode()));
+            }
+            log.debug("Creating tx " + walletTransactionProperty.get().getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + nodeHashes + " and \nchange \n" + changeHash);
+        }
+
         createdWalletTransactionProperty.set(walletTransactionProperty.get());
         PSBT psbt = walletTransactionProperty.get().createPSBT();
         EventManager.get().post(new ViewPSBTEvent(label.getText(), psbt));

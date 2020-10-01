@@ -228,6 +228,7 @@ public class WalletForm {
         if(wallet.isValid()) {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
+                log.debug(wallet.getName() + " history event for node " + walletNode);
                 refreshHistory(AppController.getCurrentBlockHeight(), walletNode);
             }
         }

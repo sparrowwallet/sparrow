@@ -14,15 +14,18 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
+
+    private final AtomicLong idCounter = new AtomicLong();
 
     @Override
     public void ping(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            client.createRequest().method("server.ping").id(1).executeNullable();
+            client.createRequest().method("server.ping").id(idCounter.incrementAndGet()).executeNullable();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException("Error pinging server", e);
         }
@@ -32,7 +35,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAsList(String.class).method("server.version").id(1).param("client_name", clientName).param("protocol_version", supportedVersions).execute();
+            return client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).param("client_name", clientName).param("protocol_version", supportedVersions).execute();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException("Error getting server version", e);
         }
@@ -42,7 +45,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public String getServerBanner(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(String.class).method("server.banner").id(1).execute();
+            return client.createRequest().returnAs(String.class).method("server.banner").id(idCounter.incrementAndGet()).execute();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException("Error getting server banner", e);
         }
@@ -52,7 +55,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public BlockHeaderTip subscribeBlockHeaders(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(1).execute();
+            return client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(idCounter.incrementAndGet()).execute();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException("Error subscribing to block headers", e);
         }
@@ -209,7 +212,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Double getMinimumRelayFee(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(Double.class).method("blockchain.relayfee").id(1).execute();
+            return client.createRequest().returnAs(Double.class).method("blockchain.relayfee").id(idCounter.incrementAndGet()).execute();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException("Error getting minimum relay fee", e);
         }
@@ -219,7 +222,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public String broadcastTransaction(Transport transport, String txHex) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(1).param("raw_tx", txHex).execute();
+            return client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(idCounter.incrementAndGet()).param("raw_tx", txHex).execute();
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException(e.getErrorMessage().getMessage(), e);
         }

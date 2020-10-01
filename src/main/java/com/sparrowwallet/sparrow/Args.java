@@ -7,7 +7,7 @@ public class Args {
     @Parameter(names = { "--dir", "-d" }, description = "Path to Sparrow home folder")
     public String dir;
 
-    @Parameter(names = { "--network", "-n" }, description = "Network to use (mainnet, testnet or regtest)")
+    @Parameter(names = { "--network", "-n" }, description = "Network to use")
     public Network network;
 
     @Parameter(names = { "--help", "-h" }, description = "Show usage", help = true)

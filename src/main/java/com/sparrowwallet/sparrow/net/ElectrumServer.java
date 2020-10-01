@@ -528,7 +528,8 @@ public class ElectrumServer {
 
             Map<Integer, Double> targetBlocksFeeRatesSats = new TreeMap<>();
             for(Integer target : targetBlocksFeeRatesBtcKb.keySet()) {
-                targetBlocksFeeRatesSats.put(target, targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN / 1000);
+                long minFeeRateSatsKb = (long)(targetBlocksFeeRatesBtcKb.get(target) * Transaction.SATOSHIS_PER_BITCOIN);
+                targetBlocksFeeRatesSats.put(target, minFeeRateSatsKb / 1000d);
             }
 
             return targetBlocksFeeRatesSats;

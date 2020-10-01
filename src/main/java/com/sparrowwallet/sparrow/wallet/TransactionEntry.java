@@ -116,13 +116,13 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TransactionEntry that = (TransactionEntry) o;
-        return wallet.equals(that.wallet) &&
-                blockTransaction.equals(that.blockTransaction);
+        return wallet.equals(that.wallet) && blockTransaction.equals(that.blockTransaction) &&
+                getChildren().equals(that.getChildren());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(wallet, blockTransaction);
+        return Objects.hash(wallet, blockTransaction, getChildren());
     }
 
     @Override
