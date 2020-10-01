@@ -20,6 +20,8 @@ When updating to the latest HEAD
 
 `git pull --recurse-submodules`
 
+All jar files created are reproducible builds.
+
 ## Running
 
 If you prefer to run Sparrow directly from source, it can be launched with

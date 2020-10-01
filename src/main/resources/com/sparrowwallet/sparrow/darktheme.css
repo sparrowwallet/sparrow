@@ -86,7 +86,11 @@
 }
 
 #outputsPie .default-color3.chart-pie {
-    -fx-pie-color: #e06c75
+    -fx-pie-color: #e06c75;
+}
+
+.root .descriptor-error {
+    -fx-fill: #e06c75;
 }
 
 .root .etched-raised-border {

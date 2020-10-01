@@ -1,8 +1,8 @@
 plugins {
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.8'
+    id 'org.openjfx.javafxplugin' version '0.0.9'
     id 'org.kordamp.gradle.jdeps' version '0.9.0'
-    id 'org.beryx.jlink' version '2.17.4'
+    id 'org.beryx.jlink' version '2.22.0'
 }
 
 def sparrowVersion = '0.9.4'
@@ -28,7 +28,7 @@ tasks.withType(AbstractArchiveTask) {
 }
 
 javafx {
-    version = "14"
+    version = "15"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 
