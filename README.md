@@ -16,6 +16,10 @@ In order to build, Sparrow requires Java 14 to be installed. The release package
 
 `./gradlew jpackage`
 
+When updating to the latest HEAD
+
+`git pull --recurse-submodules`
+
 ## Running
 
 If you prefer to run Sparrow directly from source, it can be launched with
