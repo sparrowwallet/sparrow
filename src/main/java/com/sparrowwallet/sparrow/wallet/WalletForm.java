@@ -27,6 +27,7 @@ public class WalletForm {
     private WalletTransactionsEntry walletTransactionsEntry;
     private WalletUtxosEntry walletUtxosEntry;
     private final List<NodeEntry> accountEntries = new ArrayList<>();
+    private final List<Set<WalletNode>> walletTransactionNodes = new ArrayList<>();
 
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
@@ -76,7 +77,7 @@ public class WalletForm {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppController.isOnline()) {
             log.debug(node == null ? "Refreshing full wallet history" : "Requesting node wallet history for " + node.getDerivationPath());
-            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, node);
+            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
             historyService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new WalletHistoryStatusEvent(true));
                 updateWallet(previousWallet, blockHeight);
@@ -134,6 +135,25 @@ public class WalletForm {
         }
 
         return changedNodes;
+    }
+
+    public void addWalletTransactionNodes(Set<WalletNode> transactionNodes) {
+        walletTransactionNodes.add(transactionNodes);
+    }
+
+    private Set<WalletNode> getWalletTransactionNodes(WalletNode walletNode) {
+        if(walletNode == null) {
+            return null;
+        }
+
+        Set<WalletNode> allNodes = new LinkedHashSet<>();
+        for(Set<WalletNode> nodes : walletTransactionNodes) {
+            if(nodes.contains(walletNode)) {
+                allNodes.addAll(nodes);
+            }
+        }
+
+        return allNodes.isEmpty() ? Set.of(walletNode) : allNodes;
     }
 
     public NodeEntry getNodeEntry(KeyPurpose keyPurpose) {

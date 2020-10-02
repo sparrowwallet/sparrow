@@ -135,9 +135,8 @@ public class ElectrumServer {
         return receiveTransactionMap;
     }
 
-    public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet, WalletNode walletNode) throws ServerException {
+    public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet, Collection<WalletNode> nodes) throws ServerException {
         Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
-        Collection<WalletNode> nodes = Set.of(walletNode);
         subscribeWalletNodes(wallet, nodes, nodeTransactionMap, 0);
         getReferences(wallet, nodes, nodeTransactionMap);
 
@@ -760,16 +759,16 @@ public class ElectrumServer {
 
     public static class TransactionHistoryService extends Service<Boolean> {
         private final Wallet wallet;
-        private final WalletNode node;
+        private final Set<WalletNode> nodes;
 
         public TransactionHistoryService(Wallet wallet) {
             this.wallet = wallet;
-            this.node = null;
+            this.nodes = null;
         }
 
-        public TransactionHistoryService(Wallet wallet, WalletNode node) {
+        public TransactionHistoryService(Wallet wallet, Set<WalletNode> nodes) {
             this.wallet = wallet;
-            this.node = node;
+            this.nodes = nodes;
         }
 
         @Override
@@ -777,7 +776,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected Boolean call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (node == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, node));
+                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));
                     electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
                     electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
                     return true;

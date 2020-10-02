@@ -601,9 +601,23 @@ public class SendController extends WalletFormController implements Initializabl
             log.debug("Creating tx " + walletTransactionProperty.get().getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + nodeHashes + " and \nchange \n" + changeHash);
         }
 
+        addWalletTransactionNodes();
         createdWalletTransactionProperty.set(walletTransactionProperty.get());
         PSBT psbt = walletTransactionProperty.get().createPSBT();
         EventManager.get().post(new ViewPSBTEvent(label.getText(), psbt));
+    }
+
+    private void addWalletTransactionNodes() {
+        WalletTransaction walletTransaction = walletTransactionProperty.get();
+        Set<WalletNode> nodes = new LinkedHashSet<>(walletTransaction.getSelectedUtxos().values());
+        nodes.add(walletTransaction.getChangeNode());
+        WalletNode consolidationNode = walletTransaction.getConsolidationSendNode();
+        if(consolidationNode != null) {
+            nodes.add(consolidationNode);
+        }
+
+        //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
+        walletForm.addWalletTransactionNodes(nodes);
     }
 
     @Subscribe
