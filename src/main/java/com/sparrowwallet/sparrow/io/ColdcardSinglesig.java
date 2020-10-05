@@ -5,9 +5,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.io.File;
@@ -16,7 +19,7 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-public class ColdcardSinglesig implements KeystoreFileImport {
+public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
     @Override
     public String getName() {
         return "Coldcard";
@@ -75,6 +78,29 @@ public class ColdcardSinglesig implements KeystoreFileImport {
         }
 
         throw new ImportException("Correct derivation not found for script type: " + scriptType);
+    }
+
+    @Override
+    public String getWalletImportDescription() {
+        return getKeystoreImportDescription();
+    }
+
+    @Override
+    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+        //Use default of P2WPKH
+        Keystore keystore = getKeystore(ScriptType.P2WPKH, inputStream, "");
+
+        Wallet wallet = new Wallet();
+        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setScriptType(ScriptType.P2WPKH);
+        wallet.getKeystores().add(keystore);
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, ScriptType.P2WPKH, wallet.getKeystores(), null));
+
+        if(!wallet.isValid()) {
+            throw new ImportException("Wallet is in an inconsistent state.");
+        }
+
+        return wallet;
     }
 
     private static class ColdcardKeystore {

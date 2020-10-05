@@ -773,6 +773,9 @@ public class AppController implements Initializable {
                 Wallet wallet = storage.loadWallet();
                 checkWalletNetwork(wallet);
                 restorePublicKeysFromSeed(wallet, null);
+                if(!wallet.isValid()) {
+                    throw new IllegalStateException("Wallet file is not valid.");
+                }
                 Tab tab = addWalletTab(storage, wallet);
                 tabs.getSelectionModel().select(tab);
             } else if(FileType.BINARY.equals(fileType)) {
@@ -804,8 +807,11 @@ public class AppController implements Initializable {
                     if(exception instanceof InvalidPasswordException) {
                         showErrorDialog("Invalid Password", "The wallet password was invalid.");
                     } else {
-                        log.error("Error Opening Wallet", exception);
-                        showErrorDialog("Error Opening Wallet", exception.getMessage());
+                        if(!attemptImportWallet(file, password)) {
+                            log.error("Error Opening Wallet", exception);
+                            showErrorDialog("Error Opening Wallet", exception.getMessage());
+                        }
+                        password.clear();
                     }
                 });
                 EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
@@ -814,8 +820,10 @@ public class AppController implements Initializable {
                 throw new IOException("Unsupported file type");
             }
         } catch(Exception e) {
-            log.error("Error opening wallet", e);
-            showErrorDialog("Error Opening Wallet", e.getMessage());
+            if(!attemptImportWallet(file, null)) {
+                log.error("Error opening wallet", e);
+                showErrorDialog("Error Opening Wallet", e.getMessage());
+            }
         }
     }
 
@@ -872,35 +880,65 @@ public class AppController implements Initializable {
         Optional<Wallet> optionalWallet = dlg.showAndWait();
         if(optionalWallet.isPresent()) {
             Wallet wallet = optionalWallet.get();
-            File walletFile = Storage.getWalletFile(wallet.getName());
+            addImportedWallet(wallet);
+        }
+    }
 
-            if(walletFile.exists()) {
-                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-                alert.setTitle("Existing wallet found");
-                alert.setHeaderText("Replace existing wallet?");
-                alert.setContentText("Wallet file " + wallet.getName() + " already exists");
-                Optional<ButtonType> result = alert.showAndWait();
-                if(result.isPresent() && result.get() == ButtonType.CANCEL) {
-                    return;
+    private boolean attemptImportWallet(File file, SecureString password) {
+        List<WalletImport> walletImporters = List.of(new ColdcardSinglesig(), new ColdcardMultisig(), new Electrum(), new Specter());
+        for(WalletImport importer : walletImporters) {
+            try(FileInputStream inputStream = new FileInputStream(file)) {
+                if(importer.isEncrypted(file) && password == null) {
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    Optional<SecureString> optionalPassword = dlg.showAndWait();
+                    if(optionalPassword.isPresent()) {
+                        password = optionalPassword.get();
+                    }
                 }
 
-                //Close existing wallet first if open
-                for(Iterator<Tab> iter = tabs.getTabs().iterator(); iter.hasNext(); ) {
-                    Tab tab = iter.next();
-                    TabData tabData = (TabData)tab.getUserData();
-                    if(tabData.getType() == TabData.TabType.WALLET) {
-                        WalletTabData walletTabData = (WalletTabData) tabData;
-                        if(walletTabData.getStorage().getWalletFile().equals(walletFile)) {
-                            iter.remove();
-                        }
+                Wallet wallet = importer.importWallet(inputStream, password == null ? null: password.asString());
+                if(wallet.getName() == null) {
+                    wallet.setName(file.getName());
+                }
+                addImportedWallet(wallet);
+                return true;
+            } catch(Exception e) {
+                //ignore
+            }
+        }
+
+        return false;
+    }
+
+    private void addImportedWallet(Wallet wallet) {
+        File walletFile = Storage.getWalletFile(wallet.getName());
+
+        if(walletFile.exists()) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Existing wallet found");
+            alert.setHeaderText("Replace existing wallet?");
+            alert.setContentText("Wallet file " + wallet.getName() + " already exists");
+            Optional<ButtonType> result = alert.showAndWait();
+            if(result.isPresent() && result.get() == ButtonType.CANCEL) {
+                return;
+            }
+
+            //Close existing wallet first if open
+            for(Iterator<Tab> iter = tabs.getTabs().iterator(); iter.hasNext(); ) {
+                Tab tab = iter.next();
+                TabData tabData = (TabData)tab.getUserData();
+                if(tabData.getType() == TabData.TabType.WALLET) {
+                    WalletTabData walletTabData = (WalletTabData) tabData;
+                    if(walletTabData.getStorage().getWalletFile().equals(walletFile)) {
+                        iter.remove();
                     }
                 }
             }
-
-            Storage storage = new Storage(walletFile);
-            Tab tab = addWalletTab(storage, wallet);
-            tabs.getSelectionModel().select(tab);
         }
+
+        Storage storage = new Storage(walletFile);
+        Tab tab = addWalletTab(storage, wallet);
+        tabs.getSelectionModel().select(tab);
     }
 
     public void exportWallet(ActionEvent event) {

@@ -81,7 +81,7 @@ public class Storage {
         return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
     }
 
-    public Wallet loadWallet() throws IOException, MnemonicException {
+    public Wallet loadWallet() throws IOException {
         Reader reader = new FileReader(walletFile);
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
@@ -90,7 +90,7 @@ public class Storage {
         return wallet;
     }
 
-    public WalletAndKey loadWallet(CharSequence password) throws IOException, MnemonicException, StorageException {
+    public WalletAndKey loadWallet(CharSequence password) throws IOException, StorageException {
         InputStream fileStream = new FileInputStream(walletFile);
         ECKey encryptionKey = getEncryptionKey(password, fileStream);
 
@@ -461,11 +461,9 @@ public class Storage {
         protected Task<WalletAndKey> createTask() {
             return new Task<>() {
                 protected WalletAndKey call() throws IOException, StorageException, MnemonicException {
-                    try {
-                        return storage.loadWallet(password);
-                    } finally {
-                        password.clear();
-                    }
+                    WalletAndKey walletAndKey = storage.loadWallet(password);
+                    password.clear();
+                    return walletAndKey;
                 }
             };
         }
