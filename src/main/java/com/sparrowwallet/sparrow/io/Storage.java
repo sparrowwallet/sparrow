@@ -222,12 +222,16 @@ public class Storage {
                 if(read != BINARY_HEADER_LENGTH) {
                     throw new StorageException("Not a Sparrow wallet - invalid header");
                 }
-                byte[] decodedHeader = Base64.getDecoder().decode(header);
-                byte[] magic = Arrays.copyOfRange(decodedHeader, 0, HEADER_MAGIC_1.length());
-                if(!HEADER_MAGIC_1.equals(new String(magic, StandardCharsets.UTF_8))) {
-                    throw new StorageException("Not a Sparrow wallet - invalid magic");
+                try {
+                    byte[] decodedHeader = Base64.getDecoder().decode(header);
+                    byte[] magic = Arrays.copyOfRange(decodedHeader, 0, HEADER_MAGIC_1.length());
+                    if(!HEADER_MAGIC_1.equals(new String(magic, StandardCharsets.UTF_8))) {
+                        throw new StorageException("Not a Sparrow wallet - invalid magic");
+                    }
+                    salt = Arrays.copyOfRange(decodedHeader, HEADER_MAGIC_1.length(), decodedHeader.length);
+                } catch(IllegalArgumentException e) {
+                    throw new StorageException("Not a Sparrow wallet - invalid header");
                 }
-                salt = Arrays.copyOfRange(decodedHeader, HEADER_MAGIC_1.length(), decodedHeader.length);
             } else {
                 SecureRandom secureRandom = new SecureRandom();
                 secureRandom.nextBytes(salt);

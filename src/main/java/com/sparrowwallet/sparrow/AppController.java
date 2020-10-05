@@ -809,7 +809,7 @@ public class AppController implements Initializable {
                     } else {
                         if(!attemptImportWallet(file, password)) {
                             log.error("Error Opening Wallet", exception);
-                            showErrorDialog("Error Opening Wallet", exception.getMessage());
+                            showErrorDialog("Error Opening Wallet", exception.getMessage() == null ? "Unsupported file format" : exception.getMessage());
                         }
                         password.clear();
                     }
@@ -822,7 +822,7 @@ public class AppController implements Initializable {
         } catch(Exception e) {
             if(!attemptImportWallet(file, null)) {
                 log.error("Error opening wallet", e);
-                showErrorDialog("Error Opening Wallet", e.getMessage());
+                showErrorDialog("Error Opening Wallet", e.getMessage() == null ? "Unsupported file format" : e.getMessage());
             }
         }
     }
