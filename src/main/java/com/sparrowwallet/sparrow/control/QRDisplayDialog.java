@@ -76,6 +76,28 @@ public class QRDisplayDialog extends Dialog<UR> {
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
     }
 
+    public QRDisplayDialog(String data) {
+        this.ur = null;
+        this.encoder = null;
+
+        final DialogPane dialogPane = getDialogPane();
+        AppController.setStageIcon(dialogPane.getScene().getWindow());
+
+        StackPane stackPane = new StackPane();
+        qrImageView = new ImageView();
+        stackPane.getChildren().add(qrImageView);
+
+        dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
+        qrImageView.setImage(getQrCode(data));
+
+        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialogPane.getButtonTypes().addAll(cancelButtonType);
+        dialogPane.setPrefWidth(500);
+        dialogPane.setPrefHeight(550);
+
+        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
+    }
+
     private void nextPart() {
         String fragment = encoder.nextPart();
         currentPart = fragment.toUpperCase();

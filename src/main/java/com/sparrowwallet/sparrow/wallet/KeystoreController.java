@@ -7,6 +7,8 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.QRDisplayDialog;
+import com.sparrowwallet.sparrow.control.QRScanDialog;
 import com.sparrowwallet.sparrow.control.SeedDisplayDialog;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.StorageEvent;
@@ -29,6 +31,9 @@ import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tornadofx.control.Field;
 
 import java.net.URL;
 import java.util.Optional;
@@ -36,6 +41,8 @@ import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
 public class KeystoreController extends WalletFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(KeystoreController.class);
+
     private Keystore keystore;
 
     @FXML
@@ -57,6 +64,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     private TextField label;
 
     @FXML
+    private Field xpubField;
+
+    @FXML
     private TextArea xpub;
 
     @FXML
@@ -64,6 +74,15 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @FXML
     private TextField fingerprint;
+
+    @FXML
+    private Button scanXpubQR;
+
+    @FXML
+    private Button displayXpubQR;
+
+    @FXML
+    private Button switchXpubHeader;
 
     private final ValidationSupport validationSupport = new ValidationSupport();
 
@@ -87,6 +106,9 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
 
         viewSeedButton.managedProperty().bind(viewSeedButton.visibleProperty());
+        scanXpubQR.managedProperty().bind(scanXpubQR.visibleProperty());
+        displayXpubQR.managedProperty().bind(displayXpubQR.visibleProperty());
+        displayXpubQR.visibleProperty().bind(scanXpubQR.visibleProperty().not());
 
         updateType();
 
@@ -97,6 +119,8 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(keystore.getExtendedPublicKey() != null) {
             xpub.setText(keystore.getExtendedPublicKey().toString());
             setXpubContext(keystore.getExtendedPublicKey());
+        } else {
+            switchXpubHeader.setDisable(true);
         }
 
         if(keystore.getKeyDerivation() != null) {
@@ -121,15 +145,19 @@ public class KeystoreController extends WalletFormController implements Initiali
             }
         });
         xpub.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(ExtendedKey.isValid(newValue)) {
+            boolean valid = ExtendedKey.isValid(newValue);
+            if(valid) {
                 ExtendedKey extendedKey = ExtendedKey.fromDescriptor(newValue);
                 setXpubContext(extendedKey);
-                keystore.setExtendedPublicKey(extendedKey);
-                EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
+                if(!extendedKey.equals(keystore.getExtendedPublicKey()) && extendedKey.getKey().isPubKeyOnly()) {
+                    keystore.setExtendedPublicKey(extendedKey);
+                    EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
+                }
             } else {
-                xpub.setTooltip(null);
                 xpub.setContextMenu(null);
+                switchXpubHeader.setDisable(true);
             }
+            scanXpubQR.setVisible(!valid);
         });
     }
 
@@ -148,7 +176,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(header != Network.get().getXpubHeader()) {
             String otherPub = extendedKey.getExtendedKey(header);
 
-            MenuItem copyOtherPub = new MenuItem("Copy " + header.getName().replace('p', 'P'));
+            MenuItem copyOtherPub = new MenuItem("Copy " + header.getDisplayName());
             copyOtherPub.setOnAction(AE -> {
                 contextMenu.hide();
                 ClipboardContent content = new ClipboardContent();
@@ -157,13 +185,16 @@ public class KeystoreController extends WalletFormController implements Initiali
             });
             contextMenu.getItems().add(copyOtherPub);
 
-            Tooltip tooltip = new Tooltip(otherPub);
-            xpub.setTooltip(tooltip);
+            xpubField.setText("xPub / " + header.getDisplayName() + ":");
+            switchXpubHeader.setDisable(false);
+            switchXpubHeader.setTooltip(new Tooltip("Show as " + header.getDisplayName()));
         } else {
-            xpub.setTooltip(null);
+            xpubField.setText("xPub:");
+            switchXpubHeader.setDisable(true);
         }
 
         xpub.setContextMenu(contextMenu);
+        scanXpubQR.setVisible(false);
     }
 
     public void selectSource(ActionEvent event) {
@@ -223,6 +254,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         fingerprint.setEditable(editable);
         derivation.setEditable(editable);
         xpub.setEditable(editable);
+        scanXpubQR.setVisible(editable);
     }
 
     private String getTypeLabel(Keystore keystore) {
@@ -284,6 +316,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
             if(keystore.getExtendedPublicKey() != null) {
                 xpub.setText(keystore.getExtendedPublicKey().toString());
+                setXpubContext(keystore.getExtendedPublicKey());
             } else {
                 xpub.setText("");
             }
@@ -319,6 +352,44 @@ public class KeystoreController extends WalletFormController implements Initiali
     private void showSeed(Keystore keystore) {
         SeedDisplayDialog dlg = new SeedDisplayDialog(keystore);
         dlg.showAndWait();
+    }
+
+    public void scanXpubQR(ActionEvent event) {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.extendedKey != null && result.extendedKey.getKey().isPubKeyOnly()) {
+                xpub.setText(result.extendedKey.getExtendedKey());
+            } else if(result.error != null) {
+                AppController.showErrorDialog("Invalid QR Code", result.error);
+            } else if(result.exception != null) {
+                log.error("Error opening webcam", result.exception);
+                AppController.showErrorDialog("Error opening webcam", result.exception.getMessage());
+            } else {
+                AppController.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid xPub");
+            }
+        }
+    }
+
+    public void displayXpubQR(ActionEvent event) {
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(xpub.getText());
+        qrDisplayDialog.showAndWait();
+    }
+
+    public void switchXpubHeader(ActionEvent event) {
+        if(keystore.getExtendedPublicKey() != null) {
+            ExtendedKey.Header header = ExtendedKey.Header.fromScriptType(walletForm.getWallet().getScriptType(), false);
+            if(!xpub.getText().startsWith(header.getName())) {
+                String otherPub = keystore.getExtendedPublicKey().getExtendedKey(header);
+                xpub.setText(otherPub);
+                switchXpubHeader.setTooltip(new Tooltip("Show as xPub"));
+            } else {
+                String xPub = keystore.getExtendedPublicKey().getExtendedKey();
+                xpub.setText(xPub);
+                switchXpubHeader.setTooltip(new Tooltip("Show as " + header.getDisplayName()));
+            }
+        }
     }
 
     @Subscribe

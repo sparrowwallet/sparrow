@@ -23,6 +23,7 @@ public class FontAwesome5 extends GlyphFont {
         CHECK_CIRCLE('\uf058'),
         CIRCLE('\uf111'),
         COINS('\uf51e'),
+        EXCHANGE_ALT('\uf362'),
         EXCLAMATION_CIRCLE('\uf06a'),
         EXCLAMATION_TRIANGLE('\uf071'),
         EXTERNAL_LINK_ALT('\uf35d'),

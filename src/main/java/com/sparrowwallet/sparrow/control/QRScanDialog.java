@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.github.sarxos.webcam.WebcamResolution;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Base43;
@@ -106,6 +107,15 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 Transaction transaction;
                 BitcoinURI bitcoinURI;
                 Address address;
+                ExtendedKey extendedKey;
+                try {
+                    extendedKey = ExtendedKey.fromDescriptor(qrtext);
+                    result = new Result(extendedKey);
+                    return;
+                } catch(Exception e) {
+                    //Ignore, not a valid xpub
+                }
+
                 try {
                     bitcoinURI = new BitcoinURI(qrtext);
                     result = new Result(bitcoinURI);
@@ -180,6 +190,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public final Transaction transaction;
         public final PSBT psbt;
         public final BitcoinURI uri;
+        public final ExtendedKey extendedKey;
         public final String error;
         public final Throwable exception;
 
@@ -187,6 +198,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.transaction = transaction;
             this.psbt = null;
             this.uri = null;
+            this.extendedKey = null;
             this.error = null;
             this.exception = null;
         }
@@ -195,6 +207,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.transaction = null;
             this.psbt = psbt;
             this.uri = null;
+            this.extendedKey = null;
             this.error = null;
             this.exception = null;
         }
@@ -203,6 +216,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.transaction = null;
             this.psbt = null;
             this.uri = uri;
+            this.extendedKey = null;
             this.error = null;
             this.exception = null;
         }
@@ -211,6 +225,16 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.transaction = null;
             this.psbt = null;
             this.uri = BitcoinURI.fromAddress(address);
+            this.extendedKey = null;
+            this.error = null;
+            this.exception = null;
+        }
+
+        public Result(ExtendedKey extendedKey) {
+            this.transaction = null;
+            this.psbt = null;
+            this.uri = null;
+            this.extendedKey = extendedKey;
             this.error = null;
             this.exception = null;
         }
@@ -219,6 +243,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.transaction = null;
             this.psbt = null;
             this.uri = null;
+            this.extendedKey = null;
             this.error = error;
             this.exception = null;
         }
@@ -227,6 +252,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.transaction = null;
             this.psbt = null;
             this.uri = null;
+            this.extendedKey = null;
             this.error = null;
             this.exception = exception;
         }
