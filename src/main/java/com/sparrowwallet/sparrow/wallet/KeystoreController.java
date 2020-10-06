@@ -121,6 +121,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             setXpubContext(keystore.getExtendedPublicKey());
         } else {
             switchXpubHeader.setDisable(true);
+            xpubField.setText(Network.get().getXpubHeader().getDisplayName() + ":");
         }
 
         if(keystore.getKeyDerivation() != null) {
@@ -163,7 +164,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     private void setXpubContext(ExtendedKey extendedKey) {
         ContextMenu contextMenu = new ContextMenu();
-        MenuItem copyXPub = new MenuItem("Copy xPub");
+        MenuItem copyXPub = new MenuItem("Copy " + Network.get().getXpubHeader().getDisplayName());
         copyXPub.setOnAction(AE -> {
             contextMenu.hide();
             ClipboardContent content = new ClipboardContent();
@@ -185,11 +186,11 @@ public class KeystoreController extends WalletFormController implements Initiali
             });
             contextMenu.getItems().add(copyOtherPub);
 
-            xpubField.setText("xPub / " + header.getDisplayName() + ":");
+            xpubField.setText(Network.get().getXpubHeader().getDisplayName() + " / " + header.getDisplayName() + ":");
             switchXpubHeader.setDisable(false);
             switchXpubHeader.setTooltip(new Tooltip("Show as " + header.getDisplayName()));
         } else {
-            xpubField.setText("xPub:");
+            xpubField.setText(Network.get().getXpubHeader().getDisplayName() + ":");
             switchXpubHeader.setDisable(true);
         }
 
@@ -224,8 +225,8 @@ public class KeystoreController extends WalletFormController implements Initiali
         ));
 
         validationSupport.registerValidator(xpub, Validator.combine(
-                Validator.createEmptyValidator("xPub is required"),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "xPub is invalid", !ExtendedKey.isValid(newValue))
+                Validator.createEmptyValidator(Network.get().getXpubHeader().getDisplayName() + " is required"),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is invalid", !ExtendedKey.isValid(newValue))
         ));
 
         validationSupport.registerValidator(derivation, Validator.combine(
@@ -367,7 +368,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 log.error("Error opening webcam", result.exception);
                 AppController.showErrorDialog("Error opening webcam", result.exception.getMessage());
             } else {
-                AppController.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid xPub");
+                AppController.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid " + Network.get().getXpubHeader().getDisplayName());
             }
         }
     }
@@ -383,7 +384,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             if(!xpub.getText().startsWith(header.getName())) {
                 String otherPub = keystore.getExtendedPublicKey().getExtendedKey(header);
                 xpub.setText(otherPub);
-                switchXpubHeader.setTooltip(new Tooltip("Show as xPub"));
+                switchXpubHeader.setTooltip(new Tooltip("Show as " + Network.get().getXpubHeader().getDisplayName()));
             } else {
                 String xPub = keystore.getExtendedPublicKey().getExtendedKey();
                 xpub.setText(xPub);

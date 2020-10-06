@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -40,7 +41,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
             keystoreImportController.initializeView(wallet);
             keystoreImportController.selectSource(initialSource);
 
-            final ButtonType watchOnlyButtonType = new javafx.scene.control.ButtonType("xPub / Watch Only Wallet", ButtonBar.ButtonData.LEFT);
+            final ButtonType watchOnlyButtonType = new javafx.scene.control.ButtonType(Network.get().getXpubHeader().getDisplayName() + " / Watch Only Wallet", ButtonBar.ButtonData.LEFT);
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             dialogPane.getButtonTypes().addAll(watchOnlyButtonType, cancelButtonType);
             dialogPane.setPrefWidth(650);
