@@ -28,7 +28,7 @@
             <Fieldset inputGrow="SOMETIMES" text="Advanced Settings" styleClass="wideLabelFieldSet">
                 <Field text="Gap limit:">
                     <Spinner fx:id="gapLimit" editable="true" prefWidth="90" />
-                    <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs"/>
+                    <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs."/>
                 </Field>
             </Fieldset>
         </Form>

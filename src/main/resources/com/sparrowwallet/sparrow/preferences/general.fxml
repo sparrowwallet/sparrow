@@ -39,7 +39,7 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
-                <HelpLabel helpText="Display unit for bitcoin amounts. Auto displays amounts over 1 BTC in BTC, and amounts under in satoshis"/>
+                <HelpLabel helpText="Display unit for bitcoin amounts.\nAuto displays amounts over 1 BTC in BTC, and amounts under that in satoshis."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Fiat" styleClass="wideLabelFieldSet">
@@ -61,21 +61,21 @@
         <Fieldset inputGrow="SOMETIMES" text="Coin Selection" styleClass="wideLabelFieldSet">
             <Field text="Group by address:">
                 <UnlabeledToggleSwitch fx:id="groupByAddress" />
-                <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once"/>
+                <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once."/>
             </Field>
             <Field text="Use mempool change:">
                 <UnlabeledToggleSwitch fx:id="includeMempoolChange" />
-                <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool where all their inputs are from that wallet"/>
+                <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool where all their inputs are from that wallet."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Notifications" styleClass="wideLabelFieldSet">
             <Field text="New transactions:">
                 <UnlabeledToggleSwitch fx:id="notifyNewTransactions" />
-                <HelpLabel helpText="Show system notifications on new wallet transactions"/>
+                <HelpLabel helpText="Show system notifications on new wallet transactions?"/>
             </Field>
             <Field text="Software updates:">
                 <UnlabeledToggleSwitch fx:id="checkNewVersions" />
-                <HelpLabel helpText="Check for updates to Sparrow"/>
+                <HelpLabel helpText="Check for updates to Sparrow?"/>
             </Field>
         </Fieldset>
     </Form>

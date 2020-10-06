@@ -36,7 +36,7 @@ public class HelpLabel extends Label {
     private StringProperty helpText;
 
     public final void setHelpText(String value) {
-        helpTextProperty().setValue(value);
+        helpTextProperty().setValue(value.replace("\\n", "\n"));
     }
 
     public final String getHelpText() {
