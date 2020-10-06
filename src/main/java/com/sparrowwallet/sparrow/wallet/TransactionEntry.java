@@ -116,6 +116,8 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TransactionEntry that = (TransactionEntry) o;
+        // Even though the txid identifies a transaction, receiving an incomplete set of script hash notifications can result in some inputs/outputs for a tx being missing.
+        // To resolve this we check the number of children, but not the children themselves (since we don't care here when they are spent)
         return wallet.equals(that.wallet) && blockTransaction.equals(that.blockTransaction) && getChildren().size() == that.getChildren().size();
     }
 
