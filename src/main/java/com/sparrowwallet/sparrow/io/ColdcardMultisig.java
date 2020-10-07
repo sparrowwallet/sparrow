@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
-import com.google.gson.Gson;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
@@ -19,8 +18,6 @@ import java.util.List;
 import java.util.Set;
 
 public class ColdcardMultisig implements WalletImport, KeystoreFileImport, WalletExport {
-    private final Gson gson = new Gson();
-
     @Override
     public String getName() {
         return "Coldcard Multisig";
@@ -153,7 +150,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         }
 
         if(!wallet.getPolicyType().equals(PolicyType.MULTI)) {
-            throw new ExportException("Coldcard multisig import requires a multisig wallet");
+            throw new ExportException(getName() + " import requires a multisig wallet");
         }
 
         boolean multipleDerivations = false;
@@ -167,7 +164,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
-            writer.append("# Coldcard Multisig setup file (created by Sparrow)\n");
+            writer.append("# " + getName() + " setup file (created by Sparrow)\n");
             writer.append("#\n");
             writer.append("Name: ").append(wallet.getName()).append("\n");
             writer.append("Policy: ").append(Integer.toString(wallet.getDefaultPolicy().getNumSignaturesRequired())).append(" of ").append(Integer.toString(wallet.getKeystores().size())).append("\n");

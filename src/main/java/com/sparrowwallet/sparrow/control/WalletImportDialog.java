@@ -31,7 +31,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         stackPane.getChildren().add(anchorPane);
 
         ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setPrefHeight(400);
+        scrollPane.setPrefHeight(420);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         anchorPane.getChildren().add(scrollPane);
         scrollPane.setFitToWidth(true);
@@ -39,13 +39,13 @@ public class WalletImportDialog extends Dialog<Wallet> {
         AnchorPane.setRightAnchor(scrollPane, 0.0);
 
         Accordion importAccordion = new Accordion();
-        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig());
+        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig());
         for(KeystoreFileImport importer : keystoreImporters) {
             FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
             importAccordion.getPanes().add(importPane);
         }
 
-        List<WalletImport> walletImporters = List.of(new ColdcardMultisig(), new Electrum(), new Specter());
+        List<WalletImport> walletImporters = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new Specter());
         for(WalletImport importer : walletImporters) {
             FileWalletImportPane importPane = new FileWalletImportPane(importer);
             importAccordion.getPanes().add(importPane);
@@ -55,7 +55,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
         dialogPane.setPrefWidth(500);
-        dialogPane.setPrefHeight(480);
+        dialogPane.setPrefHeight(500);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);
     }

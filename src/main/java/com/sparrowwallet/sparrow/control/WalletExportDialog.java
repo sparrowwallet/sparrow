@@ -6,10 +6,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
-import com.sparrowwallet.sparrow.io.ColdcardMultisig;
-import com.sparrowwallet.sparrow.io.Electrum;
-import com.sparrowwallet.sparrow.io.Specter;
-import com.sparrowwallet.sparrow.io.WalletExport;
+import com.sparrowwallet.sparrow.io.*;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
@@ -35,7 +32,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
         stackPane.getChildren().add(anchorPane);
 
         ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setPrefHeight(280);
+        scrollPane.setPrefHeight(400);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         anchorPane.getChildren().add(scrollPane);
         scrollPane.setFitToWidth(true);
@@ -46,7 +43,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
         if(wallet.getPolicyType() == PolicyType.SINGLE) {
             exporters = List.of(new Electrum(), new Specter());
         } else if(wallet.getPolicyType() == PolicyType.MULTI) {
-            exporters = List.of(new ColdcardMultisig(), new Electrum(), new Specter());
+            exporters = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new Specter());
         } else {
             throw new UnsupportedOperationException("Cannot export wallet with policy type " + wallet.getPolicyType());
         }
@@ -61,7 +58,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
         dialogPane.setPrefWidth(500);
-        dialogPane.setPrefHeight(360);
+        dialogPane.setPrefHeight(480);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);
     }

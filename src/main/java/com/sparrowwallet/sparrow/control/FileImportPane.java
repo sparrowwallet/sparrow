@@ -53,7 +53,8 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         fileChooser.setTitle("Open " + importer.getWalletModel().toDisplayString() + " File");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("All Files", "*.*"),
-                new FileChooser.ExtensionFilter("JSON", "*.json")
+                new FileChooser.ExtensionFilter("JSON", "*.json"),
+                new FileChooser.ExtensionFilter("TXT", "*.txt")
         );
 
         File file = fileChooser.showOpenDialog(window);

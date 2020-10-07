@@ -885,7 +885,7 @@ public class AppController implements Initializable {
     }
 
     private boolean attemptImportWallet(File file, SecureString password) {
-        List<WalletImport> walletImporters = List.of(new ColdcardSinglesig(), new ColdcardMultisig(), new Electrum(), new Specter());
+        List<WalletImport> walletImporters = List.of(new ColdcardSinglesig(), new ColdcardMultisig(), new Electrum(), new Specter(), new CoboVaultSinglesig(), new CoboVaultMultisig());
         for(WalletImport importer : walletImporters) {
             try(FileInputStream inputStream = new FileInputStream(file)) {
                 if(importer.isEncrypted(file) && password == null) {
