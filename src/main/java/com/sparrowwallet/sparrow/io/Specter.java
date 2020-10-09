@@ -76,6 +76,11 @@ public class Specter implements WalletImport, WalletExport {
     }
 
     @Override
+    public boolean isScannable() {
+        return true;
+    }
+
+    @Override
     public String getName() {
         return "Specter";
     }

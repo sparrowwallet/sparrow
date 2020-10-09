@@ -36,7 +36,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
     private byte[] fileBytes;
 
     public FileWalletKeystoreImportPane(KeystoreFileImport importer) {
-        super(importer, importer.getName(), "Wallet file import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer, importer.getName(), "Wallet import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png", importer.isScannable());
         this.importer = importer;
     }
 

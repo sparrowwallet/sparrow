@@ -318,6 +318,11 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
+    public boolean isScannable() {
+        return false;
+    }
+
+    @Override
     public String getWalletExportDescription() {
         return "Export this wallet as an Electrum wallet file.";
     }

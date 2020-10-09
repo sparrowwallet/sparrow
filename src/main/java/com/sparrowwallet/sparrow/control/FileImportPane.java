@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.FileImport;
 import com.sparrowwallet.sparrow.io.ImportException;
 import javafx.beans.property.SimpleStringProperty;
@@ -9,41 +10,72 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Control;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.control.textfield.TextFields;
+import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 public abstract class FileImportPane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(FileImportPane.class);
 
     private final FileImport importer;
-    protected Button importButton;
+    protected ButtonBase importButton;
     private final SimpleStringProperty password = new SimpleStringProperty("");
+    private final boolean scannable;
 
-    public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl) {
+    public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl, boolean scannable) {
         super(title, description, content, imageUrl);
         this.importer = importer;
+        this.scannable = scannable;
+
+        buttonBox.getChildren().clear();
+        buttonBox.getChildren().add(createButton());
     }
 
     @Override
     protected Control createButton() {
-        importButton = new Button("Import File...");
-        importButton.setAlignment(Pos.CENTER_RIGHT);
-        importButton.setOnAction(event -> {
-            importFile();
-        });
-        return importButton;
+        if(scannable) {
+            ToggleButton scanButton = new ToggleButton("Scan...");
+            Glyph cameraGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CAMERA);
+            cameraGlyph.setFontSize(12);
+            scanButton.setGraphic(cameraGlyph);
+            scanButton.setOnAction(event -> {
+                scanButton.setSelected(false);
+                importQR();
+            });
+
+            ToggleButton fileButton = new ToggleButton("Import File...");
+            fileButton.setAlignment(Pos.CENTER_RIGHT);
+            fileButton.setOnAction(event -> {
+                fileButton.setSelected(false);
+                importFile();
+            });
+            importButton = fileButton;
+
+            SegmentedButton segmentedButton = new SegmentedButton();
+            segmentedButton.getButtons().addAll(scanButton, fileButton);
+            return segmentedButton;
+        } else {
+            importButton = new Button("Import File...");
+            importButton.setAlignment(Pos.CENTER_RIGHT);
+            importButton.setOnAction(event -> {
+                importFile();
+            });
+            return importButton;
+        }
     }
 
     private void importFile() {
@@ -90,6 +122,29 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 }
                 setError("Import Error", errorMessage);
                 importButton.setDisable(false);
+            }
+        }
+    }
+
+    private void importQR() {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.payload != null) {
+                try {
+                    importFile(importer.getName(), new ByteArrayInputStream(result.payload.getBytes(StandardCharsets.UTF_8)), null);
+                } catch(Exception e) {
+                    log.error("Error importing QR", e);
+                    String errorMessage = e.getMessage();
+                    if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
+                        errorMessage = e.getCause().getMessage();
+                    }
+                    if(e instanceof JsonParseException || e.getCause() instanceof JsonParseException) {
+                        errorMessage = "QR contents were not in JSON format";
+                    }
+                    setError("Import Error", errorMessage);
+                }
             }
         }
     }

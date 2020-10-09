@@ -23,7 +23,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import file created by using the Watch-Only Wallet > Generic Wallet > Export Wallet feature on your Cobo Vault.";
+        return "Import file or QR created by using the Watch-Only Wallet > Generic Wallet > Export Wallet feature on your Cobo Vault.";
     }
 
     @Override
@@ -35,7 +35,11 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
-            CoboVaultKeystore coboKeystore = gson.fromJson(new InputStreamReader(inputStream), CoboVaultKeystore.class);
+            CoboVaultSinglesigKeystore coboKeystore = gson.fromJson(new InputStreamReader(inputStream), CoboVaultSinglesigKeystore.class);
+
+            if(coboKeystore.MasterFingerprint == null || coboKeystore.AccountKeyPath == null || coboKeystore.ExtPubKey == null) {
+                throw new ImportException("Not a valid " + getName() + " keystore export");
+            }
 
             Keystore keystore = new Keystore();
             keystore.setLabel(getName());
@@ -83,7 +87,12 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
         return false;
     }
 
-    private static class CoboVaultKeystore {
+    @Override
+    public boolean isScannable() {
+        return true;
+    }
+
+    private static class CoboVaultSinglesigKeystore {
         public String ExtPubKey;
         public String MasterFingerprint;
         public String AccountKeyPath;

@@ -362,8 +362,6 @@ public class KeystoreController extends WalletFormController implements Initiali
             QRScanDialog.Result result = optionalResult.get();
             if(result.extendedKey != null && result.extendedKey.getKey().isPubKeyOnly()) {
                 xpub.setText(result.extendedKey.getExtendedKey());
-            } else if(result.error != null) {
-                AppController.showErrorDialog("Invalid QR Code", result.error);
             } else if(result.exception != null) {
                 log.error("Error opening webcam", result.exception);
                 AppController.showErrorDialog("Error opening webcam", result.exception.getMessage());

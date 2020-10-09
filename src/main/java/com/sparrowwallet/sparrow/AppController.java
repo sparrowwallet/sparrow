@@ -559,17 +559,14 @@ public class AppController implements Initializable {
             if(result.transaction != null) {
                 Tab tab = addTransactionTab(null, result.transaction);
                 tabs.getSelectionModel().select(tab);
-            }
-            if(result.psbt != null) {
+            } else if(result.psbt != null) {
                 Tab tab = addTransactionTab(null, result.psbt);
                 tabs.getSelectionModel().select(tab);
-            }
-            if(result.error != null) {
-                showErrorDialog("Invalid QR Code", result.error);
-            }
-            if(result.exception != null) {
+            } else if(result.exception != null) {
                 log.error("Error opening webcam", result.exception);
                 showErrorDialog("Error opening webcam", result.exception.getMessage());
+            } else {
+                AppController.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a transaction or PSBT");
             }
         }
     }

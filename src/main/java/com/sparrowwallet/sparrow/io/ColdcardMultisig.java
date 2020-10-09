@@ -37,7 +37,14 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         keystore.setSource(KeystoreSource.HW_AIRGAPPED);
         keystore.setWalletModel(WalletModel.COLDCARD);
 
-        if(scriptType.equals(ScriptType.P2SH)) {
+        if(cck.xpub != null && cck.path != null) {
+            ExtendedKey.Header header = ExtendedKey.Header.fromExtendedKey(cck.xpub);
+            if(header.getDefaultScriptType() != scriptType) {
+                throw new ImportException("This wallet's script type (" + scriptType + ") does not match the " + getName() + " script type (" + header.getDefaultScriptType() + ")");
+            }
+            keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.path));
+            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.xpub));
+        } else if(scriptType.equals(ScriptType.P2SH)) {
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2sh_deriv));
             keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2sh));
         } else if(scriptType.equals(ScriptType.P2SH_P2WSH)) {
@@ -60,6 +67,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         public String p2wsh_p2sh;
         public String p2wsh_deriv;
         public String p2wsh;
+        public String xpub;
+        public String path;
         public String xfp;
     }
 
@@ -198,6 +207,11 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public boolean isEncrypted(File file) {
+        return false;
+    }
+
+    @Override
+    public boolean isScannable() {
         return false;
     }
 }

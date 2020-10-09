@@ -41,6 +41,11 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
+    public boolean isScannable() {
+        return false;
+    }
+
+    @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();

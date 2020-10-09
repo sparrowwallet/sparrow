@@ -22,12 +22,22 @@ import javafx.scene.control.DialogPane;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.tools.Borders;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.IntStream;
+
 public class QRScanDialog extends Dialog<QRScanDialog.Result> {
     private final URDecoder decoder;
     private final WebcamService webcamService;
+    private List<String> parts;
 
     private boolean isUr;
     private QRScanDialog.Result result;
+
+    private static final Pattern PART_PATTERN = Pattern.compile("p(\\d+)of(\\d+) (.+)");
 
     public QRScanDialog() {
         this.decoder = new URDecoder();
@@ -69,6 +79,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
             //Try text first
             String qrtext = qrResult.getText();
+            Matcher partMatcher = PART_PATTERN.matcher(qrtext);
+
             if(isUr || qrtext.toLowerCase().startsWith(UR.UR_PREFIX)) {
                 isUr = true;
                 decoder.receivePart(qrtext);
@@ -101,6 +113,37 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     } else {
                         result = new Result(urResult.error);
                     }
+                }
+            } else if(partMatcher.matches()) {
+                int m = Integer.parseInt(partMatcher.group(1));
+                int n = Integer.parseInt(partMatcher.group(2));
+                String payload = partMatcher.group(3);
+
+                if(parts == null) {
+                    parts = new ArrayList<>(n);
+                    IntStream.range(0, n).forEach(i -> parts.add(null));
+                }
+                parts.set(m - 1, payload);
+
+                if(parts.stream().filter(Objects::nonNull).count() == n) {
+                    String complete = String.join("", parts);
+                    try {
+                        PSBT psbt = PSBT.fromString(complete);
+                        result = new Result(psbt);
+                        return;
+                    } catch(Exception e) {
+                        //ignore, bytes not parsable as PSBT
+                    }
+
+                    try {
+                        Transaction transaction = new Transaction(Utils.hexToBytes(complete));
+                        result = new Result(transaction);
+                        return;
+                    } catch(Exception e) {
+                        //ignore, bytes not parsable as tx
+                    }
+
+                    result = new Result("Parsed QR parts were not a PSBT or transaction");
                 }
             } else {
                 PSBT psbt;
@@ -166,7 +209,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
                 //Try Base43 used by Electrum
                 try {
-                    psbt = new PSBT(Base43.decode(qrResult.getText()));
+                    psbt = new PSBT(Base43.decode(qrtext));
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -174,14 +217,14 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 try {
-                    transaction = new Transaction(Base43.decode(qrResult.getText()));
+                    transaction = new Transaction(Base43.decode(qrtext));
                     result = new Result(transaction);
                     return;
                 } catch(Exception e) {
                     //Ignore, not parseable as base43 decoded bytes
                 }
 
-                result = new Result("Cannot parse QR code into a PSBT, transaction or address");
+                result = new Result(qrtext);
             }
         }
     }
@@ -191,7 +234,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public final PSBT psbt;
         public final BitcoinURI uri;
         public final ExtendedKey extendedKey;
-        public final String error;
+        public final String payload;
         public final Throwable exception;
 
         public Result(Transaction transaction) {
@@ -199,7 +242,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
-            this.error = null;
+            this.payload = null;
             this.exception = null;
         }
 
@@ -208,7 +251,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = psbt;
             this.uri = null;
             this.extendedKey = null;
-            this.error = null;
+            this.payload = null;
             this.exception = null;
         }
 
@@ -217,7 +260,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = uri;
             this.extendedKey = null;
-            this.error = null;
+            this.payload = null;
             this.exception = null;
         }
 
@@ -226,7 +269,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = BitcoinURI.fromAddress(address);
             this.extendedKey = null;
-            this.error = null;
+            this.payload = null;
             this.exception = null;
         }
 
@@ -235,16 +278,16 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = extendedKey;
-            this.error = null;
+            this.payload = null;
             this.exception = null;
         }
 
-        public Result(String error) {
+        public Result(String payload) {
             this.transaction = null;
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
-            this.error = error;
+            this.payload = payload;
             this.exception = null;
         }
 
@@ -253,7 +296,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
-            this.error = null;
+            this.payload = null;
             this.exception = exception;
         }
     }
