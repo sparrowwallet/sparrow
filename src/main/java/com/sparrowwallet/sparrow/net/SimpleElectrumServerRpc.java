@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(SimpleElectrumServerRpc.class);
     private static final int MAX_TARGET_BLOCKS = 25;
+    private static final int PER_REQUEST_DELAY_MILLIS = 50;
 
     private final AtomicLong idCounter = new AtomicLong();
 
@@ -72,7 +73,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 ScriptHashTx[] scriptHashTxes = client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute();
                 result.put(path, scriptHashTxes);
-            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException e) {
+                Thread.sleep(PER_REQUEST_DELAY_MILLIS);
+            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException | InterruptedException e) {
                 if(failOnError) {
                     throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);
                 }
@@ -93,7 +95,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 ScriptHashTx[] scriptHashTxes = client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_mempool").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute();
                 result.put(path, scriptHashTxes);
-            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException e) {
+                Thread.sleep(PER_REQUEST_DELAY_MILLIS);
+            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException | InterruptedException e) {
                 if(failOnError) {
                     throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);
                 }
@@ -115,7 +118,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 String scriptHash = client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable();
                 result.put(path, scriptHash);
-            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException e) {
+                Thread.sleep(PER_REQUEST_DELAY_MILLIS);
+            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException | InterruptedException e) {
                 //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
                 throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);
             }
@@ -134,7 +138,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 String blockHeader = client.createRequest().returnAs(String.class).method("blockchain.block.header").id(idCounter.incrementAndGet()).params(blockHeight).execute();
                 result.put(blockHeight, blockHeader);
-            } catch(IllegalStateException | IllegalArgumentException e) {
+                Thread.sleep(PER_REQUEST_DELAY_MILLIS);
+            } catch(IllegalStateException | IllegalArgumentException | InterruptedException e) {
                 log.warn("Failed to retrieve block header for block height: " + blockHeight + " (" + e.getMessage() + ")");
             } catch(JsonRpcException e) {
                 log.warn("Failed to retrieve block header for block height: " + blockHeight + " (" + e.getErrorMessage() + ")");
@@ -154,7 +159,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 String rawTxHex = client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid).execute();
                 result.put(txid, rawTxHex);
-            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException e) {
+                Thread.sleep(PER_REQUEST_DELAY_MILLIS);
+            } catch(JsonRpcException | IllegalStateException | IllegalArgumentException | InterruptedException e) {
                 result.put(txid, Sha256Hash.ZERO_HASH.toString());
             }
         }
@@ -171,8 +177,9 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             try {
                 VerboseTransaction verboseTransaction = client.createRequest().returnAs(VerboseTransaction.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid, true).execute();
                 result.put(txid, verboseTransaction);
+                Thread.sleep(PER_REQUEST_DELAY_MILLIS);
             } catch(Exception e) {
-                //electrs does not currently support the verbose parameter, so try to fetch an incomplete VerboseTransaction without it
+                //electrs-esplora does not currently support the verbose parameter, so try to fetch an incomplete VerboseTransaction without it
                 //Note that without the script hash associated with the transaction, we can't get a block height as there is no way in the Electrum RPC protocol to do this
                 //We mark this VerboseTransaction as incomplete by assigning it a Sha256Hash.ZERO_HASH blockhash
                 log.debug("Error retrieving transaction: " + txid + " (" + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()) + ")");
@@ -218,7 +225,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 try {
                     Double targetBlocksFeeRateBtcKb = client.createRequest().returnAs(Double.class).method("blockchain.estimatefee").id(idCounter.incrementAndGet()).params(targetBlock).execute();
                     result.put(targetBlock, targetBlocksFeeRateBtcKb);
-                } catch(IllegalStateException | IllegalArgumentException e) {
+                    Thread.sleep(PER_REQUEST_DELAY_MILLIS);
+                } catch(IllegalStateException | IllegalArgumentException | InterruptedException e) {
                     log.warn("Failed to retrieve fee rate for target blocks: " + targetBlock + " (" + e.getMessage() + ")");
                     result.put(targetBlock, result.values().stream().mapToDouble(v -> v).min().orElse(0.0001d));
                 } catch(JsonRpcException e) {
