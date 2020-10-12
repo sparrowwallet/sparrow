@@ -158,17 +158,17 @@ public class ElectrumServer {
             gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
         }
 
-        //All WalletNode keys in nodeTransactionMap with non-null values need to have their history fetched
-        Collection<WalletNode> usedNodes = nodeTransactionMap.entrySet().stream().filter(entry -> entry.getValue() != null).map(Map.Entry::getKey).collect(Collectors.toList());
+        //All WalletNode keys in nodeTransactionMap need to have their history fetched
+        Collection<WalletNode> usedNodes = new ArrayList<>(nodeTransactionMap.keySet());
         log.debug("Retrieving history for " + usedNodes.stream().map(WalletNode::getDerivationPath).collect(Collectors.joining(", ")));
         getReferences(wallet, usedNodes, nodeTransactionMap);
 
         //Set the remaining WalletNode keys to empty sets to indicate no history
-        nodeTransactionMap.entrySet().stream().filter(entry -> entry.getValue() == null).forEach(entry -> entry.setValue(Collections.emptySet()));
+        purposeNode.getChildren().stream().filter(node -> !nodeTransactionMap.containsKey(node)).forEach(node -> nodeTransactionMap.put(node, Collections.emptySet()));
     }
 
     private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
-        int highestIndex = nodeTransactionMap.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(entry -> entry.getKey().getIndex()).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
+        int highestIndex = nodeTransactionMap.keySet().stream().map(WalletNode::getIndex).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
         return highestIndex + wallet.getGapLimit() + 1;
     }
 
