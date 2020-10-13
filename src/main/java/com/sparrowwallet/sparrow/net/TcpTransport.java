@@ -19,6 +19,7 @@ public class TcpTransport implements Transport, Closeable {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
+    private static final int READ_TIMEOUT_SECS = 3;
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -64,7 +65,7 @@ public class TcpTransport implements Transport, Closeable {
 
     private String readResponse() throws IOException {
         try {
-            if(!readLock.tryLock(60, TimeUnit.SECONDS)) {
+            if(!readLock.tryLock(READ_TIMEOUT_SECS, TimeUnit.SECONDS)) {
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {

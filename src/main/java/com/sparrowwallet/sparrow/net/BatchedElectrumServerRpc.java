@@ -18,6 +18,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
+    private static final int MAX_RETRIES = 3;
+    private static final int RETRY_DELAY = 0;
 
     private final AtomicLong idCounter = new AtomicLong();
 
@@ -25,8 +27,9 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public void ping(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            client.createRequest().method("server.ping").id(idCounter.incrementAndGet()).executeNullable();
-        } catch(JsonRpcException e) {
+            new RetryLogic<>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().method("server.ping").id(idCounter.incrementAndGet()).executeNullable());
+        } catch(Exception e) {
             throw new ElectrumServerRpcException("Error pinging server", e);
         }
     }
@@ -35,8 +38,9 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).param("client_name", clientName).param("protocol_version", supportedVersions).execute();
-        } catch(JsonRpcException e) {
+            return new RetryLogic<List<String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).param("client_name", clientName).param("protocol_version", supportedVersions).execute());
+        } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server version", e);
         }
     }
@@ -45,8 +49,9 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public String getServerBanner(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(String.class).method("server.banner").id(idCounter.incrementAndGet()).execute();
-        } catch(JsonRpcException e) {
+            return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(String.class).method("server.banner").id(idCounter.incrementAndGet()).execute());
+        } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server banner", e);
         }
     }
@@ -55,8 +60,9 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public BlockHeaderTip subscribeBlockHeaders(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(idCounter.incrementAndGet()).execute();
-        } catch(JsonRpcException e) {
+            return new RetryLogic<BlockHeaderTip>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(idCounter.incrementAndGet()).execute());
+        } catch(Exception e) {
             throw new ElectrumServerRpcException("Error subscribing to block headers", e);
         }
     }
@@ -73,7 +79,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
+            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch (JsonRpcBatchException e) {
             if(failOnError) {
                 throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + e.getErrors().keySet(), e);
@@ -85,6 +91,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             }
 
             return result;
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + pathScriptHashes.keySet(), e);
         }
     }
 
@@ -99,8 +107,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch (JsonRpcBatchException e) {
+            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+        } catch(JsonRpcBatchException e) {
             if(failOnError) {
                 throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + e.getErrors().keySet(), e);
             }
@@ -111,6 +119,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             }
 
             return result;
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + pathScriptHashes.keySet(), e);
         }
     }
 
@@ -125,10 +135,12 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
+            return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
             throw new ElectrumServerRpcException("Failed to subscribe for updates for paths: " + e.getErrors().keySet(), e);
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to subscribe for updates for paths: " + pathScriptHashes.keySet(), e);
         }
     }
 
@@ -144,9 +156,11 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch (JsonRpcBatchException e) {
+            return new RetryLogic<Map<Integer, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+        } catch(JsonRpcBatchException e) {
             return (Map<Integer, String>)e.getSuccesses();
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to block headers for block heights: " + blockHeights, e);
         }
     }
 
@@ -162,8 +176,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch (JsonRpcBatchException e) {
+            return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+        } catch(JsonRpcBatchException e) {
             Map<String, String> result = (Map<String, String>)e.getSuccesses();
 
             String strErrorTx = Sha256Hash.ZERO_HASH.toString();
@@ -173,6 +187,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             }
 
             return result;
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve transactions for txids: " + txids, e);
         }
     }
 
@@ -186,10 +202,12 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch (JsonRpcBatchException e) {
+            return new RetryLogic<Map<String, VerboseTransaction>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+        } catch(JsonRpcBatchException e) {
             log.warn("Some errors retrieving transactions: " + e.getErrors());
             return (Map<String, VerboseTransaction>)e.getSuccesses();
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve verbose transactions for txids: " + txids, e);
         }
     }
 
@@ -202,9 +220,11 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
+            return new RetryLogic<Map<Integer, Double>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             throw new ElectrumServerRpcException("Error getting fee estimates", e);
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error getting fee estimates for target blocks: " + targetBlocks, e);
         }
     }
 
@@ -212,8 +232,9 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Double getMinimumRelayFee(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(Double.class).method("blockchain.relayfee").id(idCounter.incrementAndGet()).execute();
-        } catch(JsonRpcException e) {
+            return new RetryLogic<Double>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(Double.class).method("blockchain.relayfee").id(idCounter.incrementAndGet()).execute());
+        } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting minimum relay fee", e);
         }
     }
@@ -222,9 +243,12 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public String broadcastTransaction(Transport transport, String txHex) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(idCounter.incrementAndGet()).param("raw_tx", txHex).execute();
+            return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(idCounter.incrementAndGet()).param("raw_tx", txHex).execute());
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException(e.getErrorMessage().getMessage(), e);
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error broadcasting transaction", e);
         }
     }
 }
