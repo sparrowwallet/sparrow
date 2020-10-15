@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
 
-    private static final int SERVER_PING_PERIOD = 10 * 1000;
+    private static final int SERVER_PING_PERIOD = 8 * 60 * 1000;
     private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
     private static final int RATES_PERIOD = 5 * 60 * 1000;
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;

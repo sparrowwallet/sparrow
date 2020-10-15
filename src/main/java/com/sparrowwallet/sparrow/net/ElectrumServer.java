@@ -139,6 +139,42 @@ public class ElectrumServer {
         Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
         subscribeWalletNodes(wallet, nodes, nodeTransactionMap, 0);
         getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, 0);
+        Set<BlockTransactionHash> newReferences = nodeTransactionMap.values().stream().flatMap(Collection::stream).filter(ref -> !wallet.getTransactions().containsKey(ref.getHash())).collect(Collectors.toSet());
+        getReferencedTransactions(wallet, nodeTransactionMap);
+
+        if(!newReferences.isEmpty()) {
+            //Look for additional nodes to fetch history for by considering the inputs and outputs of new transactions found
+            log.debug("Found new transactions: " + newReferences);
+            Set<WalletNode> additionalNodes = new HashSet<>();
+            Map<String, WalletNode> walletScriptHashes = getAllScriptHashes(wallet);
+            for(BlockTransactionHash reference : newReferences) {
+                BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
+                for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
+                    WalletNode node = walletScriptHashes.get(getScriptHash(txOutput));
+                    if(node != null && !nodes.contains(node)) {
+                        additionalNodes.add(node);
+                    }
+                }
+
+                for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
+                    BlockTransaction inputBlockTransaction = wallet.getTransactions().get(txInput.getOutpoint().getHash());
+                    if(inputBlockTransaction != null) {
+                        TransactionOutput txOutput = inputBlockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+                        WalletNode node = walletScriptHashes.get(getScriptHash(txOutput));
+                        if(node != null && !nodes.contains(node)) {
+                            additionalNodes.add(node);
+                        }
+                    }
+                }
+            }
+
+            if(!additionalNodes.isEmpty()) {
+                log.debug("Found additional nodes: " + additionalNodes);
+                subscribeWalletNodes(wallet, additionalNodes, nodeTransactionMap, 0);
+                getReferences(wallet, additionalNodes, nodeTransactionMap, 0);
+                getReferencedTransactions(wallet, nodeTransactionMap);
+            }
+        }
 
         return nodeTransactionMap;
     }
@@ -149,7 +185,7 @@ public class ElectrumServer {
         subscribeWalletNodes(wallet, purposeNode.getChildren(), nodeTransactionMap, 0);
         //All WalletNode keys in nodeTransactionMap need to have their history fetched (nodes without history will not be keys in the map yet)
         getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, 0);
-        //Fetch all referenced transaction to wallet transactions map
+        //Fetch all referenced transaction to wallet transactions map. We do this now even though it is done again later to get it done before too many script hashes are subscribed
         getReferencedTransactions(wallet, nodeTransactionMap);
 
         //Because node children are added sequentially in WalletNode.fillToIndex, we can simply look at the number of children to determine the highest filled index
@@ -589,6 +625,18 @@ public class ElectrumServer {
         }
     }
 
+    public static Map<String, WalletNode> getAllScriptHashes(Wallet wallet) {
+        Map<String, WalletNode> scriptHashes = new HashMap<>();
+        List<KeyPurpose> purposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
+        for(KeyPurpose keyPurpose : purposes) {
+            for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
+                scriptHashes.put(getScriptHash(wallet, childNode), childNode);
+            }
+        }
+
+        return scriptHashes;
+    }
+
     public static String getScriptHash(Wallet wallet, WalletNode node) {
         byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
@@ -648,7 +696,7 @@ public class ElectrumServer {
     }
 
     public static class ConnectionService extends ScheduledService<FeeRatesUpdatedEvent> implements Thread.UncaughtExceptionHandler {
-        private static final int FEE_RATES_PERIOD = 5 * 60 * 1000;
+        private static final int FEE_RATES_PERIOD = 10 * 60 * 1000;
 
         private final boolean subscribe;
         private boolean firstCall = true;

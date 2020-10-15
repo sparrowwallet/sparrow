@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.net;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.net.HostAndPort;
+import com.google.gson.Gson;
 import com.sparrowwallet.sparrow.io.Config;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.SocketFactory;
 import java.io.*;
 import java.net.Socket;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -19,7 +21,7 @@ public class TcpTransport implements Transport, Closeable {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
-    private static final int READ_TIMEOUT_SECS = 3;
+    private static final int READ_TIMEOUT_SECS = 15;
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -33,13 +35,14 @@ public class TcpTransport implements Transport, Closeable {
 
     private final ReentrantLock clientRequestLock = new ReentrantLock();
     private boolean running = false;
-    private boolean reading = true;
+    private volatile boolean reading = true;
     private boolean firstRead = true;
 
     private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
     private final SubscriptionService subscriptionService = new SubscriptionService();
 
     private Exception lastException;
+    private final Gson gson = new Gson();
 
     public TcpTransport(HostAndPort server) {
         this.server = server;
@@ -50,8 +53,17 @@ public class TcpTransport implements Transport, Closeable {
     public @NotNull String pass(@NotNull String request) throws IOException {
         clientRequestLock.lock();
         try {
+            Rpc sentRpc = request.startsWith("{") ? gson.fromJson(request, Rpc.class) : null;
+            Rpc recvRpc;
+            String recv;
+
             writeRequest(request);
-            return readResponse();
+            do {
+                recv = readResponse();
+                recvRpc = recv.startsWith("{") ? gson.fromJson(response, Rpc.class) : null;
+            } while(!Objects.equals(recvRpc, sentRpc));
+
+            return recv;
         } finally {
             clientRequestLock.unlock();
         }
@@ -66,6 +78,7 @@ public class TcpTransport implements Transport, Closeable {
     private String readResponse() throws IOException {
         try {
             if(!readLock.tryLock(READ_TIMEOUT_SECS, TimeUnit.SECONDS)) {
+                log.debug("No response from server");
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {
@@ -176,6 +189,27 @@ public class TcpTransport implements Transport, Closeable {
         if(socket != null) {
             running = false;
             socket.close();
+        }
+    }
+
+    private static class Rpc {
+        public String id;
+
+        @Override
+        public boolean equals(Object o) {
+            if(this == o) {
+                return true;
+            }
+            if(o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Rpc rpc = (Rpc) o;
+            return Objects.equals(id, rpc.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id);
         }
     }
 }
