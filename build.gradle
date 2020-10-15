@@ -50,7 +50,7 @@ dependencies {
     implementation('com.github.arteam:simple-json-rpc-server:1.0') {
         exclude group: 'org.slf4j'
     }
-    implementation('co.nstant.in:cbor:0.9')
+    implementation('com.sparrowwallet:hummingbird:1.2')
     implementation('com.nativelibs4java:bridj:0.7-20200803')
     implementation('com.github.sarxos:webcam-capture:0.3.13-SNAPSHOT') {
         exclude group: 'com.nativelibs4java', module: 'bridj'

@@ -18,9 +18,9 @@ open module com.sparrowwallet.sparrow {
     requires simple.json.rpc.core;
     requires org.jetbrains.annotations;
     requires com.fasterxml.jackson.databind;
-    requires cbor;
     requires webcam.capture;
     requires netlayer.jpms;
+    requires hummingbird;
     requires centerdevice.nsmenufx;
     requires jcommander;
     requires slf4j.api;

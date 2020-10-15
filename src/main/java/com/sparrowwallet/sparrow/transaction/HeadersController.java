@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -589,8 +590,12 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
-        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(headersForm.getPsbt().serialize());
-        qrDisplayDialog.show();
+        try {
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(UR.CRYPTO_PSBT_TYPE, headersForm.getPsbt().serialize());
+            qrDisplayDialog.show();
+        } catch(UR.URException e) {
+            log.error("Error creating PSBT UR", e);
+        }
     }
 
     public void scanPSBT(ActionEvent event) {

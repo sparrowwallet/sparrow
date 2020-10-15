@@ -7,8 +7,8 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.io.ImportException;
-import com.sparrowwallet.sparrow.ur.UR;
-import com.sparrowwallet.sparrow.ur.UREncoder;
+import com.sparrowwallet.hummingbird.UR;
+import com.sparrowwallet.hummingbird.UREncoder;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.scene.control.ButtonBar;
@@ -39,8 +39,8 @@ public class QRDisplayDialog extends Dialog<UR> {
 
     private String currentPart;
 
-    public QRDisplayDialog(byte[] data) {
-        this(UR.fromBytes(data));
+    public QRDisplayDialog(String type, byte[] data) throws UR.URException {
+        this(UR.fromBytes(type, data));
     }
 
     public QRDisplayDialog(UR ur) {
