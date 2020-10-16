@@ -285,7 +285,7 @@ public class Storage {
         return getSparrowHome();
     }
 
-    static File getSparrowHome() {
+    public static File getSparrowHome() {
         if(System.getProperty(MainApp.APP_HOME_PROPERTY) != null) {
             return new File(System.getProperty(MainApp.APP_HOME_PROPERTY));
         }

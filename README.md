@@ -52,6 +52,8 @@ As a fallback, the network (mainnet, testnet or regtest) can also be set using a
 
 `export SPARROW_NETWORK=testnet`
 
+A final fallback which can be useful when running the Sparrow binary is to create a file called ``network-testnet`` in the Sparrow home folder (see below) to configure the testnet network.
+
 Note that if you are connecting to an Electrum server when using testnet, that server will need to running on testnet configuration as well.
 
 When not explicitly configured using the command line argument above, Sparrow stores it's mainnet config file, log file and wallets in a home folder location appropriate to the operating system:

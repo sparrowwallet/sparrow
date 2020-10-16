@@ -8,6 +8,7 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.FileType;
 import com.sparrowwallet.sparrow.io.IOUtils;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import javafx.application.Application;
@@ -136,6 +137,11 @@ public class MainApp extends Application {
                     log.warn("Invalid " + NETWORK_ENV_PROPERTY + " property: " + envNetwork);
                 }
             }
+        }
+
+        File testnetFlag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET.getName());
+        if(testnetFlag.exists()) {
+            Network.set(Network.TESTNET);
         }
 
         if(Network.get() != Network.MAINNET) {
