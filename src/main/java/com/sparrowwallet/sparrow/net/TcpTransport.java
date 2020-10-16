@@ -21,7 +21,7 @@ public class TcpTransport implements Transport, Closeable {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
-    private static final int READ_TIMEOUT_SECS = 15;
+    private static final int[] READ_TIMEOUT_SECS = {3, 8, 16, 34};
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -37,6 +37,7 @@ public class TcpTransport implements Transport, Closeable {
     private boolean running = false;
     private volatile boolean reading = true;
     private boolean firstRead = true;
+    private int readTimeoutIndex;
 
     private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
     private final SubscriptionService subscriptionService = new SubscriptionService();
@@ -77,12 +78,17 @@ public class TcpTransport implements Transport, Closeable {
 
     private String readResponse() throws IOException {
         try {
-            if(!readLock.tryLock(READ_TIMEOUT_SECS, TimeUnit.SECONDS)) {
-                log.debug("No response from server");
+            if(!readLock.tryLock(READ_TIMEOUT_SECS[readTimeoutIndex], TimeUnit.SECONDS)) {
+                readTimeoutIndex = Math.min(readTimeoutIndex + 1, READ_TIMEOUT_SECS.length - 1);
+                log.debug("No response from server, setting read timeout to " + READ_TIMEOUT_SECS[readTimeoutIndex] + " secs");
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {
             throw new IOException("Read thread interrupted");
+        }
+
+        if(readTimeoutIndex == READ_TIMEOUT_SECS.length - 1) {
+            readTimeoutIndex--;
         }
 
         try {
