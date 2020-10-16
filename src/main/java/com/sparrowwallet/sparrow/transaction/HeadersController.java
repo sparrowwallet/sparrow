@@ -837,7 +837,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         if(headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
-            List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).collect(Collectors.toList());
+            List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).sorted(new WalletSignComparator()).collect(Collectors.toList());
             Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
             availableWalletsMap.keySet().retainAll(availableWallets);
             headersForm.getAvailableWallets().keySet().retainAll(availableWallets);
@@ -1014,6 +1014,20 @@ public class HeadersController extends TransactionFormController implements Init
         }
         if(futureBlockWarning.isVisible()) {
             futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && locktimeBlock.getValue() > event.getHeight());
+        }
+    }
+
+    private static class WalletSignComparator implements Comparator<Wallet> {
+        private static final List<KeystoreSource> sourceOrder = List.of(KeystoreSource.SW_WATCH, KeystoreSource.HW_AIRGAPPED, KeystoreSource.HW_USB, KeystoreSource.SW_SEED);
+
+        @Override
+        public int compare(Wallet wallet1, Wallet wallet2) {
+            return getHighestSourceIndex(wallet2) - getHighestSourceIndex(wallet1);
+
+        }
+
+        private int getHighestSourceIndex(Wallet wallet) {
+            return wallet.getKeystores().stream().map(keystore -> sourceOrder.indexOf(keystore.getSource())).mapToInt(v -> v).max().orElse(0);
         }
     }
 }
