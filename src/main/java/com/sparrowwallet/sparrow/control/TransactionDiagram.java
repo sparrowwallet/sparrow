@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
 import com.sparrowwallet.sparrow.EventManager;
@@ -26,6 +27,7 @@ import java.util.*;
 
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
+    private static final int MAX_PAYMENTS = 6;
     private static final double DIAGRAM_HEIGHT = 230.0;
     private static final int TOOLTIP_SHOW_DELAY = 50;
 
@@ -55,10 +57,12 @@ public class TransactionDiagram extends GridPane {
         Pane txPane = getTransactionPane();
         GridPane.setConstraints(txPane, 3, 0);
 
-        Pane outputsLinesPane = getOutputsLines();
+        List<Payment> displayedPayments = getDisplayedPayments();
+
+        Pane outputsLinesPane = getOutputsLines(displayedPayments);
         GridPane.setConstraints(outputsLinesPane, 4, 0);
 
-        Pane outputsPane = getOutputsLabels();
+        Pane outputsPane = getOutputsLabels(displayedPayments);
         GridPane.setConstraints(outputsPane, 5, 0);
 
         getChildren().clear();
@@ -241,7 +245,28 @@ public class TransactionDiagram extends GridPane {
         return value * (1.0 - scaleFactor) + additional;
     }
 
-    private Pane getOutputsLines() {
+    private List<Payment> getDisplayedPayments() {
+        List<Payment> payments = walletTx.getPayments();
+
+        if(payments.size() > MAX_PAYMENTS) {
+            List<Payment> displayedPayments = new ArrayList<>();
+            List<Payment> additional = new ArrayList<>();
+            for(Payment payment : payments) {
+                if(displayedPayments.size() < MAX_PAYMENTS) {
+                    displayedPayments.add(payment);
+                } else {
+                    additional.add(payment);
+                }
+            }
+
+            displayedPayments.add(new AdditionalPayment(additional));
+            return displayedPayments;
+        } else {
+            return payments;
+        }
+    }
+
+    private Pane getOutputsLines(List<Payment> displayedPayments) {
         VBox pane = new VBox();
         Group group = new Group();
         VBox.setVgrow(group, Priority.ALWAYS);
@@ -255,7 +280,7 @@ public class TransactionDiagram extends GridPane {
         group.getChildren().add(yaxisLine);
 
         double width = 140.0;
-        int numOutputs = (walletTx.getChangeNode() == null ? 2 : 3);
+        int numOutputs = displayedPayments.size() + (walletTx.getChangeNode() == null ? 1 : 2);
         for(int i = 1; i <= numOutputs; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("output-line");
@@ -280,23 +305,25 @@ public class TransactionDiagram extends GridPane {
         return pane;
     }
 
-    private Pane getOutputsLabels() {
+    private Pane getOutputsLabels(List<Payment> displayedPayments) {
         VBox outputsBox = new VBox();
         outputsBox.setMaxWidth(150);
         outputsBox.setPadding(new Insets(0, 20, 0, 10));
         outputsBox.setAlignment(Pos.CENTER_LEFT);
         outputsBox.getChildren().add(createSpacer());
 
-        boolean isConsolidation = walletTx.isConsolidationSend();
-        String recipientDesc = walletTx.getRecipientAddress().toString().substring(0, 8) + "...";
-        Label recipientLabel = new Label(recipientDesc, isConsolidation ? getConsolidationGlyph() : getPaymentGlyph());
-        recipientLabel.getStyleClass().addAll("output-label", "recipient-label");
-        Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(walletTx.getRecipientAmount()) + " sats to\n" + walletTx.getRecipientAddress().toString());
-        recipientTooltip.getStyleClass().add("recipient-label");
-        recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
-        recipientLabel.setTooltip(recipientTooltip);
-        outputsBox.getChildren().add(recipientLabel);
-        outputsBox.getChildren().add(createSpacer());
+        for(Payment payment : displayedPayments) {
+            boolean isConsolidation = walletTx.isConsolidationSend(payment);
+            String recipientDesc = payment instanceof AdditionalPayment ? payment.getLabel() : payment.getAddress().toString().substring(0, 8) + "...";
+            Label recipientLabel = new Label(recipientDesc, isConsolidation ? getConsolidationGlyph() : getPaymentGlyph());
+            recipientLabel.getStyleClass().addAll("output-label", "recipient-label");
+            Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(payment.getAmount()) + " sats to\n" + payment.getAddress().toString());
+            recipientTooltip.getStyleClass().add("recipient-label");
+            recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+            recipientLabel.setTooltip(recipientTooltip);
+            outputsBox.getChildren().add(recipientLabel);
+            outputsBox.getChildren().add(createSpacer());
+        }
 
         if(walletTx.getChangeNode() != null) {
             String changeDesc = walletTx.getChangeAddress().toString().substring(0, 8) + "...";
@@ -410,6 +437,12 @@ public class TransactionDiagram extends GridPane {
 
         public List<BlockTransactionHashIndex> getAdditionalInputs() {
             return additionalInputs;
+        }
+    }
+
+    private static class AdditionalPayment extends Payment {
+        public AdditionalPayment(List<Payment> additionalPayments) {
+            super(null, additionalPayments.size() + " more...", additionalPayments.stream().map(Payment::getAmount).mapToLong(v -> v).sum(), false);
         }
     }
 }

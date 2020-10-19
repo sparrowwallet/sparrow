@@ -275,9 +275,9 @@ public class SendController extends WalletFormController implements Initializabl
 
         walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
             if(walletTransaction != null) {
-                if(getRecipientValueSats() == null || walletTransaction.getRecipientAmount() != getRecipientValueSats()) {
-                    setRecipientValueSats(walletTransaction.getRecipientAmount());
-                    setFiatAmount(AppController.getFiatCurrencyExchangeRate(), walletTransaction.getRecipientAmount());
+                if(getRecipientValueSats() == null || walletTransaction.getPayments().get(0).getAmount() != getRecipientValueSats()) {
+                    setRecipientValueSats(walletTransaction.getPayments().get(0).getAmount());
+                    setFiatAmount(AppController.getFiatCurrencyExchangeRate(), walletTransaction.getPayments().get(0).getAmount());
                 }
 
                 double feeRate = walletTransaction.getFeeRate();
@@ -329,11 +329,12 @@ public class SendController extends WalletFormController implements Initializabl
             Long recipientAmount = sendAll ? Long.valueOf(recipientDustThreshold + 1) : getRecipientValueSats();
             if(recipientAmount != null && recipientAmount > recipientDustThreshold && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
                 Wallet wallet = getWalletForm().getWallet();
+                List<Payment> payments = List.of(new Payment(recipientAddress, label.getText(), recipientAmount, sendAll));
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 Integer currentBlockHeight = AppController.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolChange = Config.get().isIncludeMempoolChange();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), recipientAddress, recipientAmount, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, sendAll, groupByAddress, includeMempoolChange);
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), payments, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolChange);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 
@@ -611,10 +612,8 @@ public class SendController extends WalletFormController implements Initializabl
         WalletTransaction walletTransaction = walletTransactionProperty.get();
         Set<WalletNode> nodes = new LinkedHashSet<>(walletTransaction.getSelectedUtxos().values());
         nodes.add(walletTransaction.getChangeNode());
-        WalletNode consolidationNode = walletTransaction.getConsolidationSendNode();
-        if(consolidationNode != null) {
-            nodes.add(consolidationNode);
-        }
+        List<WalletNode> consolidationNodes = walletTransaction.getConsolidationSendNodes();
+        nodes.addAll(consolidationNodes);
 
         //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
         walletForm.addWalletTransactionNodes(nodes);
