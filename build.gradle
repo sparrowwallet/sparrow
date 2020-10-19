@@ -20,6 +20,7 @@ repositories {
     maven { url 'https://oss.sonatype.org/content/groups/public' }
     maven { url 'https://mymavenrepo.com/repo/29EACwkkGcoOKnbx3bxN/' }
     maven { url 'https://jitpack.io' }
+    maven { url 'http://maven.openimaj.org/' }
 }
 
 tasks.withType(AbstractArchiveTask) {
@@ -51,7 +52,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('com.sparrowwallet:hummingbird:1.2')
-    implementation('com.nativelibs4java:bridj:0.7-20200803')
+    implementation('com.nativelibs4java:bridj:0.7-20140918-3')
     implementation('com.github.sarxos:webcam-capture:0.3.13-SNAPSHOT') {
         exclude group: 'com.nativelibs4java', module: 'bridj'
     }
