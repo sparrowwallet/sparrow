@@ -58,7 +58,7 @@ public class AddressCell extends TreeTableCell<Entry, Entry> {
     }
 
     private String getTooltipText(UtxoEntry utxoEntry) {
-        return utxoEntry.getNode().getDerivationPath() + (utxoEntry.isDuplicateAddress() ? " (Duplicate address)" : "");
+        return utxoEntry.getNode().getDerivationPath().replace("m", "..") + (utxoEntry.isDuplicateAddress() ? " (Duplicate address)" : "");
     }
 
     public static Glyph getDuplicateGlyph() {

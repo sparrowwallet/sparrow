@@ -171,8 +171,7 @@ public class TransactionDiagram extends GridPane {
 
             Tooltip tooltip = new Tooltip();
             if(walletNode != null) {
-                KeyDerivation fullDerivation = walletTx.getWallet().getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
-                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + fullDerivation.getDerivationPath() + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + walletNode.getDerivationPath().replace("m", "..") + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
                 tooltip.getStyleClass().add("input-label");
 
                 if(input.getLabel() == null || input.getLabel().isEmpty()) {
@@ -333,8 +332,7 @@ public class TransactionDiagram extends GridPane {
             String changeDesc = walletTx.getChangeAddress().toString().substring(0, 8) + "...";
             Label changeLabel = new Label(changeDesc, getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
-            KeyDerivation fullDerivation = walletTx.getWallet().getKeystores().get(0).getKeyDerivation().extend(walletTx.getChangeNode().getDerivation());
-            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + fullDerivation.getDerivationPath() + "\n" + walletTx.getChangeAddress().toString());
+            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + walletTx.getChangeNode().getDerivationPath().replace("m", "..") + "\n" + walletTx.getChangeAddress().toString());
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeLabel.setTooltip(changeTooltip);
