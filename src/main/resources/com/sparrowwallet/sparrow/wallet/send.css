@@ -1,9 +1,31 @@
+.title-form .fieldset {
+    -fx-padding: 0 0 0 0;
+}
+
 .form .fieldset:horizontal .field {
     -fx-pref-height: 40px;
 }
 
 .send-form .form .fieldset:horizontal .label-container {
     -fx-pref-width: 90px;
+}
+
+#paymentTabs {
+    -fx-max-height: 154px;
+}
+
+.initial .tab-header-area {
+    visibility: hidden;
+}
+
+.multiple-tabs {
+    -fx-background-color: derive(-fx-background, 20%);
+    -fx-border-width: 1px 0px 1px 0px;
+    -fx-border-color: derive(-fx-background, -5%);
+}
+
+.multiple-tabs .send-form {
+    -fx-padding: 9px 0px 9px 0px;
 }
 
 .amount-field {
@@ -51,7 +73,7 @@
     -fx-stroke: transparent;
 }
 
-#transactionDiagram .input-label, #transactionDiagram .recipient-label, #transactionDiagram .change-label, #transactionDiagram .fee-tooltip {
+#transactionDiagram .input-label, #transactionDiagram .recipient-label, #transactionDiagram .change-label, #transactionDiagram .fee-tooltip, #transactionDiagram .transaction-tooltip {
     -fx-font-size: 13px;
     -fx-font-family: 'Roboto Mono';
 }

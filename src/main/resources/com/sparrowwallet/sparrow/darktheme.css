@@ -153,3 +153,9 @@
     -fx-border-color: derive(-fx-base, -2%);
     /*-fx-border-width: 1;*/
 }
+
+.root .multiple-tabs {
+    -fx-background-color: derive(-fx-background, -4%);
+    -fx-border-width: 1px 0px 1px 0px;
+    -fx-border-color: derive(-fx-background, -10%);
+}

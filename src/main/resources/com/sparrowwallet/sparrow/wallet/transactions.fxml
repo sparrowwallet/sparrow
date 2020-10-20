@@ -30,7 +30,7 @@
                     <RowConstraints />
                 </rowConstraints>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Fieldset inputGrow="SOMETIMES" text="Transactions">
+                    <Fieldset inputGrow="SOMETIMES" text="Transactions" styleClass="header">
                         <Field text="Balance:">
                             <CoinLabel fx:id="balance"/>
                         </Field>

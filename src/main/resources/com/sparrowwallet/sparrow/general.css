@@ -27,6 +27,10 @@
     -fx-padding: 3 5;
 }
 
+.form .fieldset.header .legend {
+    -fx-padding: 0 0 15px 0;
+}
+
 .id, .fixed-width {
     -fx-font-size: 13px;
     -fx-font-family: 'Roboto Mono';

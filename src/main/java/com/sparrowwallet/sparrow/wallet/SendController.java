@@ -17,17 +17,18 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ExchangeSource;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.application.Platform;
+import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -36,6 +37,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -51,22 +53,7 @@ public class SendController extends WalletFormController implements Initializabl
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
 
     @FXML
-    private CopyableTextField address;
-
-    @FXML
-    private TextField label;
-
-    @FXML
-    private TextField amount;
-
-    @FXML
-    private ComboBox<BitcoinUnit> amountUnit;
-
-    @FXML
-    private FiatLabel fiatAmount;
-
-    @FXML
-    private Button maxButton;
+    private TabPane paymentTabs;
 
     @FXML
     private Slider targetBlocks;
@@ -95,6 +82,8 @@ public class SendController extends WalletFormController implements Initializabl
     @FXML
     private Button createButton;
 
+    private StackPane tabHeader;
+
     private final BooleanProperty userFeeSet = new SimpleBooleanProperty(false);
 
     private final ObjectProperty<UtxoSelector> utxoSelectorProperty = new SimpleObjectProperty<>(null);
@@ -107,23 +96,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final BooleanProperty insufficientInputsProperty = new SimpleBooleanProperty(false);
 
-    private final ChangeListener<String> amountListener = new ChangeListener<>() {
-        @Override
-        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-            if(utxoSelectorProperty.get() instanceof MaxUtxoSelector) {
-                utxoSelectorProperty.setValue(null);
-            }
-
-            Long recipientValueSats = getRecipientValueSats();
-            if(recipientValueSats != null) {
-                setFiatAmount(AppController.getFiatCurrencyExchangeRate(), recipientValueSats);
-            } else {
-                fiatAmount.setText("");
-            }
-
-            updateTransaction();
-        }
-    };
+    private final StringProperty utxoLabelSelectionProperty = new SimpleStringProperty("");
 
     private final ChangeListener<String> feeListener = new ChangeListener<>() {
         @Override
@@ -157,7 +130,10 @@ public class SendController extends WalletFormController implements Initializabl
             targetBlocks.setTooltip(tooltip);
 
             userFeeSet.set(false);
-            revalidate(amount, amountListener);
+            for(Tab tab : paymentTabs.getTabs()) {
+                PaymentController controller = (PaymentController)tab.getUserData();
+                controller.revalidate();
+            }
             updateTransaction();
         }
     };
@@ -171,42 +147,44 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Override
     public void initializeView() {
-        address.textProperty().addListener((observable, oldValue, newValue) -> {
-            revalidate(amount, amountListener);
-            maxButton.setDisable(!isValidRecipientAddress());
+        addValidation();
+
+        addPaymentTab();
+        Platform.runLater(() -> {
+            StackPane stackPane = (StackPane)paymentTabs.lookup(".tab-header-area");
+            if(stackPane != null) {
+                tabHeader = stackPane;
+                tabHeader.managedProperty().bind(tabHeader.visibleProperty());
+                tabHeader.setVisible(false);
+                paymentTabs.getStyleClass().remove("initial");
+            }
+        });
+
+        paymentTabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
+            if(tabHeader != null) {
+                tabHeader.setVisible(c.getList().size() > 1);
+            }
+
+            if(c.getList().size() > 1) {
+                if(!paymentTabs.getStyleClass().contains("multiple-tabs")) {
+                    paymentTabs.getStyleClass().add("multiple-tabs");
+                }
+                paymentTabs.getTabs().forEach(tab -> tab.setClosable(true));
+            } else {
+                paymentTabs.getStyleClass().remove("multiple-tabs");
+                Tab remainingTab = paymentTabs.getTabs().get(0);
+                remainingTab.setClosable(false);
+                remainingTab.setText("1");
+            }
+
             updateTransaction();
-
-            if(validationSupport != null) {
-                validationSupport.setErrorDecorationEnabled(true);
-            }
         });
-
-        label.textProperty().addListener((observable, oldValue, newValue) -> {
-            createButton.setDisable(walletTransactionProperty.get() == null || newValue == null || newValue.isEmpty() || isInsufficientFeeRate());
-        });
-
-        amount.setTextFormatter(new CoinTextFormatter());
-        amount.textProperty().addListener(amountListener);
-
-        BitcoinUnit unit = Config.get().getBitcoinUnit();
-        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
-            unit = getWalletForm().getWallet().getAutoUnit();
-        }
-
-        amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
-        amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
-            Long value = getRecipientValueSats(oldValue);
-            if(value != null) {
-                DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-                df.setMaximumFractionDigits(8);
-                amount.setText(df.format(newValue.getValue(value)));
-            }
-        });
-
-        maxButton.setDisable(!isValidRecipientAddress());
 
         insufficientInputsProperty.addListener((observable, oldValue, newValue) -> {
-            revalidate(amount, amountListener);
+            for(Tab tab : paymentTabs.getTabs()) {
+                PaymentController controller = (PaymentController)tab.getUserData();
+                controller.revalidate();
+            }
             revalidate(fee, feeListener);
         });
 
@@ -244,6 +222,7 @@ public class SendController extends WalletFormController implements Initializabl
         fee.setTextFormatter(new CoinTextFormatter());
         fee.textProperty().addListener(feeListener);
 
+        BitcoinUnit unit = getBitcoinUnit(Config.get().getBitcoinUnit());
         feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
         feeAmountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getFeeValueSats(oldValue);
@@ -265,6 +244,10 @@ public class SendController extends WalletFormController implements Initializabl
             }
         });
 
+        utxoLabelSelectionProperty.addListener((observable, oldValue, newValue) -> {
+            clearButton.setText("Clear" + newValue);
+        });
+
         utxoSelectorProperty.addListener((observable, oldValue, utxoSelector) -> {
             updateMaxClearButtons(utxoSelector, utxoFilterProperty.get());
         });
@@ -275,9 +258,10 @@ public class SendController extends WalletFormController implements Initializabl
 
         walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
             if(walletTransaction != null) {
-                if(getRecipientValueSats() == null || walletTransaction.getPayments().get(0).getAmount() != getRecipientValueSats()) {
-                    setRecipientValueSats(walletTransaction.getPayments().get(0).getAmount());
-                    setFiatAmount(AppController.getFiatCurrencyExchangeRate(), walletTransaction.getPayments().get(0).getAmount());
+                for(int i = 0; i < paymentTabs.getTabs().size(); i++) {
+                    Payment payment = walletTransaction.getPayments().get(i);
+                    PaymentController controller = (PaymentController)paymentTabs.getTabs().get(i).getUserData();
+                    controller.setPayment(payment);
                 }
 
                 double feeRate = walletTransaction.getFeeRate();
@@ -291,24 +275,24 @@ public class SendController extends WalletFormController implements Initializabl
             }
 
             transactionDiagram.update(walletTransaction);
-            createButton.setDisable(walletTransaction == null || label.getText().isEmpty() || isInsufficientFeeRate());
+            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate());
         });
+    }
 
-        addValidation();
+    public BitcoinUnit getBitcoinUnit(BitcoinUnit bitcoinUnit) {
+        BitcoinUnit unit = bitcoinUnit;
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = getWalletForm().getWallet().getAutoUnit();
+        }
+        return unit;
+    }
+
+    public ValidationSupport getValidationSupport() {
+        return validationSupport;
     }
 
     private void addValidation() {
         validationSupport = new ValidationSupport();
-        validationSupport.registerValidator(address, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Address", !newValue.isEmpty() && !isValidRecipientAddress())
-        ));
-        validationSupport.registerValidator(label, Validator.combine(
-                Validator.createEmptyValidator("Label is required")
-        ));
-        validationSupport.registerValidator(amount, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", insufficientInputsProperty.get()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() <= getRecipientDustThreshold())
-        ));
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() != null && getFeeValueSats() == 0),
@@ -316,20 +300,64 @@ public class SendController extends WalletFormController implements Initializabl
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+        validationSupport.setErrorDecorationEnabled(false);
     }
 
-    private void updateTransaction() {
-        updateTransaction(false);
+    public Tab addPaymentTab() {
+        Tab tab = getPaymentTab();
+        paymentTabs.getTabs().add(tab);
+        paymentTabs.getSelectionModel().select(tab);
+        return tab;
     }
 
-    private void updateTransaction(boolean sendAll) {
+    public Tab getPaymentTab() {
+        Tab tab = new Tab(Integer.toString(paymentTabs.getTabs().size() + 1));
+
         try {
-            Address recipientAddress = getRecipientAddress();
-            long recipientDustThreshold = getRecipientDustThreshold();
-            Long recipientAmount = sendAll ? Long.valueOf(recipientDustThreshold + 1) : getRecipientValueSats();
-            if(recipientAmount != null && recipientAmount > recipientDustThreshold && (!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0))) {
+            FXMLLoader paymentLoader = new FXMLLoader(AppController.class.getResource("wallet/payment.fxml"));
+            tab.setContent(paymentLoader.load());
+            PaymentController controller = paymentLoader.getController();
+            controller.setSendController(this);
+            controller.initializeView();
+            tab.setUserData(controller);
+            return tab;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public List<Payment> getPayments() {
+        List<Payment> payments = new ArrayList<>();
+        for(Tab tab : paymentTabs.getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            payments.add(controller.getPayment());
+        }
+
+        return payments;
+    }
+
+    public void updateTransaction() {
+        updateTransaction(null);
+    }
+
+    public void updateTransaction(boolean sendAll) {
+        try {
+            if(paymentTabs.getTabs().size() == 1) {
+                PaymentController controller = (PaymentController)paymentTabs.getTabs().get(0).getUserData();
+                updateTransaction(List.of(controller.getPayment(sendAll)));
+            } else {
+                updateTransaction(null);
+            }
+        } catch(IllegalStateException e) {
+            //ignore
+        }
+    }
+
+    public void updateTransaction(List<Payment> transactionPayments) {
+        try {
+            List<Payment> payments = transactionPayments != null ? transactionPayments : getPayments();
+            if(!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0)) {
                 Wallet wallet = getWalletForm().getWallet();
-                List<Payment> payments = List.of(new Payment(recipientAddress, label.getText(), recipientAmount, sendAll));
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 Integer currentBlockHeight = AppController.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
@@ -340,9 +368,9 @@ public class SendController extends WalletFormController implements Initializabl
 
                 return;
             }
-        } catch (InvalidAddressException e) {
+        } catch(InvalidAddressException | IllegalStateException e) {
             //ignore
-        } catch (InsufficientFundsException e) {
+        } catch(InsufficientFundsException e) {
             insufficientInputsProperty.set(true);
         }
 
@@ -355,7 +383,7 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         Wallet wallet = getWalletForm().getWallet();
-        long noInputsFee = wallet.getNoInputsFee(getRecipientAddress(), getFeeRate());
+        long noInputsFee = wallet.getNoInputsFee(getPayments(), getFeeRate());
         long costOfChange = wallet.getCostOfChange(getFeeRate(), getMinimumFeeRate());
 
         return List.of(new BnBUtxoSelector(noInputsFee, costOfChange), new KnapsackUtxoSelector(noInputsFee));
@@ -368,40 +396,6 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         return Collections.emptyList();
-    }
-
-    private boolean isValidRecipientAddress() {
-        try {
-            getRecipientAddress();
-            return true;
-        } catch (InvalidAddressException e) {
-            return false;
-        }
-    }
-
-    private Address getRecipientAddress() throws InvalidAddressException {
-        return Address.fromString(address.getText());
-    }
-
-    private Long getRecipientValueSats() {
-        return getRecipientValueSats(amountUnit.getSelectionModel().getSelectedItem());
-    }
-
-    private Long getRecipientValueSats(BitcoinUnit bitcoinUnit) {
-        if(amount.getText() != null && !amount.getText().isEmpty()) {
-            double fieldValue = Double.parseDouble(amount.getText().replaceAll(",", ""));
-            return bitcoinUnit.getSatsValue(fieldValue);
-        }
-
-        return null;
-    }
-
-    private void setRecipientValueSats(long recipientValue) {
-        amount.textProperty().removeListener(amountListener);
-        DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-        df.setMaximumFractionDigits(8);
-        amount.setText(df.format(amountUnit.getValue().getValue(recipientValue)));
-        amount.textProperty().addListener(amountListener);
     }
 
     private Long getFeeValueSats() {
@@ -464,7 +458,7 @@ public class SendController extends WalletFormController implements Initializabl
         return retrievedFeeRates;
     }
 
-    private Double getFeeRate() {
+    public Double getFeeRate() {
         return getTargetBlocksFeeRates().get(getTargetBlocks());
     }
 
@@ -474,7 +468,7 @@ public class SendController extends WalletFormController implements Initializabl
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
     }
 
-    private boolean isInsufficientFeeRate() {
+    public boolean isInsufficientFeeRate() {
         return walletTransactionProperty.get() != null && walletTransactionProperty.get().getFeeRate() < AppController.getMinimumRelayFeeRate();
     }
 
@@ -486,38 +480,10 @@ public class SendController extends WalletFormController implements Initializabl
         return targetBlocks.lookup(".thumb");
     }
 
-    public void setMaxInput(ActionEvent event) {
-        UtxoSelector utxoSelector = utxoSelectorProperty.get();
-        if(utxoSelector == null) {
-            MaxUtxoSelector maxUtxoSelector = new MaxUtxoSelector();
-            utxoSelectorProperty.set(maxUtxoSelector);
-        }
-
-        updateTransaction(true);
-    }
-
-    private void setFiatAmount(CurrencyRate currencyRate, Long amount) {
-        if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
-            fiatAmount.set(currencyRate, amount);
-        }
-    }
-
     private void setFiatFeeAmount(CurrencyRate currencyRate, Long amount) {
         if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
             fiatFeeAmount.set(currencyRate, amount);
         }
-    }
-
-    private long getRecipientDustThreshold() {
-        Address address;
-        try {
-            address = getRecipientAddress();
-        } catch(InvalidAddressException e) {
-            address = new P2PKHAddress(new byte[20]);
-        }
-
-        TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
-        return address.getScriptType().getDustThreshold(txOutput, getFeeRate());
     }
 
     private void updateMaxClearButtons(UtxoSelector utxoSelector, UtxoFilter utxoFilter) {
@@ -525,48 +491,29 @@ public class SendController extends WalletFormController implements Initializabl
             PresetUtxoSelector presetUtxoSelector = (PresetUtxoSelector)utxoSelector;
             int num = presetUtxoSelector.getPresetUtxos().size();
             String selection = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " selected)";
-            maxButton.setText("Max" + selection);
-            clearButton.setText("Clear" + selection);
+            utxoLabelSelectionProperty.set(selection);
         } else if(utxoFilter instanceof ExcludeUtxoFilter) {
             ExcludeUtxoFilter excludeUtxoFilter = (ExcludeUtxoFilter)utxoFilter;
             int num = excludeUtxoFilter.getExcludedUtxos().size();
             String exclusion = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " excluded)";
-            maxButton.setText("Max" + exclusion);
-            clearButton.setText("Clear" + exclusion);
+            utxoLabelSelectionProperty.set(exclusion);
         } else {
-            maxButton.setText("Max");
-            clearButton.setText("Clear");
-        }
-    }
-
-    public void scanQrAddress(ActionEvent event) {
-        QRScanDialog qrScanDialog = new QRScanDialog();
-        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
-        if(optionalResult.isPresent()) {
-            QRScanDialog.Result result = optionalResult.get();
-            if(result.uri != null) {
-                if(result.uri.getAddress() != null) {
-                    address.setText(result.uri.getAddress().toString());
-                }
-                if(result.uri.getLabel() != null) {
-                    label.setText(result.uri.getLabel());
-                }
-                if(result.uri.getAmount() != null) {
-                    setRecipientValueSats(result.uri.getAmount());
-                }
-            }
+            utxoLabelSelectionProperty.set("");
         }
     }
 
     public void clear(ActionEvent event) {
-        address.setText("");
-        label.setText("");
-
-        amount.textProperty().removeListener(amountListener);
-        amount.setText("");
-        amount.textProperty().addListener(amountListener);
-
-        fiatAmount.setText("");
+        boolean firstTab = true;
+        for(Iterator<Tab> iterator = paymentTabs.getTabs().iterator(); iterator.hasNext(); ) {
+            PaymentController controller = (PaymentController)iterator.next().getUserData();
+            if(firstTab) {
+                controller.clear();
+                firstTab = false;
+            } else {
+                EventManager.get().unregister(controller);
+                iterator.remove();
+            }
+        }
 
         fee.textProperty().removeListener(feeListener);
         fee.setText("");
@@ -582,6 +529,46 @@ public class SendController extends WalletFormController implements Initializabl
         createdWalletTransactionProperty.set(null);
 
         validationSupport.setErrorDecorationEnabled(false);
+    }
+
+    public UtxoSelector getUtxoSelector() {
+        return utxoSelectorProperty.get();
+    }
+
+    public ObjectProperty<UtxoSelector> utxoSelectorProperty() {
+        return utxoSelectorProperty;
+    }
+
+    public boolean isInsufficientInputs() {
+        return insufficientInputsProperty.get();
+    }
+
+    public BooleanProperty insufficientInputsProperty() {
+        return insufficientInputsProperty;
+    }
+
+    public WalletTransaction getWalletTransaction() {
+        return walletTransactionProperty.get();
+    }
+
+    public ObjectProperty<WalletTransaction> walletTransactionProperty() {
+        return walletTransactionProperty;
+    }
+
+    public String getUtxoLabelSelection() {
+        return utxoLabelSelectionProperty.get();
+    }
+
+    public StringProperty utxoLabelSelectionProperty() {
+        return utxoLabelSelectionProperty;
+    }
+
+    public TabPane getPaymentTabs() {
+        return paymentTabs;
+    }
+
+    public Button getCreateButton() {
+        return createButton;
     }
 
     private void revalidate(TextField field, ChangeListener<String> listener) {
@@ -605,7 +592,7 @@ public class SendController extends WalletFormController implements Initializabl
         addWalletTransactionNodes();
         createdWalletTransactionProperty.set(walletTransactionProperty.get());
         PSBT psbt = walletTransactionProperty.get().createPSBT();
-        EventManager.get().post(new ViewPSBTEvent(label.getText(), psbt));
+        EventManager.get().post(new ViewPSBTEvent(walletTransactionProperty.get().getPayments().get(0).getLabel(), psbt));
     }
 
     private void addWalletTransactionNodes() {
@@ -683,25 +670,20 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        BitcoinUnit unit = event.getBitcoinUnit();
-        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
-            unit = getWalletForm().getWallet().getAutoUnit();
-        }
-        amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
+        BitcoinUnit unit = getBitcoinUnit(event.getBitcoinUnit());
         feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
     }
 
     @Subscribe
     public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
         if(event.getExchangeSource() == ExchangeSource.NONE) {
-            fiatAmount.setCurrency(null);
-            fiatAmount.setBtcRate(0.0);
+            fiatFeeAmount.setCurrency(null);
+            fiatFeeAmount.setBtcRate(0.0);
         }
     }
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        setFiatAmount(event.getCurrencyRate(), getRecipientValueSats());
         setFiatFeeAmount(event.getCurrencyRate(), getFeeValueSats());
     }
 

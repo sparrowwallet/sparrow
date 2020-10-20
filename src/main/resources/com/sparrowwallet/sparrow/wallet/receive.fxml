@@ -33,7 +33,7 @@
                 <RowConstraints />
             </rowConstraints>
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-                <Fieldset inputGrow="ALWAYS" text="Receive">
+                <Fieldset inputGrow="ALWAYS" text="Receive" styleClass="header">
                     <Field text="Address:">
                         <CopyableTextField fx:id="address" styleClass="address-text-field" editable="false"/>
                     </Field>

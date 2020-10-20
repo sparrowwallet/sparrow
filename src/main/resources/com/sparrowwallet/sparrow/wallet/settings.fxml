@@ -28,7 +28,7 @@
             </rowConstraints>
 
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-                <Fieldset inputGrow="SOMETIMES" text="Settings">
+                <Fieldset inputGrow="SOMETIMES" text="Settings" styleClass="header">
                     <Field text="Policy Type:">
                         <ComboBox fx:id="policyType">
                             <items>

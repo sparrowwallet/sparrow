@@ -37,40 +37,16 @@
                 <rowConstraints>
                     <RowConstraints />
                 </rowConstraints>
-                <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
-                    <Fieldset inputGrow="ALWAYS" text="Send">
-                        <Field text="Pay to:">
-                            <CopyableTextField fx:id="address" styleClass="address-text-field"/>
-                        </Field>
-                        <Field text="Label:">
-                            <TextField fx:id="label" />
-                        </Field>
-                        <Field text="Amount:">
-                            <TextField fx:id="amount" styleClass="amount-field" />
-                            <ComboBox fx:id="amountUnit" styleClass="amount-unit">
-                                <items>
-                                    <FXCollections fx:factory="observableArrayList">
-                                        <BitcoinUnit fx:constant="BTC" />
-                                        <BitcoinUnit fx:constant="SATOSHIS" />
-                                    </FXCollections>
-                                </items>
-                            </ComboBox>
-                            <Label style="-fx-pref-width: 15" />
-                            <FiatLabel fx:id="fiatAmount" />
-                            <Region style="-fx-pref-width: 20" />
-                            <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
-                        </Field>
-                    </Fieldset>
-                </Form>
-                <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
-                    <Fieldset inputGrow="SOMETIMES" text="" style="-fx-padding: 2 0 0 0">
-                        <Button text="Scan QR" onAction="#scanQrAddress" prefHeight="30">
-                            <graphic>
-                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
-                            </graphic>
-                        </Button>
-                    </Fieldset>
-                </Form>
+                <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="3">
+                    <top>
+                        <Form styleClass="title-form">
+                            <Fieldset inputGrow="ALWAYS" text="Send"/>
+                        </Form>
+                    </top>
+                    <center>
+                        <TabPane fx:id="paymentTabs" side="RIGHT" styleClass="initial" />
+                    </center>
+                </BorderPane>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
                     <Fieldset inputGrow="SOMETIMES" text="Fee">
                         <Field text="Block target">

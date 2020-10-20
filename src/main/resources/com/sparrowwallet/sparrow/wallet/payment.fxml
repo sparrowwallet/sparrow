@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import com.sparrowwallet.sparrow.control.CopyableTextField?>
+<?import javafx.collections.FXCollections?>
+<?import com.sparrowwallet.sparrow.control.FiatLabel?>
+<?import com.sparrowwallet.drongo.BitcoinUnit?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
+<?import javafx.geometry.Insets?>
+<GridPane styleClass="send-form" hgap="10.0" vgap="10.0" stylesheets="@payment.css, @send.css, @wallet.css, @../script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.PaymentController">
+    <padding>
+        <Insets top="10.0" bottom="10.0" />
+    </padding>
+    <columnConstraints>
+        <ColumnConstraints prefWidth="410" />
+        <ColumnConstraints prefWidth="200" />
+        <ColumnConstraints prefWidth="105" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints />
+    </rowConstraints>
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
+        <Fieldset inputGrow="ALWAYS">
+            <Field text="Pay to:">
+                <CopyableTextField fx:id="address" styleClass="address-text-field"/>
+            </Field>
+            <Field text="Label:">
+                <TextField fx:id="label" />
+            </Field>
+            <Field text="Amount:">
+                <TextField fx:id="amount" styleClass="amount-field" />
+                <ComboBox fx:id="amountUnit" styleClass="amount-unit">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <BitcoinUnit fx:constant="BTC" />
+                            <BitcoinUnit fx:constant="SATOSHIS" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+                <Label style="-fx-pref-width: 15" />
+                <FiatLabel fx:id="fiatAmount" />
+                <Region style="-fx-pref-width: 20" />
+                <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
+            </Field>
+        </Fieldset>
+    </Form>
+    <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
+        <Fieldset inputGrow="ALWAYS" style="-fx-padding: 2 0 0 0">
+            <HBox>
+                <Button text="" onAction="#scanQrAddress" prefHeight="30">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
+                    </graphic>
+                </Button>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="addPaymentButton" text="Add" onAction="#addPayment" prefHeight="30">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="PLUS" />
+                    </graphic>
+                </Button>
+                <Region HBox.hgrow="ALWAYS" />
+            </HBox>
+        </Fieldset>
+    </Form>
+</GridPane>

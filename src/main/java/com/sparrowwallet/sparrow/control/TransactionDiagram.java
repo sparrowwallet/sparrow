@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Payment;
@@ -24,6 +25,7 @@ import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
@@ -76,7 +78,7 @@ public class TransactionDiagram extends GridPane {
             Map<BlockTransactionHashIndex, WalletNode> utxos = new LinkedHashMap<>();
             List<BlockTransactionHashIndex> additional = new ArrayList<>();
             for(BlockTransactionHashIndex reference : selectedUtxos.keySet()) {
-                if (utxos.size() < MAX_UTXOS) {
+                if(utxos.size() < MAX_UTXOS - 1) {
                     utxos.put(reference, selectedUtxos.get(reference));
                 } else {
                     additional.add(reference);
@@ -169,7 +171,8 @@ public class TransactionDiagram extends GridPane {
 
             Tooltip tooltip = new Tooltip();
             if(walletNode != null) {
-                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + walletNode.getDerivationPath() + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                KeyDerivation fullDerivation = walletTx.getWallet().getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
+                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + fullDerivation.getDerivationPath() + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
                 tooltip.getStyleClass().add("input-label");
 
                 if(input.getLabel() == null || input.getLabel().isEmpty()) {
@@ -252,7 +255,7 @@ public class TransactionDiagram extends GridPane {
             List<Payment> displayedPayments = new ArrayList<>();
             List<Payment> additional = new ArrayList<>();
             for(Payment payment : payments) {
-                if(displayedPayments.size() < MAX_PAYMENTS) {
+                if(displayedPayments.size() < MAX_PAYMENTS - 1) {
                     displayedPayments.add(payment);
                 } else {
                     additional.add(payment);
@@ -316,8 +319,9 @@ public class TransactionDiagram extends GridPane {
             boolean isConsolidation = walletTx.isConsolidationSend(payment);
             String recipientDesc = payment instanceof AdditionalPayment ? payment.getLabel() : payment.getAddress().toString().substring(0, 8) + "...";
             Label recipientLabel = new Label(recipientDesc, isConsolidation ? getConsolidationGlyph() : getPaymentGlyph());
-            recipientLabel.getStyleClass().addAll("output-label", "recipient-label");
-            Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(payment.getAmount()) + " sats to\n" + payment.getAddress().toString());
+            recipientLabel.getStyleClass().add("output-label");
+            recipientLabel.getStyleClass().add(payment instanceof AdditionalPayment ? "additional-label" : "recipient-label");
+            Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(payment.getAmount()) + " sats to " + (payment instanceof AdditionalPayment ? "\n" + payment : payment.getLabel() + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientLabel.setTooltip(recipientTooltip);
@@ -329,7 +333,8 @@ public class TransactionDiagram extends GridPane {
             String changeDesc = walletTx.getChangeAddress().toString().substring(0, 8) + "...";
             Label changeLabel = new Label(changeDesc, getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
-            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + walletTx.getChangeNode().getDerivationPath() + "\n" + walletTx.getChangeAddress().toString());
+            KeyDerivation fullDerivation = walletTx.getWallet().getKeystores().get(0).getKeyDerivation().extend(walletTx.getChangeNode().getDerivation());
+            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + fullDerivation.getDerivationPath() + "\n" + walletTx.getChangeAddress().toString());
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeLabel.setTooltip(changeTooltip);
@@ -360,6 +365,8 @@ public class TransactionDiagram extends GridPane {
         String txDesc = "Transaction";
         Label txLabel = new Label(txDesc);
         Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n" + walletTx.getTransaction().getVirtualSize() + " vBytes");
+        tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        tooltip.getStyleClass().add("transaction-tooltip");
         txLabel.setTooltip(tooltip);
         txPane.getChildren().add(txLabel);
         txPane.getChildren().add(createSpacer());
@@ -441,8 +448,15 @@ public class TransactionDiagram extends GridPane {
     }
 
     private static class AdditionalPayment extends Payment {
+        private final List<Payment> additionalPayments;
+
         public AdditionalPayment(List<Payment> additionalPayments) {
             super(null, additionalPayments.size() + " more...", additionalPayments.stream().map(Payment::getAmount).mapToLong(v -> v).sum(), false);
+            this.additionalPayments = additionalPayments;
+        }
+
+        public String toString() {
+            return additionalPayments.stream().map(payment -> payment.getAddress().toString()).collect(Collectors.joining("\n"));
         }
     }
 }
