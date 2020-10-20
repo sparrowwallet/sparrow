@@ -644,7 +644,7 @@ public class AppController implements Initializable {
     }
 
     public static Double getMinimumRelayFeeRate() {
-        return minimumRelayFeeRate;
+        return minimumRelayFeeRate == null ? Transaction.DEFAULT_MIN_RELAY_FEE : minimumRelayFeeRate;
     }
 
     public static CurrencyRate getFiatCurrencyExchangeRate() {
