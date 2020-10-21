@@ -254,6 +254,19 @@ public class Storage {
         return (encrypted.exists() || unencrypted.exists());
     }
 
+    public static File getExistingWallet(String walletName) {
+        File encrypted = new File(getWalletsDir(), walletName);
+        File unencrypted = new File(getWalletsDir(), walletName + ".json");
+
+        if(encrypted.exists()) {
+            return encrypted;
+        } else if(unencrypted.exists()) {
+            return unencrypted;
+        }
+
+        return null;
+    }
+
     public static File getWalletFile(String walletName) {
         //TODO: Check for existing file
         return new File(getWalletsDir(), walletName);

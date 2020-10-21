@@ -158,6 +158,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         HBox.setHgrow(passwordField, Priority.ALWAYS);
 
         Button importEncryptedButton = new Button("Import");
+        importEncryptedButton.setDefaultButton(true);
         importEncryptedButton.setOnAction(event -> {
             showHideLink.setVisible(true);
             setExpanded(false);

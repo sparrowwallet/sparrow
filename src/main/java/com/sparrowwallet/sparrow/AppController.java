@@ -7,6 +7,8 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -908,13 +910,13 @@ public class AppController implements Initializable {
     }
 
     private void addImportedWallet(Wallet wallet) {
-        File walletFile = Storage.getWalletFile(wallet.getName());
+        File walletFile = Storage.getExistingWallet(wallet.getName());
 
-        if(walletFile.exists()) {
+        if(walletFile != null) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Existing wallet found");
             alert.setHeaderText("Replace existing wallet?");
-            alert.setContentText("Wallet file " + wallet.getName() + " already exists");
+            alert.setContentText("Wallet file " + walletFile.getName() + " already exists.\n");
             Optional<ButtonType> result = alert.showAndWait();
             if(result.isPresent() && result.get() == ButtonType.CANCEL) {
                 return;
@@ -931,11 +933,47 @@ public class AppController implements Initializable {
                     }
                 }
             }
+
+            walletFile.delete();
         }
 
-        Storage storage = new Storage(walletFile);
-        Tab tab = addWalletTab(storage, wallet);
-        tabs.getSelectionModel().select(tab);
+        Storage storage = new Storage(Storage.getWalletFile(wallet.getName()));
+        WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.UPDATE_NEW);
+        Optional<SecureString> password = dlg.showAndWait();
+        if(password.isPresent()) {
+            if(password.get().length() == 0) {
+                storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+                Tab tab = addWalletTab(storage, wallet);
+                tabs.getSelectionModel().select(tab);
+            } else {
+                Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
+                keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()), TimedEvent.Action.END, "Done"));
+                    ECKey encryptionFullKey = keyDerivationService.getValue();
+                    Key key = null;
+
+                    try {
+                        ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
+                        key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                        wallet.encrypt(key);
+                        storage.setEncryptionPubKey(encryptionPubKey);
+                        Tab tab = addWalletTab(storage, wallet);
+                        tabs.getSelectionModel().select(tab);
+                    } finally {
+                        encryptionFullKey.clear();
+                        if(key != null) {
+                            key.clear();
+                        }
+                    }
+                });
+                keyDerivationService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()), TimedEvent.Action.END, "Failed"));
+                    showErrorDialog("Error encrypting wallet", keyDerivationService.getException().getMessage());
+                });
+                EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()), TimedEvent.Action.START, "Encrypting wallet..."));
+                keyDerivationService.start();
+            }
+        }
     }
 
     public void exportWallet(ActionEvent event) {

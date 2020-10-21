@@ -191,7 +191,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     if(blockTransaction != null) {
                         blockTransaction.setLabel(ew.labels.get(key));
                     }
-                } catch(IllegalArgumentException e) {
+                } catch(Exception e) {
                     //not a tx, probably an address
                 }
             }
