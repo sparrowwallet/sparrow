@@ -445,7 +445,7 @@ public class AppController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Transaction");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", "*.*"),
+                new FileChooser.ExtensionFilter("All Files", "*"),
                 new FileChooser.ExtensionFilter("PSBT", "*.psbt"),
                 new FileChooser.ExtensionFilter("TXN", "*.txn")
         );
