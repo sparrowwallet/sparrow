@@ -109,7 +109,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Select Electrum Server certificate");
             fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("All Files", "*"),
+                    new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
                     new FileChooser.ExtensionFilter("CRT", "*.crt")
             );
 

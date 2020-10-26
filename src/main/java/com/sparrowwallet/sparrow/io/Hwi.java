@@ -84,7 +84,7 @@ public class Hwi {
             if(result.get("xpub") != null) {
                 return result.get("xpub").getAsString();
             } else {
-                throw new ImportException("Could not retrieve xpub");
+                throw new ImportException("Could not retrieve xpub - reconnect your device and try again.");
             }
         } catch(IOException e) {
             throw new ImportException(e);

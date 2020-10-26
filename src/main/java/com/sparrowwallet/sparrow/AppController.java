@@ -447,7 +447,7 @@ public class AppController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Transaction");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", "*"),
+                new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
                 new FileChooser.ExtensionFilter("PSBT", "*.psbt"),
                 new FileChooser.ExtensionFilter("TXN", "*.txn")
         );

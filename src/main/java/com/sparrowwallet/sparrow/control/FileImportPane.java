@@ -21,6 +21,7 @@ import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,7 +85,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open " + importer.getWalletModel().toDisplayString() + " File");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", "*"),
+                new FileChooser.ExtensionFilter("All Files", Platform.getCurrent().equals(Platform.UNIX) ? "*" : "*.*"),
                 new FileChooser.ExtensionFilter("JSON", "*.json"),
                 new FileChooser.ExtensionFilter("TXT", "*.txt")
         );

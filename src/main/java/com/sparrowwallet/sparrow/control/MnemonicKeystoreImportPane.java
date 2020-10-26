@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
@@ -107,7 +108,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             importKeystore(wallet.getScriptType().getDefaultDerivation(), false);
         });
         String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
-        for(int i = 0; i < accounts.length; i++) {
+        int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
+        for(int i = 0; i < scriptAccountsLength; i++) {
             MenuItem item = new MenuItem(accounts[i]);
             final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
             item.setOnAction(event -> {

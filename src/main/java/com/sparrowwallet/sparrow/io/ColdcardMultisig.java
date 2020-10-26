@@ -88,7 +88,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         wallet.setPolicyType(PolicyType.MULTI);
 
         int threshold = 2;
-        ScriptType scriptType = null;
+        ScriptType scriptType = ScriptType.P2SH;
         String derivation = null;
 
         try {
