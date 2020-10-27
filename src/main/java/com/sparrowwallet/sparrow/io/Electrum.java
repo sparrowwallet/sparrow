@@ -138,6 +138,9 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     if(keystore.getWalletModel() == null) {
                         throw new ImportException("Wallet has keystore of unknown hardware wallet type \"" + ek.hw_type + "\".");
                     }
+                    if(keystore.getWalletModel().equals(WalletModel.TREZOR_1)) {
+                        keystore.setWalletModel(WalletModel.TREZOR_T);
+                    }
                 } else if("bip32".equals(ek.type)) {
                     if(ek.xprv != null && ek.seed == null) {
                         throw new ImportException("Electrum does not support exporting BIP39 derived seeds, as it does not store the mnemonic words. Only seeds created with its native Electrum Seed Version System are exportable. " +
