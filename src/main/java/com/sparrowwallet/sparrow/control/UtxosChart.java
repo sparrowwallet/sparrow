@@ -39,7 +39,7 @@ public class UtxosChart extends BarChart<String, Number> {
     public void update(WalletUtxosEntry walletUtxosEntry) {
         List<Data<String, Number>> utxoDataList = walletUtxosEntry.getChildren().stream()
                 .map(entry -> new XYChart.Data<>(getCategoryName(entry), (Number)entry.getValue(), entry))
-                .sorted((o1, o2) -> (int) (o2.getYValue().longValue() - o1.getYValue().longValue()))
+                .sorted((o1, o2) -> Long.compare(o2.getYValue().longValue(), o1.getYValue().longValue()))
                 .collect(Collectors.toList());
 
         totalUtxos = utxoDataList.size();

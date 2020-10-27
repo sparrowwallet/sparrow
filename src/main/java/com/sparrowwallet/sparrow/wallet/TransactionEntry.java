@@ -97,15 +97,15 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             TransactionHashIndexEntry entry1 = (TransactionHashIndexEntry) o1;
             TransactionHashIndexEntry entry2 = (TransactionHashIndexEntry) o2;
 
-            if (!entry1.getHashIndex().getHash().equals(entry2.getHashIndex().getHash())) {
+            if(!entry1.getHashIndex().getHash().equals(entry2.getHashIndex().getHash())) {
                 return entry1.getHashIndex().getHash().compareTo(entry2.getHashIndex().getHash());
             }
 
-            if (!entry1.getType().equals(entry2.getType())) {
+            if(!entry1.getType().equals(entry2.getType())) {
                 return entry1.getType().ordinal() - entry2.getType().ordinal();
             }
 
-            return (int) entry1.getHashIndex().getIndex() - (int) entry2.getHashIndex().getIndex();
+            return Long.compare(entry1.getHashIndex().getIndex(), entry2.getHashIndex().getIndex());
         });
 
         return childEntries;

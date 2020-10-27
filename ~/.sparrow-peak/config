@@ -1,0 +1,10 @@
+{
+  "mode": "OFFLINE",
+  "bitcoinUnit": "AUTO",
+  "groupByAddress": true,
+  "includeMempoolChange": true,
+  "notifyNewTransactions": true,
+  "checkNewVersions": true,
+  "theme": "LIGHT",
+  "useProxy": false
+}
