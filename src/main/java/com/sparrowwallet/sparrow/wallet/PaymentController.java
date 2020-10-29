@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.MaxUtxoSelector;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.UtxoSelector;
@@ -22,9 +23,9 @@ import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ExchangeSource;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -95,6 +96,14 @@ public class PaymentController extends WalletFormController implements Initializ
     @Override
     public void initializeView() {
         address.textProperty().addListener((observable, oldValue, newValue) -> {
+            try {
+                BitcoinURI bitcoinURI = new BitcoinURI(newValue);
+                Platform.runLater(() -> updateFromURI(bitcoinURI));
+                return;
+            } catch(Exception e) {
+                //ignore, not a URI
+            }
+
             revalidate(amount, amountListener);
             maxButton.setDisable(!isValidRecipientAddress());
             sendController.updateTransaction();
@@ -291,18 +300,22 @@ public class PaymentController extends WalletFormController implements Initializ
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.uri != null) {
-                if(result.uri.getAddress() != null) {
-                    address.setText(result.uri.getAddress().toString());
-                }
-                if(result.uri.getLabel() != null) {
-                    label.setText(result.uri.getLabel());
-                }
-                if(result.uri.getAmount() != null) {
-                    setRecipientValueSats(result.uri.getAmount());
-                }
-                sendController.updateTransaction();
+                updateFromURI(result.uri);
             }
         }
+    }
+
+    private void updateFromURI(BitcoinURI bitcoinURI) {
+        if(bitcoinURI.getAddress() != null) {
+            address.setText(bitcoinURI.getAddress().toString());
+        }
+        if(bitcoinURI.getLabel() != null) {
+            label.setText(bitcoinURI.getLabel());
+        }
+        if(bitcoinURI.getAmount() != null) {
+            setRecipientValueSats(bitcoinURI.getAmount());
+        }
+        sendController.updateTransaction();
     }
 
     public void addPayment(ActionEvent event) {
