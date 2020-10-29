@@ -267,7 +267,7 @@ public class ElectrumServer {
             Map<String, String> pathScriptHashes = new LinkedHashMap<>();
             for(WalletNode node : nodes) {
                 if(node == null) {
-                    log.error("Null node for wallet " + wallet.getName() + " subscribing nodes " + nodes + " startIndex " + startIndex);
+                    log.error("Null node for wallet " + wallet.getName() + " subscribing nodes " + nodes + " startIndex " + startIndex, new Throwable());
                 }
 
                 if(node != null && node.getIndex() >= startIndex) {
