@@ -598,7 +598,9 @@ public class SendController extends WalletFormController implements Initializabl
     private void addWalletTransactionNodes() {
         WalletTransaction walletTransaction = walletTransactionProperty.get();
         Set<WalletNode> nodes = new LinkedHashSet<>(walletTransaction.getSelectedUtxos().values());
-        nodes.add(walletTransaction.getChangeNode());
+        if(walletTransaction.getChangeNode() != null) {
+            nodes.add(walletTransaction.getChangeNode());
+        }
         List<WalletNode> consolidationNodes = walletTransaction.getConsolidationSendNodes();
         nodes.addAll(consolidationNodes);
 
