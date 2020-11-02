@@ -261,7 +261,7 @@ public class SettingsController extends WalletFormController implements Initiali
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
             try {
-                OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.get());
+                OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.get().trim().replace("\\", ""));
                 Wallet editedWallet = editedOutputDescriptor.toWallet();
 
                 editedWallet.setName(getWalletForm().getWallet().getName());
