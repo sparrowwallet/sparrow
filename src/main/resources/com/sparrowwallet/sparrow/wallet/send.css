@@ -89,6 +89,10 @@
     -fx-stroke-width: 1px;
 }
 
+#transactionDiagram .input-dashed-line {
+    -fx-stroke-dash-array: 5px 5px;
+}
+
 #transactionDiagram .utxo-label .button {
     -fx-padding: 0;
     -fx-pref-height: 18;

@@ -1,11 +1,13 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
+import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -74,6 +76,11 @@ public class TransactionDiagram extends GridPane {
     private Map<BlockTransactionHashIndex, WalletNode> getDisplayedUtxos() {
         Map<BlockTransactionHashIndex, WalletNode> selectedUtxos = walletTx.getSelectedUtxos();
 
+        if(getPayjoinURI() != null) {
+            selectedUtxos = new LinkedHashMap<>(selectedUtxos);
+            selectedUtxos.put(new PayjoinBlockTransactionHashIndex(), null);
+        }
+
         if(selectedUtxos.size() > MAX_UTXOS) {
             Map<BlockTransactionHashIndex, WalletNode> utxos = new LinkedHashMap<>();
             List<BlockTransactionHashIndex> additional = new ArrayList<>();
@@ -90,6 +97,22 @@ public class TransactionDiagram extends GridPane {
         } else {
             return selectedUtxos;
         }
+    }
+
+    private BitcoinURI getPayjoinURI() {
+        for(Payment payment : walletTx.getPayments()) {
+            try {
+                Address address = payment.getAddress();
+                BitcoinURI bitcoinURI = AppController.getPayjoinURI(address);
+                if(bitcoinURI != null) {
+                    return bitcoinURI;
+                }
+            } catch(Exception e) {
+                //ignore
+            }
+        }
+
+        return null;
     }
 
     private Pane getInputsType(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
@@ -166,9 +189,6 @@ public class TransactionDiagram extends GridPane {
                 EventManager.get().post(new ExcludeUtxoEvent(walletTx, input));
             });
 
-            label.setGraphic(excludeUtxoButton);
-            label.setContentDisplay(ContentDisplay.LEFT);
-
             Tooltip tooltip = new Tooltip();
             if(walletNode != null) {
                 tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + walletNode.getDerivationPath().replace("m", "..") + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
@@ -177,13 +197,20 @@ public class TransactionDiagram extends GridPane {
                 if(input.getLabel() == null || input.getLabel().isEmpty()) {
                     label.getStyleClass().add("input-label");
                 }
+
+                label.setGraphic(excludeUtxoButton);
+                label.setContentDisplay(ContentDisplay.LEFT);
             } else {
-                AdditionalBlockTransactionHashIndex additionalReference = (AdditionalBlockTransactionHashIndex)input;
-                StringJoiner joiner = new StringJoiner("\n");
-                for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
-                    joiner.add(getInputDescription(additionalInput));
+                if(input instanceof PayjoinBlockTransactionHashIndex) {
+                    tooltip.setText("Added once transaction is signed and sent to the payjoin server");
+                } else {
+                    AdditionalBlockTransactionHashIndex additionalReference = (AdditionalBlockTransactionHashIndex) input;
+                    StringJoiner joiner = new StringJoiner("\n");
+                    for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
+                        joiner.add(getInputDescription(additionalInput));
+                    }
+                    tooltip.setText(joiner.toString());
                 }
-                tooltip.setText(joiner.toString());
                 tooltip.getStyleClass().add("input-label");
             }
             tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
@@ -218,10 +245,15 @@ public class TransactionDiagram extends GridPane {
         group.getChildren().add(yaxisLine);
 
         double width = 140.0;
+        List<BlockTransactionHashIndex> inputs = new ArrayList<>(displayedUtxos.keySet());
         int numUtxos = displayedUtxos.size();
         for(int i = 1; i <= numUtxos; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("input-line");
+
+            if(inputs.get(numUtxos-i) instanceof PayjoinBlockTransactionHashIndex) {
+                curve.getStyleClass().add("input-dashed-line");
+            }
 
             curve.setStartX(0);
             double scaleFactor = (double)i / (numUtxos + 1);
@@ -425,6 +457,17 @@ public class TransactionDiagram extends GridPane {
         lockGlyph.getStyleClass().add("lock-icon");
         lockGlyph.setFontSize(12);
         return lockGlyph;
+    }
+
+    private static class PayjoinBlockTransactionHashIndex extends BlockTransactionHashIndex {
+        public PayjoinBlockTransactionHashIndex() {
+            super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, 0, 0);
+        }
+
+        @Override
+        public String getLabel() {
+            return "Payjoin input";
+        }
     }
 
     private static class AdditionalBlockTransactionHashIndex extends BlockTransactionHashIndex {
