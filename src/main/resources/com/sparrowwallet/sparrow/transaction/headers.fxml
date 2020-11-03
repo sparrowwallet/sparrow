@@ -248,6 +248,11 @@
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="ARROW_DOWN" />
                         </graphic>
                     </Button>
+                    <Button fx:id="payjoinButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Get Payjoin Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#getPayjoinTransaction">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" />
+                        </graphic>
+                    </Button>
                 </HBox>
             </VBox>
         </Fieldset>

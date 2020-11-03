@@ -3,9 +3,11 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.sparrow.AppController;
@@ -16,6 +18,8 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.payjoin.Payjoin;
+import com.sparrowwallet.sparrow.payjoin.PayjoinReceiverException;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.application.Platform;
@@ -40,10 +44,8 @@ import tornadofx.control.Fieldset;
 import com.google.common.eventbus.Subscribe;
 import tornadofx.control.Form;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.net.URL;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.*;
@@ -195,6 +197,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private Button saveFinalButton;
+
+    @FXML
+    private Button payjoinButton;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -355,6 +360,12 @@ public class HeadersController extends TransactionFormController implements Init
         saveFinalButton.managedProperty().bind(saveFinalButton.visibleProperty());
         saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
         broadcastButton.visibleProperty().bind(AppController.onlineProperty());
+
+        BitcoinURI payjoinURI = getPayjoinURI();
+        boolean isPayjoinOriginalTx = payjoinURI != null && headersForm.getPsbt() != null && headersForm.getPsbt().getPsbtInputs().stream().noneMatch(PSBTInput::isFinalized);
+        payjoinButton.managedProperty().bind(payjoinButton.visibleProperty());
+        payjoinButton.visibleProperty().set(isPayjoinOriginalTx);
+        broadcastButton.setDefaultButton(!isPayjoinOriginalTx);
 
         blockchainForm.setVisible(false);
         signingWalletForm.setVisible(false);
@@ -541,6 +552,24 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
+    private BitcoinURI getPayjoinURI() {
+        if(headersForm.getPsbt() != null) {
+            for(TransactionOutput txOutput : headersForm.getPsbt().getTransaction().getOutputs()) {
+                try {
+                    Address address = txOutput.getScript().getToAddresses()[0];
+                    BitcoinURI bitcoinURI = AppController.getPayjoinURI(address);
+                    if(bitcoinURI != null) {
+                        return bitcoinURI;
+                    }
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+        }
+
+        return null;
+    }
+
     private static class BlockHeightContextMenu extends ContextMenu {
         public BlockHeightContextMenu(Sha256Hash blockHash) {
             MenuItem copyBlockHash = new MenuItem("Copy Block Hash");
@@ -556,7 +585,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateTxId() {
         id.setText(headersForm.getTransaction().calculateTxId(false).toString());
-        if(headersForm.getPsbt() != null && !(headersForm.getTransaction().hasScriptSigs() || headersForm.getTransaction().hasWitnesses())) {
+        if(!headersForm.isTransactionFinalized()) {
             if(!id.getStyleClass().contains(UNFINALIZED_TXID_CLASS)) {
                 id.getStyleClass().add(UNFINALIZED_TXID_CLASS);
             }
@@ -788,6 +817,21 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
+    public void getPayjoinTransaction(ActionEvent event) {
+        BitcoinURI payjoinURI = getPayjoinURI();
+        if(payjoinURI == null) {
+            throw new IllegalStateException("No valid Payjoin URI");
+        }
+
+        try {
+            Payjoin payjoin = new Payjoin(payjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
+            PSBT proposalPsbt = payjoin.requestPayjoinPSBT(true);
+            EventManager.get().post(new ViewPSBTEvent(headersForm.getName() + " Payjoin", proposalPsbt));
+        } catch(PayjoinReceiverException e) {
+            AppController.showErrorDialog("Invalid Payjoin Transaction", e.getMessage());
+        }
+    }
+
     @Override
     public void update() {
         BlockTransaction blockTransaction = headersForm.getBlockTransaction();
@@ -961,7 +1005,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Subscribe
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
-        if(headersForm.getSigningWallet() != null && event.getWalletNode(headersForm.getSigningWallet()) != null) {
+        if(headersForm.getSigningWallet() != null && event.getWalletNode(headersForm.getSigningWallet()) != null && headersForm.isTransactionFinalized()) {
             Sha256Hash txid = headersForm.getTransaction().getTxId();
             ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid), event.getScriptHash());
             transactionReferenceService.setOnSucceeded(successEvent -> {

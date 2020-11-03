@@ -107,6 +107,10 @@ public abstract class TransactionForm {
         return true;
     }
 
+    public boolean isTransactionFinalized() {
+        return getPsbt() == null || getTransaction().hasScriptSigs() || getTransaction().hasWitnesses();
+    }
+
     public abstract Node getContents() throws IOException;
 
     public abstract TransactionView getView();

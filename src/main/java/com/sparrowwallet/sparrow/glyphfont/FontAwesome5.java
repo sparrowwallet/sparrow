@@ -38,6 +38,7 @@ public class FontAwesome5 extends GlyphFont {
         PLUS('\uf067'),
         QRCODE('\uf029'),
         QUESTION_CIRCLE('\uf059'),
+        RANDOM('\uf074'),
         REPLY_ALL('\uf122'),
         SATELLITE_DISH('\uf7c0'),
         SD_CARD('\uf7c2'),

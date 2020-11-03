@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
@@ -17,6 +18,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -145,6 +147,8 @@ public class AppController implements Initializable {
     private static CurrencyRate fiatCurrencyExchangeRate;
 
     private static List<Device> devices;
+
+    private static Map<Address, BitcoinURI> payjoinURIs = new HashMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -655,6 +659,17 @@ public class AppController implements Initializable {
 
     public static List<Device> getDevices() {
         return devices == null ? new ArrayList<>() : devices;
+    }
+
+    public static BitcoinURI getPayjoinURI(Address address) {
+        return payjoinURIs.get(address);
+    }
+
+    public static void addPayjoinURI(BitcoinURI bitcoinURI) {
+        if(bitcoinURI.getPayjoinUrl() == null) {
+            throw new IllegalArgumentException("Not a payjoin URI");
+        }
+        payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
 
     public Map<Wallet, Storage> getOpenWallets() {

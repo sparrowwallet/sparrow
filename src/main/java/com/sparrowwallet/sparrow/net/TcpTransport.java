@@ -133,7 +133,7 @@ public class TcpTransport implements Transport, Closeable {
             while(running) {
                 try {
                     String received = readInputStream();
-                    if(received.contains("method")) {
+                    if(received.contains("method") && !received.contains("error")) {
                         //Handle subscription notification
                         jsonRpcServer.handle(received, subscriptionService);
                     } else {
