@@ -201,8 +201,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
             wallet.updateTransactions(ew.transactions);
 
-            if(!wallet.isValid()) {
-                throw new IllegalStateException("Electrum wallet is in an inconsistent state.");
+            try {
+                wallet.checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("Imported Electrum wallet was invalid: " + e.getMessage());
             }
 
             return wallet;

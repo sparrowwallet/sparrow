@@ -36,6 +36,23 @@ public class Payjoin {
         this.payjoinURI = payjoinURI;
         this.wallet = wallet;
         this.psbt = psbt.getPublicCopy();
+
+        for(PSBTInput psbtInput : this.psbt.getPsbtInputs()) {
+            if(psbtInput.getUtxo() == null) {
+                throw new IllegalArgumentException("Original PSBT for payjoin transaction must have non_witness_utxo or witness_utxo fields for all inputs");
+            }
+            if(!psbtInput.getDerivedPublicKeys().isEmpty()) {
+                throw new IllegalArgumentException("Original PSBT for payjoin transaction must have no derived public keys for all inputs");
+            }
+        }
+
+        if(!this.psbt.isFinalized()) {
+            throw new IllegalArgumentException("Original PSBT for payjoin transaction must be finalized");
+        }
+
+        if(!this.psbt.getExtendedPublicKeys().isEmpty()) {
+            throw new IllegalArgumentException("Original PSBT for payjoin transaction must have no global xpubs");
+        }
     }
 
     public PSBT requestPayjoinPSBT(boolean allowOutputSubstitution) throws PayjoinReceiverException {
@@ -57,7 +74,7 @@ public class Payjoin {
             long maxAdditionalFeeContribution = 0;
             if(changeOutputIndex > -1) {
                 appendQuery += "&additionalfeeoutputindex=" + changeOutputIndex;
-                maxAdditionalFeeContribution = getAdditionalFeeContribution(psbt.getTransaction());
+                maxAdditionalFeeContribution = getAdditionalFeeContribution();
                 appendQuery += "&maxadditionalfeecontribution=" + maxAdditionalFeeContribution;
             }
 
@@ -158,8 +175,8 @@ public class Payjoin {
                 proposedPSBTInput.setWitnessUtxo(originalPSBTInput.getWitnessUtxo());
                 // We fill up information we had on the signed PSBT, so we can sign it.
                 proposedPSBTInput.getDerivedPublicKeys().putAll(originalPSBTInput.getDerivedPublicKeys());
-                proposedPSBTInput.setRedeemScript(originalPSBTInput.getRedeemScript());
-                proposedPSBTInput.setWitnessScript(originalPSBTInput.getWitnessScript());
+                proposedPSBTInput.setRedeemScript(originalPSBTInput.getFinalScriptSig().getFirstNestedScript());
+                proposedPSBTInput.setWitnessScript(originalPSBTInput.getFinalScriptWitness().getWitnessScript());
                 proposedPSBTInput.setSigHash(originalPSBTInput.getSigHash());
             } else {
                 // Verify the PSBT input is finalized
@@ -220,7 +237,7 @@ public class Payjoin {
                     }
                     // Make sure the actual contribution is only paying for fee incurred by additional inputs
                     int additionalInputsCount = proposalTx.getInputs().size() - originalTx.getInputs().size();
-                    if(actualContribution > getSingleInputFee(originalTx) * additionalInputsCount) {
+                    if(actualContribution > getSingleInputFee() * additionalInputsCount) {
                         throw new PayjoinReceiverException("The actual contribution is not only paying for additional inputs");
                     }
                 } else if(allowOutputSubstitution && originalOutput.getKey().getScript().equals(payjoinURI.getAddress().getOutputScript())) {
@@ -259,11 +276,12 @@ public class Payjoin {
         return -1;
     }
 
-    private long getAdditionalFeeContribution(Transaction transaction) {
-        return getSingleInputFee(transaction);
+    private long getAdditionalFeeContribution() {
+        return getSingleInputFee();
     }
 
-    private long getSingleInputFee(Transaction transaction) {
+    private long getSingleInputFee() {
+        Transaction transaction = psbt.extractTransaction();
         double feeRate = psbt.getFee().doubleValue() / transaction.getVirtualSize();
         int vSize = 68;
 

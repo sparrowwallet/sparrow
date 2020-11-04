@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
@@ -57,8 +58,10 @@ public class Specter implements WalletImport, WalletExport {
                 Wallet wallet = outputDescriptor.toWallet();
                 wallet.setName(specterWallet.label);
 
-                if(!wallet.isValid()) {
-                    throw new ImportException("Specter wallet file did not contain a valid wallet");
+                try {
+                    wallet.checkWallet();
+                } catch(InvalidWalletException e) {
+                    throw new ImportException("Imported Specter wallet was invalid: " + e.getMessage());
                 }
 
                 return wallet;

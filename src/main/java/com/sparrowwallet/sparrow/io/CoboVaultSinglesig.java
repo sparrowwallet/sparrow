@@ -6,10 +6,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.*;
 
 import java.io.File;
 import java.io.InputStream;
@@ -75,8 +72,10 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, ScriptType.P2WPKH, wallet.getKeystores(), null));
 
-        if(!wallet.isValid()) {
-            throw new ImportException("Wallet is in an inconsistent state.");
+        try {
+            wallet.checkWallet();
+        } catch(InvalidWalletException e) {
+            throw new ImportException("Imported Cobo Vault wallet was invalid: " + e.getMessage());
         }
 
         return wallet;
