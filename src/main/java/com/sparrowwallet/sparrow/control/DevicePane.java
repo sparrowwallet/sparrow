@@ -32,10 +32,14 @@ import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class DevicePane extends TitledDescriptionPane {
+    private static final Logger log = LoggerFactory.getLogger(DevicePane.class);
+
     private final DeviceOperation deviceOperation;
     private final Wallet wallet;
     private final PSBT psbt;
@@ -467,6 +471,7 @@ public class DevicePane extends TitledDescriptionPane {
         });
         signPSBTService.setOnFailed(workerStateEvent -> {
             setError("Signing Error", signPSBTService.getException().getMessage());
+            log.error("Signing Error: " + signPSBTService.getException().getMessage());
             signButton.setDisable(false);
         });
         setDescription("Signing...");

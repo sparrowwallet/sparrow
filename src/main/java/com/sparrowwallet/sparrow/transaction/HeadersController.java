@@ -376,7 +376,6 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastButtonBox.setVisible(false);
 
         if(headersForm.getBlockTransaction() != null) {
-            blockchainForm.setVisible(true);
             updateBlockchainForm(headersForm.getBlockTransaction(), AppController.getCurrentBlockHeight());
         } else if(headersForm.getPsbt() != null) {
             PSBT psbt = headersForm.getPsbt();
@@ -481,6 +480,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void updateBlockchainForm(BlockTransaction blockTransaction, Integer currentHeight) {
+        signaturesForm.setVisible(false);
         blockchainForm.setVisible(true);
 
         if(Sha256Hash.ZERO_HASH.equals(blockTransaction.getBlockHash()) && blockTransaction.getHeight() == 0 && headersForm.getSigningWallet() == null) {
@@ -1013,7 +1013,6 @@ public class HeadersController extends TransactionFormController implements Init
                 BlockTransaction blockTransaction = transactionMap.get(txid);
                 if(blockTransaction != null) {
                     headersForm.setBlockTransaction(blockTransaction);
-                    signaturesForm.setVisible(false);
                     updateBlockchainForm(blockTransaction, AppController.getCurrentBlockHeight());
                 }
             });

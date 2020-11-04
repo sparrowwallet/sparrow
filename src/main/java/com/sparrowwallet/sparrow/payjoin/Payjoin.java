@@ -35,23 +35,16 @@ public class Payjoin {
     public Payjoin(BitcoinURI payjoinURI, Wallet wallet, PSBT psbt) {
         this.payjoinURI = payjoinURI;
         this.wallet = wallet;
-        this.psbt = psbt.getPublicCopy();
+        this.psbt = psbt;
 
-        for(PSBTInput psbtInput : this.psbt.getPsbtInputs()) {
+        for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
             if(psbtInput.getUtxo() == null) {
                 throw new IllegalArgumentException("Original PSBT for payjoin transaction must have non_witness_utxo or witness_utxo fields for all inputs");
             }
-            if(!psbtInput.getDerivedPublicKeys().isEmpty()) {
-                throw new IllegalArgumentException("Original PSBT for payjoin transaction must have no derived public keys for all inputs");
-            }
         }
 
-        if(!this.psbt.isFinalized()) {
+        if(!psbt.isFinalized()) {
             throw new IllegalArgumentException("Original PSBT for payjoin transaction must be finalized");
-        }
-
-        if(!this.psbt.getExtendedPublicKeys().isEmpty()) {
-            throw new IllegalArgumentException("Original PSBT for payjoin transaction must have no global xpubs");
         }
     }
 
@@ -67,7 +60,7 @@ public class Payjoin {
         }
 
         try {
-            String base64Psbt = psbt.toBase64String();
+            String base64Psbt = psbt.getPublicCopy().toBase64String();
 
             String appendQuery = "v=1";
             int changeOutputIndex = getChangeOutputIndex();
@@ -175,6 +168,7 @@ public class Payjoin {
                 proposedPSBTInput.setWitnessUtxo(originalPSBTInput.getWitnessUtxo());
                 // We fill up information we had on the signed PSBT, so we can sign it.
                 proposedPSBTInput.getDerivedPublicKeys().putAll(originalPSBTInput.getDerivedPublicKeys());
+                proposedPSBTInput.getProprietary().putAll(originalPSBTInput.getProprietary());
                 proposedPSBTInput.setRedeemScript(originalPSBTInput.getFinalScriptSig().getFirstNestedScript());
                 proposedPSBTInput.setWitnessScript(originalPSBTInput.getFinalScriptWitness().getWitnessScript());
                 proposedPSBTInput.setSigHash(originalPSBTInput.getSigHash());
@@ -251,6 +245,7 @@ public class Payjoin {
                 PSBTOutput originalPSBTOutput = originalOutput.getValue();
                 // We fill up information we had on the signed PSBT, so we can sign it.
                 proposedPSBTOutput.getDerivedPublicKeys().putAll(originalPSBTOutput.getDerivedPublicKeys());
+                proposedPSBTOutput.getProprietary().putAll(originalPSBTOutput.getProprietary());
                 proposedPSBTOutput.setRedeemScript(originalPSBTOutput.getRedeemScript());
                 proposedPSBTOutput.setWitnessScript(originalPSBTOutput.getWitnessScript());
             }
@@ -263,6 +258,10 @@ public class Payjoin {
                 throw new PayjoinReceiverException("Some of our outputs are not included in the proposal");
             }
         }
+
+        //Add global pubkey map for signing
+        proposal.getExtendedPublicKeys().putAll(psbt.getExtendedPublicKeys());
+        proposal.getGlobalProprietary().putAll(psbt.getGlobalProprietary());
     }
 
     private int getChangeOutputIndex() {
