@@ -535,7 +535,17 @@ public class Hwi {
     private static class DeviceModelDeserializer implements JsonDeserializer<WalletModel> {
         @Override
         public WalletModel deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return WalletModel.valueOf(json.getAsJsonPrimitive().getAsString().toUpperCase());
+            String modelStr = json.getAsJsonPrimitive().getAsString();
+            try {
+                return WalletModel.valueOf(modelStr.toUpperCase());
+            } catch(Exception e) {
+                for(WalletModel model : WalletModel.values()) {
+                    if(modelStr.startsWith(model.getType())) {
+                        return model;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("Could not determine wallet model for " + modelStr);
         }
     }
 
