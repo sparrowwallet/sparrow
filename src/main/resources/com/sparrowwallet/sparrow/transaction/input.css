@@ -24,4 +24,7 @@
 
 .locktime { -fx-fill: color-grey }
 
-
+.legend {
+    -fx-content-display: RIGHT;
+    -fx-graphic-text-gap: 5px;
+}

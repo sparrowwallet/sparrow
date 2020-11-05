@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import javafx.fxml.FXMLLoader;
@@ -28,6 +29,18 @@ public class OutputForm extends IndexedTransactionForm {
 
     public PSBTOutput getPsbtOutput() {
         return psbtOutput;
+    }
+
+    public boolean isWalletConsolidation() {
+        return (getSigningWallet() != null && getSigningWallet().getWalletOutputScripts(KeyPurpose.RECEIVE).containsKey(getTransactionOutput().getScript()));
+    }
+
+    public boolean isWalletChange() {
+        return (getSigningWallet() != null && getSigningWallet().getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(getTransactionOutput().getScript()));
+    }
+
+    public boolean isWalletPayment() {
+        return getSigningWallet() != null;
     }
 
     @Override

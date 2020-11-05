@@ -46,6 +46,11 @@ public class InputForm extends IndexedTransactionForm {
         return null;
     }
 
+    public boolean isWalletTxo() {
+        TransactionInput txInput = getTransactionInput();
+        return getSigningWallet() != null && getSigningWallet().getWalletTxos().keySet().stream().anyMatch(ref -> ref.getHash().equals(txInput.getOutpoint().getHash()) && ref.getIndex() == txInput.getOutpoint().getIndex());
+    }
+
     @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("input.fxml"));

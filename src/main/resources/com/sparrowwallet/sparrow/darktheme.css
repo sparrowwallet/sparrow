@@ -42,7 +42,7 @@
     -fx-base: -fx-accent ;
 }
 
-.table-view{
+.table-view, .tree-view {
     /*-fx-background-color: derive(-fx-base, 10%);*/
     -fx-selection-bar-non-focused: derive(-fx-base, 50%);
 }

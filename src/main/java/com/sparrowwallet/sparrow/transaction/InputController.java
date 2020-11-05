@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -120,6 +121,11 @@ public class InputController extends TransactionFormController implements Initia
         TransactionInput txInput = inputForm.getTransactionInput();
         PSBTInput psbtInput = inputForm.getPsbtInput();
 
+        inputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
+            updateInputLegendFromWallet(txInput, signingWallet);
+        });
+        updateInputLegendFromWallet(txInput, inputForm.getSigningWallet());
+
         initializeInputFields(txInput, psbtInput);
         initializeScriptFields(txInput, psbtInput);
         initializeStatusFields(txInput, psbtInput);
@@ -132,9 +138,27 @@ public class InputController extends TransactionFormController implements Initia
         }
     }
 
-    private void initializeInputFields(TransactionInput txInput, PSBTInput psbtInput) {
-        inputFieldset.setText("Input #" + txInput.getIndex());
+    private String getLegendText(TransactionInput txInput) {
+        return "Input #" + txInput.getIndex();
+    }
 
+    private void updateInputLegendFromWallet(TransactionInput txInput, Wallet signingWallet) {
+        String baseText = getLegendText(txInput);
+        if(signingWallet != null) {
+            if(inputForm.isWalletTxo()) {
+                inputFieldset.setText(baseText + " - Wallet");
+                inputFieldset.setIcon(TransactionDiagram.getTxoGlyph());
+            } else {
+                inputFieldset.setText(baseText + " - Payjoin");
+                inputFieldset.setIcon(TransactionDiagram.getPayjoinGlyph());
+            }
+        } else {
+            inputFieldset.setText(baseText);
+            inputFieldset.setIcon(null);
+        }
+    }
+
+    private void initializeInputFields(TransactionInput txInput, PSBTInput psbtInput) {
         outpoint.managedProperty().bind(outpoint.visibleProperty());
         linkedOutpoint.managedProperty().bind(linkedOutpoint.visibleProperty());
 

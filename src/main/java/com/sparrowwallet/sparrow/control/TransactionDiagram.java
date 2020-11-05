@@ -431,6 +431,17 @@ public class TransactionDiagram extends GridPane {
         return consolidationGlyph;
     }
 
+    public static Glyph getTxoGlyph() {
+        return getChangeGlyph();
+    }
+
+    public static Glyph getPayjoinGlyph() {
+        Glyph payjoinGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
+        payjoinGlyph.getStyleClass().add("payjoin-icon");
+        payjoinGlyph.setFontSize(12);
+        return payjoinGlyph;
+    }
+
     public static Glyph getChangeGlyph() {
         Glyph changeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.COINS);
         changeGlyph.getStyleClass().add("change-icon");

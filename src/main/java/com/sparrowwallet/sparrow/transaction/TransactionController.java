@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.control.TransactionDiagram;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -17,11 +18,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
-import javafx.scene.control.cell.TextFieldTreeCell;
 import javafx.scene.layout.Pane;
-import javafx.util.StringConverter;
 import org.controlsfx.control.MasterDetailPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,17 +125,46 @@ public class TransactionController implements Initializable {
         rootItem.getChildren().add(outputsItem);
         txtree.setRoot(rootItem);
 
-        txtree.setCellFactory(p -> new TextFieldTreeCell<>(new StringConverter<TransactionForm>() {
+        txtree.setCellFactory(tc -> new TreeCell<>() {
             @Override
-            public String toString(TransactionForm transactionForm) {
-                return transactionForm.toString();
-            }
+            protected void updateItem(TransactionForm form, boolean empty) {
+                super.updateItem(form, empty);
 
-            @Override
-            public TransactionForm fromString(String string) {
-                throw new IllegalStateException("No editing");
+                setText(null);
+                setGraphic(null);
+                setTooltip(null);
+                setContextMenu(null);
+
+                if(form != null) {
+                    setText(form.toString());
+
+                    if(form.getSigningWallet() != null) {
+                        if(form instanceof InputForm) {
+                            InputForm inputForm = (InputForm)form;
+                            if(inputForm.isWalletTxo()) {
+                                setGraphic(TransactionDiagram.getTxoGlyph());
+                            } else {
+                                setGraphic(TransactionDiagram.getPayjoinGlyph());
+                            }
+                        }
+                        if(form instanceof OutputForm) {
+                            OutputForm outputForm = (OutputForm)form;
+                            if(outputForm.isWalletConsolidation()) {
+                                setGraphic(TransactionDiagram.getConsolidationGlyph());
+                            } else if(outputForm.isWalletChange()) {
+                                setGraphic(TransactionDiagram.getChangeGlyph());
+                            } else {
+                                setGraphic(TransactionDiagram.getPaymentGlyph());
+                            }
+                        }
+                    }
+                }
             }
-        }));
+        });
+
+        txdata.signingWalletProperty().addListener((observable, oldValue, newValue) -> {
+            txtree.refresh();
+        });
 
         txtree.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedItem) -> {
             TransactionForm transactionForm = selectedItem.getValue();

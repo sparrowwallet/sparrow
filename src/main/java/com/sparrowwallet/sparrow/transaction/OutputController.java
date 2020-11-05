@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
@@ -106,10 +105,10 @@ public class OutputController extends TransactionFormController implements Initi
     private void updateOutputLegendFromWallet(TransactionOutput txOutput, Wallet signingWallet) {
         String baseText = getLegendText(txOutput);
         if(signingWallet != null) {
-            if(signingWallet.getWalletOutputScripts(KeyPurpose.RECEIVE).containsKey(txOutput.getScript())) {
+            if(outputForm.isWalletConsolidation()) {
                 outputFieldset.setText(baseText + " - Consolidation");
                 outputFieldset.setIcon(TransactionDiagram.getConsolidationGlyph());
-            } else if(signingWallet.getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(txOutput.getScript())) {
+            } else if(outputForm.isWalletChange()) {
                 outputFieldset.setText(baseText + " - Change");
                 outputFieldset.setIcon(TransactionDiagram.getChangeGlyph());
             } else {
