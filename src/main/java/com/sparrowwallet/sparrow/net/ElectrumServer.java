@@ -233,7 +233,19 @@ public class ElectrumServer {
                 if(optionalNode.isPresent()) {
                     WalletNode node = optionalNode.get();
 
-                    Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).collect(Collectors.toCollection(TreeSet::new));
+                    //Some servers can return the same tx as multiple ScriptHashTx entries with different heights. Take the highest height only
+                    Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash)
+                            .collect(TreeSet::new, (set, ref) -> {
+                                Optional<BlockTransactionHash> optExisting = set.stream().filter(prev -> prev.getHash().equals(ref.getHash())).findFirst();
+                                if(optExisting.isPresent()) {
+                                    if(optExisting.get().getHeight() < ref.getHeight()) {
+                                        set.remove(optExisting.get());
+                                        set.add(ref);
+                                    }
+                                } else {
+                                    set.add(ref);
+                                }
+                            }, TreeSet::addAll);
                     Set<BlockTransactionHash> existingReferences = nodeTransactionMap.get(node);
 
                     if(existingReferences == null) {

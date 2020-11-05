@@ -9,11 +9,15 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewWalletTransactionsEvent;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.LongPropertyBase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class WalletTransactionsEntry extends Entry {
+    private static final Logger log = LoggerFactory.getLogger(WalletTransactionsEntry.class);
+
     private final Wallet wallet;
 
     public WalletTransactionsEntry(Wallet wallet) {
@@ -67,11 +71,20 @@ public class WalletTransactionsEntry extends Entry {
 
         calculateBalances();
 
-        if(!entriesAdded.isEmpty()) {
+        List<Entry> entriesComplete = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).isComplete()).collect(Collectors.toList());
+        if(!entriesComplete.isEmpty()) {
             List<BlockTransaction> blockTransactions = entriesAdded.stream().map(txEntry -> ((TransactionEntry)txEntry).getBlockTransaction()).collect(Collectors.toList());
             long totalBlockchainValue = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).getConfirmations() > 0).mapToLong(Entry::getValue).sum();
             long totalMempoolValue = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).getConfirmations() == 0).mapToLong(Entry::getValue).sum();
             EventManager.get().post(new NewWalletTransactionsEvent(wallet, blockTransactions, totalBlockchainValue, totalMempoolValue));
+        }
+
+        if(entriesAdded.size() > entriesComplete.size()) {
+            entriesAdded.removeAll(entriesComplete);
+            for(Entry entry : entriesAdded) {
+                TransactionEntry txEntry = (TransactionEntry)entry;
+                log.warn("Not notifying for incomplete entry " + ((TransactionEntry)entry).getBlockTransaction().getHashAsString() + " value " + txEntry.getValue());
+            }
         }
     }
 

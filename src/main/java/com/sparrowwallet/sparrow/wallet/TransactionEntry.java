@@ -2,10 +2,9 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
@@ -83,6 +82,35 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         } else {
             return BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
         }
+    }
+
+    public boolean isComplete() {
+        int validEntries = 0;
+        Map<BlockTransactionHashIndex, WalletNode> walletTxos = wallet.getWalletTxos();
+        for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
+            Optional<BlockTransactionHashIndex> optRef = walletTxos.keySet().stream().filter(ref -> ref.getHash().equals(txInput.getOutpoint().getHash()) && ref.getIndex() == txInput.getOutpoint().getIndex()).findFirst();
+            if(optRef.isPresent()) {
+                validEntries++;
+                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().equals(optRef.get().getSpentBy()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.INPUT))) {
+                    return false;
+                }
+            }
+        }
+        for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
+            Optional<BlockTransactionHashIndex> optRef = walletTxos.keySet().stream().filter(ref -> ref.getHash().equals(txOutput.getHash()) && ref.getIndex() == txOutput.getIndex()).findFirst();
+            if(optRef.isPresent()) {
+                validEntries++;
+                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().equals(optRef.get()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.OUTPUT))) {
+                    return false;
+                }
+            }
+        }
+
+        if(getChildren().size() != validEntries) {
+            return false;
+        }
+
+        return true;
     }
 
     private static List<Entry> createChildEntries(Wallet wallet, Map<BlockTransactionHashIndex, KeyPurpose> incoming, Map<BlockTransactionHashIndex, KeyPurpose> outgoing) {
