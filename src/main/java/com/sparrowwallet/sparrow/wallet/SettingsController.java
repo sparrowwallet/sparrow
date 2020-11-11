@@ -13,10 +13,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.control.DescriptorArea;
-import com.sparrowwallet.sparrow.control.TextAreaDialog;
-import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
@@ -251,6 +248,21 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
+    public void scanDescriptorQR(ActionEvent event) {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.outputDescriptor != null) {
+                setDescriptorText(result.outputDescriptor.toString());
+            } else if(result.payload != null && !result.payload.isEmpty()) {
+                setDescriptorText(result.payload);
+            } else if(result.exception != null) {
+                AppController.showErrorDialog("Error scanning QR", result.exception.getMessage());
+            }
+        }
+    }
+
     public void editDescriptor(ActionEvent event) {
         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet());
         String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
@@ -260,22 +272,26 @@ public class SettingsController extends WalletFormController implements Initiali
         dialog.getDialogPane().setHeaderText("Wallet output descriptor:");
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
-            try {
-                OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.get().trim().replace("\\", ""));
-                Wallet editedWallet = editedOutputDescriptor.toWallet();
+            setDescriptorText(text.get());
+        }
+    }
 
-                editedWallet.setName(getWalletForm().getWallet().getName());
-                keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
-                totalKeystores.unbind();
-                totalKeystores.setValue(0);
-                walletForm.setWallet(editedWallet);
-                initialising = true;
-                setFieldsFromWallet(editedWallet);
+    private void setDescriptorText(String text) {
+        try {
+            OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.trim().replace("\\", ""));
+            Wallet editedWallet = editedOutputDescriptor.toWallet();
 
-                EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
-            } catch(Exception e) {
-                AppController.showErrorDialog("Invalid output descriptor", e.getMessage());
-            }
+            editedWallet.setName(getWalletForm().getWallet().getName());
+            keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
+            totalKeystores.unbind();
+            totalKeystores.setValue(0);
+            walletForm.setWallet(editedWallet);
+            initialising = true;
+            setFieldsFromWallet(editedWallet);
+
+            EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
+        } catch(Exception e) {
+            AppController.showErrorDialog("Invalid output descriptor", e.getMessage());
         }
     }
 

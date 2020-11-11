@@ -11,6 +11,7 @@
 <?import com.sparrowwallet.drongo.protocol.ScriptType?>
 <?import com.sparrowwallet.sparrow.control.DescriptorArea?>
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
+<?import org.controlsfx.glyphfont.Glyph?>
 
 <BorderPane stylesheets="@settings.css, @wallet.css, @../script.css, @../descriptor.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
     <center>
@@ -79,6 +80,14 @@
                                 <DescriptorArea fx:id="descriptor" editable="false" styleClass="uneditable-codearea" prefHeight="27" maxHeight="27" />
                             </content>
                         </VirtualizedScrollPane>
+                        <Button onAction="#scanDescriptorQR">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
+                            </graphic>
+                            <tooltip>
+                                <Tooltip text="Scan a QR code" />
+                            </tooltip>
+                        </Button>
                         <Button text="Edit..." onAction="#editDescriptor" />
                     </Field>
                 </Fieldset>

@@ -289,7 +289,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private Address getAddress(CryptoAddress cryptoAddress) {
             Address address = null;
-            if(cryptoAddress.getType() == CryptoAddress.Type.P2PKH) {
+            if(cryptoAddress.getType() == null || cryptoAddress.getType() == CryptoAddress.Type.P2PKH) {
                 address = new P2PKHAddress(cryptoAddress.getData());
             } else if(cryptoAddress.getType() == CryptoAddress.Type.P2SH) {
                 address = new P2SHAddress(cryptoAddress.getData());
