@@ -150,15 +150,7 @@ public class SendController extends WalletFormController implements Initializabl
         addValidation();
 
         addPaymentTab();
-        Platform.runLater(() -> {
-            StackPane stackPane = (StackPane)paymentTabs.lookup(".tab-header-area");
-            if(stackPane != null) {
-                tabHeader = stackPane;
-                tabHeader.managedProperty().bind(tabHeader.visibleProperty());
-                tabHeader.setVisible(false);
-                paymentTabs.getStyleClass().remove("initial");
-            }
-        });
+        initializeTabHeader(0);
 
         paymentTabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
             if(tabHeader != null) {
@@ -276,6 +268,21 @@ public class SendController extends WalletFormController implements Initializabl
 
             transactionDiagram.update(walletTransaction);
             createButton.setDisable(walletTransaction == null || isInsufficientFeeRate());
+        });
+    }
+
+    private void initializeTabHeader(int count) {
+        final int lookupCount = count;
+        Platform.runLater(() -> {
+            StackPane stackPane = (StackPane)paymentTabs.lookup(".tab-header-area");
+            if(stackPane != null) {
+                tabHeader = stackPane;
+                tabHeader.managedProperty().bind(tabHeader.visibleProperty());
+                tabHeader.setVisible(false);
+                paymentTabs.getStyleClass().remove("initial");
+            } else if(lookupCount < 20) {
+                initializeTabHeader(lookupCount+1);
+            }
         });
     }
 
