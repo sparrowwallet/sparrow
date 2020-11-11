@@ -146,7 +146,7 @@ public class InputController extends TransactionFormController implements Initia
         String baseText = getLegendText(txInput);
         if(signingWallet != null) {
             if(inputForm.isWalletTxo()) {
-                inputFieldset.setText(baseText + " - Wallet");
+                inputFieldset.setText(baseText + " - " + signingWallet.getName());
                 inputFieldset.setIcon(TransactionDiagram.getTxoGlyph());
             } else {
                 inputFieldset.setText(baseText + " - Payjoin");
