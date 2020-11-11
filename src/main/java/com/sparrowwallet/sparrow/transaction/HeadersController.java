@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
+import com.sparrowwallet.hummingbird.registry.RegistryType;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -620,7 +621,7 @@ public class HeadersController extends TransactionFormController implements Init
         toggleButton.setSelected(false);
 
         try {
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(UR.CRYPTO_PSBT_TYPE, headersForm.getPsbt().serialize());
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(RegistryType.CRYPTO_PSBT.toString(), headersForm.getPsbt().serialize());
             qrDisplayDialog.show();
         } catch(UR.URException e) {
             log.error("Error creating PSBT UR", e);

@@ -2,6 +2,9 @@ package com.sparrowwallet.sparrow.control;
 
 import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.FileImport;
 import com.sparrowwallet.sparrow.io.ImportException;
@@ -27,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Optional;
 
 public abstract class FileImportPane extends TitledDescriptionPane {
@@ -36,6 +40,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
     protected ButtonBase importButton;
     private final SimpleStringProperty password = new SimpleStringProperty("");
     private final boolean scannable;
+    protected List<Wallet> wallets;
 
     public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl, boolean scannable) {
         super(title, description, content, imageUrl);
@@ -132,7 +137,14 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
-            if(result.payload != null) {
+            if(result.wallets != null) {
+                wallets = result.wallets;
+                try {
+                    importFile(importer.getName(), null, null);
+                } catch(ImportException e) {
+                    setError("Import Error", e.getMessage());
+                }
+            } else if(result.payload != null) {
                 try {
                     importFile(importer.getName(), new ByteArrayInputStream(result.payload.getBytes(StandardCharsets.UTF_8)), null);
                 } catch(Exception e) {
@@ -146,8 +158,25 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                     }
                     setError("Import Error", errorMessage);
                 }
+            } else if(result.exception != null) {
+                log.error("Error importing QR", result.exception);
+                setError("Import Error", result.exception.getMessage());
             }
         }
+    }
+
+    protected Keystore getScannedKeystore(ScriptType scriptType) throws ImportException {
+        if(wallets != null) {
+            for(Wallet wallet : wallets) {
+                if(scriptType.equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
+                    return wallet.getKeystores().get(0);
+                }
+            }
+
+            throw new ImportException("Script type " + scriptType + " is not supported");
+        }
+
+        return null;
     }
 
     protected abstract void importFile(String fileName, InputStream inputStream, String password) throws ImportException;

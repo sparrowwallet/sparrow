@@ -569,8 +569,8 @@ public class AppController implements Initializable {
                 Tab tab = addTransactionTab(null, result.psbt);
                 tabs.getSelectionModel().select(tab);
             } else if(result.exception != null) {
-                log.error("Error opening webcam", result.exception);
-                showErrorDialog("Error opening webcam", result.exception.getMessage());
+                log.error("Error scanning QR", result.exception);
+                showErrorDialog("Error scanning QR", result.exception.getMessage());
             } else {
                 AppController.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a transaction or PSBT");
             }

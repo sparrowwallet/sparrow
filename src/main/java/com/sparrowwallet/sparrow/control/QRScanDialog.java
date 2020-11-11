@@ -2,12 +2,22 @@ package com.sparrowwallet.sparrow.control;
 
 import com.github.sarxos.webcam.WebcamResolution;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.address.P2PKHAddress;
+import com.sparrowwallet.drongo.address.P2SHAddress;
+import com.sparrowwallet.drongo.address.P2WPKHAddress;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.protocol.Base43;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.hummingbird.registry.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.hummingbird.ResultType;
 import com.sparrowwallet.hummingbird.UR;
@@ -21,15 +31,17 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.tools.Borders;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class QRScanDialog extends Dialog<QRScanDialog.Result> {
+    private static final Logger log = LoggerFactory.getLogger(QRScanDialog.class);
+
     private final URDecoder decoder;
     private final WebcamService webcamService;
     private List<String> parts;
@@ -88,30 +100,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 if(decoder.getResult() != null) {
                     URDecoder.Result urResult = decoder.getResult();
                     if(urResult.type == ResultType.SUCCESS) {
-                        //TODO: Confirm once UR type registry is updated
-                        if(urResult.ur.getType().contains(UR.BYTES_TYPE) || urResult.ur.getType().equals(UR.CRYPTO_PSBT_TYPE)) {
-                            try {
-                                PSBT psbt = new PSBT(urResult.ur.toBytes());
-                                result = new Result(psbt);
-                                return;
-                            } catch(Exception e) {
-                                //ignore, bytes not parsable as PSBT
-                            }
-
-                            try {
-                                Transaction transaction = new Transaction(urResult.ur.toBytes());
-                                result = new Result(transaction);
-                                return;
-                            } catch(Exception e) {
-                                //ignore, bytes not parsable as tx
-                            }
-
-                            result = new Result("Parsed UR of type " + urResult.ur.getType() + " was not a PSBT or transaction");
-                        } else {
-                            result = new Result("Cannot parse UR type of " + urResult.ur.getType());
-                        }
+                        result = extractResultFromUR(urResult.ur);
                     } else {
-                        result = new Result(urResult.error);
+                        result = new Result(new URException(urResult.error));
                     }
                 }
             } else if(partMatcher.matches()) {
@@ -143,7 +134,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         //ignore, bytes not parsable as tx
                     }
 
-                    result = new Result("Parsed QR parts were not a PSBT or transaction");
+                    result = new Result(new ScanException("Parsed QR parts were not a PSBT or transaction"));
                 }
             } else {
                 PSBT psbt;
@@ -227,6 +218,180 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 result = new Result(qrtext);
             }
         }
+
+        private Result extractResultFromUR(UR ur) {
+            try {
+                RegistryType urRegistryType = ur.getRegistryType();
+
+                if(urRegistryType.equals(RegistryType.BYTES)) {
+                    byte[] urBytes = (byte[])ur.decodeFromRegistry();
+                    try {
+                        PSBT psbt = new PSBT(urBytes);
+                        return new Result(psbt);
+                    } catch(Exception e) {
+                        //ignore, bytes not parsable as PSBT
+                    }
+
+                    try {
+                        Transaction transaction = new Transaction(urBytes);
+                        return new Result(transaction);
+                    } catch(Exception e) {
+                        //ignore, bytes not parsable as tx
+                    }
+
+                    result = new Result(new URException("Parsed UR of type " + urRegistryType + " was not a PSBT or transaction"));
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_PSBT)) {
+                    CryptoPSBT cryptoPSBT = (CryptoPSBT)ur.decodeFromRegistry();
+                    try {
+                        PSBT psbt = new PSBT(cryptoPSBT.getPsbt());
+                        return new Result(psbt);
+                    } catch(Exception e) {
+                        log.error("Error parsing PSBT from UR type " + urRegistryType, e);
+                        return new Result(new URException("Error parsing PSBT from UR type " + urRegistryType, e));
+                    }
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_ADDRESS)) {
+                    CryptoAddress cryptoAddress = (CryptoAddress)ur.decodeFromRegistry();
+                    Address address = getAddress(cryptoAddress);
+                    if(address != null) {
+                        return new Result(BitcoinURI.fromAddress(address));
+                    } else {
+                        return new Result(new URException("Unknown " + urRegistryType + " type of " + cryptoAddress.getType()));
+                    }
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_HDKEY)) {
+                    CryptoHDKey cryptoHDKey = (CryptoHDKey)ur.decodeFromRegistry();
+                    ExtendedKey extendedKey = getExtendedKey(cryptoHDKey);
+                    return new Result(extendedKey);
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_OUTPUT)) {
+                    CryptoOutput cryptoOutput = (CryptoOutput)ur.decodeFromRegistry();
+                    OutputDescriptor outputDescriptor = getOutputDescriptor(cryptoOutput);
+                    return new Result(outputDescriptor);
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_ACCOUNT)) {
+                    CryptoAccount cryptoAccount = (CryptoAccount)ur.decodeFromRegistry();
+                    List<Wallet> wallets = getWallets(cryptoAccount);
+                    return new Result(wallets);
+                } else {
+                    log.error("Unsupported UR type " + urRegistryType);
+                    return new Result(new URException("UR type " + urRegistryType + " is not supported"));
+                }
+            } catch(IllegalArgumentException e) {
+                log.error("Unknown UR type of " + ur.getType(), e);
+                return new Result(new URException("Unknown UR type of " + ur.getType(), e));
+            } catch(UR.InvalidCBORException e) {
+                log.error("Invalid CBOR in UR", e);
+                return new Result(new URException("Invalid CBOR in UR", e));
+            } catch(Exception e) {
+                log.error("Error parsing UR CBOR", e);
+                return new Result(new URException("Error parsing UR CBOR", e));
+            }
+
+            return null;
+        }
+
+        private Address getAddress(CryptoAddress cryptoAddress) {
+            Address address = null;
+            if(cryptoAddress.getType() == CryptoAddress.Type.P2PKH) {
+                address = new P2PKHAddress(cryptoAddress.getData());
+            } else if(cryptoAddress.getType() == CryptoAddress.Type.P2SH) {
+                address = new P2SHAddress(cryptoAddress.getData());
+            } else if(cryptoAddress.getType() == CryptoAddress.Type.P2WPKH) {
+                address = new P2WPKHAddress(cryptoAddress.getData());
+            }
+            return address;
+        }
+
+        private ExtendedKey getExtendedKey(CryptoHDKey cryptoHDKey) {
+            if(cryptoHDKey.isPrivateKey()) {
+                DeterministicKey prvKey = HDKeyDerivation.createMasterPrivKeyFromBytes(Arrays.copyOfRange(cryptoHDKey.getKey(), 1, 33), cryptoHDKey.getChainCode(), List.of(ChildNumber.ZERO));
+                return new ExtendedKey(prvKey, new byte[4], ChildNumber.ZERO);
+            } else {
+                ChildNumber lastChild = ChildNumber.ZERO;
+                int depth = 1;
+                byte[] parentFingerprint = new byte[4];
+                if(cryptoHDKey.getOrigin() != null) {
+                    if(!cryptoHDKey.getOrigin().getComponents().isEmpty()) {
+                        PathComponent lastComponent = cryptoHDKey.getOrigin().getComponents().get(cryptoHDKey.getOrigin().getComponents().size() - 1);
+                        lastChild = new ChildNumber(lastComponent.getIndex(), lastComponent.isHardened());
+                        depth = cryptoHDKey.getOrigin().getComponents().size();
+                    }
+                    if(cryptoHDKey.getOrigin().getParentFingerprint() != null) {
+                        parentFingerprint = cryptoHDKey.getOrigin().getParentFingerprint();
+                    }
+                }
+                DeterministicKey pubKey = new DeterministicKey(List.of(lastChild), cryptoHDKey.getChainCode(), cryptoHDKey.getKey(), depth, parentFingerprint);
+                return new ExtendedKey(pubKey, parentFingerprint, lastChild);
+            }
+        }
+
+        private OutputDescriptor getOutputDescriptor(CryptoOutput cryptoOutput) {
+            ScriptType scriptType = getScriptType(cryptoOutput.getScriptExpressions());
+
+            if(cryptoOutput.getMultiKey() != null) {
+                MultiKey multiKey = cryptoOutput.getMultiKey();
+                Map<ExtendedKey, KeyDerivation> extendedPublicKeys = new LinkedHashMap<>();
+                for(CryptoHDKey cryptoHDKey : multiKey.getHdKeys()) {
+                    ExtendedKey extendedKey = getExtendedKey(cryptoHDKey);
+                    KeyDerivation keyDerivation = getKeyDerivation(cryptoHDKey.getOrigin());
+                    extendedPublicKeys.put(extendedKey, keyDerivation);
+                }
+                return new OutputDescriptor(scriptType, multiKey.getThreshold(), extendedPublicKeys);
+            } else if(cryptoOutput.getEcKey() != null) {
+                throw new IllegalArgumentException("EC keys are currently unsupported");
+            } else if(cryptoOutput.getHdKey() != null) {
+                ExtendedKey extendedKey = getExtendedKey(cryptoOutput.getHdKey());
+                KeyDerivation keyDerivation = getKeyDerivation(cryptoOutput.getHdKey().getOrigin());
+                return new OutputDescriptor(scriptType, extendedKey, keyDerivation);
+            }
+
+            throw new IllegalStateException("CryptoOutput did not contain sufficient information");
+        }
+
+        private List<Wallet> getWallets(CryptoAccount cryptoAccount) {
+            List<Wallet> wallets = new ArrayList<>();
+            String masterFingerprint = Utils.bytesToHex(cryptoAccount.getMasterFingerprint());
+            for(CryptoOutput cryptoOutput : cryptoAccount.getOutputDescriptors()) {
+                Wallet wallet = new Wallet();
+                OutputDescriptor outputDescriptor = getOutputDescriptor(cryptoOutput);
+                if(outputDescriptor.isMultisig()) {
+                    throw new IllegalStateException("Multisig output descriptors are unsupported in CryptoAccount");
+                }
+
+                ExtendedKey extendedKey = outputDescriptor.getSingletonExtendedPublicKey();
+                wallet.setScriptType(outputDescriptor.getScriptType());
+                Keystore keystore = new Keystore();
+                keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, outputDescriptor.getKeyDerivation(extendedKey).getDerivationPath()));
+                keystore.setExtendedPublicKey(extendedKey);
+                wallet.getKeystores().add(keystore);
+                wallets.add(wallet);
+            }
+
+            return wallets;
+        }
+
+        private ScriptType getScriptType(List<ScriptExpression> expressions) {
+            if(List.of(ScriptExpression.PUBLIC_KEY_HASH).equals(expressions)) {
+                return ScriptType.P2PKH;
+            } else if(List.of(ScriptExpression.SCRIPT_HASH, ScriptExpression.WITNESS_PUBLIC_KEY_HASH).equals(expressions)) {
+                return ScriptType.P2SH_P2WPKH;
+            } else if(List.of(ScriptExpression.WITNESS_PUBLIC_KEY_HASH).equals(expressions)) {
+                return ScriptType.P2WPKH;
+            } else if(List.of(ScriptExpression.SCRIPT_HASH).equals(expressions)) {
+                return ScriptType.P2SH;
+            } else if(List.of(ScriptExpression.SCRIPT_HASH, ScriptExpression.WITNESS_SCRIPT_HASH).equals(expressions)) {
+                return ScriptType.P2SH_P2WSH;
+            } else if(List.of(ScriptExpression.WITNESS_SCRIPT_HASH).equals(expressions)) {
+                return ScriptType.P2WSH;
+            }
+
+            throw new IllegalArgumentException("Unknown script of " + expressions);
+        }
+
+        private KeyDerivation getKeyDerivation(CryptoKeypath cryptoKeypath) {
+            if(cryptoKeypath != null) {
+                return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getParentFingerprint()), cryptoKeypath.getPath());
+            }
+
+            return null;
+        }
     }
 
     public static class Result {
@@ -234,6 +399,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public final PSBT psbt;
         public final BitcoinURI uri;
         public final ExtendedKey extendedKey;
+        public final OutputDescriptor outputDescriptor;
+        public final List<Wallet> wallets;
         public final String payload;
         public final Throwable exception;
 
@@ -242,6 +409,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
             this.payload = null;
             this.exception = null;
         }
@@ -251,6 +420,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = psbt;
             this.uri = null;
             this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
             this.payload = null;
             this.exception = null;
         }
@@ -260,6 +431,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = uri;
             this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
             this.payload = null;
             this.exception = null;
         }
@@ -269,6 +442,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = BitcoinURI.fromAddress(address);
             this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
             this.payload = null;
             this.exception = null;
         }
@@ -278,6 +453,30 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = extendedKey;
+            this.outputDescriptor = null;
+            this.wallets = null;
+            this.payload = null;
+            this.exception = null;
+        }
+
+        public Result(OutputDescriptor outputDescriptor) {
+            this.transaction = null;
+            this.psbt = null;
+            this.uri = null;
+            this.extendedKey = null;
+            this.outputDescriptor = outputDescriptor;
+            this.wallets = null;
+            this.payload = null;
+            this.exception = null;
+        }
+
+        public Result(List<Wallet> wallets) {
+            this.transaction = null;
+            this.psbt = null;
+            this.uri = null;
+            this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = wallets;
             this.payload = null;
             this.exception = null;
         }
@@ -287,6 +486,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
             this.payload = payload;
             this.exception = null;
         }
@@ -296,8 +497,46 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
             this.payload = null;
             this.exception = exception;
+        }
+    }
+
+    public static class ScanException extends Exception {
+        public ScanException() {
+            super();
+        }
+
+        public ScanException(String message) {
+            super(message);
+        }
+
+        public ScanException(Throwable cause) {
+            super(cause);
+        }
+
+        public ScanException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class URException extends ScanException {
+        public URException() {
+            super();
+        }
+
+        public URException(String message) {
+            super(message);
+        }
+
+        public URException(Throwable cause) {
+            super(cause);
+        }
+
+        public URException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

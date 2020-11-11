@@ -363,8 +363,8 @@ public class KeystoreController extends WalletFormController implements Initiali
             if(result.extendedKey != null && result.extendedKey.getKey().isPubKeyOnly()) {
                 xpub.setText(result.extendedKey.getExtendedKey());
             } else if(result.exception != null) {
-                log.error("Error opening webcam", result.exception);
-                AppController.showErrorDialog("Error opening webcam", result.exception.getMessage());
+                log.error("Error scanning QR", result.exception);
+                AppController.showErrorDialog("Error scanning QR", result.exception.getMessage());
             } else {
                 AppController.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid " + Network.get().getXpubHeader().getDisplayName());
             }

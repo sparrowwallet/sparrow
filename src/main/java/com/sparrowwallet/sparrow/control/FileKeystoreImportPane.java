@@ -20,7 +20,11 @@ public class FileKeystoreImportPane extends FileImportPane {
     }
 
     protected void importFile(String fileName, InputStream inputStream, String password) throws ImportException {
-        Keystore keystore = importer.getKeystore(wallet.getScriptType(), inputStream, password);
+        Keystore keystore = getScannedKeystore(wallet.getScriptType());
+        if(keystore == null) {
+            keystore = importer.getKeystore(wallet.getScriptType(), inputStream, password);
+        }
+
         EventManager.get().post(new KeystoreImportEvent(keystore));
     }
 }
