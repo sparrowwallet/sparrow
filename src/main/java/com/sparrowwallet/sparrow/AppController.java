@@ -1046,6 +1046,9 @@ public class AppController implements Initializable {
             if(name.endsWith(".json")) {
                 name = name.substring(0, name.lastIndexOf('.'));
             }
+            if(!name.equals(wallet.getName())) {
+                wallet.setName(name);
+            }
             Tab tab = new Tab(name);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
