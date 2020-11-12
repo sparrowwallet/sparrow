@@ -32,6 +32,8 @@ public class QRDisplayDialog extends Dialog<UR> {
     private static final int MIN_FRAGMENT_LENGTH = 10;
     private static final int MAX_FRAGMENT_LENGTH = 100;
 
+    private static final int ANIMATION_PERIOD_MILLIS = 200;
+
     private final UR ur;
     private final UREncoder encoder;
 
@@ -61,7 +63,7 @@ public class QRDisplayDialog extends Dialog<UR> {
             qrImageView.setImage(getQrCode(currentPart));
         } else {
             AnimateQRService animateQRService = new AnimateQRService();
-            animateQRService.setPeriod(Duration.millis(100));
+            animateQRService.setPeriod(Duration.millis(ANIMATION_PERIOD_MILLIS));
             animateQRService.start();
             setOnCloseRequest(event -> {
                 animateQRService.cancel();
