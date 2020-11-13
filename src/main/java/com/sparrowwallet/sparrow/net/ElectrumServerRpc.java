@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
+import com.sparrowwallet.drongo.wallet.Wallet;
 
 import java.util.List;
 import java.util.Map;
@@ -15,15 +16,15 @@ public interface ElectrumServerRpc {
 
     BlockHeaderTip subscribeBlockHeaders(Transport transport);
 
-    Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Map<String, String> pathScriptHashes, boolean failOnError);
+    Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError);
 
-    Map<String, ScriptHashTx[]> getScriptHashMempool(Transport transport, Map<String, String> pathScriptHashes, boolean failOnError);
+    Map<String, ScriptHashTx[]> getScriptHashMempool(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError);
 
-    Map<String, String> subscribeScriptHashes(Transport transport, Map<String, String> pathScriptHashes);
+    Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes);
 
-    Map<Integer, String> getBlockHeaders(Transport transport, Set<Integer> blockHeights);
+    Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights);
 
-    Map<String, String> getTransactions(Transport transport, Set<String> txids);
+    Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids);
 
     Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash);
 

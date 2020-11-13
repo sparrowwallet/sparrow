@@ -38,18 +38,21 @@ public class CoinTreeTable extends TreeTableView<Entry> {
     }
 
     public void updateHistoryStatus(WalletHistoryStatusEvent event) {
-        Platform.runLater(() -> {
-            if(event.getErrorMessage() != null) {
-                setPlaceholder(new Label("Error loading transactions: " + event.getErrorMessage()));
-            } else if(event.isLoading()) {
-                if(event.getStatusMessage() != null) {
-                    setPlaceholder(new Label(event.getStatusMessage() + "..."));
+        Entry entry = getRoot().getValue();
+        if(entry != null && event.getWallet() != null && entry.getWallet() == event.getWallet()) {
+            Platform.runLater(() -> {
+                if(event.getErrorMessage() != null) {
+                    setPlaceholder(new Label("Error loading transactions: " + event.getErrorMessage()));
+                } else if(event.isLoading()) {
+                    if(event.getStatusMessage() != null) {
+                        setPlaceholder(new Label(event.getStatusMessage() + "..."));
+                    } else {
+                        setPlaceholder(new Label("Loading transactions..."));
+                    }
                 } else {
-                    setPlaceholder(new Label("Loading transactions..."));
+                    setPlaceholder(new Label("No transactions"));
                 }
-            } else {
-                setPlaceholder(new Label("No transactions"));
-            }
-        });
+            });
+        }
     }
 }

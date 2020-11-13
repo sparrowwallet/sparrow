@@ -79,14 +79,14 @@ public class WalletForm {
             log.debug(node == null ? "Refreshing full wallet history" : "Requesting node wallet history for " + node.getDerivationPath());
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
             historyService.setOnSucceeded(workerStateEvent -> {
-                EventManager.get().post(new WalletHistoryStatusEvent(true));
+                EventManager.get().post(new WalletHistoryStatusEvent(wallet, true));
                 updateWallet(previousWallet, blockHeight);
             });
             historyService.setOnFailed(workerStateEvent -> {
                 log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
-                EventManager.get().post(new WalletHistoryStatusEvent(workerStateEvent.getSource().getException().getMessage()));
+                EventManager.get().post(new WalletHistoryStatusEvent(wallet, workerStateEvent.getSource().getException().getMessage()));
             });
-            EventManager.get().post(new WalletHistoryStatusEvent(false));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, false));
             historyService.start();
         }
     }

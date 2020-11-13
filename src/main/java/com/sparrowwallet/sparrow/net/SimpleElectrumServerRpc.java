@@ -6,6 +6,7 @@ import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
@@ -69,12 +70,12 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Map<String, String> pathScriptHashes, boolean failOnError) {
+    public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
         JsonRpcClient client = new JsonRpcClient(transport);
 
         Map<String, ScriptHashTx[]> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
-            EventManager.get().post(new WalletHistoryStatusEvent(false, "Loading transactions for " + path));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, false, "Loading transactions for " + path));
             try {
                 ScriptHashTx[] scriptHashTxes = new RetryLogic<ScriptHashTx[]>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute());
@@ -92,7 +93,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<String, ScriptHashTx[]> getScriptHashMempool(Transport transport, Map<String, String> pathScriptHashes, boolean failOnError) {
+    public Map<String, ScriptHashTx[]> getScriptHashMempool(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
         JsonRpcClient client = new JsonRpcClient(transport);
 
         Map<String, ScriptHashTx[]> result = new LinkedHashMap<>();
@@ -114,12 +115,12 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<String, String> subscribeScriptHashes(Transport transport, Map<String, String> pathScriptHashes) {
+    public Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes) {
         JsonRpcClient client = new JsonRpcClient(transport);
 
         Map<String, String> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
-            EventManager.get().post(new WalletHistoryStatusEvent(false, "Finding transactions for " + path));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, false, "Finding transactions for " + path));
             try {
                 String scriptHash = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable());
@@ -134,12 +135,12 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<Integer, String> getBlockHeaders(Transport transport, Set<Integer> blockHeights) {
+    public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
         JsonRpcClient client = new JsonRpcClient(transport);
 
         Map<Integer, String> result = new LinkedHashMap<>();
         for(Integer blockHeight : blockHeights) {
-            EventManager.get().post(new WalletHistoryStatusEvent(false, "Retrieving block at height " + blockHeight));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, false, "Retrieving block at height " + blockHeight));
             try {
                 String blockHeader = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.block.header").id(idCounter.incrementAndGet()).params(blockHeight).execute());
@@ -155,12 +156,12 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<String, String> getTransactions(Transport transport, Set<String> txids) {
+    public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
         JsonRpcClient client = new JsonRpcClient(transport);
 
         Map<String, String> result = new LinkedHashMap<>();
         for(String txid : txids) {
-            EventManager.get().post(new WalletHistoryStatusEvent(false, "Retrieving transaction [" + txid.substring(0, 6) + "]"));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, false, "Retrieving transaction [" + txid.substring(0, 6) + "]"));
             try {
                 String rawTxHex = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid).execute());

@@ -224,7 +224,7 @@ public class ElectrumServer {
             }
 
             //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed if that's the case.
-            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), pathScriptHashes, true);
+            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), wallet, pathScriptHashes, true);
 
             for(String path : result.keySet()) {
                 ScriptHashTx[] txes = result.get(path);
@@ -298,7 +298,7 @@ public class ElectrumServer {
                 return;
             }
 
-            Map<String, String> result = electrumServerRpc.subscribeScriptHashes(getTransport(), pathScriptHashes);
+            Map<String, String> result = electrumServerRpc.subscribeScriptHashes(getTransport(), wallet, pathScriptHashes);
 
             for(String path : result.keySet()) {
                 String status = result.get(path);
@@ -332,7 +332,7 @@ public class ElectrumServer {
                 pathScriptHashes.put(Integer.toString(i), getScriptHash(output));
             }
 
-            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), pathScriptHashes, false);
+            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), null, pathScriptHashes, false);
 
             List<Set<BlockTransactionHash>> blockTransactionHashes = new ArrayList<>(transaction.getOutputs().size());
             for(int i = 0; i < transaction.getOutputs().size(); i++) {
@@ -384,8 +384,8 @@ public class ElectrumServer {
 
         Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
         if(!references.isEmpty()) {
-            Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(references);
-            transactionMap = getTransactions(references, blockHeaderMap);
+            Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, references);
+            transactionMap = getTransactions(wallet, references, blockHeaderMap);
         }
 
         if(!transactionMap.equals(wallet.getTransactions())) {
@@ -393,7 +393,7 @@ public class ElectrumServer {
         }
     }
 
-    public Map<Integer, BlockHeader> getBlockHeaders(Set<BlockTransactionHash> references) throws ServerException {
+    public Map<Integer, BlockHeader> getBlockHeaders(Wallet wallet, Set<BlockTransactionHash> references) throws ServerException {
         try {
             Set<Integer> blockHeights = new TreeSet<>();
             for(BlockTransactionHash reference : references) {
@@ -406,7 +406,7 @@ public class ElectrumServer {
                 return Collections.emptyMap();
             }
 
-            Map<Integer, String> result = electrumServerRpc.getBlockHeaders(getTransport(), blockHeights);
+            Map<Integer, String> result = electrumServerRpc.getBlockHeaders(getTransport(), wallet, blockHeights);
 
             Map<Integer, BlockHeader> blockHeaderMap = new TreeMap<>();
             for(Integer height : result.keySet()) {
@@ -428,7 +428,7 @@ public class ElectrumServer {
         }
     }
 
-    public Map<Sha256Hash, BlockTransaction> getTransactions(Set<BlockTransactionHash> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
+    public Map<Sha256Hash, BlockTransaction> getTransactions(Wallet wallet, Set<BlockTransactionHash> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
         try {
             Set<BlockTransactionHash> checkReferences = new TreeSet<>(references);
 
@@ -437,7 +437,7 @@ public class ElectrumServer {
                 txids.add(reference.getHashAsString());
             }
 
-            Map<String, String> result = electrumServerRpc.getTransactions(getTransport(), txids);
+            Map<String, String> result = electrumServerRpc.getTransactions(getTransport(), wallet, txids);
 
             String strErrorTx = Sha256Hash.ZERO_HASH.toString();
             Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
@@ -946,8 +946,8 @@ public class ElectrumServer {
 
                     Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
                     if(!setReferences.isEmpty()) {
-                        Map<Integer, BlockHeader> blockHeaderMap = electrumServer.getBlockHeaders(setReferences);
-                        transactionMap = electrumServer.getTransactions(setReferences, blockHeaderMap);
+                        Map<Integer, BlockHeader> blockHeaderMap = electrumServer.getBlockHeaders(null, setReferences);
+                        transactionMap = electrumServer.getTransactions(null, setReferences, blockHeaderMap);
                     }
 
                     for(int i = 0; i < outputTransactionReferences.size(); i++) {
