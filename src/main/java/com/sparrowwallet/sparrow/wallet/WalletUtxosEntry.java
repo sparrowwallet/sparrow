@@ -6,16 +6,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WalletUtxosEntry extends Entry {
-    private final Wallet wallet;
-
     public WalletUtxosEntry(Wallet wallet) {
-        super(wallet.getName(), wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(wallet, entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
-        this.wallet = wallet;
+        super(wallet, wallet.getName(), wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(wallet, entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
         calculateDuplicates();
-    }
-
-    public Wallet getWallet() {
-        return wallet;
     }
 
     @Override
@@ -42,7 +35,7 @@ public class WalletUtxosEntry extends Entry {
     }
 
     public void updateUtxos() {
-        List<Entry> current = wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(wallet, entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList());
+        List<Entry> current = getWallet().getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(getWallet(), entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
 
         List<Entry> entriesAdded = new ArrayList<>(current);

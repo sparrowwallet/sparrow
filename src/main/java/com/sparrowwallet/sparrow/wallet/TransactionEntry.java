@@ -19,12 +19,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TransactionEntry extends Entry implements Comparable<TransactionEntry> {
-    private final Wallet wallet;
     private final BlockTransaction blockTransaction;
 
     public TransactionEntry(Wallet wallet, BlockTransaction blockTransaction, Map<BlockTransactionHashIndex, KeyPurpose> inputs, Map<BlockTransactionHashIndex, KeyPurpose> outputs) {
-        super(blockTransaction.getLabel(), createChildEntries(wallet, inputs, outputs));
-        this.wallet = wallet;
+        super(wallet, blockTransaction.getLabel(), createChildEntries(wallet, inputs, outputs));
         this.blockTransaction = blockTransaction;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
@@ -36,10 +34,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         if(isFullyConfirming()) {
             EventManager.get().register(this);
         }
-    }
-
-    public Wallet getWallet() {
-        return wallet;
     }
 
     public BlockTransaction getBlockTransaction() {
@@ -70,7 +64,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     }
 
     public int calculateConfirmations() {
-        return blockTransaction.getConfirmations(wallet.getStoredBlockHeight());
+        return blockTransaction.getConfirmations(getWallet().getStoredBlockHeight());
     }
 
     public String getConfirmationsDescription() {
@@ -86,7 +80,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
     public boolean isComplete() {
         int validEntries = 0;
-        Map<BlockTransactionHashIndex, WalletNode> walletTxos = wallet.getWalletTxos();
+        Map<BlockTransactionHashIndex, WalletNode> walletTxos = getWallet().getWalletTxos();
         for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
             Optional<BlockTransactionHashIndex> optRef = walletTxos.keySet().stream().filter(ref -> ref.getHash().equals(txInput.getOutpoint().getHash()) && ref.getIndex() == txInput.getOutpoint().getIndex()).findFirst();
             if(optRef.isPresent()) {
@@ -146,12 +140,12 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         TransactionEntry that = (TransactionEntry) o;
         // Even though the txid identifies a transaction, receiving an incomplete set of script hash notifications can result in some inputs/outputs for a tx being missing.
         // To resolve this we check the number of children, but not the children themselves (since we don't care here when they are spent)
-        return wallet.equals(that.wallet) && blockTransaction.equals(that.blockTransaction) && getChildren().size() == that.getChildren().size();
+        return getWallet().equals(that.getWallet()) && blockTransaction.equals(that.blockTransaction) && getChildren().size() == that.getChildren().size();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(wallet, blockTransaction, getChildren().size());
+        return Objects.hash(getWallet(), blockTransaction, getChildren().size());
     }
 
     @Override
@@ -239,7 +233,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     @Subscribe
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
-            if(tabData.getWalletForm().getWallet() == wallet) {
+            if(tabData.getWalletForm().getWallet() == getWallet()) {
                 try {
                     EventManager.get().unregister(this);
                 } catch(IllegalArgumentException e) {

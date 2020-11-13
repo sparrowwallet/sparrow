@@ -18,16 +18,9 @@ import java.util.stream.Collectors;
 public class WalletTransactionsEntry extends Entry {
     private static final Logger log = LoggerFactory.getLogger(WalletTransactionsEntry.class);
 
-    private final Wallet wallet;
-
     public WalletTransactionsEntry(Wallet wallet) {
-        super(wallet.getName(), getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
-        this.wallet = wallet;
+        super(wallet, wallet.getName(), getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
         calculateBalances();
-    }
-
-    public Wallet getWallet() {
-        return wallet;
     }
 
     @Override
@@ -58,7 +51,7 @@ public class WalletTransactionsEntry extends Entry {
     }
 
     public void updateTransactions() {
-        List<Entry> current = getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
+        List<Entry> current = getWalletTransactions(getWallet()).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
 
         List<Entry> entriesAdded = new ArrayList<>(current);
@@ -76,7 +69,7 @@ public class WalletTransactionsEntry extends Entry {
             List<BlockTransaction> blockTransactions = entriesAdded.stream().map(txEntry -> ((TransactionEntry)txEntry).getBlockTransaction()).collect(Collectors.toList());
             long totalBlockchainValue = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).getConfirmations() > 0).mapToLong(Entry::getValue).sum();
             long totalMempoolValue = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).getConfirmations() == 0).mapToLong(Entry::getValue).sum();
-            EventManager.get().post(new NewWalletTransactionsEvent(wallet, blockTransactions, totalBlockchainValue, totalMempoolValue));
+            EventManager.get().post(new NewWalletTransactionsEvent(getWallet(), blockTransactions, totalBlockchainValue, totalMempoolValue));
         }
 
         if(entriesAdded.size() > entriesComplete.size()) {

@@ -10,16 +10,14 @@ import com.sparrowwallet.sparrow.event.WalletEntryLabelChangedEvent;
 import java.util.stream.Collectors;
 
 public class NodeEntry extends Entry implements Comparable<NodeEntry> {
-    private final Wallet wallet;
     private final WalletNode node;
 
     public NodeEntry(Wallet wallet, WalletNode node) {
-        super(node.getLabel(),
+        super(wallet, node.getLabel(),
                 !node.getChildren().isEmpty() ?
                         node.getChildren().stream().map(childNode -> new NodeEntry(wallet, childNode)).collect(Collectors.toList()) :
                         node.getTransactionOutputs().stream().map(txo -> new HashIndexEntry(wallet, txo, HashIndexEntry.Type.OUTPUT, node.getKeyPurpose())).collect(Collectors.toList()));
 
-        this.wallet = wallet;
         this.node = node;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
@@ -28,24 +26,20 @@ public class NodeEntry extends Entry implements Comparable<NodeEntry> {
         });
     }
 
-    public Wallet getWallet() {
-        return wallet;
-    }
-
     public WalletNode getNode() {
         return node;
     }
 
     public Address getAddress() {
-        return wallet.getAddress(node);
+        return getWallet().getAddress(node);
     }
 
     public Script getOutputScript() {
-        return wallet.getOutputScript(node);
+        return getWallet().getOutputScript(node);
     }
 
     public String getOutputDescriptor() {
-        return wallet.getOutputDescriptor(node);
+        return getWallet().getOutputDescriptor(node);
     }
 
     @Override

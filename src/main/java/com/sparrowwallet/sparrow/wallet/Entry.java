@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.sparrowwallet.drongo.wallet.Wallet;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -7,17 +8,24 @@ import javafx.collections.ObservableList;
 import java.util.List;
 
 public abstract class Entry {
+    private final Wallet wallet;
     private final SimpleStringProperty labelProperty;
     private final ObservableList<Entry> children;
 
-    public Entry(String label, List<Entry> entries) {
+    public Entry(Wallet wallet, String label, List<Entry> entries) {
+        this.wallet = wallet;
         this.labelProperty = new SimpleStringProperty(this, "label", label);
         this.children = FXCollections.observableList(entries);
     }
 
-    public Entry(SimpleStringProperty labelProperty, ObservableList<Entry> children) {
+    public Entry(Wallet wallet, SimpleStringProperty labelProperty, ObservableList<Entry> children) {
+        this.wallet = wallet;
         this.labelProperty = labelProperty;
         this.children = children;
+    }
+
+    public Wallet getWallet() {
+        return wallet;
     }
 
     public String getLabel() {

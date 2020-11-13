@@ -13,14 +13,12 @@ import java.util.List;
 import java.util.Objects;
 
 public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> {
-    private final Wallet wallet;
     private final BlockTransactionHashIndex hashIndex;
     private final Type type;
     private final KeyPurpose keyPurpose;
 
     public HashIndexEntry(Wallet wallet, BlockTransactionHashIndex hashIndex, Type type, KeyPurpose keyPurpose) {
-        super(hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT, keyPurpose)) : Collections.emptyList());
-        this.wallet = wallet;
+        super(wallet, hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT, keyPurpose)) : Collections.emptyList());
         this.hashIndex = hashIndex;
         this.type = type;
         this.keyPurpose = keyPurpose;
@@ -29,10 +27,6 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
             hashIndex.setLabel(newValue);
             EventManager.get().post(new WalletEntryLabelChangedEvent(wallet, this));
         });
-    }
-
-    public Wallet getWallet() {
-        return wallet;
     }
 
     public BlockTransactionHashIndex getHashIndex() {
@@ -48,7 +42,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     }
 
     public BlockTransaction getBlockTransaction() {
-        return wallet.getTransactions().get(hashIndex.getHash());
+        return getWallet().getTransactions().get(hashIndex.getHash());
     }
 
     public String getDescription() {
@@ -63,7 +57,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     }
 
     public boolean isSpendable() {
-        return !isSpent() && (hashIndex.getHeight() > 0 || wallet.allInputsFromWallet(hashIndex.getHash()));
+        return !isSpent() && (hashIndex.getHeight() > 0 || getWallet().allInputsFromWallet(hashIndex.getHash()));
     }
 
     @Override
@@ -80,7 +74,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         if (this == o) return true;
         if (!(o instanceof HashIndexEntry)) return false;
         HashIndexEntry that = (HashIndexEntry) o;
-        return wallet.equals(that.wallet) &&
+        return getWallet().equals(that.getWallet()) &&
                 hashIndex.equals(that.hashIndex) &&
                 type == that.type &&
                 keyPurpose == that.keyPurpose;
@@ -88,7 +82,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
 
     @Override
     public int hashCode() {
-        return Objects.hash(wallet, hashIndex, type, keyPurpose);
+        return Objects.hash(getWallet(), hashIndex, type, keyPurpose);
     }
 
     @Override
