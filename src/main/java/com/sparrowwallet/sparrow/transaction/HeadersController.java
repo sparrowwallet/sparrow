@@ -620,8 +620,11 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
+        //TODO: Remove once Cobo Vault has upgraded to UR2.0
+        boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COBO_VAULT));
+
         try {
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(RegistryType.CRYPTO_PSBT.toString(), headersForm.getPsbt().serialize());
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(RegistryType.CRYPTO_PSBT.toString(), headersForm.getPsbt().serialize(), addLegacyEncodingOption);
             qrDisplayDialog.show();
         } catch(UR.URException e) {
             log.error("Error creating PSBT UR", e);
@@ -981,6 +984,10 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void psbtFinalized(PSBTFinalizedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt())) {
+            if(headersForm.getSigningWallet() != null) {
+                updateSignedKeystores(headersForm.getSigningWallet());
+            }
+
             signButtonBox.setVisible(false);
             broadcastButtonBox.setVisible(true);
         }

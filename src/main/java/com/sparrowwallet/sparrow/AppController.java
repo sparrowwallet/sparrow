@@ -17,6 +17,7 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
@@ -1137,14 +1138,31 @@ public class AppController implements Initializable {
 
                 //If an exact match bytewise of an existing tab, return that tab
                 if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), transaction.bitcoinSerialize())) {
-                    //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
-                    if(transactionTabData.getPsbt() != null && psbt != null && !transactionTabData.getPsbt().isFinalized() && !psbt.isFinalized()) {
-                        transactionTabData.getPsbt().combine(psbt);
-                        if(name != null && !name.isEmpty()) {
-                            tab.setText(name);
-                        }
+                    if(transactionTabData.getPsbt() != null && psbt != null && !transactionTabData.getPsbt().isFinalized()) {
+                        if(!psbt.isFinalized()) {
+                            //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
+                            transactionTabData.getPsbt().combine(psbt);
+                            if(name != null && !name.isEmpty()) {
+                                tab.setText(name);
+                            }
 
-                        EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
+                            EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
+                        } else {
+                            //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
+                            for(int i = 0; i < transactionTabData.getPsbt().getPsbtInputs().size(); i++) {
+                                PSBTInput existingInput = transactionTabData.getPsbt().getPsbtInputs().get(i);
+                                PSBTInput finalizedInput = psbt.getPsbtInputs().get(i);
+                                existingInput.setFinalScriptSig(finalizedInput.getFinalScriptSig());
+                                existingInput.setFinalScriptWitness(finalizedInput.getFinalScriptWitness());
+                                existingInput.clearNonFinalFields();
+                            }
+
+                            if(name != null && !name.isEmpty()) {
+                                tab.setText(name);
+                            }
+
+                            EventManager.get().post(new PSBTFinalizedEvent(transactionTabData.getPsbt()));
+                        }
                     }
 
                     return tab;

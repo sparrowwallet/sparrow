@@ -17,6 +17,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.hummingbird.LegacyURDecoder;
 import com.sparrowwallet.hummingbird.registry.*;
 import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.hummingbird.ResultType;
@@ -39,10 +40,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
+@SuppressWarnings("deprecation")
 public class QRScanDialog extends Dialog<QRScanDialog.Result> {
     private static final Logger log = LoggerFactory.getLogger(QRScanDialog.class);
 
     private final URDecoder decoder;
+    private final LegacyURDecoder legacyDecoder;
     private final WebcamService webcamService;
     private List<String> parts;
 
@@ -53,6 +56,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
     public QRScanDialog() {
         this.decoder = new URDecoder();
+        this.legacyDecoder = new LegacyURDecoder();
 
         this.webcamService = new WebcamService(WebcamResolution.VGA);
         WebcamView webcamView = new WebcamView(webcamService);
@@ -95,14 +99,28 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
             if(isUr || qrtext.toLowerCase().startsWith(UR.UR_PREFIX)) {
                 isUr = true;
-                decoder.receivePart(qrtext);
 
-                if(decoder.getResult() != null) {
-                    URDecoder.Result urResult = decoder.getResult();
-                    if(urResult.type == ResultType.SUCCESS) {
-                        result = extractResultFromUR(urResult.ur);
-                    } else {
-                        result = new Result(new URException(urResult.error));
+                if(LegacyURDecoder.isLegacyURFragment(qrtext)) {
+                    legacyDecoder.receivePart(qrtext.toLowerCase());
+
+                    if(legacyDecoder.isComplete()) {
+                        try {
+                            UR ur = legacyDecoder.decode();
+                            result = extractResultFromUR(ur);
+                        } catch(Exception e) {
+                            result = new Result(new URException(e.getMessage()));
+                        }
+                    }
+                } else {
+                    decoder.receivePart(qrtext);
+
+                    if(decoder.getResult() != null) {
+                        URDecoder.Result urResult = decoder.getResult();
+                        if(urResult.type == ResultType.SUCCESS) {
+                            result = extractResultFromUR(urResult.ur);
+                        } else {
+                            result = new Result(new URException(urResult.error));
+                        }
                     }
                 }
             } else if(partMatcher.matches()) {
@@ -313,8 +331,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         lastChild = new ChildNumber(lastComponent.getIndex(), lastComponent.isHardened());
                         depth = cryptoHDKey.getOrigin().getComponents().size();
                     }
-                    if(cryptoHDKey.getOrigin().getParentFingerprint() != null) {
-                        parentFingerprint = cryptoHDKey.getOrigin().getParentFingerprint();
+                    if(cryptoHDKey.getParentFingerprint() != null) {
+                        parentFingerprint = cryptoHDKey.getParentFingerprint();
                     }
                 }
                 DeterministicKey pubKey = new DeterministicKey(List.of(lastChild), cryptoHDKey.getChainCode(), cryptoHDKey.getKey(), depth, parentFingerprint);
@@ -387,7 +405,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private KeyDerivation getKeyDerivation(CryptoKeypath cryptoKeypath) {
             if(cryptoKeypath != null) {
-                return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getParentFingerprint()), cryptoKeypath.getPath());
+                return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getSourceFingerprint()), cryptoKeypath.getPath());
             }
 
             return null;
