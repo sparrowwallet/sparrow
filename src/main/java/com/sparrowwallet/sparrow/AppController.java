@@ -143,6 +143,8 @@ public class AppController implements Initializable {
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
+    private static Map<Long, Long> feeRateHistogram;
+
     private static Double minimumRelayFeeRate;
 
     private static CurrencyRate fiatCurrencyExchangeRate;
@@ -648,6 +650,10 @@ public class AppController implements Initializable {
 
     public static Map<Integer, Double> getTargetBlockFeeRates() {
         return targetBlockFeeRates;
+    }
+
+    public static Map<Long, Long> getFeeRateHistogram() {
+        return feeRateHistogram;
     }
 
     public static Double getMinimumRelayFeeRate() {
@@ -1429,6 +1435,7 @@ public class AppController implements Initializable {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         targetBlockFeeRates = event.getTargetBlockFeeRates();
+        feeRateHistogram = event.getFeeRateHistogram();
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
         String banner = event.getServerBanner();
         String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
@@ -1453,6 +1460,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void feesUpdated(FeeRatesUpdatedEvent event) {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
+        feeRateHistogram = event.getFeeRateHistogram();
     }
 
     @Subscribe

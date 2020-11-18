@@ -12,8 +12,8 @@ public class ConnectionEvent extends FeeRatesUpdatedEvent {
     private final BlockHeader blockHeader;
     private final Double minimumRelayFeeRate;
 
-    public ConnectionEvent(List<String> serverVersion, String serverBanner, int blockHeight, BlockHeader blockHeader, Map<Integer, Double> targetBlockFeeRates, Double minimumRelayFeeRate) {
-        super(targetBlockFeeRates);
+    public ConnectionEvent(List<String> serverVersion, String serverBanner, int blockHeight, BlockHeader blockHeader, Map<Integer, Double> targetBlockFeeRates, Map<Long, Long> feeRateHistogram, Double minimumRelayFeeRate) {
+        super(targetBlockFeeRates, feeRateHistogram);
         this.serverVersion = serverVersion;
         this.serverBanner = serverBanner;
         this.blockHeight = blockHeight;

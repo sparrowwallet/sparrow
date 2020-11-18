@@ -247,6 +247,24 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
+    public Map<Long, Long> getFeeRateHistogram(Transport transport) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            Long[][] feesArray = new RetryLogic<Long[][]>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(Long[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
+
+            Map<Long, Long> feeRateHistogram = new TreeMap<>();
+            for(Long[] feePair : feesArray) {
+                feeRateHistogram.put(feePair[0], feePair[1]);
+            }
+
+            return feeRateHistogram;
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error getting fee rate histogram", e);
+        }
+    }
+
+    @Override
     public Double getMinimumRelayFee(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);

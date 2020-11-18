@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
@@ -226,6 +227,24 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             throw new ElectrumServerRpcException("Error getting fee estimates", e);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting fee estimates for target blocks: " + targetBlocks, e);
+        }
+    }
+
+    @Override
+    public Map<Long, Long> getFeeRateHistogram(Transport transport) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            Long[][] feesArray = new RetryLogic<Long[][]>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(Long[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
+
+            Map<Long, Long> feeRateHistogram = new TreeMap<>();
+            for(Long[] feePair : feesArray) {
+                feeRateHistogram.put(feePair[0], feePair[1]);
+            }
+
+            return feeRateHistogram;
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error getting fee rate histogram", e);
         }
     }
 

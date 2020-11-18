@@ -610,6 +610,10 @@ public class ElectrumServer {
         }
     }
 
+    public Map<Long, Long> getFeeRateHistogram() throws ServerException {
+        return electrumServerRpc.getFeeRateHistogram(getTransport());
+    }
+
     public Double getMinimumRelayFee() throws ServerException {
         Double minFeeRateBtcKb = electrumServerRpc.getMinimumRelayFee(getTransport());
         if(minFeeRateBtcKb != null) {
@@ -760,6 +764,7 @@ public class ElectrumServer {
                         String banner = electrumServer.getServerBanner();
 
                         Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                        Map<Long, Long> feeRateHistogram = electrumServer.getFeeRateHistogram();
                         feeRatesRetrievedAt = System.currentTimeMillis();
 
                         Double minimumRelayFeeRate = electrumServer.getMinimumRelayFee();
@@ -767,7 +772,7 @@ public class ElectrumServer {
                             blockTargetFeeRates.computeIfPresent(blockTarget, (blocks, feeRate) -> feeRate < minimumRelayFeeRate ? minimumRelayFeeRate : feeRate);
                         }
 
-                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates, minimumRelayFeeRate);
+                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates, feeRateHistogram, minimumRelayFeeRate);
                     } else {
                         if(reader.isAlive()) {
                             electrumServer.ping();
@@ -775,8 +780,9 @@ public class ElectrumServer {
                             long elapsed = System.currentTimeMillis() - feeRatesRetrievedAt;
                             if(elapsed > FEE_RATES_PERIOD) {
                                 Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                                Map<Long, Long> feeRateHistogram = electrumServer.getFeeRateHistogram();
                                 feeRatesRetrievedAt = System.currentTimeMillis();
-                                return new FeeRatesUpdatedEvent(blockTargetFeeRates);
+                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, feeRateHistogram);
                             }
                         } else {
                             resetConnection();
