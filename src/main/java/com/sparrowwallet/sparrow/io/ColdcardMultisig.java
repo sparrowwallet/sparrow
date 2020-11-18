@@ -211,7 +211,12 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     }
 
     @Override
-    public boolean isScannable() {
+    public boolean isWalletImportScannable() {
+        return false;
+    }
+
+    @Override
+    public boolean isKeystoreImportScannable() {
         return false;
     }
 }

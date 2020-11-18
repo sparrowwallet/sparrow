@@ -4,5 +4,4 @@ import java.io.File;
 
 public interface FileImport extends Import {
     boolean isEncrypted(File file);
-    boolean isScannable();
 }

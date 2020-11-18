@@ -323,7 +323,12 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
-    public boolean isScannable() {
+    public boolean isWalletImportScannable() {
+        return false;
+    }
+
+    @Override
+    public boolean isKeystoreImportScannable() {
         return false;
     }
 

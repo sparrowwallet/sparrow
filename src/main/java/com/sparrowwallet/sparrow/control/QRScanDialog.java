@@ -35,6 +35,10 @@ import org.controlsfx.tools.Borders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -257,7 +261,16 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         //ignore, bytes not parsable as tx
                     }
 
-                    result = new Result(new URException("Parsed UR of type " + urRegistryType + " was not a PSBT or transaction"));
+                    try {
+                        CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+                        ByteBuffer buf = ByteBuffer.wrap(urBytes);
+                        CharBuffer charBuffer = decoder.decode(buf);
+                        return new Result(charBuffer.toString());
+                    } catch(Exception e) {
+                        //ignore, bytes not parsable as utf-8
+                    }
+
+                    result = new Result(new URException("Parsed UR of type " + urRegistryType + " was not a PSBT, transaction or UTF-8 text"));
                 } else if(urRegistryType.equals(RegistryType.CRYPTO_PSBT)) {
                     CryptoPSBT cryptoPSBT = (CryptoPSBT)ur.decodeFromRegistry();
                     try {

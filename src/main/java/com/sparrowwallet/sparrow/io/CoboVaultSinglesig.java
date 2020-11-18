@@ -20,7 +20,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import file or QR created by using the Watch-Only Wallet > Generic Wallet > Export Wallet feature on your Cobo Vault.";
+        return "Import file or QR created by using the Settings > Watch-Only Wallet > Generic Wallet > Export Wallet feature on your Cobo Vault.";
     }
 
     @Override
@@ -87,7 +87,12 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public boolean isScannable() {
+    public boolean isWalletImportScannable() {
+        return true;
+    }
+
+    @Override
+    public boolean isKeystoreImportScannable() {
         return true;
     }
 

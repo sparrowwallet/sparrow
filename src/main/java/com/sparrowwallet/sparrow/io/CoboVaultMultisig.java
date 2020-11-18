@@ -29,7 +29,7 @@ public class CoboVaultMultisig extends ColdcardMultisig {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import file or QR created by using the Multisig Wallet > Show/Export XPUB > Export All > Export feature on your Cobo Vault.";
+        return "Import file or QR created by using the Multisig Wallet > Show/Export XPUB feature on your Cobo Vault.";
     }
 
     @Override
@@ -54,7 +54,12 @@ public class CoboVaultMultisig extends ColdcardMultisig {
     }
 
     @Override
-    public boolean isScannable() {
+    public boolean isWalletImportScannable() {
+        return true;
+    }
+
+    @Override
+    public boolean isKeystoreImportScannable() {
         return true;
     }
 }

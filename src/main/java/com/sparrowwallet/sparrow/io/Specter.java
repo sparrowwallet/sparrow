@@ -79,7 +79,7 @@ public class Specter implements WalletImport, WalletExport {
     }
 
     @Override
-    public boolean isScannable() {
+    public boolean isWalletImportScannable() {
         return true;
     }
 
