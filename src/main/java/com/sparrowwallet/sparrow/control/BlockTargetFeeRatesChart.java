@@ -9,11 +9,11 @@ import javafx.scene.chart.XYChart;
 import java.util.Iterator;
 import java.util.Map;
 
-public class FeeRatesChart extends LineChart<String, Number> {
+public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
     private XYChart.Series<String, Number> feeRateSeries;
     private Integer selectedTargetBlocks;
 
-    public FeeRatesChart(@NamedArg("xAxis") Axis<String> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
+    public BlockTargetFeeRatesChart(@NamedArg("xAxis") Axis<String> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
     }
 

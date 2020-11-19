@@ -49,7 +49,7 @@ public class PreferencesDialog extends Dialog<Boolean> {
             }
 
             dialogPane.setPrefWidth(650);
-            dialogPane.setPrefHeight(500);
+            dialogPane.setPrefHeight(550);
 
             existingConnection = ElectrumServer.isConnected();
             setOnCloseRequest(event -> {

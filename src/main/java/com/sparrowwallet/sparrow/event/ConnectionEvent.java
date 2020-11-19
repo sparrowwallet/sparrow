@@ -1,9 +1,11 @@
 package com.sparrowwallet.sparrow.event;
 
 import com.sparrowwallet.drongo.protocol.BlockHeader;
+import com.sparrowwallet.sparrow.net.MempoolRateSize;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ConnectionEvent extends FeeRatesUpdatedEvent {
     private final List<String> serverVersion;
@@ -12,8 +14,8 @@ public class ConnectionEvent extends FeeRatesUpdatedEvent {
     private final BlockHeader blockHeader;
     private final Double minimumRelayFeeRate;
 
-    public ConnectionEvent(List<String> serverVersion, String serverBanner, int blockHeight, BlockHeader blockHeader, Map<Integer, Double> targetBlockFeeRates, Map<Long, Long> feeRateHistogram, Double minimumRelayFeeRate) {
-        super(targetBlockFeeRates, feeRateHistogram);
+    public ConnectionEvent(List<String> serverVersion, String serverBanner, int blockHeight, BlockHeader blockHeader, Map<Integer, Double> targetBlockFeeRates, Set<MempoolRateSize> mempoolRateSizes, Double minimumRelayFeeRate) {
+        super(targetBlockFeeRates, mempoolRateSizes);
         this.serverVersion = serverVersion;
         this.serverBanner = serverBanner;
         this.blockHeight = blockHeight;

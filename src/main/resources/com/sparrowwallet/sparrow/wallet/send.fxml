@@ -14,13 +14,14 @@
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import javafx.collections.FXCollections?>
-<?import com.sparrowwallet.sparrow.control.FeeRatesChart?>
+<?import com.sparrowwallet.sparrow.control.BlockTargetFeeRatesChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.control.FiatLabel?>
 <?import org.controlsfx.glyphfont.Glyph?>
+<?import com.sparrowwallet.sparrow.control.MempoolSizeFeeRatesChart?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
@@ -49,8 +50,11 @@
                 </BorderPane>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
                     <Fieldset inputGrow="SOMETIMES" text="Fee">
-                        <Field text="Block target">
+                        <Field fx:id="targetBlocksField" text="Block target">
                             <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
+                        </Field>
+                        <Field fx:id="feeRangeField" text="Range:">
+                            <Slider fx:id="feeRange" snapToTicks="false" showTickLabels="true" showTickMarks="true" />
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">
                             <CopyableLabel fx:id="feeRate" />
@@ -71,14 +75,22 @@
                     </Fieldset>
                 </Form>
                 <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2">
-                    <FeeRatesChart fx:id="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
+                    <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
                         </xAxis>
                         <yAxis>
                             <NumberAxis side="LEFT" />
                         </yAxis>
-                    </FeeRatesChart>
+                    </BlockTargetFeeRatesChart>
+                    <MempoolSizeFeeRatesChart fx:id="mempoolSizeFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
+                        <xAxis>
+                            <CategoryAxis side="BOTTOM" />
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis side="LEFT" />
+                        </yAxis>
+                    </MempoolSizeFeeRatesChart>
                 </AnchorPane>
             </GridPane>
             <AnchorPane>

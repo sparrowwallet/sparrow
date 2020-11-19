@@ -610,8 +610,14 @@ public class ElectrumServer {
         }
     }
 
-    public Map<Long, Long> getFeeRateHistogram() throws ServerException {
-        return electrumServerRpc.getFeeRateHistogram(getTransport());
+    public Set<MempoolRateSize> getMempoolRateSizes() throws ServerException {
+        Map<Long, Long> feeRateHistogram = electrumServerRpc.getFeeRateHistogram(getTransport());
+        Set<MempoolRateSize> mempoolRateSizes = new TreeSet<>();
+        for(Long fee : feeRateHistogram.keySet()) {
+            mempoolRateSizes.add(new MempoolRateSize(fee, feeRateHistogram.get(fee)));
+        }
+
+        return mempoolRateSizes;
     }
 
     public Double getMinimumRelayFee() throws ServerException {
@@ -712,7 +718,7 @@ public class ElectrumServer {
     }
 
     public static class ConnectionService extends ScheduledService<FeeRatesUpdatedEvent> implements Thread.UncaughtExceptionHandler {
-        private static final int FEE_RATES_PERIOD = 10 * 60 * 1000;
+        private static final int FEE_RATES_PERIOD = 1 * 60 * 1000;
 
         private final boolean subscribe;
         private boolean firstCall = true;
@@ -764,7 +770,7 @@ public class ElectrumServer {
                         String banner = electrumServer.getServerBanner();
 
                         Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
-                        Map<Long, Long> feeRateHistogram = electrumServer.getFeeRateHistogram();
+                        Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                         feeRatesRetrievedAt = System.currentTimeMillis();
 
                         Double minimumRelayFeeRate = electrumServer.getMinimumRelayFee();
@@ -772,7 +778,7 @@ public class ElectrumServer {
                             blockTargetFeeRates.computeIfPresent(blockTarget, (blocks, feeRate) -> feeRate < minimumRelayFeeRate ? minimumRelayFeeRate : feeRate);
                         }
 
-                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates, feeRateHistogram, minimumRelayFeeRate);
+                        return new ConnectionEvent(serverVersion, banner, tip.height, tip.getBlockHeader(), blockTargetFeeRates, mempoolRateSizes, minimumRelayFeeRate);
                     } else {
                         if(reader.isAlive()) {
                             electrumServer.ping();
@@ -780,9 +786,9 @@ public class ElectrumServer {
                             long elapsed = System.currentTimeMillis() - feeRatesRetrievedAt;
                             if(elapsed > FEE_RATES_PERIOD) {
                                 Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
-                                Map<Long, Long> feeRateHistogram = electrumServer.getFeeRateHistogram();
+                                Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                                 feeRatesRetrievedAt = System.currentTimeMillis();
-                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, feeRateHistogram);
+                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
                             }
                         } else {
                             resetConnection();

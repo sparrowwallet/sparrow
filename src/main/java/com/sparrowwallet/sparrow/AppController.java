@@ -25,6 +25,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import com.sparrowwallet.sparrow.net.VersionCheckService;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
@@ -68,6 +69,9 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -75,7 +79,7 @@ import java.util.stream.Collectors;
 public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
 
-    private static final int SERVER_PING_PERIOD = 8 * 60 * 1000;
+    private static final int SERVER_PING_PERIOD = 1 * 60 * 1000;
     private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
     private static final int RATES_PERIOD = 5 * 60 * 1000;
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;
@@ -143,7 +147,7 @@ public class AppController implements Initializable {
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
-    private static Map<Long, Long> feeRateHistogram;
+    private static final Map<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
 
     private static Double minimumRelayFeeRate;
 
@@ -151,7 +155,7 @@ public class AppController implements Initializable {
 
     private static List<Device> devices;
 
-    private static Map<Address, BitcoinURI> payjoinURIs = new HashMap<>();
+    private static final Map<Address, BitcoinURI> payjoinURIs = new HashMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -652,8 +656,17 @@ public class AppController implements Initializable {
         return targetBlockFeeRates;
     }
 
-    public static Map<Long, Long> getFeeRateHistogram() {
-        return feeRateHistogram;
+    public static Map<Date, Set<MempoolRateSize>> getMempoolHistogram() {
+        return mempoolHistogram;
+    }
+
+    private void addMempoolRateSizes(Set<MempoolRateSize> rateSizes) {
+        LocalDateTime dateMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
+        if(mempoolHistogram.isEmpty()) {
+            mempoolHistogram.put(Date.from(dateMinute.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()), rateSizes);
+        }
+
+        mempoolHistogram.put(Date.from(dateMinute.atZone(ZoneId.systemDefault()).toInstant()), rateSizes);
     }
 
     public static Double getMinimumRelayFeeRate() {
@@ -1435,7 +1448,7 @@ public class AppController implements Initializable {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         targetBlockFeeRates = event.getTargetBlockFeeRates();
-        feeRateHistogram = event.getFeeRateHistogram();
+        addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
         String banner = event.getServerBanner();
         String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
@@ -1460,7 +1473,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void feesUpdated(FeeRatesUpdatedEvent event) {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
-        feeRateHistogram = event.getFeeRateHistogram();
+        addMempoolRateSizes(event.getMempoolRateSizes());
     }
 
     @Subscribe

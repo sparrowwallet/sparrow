@@ -2,11 +2,8 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
-import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppController;
@@ -17,6 +14,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ExchangeSource;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
@@ -36,6 +34,7 @@ import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tornadofx.control.Field;
 
 import java.io.IOException;
 import java.net.URL;
@@ -49,6 +48,7 @@ public class SendController extends WalletFormController implements Initializabl
     private static final Logger log = LoggerFactory.getLogger(SendController.class);
 
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50, 100, 500);
+    public static final List<Long> FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L);
 
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
 
@@ -56,7 +56,16 @@ public class SendController extends WalletFormController implements Initializabl
     private TabPane paymentTabs;
 
     @FXML
+    private Field targetBlocksField;
+
+    @FXML
     private Slider targetBlocks;
+
+    @FXML
+    private Field feeRangeField;
+
+    @FXML
+    private Slider feeRange;
 
     @FXML
     private CopyableLabel feeRate;
@@ -71,7 +80,10 @@ public class SendController extends WalletFormController implements Initializabl
     private FiatLabel fiatFeeAmount;
 
     @FXML
-    private FeeRatesChart feeRatesChart;
+    private BlockTargetFeeRatesChart blockTargetFeeRatesChart;
+
+    @FXML
+    private MempoolSizeFeeRatesChart mempoolSizeFeeRatesChart;
 
     @FXML
     private TransactionDiagram transactionDiagram;
@@ -121,7 +133,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             if(targetBlocksFeeRates != null) {
                 setFeeRate(targetBlocksFeeRates.get(target));
-                feeRatesChart.select(target);
+                blockTargetFeeRatesChart.select(target);
             } else {
                 feeRate.setText("Unknown");
             }
@@ -129,6 +141,19 @@ public class SendController extends WalletFormController implements Initializabl
             Tooltip tooltip = new Tooltip("Target confirmation within " + target + " blocks");
             targetBlocks.setTooltip(tooltip);
 
+            userFeeSet.set(false);
+            for(Tab tab : paymentTabs.getTabs()) {
+                PaymentController controller = (PaymentController)tab.getUserData();
+                controller.revalidate();
+            }
+            updateTransaction();
+        }
+    };
+
+    private final ChangeListener<Number> feeRangeListener = new ChangeListener<>() {
+        @Override
+        public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+            setFeeRate(getFeeRangeRate());
             userFeeSet.set(false);
             for(Tab tab : paymentTabs.getTabs()) {
                 PaymentController controller = (PaymentController)tab.getUserData();
@@ -180,6 +205,7 @@ public class SendController extends WalletFormController implements Initializabl
             revalidate(fee, feeListener);
         });
 
+        targetBlocksField.managedProperty().bind(targetBlocksField.visibleProperty());
         targetBlocks.setMin(0);
         targetBlocks.setMax(TARGET_BLOCKS_RANGE.size() - 1);
         targetBlocks.setMajorTickUnit(1);
@@ -198,18 +224,43 @@ public class SendController extends WalletFormController implements Initializabl
         });
         targetBlocks.valueProperty().addListener(targetBlocksListener);
 
-        feeRatesChart.initialize();
+        feeRangeField.managedProperty().bind(feeRangeField.visibleProperty());
+        feeRangeField.visibleProperty().bind(targetBlocksField.visibleProperty().not());
+        feeRange.setMin(0);
+        feeRange.setMax(FEE_RATES_RANGE.size() - 1);
+        feeRange.setMajorTickUnit(1);
+        feeRange.setMinorTickCount(0);
+        feeRange.setLabelFormatter(new StringConverter<Double>() {
+            @Override
+            public String toString(Double object) {
+                return Long.toString(FEE_RATES_RANGE.get(object.intValue()));
+            }
+
+            @Override
+            public Double fromString(String string) {
+                return null;
+            }
+        });
+        feeRange.valueProperty().addListener(feeRangeListener);
+
+        blockTargetFeeRatesChart.managedProperty().bind(blockTargetFeeRatesChart.visibleProperty());
+        blockTargetFeeRatesChart.initialize();
         Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
         if(targetBlocksFeeRates != null) {
-            feeRatesChart.update(targetBlocksFeeRates);
+            blockTargetFeeRatesChart.update(targetBlocksFeeRates);
         } else {
             feeRate.setText("Unknown");
         }
 
-        int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
-        int index = TARGET_BLOCKS_RANGE.indexOf(defaultTarget);
-        targetBlocks.setValue(index);
-        feeRatesChart.select(defaultTarget);
+        mempoolSizeFeeRatesChart.managedProperty().bind(mempoolSizeFeeRatesChart.visibleProperty());
+        mempoolSizeFeeRatesChart.visibleProperty().bind(blockTargetFeeRatesChart.visibleProperty().not());
+        mempoolSizeFeeRatesChart.initialize();
+        Map<Date, Set<MempoolRateSize>> mempoolHistogram = getMempoolHistogram();
+        if(mempoolHistogram != null) {
+            mempoolSizeFeeRatesChart.update(mempoolHistogram);
+        }
+
+        updateFeeRateSelection(Config.get().getFeeRateSelection());
 
         fee.setTextFormatter(new CoinTextFormatter());
         fee.textProperty().addListener(feeListener);
@@ -224,7 +275,7 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         userFeeSet.addListener((observable, oldValue, newValue) -> {
-            feeRatesChart.select(0);
+            blockTargetFeeRatesChart.select(0);
 
             Node thumb = getSliderThumb();
             if(thumb != null) {
@@ -405,6 +456,27 @@ public class SendController extends WalletFormController implements Initializabl
         return Collections.emptyList();
     }
 
+    private void updateFeeRateSelection(FeeRateSelection feeRateSelection) {
+        boolean blockTargetSelection = (feeRateSelection == FeeRateSelection.BLOCK_TARGET);
+        targetBlocksField.setVisible(blockTargetSelection);
+        blockTargetFeeRatesChart.setVisible(blockTargetSelection);
+        setDefaultFeeRate();
+        updateTransaction();
+    }
+
+    private void setDefaultFeeRate() {
+        if(targetBlocksField.isVisible()) {
+            int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
+            int index = TARGET_BLOCKS_RANGE.indexOf(defaultTarget);
+            targetBlocks.setValue(index);
+            blockTargetFeeRatesChart.select(defaultTarget);
+            setFeeRate(getTargetBlocksFeeRates().get(getTargetBlocks()));
+        } else {
+            feeRange.setValue(5.0);
+            setFeeRate(getFeeRangeRate());
+        }
+    }
+
     private Long getFeeValueSats() {
         return getFeeValueSats(feeAmountUnit.getSelectionModel().getSelectedItem());
     }
@@ -450,7 +522,7 @@ public class SendController extends WalletFormController implements Initializabl
         targetBlocks.valueProperty().removeListener(targetBlocksListener);
         int index = TARGET_BLOCKS_RANGE.indexOf(target);
         targetBlocks.setValue(index);
-        feeRatesChart.select(target);
+        blockTargetFeeRatesChart.select(target);
         targetBlocks.valueProperty().addListener(targetBlocksListener);
     }
 
@@ -465,14 +537,26 @@ public class SendController extends WalletFormController implements Initializabl
         return retrievedFeeRates;
     }
 
+    private Double getFeeRangeRate() {
+        return Math.pow(2.0, feeRange.getValue());
+    }
+
     public Double getFeeRate() {
-        return getTargetBlocksFeeRates().get(getTargetBlocks());
+        if(targetBlocksField.isVisible()) {
+            return getTargetBlocksFeeRates().get(getTargetBlocks());
+        } else {
+            return getFeeRangeRate();
+        }
     }
 
     private Double getMinimumFeeRate() {
         Optional<Double> optMinFeeRate = getTargetBlocksFeeRates().values().stream().min(Double::compareTo);
         Double minRate = optMinFeeRate.orElse(FALLBACK_FEE_RATE);
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
+    }
+
+    private Map<Date, Set<MempoolRateSize>> getMempoolHistogram() {
+        return AppController.getMempoolHistogram();
     }
 
     public boolean isInsufficientFeeRate() {
@@ -662,9 +746,17 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void feeRatesUpdated(FeeRatesUpdatedEvent event) {
-        feeRatesChart.update(event.getTargetBlockFeeRates());
-        feeRatesChart.select(getTargetBlocks());
-        setFeeRate(event.getTargetBlockFeeRates().get(getTargetBlocks()));
+        blockTargetFeeRatesChart.update(event.getTargetBlockFeeRates());
+        blockTargetFeeRatesChart.select(getTargetBlocks());
+        mempoolSizeFeeRatesChart.update(getMempoolHistogram());
+        if(targetBlocksField.isVisible()) {
+            setFeeRate(event.getTargetBlockFeeRates().get(getTargetBlocks()));
+        }
+    }
+
+    @Subscribe
+    public void feeRateSelectionChanged(FeeRateSelectionChangedEvent event) {
+        updateFeeRateSelection(event.getFeeRateSelection());
     }
 
     @Subscribe
