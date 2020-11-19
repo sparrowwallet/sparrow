@@ -6,7 +6,6 @@ import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.collections.FXCollections;
-import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
@@ -67,6 +66,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         }
 
         categoryAxis.setGapStartAndEnd(false);
+        categoryAxis.setTickLabelRotation(0);
         categoryAxis.setOnMouseMoved(mouseEvent -> {
             String category = categoryAxis.getValueForDisplay(mouseEvent.getX());
             if(category != null) {
@@ -92,6 +92,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         for(Long feeRate : SendController.FEE_RATES_RANGE) {
             XYChart.Series<String, Number> series = new XYChart.Series<>();
             series.setName(feeRate + "+ vB");
+            long seriesTotalVSize = 0;
 
             for(Date date : periodRateSizes.keySet()) {
                 Set<MempoolRateSize> rateSizes = periodRateSizes.get(date);
@@ -103,10 +104,14 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 }
 
                 series.getData().add(new XYChart.Data<>(dateFormatter.format(date), totalVSize));
+                seriesTotalVSize += totalVSize;
+            }
+
+            if(seriesTotalVSize > 0) {
+                getData().add(series);
             }
 
             previousFeeRate = feeRate;
-            getData().add(series);
         }
 
         if(categories.iterator().hasNext()) {

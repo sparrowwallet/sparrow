@@ -56,6 +56,15 @@ public class SendController extends WalletFormController implements Initializabl
     private TabPane paymentTabs;
 
     @FXML
+    private ToggleGroup feeSelectionToggleGroup;
+
+    @FXML
+    private ToggleButton targetBlocksToggle;
+
+    @FXML
+    private ToggleButton mempoolSizeToggle;
+
+    @FXML
     private Field targetBlocksField;
 
     @FXML
@@ -260,7 +269,14 @@ public class SendController extends WalletFormController implements Initializabl
             mempoolSizeFeeRatesChart.update(mempoolHistogram);
         }
 
-        updateFeeRateSelection(Config.get().getFeeRateSelection());
+        FeeRateSelection feeRateSelection = Config.get().getFeeRateSelection();
+        updateFeeRateSelection(feeRateSelection);
+        feeSelectionToggleGroup.selectToggle(feeRateSelection == FeeRateSelection.BLOCK_TARGET ? targetBlocksToggle : mempoolSizeToggle);
+        feeSelectionToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            FeeRateSelection newFeeRateSelection = (FeeRateSelection)newValue.getUserData();
+            Config.get().setFeeRateSelection(newFeeRateSelection);
+            EventManager.get().post(new FeeRateSelectionChangedEvent(newFeeRateSelection));
+        });
 
         fee.setTextFormatter(new CoinTextFormatter());
         fee.textProperty().addListener(feeListener);

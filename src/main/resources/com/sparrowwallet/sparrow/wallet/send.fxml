@@ -22,10 +22,12 @@
 <?import com.sparrowwallet.sparrow.control.FiatLabel?>
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import com.sparrowwallet.sparrow.control.MempoolSizeFeeRatesChart?>
+<?import org.controlsfx.control.SegmentedButton?>
+<?import com.sparrowwallet.sparrow.wallet.FeeRateSelection?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
-        <VBox spacing="10">
+        <VBox>
             <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
                 <padding>
                     <Insets left="25.0" right="25.0" top="25.0" />
@@ -48,12 +50,43 @@
                         <TabPane fx:id="paymentTabs" side="RIGHT" styleClass="initial" />
                     </center>
                 </BorderPane>
-                <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
-                    <Fieldset inputGrow="SOMETIMES" text="Fee">
+                <Form styleClass="title-form" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                    <Fieldset inputGrow="ALWAYS" text="Fee"/>
+                </Form>
+                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.halignment="RIGHT" alignment="CENTER_RIGHT">
+                    <padding>
+                        <Insets right="10.0" />
+                    </padding>
+                    <SegmentedButton>
+                        <toggleGroup>
+                            <ToggleGroup fx:id="feeSelectionToggleGroup" />
+                        </toggleGroup>
+                        <buttons>
+                            <ToggleButton fx:id="targetBlocksToggle" text="Target Blocks" toggleGroup="$feeSelectionToggleGroup">
+                                <tooltip>
+                                    <Tooltip text="Determine fee via estimated number of blocks"/>
+                                </tooltip>
+                                <userData>
+                                    <FeeRateSelection fx:constant="BLOCK_TARGET"/>
+                                </userData>
+                            </ToggleButton>
+                            <ToggleButton fx:id="mempoolSizeToggle" text="Mempool Size" toggleGroup="$feeSelectionToggleGroup">
+                                <tooltip>
+                                    <Tooltip text="Determine fee via current mempool size"/>
+                                </tooltip>
+                                <userData>
+                                    <FeeRateSelection fx:constant="MEMPOOL_SIZE"/>
+                                </userData>
+                            </ToggleButton>
+                        </buttons>
+                    </SegmentedButton>
+                </HBox>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="2">
+                    <Fieldset inputGrow="SOMETIMES">
                         <Field fx:id="targetBlocksField" text="Block target">
                             <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
                         </Field>
-                        <Field fx:id="feeRangeField" text="Range:">
+                        <Field fx:id="feeRangeField" text="Rate Range:">
                             <Slider fx:id="feeRange" snapToTicks="false" showTickLabels="true" showTickMarks="true" />
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">
@@ -74,7 +107,7 @@
                         </Field>
                     </Fieldset>
                 </Form>
-                <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2">
+                <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="2">
                     <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
