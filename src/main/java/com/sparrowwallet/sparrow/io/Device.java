@@ -11,6 +11,7 @@ public class Device {
     private Boolean needsPinSent;
     private Boolean needsPassphraseSent;
     private String fingerprint;
+    private String error;
 
     public String getType() {
         return type;
@@ -58,6 +59,14 @@ public class Device {
 
     public void setFingerprint(String fingerprint) {
         this.fingerprint = fingerprint;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
     }
 
     public String toString() {

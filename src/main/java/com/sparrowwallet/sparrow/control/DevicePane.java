@@ -73,7 +73,12 @@ public class DevicePane extends TitledDescriptionPane {
         createSetPassphraseButton();
         createImportButton();
 
-        if (device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
+        if(device.getError() != null) {
+            setError("Error", device.getError());
+            Platform.runLater(() -> {
+                setExpanded(true);
+            });
+        } else if(device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
             unlockButton.setVisible(true);
         } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
             setPassphraseButton.setVisible(true);
