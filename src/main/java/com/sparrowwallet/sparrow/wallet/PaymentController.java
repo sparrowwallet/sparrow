@@ -22,7 +22,7 @@ import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.ExchangeSource;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;

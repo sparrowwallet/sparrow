@@ -9,7 +9,7 @@ import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.FiatLabel;
 import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
 import com.sparrowwallet.sparrow.event.*;
-import com.sparrowwallet.sparrow.io.ExchangeSource;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;

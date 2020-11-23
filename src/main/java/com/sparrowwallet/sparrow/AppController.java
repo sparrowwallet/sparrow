@@ -25,6 +25,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import com.sparrowwallet.sparrow.net.VersionCheckService;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;

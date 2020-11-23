@@ -12,7 +12,7 @@
 <?import javafx.collections.FXCollections?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
-<?import com.sparrowwallet.sparrow.io.ExchangeSource?>
+<?import com.sparrowwallet.sparrow.net.ExchangeSource?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <?import com.sparrowwallet.sparrow.wallet.FeeRateSelection?>

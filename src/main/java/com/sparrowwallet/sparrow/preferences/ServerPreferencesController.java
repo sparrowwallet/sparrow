@@ -296,6 +296,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     @NotNull
     private ChangeListener<String> getProxyListener(Config config) {
         return (observable, oldValue, newValue) -> {
+            if(oldValue.trim().equals(newValue.trim())) {
+                return;
+            }
+
             String hostAsString = getHost(proxyHost.getText());
             Integer portAsInteger = getPort(proxyPort.getText());
             if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {

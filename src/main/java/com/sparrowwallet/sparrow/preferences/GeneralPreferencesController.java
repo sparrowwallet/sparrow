@@ -8,7 +8,7 @@ import com.sparrowwallet.sparrow.event.FeeRateSelectionChangedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.event.VersionCheckStatusEvent;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.ExchangeSource;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.wallet.FeeRateSelection;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;

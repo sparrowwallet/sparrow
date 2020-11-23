@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.event;
 
-import com.sparrowwallet.sparrow.io.ExchangeSource;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 
 import java.util.Currency;
 
