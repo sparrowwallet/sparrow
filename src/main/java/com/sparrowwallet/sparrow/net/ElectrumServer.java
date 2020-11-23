@@ -5,6 +5,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
@@ -605,7 +606,7 @@ public class ElectrumServer {
             }
 
             FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
-            if(feeRatesSource != null) {
+            if(feeRatesSource != null && Network.get().equals(Network.MAINNET)) {
                 targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
             }
 
