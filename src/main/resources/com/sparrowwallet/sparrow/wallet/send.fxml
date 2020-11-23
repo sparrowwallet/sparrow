@@ -23,7 +23,7 @@
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import com.sparrowwallet.sparrow.control.MempoolSizeFeeRatesChart?>
 <?import org.controlsfx.control.SegmentedButton?>
-<?import com.sparrowwallet.sparrow.wallet.FeeRateSelection?>
+<?import com.sparrowwallet.sparrow.wallet.FeeRatesSelection?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
@@ -67,7 +67,7 @@
                                     <Tooltip text="Determine fee via estimated number of blocks"/>
                                 </tooltip>
                                 <userData>
-                                    <FeeRateSelection fx:constant="BLOCK_TARGET"/>
+                                    <FeeRatesSelection fx:constant="BLOCK_TARGET"/>
                                 </userData>
                             </ToggleButton>
                             <ToggleButton fx:id="mempoolSizeToggle" text="Mempool Size" toggleGroup="$feeSelectionToggleGroup">
@@ -75,7 +75,7 @@
                                     <Tooltip text="Determine fee via current mempool size"/>
                                 </tooltip>
                                 <userData>
-                                    <FeeRateSelection fx:constant="MEMPOOL_SIZE"/>
+                                    <FeeRatesSelection fx:constant="MEMPOOL_SIZE"/>
                                 </userData>
                             </ToggleButton>
                         </buttons>

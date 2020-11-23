@@ -604,6 +604,11 @@ public class ElectrumServer {
                 targetBlocksFeeRatesSats.put(target, minFeeRateSatsKb / 1000d);
             }
 
+            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+            if(feeRatesSource != null) {
+                targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
+            }
+
             return targetBlocksFeeRatesSats;
         } catch(ElectrumServerRpcException e) {
             throw new ServerException(e.getMessage(), e);
@@ -718,7 +723,7 @@ public class ElectrumServer {
     }
 
     public static class ConnectionService extends ScheduledService<FeeRatesUpdatedEvent> implements Thread.UncaughtExceptionHandler {
-        private static final int FEE_RATES_PERIOD = 1 * 60 * 1000;
+        private static final int FEE_RATES_PERIOD = 30 * 1000;
 
         private final boolean subscribe;
         private boolean firstCall = true;
@@ -1010,6 +1015,20 @@ public class ElectrumServer {
                 protected Sha256Hash call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
                     return electrumServer.broadcastTransaction(transaction);
+                }
+            };
+        }
+    }
+
+    public static class FeeRatesService extends Service<FeeRatesUpdatedEvent> {
+        @Override
+        protected Task<FeeRatesUpdatedEvent> createTask() {
+            return new Task<>() {
+                protected FeeRatesUpdatedEvent call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                    Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
+                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
                 }
             };
         }

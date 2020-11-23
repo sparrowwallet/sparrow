@@ -1496,6 +1496,15 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
+        ElectrumServer.FeeRatesService feeRatesService = new ElectrumServer.FeeRatesService();
+        feeRatesService.setOnSucceeded(workerStateEvent -> {
+            EventManager.get().post(feeRatesService.getValue());
+        });
+        feeRatesService.start();
+    }
+
+    @Subscribe
     public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
         ratesService.cancel();
 

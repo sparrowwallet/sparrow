@@ -15,7 +15,7 @@
 <?import com.sparrowwallet.sparrow.net.ExchangeSource?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
-<?import com.sparrowwallet.sparrow.wallet.FeeRateSelection?>
+<?import com.sparrowwallet.sparrow.net.FeeRatesSource?>
 
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.GeneralPreferencesController">
     <padding>
@@ -42,16 +42,17 @@
                 </ComboBox>
                 <HelpLabel helpText="Display unit for bitcoin amounts.\nAuto displays amounts over 1 BTC in BTC, and amounts under that in satoshis."/>
             </Field>
-            <Field text="Fee rate selection:">
-                <ComboBox fx:id="feeRateSelection">
+            <Field text="Fee rates source:">
+                <ComboBox fx:id="feeRatesSource">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
-                            <FeeRateSelection fx:constant="BLOCK_TARGET" />
-                            <FeeRateSelection fx:constant="MEMPOOL_SIZE" />
+                            <FeeRatesSource fx:constant="ELECTRUM_SERVER" />
+                            <FeeRatesSource fx:constant="MEMPOOL_SPACE" />
+                            <FeeRatesSource fx:constant="BITCOINFEES_EARN_COM" />
                         </FXCollections>
                     </items>
                 </ComboBox>
-                <HelpLabel helpText="Fee rate selection can be done either by estimating the number of blocks until a transaction is mined, or examining the current size of the mempool."/>
+                <HelpLabel helpText="Recommended fee rates can be sourced from your connected Electrum server, or an external source."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Fiat" styleClass="wideLabelFieldSet">

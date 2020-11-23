@@ -3,13 +3,10 @@ package com.sparrowwallet.sparrow.preferences;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
-import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
-import com.sparrowwallet.sparrow.event.FeeRateSelectionChangedEvent;
-import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
-import com.sparrowwallet.sparrow.event.VersionCheckStatusEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.wallet.FeeRateSelection;
+import com.sparrowwallet.sparrow.net.FeeRatesSource;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
@@ -27,7 +24,7 @@ public class GeneralPreferencesController extends PreferencesDetailController {
     private ComboBox<BitcoinUnit> bitcoinUnit;
 
     @FXML
-    private ComboBox<FeeRateSelection> feeRateSelection;
+    private ComboBox<FeeRatesSource> feeRatesSource;
 
     @FXML
     private ComboBox<Currency> fiatCurrency;
@@ -68,16 +65,16 @@ public class GeneralPreferencesController extends PreferencesDetailController {
             EventManager.get().post(new BitcoinUnitChangedEvent(newValue));
         });
 
-        if(config.getFeeRateSelection() != null) {
-            feeRateSelection.setValue(config.getFeeRateSelection());
+        if(config.getFeeRatesSource() != null) {
+            feeRatesSource.setValue(config.getFeeRatesSource());
         } else {
-            feeRateSelection.getSelectionModel().select(0);
-            config.setFeeRateSelection(FeeRateSelection.BLOCK_TARGET);
+            feeRatesSource.getSelectionModel().select(1);
+            config.setFeeRatesSource(feeRatesSource.getValue());
         }
 
-        feeRateSelection.valueProperty().addListener((observable, oldValue, newValue) -> {
-            config.setFeeRateSelection(newValue);
-            EventManager.get().post(new FeeRateSelectionChangedEvent(newValue));
+        feeRatesSource.valueProperty().addListener((observable, oldValue, newValue) -> {
+            config.setFeeRatesSource(newValue);
+            EventManager.get().post(new FeeRatesSourceChangedEvent(newValue));
         });
 
         if(config.getExchangeSource() != null) {

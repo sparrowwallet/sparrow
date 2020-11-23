@@ -269,13 +269,14 @@ public class SendController extends WalletFormController implements Initializabl
             mempoolSizeFeeRatesChart.update(mempoolHistogram);
         }
 
-        FeeRateSelection feeRateSelection = Config.get().getFeeRateSelection();
-        updateFeeRateSelection(feeRateSelection);
-        feeSelectionToggleGroup.selectToggle(feeRateSelection == FeeRateSelection.BLOCK_TARGET ? targetBlocksToggle : mempoolSizeToggle);
+        FeeRatesSelection feeRatesSelection = Config.get().getFeeRatesSelection();
+        feeRatesSelection = (feeRatesSelection == null ? FeeRatesSelection.BLOCK_TARGET : feeRatesSelection);
+        updateFeeRateSelection(feeRatesSelection);
+        feeSelectionToggleGroup.selectToggle(feeRatesSelection == FeeRatesSelection.BLOCK_TARGET ? targetBlocksToggle : mempoolSizeToggle);
         feeSelectionToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            FeeRateSelection newFeeRateSelection = (FeeRateSelection)newValue.getUserData();
-            Config.get().setFeeRateSelection(newFeeRateSelection);
-            EventManager.get().post(new FeeRateSelectionChangedEvent(newFeeRateSelection));
+            FeeRatesSelection newFeeRatesSelection = (FeeRatesSelection)newValue.getUserData();
+            Config.get().setFeeRatesSelection(newFeeRatesSelection);
+            EventManager.get().post(new FeeRatesSelectionChangedEvent(newFeeRatesSelection));
         });
 
         fee.setTextFormatter(new CoinTextFormatter());
@@ -472,8 +473,8 @@ public class SendController extends WalletFormController implements Initializabl
         return Collections.emptyList();
     }
 
-    private void updateFeeRateSelection(FeeRateSelection feeRateSelection) {
-        boolean blockTargetSelection = (feeRateSelection == FeeRateSelection.BLOCK_TARGET);
+    private void updateFeeRateSelection(FeeRatesSelection feeRatesSelection) {
+        boolean blockTargetSelection = (feeRatesSelection == FeeRatesSelection.BLOCK_TARGET);
         targetBlocksField.setVisible(blockTargetSelection);
         blockTargetFeeRatesChart.setVisible(blockTargetSelection);
         setDefaultFeeRate();
@@ -481,14 +482,15 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void setDefaultFeeRate() {
+        int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
+        int index = TARGET_BLOCKS_RANGE.indexOf(defaultTarget);
+        Double defaultRate = getTargetBlocksFeeRates().get(defaultTarget);
         if(targetBlocksField.isVisible()) {
-            int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
-            int index = TARGET_BLOCKS_RANGE.indexOf(defaultTarget);
             targetBlocks.setValue(index);
             blockTargetFeeRatesChart.select(defaultTarget);
-            setFeeRate(getTargetBlocksFeeRates().get(getTargetBlocks()));
+            setFeeRate(defaultRate);
         } else {
-            feeRange.setValue(5.0);
+            feeRange.setValue(Math.log(defaultRate) / Math.log(2));
             setFeeRate(getFeeRangeRate());
         }
     }
@@ -771,7 +773,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     @Subscribe
-    public void feeRateSelectionChanged(FeeRateSelectionChangedEvent event) {
+    public void feeRateSelectionChanged(FeeRatesSelectionChangedEvent event) {
         updateFeeRateSelection(event.getFeeRateSelection());
     }
 

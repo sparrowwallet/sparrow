@@ -5,7 +5,8 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.wallet.FeeRateSelection;
+import com.sparrowwallet.sparrow.net.FeeRatesSource;
+import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +22,8 @@ public class Config {
 
     private Mode mode;
     private BitcoinUnit bitcoinUnit;
-    private FeeRateSelection feeRateSelection;
+    private FeeRatesSource feeRatesSource;
+    private FeeRatesSelection feeRatesSelection;
     private Currency fiatCurrency;
     private ExchangeSource exchangeSource;
     private boolean groupByAddress = true;
@@ -101,12 +103,21 @@ public class Config {
         flush();
     }
 
-    public FeeRateSelection getFeeRateSelection() {
-        return feeRateSelection;
+    public FeeRatesSource getFeeRatesSource() {
+        return feeRatesSource;
     }
 
-    public void setFeeRateSelection(FeeRateSelection feeRateSelection) {
-        this.feeRateSelection = feeRateSelection;
+    public void setFeeRatesSource(FeeRatesSource feeRatesSource) {
+        this.feeRatesSource = feeRatesSource;
+        flush();
+    }
+
+    public FeeRatesSelection getFeeRatesSelection() {
+        return feeRatesSelection;
+    }
+
+    public void setFeeRatesSelection(FeeRatesSelection feeRatesSelection) {
+        this.feeRatesSelection = feeRatesSelection;
         flush();
     }
 
