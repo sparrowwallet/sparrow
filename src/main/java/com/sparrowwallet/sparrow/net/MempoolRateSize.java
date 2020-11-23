@@ -40,4 +40,12 @@ public class MempoolRateSize implements Comparable<MempoolRateSize> {
     public int compareTo(MempoolRateSize other) {
         return Long.compare(fee, other.fee);
     }
+
+    @Override
+    public String toString() {
+        return "MempoolRateSize{" +
+                "fee=" + fee +
+                ", vSize=" + vSize +
+                '}';
+    }
 }

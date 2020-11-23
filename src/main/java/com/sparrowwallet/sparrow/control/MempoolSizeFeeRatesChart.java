@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
     private static final DateFormat dateFormatter = new SimpleDateFormat("HH:mm");
+    public static final int MAX_PERIOD_HOURS = 2;
 
     private Tooltip tooltip;
 
@@ -54,23 +55,22 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         }
 
         Map<Date, Set<MempoolRateSize>> periodRateSizes = getPeriodRateSizes(mempoolRateSizes);
-        List<String> categories = getCategories(periodRateSizes);
+        Map<Date, String> categories = getCategories(periodRateSizes);
 
         CategoryAxis categoryAxis = (CategoryAxis)getXAxis();
-        if(categoryAxis.getCategories() == null) {
-            categoryAxis.setCategories(FXCollections.observableArrayList(categories));
-        } else {
-            categoryAxis.getCategories().retainAll(categories);
-            categories.removeAll(categoryAxis.getCategories());
-            categoryAxis.getCategories().addAll(categories);
-        }
+        categoryAxis.setTickMarkVisible(false);
+        categoryAxis.setTickLabelGap(10);
+        categoryAxis.setAutoRanging(false);
+        categoryAxis.setCategories(FXCollections.observableArrayList(categories.values()));
+        categoryAxis.invalidateRange(new ArrayList<>(categories.values()));
 
         categoryAxis.setGapStartAndEnd(false);
         categoryAxis.setTickLabelRotation(0);
         categoryAxis.setOnMouseMoved(mouseEvent -> {
             String category = categoryAxis.getValueForDisplay(mouseEvent.getX());
             if(category != null) {
-                tooltip.setGraphic(new ChartTooltip(category, getData()));
+                Optional<String> time = categories.entrySet().stream().filter(entry -> entry.getValue().equals(category)).map(entry -> dateFormatter.format(entry.getKey())).findFirst();
+                time.ifPresent(s -> tooltip.setGraphic(new ChartTooltip(category, s, getData())));
             }
         });
 
@@ -103,7 +103,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                     }
                 }
 
-                series.getData().add(new XYChart.Data<>(dateFormatter.format(date), totalVSize));
+                series.getData().add(new XYChart.Data<>(categories.get(date), totalVSize));
                 seriesTotalVSize += totalVSize;
             }
 
@@ -114,8 +114,9 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             previousFeeRate = feeRate;
         }
 
-        if(categories.iterator().hasNext()) {
-            tooltip.setGraphic(new ChartTooltip(categories.iterator().next(), getData()));
+        if(categories.keySet().iterator().hasNext()) {
+            String time = categories.values().iterator().next();
+            tooltip.setGraphic(new ChartTooltip(time, time, getData()));
             numberAxis.setTickLabelsVisible(true);
             numberAxis.setOpacity(1);
         } else {
@@ -129,7 +130,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             return mempoolRateSizes;
         }
 
-        LocalDateTime period = LocalDateTime.now().minusHours(6);
+        LocalDateTime period = LocalDateTime.now().minusHours(MAX_PERIOD_HOURS);
         return mempoolRateSizes.entrySet().stream().filter(entry -> {
             LocalDateTime dateTime = entry.getKey().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             return dateTime.isAfter(period);
@@ -138,18 +139,27 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 TreeMap::new));
     }
 
-    private List<String> getCategories(Map<Date, Set<MempoolRateSize>> mempoolHistogram) {
-        List<String> categories = new ArrayList<>();
-        for(Date date : mempoolHistogram.keySet()) {
-            categories.add(dateFormatter.format(date));
+    private Map<Date, String> getCategories(Map<Date, Set<MempoolRateSize>> mempoolHistogram) {
+        Map<Date, String> categories = new LinkedHashMap<>();
+
+        String invisible = "" + (char)29;
+        for(Iterator<Date> iter = mempoolHistogram.keySet().iterator(); iter.hasNext(); ) {
+            Date date = iter.next();
+            String label = dateFormatter.format(date);
+            if(!categories.isEmpty() && iter.hasNext()) {
+                label = invisible;
+                invisible += (char)29;
+            }
+
+            categories.put(date, label);
         }
 
         return categories;
     }
 
     private static class ChartTooltip extends VBox {
-        public ChartTooltip(String category, List<Series<String, Number>> seriesList) {
-            Label title = new Label("At " + category);
+        public ChartTooltip(String category, String time, List<Series<String, Number>> seriesList) {
+            Label title = new Label("At " + time);
             HBox titleBox = new HBox(title);
             title.getStyleClass().add("tooltip-title");
             getChildren().add(titleBox);
