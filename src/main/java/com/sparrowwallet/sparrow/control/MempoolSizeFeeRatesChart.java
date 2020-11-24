@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.collections.FXCollections;
+import javafx.geometry.Point2D;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
@@ -63,16 +64,8 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         categoryAxis.setAutoRanging(false);
         categoryAxis.setCategories(FXCollections.observableArrayList(categories.values()));
         categoryAxis.invalidateRange(new ArrayList<>(categories.values()));
-
         categoryAxis.setGapStartAndEnd(false);
         categoryAxis.setTickLabelRotation(0);
-        categoryAxis.setOnMouseMoved(mouseEvent -> {
-            String category = categoryAxis.getValueForDisplay(mouseEvent.getX());
-            if(category != null) {
-                Optional<String> time = categories.entrySet().stream().filter(entry -> entry.getValue().equals(category)).map(entry -> dateFormatter.format(entry.getKey())).findFirst();
-                time.ifPresent(s -> tooltip.setGraphic(new ChartTooltip(category, s, getData())));
-            }
-        });
 
         NumberAxis numberAxis = (NumberAxis)getYAxis();
         numberAxis.setTickLabelFormatter(new StringConverter<Number>() {
@@ -85,6 +78,15 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             @Override
             public Number fromString(String string) {
                 return null;
+            }
+        });
+
+        this.setOnMouseMoved(mouseEvent -> {
+            Point2D sceneCoords = this.localToScene(mouseEvent.getX(), mouseEvent.getY());
+            String category = categoryAxis.getValueForDisplay(categoryAxis.sceneToLocal(sceneCoords).getX());
+            if(category != null) {
+                Optional<String> time = categories.entrySet().stream().filter(entry -> entry.getValue().equals(category)).map(entry -> dateFormatter.format(entry.getKey())).findFirst();
+                time.ifPresent(s -> tooltip.setGraphic(new ChartTooltip(category, s, getData())));
             }
         });
 
@@ -161,7 +163,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         public ChartTooltip(String category, String time, List<Series<String, Number>> seriesList) {
             Label title = new Label("At " + time);
             HBox titleBox = new HBox(title);
-            title.getStyleClass().add("tooltip-title");
+            title.setStyle("-fx-alignment: center; -fx-font-size: 12px; -fx-padding: 0 0 5 0;");
             getChildren().add(titleBox);
 
             for(int i = seriesList.size() - 1; i >= 0; i--) {
@@ -172,7 +174,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                         if(mvb >= 0.01) {
                             Label label = new Label(series.getName() + ": " + String.format("%.2f", mvb) + " MvB");
                             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CIRCLE);
-                            circle.getStyleClass().add("tooltip-series" + i);
+                            circle.setStyle("-fx-text-fill: CHART_COLOR_" + (i+1));
                             label.setGraphic(circle);
                             getChildren().add(label);
                         }

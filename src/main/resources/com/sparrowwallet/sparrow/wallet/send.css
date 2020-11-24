@@ -108,18 +108,3 @@
 #transactionDiagram .utxo-label:hover .button .label .text {
     -fx-fill: -fx-text-base-color;
 }
-
-.tooltip-title {
-    -fx-alignment: center;
-    -fx-font-size: 12px;
-    -fx-padding: 0 0 5 0;
-}
-
-.tooltip-series0 { -fx-text-fill: CHART_COLOR_1; }
-.tooltip-series1 { -fx-text-fill: CHART_COLOR_2; }
-.tooltip-series2 { -fx-text-fill: CHART_COLOR_3; }
-.tooltip-series3 { -fx-text-fill: CHART_COLOR_4; }
-.tooltip-series4 { -fx-text-fill: CHART_COLOR_5; }
-.tooltip-series5 { -fx-text-fill: CHART_COLOR_6; }
-.tooltip-series6 { -fx-text-fill: CHART_COLOR_7; }
-.tooltip-series7 { -fx-text-fill: CHART_COLOR_8; }
