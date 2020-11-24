@@ -30,6 +30,7 @@ public class FontAwesome5 extends GlyphFont {
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
         HAND_HOLDING('\uf4bd'),
+        HAND_HOLDING_MEDICAL('\ue05c'),
         KEY('\uf084'),
         LAPTOP('\uf109'),
         LOCK('\uf023'),

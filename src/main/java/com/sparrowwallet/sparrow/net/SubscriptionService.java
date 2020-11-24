@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 import com.google.common.collect.Iterables;
@@ -23,7 +24,12 @@ public class SubscriptionService {
     }
 
     @JsonRpcMethod("blockchain.scripthash.subscribe")
-    public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcParam("status") final String status) {
+    public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcOptional @JsonRpcParam("status") final String status) {
+        if(status == null) {
+            //Mempool transaction was replaced returning change/consolidation script hash status to null, ignore this update
+            return;
+        }
+
         Set<String> existingStatuses = ElectrumServer.getSubscribedScriptHashes().get(scriptHash);
         if(existingStatuses == null) {
             log.warn("Received script hash status update for unsubscribed script hash: " + scriptHash);

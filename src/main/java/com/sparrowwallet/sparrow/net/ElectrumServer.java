@@ -138,7 +138,16 @@ public class ElectrumServer {
 
     public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet, Collection<WalletNode> nodes) throws ServerException {
         Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
-        subscribeWalletNodes(wallet, nodes, nodeTransactionMap, 0);
+
+        Set<WalletNode> historyNodes = new HashSet<>(nodes);
+        //Add any nodes with mempool transactions in case these have been replaced
+        Set<WalletNode> mempoolNodes = wallet.getWalletTxos().entrySet().stream()
+                .filter(entry -> entry.getKey().getHeight() <= 0 || (entry.getKey().getSpentBy() != null && entry.getKey().getSpentBy().getHeight() <= 0))
+                .map(Map.Entry::getValue)
+                .collect(Collectors.toSet());
+        historyNodes.addAll(mempoolNodes);
+
+        subscribeWalletNodes(wallet, historyNodes, nodeTransactionMap, 0);
         getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, 0);
         Set<BlockTransactionHash> newReferences = nodeTransactionMap.values().stream().flatMap(Collection::stream).filter(ref -> !wallet.getTransactions().containsKey(ref.getHash())).collect(Collectors.toSet());
         getReferencedTransactions(wallet, nodeTransactionMap);
@@ -152,7 +161,7 @@ public class ElectrumServer {
                 BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
                 for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
                     WalletNode node = walletScriptHashes.get(getScriptHash(txOutput));
-                    if(node != null && !nodes.contains(node)) {
+                    if(node != null && !historyNodes.contains(node)) {
                         additionalNodes.add(node);
                     }
                 }
@@ -162,7 +171,7 @@ public class ElectrumServer {
                     if(inputBlockTransaction != null) {
                         TransactionOutput txOutput = inputBlockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
                         WalletNode node = walletScriptHashes.get(getScriptHash(txOutput));
-                        if(node != null && !nodes.contains(node)) {
+                        if(node != null && !historyNodes.contains(node)) {
                             additionalNodes.add(node);
                         }
                     }

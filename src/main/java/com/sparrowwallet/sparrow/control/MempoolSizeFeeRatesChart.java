@@ -174,7 +174,9 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                         if(mvb >= 0.01) {
                             Label label = new Label(series.getName() + ": " + String.format("%.2f", mvb) + " MvB");
                             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CIRCLE);
-                            circle.setStyle("-fx-text-fill: CHART_COLOR_" + (i+1));
+                            if(i < 8) {
+                                circle.setStyle("-fx-text-fill: CHART_COLOR_" + (i+1));
+                            }
                             label.setGraphic(circle);
                             getChildren().add(label);
                         }

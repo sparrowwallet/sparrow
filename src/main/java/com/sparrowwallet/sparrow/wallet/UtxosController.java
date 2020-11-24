@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.UtxosChart;
@@ -81,8 +82,9 @@ public class UtxosController extends WalletFormController implements Initializab
                 .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
                 .collect(Collectors.toList());
 
-        EventManager.get().post(new SendActionEvent(utxoEntries));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(utxoEntries)));
+        final List<BlockTransactionHashIndex> spendingUtxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
+        EventManager.get().post(new SendActionEvent(getWalletForm().getWallet(), spendingUtxos));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(getWalletForm().getWallet(), spendingUtxos)));
     }
 
     public void clear(ActionEvent event) {

@@ -1,17 +1,24 @@
 package com.sparrowwallet.sparrow.event;
 
-import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Wallet;
 
 import java.util.List;
 
 public class SendActionEvent {
-    private final List<HashIndexEntry> utxoEntries;
+    private final Wallet wallet;
+    private final List<BlockTransactionHashIndex> utxos;
 
-    public SendActionEvent(List<HashIndexEntry> utxoEntries) {
-        this.utxoEntries = utxoEntries;
+    public SendActionEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos) {
+        this.wallet = wallet;
+        this.utxos = utxos;
     }
 
-    public List<HashIndexEntry> getUtxoEntries() {
-        return utxoEntries;
+    public Wallet getWallet() {
+        return wallet;
+    }
+
+    public List<BlockTransactionHashIndex> getUtxos() {
+        return utxos;
     }
 }

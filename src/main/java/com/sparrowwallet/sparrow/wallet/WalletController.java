@@ -121,7 +121,7 @@ public class WalletController extends WalletFormController implements Initializa
 
     @Subscribe
     public void sendAction(SendActionEvent event) {
-        if(!event.getUtxoEntries().isEmpty() && event.getUtxoEntries().get(0).getWallet().equals(walletForm.getWallet())) {
+        if(!event.getUtxos().isEmpty() && event.getWallet().equals(walletForm.getWallet())) {
             selectFunction(Function.SEND);
         }
     }

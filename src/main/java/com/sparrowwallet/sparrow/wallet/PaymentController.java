@@ -255,6 +255,10 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public void setPayment(Payment payment) {
         if(getRecipientValueSats() == null || payment.getAmount() != getRecipientValueSats()) {
+            address.setText(payment.getAddress().toString());
+            if(payment.getLabel() != null) {
+                label.setText(payment.getLabel());
+            }
             setRecipientValueSats(payment.getAmount());
             setFiatAmount(AppController.getFiatCurrencyExchangeRate(), payment.getAmount());
         }
