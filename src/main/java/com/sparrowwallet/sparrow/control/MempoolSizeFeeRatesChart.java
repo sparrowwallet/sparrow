@@ -144,13 +144,13 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
     private Map<Date, String> getCategories(Map<Date, Set<MempoolRateSize>> mempoolHistogram) {
         Map<Date, String> categories = new LinkedHashMap<>();
 
-        String invisible = "" + (char)29;
+        String invisible = "" + '\ufeff';
         for(Iterator<Date> iter = mempoolHistogram.keySet().iterator(); iter.hasNext(); ) {
             Date date = iter.next();
             String label = dateFormatter.format(date);
             if(!categories.isEmpty() && iter.hasNext()) {
                 label = invisible;
-                invisible += (char)29;
+                invisible += '\ufeff';
             }
 
             categories.put(date, label);
