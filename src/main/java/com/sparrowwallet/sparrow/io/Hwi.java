@@ -29,7 +29,7 @@ import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
-    private static final String TEMP_FILE_PREFIX = "hwi-1.2.0-";
+    private static final String TEMP_FILE_PREFIX = "hwi-1.2.1-";
 
     private static boolean isPromptActive = false;
 
@@ -218,7 +218,7 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/hwi-1.2.0-mac-amd64-signed.zip");
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/hwi-1.2.1-mac-amd64-signed.zip");
                     Path tempHwiDirPath = Files.createTempDirectory(TEMP_FILE_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
