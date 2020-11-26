@@ -73,3 +73,10 @@ Please use the [Issues](https://github.com/sparrowwallet/sparrow/issues) tab abo
 ## License
 
 Sparrow is licensed under the Apache 2 software licence.
+
+## Credit
+
+![Yourkit](https://www.yourkit.com/images/yklogo.png)
+
+Sparrow Wallet uses the [Yourkit Java Profiler](https://www.yourkit.com/java/profiler/) to profile and improve performance. 
+YourKit supports open source projects with useful tools for monitoring and profiling Java and .NET applications.
