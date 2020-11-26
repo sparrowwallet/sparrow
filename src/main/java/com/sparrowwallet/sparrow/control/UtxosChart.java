@@ -86,11 +86,10 @@ public class UtxosChart extends BarChart<String, Number> {
 
         for(int i = 0; i < utxoSeries.getData().size(); i++) {
             XYChart.Data<String, Number> data = utxoSeries.getData().get(i);
-            Node bar = lookup(".data" + i);
-            if(bar != null) {
-                if(data.getExtraValue() != null && entries.contains((Entry)data.getExtraValue())) {
-                    bar.getStyleClass().add("selected");
-                } else if(data.getExtraValue() == null && entries.size() == totalUtxos) {
+
+            if((data.getExtraValue() != null && entries.contains((Entry)data.getExtraValue())) || (data.getExtraValue() == null && entries.size() == totalUtxos)) {
+                Node bar = lookup(".data" + i);
+                if(bar != null) {
                     bar.getStyleClass().add("selected");
                 }
             }

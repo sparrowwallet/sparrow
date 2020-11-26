@@ -82,9 +82,9 @@ public class BalanceChart extends LineChart<Number, Number> {
 
         for(int i = 0; i < balanceSeries.getData().size(); i++) {
             XYChart.Data<Number, Number> data = balanceSeries.getData().get(i);
-            Node symbol = lookup(".chart-line-symbol.data" + i);
-            if(symbol != null) {
-                if(transactionEntry.getBlockTransaction().getDate() != null && data.getXValue().equals(transactionEntry.getBlockTransaction().getDate().getTime()) && data.getExtraValue() != null) {
+            if(transactionEntry.getBlockTransaction().getDate() != null && data.getXValue().equals(transactionEntry.getBlockTransaction().getDate().getTime()) && data.getExtraValue() != null) {
+                Node symbol = lookup(".chart-line-symbol.data" + i);
+                if(symbol != null) {
                     symbol.getStyleClass().add("selected");
                     selectedEntry = transactionEntry;
                 }
