@@ -4,7 +4,9 @@ import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -89,6 +91,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     for(String labelKey : jsonObject.keySet()) {
                         ew.labels.put(labelKey, jsonObject.get(labelKey).getAsString());
                     }
+                }
+
+                if(key.equals("addresses")) {
+                    ew.addresses = gson.fromJson(map.get(key), ElectrumAddresses.class);
                 }
 
                 if(key.equals("verified_tx3")) {
@@ -195,7 +201,24 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                         blockTransaction.setLabel(ew.labels.get(key));
                     }
                 } catch(Exception e) {
-                    //not a tx, probably an address
+                    //not a tx - try an address
+                    if(ew.addresses != null) {
+                        try {
+                            Address address = Address.fromString(key);
+                            Map<KeyPurpose, List<String>> keyPurposes = Map.of(KeyPurpose.RECEIVE, ew.addresses.receiving, KeyPurpose.CHANGE, ew.addresses.change);
+                            for(KeyPurpose keyPurpose : keyPurposes.keySet()) {
+                                WalletNode purposeNode = wallet.getNode(keyPurpose);
+                                purposeNode.fillToIndex(keyPurposes.get(keyPurpose).size() - 1);
+                                for(WalletNode addressNode : purposeNode.getChildren()) {
+                                    if(address.equals(wallet.getAddress(addressNode))) {
+                                        addressNode.setLabel(ew.labels.get(key));
+                                    }
+                                }
+                            }
+                        } catch(Exception ex) {
+                            //not an address
+                        }
+                    }
                 }
             }
 
@@ -342,6 +365,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         public String wallet_type;
         public String seed_type;
         public Boolean use_encryption;
+        public ElectrumAddresses addresses;
         public Map<String, String> labels = new LinkedHashMap<>();
         public Map<Sha256Hash, BlockTransaction> transactions = new HashMap<>();
     }
@@ -359,5 +383,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         public String seed;
         public String passphrase;
         public Integer pw_hash_version;
+    }
+
+    public static class ElectrumAddresses {
+        public List<String> receiving;
+        public List<String> change;
     }
 }
