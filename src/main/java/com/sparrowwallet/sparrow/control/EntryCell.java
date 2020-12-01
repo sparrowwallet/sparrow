@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
-import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
@@ -125,7 +124,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
             } else if(entry instanceof HashIndexEntry) {
                 HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                 setText(hashIndexEntry.getDescription());
-                setContextMenu(new HashIndexEntryContextMenu(hashIndexEntry));
+                setContextMenu(new HashIndexEntryContextMenu(getTreeTableView(), hashIndexEntry));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(hashIndexEntry.getHashIndex().toString());
                 setTooltip(tooltip);
@@ -140,26 +139,13 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 });
                 actionBox.getChildren().add(viewTransactionButton);
 
-                if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && hashIndexEntry.isSpendable()) {
+                if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && hashIndexEntry.isSpendable() && !hashIndexEntry.getHashIndex().isSpent()) {
                     Button spendUtxoButton = new Button("");
                     Glyph sendGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
                     sendGlyph.setFontSize(12);
                     spendUtxoButton.setGraphic(sendGlyph);
                     spendUtxoButton.setOnAction(event -> {
-                        List<HashIndexEntry> utxoEntries = getTreeTableView().getSelectionModel().getSelectedCells().stream()
-                                .map(tp -> tp.getTreeItem().getValue())
-                                .filter(e -> e instanceof HashIndexEntry)
-                                .map(e -> (HashIndexEntry)e)
-                                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
-                                .collect(Collectors.toList());
-
-                        if(!utxoEntries.contains(hashIndexEntry)) {
-                            utxoEntries = List.of(hashIndexEntry);
-                        }
-
-                        final List<BlockTransactionHashIndex> spendingUtxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
-                        EventManager.get().post(new SendActionEvent(hashIndexEntry.getWallet(), spendingUtxos));
-                        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(hashIndexEntry.getWallet(), spendingUtxos)));
+                        sendSelectedUtxos(getTreeTableView(), hashIndexEntry);
                     });
                     actionBox.getChildren().add(spendUtxoButton);
                 }
@@ -221,6 +207,33 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
         }
 
         return AppController.getTargetBlockFeeRates().values().iterator().next();
+    }
+
+    private static void sendSelectedUtxos(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
+        List<HashIndexEntry> utxoEntries = treeTableView.getSelectionModel().getSelectedCells().stream()
+                .map(tp -> tp.getTreeItem().getValue())
+                .filter(e -> e instanceof HashIndexEntry)
+                .map(e -> (HashIndexEntry)e)
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
+                .collect(Collectors.toList());
+
+        if(!utxoEntries.contains(hashIndexEntry)) {
+            utxoEntries = List.of(hashIndexEntry);
+        }
+
+        final List<BlockTransactionHashIndex> spendingUtxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
+        EventManager.get().post(new SendActionEvent(hashIndexEntry.getWallet(), spendingUtxos));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(hashIndexEntry.getWallet(), spendingUtxos)));
+    }
+
+    private static void freezeUtxo(HashIndexEntry hashIndexEntry) {
+        hashIndexEntry.getHashIndex().setStatus(Status.FROZEN);
+        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), hashIndexEntry.getHashIndex()));
+    }
+
+    private static void unfreezeUtxo(HashIndexEntry hashIndexEntry) {
+        hashIndexEntry.getHashIndex().setStatus(null);
+        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), hashIndexEntry.getHashIndex()));
     }
 
     private static class UnconfirmedTransactionContextMenu extends ContextMenu {
@@ -320,7 +333,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
     }
 
     private static class HashIndexEntryContextMenu extends ContextMenu {
-        public HashIndexEntryContextMenu(HashIndexEntry hashIndexEntry) {
+        public HashIndexEntryContextMenu(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
             String label = "Copy " + (hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) ? "Transaction Output" : "Transaction Input");
             MenuItem copyHashIndex = new MenuItem(label);
             copyHashIndex.setOnAction(AE -> {
@@ -329,8 +342,34 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 content.putString(hashIndexEntry.getHashIndex().toString());
                 Clipboard.getSystemClipboard().setContent(content);
             });
-
             getItems().add(copyHashIndex);
+
+            if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && hashIndexEntry.isSpendable() && !hashIndexEntry.getHashIndex().isSpent()) {
+                MenuItem sendSelected = new MenuItem("Send Selected");
+                sendSelected.setOnAction(AE -> {
+                    hide();
+                    sendSelectedUtxos(treeTableView, hashIndexEntry);
+                });
+                getItems().add(sendSelected);
+            }
+
+            if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && !hashIndexEntry.getHashIndex().isSpent()) {
+                if(hashIndexEntry.getHashIndex().getStatus() == null || hashIndexEntry.getHashIndex().getStatus() != Status.FROZEN) {
+                    MenuItem freezeUtxo = new MenuItem("Freeze UTXO");
+                    freezeUtxo.setOnAction(AE -> {
+                        hide();
+                        freezeUtxo(hashIndexEntry);
+                    });
+                    getItems().add(freezeUtxo);
+                } else {
+                    MenuItem unfreezeUtxo = new MenuItem("Unfreeze UTXO");
+                    unfreezeUtxo.setOnAction(AE -> {
+                        hide();
+                        unfreezeUtxo(hashIndexEntry);
+                    });
+                    getItems().add(unfreezeUtxo);
+                }
+            }
         }
     }
 

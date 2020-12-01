@@ -67,4 +67,12 @@ public class AddressesController extends WalletFormController implements Initial
         receiveTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
         changeTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
     }
+
+    @Subscribe
+    public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            receiveTable.refresh();
+            changeTable.refresh();
+        }
+    }
 }

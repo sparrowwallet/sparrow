@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Status;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.DateLabel;
@@ -57,7 +58,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     }
 
     public boolean isSpendable() {
-        return !isSpent() && (hashIndex.getHeight() > 0 || getWallet().allInputsFromWallet(hashIndex.getHash()));
+        return !isSpent() && (hashIndex.getHeight() > 0 || getWallet().allInputsFromWallet(hashIndex.getHash())) && (hashIndex.getStatus() == null || hashIndex.getStatus() != Status.FROZEN);
     }
 
     @Override

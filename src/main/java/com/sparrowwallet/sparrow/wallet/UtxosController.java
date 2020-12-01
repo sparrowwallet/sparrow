@@ -132,4 +132,11 @@ public class UtxosController extends WalletFormController implements Initializab
     public void walletHistoryStatus(WalletHistoryStatusEvent event) {
         utxosTable.updateHistoryStatus(event);
     }
+
+    @Subscribe
+    public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            utxosTable.refresh();
+        }
+    }
 }

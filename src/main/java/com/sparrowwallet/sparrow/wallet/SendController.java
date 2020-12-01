@@ -485,10 +485,10 @@ public class SendController extends WalletFormController implements Initializabl
     private List<UtxoFilter> getUtxoFilters() {
         UtxoFilter utxoFilter = utxoFilterProperty.get();
         if(utxoFilter != null) {
-            return List.of(utxoFilter);
+            return List.of(utxoFilter, new FrozenUtxoFilter());
         }
 
-        return Collections.emptyList();
+        return List.of(new FrozenUtxoFilter());
     }
 
     private void updateFeeRateSelection(FeeRatesSelection feeRatesSelection) {
@@ -873,6 +873,23 @@ public class SendController extends WalletFormController implements Initializabl
 
                 utxoFilter.getExcludedUtxos().add(event.getUtxo());
                 utxoFilterProperty.set(utxoFilter);
+                updateTransaction();
+            }
+        }
+    }
+
+    @Subscribe
+    public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            UtxoSelector utxoSelector = utxoSelectorProperty.get();
+            if(utxoSelector instanceof MaxUtxoSelector) {
+                updateTransaction(true);
+            } else if(utxoSelectorProperty().get() instanceof PresetUtxoSelector) {
+                PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(((PresetUtxoSelector)utxoSelector).getPresetUtxos());
+                presetUtxoSelector.getPresetUtxos().remove(event.getUtxo());
+                utxoSelectorProperty.set(presetUtxoSelector);
+                updateTransaction(true);
+            } else {
                 updateTransaction();
             }
         }

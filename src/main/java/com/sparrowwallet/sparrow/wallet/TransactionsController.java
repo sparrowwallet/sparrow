@@ -127,4 +127,11 @@ public class TransactionsController extends WalletFormController implements Init
     public void walletHistoryStatus(WalletHistoryStatusEvent event) {
         transactionsTable.updateHistoryStatus(event);
     }
+
+    @Subscribe
+    public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            transactionsTable.refresh();
+        }
+    }
 }
