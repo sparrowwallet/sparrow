@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.TransactionTabData;
 import com.sparrowwallet.sparrow.control.TransactionDiagram;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -63,7 +64,7 @@ public class TransactionController implements Initializable {
 
     public void initializeView() {
         initializeTxTree();
-        transactionMasterDetail.setShowDetailNode(AppController.showTxHexProperty);
+        transactionMasterDetail.setShowDetailNode(Config.get().isShowTransactionHex());
         txhex.setTransaction(getTransaction());
         highlightTxHex();
         fetchThisAndInputBlockTransactions(0, Math.min(getTransaction().getInputs().size(), PageForm.PAGE_SIZE));

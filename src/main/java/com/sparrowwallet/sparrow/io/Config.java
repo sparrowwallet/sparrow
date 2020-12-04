@@ -31,6 +31,7 @@ public class Config {
     private boolean notifyNewTransactions = true;
     private boolean checkNewVersions = true;
     private Theme theme;
+    private boolean showTransactionHex = true;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -181,6 +182,15 @@ public class Config {
 
     public void setTheme(Theme theme) {
         this.theme = theme;
+        flush();
+    }
+
+    public boolean isShowTransactionHex() {
+        return showTransactionHex;
+    }
+
+    public void setShowTransactionHex(boolean showTransactionHex) {
+        this.showTransactionHex = showTransactionHex;
         flush();
     }
 

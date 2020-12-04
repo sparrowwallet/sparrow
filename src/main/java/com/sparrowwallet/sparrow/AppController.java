@@ -144,8 +144,6 @@ public class AppController implements Initializable {
 
     private static Integer currentBlockHeight;
 
-    public static boolean showTxHexProperty;
-
     private static Map<Integer, Double> targetBlockFeeRates;
 
     private static final Map<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
@@ -257,8 +255,7 @@ public class AppController implements Initializable {
         selectedThemeToggle.ifPresent(toggle -> theme.selectToggle(toggle));
         setTheme(null);
 
-        showTxHex.setSelected(true);
-        showTxHexProperty = true;
+        showTxHex.setSelected(Config.get().isShowTransactionHex());
         exportWallet.setDisable(true);
 
         serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -756,8 +753,8 @@ public class AppController implements Initializable {
 
     public void showTxHex(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setShowTransactionHex(item.isSelected());
         EventManager.get().post(new TransactionTabChangedEvent(tabs.getSelectionModel().getSelectedItem(), item.isSelected()));
-        showTxHexProperty = item.isSelected();
     }
 
     public void setBitcoinUnit(ActionEvent event) {
