@@ -7,7 +7,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import org.slf4j.Logger;
@@ -209,7 +209,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                     VerboseTransaction verboseTransaction = new VerboseTransaction();
                     verboseTransaction.txid = id;
                     verboseTransaction.hex = rawTxHex;
-                    verboseTransaction.confirmations = (height <= 0 ? 0 : AppController.getCurrentBlockHeight() - height + 1);
+                    verboseTransaction.confirmations = (height <= 0 ? 0 : AppServices.getCurrentBlockHeight() - height + 1);
                     verboseTransaction.blockhash = Sha256Hash.ZERO_HASH.toString();
                     result.put(txid, verboseTransaction);
                 } catch(Exception ex) {

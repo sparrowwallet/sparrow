@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
@@ -22,11 +22,11 @@ public class WalletNameDialog extends Dialog<String> {
     public WalletNameDialog() {
         this.name = (CustomTextField)TextFields.createClearableTextField();
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         setTitle("Wallet Name");
         dialogPane.setHeaderText("Enter a name for this wallet:");
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(380);
         dialogPane.setPrefHeight(200);

@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.SecureString;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -37,8 +37,8 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         final DialogPane dialogPane = getDialogPane();
         setTitle("Wallet Password" + (walletName != null ? " - " + walletName : ""));
         dialogPane.setHeaderText(walletName != null ? requirement.description.substring(0, requirement.description.length() - 1) + " for " + walletName + ":" : requirement.description);
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(380);
         dialogPane.setPrefHeight(260);

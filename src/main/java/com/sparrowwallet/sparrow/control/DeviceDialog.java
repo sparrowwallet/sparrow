@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.UsbDeviceEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
@@ -33,8 +33,8 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         this.operationFingerprints = operationFingerprints;
 
         final DialogPane dialogPane = getDialogPane();
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);
@@ -67,7 +67,7 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
 
         stackPane.getChildren().addAll(anchorPane, scanBox);
 
-        List<Device> devices = AppController.getDevices();
+        List<Device> devices = AppServices.getDevices();
         if(devices == null || devices.isEmpty()) {
             scanBox.setVisible(true);
         } else {

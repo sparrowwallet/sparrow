@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.Mode;
 import javafx.application.HostServices;
 import javafx.geometry.Insets;
@@ -27,8 +27,8 @@ public class WelcomeDialog extends Dialog<Mode> {
 
         setTitle("Welcome to Sparrow");
         dialogPane.setHeaderText("Welcome to Sparrow!");
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setPrefWidth(600);
         dialogPane.setPrefHeight(480);
 

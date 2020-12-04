@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Device;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -84,7 +84,7 @@ public class KeystoreImportController implements Initializable {
         importPane.getChildren().removeAll(importPane.getChildren());
 
         try {
-            FXMLLoader importLoader = new FXMLLoader(AppController.class.getResource("keystoreimport/" + fxmlName + ".fxml"));
+            FXMLLoader importLoader = new FXMLLoader(AppServices.class.getResource("keystoreimport/" + fxmlName + ".fxml"));
             Node importTypeNode = importLoader.load();
             KeystoreImportDetailController controller = importLoader.getController();
             controller.setMasterController(this);

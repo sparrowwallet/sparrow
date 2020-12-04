@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
 import com.sparrowwallet.sparrow.control.TransactionDiagram;
@@ -326,7 +326,7 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppController.isOnline() && indexStart < getTransaction().getInputs().size()) {
+        if(AppServices.isOnline() && indexStart < getTransaction().getInputs().size()) {
             Set<Sha256Hash> references = new HashSet<>();
             if(getPSBT() == null) {
                 references.add(getTransaction().getTxId());
@@ -378,7 +378,7 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchOutputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppController.isOnline() && getPSBT() == null && indexStart < getTransaction().getOutputs().size()) {
+        if(AppServices.isOnline() && getPSBT() == null && indexStart < getTransaction().getOutputs().size()) {
             int maxIndex = Math.min(getTransaction().getOutputs().size(), indexEnd);
             ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(getTransaction(), indexStart, maxIndex);
             transactionOutputsReferenceService.setOnSucceeded(successEvent -> {

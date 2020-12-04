@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -23,13 +23,13 @@ public class TransactionIdDialog extends Dialog<Sha256Hash> {
 
     public TransactionIdDialog() {
         this.txid = (CustomTextField) TextFields.createClearableTextField();
-        txid.setFont(AppController.getMonospaceFont());
+        txid.setFont(AppServices.getMonospaceFont());
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         setTitle("Load Transaction");
         dialogPane.setHeaderText("Enter the transaction ID:");
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(550);
         dialogPane.setPrefHeight(200);

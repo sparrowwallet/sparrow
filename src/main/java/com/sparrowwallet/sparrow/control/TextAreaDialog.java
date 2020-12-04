@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.scene.control.*;
@@ -29,8 +29,8 @@ public class TextAreaDialog extends Dialog<String> {
         this.defaultValue = defaultValue;
 
         dialogPane.setContent(hbox);
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         dialogPane.getStyleClass().add("text-input-dialog");
         dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);

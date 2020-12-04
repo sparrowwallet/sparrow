@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -128,7 +128,7 @@ public class SendController extends WalletFormController implements Initializabl
             if(newValue.isEmpty()) {
                 fiatFeeAmount.setText("");
             } else {
-                setFiatFeeAmount(AppController.getFiatCurrencyExchangeRate(), getFeeValueSats());
+                setFiatFeeAmount(AppServices.getFiatCurrencyExchangeRate(), getFeeValueSats());
             }
 
             setTargetBlocks(getTargetBlocks());
@@ -390,7 +390,7 @@ public class SendController extends WalletFormController implements Initializabl
         Tab tab = new Tab(Integer.toString(highestTabNo.isPresent() ? highestTabNo.getAsInt() + 1 : 1));
 
         try {
-            FXMLLoader paymentLoader = new FXMLLoader(AppController.class.getResource("wallet/payment.fxml"));
+            FXMLLoader paymentLoader = new FXMLLoader(AppServices.class.getResource("wallet/payment.fxml"));
             tab.setContent(paymentLoader.load());
             PaymentController controller = paymentLoader.getController();
             controller.setSendController(this);
@@ -451,7 +451,7 @@ public class SendController extends WalletFormController implements Initializabl
             if(!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0)) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
-                Integer currentBlockHeight = AppController.getCurrentBlockHeight();
+                Integer currentBlockHeight = AppServices.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolChange = Config.get().isIncludeMempoolChange();
                 boolean includeMempoolInputs = includeMempoolInputsProperty.get();
@@ -532,7 +532,7 @@ public class SendController extends WalletFormController implements Initializabl
         df.setMaximumFractionDigits(8);
         fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
         fee.textProperty().addListener(feeListener);
-        setFiatFeeAmount(AppController.getFiatCurrencyExchangeRate(), feeValue);
+        setFiatFeeAmount(AppServices.getFiatCurrencyExchangeRate(), feeValue);
     }
 
     private Integer getTargetBlocks() {
@@ -565,7 +565,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Map<Integer, Double> getTargetBlocksFeeRates() {
-        Map<Integer, Double> retrievedFeeRates = AppController.getTargetBlockFeeRates();
+        Map<Integer, Double> retrievedFeeRates = AppServices.getTargetBlockFeeRates();
         if(retrievedFeeRates == null) {
             retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> FALLBACK_FEE_RATE,
                     (u, v) -> { throw new IllegalStateException("Duplicate target blocks"); },
@@ -600,11 +600,11 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Map<Date, Set<MempoolRateSize>> getMempoolHistogram() {
-        return AppController.getMempoolHistogram();
+        return AppServices.getMempoolHistogram();
     }
 
     public boolean isInsufficientFeeRate() {
-        return walletTransactionProperty.get() != null && walletTransactionProperty.get().getFeeRate() < AppController.getMinimumRelayFeeRate();
+        return walletTransactionProperty.get() != null && walletTransactionProperty.get().getFeeRate() < AppServices.getMinimumRelayFeeRate();
     }
 
     private void setFeeRate(Double feeRateAmt) {

@@ -5,7 +5,7 @@ import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.QRDisplayDialog;
 import com.sparrowwallet.sparrow.control.QRScanDialog;
@@ -340,7 +340,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Failed"));
-                    AppController.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                    AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
                 });
                 EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
@@ -364,9 +364,9 @@ public class KeystoreController extends WalletFormController implements Initiali
                 xpub.setText(result.extendedKey.getExtendedKey());
             } else if(result.exception != null) {
                 log.error("Error scanning QR", result.exception);
-                AppController.showErrorDialog("Error scanning QR", result.exception.getMessage());
+                AppServices.showErrorDialog("Error scanning QR", result.exception.getMessage());
             } else {
-                AppController.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid " + Network.get().getXpubHeader().getDisplayName());
+                AppServices.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid " + Network.get().getXpubHeader().getDisplayName());
             }
         }
     }

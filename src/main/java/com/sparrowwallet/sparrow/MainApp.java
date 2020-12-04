@@ -49,7 +49,7 @@ public class MainApp extends Application {
 
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
-        Font.loadFont(AppController.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
 
         boolean createNewWallet = false;
         Mode mode = Config.get().getMode();
@@ -68,10 +68,11 @@ public class MainApp extends Application {
             }
         }
 
+        AppServices.initialize(this);
+
         FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("app.fxml"));
         Parent root = transactionLoader.load();
         AppController appController = transactionLoader.getController();
-        appController.setApplication(this);
 
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());

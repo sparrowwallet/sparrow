@@ -12,7 +12,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
 import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
@@ -36,8 +36,6 @@ import tornadofx.control.Form;
 import java.security.SignatureException;
 import java.util.List;
 import java.util.Optional;
-
-import static com.sparrowwallet.sparrow.AppController.setStageIcon;
 
 public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private static final Logger log = LoggerFactory.getLogger(MessageSignDialog.class);
@@ -84,8 +82,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         this.walletNode = walletNode;
 
         final DialogPane dialogPane = getDialogPane();
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText(wallet == null ? "Verify Message" : "Sign/Verify Message");
 
         Image image = new Image("image/seed.png", 50, 50, false, false);
@@ -209,7 +207,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void signMessage() {
         if(walletNode == null) {
-            AppController.showErrorDialog("Address not in wallet", "The provided address is not present in the currently selected wallet.");
+            AppServices.showErrorDialog("Address not in wallet", "The provided address is not present in the currently selected wallet.");
             return;
         }
 
@@ -234,7 +232,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             signature.appendText(signatureText);
         } catch(Exception e) {
             log.error("Could not sign message", e);
-            AppController.showErrorDialog("Could not sign message", e.getMessage());
+            AppServices.showErrorDialog("Could not sign message", e.getMessage());
         }
     }
 
@@ -272,19 +270,19 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
             if(verified) {
                 Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                setStageIcon(alert.getDialogPane().getScene().getWindow());
+                AppServices.setStageIcon(alert.getDialogPane().getScene().getWindow());
                 alert.setTitle("Verification Succeeded");
                 alert.setHeaderText("Verification Succeeded");
                 alert.setContentText("The signature verified against the message.");
                 alert.showAndWait();
             } else {
-                AppController.showErrorDialog("Verification failed", "The provided signature did not match the message for this address.");
+                AppServices.showErrorDialog("Verification failed", "The provided signature did not match the message for this address.");
             }
         } catch(IllegalArgumentException e) {
-            AppController.showErrorDialog("Could not verify message", e.getMessage());
+            AppServices.showErrorDialog("Could not verify message", e.getMessage());
         } catch(Exception e) {
             log.error("Could not verify message", e);
-            AppController.showErrorDialog("Could not verify message", e.getMessage());
+            AppServices.showErrorDialog("Could not verify message", e.getMessage());
         }
     }
 
@@ -320,7 +318,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             });
             decryptWalletService.setOnFailed(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
-                AppController.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
             });
             EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
             decryptWalletService.start();

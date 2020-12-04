@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
@@ -10,8 +10,8 @@ import javafx.scene.layout.StackPane;
 public class SeedDisplayDialog extends Dialog<Void> {
     public SeedDisplayDialog(Keystore decryptedKeystore) {
         final DialogPane dialogPane = getDialogPane();
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         int lines = decryptedKeystore.getSeed().getMnemonicCode().size() / 3;
         int height = lines * 40;

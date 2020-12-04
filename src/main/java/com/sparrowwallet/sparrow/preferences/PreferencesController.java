@@ -1,10 +1,7 @@
 package com.sparrowwallet.sparrow.preferences;
 
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDetailController;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -63,7 +60,7 @@ public class PreferencesController implements Initializable {
         preferencesPane.getChildren().removeAll(preferencesPane.getChildren());
 
         try {
-            FXMLLoader preferencesDetailLoader = new FXMLLoader(AppController.class.getResource("preferences/" + fxmlName + ".fxml"));
+            FXMLLoader preferencesDetailLoader = new FXMLLoader(AppServices.class.getResource("preferences/" + fxmlName + ".fxml"));
             Node preferenceGroupNode = preferencesDetailLoader.load();
             PreferencesDetailController controller = preferencesDetailLoader.getController();
             controller.setMasterController(this);

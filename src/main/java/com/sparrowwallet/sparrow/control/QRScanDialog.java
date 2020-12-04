@@ -19,10 +19,10 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.hummingbird.LegacyURDecoder;
 import com.sparrowwallet.hummingbird.registry.*;
-import com.sparrowwallet.sparrow.AppController;
 import com.sparrowwallet.hummingbird.ResultType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.URDecoder;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -66,7 +66,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         WebcamView webcamView = new WebcamView(webcamService);
 
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         stackPane.getChildren().add(webcamView.getView());

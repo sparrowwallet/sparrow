@@ -7,7 +7,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -103,7 +103,7 @@ public class TransactionDiagram extends GridPane {
         for(Payment payment : walletTx.getPayments()) {
             try {
                 Address address = payment.getAddress();
-                BitcoinURI bitcoinURI = AppController.getPayjoinURI(address);
+                BitcoinURI bitcoinURI = AppServices.getPayjoinURI(address);
                 if(bitcoinURI != null) {
                     return bitcoinURI;
                 }

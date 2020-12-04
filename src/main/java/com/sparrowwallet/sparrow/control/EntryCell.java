@@ -5,7 +5,7 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -202,11 +202,11 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
     }
 
     private static Double getMaxFeeRate() {
-        if(AppController.getTargetBlockFeeRates().isEmpty()) {
+        if(AppServices.getTargetBlockFeeRates().isEmpty()) {
             return 100.0;
         }
 
-        return AppController.getTargetBlockFeeRates().values().iterator().next();
+        return AppServices.getTargetBlockFeeRates().values().iterator().next();
     }
 
     private static void sendSelectedUtxos(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {

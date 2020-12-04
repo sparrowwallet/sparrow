@@ -7,7 +7,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import javafx.fxml.FXMLLoader;
@@ -32,10 +32,10 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
         });
 
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         try {
-            FXMLLoader ksiLoader = new FXMLLoader(AppController.class.getResource("keystoreimport/keystoreimport.fxml"));
+            FXMLLoader ksiLoader = new FXMLLoader(AppServices.class.getResource("keystoreimport/keystoreimport.fxml"));
             dialogPane.setContent(Borders.wrap(ksiLoader.load()).emptyBorder().buildAll());
             keystoreImportController = ksiLoader.getController();
             keystoreImportController.initializeView(wallet);

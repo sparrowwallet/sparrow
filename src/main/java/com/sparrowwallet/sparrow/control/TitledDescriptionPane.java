@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -21,7 +21,7 @@ public class TitledDescriptionPane extends TitledPane {
     protected HBox buttonBox;
 
     public TitledDescriptionPane(String title, String description, String content, String imageUrl) {
-        getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
+        getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         getStyleClass().add("titled-description-pane");
 
         setPadding(Insets.EMPTY);

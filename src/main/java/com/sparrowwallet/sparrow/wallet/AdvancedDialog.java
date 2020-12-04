@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -14,10 +14,10 @@ import java.io.IOException;
 public class AdvancedDialog extends Dialog<Void> {
     public AdvancedDialog(Wallet wallet) {
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         try {
-            FXMLLoader advancedLoader = new FXMLLoader(AppController.class.getResource("wallet/advanced.fxml"));
+            FXMLLoader advancedLoader = new FXMLLoader(AppServices.class.getResource("wallet/advanced.fxml"));
             dialogPane.setContent(Borders.wrap(advancedLoader.load()).emptyBorder().buildAll());
             AdvancedController settingsAdvancedController = advancedLoader.getController();
             settingsAdvancedController.initializeView(wallet);

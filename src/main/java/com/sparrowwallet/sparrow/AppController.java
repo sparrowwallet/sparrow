@@ -7,7 +7,6 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
@@ -19,15 +18,11 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
-import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
-import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.net.MempoolRateSize;
-import com.sparrowwallet.sparrow.net.VersionCheckService;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
@@ -37,10 +32,7 @@ import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.ListChangeListener;
-import javafx.concurrent.Worker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -55,7 +47,6 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
-import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -70,26 +61,16 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppServices.*;
+
 public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
 
-    private static final int SERVER_PING_PERIOD = 1 * 60 * 1000;
-    private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
-    private static final int RATES_PERIOD = 5 * 60 * 1000;
-    private static final int VERSION_CHECK_PERIOD_HOURS = 24;
-    private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
-    private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
-
     public static final String DRAG_OVER_CLASS = "drag-over";
-
-    private MainApp application;
 
     @FXML
     private MenuItem saveTransaction;
@@ -127,34 +108,7 @@ public class AppController implements Initializable {
     @FXML
     private UnlabeledToggleSwitch serverToggle;
 
-    //Determines if a change in serverToggle changes the offline/online mode
-    private boolean changeMode = true;
-
-    private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
-
     private Timeline statusTimeline;
-
-    private ExchangeSource.RatesService ratesService;
-
-    private ElectrumServer.ConnectionService connectionService;
-
-    private Hwi.ScheduledEnumerateService deviceEnumerateService;
-
-    private VersionCheckService versionCheckService;
-
-    private static Integer currentBlockHeight;
-
-    private static Map<Integer, Double> targetBlockFeeRates;
-
-    private static final Map<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
-
-    private static Double minimumRelayFeeRate;
-
-    private static CurrencyRate fiatCurrencyExchangeRate;
-
-    private static List<Device> devices;
-
-    private static final Map<Address, BitcoinURI> payjoinURIs = new HashMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -258,152 +212,12 @@ public class AppController implements Initializable {
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         exportWallet.setDisable(true);
 
-        serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if(changeMode) {
-                Config.get().setMode(newValue ? Mode.ONLINE : Mode.OFFLINE);
-                if(newValue) {
-                    if(connectionService.getState() == Worker.State.CANCELLED) {
-                        connectionService.reset();
-                    }
-
-                    if(!connectionService.isRunning()) {
-                        connectionService.start();
-                    }
-
-                    if(ratesService.getState() == Worker.State.CANCELLED) {
-                        ratesService.reset();
-                    }
-
-                    if(!ratesService.isRunning() && ratesService.getExchangeSource() != ExchangeSource.NONE) {
-                        ratesService.start();
-                    }
-
-                    if(versionCheckService.getState() == Worker.State.CANCELLED) {
-                        versionCheckService.reset();
-                    }
-
-                    if(!versionCheckService.isRunning() && Config.get().isCheckNewVersions()) {
-                        versionCheckService.start();
-                    }
-                } else {
-                    connectionService.cancel();
-                    ratesService.cancel();
-                    versionCheckService.cancel();
-                }
-            }
-        });
-
-        onlineProperty.bindBidirectional(serverToggle.selectedProperty());
+        onlineProperty().bindBidirectional(serverToggle.selectedProperty());
         onlineProperty().addListener((observable, oldValue, newValue) ->  {
-            Platform.runLater(this::setServerToggleTooltip);
+            Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
         });
 
-        Config config = Config.get();
-        connectionService = createConnectionService();
-        if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
-            connectionService.start();
-        }
-
-        ExchangeSource source = config.getExchangeSource() != null ? config.getExchangeSource() : DEFAULT_EXCHANGE_SOURCE;
-        Currency currency = config.getFiatCurrency() != null ? config.getFiatCurrency() : DEFAULT_FIAT_CURRENCY;
-        ratesService = createRatesService(source, currency);
-        if(config.getMode() == Mode.ONLINE && source != ExchangeSource.NONE) {
-            ratesService.start();
-        }
-
-        versionCheckService = createVersionCheckService();
-        if(config.getMode() == Mode.ONLINE && config.isCheckNewVersions()) {
-            versionCheckService.start();
-        }
-
-        openTransactionIdItem.disableProperty().bind(onlineProperty.not());
-    }
-
-    private ElectrumServer.ConnectionService createConnectionService() {
-        ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService();
-        connectionService.setPeriod(new Duration(SERVER_PING_PERIOD));
-        connectionService.setRestartOnFailure(true);
-
-        EventManager.get().register(connectionService);
-        connectionService.statusProperty().addListener((observable, oldValue, newValue) -> {
-            if(connectionService.isRunning()) {
-                EventManager.get().post(new StatusEvent(newValue));
-            }
-        });
-
-        connectionService.setOnSucceeded(successEvent -> {
-            changeMode = false;
-            onlineProperty.setValue(true);
-            changeMode = true;
-
-            if(connectionService.getValue() != null) {
-                EventManager.get().post(connectionService.getValue());
-            }
-        });
-        connectionService.setOnFailed(failEvent -> {
-            //Close connection here to create a new transport next time we try
-            connectionService.resetConnection();
-
-            changeMode = false;
-            onlineProperty.setValue(false);
-            changeMode = true;
-
-            log.debug("Connection failed", failEvent.getSource().getException());
-            EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
-        });
-
-        return connectionService;
-    }
-
-    private ExchangeSource.RatesService createRatesService(ExchangeSource exchangeSource, Currency currency) {
-        ExchangeSource.RatesService ratesService = new ExchangeSource.RatesService(exchangeSource, currency);
-        ratesService.setPeriod(new Duration(RATES_PERIOD));
-        ratesService.setRestartOnFailure(true);
-
-        ratesService.setOnSucceeded(successEvent -> {
-            EventManager.get().post(ratesService.getValue());
-        });
-
-        return ratesService;
-    }
-
-    private VersionCheckService createVersionCheckService() {
-        VersionCheckService versionCheckService = new VersionCheckService();
-        versionCheckService.setDelay(Duration.seconds(10));
-        versionCheckService.setPeriod(Duration.hours(VERSION_CHECK_PERIOD_HOURS));
-        versionCheckService.setRestartOnFailure(true);
-
-        versionCheckService.setOnSucceeded(successEvent -> {
-            VersionUpdatedEvent event = versionCheckService.getValue();
-            if(event != null) {
-                EventManager.get().post(event);
-            }
-        });
-
-        return versionCheckService;
-    }
-
-    private Hwi.ScheduledEnumerateService createDeviceEnumerateService() {
-        Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
-        enumerateService.setPeriod(new Duration(ENUMERATE_HW_PERIOD));
-        enumerateService.setOnSucceeded(workerStateEvent -> {
-            List<Device> devices = enumerateService.getValue();
-
-            //Null devices are returned if the app is currently prompting for a pin. Otherwise, the enumerate clears the pin screen
-            if(devices != null) {
-                //If another instance of HWI is currently accessing the usb interface, HWI returns empty device models. Ignore this run if that happens
-                List<Device> validDevices = devices.stream().filter(device -> device.getModel() != null).collect(Collectors.toList());
-                if(validDevices.size() == devices.size()) {
-                    Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));
-                }
-            }
-        });
-
-        return enumerateService;
-    }
-
-    public void setApplication(MainApp application) {
-        this.application = application;
+        openTransactionIdItem.disableProperty().bind(onlineProperty().not());
     }
 
     private void setOsxApplicationMenu() {
@@ -577,7 +391,7 @@ public class AppController implements Initializable {
                 log.error("Error scanning QR", result.exception);
                 showErrorDialog("Error scanning QR", result.exception.getMessage());
             } else {
-                AppController.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a transaction or PSBT");
+                AppServices.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a transaction or PSBT");
             }
         }
     }
@@ -626,68 +440,10 @@ public class AppController implements Initializable {
                     }
                 } catch(IOException e) {
                     log.error("Error saving transaction", e);
-                    AppController.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
+                    AppServices.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
                 }
             }
         }
-    }
-
-    public static boolean isOnline() {
-        return onlineProperty.get();
-    }
-
-    public void connect() {
-        serverToggle.selectedProperty().set(true);
-    }
-
-    public void disconnect() {
-        serverToggle.selectedProperty().set(false);
-    }
-
-    public static BooleanProperty onlineProperty() { return onlineProperty; }
-
-    public static Integer getCurrentBlockHeight() {
-        return currentBlockHeight;
-    }
-
-    public static Map<Integer, Double> getTargetBlockFeeRates() {
-        return targetBlockFeeRates;
-    }
-
-    public static Map<Date, Set<MempoolRateSize>> getMempoolHistogram() {
-        return mempoolHistogram;
-    }
-
-    private void addMempoolRateSizes(Set<MempoolRateSize> rateSizes) {
-        LocalDateTime dateMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
-        if(mempoolHistogram.isEmpty()) {
-            mempoolHistogram.put(Date.from(dateMinute.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()), rateSizes);
-        }
-
-        mempoolHistogram.put(Date.from(dateMinute.atZone(ZoneId.systemDefault()).toInstant()), rateSizes);
-    }
-
-    public static Double getMinimumRelayFeeRate() {
-        return minimumRelayFeeRate == null ? Transaction.DEFAULT_MIN_RELAY_FEE : minimumRelayFeeRate;
-    }
-
-    public static CurrencyRate getFiatCurrencyExchangeRate() {
-        return fiatCurrencyExchangeRate;
-    }
-
-    public static List<Device> getDevices() {
-        return devices == null ? new ArrayList<>() : devices;
-    }
-
-    public static BitcoinURI getPayjoinURI(Address address) {
-        return payjoinURIs.get(address);
-    }
-
-    public static void addPayjoinURI(BitcoinURI bitcoinURI) {
-        if(bitcoinURI.getPayjoinUrl() == null) {
-            throw new IllegalArgumentException("Not a payjoin URI");
-        }
-        payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
 
     public Map<Wallet, Storage> getOpenWallets() {
@@ -704,28 +460,6 @@ public class AppController implements Initializable {
         return openWallets;
     }
 
-    public static void showErrorDialog(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        setStageIcon(alert.getDialogPane().getScene().getWindow());
-        alert.getDialogPane().getScene().getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        alert.setTitle(title);
-        alert.setHeaderText(title);
-        alert.setContentText(content);
-        alert.showAndWait();
-    }
-
-    public static void setStageIcon(Window window) {
-        Stage stage = (Stage)window;
-        stage.getIcons().add(new Image(AppController.class.getResourceAsStream("/image/sparrow.png")));
-
-        if(stage.getScene() != null && Config.get().getTheme() == Theme.DARK) {
-            stage.getScene().getStylesheets().add(AppController.class.getResource("darktheme.css").toExternalForm());
-        }
-    }
-
-    public static Font getMonospaceFont() {
-        return Font.font("Roboto Mono", 13);
-    }
 
     public void selectTab(Wallet wallet) {
         for(Tab tab : tabs.getTabs()) {
@@ -745,7 +479,7 @@ public class AppController implements Initializable {
 
     public void quit(ActionEvent event) {
         try {
-            application.stop();
+            AppServices.get().getApplication().stop();
         } catch (Exception e) {
             log.error("Error quitting application", e);
         }
@@ -769,8 +503,8 @@ public class AppController implements Initializable {
         return FileType.JSON.equals(fileType) || FileType.BINARY.equals(fileType);
     }
 
-    private void setServerToggleTooltip() {
-        serverToggle.setTooltip(new Tooltip(isOnline() ? "Connected to " + Config.get().getElectrumServer() + (getCurrentBlockHeight() != null ? " at height " + getCurrentBlockHeight() : "") : "Disconnected"));
+    private void setServerToggleTooltip(Integer currentBlockHeight) {
+        serverToggle.setTooltip(new Tooltip(AppServices.isOnline() ? "Connected to " + Config.get().getElectrumServer() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") : "Disconnected"));
     }
 
     public void newWallet(ActionEvent event) {
@@ -1266,6 +1000,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void tabSelected(TabSelectedEvent event) {
+        //TODO: Handle multiple windows
         String tabName = event.getTabName();
         if(tabs.getScene() != null) {
             Stage tabStage = (Stage)tabs.getScene().getWindow();
@@ -1304,11 +1039,13 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        //TODO: Handle multiple windows
         exportWallet.setDisable(!event.getWallet().isValid());
     }
 
     @Subscribe
     public void newWalletTransactions(NewWalletTransactionsEvent event) {
+        //TODO: Handle multiple windows
         if(Config.get().isNotifyNewTransactions()) {
             String text;
             if(event.getBlockTransactions().size() == 1) {
@@ -1380,7 +1117,7 @@ public class AppController implements Initializable {
     public void versionUpdated(VersionUpdatedEvent event) {
         Hyperlink versionUpdateLabel = new Hyperlink("Sparrow " + event.getVersion() + " available");
         versionUpdateLabel.setOnAction(event1 -> {
-            application.getHostServices().showDocument("https://www.sparrowwallet.com/download");
+            AppServices.get().getApplication().getHostServices().showDocument("https://www.sparrowwallet.com/download");
         });
 
         if(statusBar.getRightItems().size() > 0 && statusBar.getRightItems().get(0) instanceof Hyperlink) {
@@ -1417,8 +1154,6 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void usbDevicesFound(UsbDeviceEvent event) {
-        devices = Collections.unmodifiableList(event.getDevices());
-
         UsbStatusButton usbStatus = null;
         for(Node node : statusBar.getRightItems()) {
             if(node instanceof UsbStatusButton) {
@@ -1443,45 +1178,20 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void newConnection(ConnectionEvent event) {
-        currentBlockHeight = event.getBlockHeight();
-        targetBlockFeeRates = event.getTargetBlockFeeRates();
-        addMempoolRateSizes(event.getMempoolRateSizes());
-        minimumRelayFeeRate = event.getMinimumRelayFeeRate();
-        String banner = event.getServerBanner();
-        String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
-        EventManager.get().post(new StatusEvent(status));
-    }
-
-    @Subscribe
-    public void connectionFailed(ConnectionFailedEvent event) {
-        String reason = event.getException().getCause() != null ? event.getException().getCause().getMessage() : event.getException().getMessage();
-        String status = "Connection error: " + reason;
-        EventManager.get().post(new StatusEvent(status));
-    }
-
-    @Subscribe
     public void newBlock(NewBlockEvent event) {
-        currentBlockHeight = event.getHeight();
-        setServerToggleTooltip();
-        String status = "Updating to new block height " + event.getHeight();
-        EventManager.get().post(new StatusEvent(status));
-    }
-
-    @Subscribe
-    public void feesUpdated(FeeRatesUpdatedEvent event) {
-        targetBlockFeeRates = event.getTargetBlockFeeRates();
-        addMempoolRateSizes(event.getMempoolRateSizes());
+        setServerToggleTooltip(event.getHeight());
     }
 
     @Subscribe
     public void viewTransaction(ViewTransactionEvent event) {
+        //TODO: Handle multiple windows
         Tab tab = addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
         tabs.getSelectionModel().select(tab);
     }
 
     @Subscribe
     public void viewPSBT(ViewPSBTEvent event) {
+        //TODO: Handle multiple windows
         Tab tab = addTransactionTab(event.getLabel(), event.getPsbt());
         tabs.getSelectionModel().select(tab);
     }
@@ -1493,101 +1203,26 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
-        ElectrumServer.FeeRatesService feeRatesService = new ElectrumServer.FeeRatesService();
-        feeRatesService.setOnSucceeded(workerStateEvent -> {
-            EventManager.get().post(feeRatesService.getValue());
-        });
-        feeRatesService.start();
-    }
-
-    @Subscribe
-    public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
-        ratesService.cancel();
-
-        if (Config.get().getMode() != Mode.OFFLINE && event.getExchangeSource() != ExchangeSource.NONE) {
-            ratesService = createRatesService(event.getExchangeSource(), event.getCurrency());
-            ratesService.start();
-        }
-    }
-
-    @Subscribe
-    public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        fiatCurrencyExchangeRate = event.getCurrencyRate();
-    }
-
-    @Subscribe
-    public void versionCheckStatus(VersionCheckStatusEvent event) {
-        versionCheckService.cancel();
-
-        if(Config.get().getMode() != Mode.OFFLINE && event.isEnabled()) {
-            versionCheckService = createVersionCheckService();
-            versionCheckService.start();
-        }
-    }
-
-    @Subscribe
-    public void openWallets(OpenWalletsEvent event) {
-        List<File> walletFiles = event.getWalletsMap().values().stream().map(Storage::getWalletFile).collect(Collectors.toList());
-        Config.get().setRecentWalletFiles(walletFiles);
-
-        boolean usbWallet = false;
-        for(Map.Entry<Wallet, Storage> entry : event.getWalletsMap().entrySet()) {
-            Wallet wallet = entry.getKey();
-            Storage storage = entry.getValue();
-
-            if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
-                usbWallet = true;
-
-                if(deviceEnumerateService == null) {
-                    deviceEnumerateService = createDeviceEnumerateService();
-                }
-
-                if(deviceEnumerateService.getState() == Worker.State.CANCELLED) {
-                    deviceEnumerateService.reset();
-                }
-
-                if(!deviceEnumerateService.isRunning()) {
-                    deviceEnumerateService.start();
-                }
-
-                break;
-            }
-        }
-
-        if(!usbWallet && deviceEnumerateService != null && deviceEnumerateService.isRunning()) {
-            deviceEnumerateService.cancel();
-            EventManager.get().post(new UsbDeviceEvent(Collections.emptyList()));
-        }
-    }
-
-    @Subscribe
     public void requestOpenWallets(RequestOpenWalletsEvent event) {
+        //TODO: Handle multiple windows
         EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
     }
 
     @Subscribe
     public void requestWalletOpen(RequestWalletOpenEvent event) {
+        //TODO: Handle multiple windows
         openWallet(null);
     }
 
     @Subscribe
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
+        //TODO: Handle multiple windows
         openTransactionFromFile(null);
     }
 
     @Subscribe
     public void requestQRScan(RequestQRScanEvent event) {
+        //TODO: Handle multiple windows
         openTransactionFromQR(null);
-    }
-
-    @Subscribe
-    public void requestConnect(RequestConnectEvent event) {
-        connect();
-    }
-
-    @Subscribe
-    public void requestDisconnect(RequestDisconnectEvent event) {
-        disconnect();
     }
 }

@@ -7,7 +7,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.sparrowwallet.hummingbird.LegacyUREncoder;
 import com.sparrowwallet.hummingbird.registry.RegistryType;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.hummingbird.UR;
@@ -63,7 +63,7 @@ public class QRDisplayDialog extends Dialog<UR> {
 
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();
@@ -102,7 +102,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         this.encoder = null;
 
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();

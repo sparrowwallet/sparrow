@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.preferences;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.RequestConnectEvent;
 import com.sparrowwallet.sparrow.io.Config;
@@ -27,10 +27,10 @@ public class PreferencesDialog extends Dialog<Boolean> {
 
     public PreferencesDialog(PreferenceGroup initialGroup, boolean initialSetup) {
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         try {
-            FXMLLoader preferencesLoader = new FXMLLoader(AppController.class.getResource("preferences/preferences.fxml"));
+            FXMLLoader preferencesLoader = new FXMLLoader(AppServices.class.getResource("preferences/preferences.fxml"));
             dialogPane.setContent(Borders.wrap(preferencesLoader.load()).emptyBorder().buildAll());
             PreferencesController preferencesController = preferencesLoader.getController();
             preferencesController.initializeView(Config.get());

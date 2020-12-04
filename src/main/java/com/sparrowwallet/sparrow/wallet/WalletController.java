@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.SendActionEvent;
@@ -57,7 +57,7 @@ public class WalletController extends WalletFormController implements Initializa
 
             try {
                 if(!existing) {
-                    FXMLLoader functionLoader = new FXMLLoader(AppController.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml"));
+                    FXMLLoader functionLoader = new FXMLLoader(AppServices.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml"));
                     Node walletFunction = functionLoader.load();
                     walletFunction.setUserData(function);
                     WalletFormController controller = functionLoader.getController();

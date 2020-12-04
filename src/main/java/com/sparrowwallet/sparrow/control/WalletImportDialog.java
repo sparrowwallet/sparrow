@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletImportEvent;
 import com.sparrowwallet.sparrow.io.*;
@@ -22,7 +22,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         });
 
         final DialogPane dialogPane = getDialogPane();
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

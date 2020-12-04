@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 
 public class IdLabel extends CopyableLabel {
     public IdLabel() {
@@ -9,6 +9,6 @@ public class IdLabel extends CopyableLabel {
 
     public IdLabel(String text) {
         super(text);
-        setFont(AppController.getMonospaceFont());
+        setFont(AppServices.getMonospaceFont());
     }
 }

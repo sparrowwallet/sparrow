@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
@@ -32,7 +32,7 @@ public class WalletForm {
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
         this.wallet = currentWallet;
-        refreshHistory(AppController.getCurrentBlockHeight());
+        refreshHistory(AppServices.getCurrentBlockHeight());
     }
 
     public Wallet getWallet() {
@@ -62,7 +62,7 @@ public class WalletForm {
     public void saveAndRefresh() throws IOException {
         wallet.clearHistory();
         save();
-        refreshHistory(AppController.getCurrentBlockHeight());
+        refreshHistory(AppServices.getCurrentBlockHeight());
     }
 
     public void saveBackup() throws IOException {
@@ -75,7 +75,7 @@ public class WalletForm {
 
     public void refreshHistory(Integer blockHeight, WalletNode node) {
         Wallet previousWallet = wallet.copy();
-        if(wallet.isValid() && AppController.isOnline()) {
+        if(wallet.isValid() && AppServices.isOnline()) {
             log.debug(node == null ? "Refreshing full wallet history" : "Requesting node wallet history for " + node.getDerivationPath());
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
             historyService.setOnSucceeded(workerStateEvent -> {
@@ -226,7 +226,7 @@ public class WalletForm {
             walletUtxosEntry = null;
             accountEntries.clear();
             EventManager.get().post(new WalletNodesChangedEvent(wallet));
-            refreshHistory(AppController.getCurrentBlockHeight());
+            refreshHistory(AppServices.getCurrentBlockHeight());
         }
     }
 
@@ -249,7 +249,7 @@ public class WalletForm {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
                 log.debug(wallet.getName() + " history event for node " + walletNode);
-                refreshHistory(AppController.getCurrentBlockHeight(), walletNode);
+                refreshHistory(AppServices.getCurrentBlockHeight(), walletNode);
             }
         }
     }

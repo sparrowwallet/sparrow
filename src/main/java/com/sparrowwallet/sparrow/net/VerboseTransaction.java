@@ -5,7 +5,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 
 import java.util.Date;
 
@@ -26,7 +26,7 @@ class VerboseTransaction {
             return 0;
         }
 
-        Integer currentHeight = AppController.getCurrentBlockHeight();
+        Integer currentHeight = AppServices.getCurrentBlockHeight();
         if(currentHeight != null) {
             return currentHeight - confirmations + 1;
         }

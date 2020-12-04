@@ -11,7 +11,7 @@ import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.RegistryType;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -252,8 +252,8 @@ public class HeadersController extends TransactionFormController implements Init
                     locktimeFieldset.getChildren().add(locktimeBlockField);
                     Integer block = locktimeBlock.getValue();
                     if(block != null) {
-                        locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppController.getCurrentBlockHeight() != null && block < AppController.getCurrentBlockHeight());
-                        futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && block > AppController.getCurrentBlockHeight());
+                        locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppServices.getCurrentBlockHeight() != null && block < AppServices.getCurrentBlockHeight());
+                        futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && block > AppServices.getCurrentBlockHeight());
                         tx.setLocktime(block);
                         if(old_toggle != null) {
                             EventManager.get().post(new TransactionChangedEvent(tx));
@@ -303,8 +303,8 @@ public class HeadersController extends TransactionFormController implements Init
 
         locktimeBlock.valueProperty().addListener((obs, oldValue, newValue) -> {
             tx.setLocktime(newValue);
-            locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppController.getCurrentBlockHeight() != null && newValue < AppController.getCurrentBlockHeight());
-            futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && newValue > AppController.getCurrentBlockHeight());
+            locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppServices.getCurrentBlockHeight() != null && newValue < AppServices.getCurrentBlockHeight());
+            futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && newValue > AppServices.getCurrentBlockHeight());
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
                 EventManager.get().post(new TransactionLocktimeChangedEvent(tx));
@@ -360,7 +360,7 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
         saveFinalButton.managedProperty().bind(saveFinalButton.visibleProperty());
         saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
-        broadcastButton.visibleProperty().bind(AppController.onlineProperty());
+        broadcastButton.visibleProperty().bind(AppServices.onlineProperty());
 
         BitcoinURI payjoinURI = getPayjoinURI();
         boolean isPayjoinOriginalTx = payjoinURI != null && headersForm.getPsbt() != null && headersForm.getPsbt().getPsbtInputs().stream().noneMatch(PSBTInput::isFinalized);
@@ -377,7 +377,7 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastButtonBox.setVisible(false);
 
         if(headersForm.getBlockTransaction() != null) {
-            updateBlockchainForm(headersForm.getBlockTransaction(), AppController.getCurrentBlockHeight());
+            updateBlockchainForm(headersForm.getBlockTransaction(), AppServices.getCurrentBlockHeight());
         } else if(headersForm.getPsbt() != null) {
             PSBT psbt = headersForm.getPsbt();
 
@@ -558,7 +558,7 @@ public class HeadersController extends TransactionFormController implements Init
             for(TransactionOutput txOutput : headersForm.getPsbt().getTransaction().getOutputs()) {
                 try {
                     Address address = txOutput.getScript().getToAddresses()[0];
-                    BitcoinURI bitcoinURI = AppController.getPayjoinURI(address);
+                    BitcoinURI bitcoinURI = AppServices.getPayjoinURI(address);
                     if(bitcoinURI != null) {
                         return bitcoinURI;
                     }
@@ -602,8 +602,8 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void setLocktimeToCurrentHeight(ActionEvent event) {
-        if(AppController.getCurrentBlockHeight() != null && locktimeBlock.isEditable()) {
-            locktimeBlock.getValueFactory().setValue(AppController.getCurrentBlockHeight());
+        if(AppServices.getCurrentBlockHeight() != null && locktimeBlock.isEditable()) {
+            locktimeBlock.getValueFactory().setValue(AppServices.getCurrentBlockHeight());
             Platform.runLater(() -> locktimeBlockType.requestFocus());
         }
     }
@@ -659,7 +659,7 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             } catch(IOException e) {
                 log.error("Error saving PSBT", e);
-                AppController.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());
+                AppServices.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());
             }
         }
     }
@@ -700,7 +700,7 @@ public class HeadersController extends TransactionFormController implements Init
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Failed"));
-                    AppController.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                    AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
                 });
                 EventManager.get().post(new StorageEvent(file, TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
@@ -716,7 +716,7 @@ public class HeadersController extends TransactionFormController implements Init
             updateSignedKeystores(headersForm.getSigningWallet());
         } catch(Exception e) {
             log.warn("Failed to Sign", e);
-            AppController.showErrorDialog("Failed to Sign", e.getMessage());
+            AppServices.showErrorDialog("Failed to Sign", e.getMessage());
         }
     }
 
@@ -726,7 +726,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         List<String> fingerprints = headersForm.getSigningWallet().getKeystores().stream().map(keystore -> keystore.getKeyDerivation().getMasterFingerprint()).collect(Collectors.toList());
-        List<Device> signingDevices = AppController.getDevices().stream().filter(device -> fingerprints.contains(device.getFingerprint())).collect(Collectors.toList());
+        List<Device> signingDevices = AppServices.getDevices().stream().filter(device -> fingerprints.contains(device.getFingerprint())).collect(Collectors.toList());
         if(signingDevices.isEmpty() && headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
             return;
         }
@@ -788,7 +788,7 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastTransactionService.setOnFailed(workerStateEvent -> {
             broadcastProgressBar.setProgress(0);
             log.error("Error broadcasting transaction", workerStateEvent.getSource().getException());
-            AppController.showErrorDialog("Error broadcasting transaction", "The server returned an error when broadcasting the transaction. The server response is contained in sparrow.log");
+            AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error when broadcasting the transaction. The server response is contained in sparrow.log");
             broadcastButton.setDisable(false);
         });
 
@@ -816,7 +816,7 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             } catch(IOException e) {
                 log.error("Error saving transaction", e);
-                AppController.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
+                AppServices.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
             }
         }
     }
@@ -832,7 +832,7 @@ public class HeadersController extends TransactionFormController implements Init
             PSBT proposalPsbt = payjoin.requestPayjoinPSBT(true);
             EventManager.get().post(new ViewPSBTEvent(headersForm.getName() + " Payjoin", proposalPsbt));
         } catch(PayjoinReceiverException e) {
-            AppController.showErrorDialog("Invalid Payjoin Transaction", e.getMessage());
+            AppServices.showErrorDialog("Invalid Payjoin Transaction", e.getMessage());
         }
     }
 
@@ -844,8 +844,8 @@ public class HeadersController extends TransactionFormController implements Init
             blockTransaction = headersForm.getSigningWallet().getTransactions().get(txId);
         }
 
-        if(blockTransaction != null && AppController.getCurrentBlockHeight() != null) {
-            updateBlockchainForm(blockTransaction, AppController.getCurrentBlockHeight());
+        if(blockTransaction != null && AppServices.getCurrentBlockHeight() != null) {
+            updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
         }
     }
 
@@ -867,7 +867,7 @@ public class HeadersController extends TransactionFormController implements Init
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
         if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
             if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || headersForm.getBlockTransaction() == null)) {
-                updateBlockchainForm(event.getBlockTransaction(), AppController.getCurrentBlockHeight());
+                updateBlockchainForm(event.getBlockTransaction(), AppServices.getCurrentBlockHeight());
             }
 
             Long feeAmt = calculateFee(event.getInputTransactions());
@@ -1021,7 +1021,7 @@ public class HeadersController extends TransactionFormController implements Init
                 BlockTransaction blockTransaction = transactionMap.get(txid);
                 if(blockTransaction != null) {
                     headersForm.setBlockTransaction(blockTransaction);
-                    updateBlockchainForm(blockTransaction, AppController.getCurrentBlockHeight());
+                    updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
                 }
             });
             transactionReferenceService.setOnFailed(failEvent -> {
@@ -1064,7 +1064,7 @@ public class HeadersController extends TransactionFormController implements Init
             updateBlockchainForm(headersForm.getBlockTransaction(), event.getHeight());
         }
         if(futureBlockWarning.isVisible()) {
-            futureBlockWarning.setVisible(AppController.getCurrentBlockHeight() != null && locktimeBlock.getValue() > event.getHeight());
+            futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && locktimeBlock.getValue() > event.getHeight());
         }
     }
 

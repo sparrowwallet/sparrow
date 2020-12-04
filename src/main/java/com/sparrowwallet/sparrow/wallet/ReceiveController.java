@@ -14,7 +14,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
@@ -116,7 +116,7 @@ public class ReceiveController extends WalletFormController implements Initializ
         outputDescriptor.clear();
         outputDescriptor.append(nodeEntry.getOutputDescriptor(), "descriptor-text");
 
-        updateDisplayAddress(AppController.getDevices());
+        updateDisplayAddress(AppServices.getDevices());
     }
 
     private void updateDerivationPath(NodeEntry nodeEntry) {
@@ -138,7 +138,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     private void updateLastUsed() {
         Set<BlockTransactionHashIndex> currentOutputs = currentEntry.getNode().getTransactionOutputs();
-        if(AppController.isOnline() && currentOutputs.isEmpty()) {
+        if(AppServices.isOnline() && currentOutputs.isEmpty()) {
             lastUsed.setText("Never");
             lastUsed.setGraphic(getUnusedGlyph());
         } else if(!currentOutputs.isEmpty()) {

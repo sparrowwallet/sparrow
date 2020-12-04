@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
@@ -25,8 +25,8 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         final DialogPane dialogPane = getDialogPane();
         setTitle("Keystore Passphrase" + (walletName != null ? " - " + walletName : ""));
         dialogPane.setHeaderText("Please enter the passphrase for keystore: \n" + keystore.getLabel());
-        dialogPane.getStylesheets().add(AppController.class.getResource("general.css").toExternalForm());
-        AppController.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         dialogPane.setPrefWidth(380);
         dialogPane.setPrefHeight(200);

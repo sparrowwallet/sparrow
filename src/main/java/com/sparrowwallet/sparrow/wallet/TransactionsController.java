@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.BalanceChart;
@@ -47,7 +47,7 @@ public class TransactionsController extends WalletFormController implements Init
         transactionsTable.initialize(walletTransactionsEntry);
 
         balance.valueProperty().addListener((observable, oldValue, newValue) -> {
-            setFiatBalance(AppController.getFiatCurrencyExchangeRate(), newValue.longValue());
+            setFiatBalance(AppServices.getFiatCurrencyExchangeRate(), newValue.longValue());
         });
         balance.setValue(walletTransactionsEntry.getBalance());
         mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());

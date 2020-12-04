@@ -11,7 +11,7 @@ import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.MaxUtxoSelector;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.UtxoSelector;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinTextFormatter;
@@ -74,7 +74,7 @@ public class PaymentController extends WalletFormController implements Initializ
 
             Long recipientValueSats = getRecipientValueSats();
             if(recipientValueSats != null) {
-                setFiatAmount(AppController.getFiatCurrencyExchangeRate(), recipientValueSats);
+                setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), recipientValueSats);
             } else {
                 fiatAmount.setText("");
             }
@@ -260,7 +260,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 label.setText(payment.getLabel());
             }
             setRecipientValueSats(payment.getAmount());
-            setFiatAmount(AppController.getFiatCurrencyExchangeRate(), payment.getAmount());
+            setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), payment.getAmount());
         }
     }
 
@@ -320,7 +320,7 @@ public class PaymentController extends WalletFormController implements Initializ
             setRecipientValueSats(bitcoinURI.getAmount());
         }
         if(bitcoinURI.getPayjoinUrl() != null) {
-            AppController.addPayjoinURI(bitcoinURI);
+            AppServices.addPayjoinURI(bitcoinURI);
         }
         sendController.updateTransaction();
     }

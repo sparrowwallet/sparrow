@@ -11,7 +11,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
@@ -223,7 +223,7 @@ public class SettingsController extends WalletFormController implements Initiali
         tab.setClosable(false);
 
         try {
-            FXMLLoader keystoreLoader = new FXMLLoader(AppController.class.getResource("wallet/keystore.fxml"));
+            FXMLLoader keystoreLoader = new FXMLLoader(AppServices.class.getResource("wallet/keystore.fxml"));
             tab.setContent(keystoreLoader.load());
             KeystoreController controller = keystoreLoader.getController();
             controller.setKeystore(getWalletForm(), keystore);
@@ -258,7 +258,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else if(result.payload != null && !result.payload.isEmpty()) {
                 setDescriptorText(result.payload);
             } else if(result.exception != null) {
-                AppController.showErrorDialog("Error scanning QR", result.exception.getMessage());
+                AppServices.showErrorDialog("Error scanning QR", result.exception.getMessage());
             }
         }
     }
@@ -291,7 +291,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
             EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
         } catch(Exception e) {
-            AppController.showErrorDialog("Invalid output descriptor", e.getMessage());
+            AppServices.showErrorDialog("Invalid output descriptor", e.getMessage());
         }
     }
 
@@ -353,7 +353,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     walletForm.saveBackup();
                 } catch(IOException e) {
                     log.error("Error saving wallet backup", e);
-                    AppController.showErrorDialog("Error saving wallet backup", e.getMessage());
+                    AppServices.showErrorDialog("Error saving wallet backup", e.getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
                     return;
@@ -369,7 +369,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     }
                 } catch (IOException e) {
                     log.error("Error saving wallet", e);
-                    AppController.showErrorDialog("Error saving wallet", e.getMessage());
+                    AppServices.showErrorDialog("Error saving wallet", e.getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
                 }
@@ -384,7 +384,7 @@ public class SettingsController extends WalletFormController implements Initiali
                         ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
 
                         if(existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
-                            AppController.showErrorDialog("Incorrect Password", "The password was incorrect.");
+                            AppServices.showErrorDialog("Incorrect Password", "The password was incorrect.");
                             revert.setDisable(false);
                             apply.setDisable(false);
                             return;
@@ -406,7 +406,7 @@ public class SettingsController extends WalletFormController implements Initiali
                         }
                     } catch (Exception e) {
                         log.error("Error saving wallet", e);
-                        AppController.showErrorDialog("Error saving wallet", e.getMessage());
+                        AppServices.showErrorDialog("Error saving wallet", e.getMessage());
                         revert.setDisable(false);
                         apply.setDisable(false);
                     } finally {
@@ -418,7 +418,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 });
                 keyDerivationService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.END, "Failed"));
-                    AppController.showErrorDialog("Error saving wallet", keyDerivationService.getException().getMessage());
+                    AppServices.showErrorDialog("Error saving wallet", keyDerivationService.getException().getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
                 });
