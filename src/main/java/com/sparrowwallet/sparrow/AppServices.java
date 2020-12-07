@@ -99,6 +99,10 @@ public class AppServices {
     };
 
     private void restartService(ScheduledService<?> service) {
+        if(service.isRunning()) {
+            service.cancel();
+        }
+
         if(service.getState() == Worker.State.CANCELLED) {
             service.reset();
         }
