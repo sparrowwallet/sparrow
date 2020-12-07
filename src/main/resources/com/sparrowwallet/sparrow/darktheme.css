@@ -102,6 +102,10 @@
     -fx-text-fill: #e06c75;
 }
 
+.root #noWalletsWarning .glyph-font {
+    -fx-text-fill: #e06c75;
+}
+
 .root .etched-raised-border {
     -fx-border-color: #ffffff, #000000;
     -fx-border-style: solid, solid;

@@ -609,7 +609,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void openWallet(ActionEvent event) {
-        EventManager.get().post(new RequestWalletOpenEvent());
+        EventManager.get().post(new RequestWalletOpenEvent(noWalletsWarningLink.getScene().getWindow()));
     }
 
     public void finalizeTransaction(ActionEvent event) {
@@ -635,7 +635,7 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
-        EventManager.get().post(new RequestQRScanEvent());
+        EventManager.get().post(new RequestQRScanEvent(toggleButton.getScene().getWindow()));
     }
 
     public void savePSBT(ActionEvent event) {
@@ -668,7 +668,7 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
-        EventManager.get().post(new RequestTransactionOpenEvent());
+        EventManager.get().post(new RequestTransactionOpenEvent(toggleButton.getScene().getWindow()));
     }
 
     public void signPSBT(ActionEvent event) {
@@ -830,7 +830,7 @@ public class HeadersController extends TransactionFormController implements Init
         try {
             Payjoin payjoin = new Payjoin(payjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
             PSBT proposalPsbt = payjoin.requestPayjoinPSBT(true);
-            EventManager.get().post(new ViewPSBTEvent(headersForm.getName() + " Payjoin", proposalPsbt));
+            EventManager.get().post(new ViewPSBTEvent(payjoinButton.getScene().getWindow(), headersForm.getName() + " Payjoin", proposalPsbt));
         } catch(PayjoinReceiverException e) {
             AppServices.showErrorDialog("Invalid Payjoin Transaction", e.getMessage());
         }
@@ -884,7 +884,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        if(headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
+        if((id.getScene() == null || id.getScene().getWindow().equals(event.getWindow())) && headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
             List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).sorted(new WalletSignComparator()).collect(Collectors.toList());
             Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
             availableWalletsMap.keySet().retainAll(availableWallets);

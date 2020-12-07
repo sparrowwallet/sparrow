@@ -168,7 +168,7 @@ public class AppController implements Initializable {
                 boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 if(walletAdded || walletRemoved) {
-                    EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
+                    EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWallets()));
                 }
 
                 List<WalletTabData> closedWalletTabs = c.getRemoved().stream().map(tab -> (TabData)tab.getUserData())
@@ -361,7 +361,7 @@ public class AppController implements Initializable {
                     showErrorDialog("Invalid transaction ID", "A transaction with that ID could not be found.");
                 } else {
                     Platform.runLater(() -> {
-                        EventManager.get().post(new ViewTransactionEvent(blockTransaction));
+                        EventManager.get().post(new ViewTransactionEvent(tabs.getScene().getWindow(), blockTransaction));
                     });
                 }
             });
@@ -1000,27 +1000,28 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void tabSelected(TabSelectedEvent event) {
-        //TODO: Handle multiple windows
-        String tabName = event.getTabName();
-        if(tabs.getScene() != null) {
-            Stage tabStage = (Stage)tabs.getScene().getWindow();
-            tabStage.setTitle("Sparrow - " + tabName);
-        }
+        if(tabs.getTabs().contains(event.getTab())) {
+            String tabName = event.getTabName();
+            if(tabs.getScene() != null) {
+                Stage tabStage = (Stage)tabs.getScene().getWindow();
+                tabStage.setTitle("Sparrow - " + tabName);
+            }
 
-        if(event instanceof TransactionTabSelectedEvent) {
-            TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
-            TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
-            saveTransaction.setDisable(false);
-            saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction() ? "Transaction..." : "PSBT..."));
-            exportWallet.setDisable(true);
-            showTxHex.setDisable(false);
-        } else if(event instanceof WalletTabSelectedEvent) {
-            WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
-            WalletTabData walletTabData = walletTabEvent.getWalletTabData();
-            saveTransaction.setDisable(true);
-            saveTransaction.setText("Save Transaction...");
-            exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
-            showTxHex.setDisable(true);
+            if(event instanceof TransactionTabSelectedEvent) {
+                TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
+                TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
+                saveTransaction.setDisable(false);
+                saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction() ? "Transaction..." : "PSBT..."));
+                exportWallet.setDisable(true);
+                showTxHex.setDisable(false);
+            } else if(event instanceof WalletTabSelectedEvent) {
+                WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
+                WalletTabData walletTabData = walletTabEvent.getWalletTabData();
+                saveTransaction.setDisable(true);
+                saveTransaction.setText("Save Transaction...");
+                exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
+                showTxHex.setDisable(true);
+            }
         }
     }
 
@@ -1039,14 +1040,19 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void walletSettingsChanged(WalletSettingsChangedEvent event) {
-        //TODO: Handle multiple windows
-        exportWallet.setDisable(!event.getWallet().isValid());
+        Tab tab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)tab.getUserData();
+        if(tabData instanceof WalletTabData) {
+            WalletTabData walletTabData = (WalletTabData)tabData;
+            if(walletTabData.getWalletForm().getWalletFile().equals(event.getWalletFile())) {
+                exportWallet.setDisable(!event.getWallet().isValid());
+            }
+        }
     }
 
     @Subscribe
     public void newWalletTransactions(NewWalletTransactionsEvent event) {
-        //TODO: Handle multiple windows
-        if(Config.get().isNotifyNewTransactions()) {
+        if(Config.get().isNotifyNewTransactions() && getOpenWallets().containsKey(event.getWallet())) {
             String text;
             if(event.getBlockTransactions().size() == 1) {
                 BlockTransaction blockTransaction = event.getBlockTransactions().get(0);
@@ -1184,16 +1190,18 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void viewTransaction(ViewTransactionEvent event) {
-        //TODO: Handle multiple windows
-        Tab tab = addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
-        tabs.getSelectionModel().select(tab);
+        if(tabs.getScene().getWindow().equals(event.getWindow())) {
+            Tab tab = addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
+            tabs.getSelectionModel().select(tab);
+        }
     }
 
     @Subscribe
     public void viewPSBT(ViewPSBTEvent event) {
-        //TODO: Handle multiple windows
-        Tab tab = addTransactionTab(event.getLabel(), event.getPsbt());
-        tabs.getSelectionModel().select(tab);
+        if(tabs.getScene().getWindow().equals(event.getWindow())) {
+            Tab tab = addTransactionTab(event.getLabel(), event.getPsbt());
+            tabs.getSelectionModel().select(tab);
+        }
     }
 
     @Subscribe
@@ -1204,25 +1212,27 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void requestOpenWallets(RequestOpenWalletsEvent event) {
-        //TODO: Handle multiple windows
-        EventManager.get().post(new OpenWalletsEvent(getOpenWallets()));
+        EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWallets()));
     }
 
     @Subscribe
     public void requestWalletOpen(RequestWalletOpenEvent event) {
-        //TODO: Handle multiple windows
-        openWallet(null);
+        if(tabs.getScene().getWindow().equals(event.getWindow())) {
+            openWallet(null);
+        }
     }
 
     @Subscribe
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
-        //TODO: Handle multiple windows
-        openTransactionFromFile(null);
+        if(tabs.getScene().getWindow().equals(event.getWindow())) {
+            openTransactionFromFile(null);
+        }
     }
 
     @Subscribe
     public void requestQRScan(RequestQRScanEvent event) {
-        //TODO: Handle multiple windows
-        openTransactionFromQR(null);
+        if(tabs.getScene().getWindow().equals(event.getWindow())) {
+            openTransactionFromQR(null);
+        }
     }
 }

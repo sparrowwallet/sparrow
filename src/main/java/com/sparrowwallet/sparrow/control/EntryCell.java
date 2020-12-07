@@ -68,7 +68,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 searchGlyph.setFontSize(12);
                 viewTransactionButton.setGraphic(searchGlyph);
                 viewTransactionButton.setOnAction(event -> {
-                    EventManager.get().post(new ViewTransactionEvent(transactionEntry.getBlockTransaction()));
+                    EventManager.get().post(new ViewTransactionEvent(this.getScene().getWindow(), transactionEntry.getBlockTransaction()));
                 });
                 actionBox.getChildren().add(viewTransactionButton);
 
@@ -135,7 +135,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 searchGlyph.setFontSize(12);
                 viewTransactionButton.setGraphic(searchGlyph);
                 viewTransactionButton.setOnAction(event -> {
-                    EventManager.get().post(new ViewTransactionEvent(hashIndexEntry.getBlockTransaction(), hashIndexEntry));
+                    EventManager.get().post(new ViewTransactionEvent(this.getScene().getWindow(), hashIndexEntry.getBlockTransaction(), hashIndexEntry));
                 });
                 actionBox.getChildren().add(viewTransactionButton);
 

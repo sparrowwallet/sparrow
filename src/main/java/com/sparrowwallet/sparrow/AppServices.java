@@ -52,6 +52,8 @@ public class AppServices {
 
     private final MainApp application;
 
+    private final Map<Window, Map<Wallet, Storage>> windows = new LinkedHashMap<>();
+
     private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
 
     private ExchangeSource.RatesService ratesService;
@@ -381,12 +383,14 @@ public class AppServices {
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        List<File> walletFiles = event.getWalletsMap().values().stream().map(Storage::getWalletFile).collect(Collectors.toList());
-        //TODO: Handle multiple windows
+        windows.put(event.getWindow(), event.getWalletsMap());
+        List<Map.Entry<Wallet, Storage>> allWallets = windows.values().stream().flatMap(map -> map.entrySet().stream()).collect(Collectors.toList());
+
+        List<File> walletFiles = allWallets.stream().map(entry -> entry.getValue().getWalletFile()).collect(Collectors.toList());
         Config.get().setRecentWalletFiles(walletFiles);
 
         boolean usbWallet = false;
-        for(Map.Entry<Wallet, Storage> entry : event.getWalletsMap().entrySet()) {
+        for(Map.Entry<Wallet, Storage> entry : allWallets) {
             Wallet wallet = entry.getKey();
             Storage storage = entry.getValue();
 

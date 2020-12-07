@@ -304,7 +304,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     public void openWallets(OpenWalletsEvent event) {
         Storage storage = event.getStorage(wallet);
         if(storage == null) {
-            throw new IllegalStateException("Wallet " + wallet + " without Storage");
+            //Another window, ignore
+            return;
         }
 
         WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);

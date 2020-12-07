@@ -194,7 +194,7 @@ public class InputController extends TransactionFormController implements Initia
         linkedOutpoint.setText(txInput.getOutpoint().getHash().toString() + ":" + txInput.getOutpoint().getIndex());
         linkedOutpoint.setOnAction(event -> {
             BlockTransaction linkedTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
-            EventManager.get().post(new ViewTransactionEvent(linkedTransaction, TransactionView.OUTPUT, (int)txInput.getOutpoint().getIndex()));
+            EventManager.get().post(new ViewTransactionEvent(linkedOutpoint.getScene().getWindow(), linkedTransaction, TransactionView.OUTPUT, (int)txInput.getOutpoint().getIndex()));
         });
         linkedOutpoint.setContextMenu(new TransactionReferenceContextMenu(linkedOutpoint.getText()));
     }

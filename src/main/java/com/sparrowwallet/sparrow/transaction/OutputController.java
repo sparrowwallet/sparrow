@@ -148,7 +148,7 @@ public class OutputController extends TransactionFormController implements Initi
                         final Integer inputIndex = i;
                         spentBy.setText(outputBlockTransaction.getHash().toString() + ":" + inputIndex);
                         spentBy.setOnAction(event -> {
-                            EventManager.get().post(new ViewTransactionEvent(outputBlockTransaction, TransactionView.INPUT, inputIndex));
+                            EventManager.get().post(new ViewTransactionEvent(spentBy.getScene().getWindow(), outputBlockTransaction, TransactionView.INPUT, inputIndex));
                         });
                         spentBy.setContextMenu(new TransactionReferenceContextMenu(spentBy.getText()));
                     }
