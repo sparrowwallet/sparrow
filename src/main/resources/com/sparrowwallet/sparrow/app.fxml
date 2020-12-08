@@ -78,6 +78,7 @@
                                 </RadioMenuItem>
                             </items>
                         </Menu>
+                        <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets in New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                     </items>
                 </Menu>

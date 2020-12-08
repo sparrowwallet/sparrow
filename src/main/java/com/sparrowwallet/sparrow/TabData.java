@@ -1,11 +1,7 @@
 package com.sparrowwallet.sparrow;
 
-import java.io.File;
-
 public class TabData {
-    private TabType type;
-    private File file;
-    private String text;
+    private final TabType type;
 
     public TabData(TabType type) {
         this.type = type;
@@ -13,22 +9,6 @@ public class TabData {
 
     public TabType getType() {
         return type;
-    }
-
-    public File getFile() {
-        return file;
-    }
-
-    public void setFile(File file) {
-        this.file = file;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
     }
 
     public enum TabType {

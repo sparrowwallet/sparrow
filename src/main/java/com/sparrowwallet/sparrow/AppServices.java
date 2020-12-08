@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -22,6 +23,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Worker;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.image.Image;
 import javafx.scene.text.Font;
@@ -32,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -52,13 +57,13 @@ public class AppServices {
 
     private final MainApp application;
 
-    private final Map<Window, Map<Wallet, Storage>> windows = new LinkedHashMap<>();
+    private final Map<Window, Map<Wallet, Storage>> walletWindows = new LinkedHashMap<>();
 
     private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
 
     private ExchangeSource.RatesService ratesService;
 
-    private final ElectrumServer.ConnectionService connectionService;
+    private ElectrumServer.ConnectionService connectionService;
 
     private Hwi.ScheduledEnumerateService deviceEnumerateService;
 
@@ -116,9 +121,10 @@ public class AppServices {
 
     public AppServices(MainApp application) {
         this.application = application;
-
         EventManager.get().register(this);
+    }
 
+    public void start() {
         Config config = Config.get();
         connectionService = createConnectionService();
         if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
@@ -231,8 +237,50 @@ public class AppServices {
         return INSTANCE;
     }
 
+    public static AppController newAppWindow(Stage stage) {
+        try {
+            FXMLLoader appLoader = new FXMLLoader(AppServices.class.getResource("app.fxml"));
+            Parent root = appLoader.load();
+            AppController appController = appLoader.getController();
+
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
+
+            stage.setTitle("Sparrow");
+            stage.setMinWidth(650);
+            stage.setMinHeight(800);
+            stage.setScene(scene);
+            stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/image/sparrow.png")));
+
+            appController.initializeView();
+            stage.show();
+            return appController;
+        } catch(IOException e) {
+            log.error("Could not load app FXML", e);
+            throw new IllegalStateException(e);
+        }
+    }
+
     public MainApp getApplication() {
         return application;
+    }
+
+    public Map<Wallet, Storage> getOpenWallets(Window window) {
+        return walletWindows.get(window);
+    }
+
+    public Window getWindowForWallet(Storage storage) {
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().values().stream().anyMatch(storage1 -> storage1.getWalletFile().equals(storage.getWalletFile()))).map(Map.Entry::getKey).findFirst();
+        return optWindow.orElse(null);
+    }
+
+    public Window getWindowForPSBT(PSBT psbt) {
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().keySet().stream().anyMatch(wallet -> wallet.canSign(psbt))).map(Map.Entry::getKey).findFirst();
+        return optWindow.orElse(null);
+    }
+
+    public double getWalletWindowMaxX() {
+        return walletWindows.keySet().stream().mapToDouble(Window::getX).max().orElse(0d);
     }
 
     public static boolean isOnline() {
@@ -383,11 +431,20 @@ public class AppServices {
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        windows.put(event.getWindow(), event.getWalletsMap());
-        List<Map.Entry<Wallet, Storage>> allWallets = windows.values().stream().flatMap(map -> map.entrySet().stream()).collect(Collectors.toList());
+        if(event.getWalletsMap().isEmpty()) {
+            walletWindows.remove(event.getWindow());
+        } else {
+            walletWindows.put(event.getWindow(), event.getWalletsMap());
+        }
 
-        List<File> walletFiles = allWallets.stream().map(entry -> entry.getValue().getWalletFile()).collect(Collectors.toList());
-        Config.get().setRecentWalletFiles(walletFiles);
+        List<Map.Entry<Wallet, Storage>> allWallets = walletWindows.values().stream().flatMap(map -> map.entrySet().stream()).collect(Collectors.toList());
+
+        Platform.runLater(() -> {
+            if(!Window.getWindows().isEmpty()) {
+                List<File> walletFiles = allWallets.stream().map(entry -> entry.getValue().getWalletFile()).collect(Collectors.toList());
+                Config.get().setRecentWalletFiles(walletFiles);
+            }
+        });
 
         boolean usbWallet = false;
         for(Map.Entry<Wallet, Storage> entry : allWallets) {

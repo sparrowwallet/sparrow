@@ -69,23 +69,7 @@ public class MainApp extends Application {
         }
 
         AppServices.initialize(this);
-
-        FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("app.fxml"));
-        Parent root = transactionLoader.load();
-        AppController appController = transactionLoader.getController();
-
-        Scene scene = new Scene(root);
-        scene.getStylesheets().add(getClass().getResource("app.css").toExternalForm());
-
-        stage.setTitle("Sparrow");
-        stage.setMinWidth(650);
-        stage.setMinHeight(800);
-        stage.setScene(scene);
-        stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/image/sparrow.png")));
-
-        appController.initializeView();
-
-        stage.show();
+        AppController appController = AppServices.newAppWindow(stage);
 
         if(createNewWallet) {
             appController.newWallet(null);
@@ -93,7 +77,7 @@ public class MainApp extends Application {
 
         List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
         if(recentWalletFiles != null) {
-            //Resort to preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
+            //Re-sort to preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
             List<File> encryptedWalletFiles = recentWalletFiles.stream().filter(file -> FileType.BINARY.equals(IOUtils.getFileType(file))).collect(Collectors.toList());
             Collections.reverse(encryptedWalletFiles);
             List<File> sortedWalletFiles = new ArrayList<>(recentWalletFiles);
@@ -102,10 +86,12 @@ public class MainApp extends Application {
 
             for(File walletFile : sortedWalletFiles) {
                 if(walletFile.exists()) {
-                    Platform.runLater(() -> appController.openWalletFile(walletFile));
+                    appController.openWalletFile(walletFile, false);
                 }
             }
         }
+
+        AppServices.get().start();
     }
 
     @Override

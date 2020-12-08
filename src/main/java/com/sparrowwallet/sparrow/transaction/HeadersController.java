@@ -420,7 +420,7 @@ public class HeadersController extends TransactionFormController implements Init
                 signaturesProgressBar.initialize(headersForm.getSignatureKeystoreMap(), threshold);
             });
 
-            EventManager.get().post(new RequestOpenWalletsEvent());
+            Platform.runLater(() -> EventManager.get().post(new RequestOpenWalletsEvent()));
         }
 
         blockchainForm.setDynamicUpdate(this);
@@ -830,7 +830,7 @@ public class HeadersController extends TransactionFormController implements Init
         try {
             Payjoin payjoin = new Payjoin(payjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
             PSBT proposalPsbt = payjoin.requestPayjoinPSBT(true);
-            EventManager.get().post(new ViewPSBTEvent(payjoinButton.getScene().getWindow(), headersForm.getName() + " Payjoin", proposalPsbt));
+            EventManager.get().post(new ViewPSBTEvent(payjoinButton.getScene().getWindow(), headersForm.getName() + " Payjoin", null, proposalPsbt));
         } catch(PayjoinReceiverException e) {
             AppServices.showErrorDialog("Invalid Payjoin Transaction", e.getMessage());
         }
@@ -884,7 +884,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        if((id.getScene() == null || id.getScene().getWindow().equals(event.getWindow())) && headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
+        if(id.getScene().getWindow().equals(event.getWindow()) && headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
             List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).sorted(new WalletSignComparator()).collect(Collectors.toList());
             Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
             availableWalletsMap.keySet().retainAll(availableWallets);

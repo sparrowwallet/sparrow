@@ -31,6 +31,7 @@ public class Config {
     private boolean notifyNewTransactions = true;
     private boolean checkNewVersions = true;
     private Theme theme;
+    private boolean openWalletsInNewWindows = false;
     private boolean showTransactionHex = true;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -182,6 +183,15 @@ public class Config {
 
     public void setTheme(Theme theme) {
         this.theme = theme;
+        flush();
+    }
+
+    public boolean isOpenWalletsInNewWindows() {
+        return openWalletsInNewWindows;
+    }
+
+    public void setOpenWalletsInNewWindows(boolean openWalletsInNewWindows) {
+        this.openWalletsInNewWindows = openWalletsInNewWindows;
         flush();
     }
 
