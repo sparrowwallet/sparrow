@@ -1014,10 +1014,16 @@ public class AppController implements Initializable {
             Config.get().setTheme(selectedTheme);
         }
 
-        if(selectedTheme == Theme.DARK) {
-            tabs.getScene().getStylesheets().add(getClass().getResource("darktheme.css").toExternalForm());
+        EventManager.get().post(new ThemeChangedEvent(selectedTheme));
+    }
+
+    @Subscribe
+    public void themeChanged(ThemeChangedEvent event) {
+        String darkCss = getClass().getResource("darktheme.css").toExternalForm();
+        if(event.getTheme() == Theme.DARK && !tabs.getScene().getStylesheets().contains(darkCss)) {
+            tabs.getScene().getStylesheets().add(darkCss);
         } else {
-            tabs.getScene().getStylesheets().remove(getClass().getResource("darktheme.css").toExternalForm());
+            tabs.getScene().getStylesheets().remove(darkCss);
         }
     }
 
