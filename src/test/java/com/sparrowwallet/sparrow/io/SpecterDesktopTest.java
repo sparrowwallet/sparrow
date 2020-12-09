@@ -6,11 +6,11 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SpecterTest extends IoTest {
+public class SpecterDesktopTest extends IoTest {
     @Test
     public void testImport() throws ImportException {
-        Specter specter = new Specter();
-        Wallet wallet = specter.importWallet(getInputStream("specter-wallet.json"), null);
+        SpecterDesktop specterDesktop = new SpecterDesktop();
+        Wallet wallet = specterDesktop.importWallet(getInputStream("specter-wallet.json"), null);
 
         Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
@@ -24,8 +24,8 @@ public class SpecterTest extends IoTest {
 
     @Test
     public void testMultisigImport() throws ImportException {
-        Specter specter = new Specter();
-        Wallet wallet = specter.importWallet(getInputStream("specter-multisig-wallet.json"), null);
+        SpecterDesktop specterDesktop = new SpecterDesktop();
+        Wallet wallet = specterDesktop.importWallet(getInputStream("specter-multisig-wallet.json"), null);
 
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WSH, wallet.getScriptType());

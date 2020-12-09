@@ -13,7 +13,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-public class Specter implements WalletImport, WalletExport {
+public class SpecterDesktop implements WalletImport, WalletExport {
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
@@ -70,7 +70,7 @@ public class Specter implements WalletImport, WalletExport {
             throw new ImportException(e);
         }
 
-        throw new ImportException("File was not a valid Specter wallet");
+        throw new ImportException("File was not a valid Specter Desktop wallet");
     }
 
     @Override
@@ -85,12 +85,12 @@ public class Specter implements WalletImport, WalletExport {
 
     @Override
     public String getName() {
-        return "Specter";
+        return "Specter Desktop";
     }
 
     @Override
     public WalletModel getWalletModel() {
-        return WalletModel.SPECTER;
+        return WalletModel.SPECTER_DESKTOP;
     }
 
     public static class SpecterWallet {
