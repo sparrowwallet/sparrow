@@ -420,10 +420,18 @@ public class HeadersController extends TransactionFormController implements Init
                 signaturesProgressBar.initialize(headersForm.getSignatureKeystoreMap(), threshold);
             });
 
-            Platform.runLater(() -> EventManager.get().post(new RequestOpenWalletsEvent()));
+            Platform.runLater(this::requestOpenWallets);
         }
 
         blockchainForm.setDynamicUpdate(this);
+    }
+
+    private void requestOpenWallets() {
+        if(id.getScene() != null) {
+            EventManager.get().post(new RequestOpenWalletsEvent());
+        } else {
+            Platform.runLater(this::requestOpenWallets);
+        }
     }
 
     private void updateType() {
