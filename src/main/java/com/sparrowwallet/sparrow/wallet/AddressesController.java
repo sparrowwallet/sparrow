@@ -75,4 +75,12 @@ public class AddressesController extends WalletFormController implements Initial
             changeTable.refresh();
         }
     }
+
+    @Subscribe
+    public void walletAddressesStatusChanged(WalletAddressesStatusEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
+            receiveTable.updateAll(getWalletForm().getNodeEntry(KeyPurpose.RECEIVE));
+            changeTable.updateAll(getWalletForm().getNodeEntry(KeyPurpose.CHANGE));
+        }
+    }
 }

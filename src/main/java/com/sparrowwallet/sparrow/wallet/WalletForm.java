@@ -262,4 +262,10 @@ public class WalletForm {
             }
         }
     }
+
+    @Subscribe
+    public void hideEmptyUsedAddressesStatusChanged(HideEmptyUsedAddressesStatusEvent event) {
+        accountEntries.clear();
+        EventManager.get().post(new WalletAddressesStatusEvent(wallet));
+    }
 }

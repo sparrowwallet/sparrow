@@ -93,6 +93,9 @@ public class AppController implements Initializable {
     private CheckMenuItem openWalletsInNewWindows;
 
     @FXML
+    private CheckMenuItem hideEmptyUsedAddresses;
+
+    @FXML
     private CheckMenuItem showTxHex;
 
     @FXML
@@ -214,6 +217,7 @@ public class AppController implements Initializable {
         setTheme(null);
 
         openWalletsInNewWindows.setSelected(Config.get().isOpenWalletsInNewWindows());
+        hideEmptyUsedAddresses.setSelected(Config.get().isHideEmptyUsedAddresses());
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         exportWallet.setDisable(true);
 
@@ -489,6 +493,12 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setOpenWalletsInNewWindows(item.isSelected());
         EventManager.get().post(new OpenWalletsNewWindowsStatusEvent(item.isSelected()));
+    }
+
+    public void hideEmptyUsedAddresses(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setHideEmptyUsedAddresses(item.isSelected());
+        EventManager.get().post(new HideEmptyUsedAddressesStatusEvent(item.isSelected()));
     }
 
     public void showTxHex(ActionEvent event) {
@@ -1258,6 +1268,11 @@ public class AppController implements Initializable {
     @Subscribe
     public void openWalletsInNewWindowsStatusChanged(OpenWalletsNewWindowsStatusEvent event) {
         openWalletsInNewWindows.setSelected(event.isOpenWalletsInNewWindows());
+    }
+
+    @Subscribe
+    public void hideEmptyUsedAddressesStatusChanged(HideEmptyUsedAddressesStatusEvent event) {
+        hideEmptyUsedAddresses.setSelected(event.isHideEmptyUsedAddresses());
     }
 
     @Subscribe

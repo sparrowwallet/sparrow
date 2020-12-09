@@ -32,6 +32,7 @@ public class Config {
     private boolean checkNewVersions = true;
     private Theme theme;
     private boolean openWalletsInNewWindows = false;
+    private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -192,6 +193,15 @@ public class Config {
 
     public void setOpenWalletsInNewWindows(boolean openWalletsInNewWindows) {
         this.openWalletsInNewWindows = openWalletsInNewWindows;
+        flush();
+    }
+
+    public boolean isHideEmptyUsedAddresses() {
+        return hideEmptyUsedAddresses;
+    }
+
+    public void setHideEmptyUsedAddresses(boolean hideEmptyUsedAddresses) {
+        this.hideEmptyUsedAddresses = hideEmptyUsedAddresses;
         flush();
     }
 

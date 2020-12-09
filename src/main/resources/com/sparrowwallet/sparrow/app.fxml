@@ -78,7 +78,9 @@
                                 </RadioMenuItem>
                             </items>
                         </Menu>
+                        <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets in New Windows" onAction="#openWalletsInNewWindows"/>
+                        <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                     </items>
                 </Menu>

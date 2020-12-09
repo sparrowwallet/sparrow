@@ -14,6 +14,7 @@ import javafx.scene.input.MouseButton;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class AddressTreeTable extends CoinTreeTable {
     public void initialize(NodeEntry rootEntry) {
@@ -60,7 +61,10 @@ public class AddressTreeTable extends CoinTreeTable {
 
         Integer highestUsedIndex = rootEntry.getNode().getHighestUsedIndex();
         if(highestUsedIndex != null) {
-            scrollTo(highestUsedIndex);
+            OptionalInt tableIndex = rootEntry.getChildren().stream().filter(childEntry -> ((NodeEntry)childEntry).getNode().getIndex() == highestUsedIndex + 1).mapToInt(childEntry -> rootEntry.getChildren().indexOf(childEntry)).findFirst();
+            if(tableIndex.isPresent() && tableIndex.getAsInt() > 5) {
+                scrollTo(tableIndex.getAsInt());
+            }
         }
 
         setOnMouseClicked(mouseEvent -> {
