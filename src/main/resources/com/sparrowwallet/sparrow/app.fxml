@@ -15,26 +15,26 @@
             <menus>
                 <Menu fx:id="fileMenu" mnemonicParsing="false" text="File">
                     <items>
-                        <MenuItem mnemonicParsing="false" text="New Wallet" onAction="#newWallet"/>
-                        <MenuItem mnemonicParsing="false" text="Open Wallet..." onAction="#openWallet"/>
+                        <MenuItem mnemonicParsing="false" text="New Wallet" accelerator="Shortcut+N" onAction="#newWallet"/>
+                        <MenuItem mnemonicParsing="false" text="Open Wallet..." accelerator="Shortcut+O" onAction="#openWallet"/>
                         <Menu mnemonicParsing="false" text="Open Transaction">
                             <items>
-                                <MenuItem text="File..." onAction="#openTransactionFromFile"/>
+                                <MenuItem text="File..." onAction="#openTransactionFromFile" accelerator="Shortcut+T"/>
                                 <MenuItem fx:id="openTransactionIdItem" text="From ID..." onAction="#openTransactionFromId"/>
                                 <MenuItem text="From Text..." onAction="#openTransactionFromText"/>
                                 <MenuItem text="From QR..." onAction="#openTransactionFromQR"/>
                                 <!-- <MenuItem text="Examples" onAction="#openExamples"/> -->
                             </items>
                         </Menu>
-                        <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." onAction="#saveTransaction"/>
+                        <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." accelerator="Shortcut+S" onAction="#saveTransaction"/>
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
                         <SeparatorMenuItem styleClass="osxHide" />
-                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Preferences..." onAction="#openPreferences"/>
+                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Preferences..." accelerator="Shortcut+P" onAction="#openPreferences"/>
                         <SeparatorMenuItem />
-                        <MenuItem mnemonicParsing="false" text="Close Tab" onAction="#closeTab"/>
-                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Quit" onAction="#quit"/>
+                        <MenuItem mnemonicParsing="false" text="Close Tab" accelerator="Shortcut+W" onAction="#closeTab"/>
+                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Quit" accelerator="Shortcut+Q" onAction="#quit"/>
                     </items>
                 </Menu>
                 <fx:define>
@@ -85,7 +85,7 @@
                     </items>
                 </Menu>
                 <Menu fx:id="toolsMenu" mnemonicParsing="false" text="Tools">
-                    <MenuItem mnemonicParsing="false" text="Sign/Verify Message" onAction="#signVerifyMessage"/>
+                    <MenuItem mnemonicParsing="false" text="Sign/Verify Message" accelerator="Shortcut+M" onAction="#signVerifyMessage"/>
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem styleClass="osxHide" mnemonicParsing="false" text="About Sparrow" onAction="#showAbout"/>

@@ -235,6 +235,7 @@ public class AppController implements Initializable {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
+            preferences.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
             Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(MainApp.APP_NAME, getAboutStage()), new SeparatorMenuItem(),
                     preferences, new SeparatorMenuItem(),
                     tk.createHideMenuItem(MainApp.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
@@ -483,7 +484,7 @@ public class AppController implements Initializable {
 
     public void quit(ActionEvent event) {
         try {
-            AppServices.get().getApplication().stop();
+            Platform.exit();
         } catch (Exception e) {
             log.error("Error quitting application", e);
         }
