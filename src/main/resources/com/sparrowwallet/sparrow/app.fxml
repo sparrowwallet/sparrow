@@ -19,10 +19,10 @@
                         <MenuItem mnemonicParsing="false" text="Open Wallet..." accelerator="Shortcut+O" onAction="#openWallet"/>
                         <Menu mnemonicParsing="false" text="Open Transaction">
                             <items>
-                                <MenuItem text="File..." onAction="#openTransactionFromFile" accelerator="Shortcut+T"/>
-                                <MenuItem fx:id="openTransactionIdItem" text="From ID..." onAction="#openTransactionFromId"/>
-                                <MenuItem text="From Text..." onAction="#openTransactionFromText"/>
-                                <MenuItem text="From QR..." onAction="#openTransactionFromQR"/>
+                                <MenuItem text="File..." onAction="#openTransactionFromFile" accelerator="Shortcut+F"/>
+                                <MenuItem fx:id="openTransactionIdItem" text="From ID..." onAction="#openTransactionFromId" accelerator="Shortcut+I"/>
+                                <MenuItem text="From Text..." onAction="#openTransactionFromText" accelerator="Shortcut+T"/>
+                                <MenuItem text="From QR..." onAction="#openTransactionFromQR" accelerator="Shortcut+R"/>
                                 <!-- <MenuItem text="Examples" onAction="#openExamples"/> -->
                             </items>
                         </Menu>
