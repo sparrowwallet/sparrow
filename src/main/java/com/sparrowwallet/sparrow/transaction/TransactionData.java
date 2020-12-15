@@ -1,21 +1,18 @@
 package com.sparrowwallet.sparrow.transaction;
 
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionSignature;
+import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TransactionData {
     private Transaction transaction;
@@ -155,5 +152,31 @@ public class TransactionData {
 
     public Collection<Keystore> getSignedKeystores() {
         return signatureKeystoreMap.values();
+    }
+
+    public Set<WalletNode> getSigningWalletNodes() {
+        if(getSigningWallet() == null) {
+            throw new IllegalStateException("Signing wallet cannot be null");
+        }
+
+        Set<WalletNode> signingWalletNodes = new LinkedHashSet<>();
+        for(TransactionInput txInput : transaction.getInputs()) {
+            Optional<WalletNode> optNode = getSigningWallet().getWalletTxos().entrySet().stream().filter(entry -> entry.getKey().getHash().equals(txInput.getOutpoint().getHash()) && entry.getKey().getIndex() == txInput.getOutpoint().getIndex()).map(Map.Entry::getValue).findFirst();
+            optNode.ifPresent(signingWalletNodes::add);
+        }
+
+        for(TransactionOutput txOutput : transaction.getOutputs()) {
+            WalletNode changeNode = getSigningWallet().getWalletOutputScripts(KeyPurpose.CHANGE).get(txOutput.getScript());
+            if(changeNode != null) {
+                signingWalletNodes.add(changeNode);
+            } else {
+                WalletNode receiveNode = getSigningWallet().getWalletOutputScripts(KeyPurpose.RECEIVE).get(txOutput.getScript());
+                if(receiveNode != null) {
+                    signingWalletNodes.add(receiveNode);
+                }
+            }
+        }
+
+        return signingWalletNodes;
     }
 }

@@ -14,6 +14,8 @@ import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.TorStatusEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.SendController;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.ScheduledService;
@@ -663,6 +665,24 @@ public class ElectrumServer {
         }
     }
 
+    public Set<String> getMempoolScriptHashes(Wallet wallet, Sha256Hash txId, Set<WalletNode> transactionNodes) throws ServerException {
+        Map<String, String> pathScriptHashes = new LinkedHashMap<>(transactionNodes.size());
+        for(WalletNode node : transactionNodes) {
+            pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
+        }
+
+        Set<String> mempoolScriptHashes = new LinkedHashSet<>();
+        Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), wallet, pathScriptHashes, true);
+        for(String path : result.keySet()) {
+            ScriptHashTx[] txes = result.get(path);
+            if(Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash).anyMatch(ref -> txId.equals(ref.getHash()) && ref.getHeight() <= 0)) {
+                mempoolScriptHashes.add(pathScriptHashes.get(path));
+            }
+        }
+
+        return mempoolScriptHashes;
+    }
+
     public static Map<String, WalletNode> getAllScriptHashes(Wallet wallet) {
         Map<String, WalletNode> scriptHashes = new HashMap<>();
         List<KeyPurpose> purposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
@@ -897,6 +917,38 @@ public class ElectrumServer {
                         electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
                         return true;
                     }
+                }
+            };
+        }
+    }
+
+    public static class TransactionMempoolService extends ScheduledService<Set<String>> {
+        private final Wallet wallet;
+        private final Sha256Hash txId;
+        private final Set<WalletNode> nodes;
+        private final IntegerProperty iterationCount = new SimpleIntegerProperty(0);
+
+        public TransactionMempoolService(Wallet wallet, Sha256Hash txId, Set<WalletNode> nodes) {
+            this.wallet = wallet;
+            this.txId = txId;
+            this.nodes = nodes;
+        }
+
+        public int getIterationCount() {
+            return iterationCount.get();
+        }
+
+        public IntegerProperty iterationCountProperty() {
+            return iterationCount;
+        }
+
+        @Override
+        protected Task<Set<String>> createTask() {
+            return new Task<>() {
+                protected Set<String> call() throws ServerException {
+                    iterationCount.set(iterationCount.get() + 1);
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    return electrumServer.getMempoolScriptHashes(wallet, txId, nodes);
                 }
             };
         }

@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableMap;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class TransactionForm {
     protected final TransactionData txdata;
@@ -90,6 +92,10 @@ public abstract class TransactionForm {
 
     public Collection<Keystore> getSignedKeystores() {
         return txdata.getSignedKeystores();
+    }
+
+    public Set<WalletNode> getSigningWalletNodes() {
+        return txdata.getSigningWalletNodes();
     }
 
     public boolean isEditable() {

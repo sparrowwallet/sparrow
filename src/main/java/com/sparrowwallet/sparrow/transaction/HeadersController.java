@@ -36,6 +36,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -201,6 +202,8 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private Button payjoinButton;
+
+    private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -791,7 +794,31 @@ public class HeadersController extends TransactionFormController implements Init
 
         ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(headersForm.getTransaction());
         broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
-            //Do nothing and wait for WalletNodeHistoryChangedEvent to indicate tx is in mempool
+            //Although we wait for WalletNodeHistoryChangedEvent to indicate tx is in mempool, start a scheduled service to check the script hashes should notifications fail
+            if(headersForm.getSigningWallet() != null) {
+                if(transactionMempoolService != null) {
+                    transactionMempoolService.cancel();
+                }
+
+                transactionMempoolService = new ElectrumServer.TransactionMempoolService(headersForm.getSigningWallet(), headersForm.getTransaction().getTxId(), headersForm.getSigningWalletNodes());
+                transactionMempoolService.setDelay(Duration.seconds(5));
+                transactionMempoolService.setPeriod(Duration.seconds(10));
+                transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
+                    Set<String> scriptHashes = transactionMempoolService.getValue();
+                    if(!scriptHashes.isEmpty()) {
+                        Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHashes.iterator().next())));
+                    }
+
+                    if(transactionMempoolService.getIterationCount() > 3) {
+                        transactionMempoolService.cancel();
+                        broadcastProgressBar.setProgress(0);
+                        log.error("Timeout searching for broadcasted transaction");
+                        AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not register it in the mempool. It is safe to try broadcasting again.");
+                        broadcastButton.setDisable(false);
+                    }
+                });
+                transactionMempoolService.start();
+            }
         });
         broadcastTransactionService.setOnFailed(workerStateEvent -> {
             broadcastProgressBar.setProgress(0);
@@ -1022,6 +1049,10 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
         if(headersForm.getSigningWallet() != null && event.getWalletNode(headersForm.getSigningWallet()) != null && headersForm.isTransactionFinalized()) {
+            if(transactionMempoolService != null) {
+                transactionMempoolService.cancel();
+            }
+
             Sha256Hash txid = headersForm.getTransaction().getTxId();
             ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid), event.getScriptHash());
             transactionReferenceService.setOnSucceeded(successEvent -> {
