@@ -801,7 +801,7 @@ public class HeadersController extends TransactionFormController implements Init
                 }
 
                 transactionMempoolService = new ElectrumServer.TransactionMempoolService(headersForm.getSigningWallet(), headersForm.getTransaction().getTxId(), headersForm.getSigningWalletNodes());
-                transactionMempoolService.setDelay(Duration.seconds(5));
+                transactionMempoolService.setDelay(Duration.seconds(3));
                 transactionMempoolService.setPeriod(Duration.seconds(10));
                 transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
                     Set<String> scriptHashes = transactionMempoolService.getValue();
