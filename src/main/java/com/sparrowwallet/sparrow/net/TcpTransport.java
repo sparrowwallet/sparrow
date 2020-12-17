@@ -130,9 +130,11 @@ public class TcpTransport implements Transport, Closeable {
                 Thread.currentThread().interrupt();
             }
 
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
             while(running) {
                 try {
-                    String received = readInputStream();
+                    String received = readInputStream(in);
                     if(received.contains("method") && !received.contains("error")) {
                         //Handle subscription notification
                         jsonRpcServer.handle(received, subscriptionService);
@@ -157,13 +159,21 @@ public class TcpTransport implements Transport, Closeable {
                     }
                 }
             }
+        } catch(IOException e) {
+            log.error("Error opening socket inputstream", e);
+            if(running) {
+                lastException = e;
+                reading = false;
+                readingCondition.signal();
+                //Allow this thread to terminate as we will need to reconnect with a new transport anyway
+                running = false;
+            }
         } finally {
             readLock.unlock();
         }
     }
 
-    protected String readInputStream() throws IOException {
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+    protected String readInputStream(BufferedReader in) throws IOException {
         String response = in.readLine();
 
         if(response == null) {
