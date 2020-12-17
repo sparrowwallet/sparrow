@@ -156,7 +156,7 @@ public class ElectrumServer {
 
         if(!newReferences.isEmpty()) {
             //Look for additional nodes to fetch history for by considering the inputs and outputs of new transactions found
-            log.debug("Found new transactions: " + newReferences);
+            log.debug(wallet.getName() + " found new transactions: " + newReferences);
             Set<WalletNode> additionalNodes = new HashSet<>();
             Map<String, WalletNode> walletScriptHashes = getAllScriptHashes(wallet);
             for(BlockTransactionHash reference : newReferences) {

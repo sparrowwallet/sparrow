@@ -76,7 +76,7 @@ public class WalletForm {
     public void refreshHistory(Integer blockHeight, WalletNode node) {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppServices.isOnline()) {
-            log.debug(node == null ? "Refreshing full wallet history" : "Requesting node wallet history for " + node.getDerivationPath());
+            log.debug(node == null ? wallet.getName() + " refreshing full wallet history" : wallet.getName() + " requesting node wallet history for " + node.getDerivationPath());
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
             historyService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new WalletHistoryStatusEvent(wallet, true));
@@ -248,7 +248,7 @@ public class WalletForm {
         if(wallet.isValid()) {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
-                log.debug(wallet.getName() + " history event for node " + walletNode);
+                log.debug(wallet.getName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
                 refreshHistory(AppServices.getCurrentBlockHeight(), walletNode);
             }
         }
