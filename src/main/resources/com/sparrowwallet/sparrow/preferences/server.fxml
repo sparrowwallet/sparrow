@@ -12,6 +12,10 @@
 <?import tornadofx.control.Field?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import org.controlsfx.glyphfont.Glyph?>
+<?import org.controlsfx.control.SegmentedButton?>
+<?import com.sparrowwallet.sparrow.net.ServerType?>
+<?import com.sparrowwallet.sparrow.net.CoreAuthType?>
+<?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.ServerPreferencesController">
     <padding>
         <Insets left="25.0" right="25.0" top="25.0" />
@@ -24,25 +28,92 @@
     </rowConstraints>
 
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-        <Fieldset inputGrow="SOMETIMES" text="Electrum Server">
+        <Fieldset inputGrow="SOMETIMES" text="Server">
+            <Field text="Type:">
+                <SegmentedButton>
+                    <toggleGroup>
+                        <ToggleGroup fx:id="serverTypeToggleGroup" />
+                    </toggleGroup>
+                    <buttons>
+                        <ToggleButton text="Bitcoin Core" toggleGroup="$serverTypeToggleGroup">
+                            <userData>
+                                <ServerType fx:constant="BITCOIN_CORE"/>
+                            </userData>
+                        </ToggleButton>
+                        <ToggleButton text="Electrum Server" toggleGroup="$serverTypeToggleGroup">
+                            <userData>
+                                <ServerType fx:constant="ELECTRUM_SERVER"/>
+                            </userData>
+                        </ToggleButton>
+                    </buttons>
+                </SegmentedButton>
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Form fx:id="coreForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <Fieldset inputGrow="SOMETIMES" text="Bitcoin Core RPC">
             <Field text="URL:">
-                <TextField fx:id="host" promptText="e.g. 127.0.0.1"/>
-                <TextField fx:id="port" promptText="e.g. 50002" prefWidth="80" />
+                <TextField fx:id="coreHost" promptText="e.g. 127.0.0.1"/>
+                <TextField fx:id="corePort" promptText="e.g. 8332" prefWidth="80" />
             </Field>
-            <Field text="Use SSL:">
-                <UnlabeledToggleSwitch fx:id="useSsl"/>
+            <Field text="Authentication:">
+                <SegmentedButton>
+                    <toggleGroup>
+                        <ToggleGroup fx:id="coreAuthToggleGroup" />
+                    </toggleGroup>
+                    <buttons>
+                        <ToggleButton text="Default" toggleGroup="$coreAuthToggleGroup">
+                            <userData>
+                                <CoreAuthType fx:constant="COOKIE"/>
+                            </userData>
+                        </ToggleButton>
+                        <ToggleButton text="User / Pass" toggleGroup="$coreAuthToggleGroup">
+                            <userData>
+                                <CoreAuthType fx:constant="USERPASS"/>
+                            </userData>
+                        </ToggleButton>
+                    </buttons>
+                </SegmentedButton>
             </Field>
-            <Field text="Certificate:" styleClass="label-button">
-                <TextField fx:id="certificate" promptText="Optional server certificate (.crt)"/>
-                <Button fx:id="certificateSelect" maxWidth="25" minWidth="-Infinity" prefWidth="30" text="Ed">
+            <Field fx:id="coreDataDirField" text="Data Folder:" styleClass="label-button">
+                <TextField fx:id="coreDataDir"/>
+                <Button fx:id="coreDataDirSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
                     <graphic>
-                        <Glyph fontFamily="FontAwesome" icon="EDIT" prefWidth="15" />
+                        <Glyph fontFamily="FontAwesome" icon="EDIT" fontSize="13" />
                     </graphic>
                 </Button>
             </Field>
+            <Field fx:id="coreUserPassField" text="User / Pass:" styleClass="label-button">
+                <TextField fx:id="coreUser"/>
+                <PasswordField fx:id="corePass"/>
+            </Field>
+            <Field text="Multi-Wallet:">
+                <UnlabeledToggleSwitch fx:id="coreMultiWallet"/> <HelpLabel helpText="Enable this if using multiple Bitcoin Core wallets" />
+            </Field>
+            <Field text="Wallet Name:" styleClass="label-button">
+                <TextField fx:id="coreWallet"/>
+            </Field>
         </Fieldset>
+    </Form>
 
-        <Fieldset inputGrow="SOMETIMES" text="Proxy">
+    <Form fx:id="electrumForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <Fieldset inputGrow="SOMETIMES" text="Electrum Server">
+            <Field text="URL:">
+                <TextField fx:id="electrumHost" promptText="e.g. 127.0.0.1"/>
+                <TextField fx:id="electrumPort" promptText="e.g. 50002" prefWidth="80" />
+            </Field>
+            <Field text="Use SSL:">
+                <UnlabeledToggleSwitch fx:id="electrumUseSsl"/>
+            </Field>
+            <Field text="Certificate:" styleClass="label-button">
+                <TextField fx:id="electrumCertificate" promptText="Optional server certificate (.crt)"/>
+                <Button fx:id="electrumCertificateSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
+                    <graphic>
+                        <Glyph fontFamily="FontAwesome" icon="EDIT" fontSize="13" />
+                    </graphic>
+                </Button>
+            </Field>
             <Field text="Use Proxy:">
                 <UnlabeledToggleSwitch fx:id="useProxy"/>
             </Field>
@@ -53,7 +124,7 @@
         </Fieldset>
     </Form>
 
-    <StackPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+    <StackPane GridPane.columnIndex="0" GridPane.rowIndex="2">
         <Button fx:id="testConnection" graphicTextGap="5" text="Test Connection">
             <graphic>
                 <Glyph fontFamily="FontAwesome" icon="QUESTION_CIRCLE" prefWidth="13" />
@@ -66,7 +137,7 @@
         </Button>
     </StackPane>
 
-    <StackPane GridPane.columnIndex="0" GridPane.rowIndex="2">
+    <StackPane GridPane.columnIndex="0" GridPane.rowIndex="3">
         <padding>
             <Insets top="10.0" bottom="20.0"/>
         </padding>

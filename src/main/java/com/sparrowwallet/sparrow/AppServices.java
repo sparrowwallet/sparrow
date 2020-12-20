@@ -127,7 +127,7 @@ public class AppServices {
     public void start() {
         Config config = Config.get();
         connectionService = createConnectionService();
-        if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
+        if(config.getMode() == Mode.ONLINE && config.getServerAddress() != null && !config.getServerAddress().isEmpty()) {
             connectionService.start();
         }
 
@@ -265,6 +265,15 @@ public class AppServices {
         return application;
     }
 
+    public Map<Wallet, Storage> getOpenWallets() {
+        Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
+        for(Map<Wallet, Storage> walletStorageMap : walletWindows.values()) {
+            openWallets.putAll(walletStorageMap);
+        }
+
+        return openWallets;
+    }
+
     public Map<Wallet, Storage> getOpenWallets(Window window) {
         return walletWindows.get(window);
     }
@@ -365,7 +374,7 @@ public class AppServices {
         addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
         String banner = event.getServerBanner();
-        String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
+        String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));
     }
 

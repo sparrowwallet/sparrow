@@ -49,10 +49,11 @@ public class PreferencesDialog extends Dialog<Boolean> {
             }
 
             dialogPane.setPrefWidth(650);
-            dialogPane.setPrefHeight(550);
+            dialogPane.setPrefHeight(600);
 
             existingConnection = ElectrumServer.isConnected();
             setOnCloseRequest(event -> {
+                preferencesController.closingProperty().set(true);
                 if(existingConnection && !ElectrumServer.isConnected()) {
                     EventManager.get().post(new RequestConnectEvent());
                 }

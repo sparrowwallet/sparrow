@@ -129,6 +129,16 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     @Subscribe
+    public void bwtSyncStatus(BwtSyncStatusEvent event) {
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), false, event.getStatus()));
+    }
+
+    @Subscribe
+    public void bwtScanStatus(BwtScanStatusEvent event) {
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), false, event.getStatus()));
+    }
+
+    @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             transactionsTable.refresh();

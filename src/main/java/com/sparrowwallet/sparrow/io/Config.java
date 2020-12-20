@@ -4,8 +4,10 @@ import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
+import com.sparrowwallet.sparrow.net.CoreAuthType;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.net.FeeRatesSource;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,12 @@ public class Config {
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
+    private ServerType serverType;
+    private String coreServer;
+    private CoreAuthType coreAuthType;
+    private File coreDataDir;
+    private String coreAuth;
+    private String coreWallet;
     private String electrumServer;
     private File electrumServerCert;
     private boolean useProxy;
@@ -238,6 +246,64 @@ public class Config {
 
     public void setHwi(File hwi) {
         this.hwi = hwi;
+        flush();
+    }
+
+    public ServerType getServerType() {
+        return serverType;
+    }
+
+    public void setServerType(ServerType serverType) {
+        this.serverType = serverType;
+        flush();
+    }
+
+    public String getServerAddress() {
+        return getServerType() == ServerType.BITCOIN_CORE ? getCoreServer() : getElectrumServer();
+    }
+
+    public String getCoreServer() {
+        return coreServer;
+    }
+
+    public void setCoreServer(String coreServer) {
+        this.coreServer = coreServer;
+        flush();
+    }
+
+    public CoreAuthType getCoreAuthType() {
+        return coreAuthType;
+    }
+
+    public void setCoreAuthType(CoreAuthType coreAuthType) {
+        this.coreAuthType = coreAuthType;
+        flush();
+    }
+
+    public File getCoreDataDir() {
+        return coreDataDir;
+    }
+
+    public void setCoreDataDir(File coreDataDir) {
+        this.coreDataDir = coreDataDir;
+        flush();
+    }
+
+    public String getCoreAuth() {
+        return coreAuth;
+    }
+
+    public void setCoreAuth(String coreAuth) {
+        this.coreAuth = coreAuth;
+        flush();
+    }
+
+    public String getCoreWallet() {
+        return coreWallet;
+    }
+
+    public void setCoreWallet(String coreWallet) {
+        this.coreWallet = (coreWallet == null || coreWallet.isEmpty() ? null : coreWallet);
         flush();
     }
 

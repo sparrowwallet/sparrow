@@ -521,16 +521,17 @@ public class AppController implements Initializable {
     }
 
     private void setServerToggleTooltip(Integer currentBlockHeight) {
-        serverToggle.setTooltip(new Tooltip(AppServices.isOnline() ? "Connected to " + Config.get().getElectrumServer() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") : "Disconnected"));
+        serverToggle.setTooltip(new Tooltip(AppServices.isOnline() ? "Connected to " + Config.get().getServerAddress() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") : "Disconnected"));
     }
 
     public void newWallet(ActionEvent event) {
         WalletNameDialog dlg = new WalletNameDialog();
-        Optional<String> walletName = dlg.showAndWait();
-        if(walletName.isPresent()) {
-            File walletFile = Storage.getWalletFile(walletName.get());
+        Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = dlg.showAndWait();
+        if(optNameAndBirthDate.isPresent()) {
+            WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
+            File walletFile = Storage.getWalletFile(nameAndBirthDate.getName());
             Storage storage = new Storage(walletFile);
-            Wallet wallet = new Wallet(walletName.get(), PolicyType.SINGLE, ScriptType.P2WPKH);
+            Wallet wallet = new Wallet(nameAndBirthDate.getName(), PolicyType.SINGLE, ScriptType.P2WPKH, nameAndBirthDate.getBirthDate());
             addWalletTabOrWindow(storage, wallet, false);
         }
     }
@@ -695,8 +696,17 @@ public class AppController implements Initializable {
     }
 
     private void addImportedWallet(Wallet wallet) {
-        File walletFile = Storage.getExistingWallet(wallet.getName());
+        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName());
+        Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
+        if(optNameAndBirthDate.isPresent()) {
+            WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
+            wallet.setName(nameAndBirthDate.getName());
+            wallet.setBirthDate(nameAndBirthDate.getBirthDate());
+        } else {
+            return;
+        }
 
+        File walletFile = Storage.getExistingWallet(wallet.getName());
         if(walletFile != null) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("Existing wallet found");
@@ -1222,6 +1232,20 @@ public class AppController implements Initializable {
             }
 
             usbStatus.setDevices(event.getDevices());
+        }
+    }
+
+    @Subscribe
+    public void bwtSyncStatus(BwtSyncStatusEvent event) {
+        if(AppServices.isOnline()) {
+            statusUpdated(new StatusEvent(event.getStatus()));
+        }
+    }
+
+    @Subscribe
+    public void bwtScanStatus(BwtScanStatusEvent event) {
+        if(AppServices.isOnline()) {
+            statusUpdated(new StatusEvent(event.getStatus()));
         }
     }
 

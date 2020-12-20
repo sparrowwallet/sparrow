@@ -15,7 +15,7 @@ public class WalletHistoryStatusEvent {
         this.errorMessage = null;
     }
 
-    public WalletHistoryStatusEvent(Wallet wallet,boolean loaded, String statusMessage) {
+    public WalletHistoryStatusEvent(Wallet wallet, boolean loaded, String statusMessage) {
         this.wallet = wallet;
         this.loaded = false;
         this.statusMessage = statusMessage;

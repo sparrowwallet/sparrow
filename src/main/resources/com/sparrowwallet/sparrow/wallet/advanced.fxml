@@ -25,7 +25,11 @@
         </rowConstraints>
 
         <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-            <Fieldset inputGrow="SOMETIMES" text="Advanced Settings" styleClass="wideLabelFieldSet">
+            <Fieldset inputGrow="SOMETIMES" text="Advanced Settings">
+                <Field text="Birth date:">
+                    <DatePicker editable="false" fx:id="birthDate" prefWidth="140" />
+                    <HelpLabel helpText="The date of the earliest transaction (used to avoid scanning the entire blockchain)."/>
+                </Field>
                 <Field text="Gap limit:">
                     <Spinner fx:id="gapLimit" editable="true" prefWidth="90" />
                     <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs."/>

@@ -25,4 +25,5 @@ open module com.sparrowwallet.sparrow {
     requires centerdevice.nsmenufx;
     requires jcommander;
     requires slf4j.api;
+    requires bwt.jni;
 }
