@@ -14,6 +14,10 @@ public class BwtSyncStatusEvent extends BwtStatusEvent {
         return progress;
     }
 
+    public boolean isCompleted() {
+        return progress == 100;
+    }
+
     public int getTip() {
         return tip;
     }

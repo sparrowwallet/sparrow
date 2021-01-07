@@ -14,10 +14,7 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
-import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
-import com.sparrowwallet.sparrow.event.StorageEvent;
-import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -28,17 +25,14 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.control.RangeSlider;
-import org.controlsfx.tools.Borders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tornadofx.control.Fieldset;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SettingsController extends WalletFormController implements Initializable {
@@ -326,6 +320,22 @@ public class SettingsController extends WalletFormController implements Initiali
             descriptor.setWallet(wallet);
             revert.setDisable(false);
             apply.setDisable(!wallet.isValid());
+        }
+    }
+
+    @Subscribe
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        updateBirthDate(event.getWalletFile(), event.getWallet());
+    }
+
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        updateBirthDate(event.getWalletFile(), event.getWallet());
+    }
+
+    private void updateBirthDate(File walletFile, Wallet wallet) {
+        if(walletFile.equals(walletForm.getWalletFile()) && !Objects.equals(wallet.getBirthDate(), walletForm.getWallet().getBirthDate())) {
+            walletForm.getWallet().setBirthDate(wallet.getBirthDate());
         }
     }
 

@@ -12,10 +12,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.net.ElectrumServer;
-import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.net.MempoolRateSize;
-import com.sparrowwallet.sparrow.net.VersionCheckService;
+import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -57,7 +54,7 @@ public class AppServices {
 
     private final MainApp application;
 
-    private final Map<Window, Map<Wallet, Storage>> walletWindows = new LinkedHashMap<>();
+    private final Map<Window, List<WalletTabData>> walletWindows = new LinkedHashMap<>();
 
     private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
 
@@ -144,6 +141,20 @@ public class AppServices {
         }
 
         onlineProperty.addListener(onlineServicesListener);
+    }
+
+    public void stop() {
+        if(connectionService != null) {
+            connectionService.cancel();
+        }
+
+        if(ratesService != null) {
+            ratesService.cancel();
+        }
+
+        if(versionCheckService != null) {
+            versionCheckService.cancel();
+        }
     }
 
     private ElectrumServer.ConnectionService createConnectionService() {
@@ -267,24 +278,22 @@ public class AppServices {
 
     public Map<Wallet, Storage> getOpenWallets() {
         Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
-        for(Map<Wallet, Storage> walletStorageMap : walletWindows.values()) {
-            openWallets.putAll(walletStorageMap);
+        for(List<WalletTabData> walletTabDataList : walletWindows.values()) {
+            for(WalletTabData walletTabData : walletTabDataList) {
+                openWallets.put(walletTabData.getWallet(), walletTabData.getStorage());
+            }
         }
 
         return openWallets;
     }
 
-    public Map<Wallet, Storage> getOpenWallets(Window window) {
-        return walletWindows.get(window);
-    }
-
     public Window getWindowForWallet(Storage storage) {
-        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().values().stream().anyMatch(storage1 -> storage1.getWalletFile().equals(storage.getWalletFile()))).map(Map.Entry::getKey).findFirst();
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getStorage().getWalletFile().equals(storage.getWalletFile()))).map(Map.Entry::getKey).findFirst();
         return optWindow.orElse(null);
     }
 
     public Window getWindowForPSBT(PSBT psbt) {
-        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().keySet().stream().anyMatch(wallet -> wallet.canSign(psbt))).map(Map.Entry::getKey).findFirst();
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getWallet().canSign(psbt))).map(Map.Entry::getKey).findFirst();
         return optWindow.orElse(null);
     }
 
@@ -292,8 +301,12 @@ public class AppServices {
         return walletWindows.keySet().stream().mapToDouble(Window::getX).max().orElse(0d);
     }
 
-    public static boolean isOnline() {
-        return onlineProperty.get();
+    public static boolean isConnecting() {
+        return onlineProperty.get() && get().connectionService.isConnecting();
+    }
+
+    public static boolean isConnected() {
+        return onlineProperty.get() && get().connectionService.isConnected();
     }
 
     public static BooleanProperty onlineProperty() {
@@ -440,25 +453,25 @@ public class AppServices {
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        if(event.getWalletsMap().isEmpty()) {
+        if(event.getWalletTabDataList().isEmpty()) {
             walletWindows.remove(event.getWindow());
         } else {
-            walletWindows.put(event.getWindow(), event.getWalletsMap());
+            walletWindows.put(event.getWindow(), event.getWalletTabDataList());
         }
 
-        List<Map.Entry<Wallet, Storage>> allWallets = walletWindows.values().stream().flatMap(map -> map.entrySet().stream()).collect(Collectors.toList());
+        List<WalletTabData> allWallets = walletWindows.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
 
         Platform.runLater(() -> {
             if(!Window.getWindows().isEmpty()) {
-                List<File> walletFiles = allWallets.stream().map(entry -> entry.getValue().getWalletFile()).collect(Collectors.toList());
+                List<File> walletFiles = allWallets.stream().map(walletTabData -> walletTabData.getStorage().getWalletFile()).collect(Collectors.toList());
                 Config.get().setRecentWalletFiles(walletFiles);
             }
         });
 
         boolean usbWallet = false;
-        for(Map.Entry<Wallet, Storage> entry : allWallets) {
-            Wallet wallet = entry.getKey();
-            Storage storage = entry.getValue();
+        for(WalletTabData walletTabData : allWallets) {
+            Wallet wallet = walletTabData.getWallet();
+            Storage storage = walletTabData.getStorage();
 
             if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
                 usbWallet = true;
@@ -493,5 +506,29 @@ public class AppServices {
     @Subscribe
     public void requestDisconnect(RequestDisconnectEvent event) {
         onlineProperty.set(false);
+    }
+
+    @Subscribe
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        restartBwt(event.getWallet());
+    }
+
+    @Subscribe
+    public void walletOpening(WalletOpeningEvent event) {
+        restartBwt(event.getWallet());
+    }
+
+    private void restartBwt(Wallet wallet) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && isConnected() && wallet.isValid()) {
+            connectionService.cancel();
+        }
+    }
+
+    @Subscribe
+    public void bwtShutdown(BwtShutdownEvent event) {
+        if(onlineProperty().get() && !connectionService.isRunning()) {
+            connectionService.reset();
+            connectionService.start();
+        }
     }
 }

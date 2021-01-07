@@ -42,7 +42,7 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
         dialogPane.setHeaderText("Enter a name for this wallet:");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
-        dialogPane.setPrefWidth(420);
+        dialogPane.setPrefWidth(460);
         dialogPane.setPrefHeight(requestBirthDate ? 250 : 200);
 
         Glyph wallet = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
@@ -60,11 +60,19 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
         existingBox.getChildren().add(existingCheck);
 
         existingPicker = new DatePicker();
+        existingPicker.setConverter(new DateStringConverter());
         existingPicker.setEditable(false);
         existingPicker.setPrefWidth(130);
         existingPicker.managedProperty().bind(existingPicker.visibleProperty());
         existingPicker.setVisible(false);
         existingBox.getChildren().add(existingPicker);
+
+        HelpLabel helpLabel = new HelpLabel();
+        helpLabel.setHelpText("Select an approximate date earlier than the first wallet transaction.");
+        helpLabel.setTranslateY(5);
+        helpLabel.managedProperty().bind(helpLabel.visibleProperty());
+        helpLabel.visibleProperty().bind(existingPicker.visibleProperty());
+        existingBox.getChildren().add(helpLabel);
 
         existingCheck.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue) {

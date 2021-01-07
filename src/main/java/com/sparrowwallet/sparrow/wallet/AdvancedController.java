@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.DateStringConverter;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -27,12 +28,14 @@ public class AdvancedController implements Initializable {
     }
 
     public void initializeView(Wallet wallet) {
+        birthDate.setConverter(new DateStringConverter());
         if(wallet.getBirthDate() != null) {
             birthDate.setValue(wallet.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
         }
         birthDate.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
                 wallet.setBirthDate(Date.from(newValue.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
+                EventManager.get().post(new SettingsChangedEvent(wallet, SettingsChangedEvent.Type.BIRTH_DATE));
             }
         });
 

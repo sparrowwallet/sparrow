@@ -5,7 +5,6 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.scene.control.Label;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
@@ -51,7 +50,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         balanceCol.setSortable(true);
         getColumns().add(balanceCol);
 
-        setPlaceholder(new Label("No transactions"));
+        setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);

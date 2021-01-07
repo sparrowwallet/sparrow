@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.BwtStatusEvent;
+import com.sparrowwallet.sparrow.event.BwtSyncStatusEvent;
 import com.sparrowwallet.sparrow.event.ConnectionEvent;
 import com.sparrowwallet.sparrow.event.RequestDisconnectEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -118,6 +119,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private TextArea testResults;
 
     private final ValidationSupport validationSupport = new ValidationSupport();
+
+    private ElectrumServer.ConnectionService connectionService;
 
     @Override
     public void initializeView(Config config) {
@@ -343,7 +346,11 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private void startElectrumConnection() {
-        ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService(false);
+        if(connectionService != null && connectionService.isRunning()) {
+            connectionService.cancel();
+        }
+
+        connectionService = new ElectrumServer.ConnectionService(false);
         connectionService.setPeriod(Duration.hours(1));
         EventManager.get().register(connectionService);
         connectionService.statusProperty().addListener((observable, oldValue, newValue) -> {
@@ -365,11 +372,11 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private void setFieldsEditable(boolean editable) {
+        serverTypeToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
+
         coreHost.setEditable(editable);
         corePort.setEditable(editable);
-        for(Toggle toggle : coreAuthToggleGroup.getToggles()) {
-            ((ToggleButton)toggle).setDisable(!editable);
-        }
+        coreAuthToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
         coreDataDir.setEditable(editable);
         coreDataDirSelect.setDisable(!editable);
         coreUser.setEditable(editable);
@@ -611,6 +618,17 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
     @Subscribe
     public void bwtStatus(BwtStatusEvent event) {
-        testResults.appendText("\n" + event.getStatus());
+        if(!(event instanceof BwtSyncStatusEvent)) {
+            testResults.appendText("\n" + event.getStatus());
+        }
+    }
+
+    @Subscribe
+    public void bwtSyncStatus(BwtSyncStatusEvent event) {
+        if(connectionService != null && connectionService.isRunning() && event.getProgress() < 100) {
+            testResults.appendText("\nThe connection to the Bitcoin Core node was successful, but it is still syncing to the the blockchain tip at " + event.getTip() + " blocks (" + event.getProgress() + "% completed)");
+            testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, null));
+            connectionService.cancel();
+        }
     }
 }

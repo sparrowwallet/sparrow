@@ -3,7 +3,6 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import javafx.scene.control.Label;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
@@ -69,7 +68,7 @@ public class UtxosTreeTable extends CoinTreeTable {
         getColumns().add(amountCol);
         setTreeColumn(amountCol);
 
-        setPlaceholder(new Label("No unspent outputs"));
+        setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         amountCol.setSortType(TreeTableColumn.SortType.DESCENDING);

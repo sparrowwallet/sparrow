@@ -96,6 +96,7 @@ public class MainApp extends Application {
 
     @Override
     public void stop() throws Exception {
+        AppServices.get().stop();
         mainStage.close();
     }
 

@@ -16,6 +16,10 @@ public class BwtScanStatusEvent extends BwtStatusEvent {
         return progress;
     }
 
+    public boolean isCompleted() {
+        return progress == 100;
+    }
+
     public Date getEta() {
         return eta;
     }

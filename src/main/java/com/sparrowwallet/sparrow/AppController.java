@@ -110,6 +110,8 @@ public class AppController implements Initializable {
     @FXML
     private UnlabeledToggleSwitch serverToggle;
 
+    private PauseTransition wait;
+
     private Timeline statusTimeline;
 
     @Override
@@ -170,7 +172,7 @@ public class AppController implements Initializable {
                 boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 if(walletAdded || walletRemoved) {
-                    EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWallets()));
+                    EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
                 }
 
                 List<WalletTabData> closedWalletTabs = c.getRemoved().stream().map(tab -> (TabData)tab.getUserData())
@@ -194,7 +196,7 @@ public class AppController implements Initializable {
 
         tabs.getScene().getWindow().setOnCloseRequest(event -> {
             EventManager.get().unregister(this);
-            EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), Collections.emptyMap()));
+            EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), Collections.emptyList()));
         });
 
         BitcoinUnit unit = Config.get().getBitcoinUnit();
@@ -221,7 +223,7 @@ public class AppController implements Initializable {
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         exportWallet.setDisable(true);
 
-        serverToggle.setSelected(isOnline());
+        serverToggle.setSelected(isConnected());
         onlineProperty().bindBidirectional(serverToggle.selectedProperty());
         onlineProperty().addListener((observable, oldValue, newValue) ->  {
             Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
@@ -451,20 +453,29 @@ public class AppController implements Initializable {
         }
     }
 
-    public Map<Wallet, Storage> getOpenWallets() {
-        Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
+
+    public List<WalletTabData> getOpenWalletTabData() {
+        List<WalletTabData> openWalletTabData = new ArrayList<>();
 
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();
             if(tabData.getType() == TabData.TabType.WALLET) {
-                WalletTabData walletTabData = (WalletTabData) tabData;
-                openWallets.put(walletTabData.getWallet(), walletTabData.getStorage());
+                openWalletTabData.add((WalletTabData)tabData);
             }
+        }
+
+        return openWalletTabData;
+    }
+
+    public Map<Wallet, Storage> getOpenWallets() {
+        Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
+
+        for(WalletTabData walletTabData : getOpenWalletTabData()){
+            openWallets.put(walletTabData.getWallet(), walletTabData.getStorage());
         }
 
         return openWallets;
     }
-
 
     public void selectTab(Wallet wallet) {
         for(Tab tab : tabs.getTabs()) {
@@ -521,7 +532,7 @@ public class AppController implements Initializable {
     }
 
     private void setServerToggleTooltip(Integer currentBlockHeight) {
-        serverToggle.setTooltip(new Tooltip(AppServices.isOnline() ? "Connected to " + Config.get().getServerAddress() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") : "Disconnected"));
+        serverToggle.setTooltip(new Tooltip(AppServices.isConnected() ? "Connected to " + Config.get().getServerAddress() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") : "Disconnected"));
     }
 
     public void newWallet(ActionEvent event) {
@@ -845,6 +856,8 @@ public class AppController implements Initializable {
             tab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
 
+            EventManager.get().post(new WalletOpeningEvent(storage, wallet));
+
             //Note that only one WalletForm is created per wallet tab, and registered to listen for events. All wallet controllers (except SettingsController) share this instance.
             WalletForm walletForm = new WalletForm(storage, wallet);
             EventManager.get().register(walletForm);
@@ -1162,7 +1175,10 @@ public class AppController implements Initializable {
     public void statusUpdated(StatusEvent event) {
         statusBar.setText(event.getStatus());
 
-        PauseTransition wait = new PauseTransition(Duration.seconds(20));
+        if(wait != null && wait.getStatus() == Animation.Status.RUNNING) {
+            wait.stop();
+        }
+        wait = new PauseTransition(Duration.seconds(20));
         wait.setOnFinished((e) -> {
             if(statusBar.getText().equals(event.getStatus())) {
                 statusBar.setText("");
@@ -1237,14 +1253,14 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
-        if(AppServices.isOnline()) {
+        if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
             statusUpdated(new StatusEvent(event.getStatus()));
         }
     }
 
     @Subscribe
     public void bwtScanStatus(BwtScanStatusEvent event) {
-        if(AppServices.isOnline()) {
+        if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
             statusUpdated(new StatusEvent(event.getStatus()));
         }
     }
@@ -1302,7 +1318,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void requestOpenWallets(RequestOpenWalletsEvent event) {
-        EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWallets()));
+        EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
     }
 
     @Subscribe

@@ -136,12 +136,17 @@ public class UtxosController extends WalletFormController implements Initializab
 
     @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
-        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), false, event.getStatus()));
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), true, event.getStatus()));
     }
 
     @Subscribe
     public void bwtScanStatus(BwtScanStatusEvent event) {
-        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), false, event.getStatus()));
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), true, event.getStatus()));
+    }
+
+    @Subscribe
+    public void bwtShutdown(BwtShutdownEvent event) {
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), false));
     }
 
     @Subscribe

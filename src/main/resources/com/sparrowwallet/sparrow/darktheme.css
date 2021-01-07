@@ -168,3 +168,7 @@
     -fx-border-width: 1px 0px 1px 0px;
     -fx-border-color: derive(-fx-background, -10%);
 }
+
+.root .placeholder .hyperlink {
+    -fx-text-fill: derive(#1e88cf, 20%);
+}

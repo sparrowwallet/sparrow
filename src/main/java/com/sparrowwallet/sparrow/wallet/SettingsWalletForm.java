@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * This class extends WalletForm to allow rollback of wallet changes. It is used exclusively by SettingsController for this purpose.
@@ -37,7 +38,7 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void saveAndRefresh() throws IOException {
-        boolean refreshAll = changesScriptHashes(wallet, walletCopy);
+        boolean refreshAll = isRefreshNecessary(wallet, walletCopy);
         if(refreshAll) {
             walletCopy.clearNodes();
         }
@@ -50,7 +51,7 @@ public class SettingsWalletForm extends WalletForm {
         }
     }
 
-    private boolean changesScriptHashes(Wallet original, Wallet changed) {
+    private boolean isRefreshNecessary(Wallet original, Wallet changed) {
         if(!original.isValid() || !changed.isValid()) {
             return true;
         }
@@ -83,6 +84,10 @@ public class SettingsWalletForm extends WalletForm {
         }
 
         if(original.getGapLimit() != changed.getGapLimit()) {
+            return true;
+        }
+
+        if(!Objects.equals(original.getBirthDate(), changed.getBirthDate())) {
             return true;
         }
 

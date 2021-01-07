@@ -795,6 +795,18 @@ public class ElectrumServer {
                     ElectrumServer electrumServer = new ElectrumServer();
 
                     if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                        if(bwt.isTerminating()) {
+                            try {
+                                bwtStartLock.lock();
+                                bwtStartCondition.await();
+                            } catch(InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return null;
+                            } finally {
+                                bwtStartLock.unlock();
+                            }
+                        }
+
                         if(!bwt.isRunning()) {
                             Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe ? AppServices.get().getOpenWallets().keySet() : null);
                             bwtConnectionService.setOnFailed(workerStateEvent -> {
@@ -817,6 +829,7 @@ public class ElectrumServer {
                                 }
                             } catch(InterruptedException e) {
                                 Thread.currentThread().interrupt();
+                                return null;
                             } finally {
                                 bwtStartLock.unlock();
                             }
@@ -894,6 +907,14 @@ public class ElectrumServer {
             }
         }
 
+        public boolean isConnecting() {
+            return isRunning() && Config.get().getServerType() == ServerType.BITCOIN_CORE && !bwt.isRunning();
+        }
+
+        public boolean isConnected() {
+            return isRunning() && (Config.get().getServerType() != ServerType.BITCOIN_CORE || bwt.isRunning());
+        }
+
         @Override
         public boolean cancel() {
             try {
@@ -907,16 +928,14 @@ public class ElectrumServer {
         }
 
         private void shutdownBwt() {
-            if(bwt.isRunning()) {
-                Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
-                disconnectionService.setOnSucceeded(workerStateEvent -> {
-                    ElectrumServer.bwtElectrumServer = null;
-                });
-                disconnectionService.setOnFailed(workerStateEvent -> {
-                    log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
-                });
-                Platform.runLater(disconnectionService::start);
-            }
+            Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
+            disconnectionService.setOnSucceeded(workerStateEvent -> {
+                ElectrumServer.bwtElectrumServer = null;
+            });
+            disconnectionService.setOnFailed(workerStateEvent -> {
+                log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
+            });
+            Platform.runLater(disconnectionService::start);
         }
 
         @Override
@@ -951,6 +970,16 @@ public class ElectrumServer {
                 } finally {
                     bwtStartLock.unlock();
                 }
+            }
+        }
+
+        @Subscribe
+        public void bwtShutdown(BwtShutdownEvent event) {
+            try {
+                bwtStartLock.lock();
+                bwtStartCondition.signal();
+            } finally {
+                bwtStartLock.unlock();
             }
         }
 

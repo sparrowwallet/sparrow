@@ -4,27 +4,27 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 
 public class WalletHistoryStatusEvent {
     private final Wallet wallet;
-    private final boolean loaded;
+    private final boolean loading;
     private final String statusMessage;
     private final String errorMessage;
 
-    public WalletHistoryStatusEvent(Wallet wallet, boolean loaded) {
+    public WalletHistoryStatusEvent(Wallet wallet, boolean loading) {
         this.wallet = wallet;
-        this.loaded = loaded;
+        this.loading = loading;
         this.statusMessage = null;
         this.errorMessage = null;
     }
 
-    public WalletHistoryStatusEvent(Wallet wallet, boolean loaded, String statusMessage) {
+    public WalletHistoryStatusEvent(Wallet wallet, boolean loading, String statusMessage) {
         this.wallet = wallet;
-        this.loaded = false;
+        this.loading = loading;
         this.statusMessage = statusMessage;
         this.errorMessage = null;
     }
 
-    public WalletHistoryStatusEvent(Wallet wallet,String errorMessage) {
+    public WalletHistoryStatusEvent(Wallet wallet, String errorMessage) {
         this.wallet = wallet;
-        this.loaded = false;
+        this.loading = true;
         this.statusMessage = null;
         this.errorMessage = errorMessage;
     }
@@ -34,11 +34,7 @@ public class WalletHistoryStatusEvent {
     }
 
     public boolean isLoading() {
-        return !loaded;
-    }
-
-    public boolean isLoaded() {
-        return loaded;
+        return loading;
     }
 
     public String getStatusMessage() {

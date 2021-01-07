@@ -326,7 +326,7 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppServices.isOnline() && indexStart < getTransaction().getInputs().size()) {
+        if(AppServices.isConnected() && indexStart < getTransaction().getInputs().size()) {
             Set<Sha256Hash> references = new HashSet<>();
             if(getPSBT() == null) {
                 references.add(getTransaction().getTxId());
@@ -378,7 +378,7 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchOutputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppServices.isOnline() && getPSBT() == null && indexStart < getTransaction().getOutputs().size()) {
+        if(AppServices.isConnected() && getPSBT() == null && indexStart < getTransaction().getOutputs().size()) {
             int maxIndex = Math.min(getTransaction().getOutputs().size(), indexEnd);
             ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(getTransaction(), indexStart, maxIndex);
             transactionOutputsReferenceService.setOnSucceeded(successEvent -> {
