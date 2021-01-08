@@ -198,6 +198,9 @@ public class Bwt {
 
         @SerializedName("setup_logger")
         public Boolean setupLogger;
+
+        @SerializedName("http_addr")
+        public String httpAddr;
     }
 
     public final class ConnectionService extends Service<Void> {
@@ -220,7 +223,7 @@ public class Bwt {
                         public void onBooting() {
                             log.debug("Booting bwt");
                             if(!terminating) {
-                                Platform.runLater(() -> EventManager.get().post(new BwtStatusEvent("Starting bwt")));
+                                Platform.runLater(() -> EventManager.get().post(new BwtBootStatusEvent("Connecting to Bitcoin Core node at " + Config.get().getCoreServer() + "...")));
                             }
                         }
 

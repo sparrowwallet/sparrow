@@ -1252,6 +1252,11 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void bwtBootStatus(BwtBootStatusEvent event) {
+        statusUpdated(new StatusEvent(event.getStatus()));
+    }
+
+    @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
         if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
             statusUpdated(new StatusEvent(event.getStatus()));
