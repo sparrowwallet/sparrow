@@ -32,7 +32,7 @@ Java 14 must be installed.
 
 ## Configuration
 
-Sparrow has a number of command line options, for example to change it's home folder or use testnet:
+Sparrow has a number of command line options, for example to change its home folder or use testnet:
 
 ```
 ./sparrow -h
@@ -56,7 +56,7 @@ A final fallback which can be useful when running the Sparrow binary is to creat
 
 Note that if you are connecting to an Electrum server when using testnet, that server will need to running on testnet configuration as well.
 
-When not explicitly configured using the command line argument above, Sparrow stores it's mainnet config file, log file and wallets in a home folder location appropriate to the operating system:
+When not explicitly configured using the command line argument above, Sparrow stores its mainnet config file, log file and wallets in a home folder location appropriate to the operating system:
 
 Platform | Location
 -------- | --------
