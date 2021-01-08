@@ -343,12 +343,13 @@ public class Config {
         flush();
     }
 
-    private void flush() {
+    private synchronized void flush() {
         Gson gson = getGson();
         try {
             File configFile = getConfigFile();
             Writer writer = new FileWriter(configFile);
             gson.toJson(this, writer);
+            writer.flush();
             writer.close();
         } catch (IOException e) {
             //Ignore

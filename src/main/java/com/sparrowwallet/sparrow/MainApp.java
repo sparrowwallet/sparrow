@@ -28,8 +28,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class MainApp extends Application {
-    private static final Logger log = LoggerFactory.getLogger(MainApp.class);
-
     public static final String APP_NAME = "Sparrow";
     public static final String APP_VERSION = "0.9.9";
     public static final String APP_HOME_PROPERTY = "sparrow.home";
@@ -110,8 +108,8 @@ public class MainApp extends Application {
         }
 
         if(args.dir != null) {
-            log.info("Using configured Sparrow home folder of " + args.dir);
             System.setProperty(APP_HOME_PROPERTY, args.dir);
+            getLogger().info("Using configured Sparrow home folder of " + args.dir);
         }
 
         if(args.network != null) {
@@ -122,7 +120,7 @@ public class MainApp extends Application {
                 try {
                     Network.set(Network.valueOf(envNetwork.toUpperCase()));
                 } catch(Exception e) {
-                    log.warn("Invalid " + NETWORK_ENV_PROPERTY + " property: " + envNetwork);
+                    getLogger().warn("Invalid " + NETWORK_ENV_PROPERTY + " property: " + envNetwork);
                 }
             }
         }
@@ -133,9 +131,13 @@ public class MainApp extends Application {
         }
 
         if(Network.get() != Network.MAINNET) {
-            log.info("Using " + Network.get() + " configuration");
+            getLogger().info("Using " + Network.get() + " configuration");
         }
 
         com.sun.javafx.application.LauncherImpl.launchApplication(MainApp.class, MainAppPreloader.class, argv);
+    }
+
+    private static Logger getLogger() {
+        return LoggerFactory.getLogger(MainApp.class);
     }
 }
