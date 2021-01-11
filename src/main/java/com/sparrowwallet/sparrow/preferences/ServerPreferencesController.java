@@ -135,12 +135,15 @@ public class ServerPreferencesController extends PreferencesDetailController {
         coreForm.visibleProperty().bind(electrumForm.visibleProperty().not());
         serverTypeToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if(serverTypeToggleGroup.getSelectedToggle() != null) {
+                ServerType existingType = config.getServerType();
                 ServerType serverType = (ServerType)newValue.getUserData();
                 electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER);
                 config.setServerType(serverType);
                 testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, ""));
                 testResults.clear();
-                EventManager.get().post(new ServerTypeChangedEvent(serverType));
+                if(existingType != serverType) {
+                    EventManager.get().post(new ServerTypeChangedEvent(serverType));
+                }
             } else if(oldValue != null) {
                 oldValue.setSelected(true);
             }

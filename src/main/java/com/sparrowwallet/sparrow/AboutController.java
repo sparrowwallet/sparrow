@@ -22,4 +22,8 @@ public class AboutController {
     public void close(ActionEvent event) {
         stage.close();
     }
+
+    public void openDonate(ActionEvent event) {
+        AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/donate");
+    }
 }

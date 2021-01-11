@@ -86,8 +86,7 @@ public class Bwt {
             bwtConfig.descriptors = outputDescriptors;
             bwtConfig.rescanSince = (rescanSince == null || rescanSince < 0 ? "now" : rescanSince);
             bwtConfig.forceRescan = forceRescan;
-            //bwtConfig.initialImportSize = IMPORT_BATCH_SIZE;
-            bwtConfig.gapLimit = IMPORT_BATCH_SIZE;
+            bwtConfig.gapLimit = gapLimit;
         } else {
             bwtConfig.requireAddresses = false;
         }

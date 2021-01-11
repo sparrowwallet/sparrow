@@ -8,7 +8,7 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-<StackPane prefHeight="420.0" prefWidth="600.0" stylesheets="@about.css" fx:controller="com.sparrowwallet.sparrow.AboutController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+<StackPane prefHeight="420.0" prefWidth="600.0" stylesheets="@about.css, @general.css" fx:controller="com.sparrowwallet.sparrow.AboutController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="20">
         <HBox styleClass="title-area">
             <HBox alignment="CENTER_LEFT">
@@ -21,8 +21,9 @@
         </HBox>
         <VBox spacing="10" styleClass="content-area">
             <Label text="Sparrow is a Bitcoin wallet with the goal of providing greater transparency and usability on the path to full financial self sovereignty. It attempts to provide all of the detail about your wallet setup, transactions and UTXOs so that you can transact will a full understanding of your money." wrapText="true" />
-            <Label text="Sparrow can operate in both an online and offline mode. In the online mode it connects to your Electrum server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator." wrapText="true" />
-            <Label text="For privacy and security reasons it is not recommended to use a public Electrum server. Install an Electrum server that connects to your full node to index the blockchain and provide full privacy." wrapText="true" />
+            <Label text="Sparrow can operate in both an online and offline mode. In the online mode it connects to your Bitcoin Core node or Electrum server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator." wrapText="true" />
+            <Label text="Connecting Sparrow to your Bitcoin Core node ensures your privacy, while connecting Sparrow to your own Electrum server ensures wallets load quicker, you have access to a full blockchain explorer, and your public keys are always encrypted on disk. " wrapText="true" />
+            <HBox><Label text="If you find Sparrow useful, consider donating at "/><Hyperlink text="https://sparrowwallet.com/donate" onAction="#openDonate"/></HBox>
         </VBox>
         <HBox styleClass="button-area" alignment="BOTTOM_RIGHT" VBox.vgrow="SOMETIMES">
             <Button text="Done" onAction="#close" />

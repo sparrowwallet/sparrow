@@ -29,3 +29,8 @@
     -fx-padding: 0 0 0 8;
     -fx-spacing: 10;
 }
+
+.core-server.toggle-switch:selected .thumb-area {
+    -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -20%), derive(-fx-text-box-border, -30%)), linear-gradient(to bottom, derive(#50a14f, 30%), #50a14f);
+    -fx-background-insets: 0, 1;
+}
