@@ -23,6 +23,7 @@ import java.util.*;
 
 public class Bwt {
     private static final Logger log = LoggerFactory.getLogger(Bwt.class);
+    private static final int IMPORT_BATCH_SIZE = 350;
     private Long shutdownPtr;
     private boolean terminating;
 
@@ -85,7 +86,8 @@ public class Bwt {
             bwtConfig.descriptors = outputDescriptors;
             bwtConfig.rescanSince = (rescanSince == null || rescanSince < 0 ? "now" : rescanSince);
             bwtConfig.forceRescan = forceRescan;
-            bwtConfig.gapLimit = gapLimit;
+            //bwtConfig.initialImportSize = IMPORT_BATCH_SIZE;
+            bwtConfig.gapLimit = IMPORT_BATCH_SIZE;
         } else {
             bwtConfig.requireAddresses = false;
         }
@@ -220,9 +222,14 @@ public class Bwt {
                 protected Void call() {
                     CallbackNotifier notifier = new CallbackNotifier() {
                         @Override
-                        public void onBooting() {
+                        public void onBooting(long shutdownPtr) {
                             log.debug("Booting bwt");
-                            if(!terminating) {
+
+                            Bwt.this.shutdownPtr = shutdownPtr;
+                            if(terminating) {
+                                Bwt.this.shutdown();
+                                terminating = false;
+                            } else {
                                 Platform.runLater(() -> EventManager.get().post(new BwtBootStatusEvent("Connecting to Bitcoin Core node at " + Config.get().getCoreServer() + "...")));
                             }
                         }
@@ -230,9 +237,10 @@ public class Bwt {
                         @Override
                         public void onSyncProgress(float progress, int tip) {
                             int percent = (int) (progress * 100.0);
+                            Date tipDate = new Date((long)tip * 1000);
                             log.debug("Syncing " + percent + "%");
                             if(!terminating) {
-                                Platform.runLater(() -> EventManager.get().post(new BwtSyncStatusEvent("Syncing" + (percent < 100 ? " (" + percent + "%)" : ""), percent, tip)));
+                                Platform.runLater(() -> EventManager.get().post(new BwtSyncStatusEvent("Syncing" + (percent < 100 ? " (" + percent + "%)" : ""), percent, tipDate)));
                             }
                         }
 
@@ -260,14 +268,10 @@ public class Bwt {
                         }
 
                         @Override
-                        public void onReady(long shutdownPtr) {
+                        public void onReady() {
                             log.debug("Bwt ready");
-                            Bwt.this.shutdownPtr = shutdownPtr;
-                            if(terminating) {
-                                Bwt.this.shutdown();
-                                terminating = false;
-                            } else {
-                                Platform.runLater(() -> EventManager.get().post(new BwtReadyStatusEvent("Server ready", shutdownPtr)));
+                            if(!terminating) {
+                                Platform.runLater(() -> EventManager.get().post(new BwtReadyStatusEvent("Server ready")));
                             }
                         }
                     };

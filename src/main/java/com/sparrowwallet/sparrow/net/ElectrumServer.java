@@ -54,7 +54,7 @@ public class ElectrumServer {
 
                 if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
                     if(bwtElectrumServer == null) {
-                        throw new ServerException("BWT server not started");
+                        throw new ServerException("Could not connect to Bitcoin Core RPC");
                     }
                     electrumServer = bwtElectrumServer;
                 } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
@@ -928,14 +928,16 @@ public class ElectrumServer {
         }
 
         private void shutdownBwt() {
-            Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
-            disconnectionService.setOnSucceeded(workerStateEvent -> {
-                ElectrumServer.bwtElectrumServer = null;
-            });
-            disconnectionService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
-            });
-            Platform.runLater(disconnectionService::start);
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
+                disconnectionService.setOnSucceeded(workerStateEvent -> {
+                    ElectrumServer.bwtElectrumServer = null;
+                });
+                disconnectionService.setOnFailed(workerStateEvent -> {
+                    log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
+                });
+                Platform.runLater(disconnectionService::start);
+            }
         }
 
         @Override

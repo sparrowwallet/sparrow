@@ -23,6 +23,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
@@ -223,6 +224,7 @@ public class AppController implements Initializable {
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         exportWallet.setDisable(true);
 
+        setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
         onlineProperty().bindBidirectional(serverToggle.selectedProperty());
         onlineProperty().addListener((observable, oldValue, newValue) ->  {
@@ -1042,6 +1044,14 @@ public class AppController implements Initializable {
         return contextMenu;
     }
 
+    public void setServerType(ServerType serverType) {
+        if(serverType == ServerType.BITCOIN_CORE && !serverToggle.getStyleClass().contains("core-server")) {
+            serverToggle.getStyleClass().add("core-server");
+        } else {
+            serverToggle.getStyleClass().remove("core-server");
+        }
+    }
+
     public void setTheme(ActionEvent event) {
         Theme selectedTheme = (Theme)theme.getSelectedToggle().getUserData();
         if(Config.get().getTheme() != selectedTheme) {
@@ -1061,6 +1071,11 @@ public class AppController implements Initializable {
         } else {
             tabs.getScene().getStylesheets().remove(darkCss);
         }
+    }
+
+    @Subscribe
+    public void serverTypeChanged(ServerTypeChangedEvent event) {
+        setServerType(event.getServerType());
     }
 
     @Subscribe

@@ -1,10 +1,12 @@
 package com.sparrowwallet.sparrow.event;
 
+import java.util.Date;
+
 public class BwtSyncStatusEvent extends BwtStatusEvent {
     private final int progress;
-    private final int tip;
+    private final Date tip;
 
-    public BwtSyncStatusEvent(String status, int progress, int tip) {
+    public BwtSyncStatusEvent(String status, int progress, Date tip) {
         super(status);
         this.progress = progress;
         this.tip = tip;
@@ -18,7 +20,7 @@ public class BwtSyncStatusEvent extends BwtStatusEvent {
         return progress == 100;
     }
 
-    public int getTip() {
+    public Date getTip() {
         return tip;
     }
 }

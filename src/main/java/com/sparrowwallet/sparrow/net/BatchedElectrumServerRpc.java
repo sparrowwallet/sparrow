@@ -204,7 +204,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, VerboseTransaction>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            //The server may return an error if the transaction has not yet been broadcasted - this is a valid state so only try once
+            return new RetryLogic<Map<String, VerboseTransaction>>(1, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             log.warn("Some errors retrieving transactions: " + e.getErrors());
             return (Map<String, VerboseTransaction>)e.getSuccesses();

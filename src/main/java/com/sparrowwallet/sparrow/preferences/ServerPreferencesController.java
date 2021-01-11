@@ -6,10 +6,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
-import com.sparrowwallet.sparrow.event.BwtStatusEvent;
-import com.sparrowwallet.sparrow.event.BwtSyncStatusEvent;
-import com.sparrowwallet.sparrow.event.ConnectionEvent;
-import com.sparrowwallet.sparrow.event.RequestDisconnectEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.*;
@@ -38,6 +35,8 @@ import javax.net.ssl.SSLHandshakeException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.cert.CertificateFactory;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.List;
 
 public class ServerPreferencesController extends PreferencesDetailController {
@@ -141,6 +140,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 config.setServerType(serverType);
                 testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, ""));
                 testResults.clear();
+                EventManager.get().post(new ServerTypeChangedEvent(serverType));
             } else if(oldValue != null) {
                 oldValue.setSelected(true);
             }
@@ -626,7 +626,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
     @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
         if(connectionService != null && connectionService.isRunning() && event.getProgress() < 100) {
-            testResults.appendText("\nThe connection to the Bitcoin Core node was successful, but it is still syncing to the the blockchain tip at " + event.getTip() + " blocks (" + event.getProgress() + "% completed)");
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm");
+            testResults.appendText("\nThe connection to the Bitcoin Core node was successful, but it is still syncing and cannot be used yet.");
+            testResults.appendText("\nCurrently " + event.getProgress() + "% completed to date " + dateFormat.format(event.getTip()));
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, null));
             connectionService.cancel();
         }

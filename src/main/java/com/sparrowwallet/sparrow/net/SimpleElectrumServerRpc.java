@@ -181,7 +181,8 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
         Map<String, VerboseTransaction> result = new LinkedHashMap<>();
         for(String txid : txids) {
             try {
-                VerboseTransaction verboseTransaction = new RetryLogic<VerboseTransaction>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                //The server may return an error if the transaction has not yet been broadcasted - this is a valid state so only try once
+                VerboseTransaction verboseTransaction = new RetryLogic<VerboseTransaction>(1, RETRY_DELAY, IllegalStateException.class).getResult(() ->
                         client.createRequest().returnAs(VerboseTransaction.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid, true).execute());
                 result.put(txid, verboseTransaction);
             } catch(Exception e) {
