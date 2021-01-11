@@ -213,7 +213,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                     verboseTransaction.blockhash = Sha256Hash.ZERO_HASH.toString();
                     result.put(txid, verboseTransaction);
                 } catch(Exception ex) {
-                    throw new ElectrumServerRpcException("Error retrieving transaction: ", ex);
+                    //ignore
                 }
             }
         }

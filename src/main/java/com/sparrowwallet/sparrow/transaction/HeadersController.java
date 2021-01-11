@@ -25,6 +25,7 @@ import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -415,16 +416,16 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             });
 
-            headersForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
-                initializeSignButton(signingWallet);
-                updateSignedKeystores(signingWallet);
-
-                int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
-                signaturesProgressBar.initialize(headersForm.getSignatureKeystoreMap(), threshold);
-            });
-
             Platform.runLater(this::requestOpenWallets);
         }
+
+        headersForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
+            initializeSignButton(signingWallet);
+            updateSignedKeystores(signingWallet);
+
+            int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
+            signaturesProgressBar.initialize(headersForm.getSignatureKeystoreMap(), threshold);
+        });
 
         blockchainForm.setDynamicUpdate(this);
     }
@@ -756,7 +757,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void updateSignedKeystores(Wallet signingWallet) {
-        Map<PSBTInput, Map<TransactionSignature, Keystore>> signedKeystoresMap = signingWallet.getSignedKeystores(headersForm.getPsbt());
+        Map<?, Map<TransactionSignature, Keystore>> signedKeystoresMap = headersForm.getPsbt() == null ? signingWallet.getSignedKeystores(headersForm.getTransaction()) : signingWallet.getSignedKeystores(headersForm.getPsbt());
         Optional<Map<TransactionSignature, Keystore>> optSignedKeystores = signedKeystoresMap.values().stream().filter(map -> !map.isEmpty()).min(Comparator.comparingInt(Map::size));
         optSignedKeystores.ifPresent(signedKeystores -> {
             headersForm.getSignatureKeystoreMap().keySet().retainAll(signedKeystores.keySet());
@@ -781,7 +782,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     public void broadcastTransaction(ActionEvent event) {
         broadcastButton.setDisable(true);
-        extractTransaction(event);
+        if(headersForm.getPsbt() != null) {
+            extractTransaction(event);
+        }
 
         if(headersForm.getSigningWallet() instanceof FinalizingPSBTWallet) {
             //Ensure the script hashes of the UTXOs in FinalizingPSBTWallet are subscribed to
@@ -818,6 +821,21 @@ public class HeadersController extends TransactionFormController implements Init
                     }
                 });
                 transactionMempoolService.start();
+            } else {
+                Sha256Hash txid = headersForm.getTransaction().getTxId();
+                ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid));
+                transactionReferenceService.setOnSucceeded(successEvent -> {
+                    Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
+                    BlockTransaction blockTransaction = transactionMap.get(txid);
+                    if(blockTransaction != null) {
+                        headersForm.setBlockTransaction(blockTransaction);
+                        updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
+                    }
+                });
+                transactionReferenceService.setOnFailed(failedEvent -> {
+                    log.error("Error fetching broadcasted transaction", failedEvent.getSource().getException());
+                });
+                transactionReferenceService.start();
             }
         });
         broadcastTransactionService.setOnFailed(workerStateEvent -> {
@@ -903,6 +921,43 @@ public class HeadersController extends TransactionFormController implements Init
         if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
             if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || headersForm.getBlockTransaction() == null)) {
                 updateBlockchainForm(event.getBlockTransaction(), AppServices.getCurrentBlockHeight());
+            } else if(headersForm.getPsbt() == null) {
+                boolean isSigned = true;
+                ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap = FXCollections.observableMap(new LinkedHashMap<>());
+                for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
+                    List<TransactionSignature> signatures = txInput.hasWitness() ? txInput.getWitness().getSignatures() : txInput.getScriptSig().getSignatures();
+
+                    if(signatures.isEmpty()) {
+                        isSigned = false;
+                        break;
+                    }
+
+                    if(signatureKeystoreMap.isEmpty()) {
+                        for(int i = 0; i < signatures.size(); i++) {
+                            signatureKeystoreMap.put(signatures.get(i), new Keystore("Keystore " + (i+1)));
+                        }
+                    }
+                }
+
+                if(isSigned) {
+                    blockchainForm.setVisible(false);
+                    signaturesForm.setVisible(true);
+                    broadcastButtonBox.setVisible(true);
+                    viewFinalButton.setDisable(true);
+
+                    if(headersForm.getSigningWallet() == null) {
+                        for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+                            if(wallet.canSign(headersForm.getTransaction())) {
+                                headersForm.setSigningWallet(wallet);
+                                break;
+                            }
+                        }
+                    }
+
+                    if(headersForm.getSigningWallet() == null) {
+                        signaturesProgressBar.initialize(signatureKeystoreMap, signatureKeystoreMap.size());
+                    }
+                }
             }
 
             Long feeAmt = calculateFee(event.getInputTransactions());
