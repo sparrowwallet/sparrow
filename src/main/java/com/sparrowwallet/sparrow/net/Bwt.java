@@ -26,6 +26,7 @@ public class Bwt {
     private static final int IMPORT_BATCH_SIZE = 350;
     private Long shutdownPtr;
     private boolean terminating;
+    private boolean ready;
 
     static {
         try {
@@ -128,12 +129,17 @@ public class Bwt {
         }
 
         NativeBwtDaemon.shutdown(shutdownPtr);
+        this.ready = false;
         this.shutdownPtr = null;
         Platform.runLater(() -> EventManager.get().post(new BwtShutdownEvent()));
     }
 
     public boolean isRunning() {
         return shutdownPtr != null;
+    }
+
+    public boolean isReady() {
+        return ready;
     }
 
     public boolean isTerminating() {
@@ -269,6 +275,7 @@ public class Bwt {
                         @Override
                         public void onReady() {
                             log.debug("Bwt ready");
+                            ready = true;
                             if(!terminating) {
                                 Platform.runLater(() -> EventManager.get().post(new BwtReadyStatusEvent("Server ready")));
                             }

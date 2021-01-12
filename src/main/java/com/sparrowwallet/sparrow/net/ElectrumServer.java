@@ -908,11 +908,11 @@ public class ElectrumServer {
         }
 
         public boolean isConnecting() {
-            return isRunning() && Config.get().getServerType() == ServerType.BITCOIN_CORE && !bwt.isRunning();
+            return isRunning() && Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning() && !bwt.isReady();
         }
 
         public boolean isConnected() {
-            return isRunning() && (Config.get().getServerType() != ServerType.BITCOIN_CORE || bwt.isRunning());
+            return isRunning() && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && bwt.isReady()));
         }
 
         @Override
