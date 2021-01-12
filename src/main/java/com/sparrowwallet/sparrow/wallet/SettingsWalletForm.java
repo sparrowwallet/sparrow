@@ -56,6 +56,26 @@ public class SettingsWalletForm extends WalletForm {
             return true;
         }
 
+        if(isAddressChange(original, changed)) {
+            return true;
+        }
+
+        if(original.getGapLimit() != changed.getGapLimit()) {
+            return true;
+        }
+
+        if(!Objects.equals(original.getBirthDate(), changed.getBirthDate())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected boolean isAddressChange() {
+        return isAddressChange(wallet, walletCopy);
+    }
+
+    private boolean isAddressChange(Wallet original, Wallet changed) {
         if(original.getPolicyType() != changed.getPolicyType()) {
             return true;
         }
@@ -74,21 +94,13 @@ public class SettingsWalletForm extends WalletForm {
             Keystore originalKeystore = original.getKeystores().get(i);
             Keystore changedKeystore = changed.getKeystores().get(i);
 
-            if(!originalKeystore.getKeyDerivation().equals(changedKeystore.getKeyDerivation())) {
+            if(!Objects.equals(originalKeystore.getKeyDerivation(), changedKeystore.getKeyDerivation())) {
                 return true;
             }
 
-            if(!originalKeystore.getExtendedPublicKey().equals(changedKeystore.getExtendedPublicKey())) {
+            if(!Objects.equals(originalKeystore.getExtendedPublicKey(), changedKeystore.getExtendedPublicKey())) {
                 return true;
             }
-        }
-
-        if(original.getGapLimit() != changed.getGapLimit()) {
-            return true;
-        }
-
-        if(!Objects.equals(original.getBirthDate(), changed.getBirthDate())) {
-            return true;
         }
 
         return false;

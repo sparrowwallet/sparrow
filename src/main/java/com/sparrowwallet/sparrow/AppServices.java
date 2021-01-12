@@ -24,6 +24,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -357,14 +358,21 @@ public class AppServices {
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
 
-    public static void showErrorDialog(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+    public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
+        return showAlertDialog(title, content, Alert.AlertType.WARNING, buttons);
+    }
+
+    public static Optional<ButtonType> showErrorDialog(String title, String content, ButtonType... buttons) {
+        return showAlertDialog(title, content, Alert.AlertType.ERROR, buttons);
+    }
+
+    public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, ButtonType... buttons) {
+        Alert alert = new Alert(alertType, content, buttons);
         setStageIcon(alert.getDialogPane().getScene().getWindow());
         alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
         alert.setHeaderText(title);
-        alert.setContentText(content);
-        alert.showAndWait();
+        return alert.showAndWait();
     }
 
     public static void setStageIcon(Window window) {

@@ -355,6 +355,15 @@ public class SettingsController extends WalletFormController implements Initiali
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_SET;
         }
 
+        if(!changePassword && ((SettingsWalletForm)walletForm).isAddressChange() && !walletForm.getWallet().getTransactions().isEmpty()) {
+            Optional<ButtonType> optResponse = AppServices.showWarningDialog("Change Wallet Addresses?", "This wallet has existing transactions which will be replaced as the wallet addresses will change. Ok to proceed?", ButtonType.CANCEL, ButtonType.OK);
+            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.CANCEL)) {
+                revert.setDisable(false);
+                apply.setDisable(false);
+                return;
+            }
+        }
+
         WalletPasswordDialog dlg = new WalletPasswordDialog(requirement);
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
