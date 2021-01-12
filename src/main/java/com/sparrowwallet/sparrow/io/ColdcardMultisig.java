@@ -48,8 +48,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2sh_deriv));
             keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2sh));
         } else if(scriptType.equals(ScriptType.P2SH_P2WSH)) {
-            keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_p2sh_deriv));
-            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh_p2sh));
+            keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_p2sh_deriv != null ? cck.p2wsh_p2sh_deriv : cck.p2sh_p2wsh_deriv));
+            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh_p2sh != null ? cck.p2wsh_p2sh : cck.p2sh_p2wsh));
         } else if(scriptType.equals(ScriptType.P2WSH)) {
             keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_deriv));
             keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh));
@@ -65,6 +65,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         public String p2sh;
         public String p2wsh_p2sh_deriv;
         public String p2wsh_p2sh;
+        public String p2sh_p2wsh_deriv;
+        public String p2sh_p2wsh;
         public String p2wsh_deriv;
         public String p2wsh;
         public String xpub;
