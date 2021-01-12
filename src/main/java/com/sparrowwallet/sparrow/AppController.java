@@ -1268,11 +1268,13 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void bwtBootStatus(BwtBootStatusEvent event) {
+        serverToggle.setDisable(true);
         statusUpdated(new StatusEvent(event.getStatus()));
     }
 
     @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
+        serverToggle.setDisable(false);
         if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
             statusUpdated(new StatusEvent(event.getStatus()));
         }
@@ -1280,8 +1282,22 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void bwtScanStatus(BwtScanStatusEvent event) {
+        serverToggle.setDisable(true);
         if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
             statusUpdated(new StatusEvent(event.getStatus()));
+        }
+    }
+
+    @Subscribe
+    public void bwtReadyStatus(BwtReadyStatusEvent event) {
+        serverToggle.setDisable(false);
+    }
+
+    @Subscribe
+    public void disconnection(DisconnectionEvent event) {
+        serverToggle.setDisable(false);
+        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith("Connection error")) {
+            statusUpdated(new StatusEvent("Disconnected"));
         }
     }
 

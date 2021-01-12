@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.SendController;
@@ -54,7 +55,7 @@ public class ElectrumServer {
 
                 if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
                     if(bwtElectrumServer == null) {
-                        throw new ServerException("Could not connect to Bitcoin Core RPC");
+                        throw new ServerConfigException("Could not connect to Bitcoin Core RPC");
                     }
                     electrumServer = bwtElectrumServer;
                 } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
@@ -64,16 +65,16 @@ public class ElectrumServer {
                 }
 
                 if(electrumServer == null) {
-                    throw new ServerException("Electrum server URL not specified");
+                    throw new ServerConfigException("Electrum server URL not specified");
                 }
 
                 if(electrumServerCert != null && !electrumServerCert.exists()) {
-                    throw new ServerException("Electrum server certificate file not found");
+                    throw new ServerConfigException("Electrum server certificate file not found");
                 }
 
                 Protocol protocol = Protocol.getProtocol(electrumServer);
                 if(protocol == null) {
-                    throw new ServerException("Electrum server URL must start with " + Protocol.TCP.toUrlString() + " or " + Protocol.SSL.toUrlString());
+                    throw new ServerConfigException("Electrum server URL must start with " + Protocol.TCP.toUrlString() + " or " + Protocol.SSL.toUrlString());
                 }
 
                 HostAndPort server = protocol.getServerHostAndPort(electrumServer);
@@ -93,7 +94,7 @@ public class ElectrumServer {
                     }
                 }
             } catch (Exception e) {
-                throw new ServerException(e);
+                throw new ServerConfigException(e);
             }
         }
 
@@ -795,18 +796,6 @@ public class ElectrumServer {
                     ElectrumServer electrumServer = new ElectrumServer();
 
                     if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                        if(bwt.isTerminating()) {
-                            try {
-                                bwtStartLock.lock();
-                                bwtStartCondition.await();
-                            } catch(InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                return null;
-                            } finally {
-                                bwtStartLock.unlock();
-                            }
-                        }
-
                         if(!bwt.isRunning()) {
                             Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe ? AppServices.get().getOpenWallets().keySet() : null);
                             bwtConnectionService.setOnFailed(workerStateEvent -> {
@@ -900,7 +889,7 @@ public class ElectrumServer {
         public void resetConnection() {
             try {
                 closeActiveConnection();
-                shutdownBwt();
+                shutdown();
                 firstCall = true;
             } catch (ServerException e) {
                 log.error("Error closing connection during connection reset", e);
@@ -919,7 +908,7 @@ public class ElectrumServer {
         public boolean cancel() {
             try {
                 closeActiveConnection();
-                shutdownBwt();
+                shutdown();
             } catch (ServerException e) {
                 log.error("Error closing connection", e);
             }
@@ -927,8 +916,8 @@ public class ElectrumServer {
             return super.cancel();
         }
 
-        private void shutdownBwt() {
-            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+        private void shutdown() {
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning()) {
                 Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
                 disconnectionService.setOnSucceeded(workerStateEvent -> {
                     ElectrumServer.bwtElectrumServer = null;
@@ -937,6 +926,8 @@ public class ElectrumServer {
                     log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
                 });
                 Platform.runLater(disconnectionService::start);
+            } else {
+                Platform.runLater(() -> EventManager.get().post(new DisconnectionEvent()));
             }
         }
 

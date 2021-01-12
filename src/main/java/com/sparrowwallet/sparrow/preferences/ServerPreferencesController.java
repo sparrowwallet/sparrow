@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.preferences;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
@@ -251,8 +252,12 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         });
 
-        boolean isConnected = ElectrumServer.isConnected();
+        boolean isConnected = AppServices.isConnecting() || AppServices.isConnected();
         setFieldsEditable(!isConnected);
+
+        if(AppServices.isConnecting()) {
+            testResults.appendText("Connecting to server, please wait...");
+        }
 
         testConnection.managedProperty().bind(testConnection.visibleProperty());
         testConnection.setVisible(!isConnected);
@@ -265,6 +270,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         editConnection.managedProperty().bind(editConnection.visibleProperty());
         editConnection.setVisible(isConnected);
+        editConnection.setDisable(AppServices.isConnecting());
         editConnection.setOnAction(event -> {
             EventManager.get().post(new RequestDisconnectEvent());
             setFieldsEditable(true);
@@ -364,6 +370,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             EventManager.get().unregister(connectionService);
             ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
             showConnectionSuccess(connectionEvent.getServerVersion(), connectionEvent.getServerBanner());
+            getMasterController().reconnectOnClosingProperty().set(true);
             connectionService.cancel();
         });
         connectionService.setOnFailed(workerStateEvent -> {
@@ -377,24 +384,24 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private void setFieldsEditable(boolean editable) {
         serverTypeToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
 
-        coreHost.setEditable(editable);
-        corePort.setEditable(editable);
+        coreHost.setDisable(!editable);
+        corePort.setDisable(!editable);
         coreAuthToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
-        coreDataDir.setEditable(editable);
+        coreDataDir.setDisable(!editable);
         coreDataDirSelect.setDisable(!editable);
-        coreUser.setEditable(editable);
-        corePass.setEditable(editable);
+        coreUser.setDisable(!editable);
+        corePass.setDisable(!editable);
         coreMultiWallet.setDisable(!editable);
-        coreWallet.setEditable(editable);
+        coreWallet.setDisable(!editable);
 
-        electrumHost.setEditable(editable);
-        electrumPort.setEditable(editable);
+        electrumHost.setDisable(!editable);
+        electrumPort.setDisable(!editable);
         electrumUseSsl.setDisable(!editable);
-        electrumCertificate.setEditable(editable);
+        electrumCertificate.setDisable(!editable);
         electrumCertificateSelect.setDisable(!editable);
         useProxy.setDisable(!editable);
-        proxyHost.setEditable(editable);
-        proxyPort.setEditable(editable);
+        proxyHost.setDisable(!editable);
+        proxyPort.setDisable(!editable);
     }
 
     private void showConnectionSuccess(List<String> serverVersion, String serverBanner) {
@@ -624,10 +631,14 @@ public class ServerPreferencesController extends PreferencesDetailController {
         if(!(event instanceof BwtSyncStatusEvent)) {
             testResults.appendText("\n" + event.getStatus());
         }
+        if(event instanceof BwtReadyStatusEvent) {
+            editConnection.setDisable(false);
+        }
     }
 
     @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
+        editConnection.setDisable(false);
         if(connectionService != null && connectionService.isRunning() && event.getProgress() < 100) {
             DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm");
             testResults.appendText("\nThe connection to the Bitcoin Core node was successful, but it is still syncing and cannot be used yet.");

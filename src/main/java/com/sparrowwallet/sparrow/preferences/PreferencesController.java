@@ -28,6 +28,8 @@ public class PreferencesController implements Initializable {
 
     private final BooleanProperty closing = new SimpleBooleanProperty(false);
 
+    private final BooleanProperty reconnectOnClosing = new SimpleBooleanProperty(false);
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
@@ -62,6 +64,14 @@ public class PreferencesController implements Initializable {
 
     BooleanProperty closingProperty() {
         return closing;
+    }
+
+    public boolean isReconnectOnClosing() {
+        return reconnectOnClosing.get();
+    }
+
+    public BooleanProperty reconnectOnClosingProperty() {
+        return reconnectOnClosing;
     }
 
     FXMLLoader setPreferencePane(String fxmlName) {

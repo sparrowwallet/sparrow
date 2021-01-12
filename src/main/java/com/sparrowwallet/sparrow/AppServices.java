@@ -108,7 +108,7 @@ public class AppServices {
             service.cancel();
         }
 
-        if(service.getState() == Worker.State.CANCELLED) {
+        if(service.getState() == Worker.State.CANCELLED || service.getState() == Worker.State.FAILED) {
             service.reset();
         }
 
@@ -171,6 +171,8 @@ public class AppServices {
         });
 
         connectionService.setOnSucceeded(successEvent -> {
+            connectionService.setRestartOnFailure(true);
+
             onlineProperty.removeListener(onlineServicesListener);
             onlineProperty.setValue(true);
             onlineProperty.addListener(onlineServicesListener);
@@ -182,6 +184,10 @@ public class AppServices {
         connectionService.setOnFailed(failEvent -> {
             //Close connection here to create a new transport next time we try
             connectionService.resetConnection();
+
+            if(failEvent.getSource().getException() instanceof ServerConfigException) {
+                connectionService.setRestartOnFailure(false);
+            }
 
             onlineProperty.removeListener(onlineServicesListener);
             onlineProperty.setValue(false);
@@ -303,7 +309,7 @@ public class AppServices {
     }
 
     public static boolean isConnecting() {
-        return onlineProperty.get() && get().connectionService.isConnecting();
+        return get().connectionService != null && get().connectionService.isConnecting();
     }
 
     public static boolean isConnected() {
