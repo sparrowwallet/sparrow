@@ -9,14 +9,10 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.FileType;
 import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import javafx.application.Application;
-import javafx.application.Platform;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
@@ -64,6 +60,10 @@ public class MainApp extends Application {
                     createNewWallet = optNewWallet.isPresent() && optNewWallet.get();
                 }
             }
+        }
+
+        if(Config.get().getServerType() == null) {
+            Config.get().setServerType(ServerType.ELECTRUM_SERVER);
         }
 
         AppServices.initialize(this);

@@ -4,10 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.BalanceChart;
-import com.sparrowwallet.sparrow.control.CoinLabel;
-import com.sparrowwallet.sparrow.control.FiatLabel;
-import com.sparrowwallet.sparrow.control.TransactionsTreeTable;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import javafx.collections.ListChangeListener;
@@ -30,6 +27,12 @@ public class TransactionsController extends WalletFormController implements Init
     private CoinLabel mempoolBalance;
 
     @FXML
+    private FiatLabel fiatMempoolBalance;
+
+    @FXML
+    private CopyableLabel transactionCount;
+
+    @FXML
     private TransactionsTreeTable transactionsTable;
 
     @FXML
@@ -47,10 +50,14 @@ public class TransactionsController extends WalletFormController implements Init
         transactionsTable.initialize(walletTransactionsEntry);
 
         balance.valueProperty().addListener((observable, oldValue, newValue) -> {
-            setFiatBalance(AppServices.getFiatCurrencyExchangeRate(), newValue.longValue());
+            setFiatBalance(fiatBalance, AppServices.getFiatCurrencyExchangeRate(), newValue.longValue());
         });
         balance.setValue(walletTransactionsEntry.getBalance());
+        mempoolBalance.valueProperty().addListener((observable, oldValue, newValue) -> {
+            setFiatBalance(fiatMempoolBalance, AppServices.getFiatCurrencyExchangeRate(), newValue.longValue());
+        });
         mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
+        setTransactionCount(walletTransactionsEntry);
         balanceChart.initialize(walletTransactionsEntry);
 
         transactionsTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
@@ -61,10 +68,17 @@ public class TransactionsController extends WalletFormController implements Init
         });
     }
 
-    private void setFiatBalance(CurrencyRate currencyRate, long balance) {
-        if(currencyRate != null && currencyRate.isAvailable()) {
-            fiatBalance.set(currencyRate, balance);
+    private void setFiatBalance(FiatLabel fiatLabel, CurrencyRate currencyRate, long balance) {
+        if(currencyRate != null && currencyRate.isAvailable() && balance > 0) {
+            fiatLabel.set(currencyRate, balance);
+        } else {
+            fiatLabel.setCurrency(null);
+            fiatLabel.setBtcRate(0.0);
         }
+    }
+
+    private void setTransactionCount(WalletTransactionsEntry walletTransactionsEntry) {
+        transactionCount.setText(walletTransactionsEntry.getChildren() != null ? Integer.toString(walletTransactionsEntry.getChildren().size()) : "0");
     }
 
     @Subscribe
@@ -76,6 +90,7 @@ public class TransactionsController extends WalletFormController implements Init
             balance.setValue(walletTransactionsEntry.getBalance());
             mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
             balanceChart.update(walletTransactionsEntry);
+            setTransactionCount(walletTransactionsEntry);
         }
     }
 
@@ -91,6 +106,7 @@ public class TransactionsController extends WalletFormController implements Init
             balance.setValue(walletTransactionsEntry.getBalance());
             mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
             balanceChart.update(walletTransactionsEntry);
+            setTransactionCount(walletTransactionsEntry);
         }
     }
 
@@ -115,12 +131,15 @@ public class TransactionsController extends WalletFormController implements Init
         if(event.getExchangeSource() == ExchangeSource.NONE) {
             fiatBalance.setCurrency(null);
             fiatBalance.setBtcRate(0.0);
+            fiatMempoolBalance.setCurrency(null);
+            fiatMempoolBalance.setBtcRate(0.0);
         }
     }
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        setFiatBalance(event.getCurrencyRate(), getWalletForm().getWalletTransactionsEntry().getBalance());
+        setFiatBalance(fiatBalance, event.getCurrencyRate(), getWalletForm().getWalletTransactionsEntry().getBalance());
+        setFiatBalance(fiatMempoolBalance, event.getCurrencyRate(), getWalletForm().getWalletTransactionsEntry().getMempoolBalance());
     }
 
     @Subscribe
