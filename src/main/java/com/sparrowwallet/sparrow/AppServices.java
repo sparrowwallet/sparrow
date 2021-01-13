@@ -312,7 +312,7 @@ public class AppServices {
     }
 
     public static boolean isConnected() {
-        return onlineProperty.get() && get().connectionService.isConnected();
+        return onlineProperty.get() && get().connectionService != null && get().connectionService.isConnected();
     }
 
     public static BooleanProperty onlineProperty() {
