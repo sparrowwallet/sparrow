@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Bwt {
     private static final Logger log = LoggerFactory.getLogger(Bwt.class);
@@ -48,19 +49,21 @@ public class Bwt {
     }
 
     private void start(Collection<Wallet> wallets, CallbackNotifier callback) {
+        List<Wallet> validWallets = wallets.stream().filter(Wallet::isValid).collect(Collectors.toList());
+
         List<String> outputDescriptors = new ArrayList<>();
-        for(Wallet wallet : wallets) {
+        for(Wallet wallet : validWallets) {
             OutputDescriptor receiveOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE);
             outputDescriptors.add(receiveOutputDescriptor.toString(false, false));
             OutputDescriptor changeOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE);
             outputDescriptors.add(changeOutputDescriptor.toString(false, false));
         }
 
-        int rescanSince = wallets.stream().filter(wallet -> wallet.getBirthDate() != null).mapToInt(wallet -> (int)(wallet.getBirthDate().getTime() / 1000)).min().orElse(-1);
-        int gapLimit = wallets.stream().filter(wallet -> wallet.getGapLimit() > 0).mapToInt(Wallet::getGapLimit).max().orElse(Wallet.DEFAULT_LOOKAHEAD);
+        int rescanSince = validWallets.stream().filter(wallet -> wallet.getBirthDate() != null).mapToInt(wallet -> (int)(wallet.getBirthDate().getTime() / 1000)).min().orElse(-1);
+        int gapLimit = validWallets.stream().filter(wallet -> wallet.getGapLimit() > 0).mapToInt(Wallet::getGapLimit).max().orElse(Wallet.DEFAULT_LOOKAHEAD);
 
         boolean forceRescan = false;
-        for(Wallet wallet :wallets) {
+        for(Wallet wallet : validWallets) {
             Date txBirthDate = wallet.getTransactions().values().stream().map(BlockTransactionHash::getDate).filter(Objects::nonNull).min(Date::compareTo).orElse(null);
             if((wallet.getBirthDate() != null && txBirthDate != null && wallet.getBirthDate().before(txBirthDate)) || (txBirthDate == null && wallet.getStoredBlockHeight() != null && wallet.getStoredBlockHeight() == 0)) {
                 forceRescan = true;
