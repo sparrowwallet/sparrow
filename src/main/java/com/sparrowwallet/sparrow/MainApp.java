@@ -45,6 +45,8 @@ public class MainApp extends Application {
         GlyphFontRegistry.register(new FontAwesome5Brands());
         Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
 
+        AppServices.initialize(this);
+
         boolean createNewWallet = false;
         Mode mode = Config.get().getMode();
         if(mode == null) {
@@ -66,7 +68,6 @@ public class MainApp extends Application {
             Config.get().setServerType(ServerType.ELECTRUM_SERVER);
         }
 
-        AppServices.initialize(this);
         AppController appController = AppServices.newAppWindow(stage);
 
         if(createNewWallet) {
