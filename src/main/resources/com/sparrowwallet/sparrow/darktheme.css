@@ -172,3 +172,11 @@
 .root .placeholder .hyperlink {
     -fx-text-fill: derive(#1e88cf, 20%);
 }
+
+.root .box-overlay {
+    -fx-effect: dropshadow(three-pass-box, black, 14, 0, 0, 0);
+}
+
+.root .box-overlay .label {
+    -fx-text-fill: white;
+}

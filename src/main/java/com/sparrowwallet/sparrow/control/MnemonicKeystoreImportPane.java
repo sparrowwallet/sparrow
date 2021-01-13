@@ -24,6 +24,7 @@ import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.CustomTextField;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.tools.Borders;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -48,6 +49,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private Label invalidLabel;
     private Button calculateButton;
     private Button backButton;
+    private Button nextButton;
     private Button confirmButton;
     private List<String> generatedMnemonicCode;
 
@@ -197,9 +199,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             confirmButton.managedProperty().bind(confirmButton.visibleProperty());
             confirmButton.setVisible(false);
             confirmButton.setDefaultButton(true);
-            confirmButton.setTooltip(new Tooltip("Write down the words above as a backup - you will need to re-enter them to confirm your backup is correct"));
-            buttonPane.getChildren().add(confirmButton);
-            AnchorPane.setRightAnchor(confirmButton, 0.0);
+            confirmButton.setTooltip(new Tooltip("Re-enter the generated word list to confirm your backup is correct"));
 
             calculateButton = new Button("Calculate Seed");
             calculateButton.setDisable(true);
@@ -217,6 +217,15 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             backButton.managedProperty().bind(backButton.visibleProperty());
             backButton.setTooltip(new Tooltip("Go back to the generated word list"));
             backButton.setVisible(false);
+
+            nextButton = new Button("Confirm Backup...");
+            nextButton.setOnAction(event -> {
+                confirmRecord();
+            });
+            nextButton.managedProperty().bind(nextButton.visibleProperty());
+            nextButton.setTooltip(new Tooltip("Confirm you have recorded the generated word list"));
+            nextButton.setVisible(false);
+            nextButton.setDefaultButton(true);
 
             wordEntriesProperty.addListener((ListChangeListener<String>) c -> {
                 boolean empty = true;
@@ -249,7 +258,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
             HBox rightBox = new HBox();
             rightBox.setSpacing(10);
-            rightBox.getChildren().addAll(backButton, calculateButton);
+            rightBox.getChildren().addAll(backButton, nextButton, confirmButton, calculateButton);
 
             buttonPane.getChildren().add(rightBox);
             AnchorPane.setRightAnchor(rightBox, 0.0);
@@ -257,7 +266,9 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             vBox.getChildren().add(buttonPane);
         }
 
-        return vBox;
+        StackPane stackPane = new StackPane();
+        stackPane.getChildren().add(vBox);
+        return stackPane;
     }
 
     private void generateNew() {
@@ -275,7 +286,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         showHideLink.setVisible(false);
 
         calculateButton.setVisible(false);
-        confirmButton.setVisible(true);
+        nextButton.setVisible(true);
         backButton.setVisible(false);
 
         if(generatedMnemonicCode.size() != wordsPane.getChildren().size()) {
@@ -287,6 +298,36 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             wordEntry.getEditor().setText(generatedMnemonicCode.get(i));
             wordEntry.getEditor().setEditable(false);
         }
+
+        StackPane wordsStackPane = (StackPane)getContent();
+        if(wordsStackPane.getChildren().size() > 1) {
+            wordsStackPane.getChildren().remove(1);
+            confirmButton.setVisible(false);
+        }
+    }
+
+    private void confirmRecord() {
+        setDescription("Confirm words have been recorded");
+        showHideLink.setVisible(false);
+
+        StackPane wordsPane = (StackPane)getContent();
+        StackPane confirmPane = new StackPane();
+        confirmPane.setMaxWidth(300);
+        confirmPane.setMaxHeight(100);
+        Region region = new Region();
+        region.setMinWidth(confirmPane.getMaxWidth());
+        region.setMinHeight(confirmPane.getMaxHeight());
+        confirmPane.getStyleClass().add("box-overlay");
+        Node wrappedRegion = Borders.wrap(region).lineBorder().innerPadding(0).outerPadding(0).buildAll();
+        Label label = new Label("Have these " + wordEntriesProperty.get().size() + " words been written down?\nIn the next step, you will need to re-enter them.");
+        confirmPane.getChildren().addAll(wrappedRegion, label);
+        wordsPane.getChildren().add(confirmPane);
+
+        setExpanded(true);
+        backButton.setVisible(true);
+        nextButton.setVisible(false);
+        confirmButton.setVisible(true);
+        generateButton.setVisible(false);
     }
 
     private void confirmBackup() {
