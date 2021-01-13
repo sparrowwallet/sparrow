@@ -1,8 +1,12 @@
 package com.sparrowwallet.sparrow.event;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class BwtSyncStatusEvent extends BwtStatusEvent {
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm");
+
     private final int progress;
     private final Date tip;
 
@@ -22,5 +26,9 @@ public class BwtSyncStatusEvent extends BwtStatusEvent {
 
     public Date getTip() {
         return tip;
+    }
+
+    public String getTipAsString() {
+        return tip == null ? "" : DATE_FORMAT.format(tip);
     }
 }

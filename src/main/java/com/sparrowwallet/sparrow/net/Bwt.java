@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -254,12 +255,12 @@ public class Bwt {
                         }
 
                         @Override
-                        public void onScanProgress(float progress, int eta) {
+                        public void onScanProgress(float progress, int remaining) {
                             int percent = (int) (progress * 100.0);
-                            Date date = new Date((long) eta * 1000);
+                            Duration remainingDuration = Duration.ofSeconds(remaining);
                             log.debug("Scanning " + percent + "%");
                             if(!terminating) {
-                                Platform.runLater(() -> EventManager.get().post(new BwtScanStatusEvent("Scanning" + (percent < 100 ? " (" + percent + "%)" : ""), percent, date)));
+                                Platform.runLater(() -> EventManager.get().post(new BwtScanStatusEvent("Scanning" + (percent < 100 ? " (" + percent + "%)" : ""), percent, remainingDuration)));
                             }
                         }
 

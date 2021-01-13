@@ -1,15 +1,15 @@
 package com.sparrowwallet.sparrow.event;
 
-import java.util.Date;
+import java.time.Duration;
 
 public class BwtScanStatusEvent extends BwtStatusEvent {
     private final int progress;
-    private final Date eta;
+    private final Duration remainingDuration;
 
-    public BwtScanStatusEvent(String status, int progress, Date eta) {
+    public BwtScanStatusEvent(String status, int progress, Duration remainingDuration) {
         super(status);
         this.progress = progress;
-        this.eta = eta;
+        this.remainingDuration = remainingDuration;
     }
 
     public int getProgress() {
@@ -20,7 +20,19 @@ public class BwtScanStatusEvent extends BwtStatusEvent {
         return progress == 100;
     }
 
-    public Date getEta() {
-        return eta;
+    public Duration getRemaining() {
+        return remainingDuration;
+    }
+
+    public String getRemainingAsString() {
+        if(remainingDuration != null) {
+            if(progress < 30) {
+                return Math.round((double)remainingDuration.toSeconds() / 60) + "m";
+            } else {
+                return remainingDuration.toMinutesPart() + "m " + remainingDuration.toSecondsPart() + "s";
+            }
+        }
+
+        return "";
     }
 }

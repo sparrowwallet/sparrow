@@ -1196,7 +1196,7 @@ public class AppController implements Initializable {
         if(wait != null && wait.getStatus() == Animation.Status.RUNNING) {
             wait.stop();
         }
-        wait = new PauseTransition(Duration.seconds(20));
+        wait = new PauseTransition(Duration.seconds(event.getShowDuration()));
         wait.setOnFinished((e) -> {
             if(statusBar.getText().equals(event.getStatus())) {
                 statusBar.setText("");
@@ -1272,14 +1272,20 @@ public class AppController implements Initializable {
     @Subscribe
     public void bwtBootStatus(BwtBootStatusEvent event) {
         serverToggle.setDisable(true);
-        statusUpdated(new StatusEvent(event.getStatus()));
+        statusUpdated(new StatusEvent(event.getStatus(), 60));
+        if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+            statusBar.setProgress(0.01);
+        }
     }
 
     @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
         serverToggle.setDisable(false);
         if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
-            statusUpdated(new StatusEvent(event.getStatus()));
+            statusUpdated(new StatusEvent("Syncing... (" + event.getProgress() + "% complete, synced to " + event.getTipAsString() + ")"));
+            if(event.getProgress() > 0 && (statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING)) {
+                statusBar.setProgress((double)event.getProgress() / 100);
+            }
         }
     }
 
@@ -1287,13 +1293,19 @@ public class AppController implements Initializable {
     public void bwtScanStatus(BwtScanStatusEvent event) {
         serverToggle.setDisable(true);
         if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
-            statusUpdated(new StatusEvent(event.getStatus()));
+            statusUpdated(new StatusEvent("Scanning... (" + event.getProgress() + "% complete" + (event.getProgress() > 30 ? ", " + event.getRemainingAsString() + " remaining)" : ")")));
+            if(event.getProgress() > 0 && (statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING)) {
+                statusBar.setProgress((double)event.getProgress() / 100);
+            }
         }
     }
 
     @Subscribe
     public void bwtReadyStatus(BwtReadyStatusEvent event) {
         serverToggle.setDisable(false);
+        if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+            statusBar.setProgress(0);
+        }
     }
 
     @Subscribe
@@ -1301,6 +1313,9 @@ public class AppController implements Initializable {
         serverToggle.setDisable(false);
         if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith("Connection error")) {
             statusUpdated(new StatusEvent("Disconnected"));
+        }
+        if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+            statusBar.setProgress(0);
         }
     }
 
