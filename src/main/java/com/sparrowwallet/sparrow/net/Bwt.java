@@ -34,9 +34,9 @@ public class Bwt {
             if(platform == org.controlsfx.tools.Platform.OSX) {
                 NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
             } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
-                NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt.dll");
+                NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");
             } else {
-                NativeUtils.loadLibraryFromJar("/native/linux/x64/libbwt.so");
+                NativeUtils.loadLibraryFromJar("/native/linux/x64/libbwt_jni.so");
             }
         } catch(IOException e) {
             log.error("Error loading bwt library", e);
