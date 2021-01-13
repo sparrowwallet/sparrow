@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
@@ -53,7 +54,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
             Gson gson = new Gson();
             Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {
             }.getType();
-            Map<String, JsonElement> map = gson.fromJson(new InputStreamReader(inputStream), stringStringMap);
+            Map<String, JsonElement> map = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), stringStringMap);
 
             if (map.get("xfp") == null) {
                 throw new ImportException("File was not a valid Coldcard wallet export");

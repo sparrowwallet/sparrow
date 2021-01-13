@@ -51,7 +51,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
-            SpecterWallet specterWallet = gson.fromJson(new InputStreamReader(inputStream), SpecterWallet.class);
+            SpecterWallet specterWallet = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), SpecterWallet.class);
 
             if(specterWallet.descriptor != null) {
                 OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(specterWallet.descriptor);

@@ -16,6 +16,7 @@ import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
 import java.util.Map;
 
@@ -45,7 +46,7 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
         URL url = new URL(VERSION_CHECK_URL);
         HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
 
-        try(InputStreamReader reader = new InputStreamReader(conn.getInputStream())) {
+        try(InputStreamReader reader = new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)) {
             Gson gson = new Gson();
             return gson.fromJson(reader, VersionCheck.class);
         }

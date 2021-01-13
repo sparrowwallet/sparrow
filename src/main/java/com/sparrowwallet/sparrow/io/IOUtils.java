@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 public class IOUtils {
@@ -13,7 +14,7 @@ public class IOUtils {
                 }
 
                 if(file.exists()) {
-                    try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
+                    try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
                         String line = br.readLine();
                         if(line.startsWith("01000000") || line.startsWith("cHNid")) {
                             return FileType.TEXT;

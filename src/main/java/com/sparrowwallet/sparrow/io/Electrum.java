@@ -58,9 +58,9 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         Reader reader;
         if(password != null) {
             ECKey decryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password);
-            reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(inputStream, decryptionKey)));
+            reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(inputStream, decryptionKey)), StandardCharsets.UTF_8);
         } else {
-            reader = new InputStreamReader(inputStream);
+            reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         }
 
         try {

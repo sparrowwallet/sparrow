@@ -12,12 +12,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class SpecterDIY implements KeystoreFileImport {
     @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
-            String text = CharStreams.toString(new InputStreamReader(inputStream));
+            String text = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             String outputDesc = "sh(" + text + ")";
             OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(outputDesc);
             Wallet wallet = outputDescriptor.toWallet();

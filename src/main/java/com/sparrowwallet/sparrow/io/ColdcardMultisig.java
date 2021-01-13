@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,7 +31,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
-        InputStreamReader reader = new InputStreamReader(inputStream);
+        InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         ColdcardKeystore cck = Storage.getGson().fromJson(reader, ColdcardKeystore.class);
 
         Keystore keystore = new Keystore("Coldcard");
@@ -94,7 +95,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         String derivation = null;
 
         try {
-            List<String> lines = CharStreams.readLines(new InputStreamReader(inputStream));
+            List<String> lines = CharStreams.readLines(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             for (String line : lines) {
                 line = line.trim();
                 if (line.isEmpty()) {

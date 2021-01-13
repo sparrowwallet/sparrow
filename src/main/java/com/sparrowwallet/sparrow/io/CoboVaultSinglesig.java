@@ -11,6 +11,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 
 public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     @Override
@@ -32,7 +33,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
-            CoboVaultSinglesigKeystore coboKeystore = gson.fromJson(new InputStreamReader(inputStream), CoboVaultSinglesigKeystore.class);
+            CoboVaultSinglesigKeystore coboKeystore = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), CoboVaultSinglesigKeystore.class);
 
             if(coboKeystore.MasterFingerprint == null || coboKeystore.AccountKeyPath == null || coboKeystore.ExtPubKey == null) {
                 throw new ImportException("Not a valid " + getName() + " keystore export");

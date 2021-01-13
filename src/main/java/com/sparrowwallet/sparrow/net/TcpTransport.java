@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.SocketFactory;
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -130,7 +131,7 @@ public class TcpTransport implements Transport, Closeable {
                 Thread.currentThread().interrupt();
             }
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
 
             while(running) {
                 try {
