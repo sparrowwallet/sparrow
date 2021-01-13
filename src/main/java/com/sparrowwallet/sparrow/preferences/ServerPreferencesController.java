@@ -5,6 +5,7 @@ import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
@@ -371,6 +372,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
             showConnectionSuccess(connectionEvent.getServerVersion(), connectionEvent.getServerBanner());
             getMasterController().reconnectOnClosingProperty().set(true);
+            Config.get().setMode(Mode.ONLINE);
             connectionService.cancel();
         });
         connectionService.setOnFailed(workerStateEvent -> {

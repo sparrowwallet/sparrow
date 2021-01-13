@@ -230,6 +230,9 @@ public class AppController implements Initializable {
         onlineProperty().addListener((observable, oldValue, newValue) ->  {
             Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
         });
+        serverToggle.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
+            Config.get().setMode(serverToggle.isSelected() ? Mode.ONLINE : Mode.OFFLINE);
+        });
 
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
     }

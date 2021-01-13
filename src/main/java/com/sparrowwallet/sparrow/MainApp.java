@@ -62,7 +62,7 @@ public class MainApp extends Application {
             }
         }
 
-        if(Config.get().getServerType() == null) {
+        if(Config.get().getServerType() == null && Config.get().getCoreServer() == null && Config.get().getElectrumServer() != null) {
             Config.get().setServerType(ServerType.ELECTRUM_SERVER);
         }
 

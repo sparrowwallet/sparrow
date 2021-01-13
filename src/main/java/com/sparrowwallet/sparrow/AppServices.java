@@ -84,7 +84,6 @@ public class AppServices {
     private final ChangeListener<Boolean> onlineServicesListener = new ChangeListener<>() {
         @Override
         public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean online) {
-            Config.get().setMode(online ? Mode.ONLINE : Mode.OFFLINE);
             if(online) {
                 restartService(connectionService);
 
