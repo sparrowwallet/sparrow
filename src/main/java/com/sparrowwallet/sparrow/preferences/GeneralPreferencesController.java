@@ -58,6 +58,8 @@ public class GeneralPreferencesController extends PreferencesDetailController {
     public void initializeView(Config config) {
         if(config.getBitcoinUnit() != null) {
             bitcoinUnit.setValue(config.getBitcoinUnit());
+        } else {
+            bitcoinUnit.setValue(BitcoinUnit.AUTO);
         }
 
         bitcoinUnit.valueProperty().addListener((observable, oldValue, newValue) -> {

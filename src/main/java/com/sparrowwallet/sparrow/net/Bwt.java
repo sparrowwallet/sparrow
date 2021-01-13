@@ -96,7 +96,7 @@ public class Bwt {
         }
 
         bwtConfig.verbose = log.isDebugEnabled() ? 2 : 0;
-        if(!log.isInfoEnabled()) {
+        if(!log.isDebugEnabled()) {
             bwtConfig.setupLogger = false;
         }
 

@@ -441,11 +441,13 @@ public class AppServices {
 
     @Subscribe
     public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
-        ratesService.cancel();
+        if(ratesService != null) {
+            ratesService.cancel();
 
-        if(Config.get().getMode() != Mode.OFFLINE && event.getExchangeSource() != ExchangeSource.NONE) {
-            ratesService = createRatesService(event.getExchangeSource(), event.getCurrency());
-            ratesService.start();
+            if(Config.get().getMode() != Mode.OFFLINE && event.getExchangeSource() != ExchangeSource.NONE) {
+                ratesService = createRatesService(event.getExchangeSource(), event.getCurrency());
+                ratesService.start();
+            }
         }
     }
 
