@@ -62,7 +62,7 @@ public class Bwt {
         boolean forceRescan = false;
         for(Wallet wallet :wallets) {
             Date txBirthDate = wallet.getTransactions().values().stream().map(BlockTransactionHash::getDate).filter(Objects::nonNull).min(Date::compareTo).orElse(null);
-            if((wallet.getBirthDate() != null && txBirthDate != null && wallet.getBirthDate().before(txBirthDate)) || (txBirthDate == null && wallet.getStoredBlockHeight() == 0)) {
+            if((wallet.getBirthDate() != null && txBirthDate != null && wallet.getBirthDate().before(txBirthDate)) || (txBirthDate == null && wallet.getStoredBlockHeight() != null && wallet.getStoredBlockHeight() == 0)) {
                 forceRescan = true;
             }
         }
