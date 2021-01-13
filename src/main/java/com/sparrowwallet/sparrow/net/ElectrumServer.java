@@ -9,11 +9,12 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.event.ConnectionEvent;
-import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.event.TorStatusEvent;
+import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.SendController;
+import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -26,6 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class ElectrumServer {
@@ -41,24 +44,37 @@ public class ElectrumServer {
 
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
+    private static String bwtElectrumServer;
+
     private static synchronized Transport getTransport() throws ServerException {
         if(transport == null) {
             try {
-                String electrumServer = Config.get().getElectrumServer();
-                File electrumServerCert = Config.get().getElectrumServerCert();
-                String proxyServer = Config.get().getProxyServer();
+                String electrumServer = null;
+                File electrumServerCert = null;
+                String proxyServer = null;
+
+                if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                    if(bwtElectrumServer == null) {
+                        throw new ServerConfigException("Could not connect to Bitcoin Core RPC");
+                    }
+                    electrumServer = bwtElectrumServer;
+                } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
+                    electrumServer = Config.get().getElectrumServer();
+                    electrumServerCert = Config.get().getElectrumServerCert();
+                    proxyServer = Config.get().getProxyServer();
+                }
 
                 if(electrumServer == null) {
-                    throw new ServerException("Electrum server URL not specified");
+                    throw new ServerConfigException("Electrum server URL not specified");
                 }
 
                 if(electrumServerCert != null && !electrumServerCert.exists()) {
-                    throw new ServerException("Electrum server certificate file not found");
+                    throw new ServerConfigException("Electrum server certificate file not found");
                 }
 
                 Protocol protocol = Protocol.getProtocol(electrumServer);
                 if(protocol == null) {
-                    throw new ServerException("Electrum server URL must start with " + Protocol.TCP.toUrlString() + " or " + Protocol.SSL.toUrlString());
+                    throw new ServerConfigException("Electrum server URL must start with " + Protocol.TCP.toUrlString() + " or " + Protocol.SSL.toUrlString());
                 }
 
                 HostAndPort server = protocol.getServerHostAndPort(electrumServer);
@@ -78,7 +94,7 @@ public class ElectrumServer {
                     }
                 }
             } catch (Exception e) {
-                throw new ServerException(e);
+                throw new ServerConfigException(e);
             }
         }
 
@@ -760,7 +776,10 @@ public class ElectrumServer {
         private boolean firstCall = true;
         private Thread reader;
         private long feeRatesRetrievedAt;
-        private StringProperty statusProperty = new SimpleStringProperty();
+        private final Bwt bwt = new Bwt();
+        private final ReentrantLock bwtStartLock = new ReentrantLock();
+        private final Condition bwtStartCondition = bwtStartLock.newCondition();
+        private final StringProperty statusProperty = new SimpleStringProperty();
 
         public ConnectionService() {
             this(true);
@@ -775,6 +794,37 @@ public class ElectrumServer {
             return new Task<>() {
                 protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
+
+                    if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                        if(!bwt.isRunning()) {
+                            Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe ? AppServices.get().getOpenWallets().keySet() : null);
+                            bwtConnectionService.setOnFailed(workerStateEvent -> {
+                                log.error("Failed to start BWT", workerStateEvent.getSource().getException());
+                                try {
+                                    bwtStartLock.lock();
+                                    bwtStartCondition.signal();
+                                } finally {
+                                    bwtStartLock.unlock();
+                                }
+                            });
+                            Platform.runLater(bwtConnectionService::start);
+
+                            try {
+                                bwtStartLock.lock();
+                                bwtStartCondition.await();
+
+                                if(!bwt.isRunning()) {
+                                    throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
+                                }
+                            } catch(InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return null;
+                            } finally {
+                                bwtStartLock.unlock();
+                            }
+                        }
+                    }
+
                     if(firstCall) {
                         electrumServer.connect();
 
@@ -839,21 +889,46 @@ public class ElectrumServer {
         public void resetConnection() {
             try {
                 closeActiveConnection();
+                shutdown();
                 firstCall = true;
             } catch (ServerException e) {
                 log.error("Error closing connection during connection reset", e);
             }
         }
 
+        public boolean isConnecting() {
+            return isRunning() && Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning() && !bwt.isReady();
+        }
+
+        public boolean isConnected() {
+            return isRunning() && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && bwt.isReady()));
+        }
+
         @Override
         public boolean cancel() {
             try {
                 closeActiveConnection();
+                shutdown();
             } catch (ServerException e) {
                 log.error("Error closing connection", e);
             }
 
             return super.cancel();
+        }
+
+        private void shutdown() {
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning()) {
+                Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
+                disconnectionService.setOnSucceeded(workerStateEvent -> {
+                    ElectrumServer.bwtElectrumServer = null;
+                });
+                disconnectionService.setOnFailed(workerStateEvent -> {
+                    log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
+                });
+                Platform.runLater(disconnectionService::start);
+            } else {
+                Platform.runLater(() -> EventManager.get().post(new DisconnectionEvent()));
+            }
         }
 
         @Override
@@ -870,6 +945,35 @@ public class ElectrumServer {
         @Subscribe
         public void torStatus(TorStatusEvent event) {
             statusProperty.set(event.getStatus());
+        }
+
+        @Subscribe
+        public void bwtElectrumReadyStatus(BwtElectrumReadyStatusEvent event) {
+            if(this.isRunning()) {
+                ElectrumServer.bwtElectrumServer = Protocol.TCP.toUrlString(HostAndPort.fromString(event.getElectrumAddr()));
+            }
+        }
+
+        @Subscribe
+        public void bwtReadyStatus(BwtReadyStatusEvent event) {
+            if(this.isRunning()) {
+                try {
+                    bwtStartLock.lock();
+                    bwtStartCondition.signal();
+                } finally {
+                    bwtStartLock.unlock();
+                }
+            }
+        }
+
+        @Subscribe
+        public void bwtShutdown(BwtShutdownEvent event) {
+            try {
+                bwtStartLock.lock();
+                bwtStartCondition.signal();
+            } finally {
+                bwtStartLock.unlock();
+            }
         }
 
         public StringProperty statusProperty() {

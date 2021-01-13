@@ -3,7 +3,9 @@ package com.sparrowwallet.sparrow.event;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.io.Storage;
 
+import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,11 +14,17 @@ import java.util.stream.Collectors;
  *
  */
 public class WalletHistoryChangedEvent extends WalletChangedEvent {
+    private final Storage storage;
     private final List<WalletNode> historyChangedNodes;
 
-    public WalletHistoryChangedEvent(Wallet wallet, List<WalletNode> historyChangedNodes) {
+    public WalletHistoryChangedEvent(Wallet wallet, Storage storage, List<WalletNode> historyChangedNodes) {
         super(wallet);
+        this.storage = storage;
         this.historyChangedNodes = historyChangedNodes;
+    }
+
+    public File getWalletFile() {
+        return storage.getWalletFile();
     }
 
     public List<WalletNode> getHistoryChangedNodes() {

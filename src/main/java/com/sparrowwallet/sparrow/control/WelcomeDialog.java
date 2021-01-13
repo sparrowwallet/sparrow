@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.Mode;
+import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.HostServices;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
@@ -13,12 +14,9 @@ import org.controlsfx.control.StatusBar;
 import org.controlsfx.control.ToggleSwitch;
 
 public class WelcomeDialog extends Dialog<Mode> {
-    private static final String[] ELECTRUM_SERVERS = new String[]{
-            "ElectrumX (Recommended)", "https://github.com/spesmilo/electrumx",
-            "electrs", "https://github.com/romanz/electrs",
-            "esplora-electrs", "https://github.com/Blockstream/electrs"};
-
     private final HostServices hostServices;
+
+    private ServerType serverType = ServerType.ELECTRUM_SERVER;
 
     public WelcomeDialog(HostServices services) {
         this.hostServices = services;
@@ -27,10 +25,11 @@ public class WelcomeDialog extends Dialog<Mode> {
 
         setTitle("Welcome to Sparrow");
         dialogPane.setHeaderText("Welcome to Sparrow!");
+        dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setPrefWidth(600);
-        dialogPane.setPrefHeight(480);
+        dialogPane.setPrefHeight(520);
 
         Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
         if (!image.isError()) {
@@ -46,16 +45,10 @@ public class WelcomeDialog extends Dialog<Mode> {
 
         final VBox content = new VBox(20);
         content.setPadding(new Insets(20, 20, 20, 20));
-        content.getChildren().add(createParagraph("Sparrow can operate in both an online and offline mode. In the online mode it connects to your Electrum server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator."));
-        content.getChildren().add(createParagraph("For privacy and security reasons it is not recommended to use a public Electrum server. Install an Electrum server that connects to your full node to index the blockchain and provide full privacy. Examples include:"));
-
-        VBox linkBox = new VBox();
-        for(int i = 0; i < ELECTRUM_SERVERS.length; i+=2) {
-            linkBox.getChildren().add(createBulletedLink(ELECTRUM_SERVERS[i], ELECTRUM_SERVERS[i+1]));
-        }
-        content.getChildren().add(linkBox);
-
-        content.getChildren().add(createParagraph("You can change your mode at any time using the toggle in the status bar:"));
+        content.getChildren().add(createParagraph("Sparrow can operate in both an online and offline mode. In the online mode it connects to your Bitcoin Core node or Electrum server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator."));
+        content.getChildren().add(createParagraph("Connecting Sparrow to your Bitcoin Core node ensures your privacy, while connecting Sparrow to your own Electrum server ensures wallets load quicker, you have access to a full blockchain explorer, and your public keys are always encrypted on disk. Examples of Electrum servers include ElectrumX and electrs."));
+        content.getChildren().add(createParagraph("It's also possible to connect Sparrow to a public Electrum server (such as blockstream.info:700) but this is not recommended as you will share your public key information with that server."));
+        content.getChildren().add(createParagraph("You can change your mode at any time using the toggle in the status bar. A blue toggle indicates you are connected to an Electrum server, while a green toggle indicates you are connected to a Bitcoin Code node."));
         content.getChildren().add(createStatusBar(onlineButtonType, offlineButtonType));
 
         dialogPane.setContent(content);
@@ -66,16 +59,6 @@ public class WelcomeDialog extends Dialog<Mode> {
     private Label createParagraph(String text) {
         Label label = new Label(text);
         label.setWrapText(true);
-
-        return label;
-    }
-
-    private HyperlinkLabel createBulletedLink(String name, String url) {
-        String[] nameParts = name.split(" ");
-        HyperlinkLabel label = new HyperlinkLabel(" \u2022 [" + nameParts[0] + "] " + (nameParts.length > 1 ? nameParts[1] : ""));
-        label.setOnAction(event -> {
-            hostServices.showDocument(url);
-        });
 
         return label;
     }
@@ -97,7 +80,18 @@ public class WelcomeDialog extends Dialog<Mode> {
             onlineButton.setDefaultButton(newValue);
             Button offlineButton = (Button) getDialogPane().lookupButton(offlineButtonType);
             offlineButton.setDefaultButton(!newValue);
-            statusBar.setText(newValue ? "Online Mode" : "Offline Mode");
+
+            if(!newValue) {
+                serverType = (serverType == ServerType.BITCOIN_CORE ? ServerType.ELECTRUM_SERVER : ServerType.BITCOIN_CORE);
+
+                if(serverType == ServerType.BITCOIN_CORE && !toggleSwitch.getStyleClass().contains("core-server")) {
+                    toggleSwitch.getStyleClass().add("core-server");
+                } else {
+                    toggleSwitch.getStyleClass().remove("core-server");
+                }
+            }
+
+            statusBar.setText(newValue ? "Online Mode: " + serverType.getName() : "Offline Mode");
         });
 
         toggleSwitch.setSelected(true);

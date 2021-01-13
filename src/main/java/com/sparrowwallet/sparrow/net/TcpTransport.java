@@ -149,7 +149,7 @@ public class TcpTransport implements Transport, Closeable {
                     //Restore interrupt status and continue
                     Thread.currentThread().interrupt();
                 } catch(Exception e) {
-                    log.debug("Connection error while reading", e);
+                    log.trace("Connection error while reading", e);
                     if(running) {
                         lastException = e;
                         reading = false;
@@ -177,7 +177,7 @@ public class TcpTransport implements Transport, Closeable {
         String response = in.readLine();
 
         if(response == null) {
-            throw new IOException("Could not connect to server at " + Config.get().getElectrumServer());
+            throw new IOException("Could not connect to server at " + Config.get().getServerAddress());
         }
 
         return response;

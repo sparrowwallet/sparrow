@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * This class extends WalletForm to allow rollback of wallet changes. It is used exclusively by SettingsController for this purpose.
@@ -37,7 +38,7 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void saveAndRefresh() throws IOException {
-        boolean refreshAll = changesScriptHashes(wallet, walletCopy);
+        boolean refreshAll = isRefreshNecessary(wallet, walletCopy);
         if(refreshAll) {
             walletCopy.clearNodes();
         }
@@ -50,11 +51,31 @@ public class SettingsWalletForm extends WalletForm {
         }
     }
 
-    private boolean changesScriptHashes(Wallet original, Wallet changed) {
+    private boolean isRefreshNecessary(Wallet original, Wallet changed) {
         if(!original.isValid() || !changed.isValid()) {
             return true;
         }
 
+        if(isAddressChange(original, changed)) {
+            return true;
+        }
+
+        if(original.getGapLimit() != changed.getGapLimit()) {
+            return true;
+        }
+
+        if(!Objects.equals(original.getBirthDate(), changed.getBirthDate())) {
+            return true;
+        }
+
+        return false;
+    }
+
+    protected boolean isAddressChange() {
+        return isAddressChange(wallet, walletCopy);
+    }
+
+    private boolean isAddressChange(Wallet original, Wallet changed) {
         if(original.getPolicyType() != changed.getPolicyType()) {
             return true;
         }
@@ -73,17 +94,13 @@ public class SettingsWalletForm extends WalletForm {
             Keystore originalKeystore = original.getKeystores().get(i);
             Keystore changedKeystore = changed.getKeystores().get(i);
 
-            if(!originalKeystore.getKeyDerivation().equals(changedKeystore.getKeyDerivation())) {
+            if(!Objects.equals(originalKeystore.getKeyDerivation(), changedKeystore.getKeyDerivation())) {
                 return true;
             }
 
-            if(!originalKeystore.getExtendedPublicKey().equals(changedKeystore.getExtendedPublicKey())) {
+            if(!Objects.equals(originalKeystore.getExtendedPublicKey(), changedKeystore.getExtendedPublicKey())) {
                 return true;
             }
-        }
-
-        if(original.getGapLimit() != changed.getGapLimit()) {
-            return true;
         }
 
         return false;

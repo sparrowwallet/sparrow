@@ -138,7 +138,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     private void updateLastUsed() {
         Set<BlockTransactionHashIndex> currentOutputs = currentEntry.getNode().getTransactionOutputs();
-        if(AppServices.isOnline() && currentOutputs.isEmpty()) {
+        if(AppServices.isConnected() && currentOutputs.isEmpty()) {
             lastUsed.setText("Never");
             lastUsed.setGraphic(getUnusedGlyph());
         } else if(!currentOutputs.isEmpty()) {

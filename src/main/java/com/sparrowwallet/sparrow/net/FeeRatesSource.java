@@ -18,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public enum FeeRatesSource {
-    ELECTRUM_SERVER("Electrum Server") {
+    ELECTRUM_SERVER("Server") {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             return Collections.emptyMap();

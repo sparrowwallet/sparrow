@@ -3,6 +3,8 @@ package com.sparrowwallet.sparrow.preferences;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -23,6 +25,10 @@ public class PreferencesController implements Initializable {
 
     @FXML
     private StackPane preferencesPane;
+
+    private final BooleanProperty closing = new SimpleBooleanProperty(false);
+
+    private final BooleanProperty reconnectOnClosing = new SimpleBooleanProperty(false);
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -54,6 +60,18 @@ public class PreferencesController implements Initializable {
                 return;
             }
         }
+    }
+
+    BooleanProperty closingProperty() {
+        return closing;
+    }
+
+    public boolean isReconnectOnClosing() {
+        return reconnectOnClosing.get();
+    }
+
+    public BooleanProperty reconnectOnClosingProperty() {
+        return reconnectOnClosing;
     }
 
     FXMLLoader setPreferencePane(String fxmlName) {

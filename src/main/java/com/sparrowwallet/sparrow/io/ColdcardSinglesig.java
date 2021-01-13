@@ -66,7 +66,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                     ColdcardKeystore ck = gson.fromJson(map.get(key), ColdcardKeystore.class);
 
                     if(ck.name != null) {
-                        ScriptType ckScriptType = ScriptType.valueOf(ck.name.replace("p2wpkh-p2sh", "p2sh_p2wpkh").toUpperCase());
+                        ScriptType ckScriptType = ScriptType.valueOf(ck.name.replace("p2wpkh-p2sh", "p2sh_p2wpkh").replace("p2sh-p2wpkh", "p2sh_p2wpkh").toUpperCase());
                         if(ckScriptType.equals(scriptType)) {
                             Keystore keystore = new Keystore();
                             keystore.setLabel(getName());

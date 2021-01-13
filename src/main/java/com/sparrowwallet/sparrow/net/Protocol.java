@@ -64,6 +64,27 @@ public enum Protocol {
         public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
             return new ProxyTcpOverTlsTransport(server, serverCert, proxy);
         }
+    },
+    HTTP {
+        @Override
+        public Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException {
+            throw new UnsupportedOperationException("No transport supported for HTTP");
+        }
+
+        @Override
+        public Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+            throw new UnsupportedOperationException("No transport supported for HTTP");
+        }
+
+        @Override
+        public Transport getTransport(HostAndPort server, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+            throw new UnsupportedOperationException("No transport supported for HTTP");
+        }
+
+        @Override
+        public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+            throw new UnsupportedOperationException("No transport supported for HTTP");
+        }
     };
 
     public abstract Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException;
@@ -104,6 +125,9 @@ public enum Protocol {
         }
         if(url.startsWith("ssl://")) {
             return SSL;
+        }
+        if(url.startsWith("http://")) {
+            return HTTP;
         }
 
         return null;

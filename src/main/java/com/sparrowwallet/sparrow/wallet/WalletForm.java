@@ -75,18 +75,18 @@ public class WalletForm {
 
     public void refreshHistory(Integer blockHeight, WalletNode node) {
         Wallet previousWallet = wallet.copy();
-        if(wallet.isValid() && AppServices.isOnline()) {
+        if(wallet.isValid() && AppServices.isConnected()) {
             log.debug(node == null ? wallet.getName() + " refreshing full wallet history" : wallet.getName() + " requesting node wallet history for " + node.getDerivationPath());
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
             historyService.setOnSucceeded(workerStateEvent -> {
-                EventManager.get().post(new WalletHistoryStatusEvent(wallet, true));
+                EventManager.get().post(new WalletHistoryStatusEvent(wallet, false));
                 updateWallet(previousWallet, blockHeight);
             });
             historyService.setOnFailed(workerStateEvent -> {
                 log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
                 EventManager.get().post(new WalletHistoryStatusEvent(wallet, workerStateEvent.getSource().getException().getMessage()));
             });
-            EventManager.get().post(new WalletHistoryStatusEvent(wallet, false));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true));
             historyService.start();
         }
     }
@@ -106,7 +106,7 @@ public class WalletForm {
 
         boolean changed = false;
         if(!historyChangedNodes.isEmpty()) {
-            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, historyChangedNodes)));
+            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, storage, historyChangedNodes)));
             changed = true;
         }
 

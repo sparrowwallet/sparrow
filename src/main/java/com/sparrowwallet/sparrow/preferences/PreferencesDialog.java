@@ -15,8 +15,6 @@ import org.controlsfx.tools.Borders;
 import java.io.IOException;
 
 public class PreferencesDialog extends Dialog<Boolean> {
-    private final boolean existingConnection;
-
     public PreferencesDialog() {
         this(null);
     }
@@ -49,11 +47,12 @@ public class PreferencesDialog extends Dialog<Boolean> {
             }
 
             dialogPane.setPrefWidth(650);
-            dialogPane.setPrefHeight(550);
+            dialogPane.setPrefHeight(600);
 
-            existingConnection = ElectrumServer.isConnected();
+            preferencesController.reconnectOnClosingProperty().set(AppServices.isConnecting() || AppServices.isConnected());
             setOnCloseRequest(event -> {
-                if(existingConnection && !ElectrumServer.isConnected()) {
+                preferencesController.closingProperty().set(true);
+                if(preferencesController.isReconnectOnClosing() && !(AppServices.isConnecting() || AppServices.isConnected())) {
                     EventManager.get().post(new RequestConnectEvent());
                 }
             });

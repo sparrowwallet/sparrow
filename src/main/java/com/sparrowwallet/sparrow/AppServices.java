@@ -12,10 +12,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.net.ElectrumServer;
-import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.net.MempoolRateSize;
-import com.sparrowwallet.sparrow.net.VersionCheckService;
+import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -27,6 +24,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.image.Image;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -57,7 +55,7 @@ public class AppServices {
 
     private final MainApp application;
 
-    private final Map<Window, Map<Wallet, Storage>> walletWindows = new LinkedHashMap<>();
+    private final Map<Window, List<WalletTabData>> walletWindows = new LinkedHashMap<>();
 
     private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
 
@@ -86,7 +84,6 @@ public class AppServices {
     private final ChangeListener<Boolean> onlineServicesListener = new ChangeListener<>() {
         @Override
         public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean online) {
-            Config.get().setMode(online ? Mode.ONLINE : Mode.OFFLINE);
             if(online) {
                 restartService(connectionService);
 
@@ -110,7 +107,7 @@ public class AppServices {
             service.cancel();
         }
 
-        if(service.getState() == Worker.State.CANCELLED) {
+        if(service.getState() == Worker.State.CANCELLED || service.getState() == Worker.State.FAILED) {
             service.reset();
         }
 
@@ -127,7 +124,7 @@ public class AppServices {
     public void start() {
         Config config = Config.get();
         connectionService = createConnectionService();
-        if(config.getMode() == Mode.ONLINE && config.getElectrumServer() != null && !config.getElectrumServer().isEmpty()) {
+        if(config.getMode() == Mode.ONLINE && config.getServerAddress() != null && !config.getServerAddress().isEmpty()) {
             connectionService.start();
         }
 
@@ -146,6 +143,20 @@ public class AppServices {
         onlineProperty.addListener(onlineServicesListener);
     }
 
+    public void stop() {
+        if(connectionService != null) {
+            connectionService.cancel();
+        }
+
+        if(ratesService != null) {
+            ratesService.cancel();
+        }
+
+        if(versionCheckService != null) {
+            versionCheckService.cancel();
+        }
+    }
+
     private ElectrumServer.ConnectionService createConnectionService() {
         ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService();
         connectionService.setPeriod(new Duration(SERVER_PING_PERIOD));
@@ -159,6 +170,8 @@ public class AppServices {
         });
 
         connectionService.setOnSucceeded(successEvent -> {
+            connectionService.setRestartOnFailure(true);
+
             onlineProperty.removeListener(onlineServicesListener);
             onlineProperty.setValue(true);
             onlineProperty.addListener(onlineServicesListener);
@@ -170,6 +183,10 @@ public class AppServices {
         connectionService.setOnFailed(failEvent -> {
             //Close connection here to create a new transport next time we try
             connectionService.resetConnection();
+
+            if(failEvent.getSource().getException() instanceof ServerConfigException) {
+                connectionService.setRestartOnFailure(false);
+            }
 
             onlineProperty.removeListener(onlineServicesListener);
             onlineProperty.setValue(false);
@@ -265,17 +282,24 @@ public class AppServices {
         return application;
     }
 
-    public Map<Wallet, Storage> getOpenWallets(Window window) {
-        return walletWindows.get(window);
+    public Map<Wallet, Storage> getOpenWallets() {
+        Map<Wallet, Storage> openWallets = new LinkedHashMap<>();
+        for(List<WalletTabData> walletTabDataList : walletWindows.values()) {
+            for(WalletTabData walletTabData : walletTabDataList) {
+                openWallets.put(walletTabData.getWallet(), walletTabData.getStorage());
+            }
+        }
+
+        return openWallets;
     }
 
     public Window getWindowForWallet(Storage storage) {
-        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().values().stream().anyMatch(storage1 -> storage1.getWalletFile().equals(storage.getWalletFile()))).map(Map.Entry::getKey).findFirst();
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getStorage().getWalletFile().equals(storage.getWalletFile()))).map(Map.Entry::getKey).findFirst();
         return optWindow.orElse(null);
     }
 
     public Window getWindowForPSBT(PSBT psbt) {
-        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().keySet().stream().anyMatch(wallet -> wallet.canSign(psbt))).map(Map.Entry::getKey).findFirst();
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getWallet().canSign(psbt))).map(Map.Entry::getKey).findFirst();
         return optWindow.orElse(null);
     }
 
@@ -283,8 +307,12 @@ public class AppServices {
         return walletWindows.keySet().stream().mapToDouble(Window::getX).max().orElse(0d);
     }
 
-    public static boolean isOnline() {
-        return onlineProperty.get();
+    public static boolean isConnecting() {
+        return get().connectionService != null && get().connectionService.isConnecting();
+    }
+
+    public static boolean isConnected() {
+        return onlineProperty.get() && get().connectionService.isConnected();
     }
 
     public static BooleanProperty onlineProperty() {
@@ -335,14 +363,21 @@ public class AppServices {
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
 
-    public static void showErrorDialog(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
+    public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
+        return showAlertDialog(title, content, Alert.AlertType.WARNING, buttons);
+    }
+
+    public static Optional<ButtonType> showErrorDialog(String title, String content, ButtonType... buttons) {
+        return showAlertDialog(title, content, Alert.AlertType.ERROR, buttons);
+    }
+
+    public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, ButtonType... buttons) {
+        Alert alert = new Alert(alertType, content, buttons);
         setStageIcon(alert.getDialogPane().getScene().getWindow());
         alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
         alert.setHeaderText(title);
-        alert.setContentText(content);
-        alert.showAndWait();
+        return alert.showAndWait();
     }
 
     public static void setStageIcon(Window window) {
@@ -365,7 +400,7 @@ public class AppServices {
         addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
         String banner = event.getServerBanner();
-        String status = "Connected to " + Config.get().getElectrumServer() + " at height " + event.getBlockHeight();
+        String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
         EventManager.get().post(new StatusEvent(status));
     }
 
@@ -431,25 +466,25 @@ public class AppServices {
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        if(event.getWalletsMap().isEmpty()) {
+        if(event.getWalletTabDataList().isEmpty()) {
             walletWindows.remove(event.getWindow());
         } else {
-            walletWindows.put(event.getWindow(), event.getWalletsMap());
+            walletWindows.put(event.getWindow(), event.getWalletTabDataList());
         }
 
-        List<Map.Entry<Wallet, Storage>> allWallets = walletWindows.values().stream().flatMap(map -> map.entrySet().stream()).collect(Collectors.toList());
+        List<WalletTabData> allWallets = walletWindows.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
 
         Platform.runLater(() -> {
             if(!Window.getWindows().isEmpty()) {
-                List<File> walletFiles = allWallets.stream().map(entry -> entry.getValue().getWalletFile()).collect(Collectors.toList());
+                List<File> walletFiles = allWallets.stream().map(walletTabData -> walletTabData.getStorage().getWalletFile()).collect(Collectors.toList());
                 Config.get().setRecentWalletFiles(walletFiles);
             }
         });
 
         boolean usbWallet = false;
-        for(Map.Entry<Wallet, Storage> entry : allWallets) {
-            Wallet wallet = entry.getKey();
-            Storage storage = entry.getValue();
+        for(WalletTabData walletTabData : allWallets) {
+            Wallet wallet = walletTabData.getWallet();
+            Storage storage = walletTabData.getStorage();
 
             if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
                 usbWallet = true;
@@ -484,5 +519,29 @@ public class AppServices {
     @Subscribe
     public void requestDisconnect(RequestDisconnectEvent event) {
         onlineProperty.set(false);
+    }
+
+    @Subscribe
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        restartBwt(event.getWallet());
+    }
+
+    @Subscribe
+    public void walletOpening(WalletOpeningEvent event) {
+        restartBwt(event.getWallet());
+    }
+
+    private void restartBwt(Wallet wallet) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && isConnected() && wallet.isValid()) {
+            connectionService.cancel();
+        }
+    }
+
+    @Subscribe
+    public void bwtShutdown(BwtShutdownEvent event) {
+        if(onlineProperty().get() && !connectionService.isRunning()) {
+            connectionService.reset();
+            connectionService.start();
+        }
     }
 }
