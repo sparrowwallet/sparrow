@@ -173,6 +173,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                 keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, derivationPath));
                 keystore.setExtendedPublicKey(xPub);
                 keystore.setLabel(ek.label != null ? ek.label : "Electrum");
+                if(keystore.getLabel().length() > Keystore.MAX_LABEL_LENGTH) {
+                    keystore.setLabel(keystore.getLabel().substring(0, Keystore.MAX_LABEL_LENGTH));
+                }
+
                 wallet.getKeystores().add(keystore);
 
                 ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromExtendedKey(ek.xpub);
