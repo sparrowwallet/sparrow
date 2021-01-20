@@ -25,23 +25,29 @@ import java.util.stream.Collectors;
 
 public class Bwt {
     private static final Logger log = LoggerFactory.getLogger(Bwt.class);
+
+    public static final String DEFAULT_CORE_WALLET = "sparrow";
     private static final int IMPORT_BATCH_SIZE = 350;
+    private static boolean initialized;
     private Long shutdownPtr;
     private boolean terminating;
     private boolean ready;
 
-    static {
-        try {
-            org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
-            if(platform == org.controlsfx.tools.Platform.OSX) {
-                NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
-            } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
-                NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");
-            } else {
-                NativeUtils.loadLibraryFromJar("/native/linux/x64/libbwt_jni.so");
+    public synchronized static void initialize() {
+        if(!initialized) {
+            try {
+                org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
+                if(platform == org.controlsfx.tools.Platform.OSX) {
+                    NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
+                } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
+                    NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");
+                } else {
+                    NativeUtils.loadLibraryFromJar("/native/linux/x64/libbwt_jni.so");
+                }
+                initialized = true;
+            } catch(IOException e) {
+                log.error("Error loading bwt library", e);
             }
-        } catch(IOException e) {
-            log.error("Error loading bwt library", e);
         }
     }
 
@@ -111,9 +117,10 @@ public class Bwt {
         } else {
             bwtConfig.bitcoindAuth = config.getCoreAuth();
         }
-        if(config.getCoreWallet() != null && !config.getCoreWallet().isEmpty()) {
+        if(config.getCoreMultiWallet() != Boolean.FALSE) {
             bwtConfig.bitcoindWallet = config.getCoreWallet();
         }
+        bwtConfig.createWalletIfMissing = true;
 
         Gson gson = new Gson();
         String jsonConfig = gson.toJson(bwtConfig);
@@ -177,6 +184,9 @@ public class Bwt {
 
         @SerializedName("bitcoind_wallet")
         public String bitcoindWallet;
+
+        @SerializedName("create_wallet_if_missing")
+        public Boolean createWalletIfMissing;
 
         @SerializedName("descriptors")
         public List<String> descriptors;

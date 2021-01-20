@@ -779,6 +779,7 @@ public class ElectrumServer {
         private final Bwt bwt = new Bwt();
         private final ReentrantLock bwtStartLock = new ReentrantLock();
         private final Condition bwtStartCondition = bwtStartLock.newCondition();
+        private Throwable bwtStartException;
         private final StringProperty statusProperty = new SimpleStringProperty();
 
         public ConnectionService() {
@@ -796,10 +797,14 @@ public class ElectrumServer {
                     ElectrumServer electrumServer = new ElectrumServer();
 
                     if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                        Bwt.initialize();
+
                         if(!bwt.isRunning()) {
                             Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe ? AppServices.get().getOpenWallets().keySet() : null);
+                            bwtStartException = null;
                             bwtConnectionService.setOnFailed(workerStateEvent -> {
                                 log.error("Failed to start BWT", workerStateEvent.getSource().getException());
+                                bwtStartException = workerStateEvent.getSource().getException();
                                 try {
                                     bwtStartLock.lock();
                                     bwtStartCondition.signal();
@@ -813,8 +818,12 @@ public class ElectrumServer {
                                 bwtStartLock.lock();
                                 bwtStartCondition.await();
 
-                                if(!bwt.isRunning()) {
-                                    throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
+                                if(!bwt.isReady()) {
+                                    if(bwtStartException != null && bwtStartException.getMessage().contains("Wallet file not specified")) {
+                                        throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
+                                    } else {
+                                        throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
+                                    }
                                 }
                             } catch(InterruptedException e) {
                                 Thread.currentThread().interrupt();

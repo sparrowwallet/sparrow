@@ -44,6 +44,7 @@ public class Config {
     private CoreAuthType coreAuthType;
     private File coreDataDir;
     private String coreAuth;
+    private Boolean coreMultiWallet;
     private String coreWallet;
     private String electrumServer;
     private File electrumServerCert;
@@ -298,12 +299,21 @@ public class Config {
         flush();
     }
 
+    public Boolean getCoreMultiWallet() {
+        return coreMultiWallet;
+    }
+
+    public void setCoreMultiWallet(Boolean coreMultiWallet) {
+        this.coreMultiWallet = coreMultiWallet;
+        flush();
+    }
+
     public String getCoreWallet() {
         return coreWallet;
     }
 
     public void setCoreWallet(String coreWallet) {
-        this.coreWallet = (coreWallet == null || coreWallet.isEmpty() ? null : coreWallet);
+        this.coreWallet = coreWallet;
         flush();
     }
 

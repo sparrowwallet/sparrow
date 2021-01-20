@@ -89,7 +89,7 @@
                 <PasswordField fx:id="corePass"/>
             </Field>
             <Field text="Multi-Wallet:">
-                <UnlabeledToggleSwitch fx:id="coreMultiWallet"/> <HelpLabel helpText="Enable this if using multiple Bitcoin Core wallets" />
+                <UnlabeledToggleSwitch fx:id="coreMultiWallet"/> <HelpLabel helpText="Creates a new Bitcoin Core wallet with the following name (recommended to avoid conflicts)" />
             </Field>
             <Field text="Wallet Name:" styleClass="label-button">
                 <TextField fx:id="coreWallet"/>

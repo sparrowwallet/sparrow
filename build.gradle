@@ -69,7 +69,7 @@ dependencies {
         exclude group: 'org.openjfx', module: 'javafx-web'
         exclude group: 'org.openjfx', module: 'javafx-media'
     }
-    implementation('dev.bwt:bwt-jni:0.1.6')
+    implementation('dev.bwt:bwt-jni:0.1.7')
     testImplementation('junit:junit:4.12')
 }
 

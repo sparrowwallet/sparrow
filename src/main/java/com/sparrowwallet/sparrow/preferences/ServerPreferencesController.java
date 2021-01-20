@@ -205,10 +205,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
 
         coreMultiWallet.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            coreWallet.setText(" ");
-            coreWallet.setText("");
+            config.setCoreMultiWallet(newValue);
             coreWallet.setDisable(!newValue);
-            coreWallet.setPromptText(newValue ? "" : "Default");
         });
 
         electrumUseSsl.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -307,11 +305,14 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         }
 
-        coreMultiWallet.setSelected(true);
-        coreMultiWallet.setSelected(config.getCoreWallet() != null);
-        if(config.getCoreWallet() != null) {
+        coreWallet.setPromptText("Default");
+        if(config.getCoreWallet() == null) {
+            coreWallet.setText(Bwt.DEFAULT_CORE_WALLET);
+        } else {
             coreWallet.setText(config.getCoreWallet());
         }
+
+        coreMultiWallet.setSelected(config.getCoreMultiWallet() != Boolean.FALSE);
 
         String electrumServer = config.getElectrumServer();
         if(electrumServer != null) {
@@ -450,10 +451,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         validationSupport.registerValidator(corePass, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Core pass required", coreAuthToggleGroup.getSelectedToggle().getUserData() == CoreAuthType.USERPASS && newValue.isEmpty())
-        ));
-
-        validationSupport.registerValidator(coreWallet, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Core wallet required", coreMultiWallet.isSelected() && newValue.isEmpty())
         ));
 
         validationSupport.registerValidator(electrumHost, Validator.combine(
