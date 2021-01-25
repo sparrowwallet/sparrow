@@ -145,10 +145,13 @@ jlink {
                    "--add-opens=javafx.controls/com.sun.javafx.scene.control=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.graphics/com.sun.javafx.menu=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
-                   "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module",
                    "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop"]
+
+        if(os.macOsX) {
+            jvmArgs += "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"
+        }
     }
     addExtraDependencies("javafx")
     jpackage {
