@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.github.sarxos.webcam.Webcam;
+import com.github.sarxos.webcam.WebcamListener;
 import com.github.sarxos.webcam.WebcamResolution;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
@@ -13,15 +14,18 @@ import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
 import java.awt.image.BufferedImage;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class WebcamService extends Service<Image> {
-    private final WebcamResolution resolution ;
+    private WebcamResolution resolution;
+    private final WebcamListener listener;
 
     private final ObjectProperty<Result> resultProperty = new SimpleObjectProperty<>(null);
 
-    public WebcamService(WebcamResolution resolution) {
+    public WebcamService(WebcamResolution resolution, WebcamListener listener) {
         this.resolution = resolution;
+        this.listener = listener;
     }
 
     @Override
@@ -33,6 +37,9 @@ public class WebcamService extends Service<Image> {
                 try {
                     cam.setCustomViewSizes(resolution.getSize());
                     cam.setViewSize(resolution.getSize());
+                    if(!Arrays.asList(cam.getWebcamListeners()).contains(listener)) {
+                        cam.addWebcamListener(listener);
+                    }
 
                     cam.open();
                     while(!isCancelled()) {
@@ -77,5 +84,9 @@ public class WebcamService extends Service<Image> {
 
     public int getCamHeight() {
         return resolution.getSize().height;
+    }
+
+    public void setResolution(WebcamResolution resolution) {
+        this.resolution = resolution;
     }
 }

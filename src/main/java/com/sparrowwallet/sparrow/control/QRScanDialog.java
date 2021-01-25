@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.github.sarxos.webcam.WebcamEvent;
+import com.github.sarxos.webcam.WebcamListener;
 import com.github.sarxos.webcam.WebcamResolution;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
@@ -23,14 +25,17 @@ import com.sparrowwallet.hummingbird.ResultType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.URDecoder;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.application.Platform;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogPane;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Borders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +45,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -58,14 +64,21 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
     private static final Pattern PART_PATTERN = Pattern.compile("p(\\d+)of(\\d+) (.+)");
 
+    private final ObjectProperty<WebcamResolution> webcamResolutionProperty = new SimpleObjectProperty<>(WebcamResolution.VGA);
+
     public QRScanDialog() {
         this.decoder = new URDecoder();
         this.legacyDecoder = new LegacyURDecoder();
 
-        this.webcamService = new WebcamService(WebcamResolution.VGA);
+        if(Config.get().isHdCapture()) {
+            webcamResolutionProperty.set(WebcamResolution.HD);
+        }
+
+        this.webcamService = new WebcamService(webcamResolutionProperty.get(), new QRScanListener());
         WebcamView webcamView = new WebcamView(webcamService);
 
-        final DialogPane dialogPane = getDialogPane();
+        final DialogPane dialogPane = new QRScanDialogPane();
+        setDialogPane(dialogPane);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
@@ -78,14 +91,27 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             Platform.runLater(() -> setResult(new Result(failedEvent.getSource().getException())));
         });
         webcamService.start();
+        webcamResolutionProperty.addListener((observable, oldValue, newResolution) -> {
+            if(newResolution != null) {
+                setHeight(newResolution == WebcamResolution.HD ? (getHeight() - 100) : (getHeight() + 100));
+            }
+            webcamService.cancel();
+        });
+
         setOnCloseRequest(event -> {
-            Platform.runLater(webcamService::cancel);
+            boolean isHdCapture = (webcamResolutionProperty.get() == WebcamResolution.HD);
+            if(Config.get().isHdCapture() != isHdCapture) {
+                Config.get().setHdCapture(isHdCapture);
+            }
+
+            Platform.runLater(() -> webcamResolutionProperty.set(null));
         });
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialogPane.getButtonTypes().addAll(cancelButtonType);
-        dialogPane.setPrefWidth(660);
-        dialogPane.setPrefHeight(550);
+        final ButtonType hdButtonType = new javafx.scene.control.ButtonType("Use HD Capture", ButtonBar.ButtonData.LEFT);
+        dialogPane.getButtonTypes().addAll(hdButtonType, cancelButtonType);
+        dialogPane.setPrefWidth(646);
+        dialogPane.setPrefHeight(webcamResolutionProperty.get() == WebcamResolution.HD ? 450 : 550);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? result : null);
     }
@@ -422,6 +448,77 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
 
             return null;
+        }
+    }
+
+    private class QRScanListener implements WebcamListener {
+        @Override
+        public void webcamOpen(WebcamEvent webcamEvent) {
+
+        }
+
+        @Override
+        public void webcamClosed(WebcamEvent webcamEvent) {
+            if(webcamResolutionProperty.get() != null) {
+                webcamService.setResolution(webcamResolutionProperty.get());
+                Platform.runLater(() -> {
+                    if(!webcamService.isRunning()) {
+                        webcamService.reset();
+                        webcamService.start();
+                    }
+                });
+            }
+        }
+
+        @Override
+        public void webcamDisposed(WebcamEvent webcamEvent) {
+
+        }
+
+        @Override
+        public void webcamImageObtained(WebcamEvent webcamEvent) {
+
+        }
+    }
+
+    private class QRScanDialogPane extends DialogPane {
+        @Override
+        protected Node createButton(ButtonType buttonType) {
+            if(buttonType.getButtonData() == ButtonBar.ButtonData.LEFT) {
+                ToggleButton hd = new ToggleButton(buttonType.getText());
+                hd.setSelected(webcamResolutionProperty.get() == WebcamResolution.HD);
+                hd.setGraphicTextGap(5);
+                setHdGraphic(hd, hd.isSelected());
+
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(hd, buttonData);
+                hd.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                    webcamResolutionProperty.set(newValue ? WebcamResolution.HD : WebcamResolution.VGA);
+                    setHdGraphic(hd, newValue);
+                });
+
+                return hd;
+            }
+
+            return super.createButton(buttonType);
+        }
+
+        private void setHdGraphic(ToggleButton hd, boolean isHd) {
+            if(isHd) {
+                hd.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, "success"));
+            } else {
+                hd.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, null));
+            }
+        }
+
+        private Glyph getGlyph(FontAwesome5.Glyph glyphName, String styleClass) {
+            Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
+            glyph.setFontSize(12);
+            if(styleClass != null) {
+                glyph.getStyleClass().add(styleClass);
+            }
+
+            return glyph;
         }
     }
 

@@ -39,6 +39,7 @@ public class Config {
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
+    private boolean hdCapture;
     private ServerType serverType;
     private String coreServer;
     private CoreAuthType coreAuthType;
@@ -247,6 +248,15 @@ public class Config {
 
     public void setHwi(File hwi) {
         this.hwi = hwi;
+        flush();
+    }
+
+    public boolean isHdCapture() {
+        return hdCapture;
+    }
+
+    public void setHdCapture(boolean hdCapture) {
+        this.hdCapture = hdCapture;
         flush();
     }
 
