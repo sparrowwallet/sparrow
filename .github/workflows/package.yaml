@@ -15,7 +15,7 @@ jobs:
       - name: Set up JDK 15.0.1
         uses: joschi/setup-jdk@v2
         with:
-          java-version: 15.0.1
+          java-version: 15
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Cache Gradle packages
