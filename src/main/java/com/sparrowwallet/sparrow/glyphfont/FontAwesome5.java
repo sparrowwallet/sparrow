@@ -45,7 +45,10 @@ public class FontAwesome5 extends GlyphFont {
         SATELLITE_DISH('\uf7c0'),
         SD_CARD('\uf7c2'),
         SEARCH('\uf002'),
+        SQUARE('\uf0c8'),
         TIMES_CIRCLE('\uf057'),
+        TOGGLE_OFF('\uf204'),
+        TOGGLE_ON('\uf205'),
         TOOLS('\uf7d9'),
         UNDO('\uf0e2'),
         WALLET('\uf555');

@@ -225,19 +225,15 @@ public class QRDisplayDialog extends Dialog<UR> {
 
         private void setLegacyGraphic(ToggleButton legacy, boolean useLegacyEncoding) {
             if(useLegacyEncoding) {
-                legacy.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, "success"));
+                legacy.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE));
             } else {
-                legacy.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, null));
+                legacy.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE));
             }
         }
 
-        private Glyph getGlyph(FontAwesome5.Glyph glyphName, String styleClass) {
+        private Glyph getGlyph(FontAwesome5.Glyph glyphName) {
             Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
-            glyph.setFontSize(12);
-            if(styleClass != null) {
-                glyph.getStyleClass().add(styleClass);
-            }
-
+            glyph.setFontSize(11);
             return glyph;
         }
     }

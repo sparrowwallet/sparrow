@@ -505,19 +505,15 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private void setHdGraphic(ToggleButton hd, boolean isHd) {
             if(isHd) {
-                hd.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, "success"));
+                hd.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE));
             } else {
-                hd.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, null));
+                hd.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE));
             }
         }
 
-        private Glyph getGlyph(FontAwesome5.Glyph glyphName, String styleClass) {
+        private Glyph getGlyph(FontAwesome5.Glyph glyphName) {
             Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
-            glyph.setFontSize(12);
-            if(styleClass != null) {
-                glyph.getStyleClass().add(styleClass);
-            }
-
+            glyph.setFontSize(11);
             return glyph;
         }
     }
