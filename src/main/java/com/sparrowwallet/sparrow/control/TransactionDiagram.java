@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 7;
     private static final int MAX_PAYMENTS = 5;
-    private static final double DIAGRAM_HEIGHT = 230.0;
+    private static final double DIAGRAM_HEIGHT = 215.0;
     private static final int TOOLTIP_SHOW_DELAY = 50;
 
     private WalletTransaction walletTx;

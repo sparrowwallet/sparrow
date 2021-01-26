@@ -127,7 +127,7 @@
                 </AnchorPane>
             </GridPane>
             <AnchorPane>
-                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" maxHeight="230" AnchorPane.leftAnchor="100" />
+                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" maxHeight="215" AnchorPane.leftAnchor="100" />
             </AnchorPane>
         </VBox>
     </center>
