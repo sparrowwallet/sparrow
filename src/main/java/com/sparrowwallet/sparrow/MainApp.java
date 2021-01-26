@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.FileType;
 import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.Bwt;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
@@ -55,6 +56,7 @@ public class MainApp extends Application {
             if(optionalMode.isPresent()) {
                 mode = optionalMode.get();
                 Config.get().setMode(mode);
+                Config.get().setCoreWallet(Bwt.DEFAULT_CORE_WALLET);
 
                 if(mode.equals(Mode.ONLINE)) {
                     PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER, true);
