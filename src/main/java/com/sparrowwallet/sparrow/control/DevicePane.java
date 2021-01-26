@@ -73,18 +73,7 @@ public class DevicePane extends TitledDescriptionPane {
         createSetPassphraseButton();
         createImportButton();
 
-        if(device.getError() != null) {
-            setError("Error", device.getError());
-            Platform.runLater(() -> {
-                setExpanded(true);
-            });
-        } else if(device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
-            unlockButton.setVisible(true);
-        } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
-            setPassphraseButton.setVisible(true);
-        } else {
-            showOperationButton();
-        }
+        initialise(device);
 
         buttonBox.getChildren().addAll(setPassphraseButton, importButton);
     }
@@ -104,13 +93,7 @@ public class DevicePane extends TitledDescriptionPane {
         createSetPassphraseButton();
         createSignButton();
 
-        if (device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
-            unlockButton.setVisible(true);
-        } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
-            setPassphraseButton.setVisible(true);
-        } else {
-            showOperationButton();
-        }
+        initialise(device);
 
         buttonBox.getChildren().addAll(setPassphraseButton, signButton);
     }
@@ -130,13 +113,7 @@ public class DevicePane extends TitledDescriptionPane {
         createSetPassphraseButton();
         createDisplayAddressButton();
 
-        if (device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
-            unlockButton.setVisible(true);
-        } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
-            setPassphraseButton.setVisible(true);
-        } else {
-            showOperationButton();
-        }
+        initialise(device);
 
         buttonBox.getChildren().addAll(setPassphraseButton, displayAddressButton);
     }
@@ -156,15 +133,24 @@ public class DevicePane extends TitledDescriptionPane {
         createSetPassphraseButton();
         createSignMessageButton();
 
-        if (device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
+        initialise(device);
+
+        buttonBox.getChildren().addAll(setPassphraseButton, signMessageButton);
+    }
+
+    private void initialise(Device device) {
+        if(device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
             unlockButton.setVisible(true);
         } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
             setPassphraseButton.setVisible(true);
+        } else if(device.getError() != null) {
+            setError("Error", device.getError());
+            Platform.runLater(() -> {
+                setExpanded(true);
+            });
         } else {
             showOperationButton();
         }
-
-        buttonBox.getChildren().addAll(setPassphraseButton, signMessageButton);
     }
 
     @Override

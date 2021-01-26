@@ -89,6 +89,8 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(360);
+
+        setResultConverter(dialogButton -> dialogButton == cancelButtonType ? null : getResult());
     }
 
     private void scan() {
