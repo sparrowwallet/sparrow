@@ -77,7 +77,11 @@ public class TransactionController implements Initializable {
             fetchOutputBlockTransactions(initialIndex, initialIndex + 1);
         }
 
-        Platform.runLater(() -> transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82));
+        transactionMasterDetail.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if(oldScene == null && newScene != null) {
+                transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82);
+            }
+        });
     }
 
     private void initializeTxTree() {

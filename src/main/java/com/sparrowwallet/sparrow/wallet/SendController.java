@@ -338,8 +338,10 @@ public class SendController extends WalletFormController implements Initializabl
             createButton.setDisable(walletTransaction == null || isInsufficientFeeRate());
         });
 
-        Platform.runLater(() -> {
-            transactionDiagram.update(null);
+        transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if(oldScene == null && newScene != null) {
+                transactionDiagram.update(null);
+            }
         });
     }
 
