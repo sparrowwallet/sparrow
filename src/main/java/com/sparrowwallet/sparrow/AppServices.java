@@ -21,6 +21,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -276,6 +277,10 @@ public class AppServices {
             log.error("Could not load app FXML", e);
             throw new IllegalStateException(e);
         }
+    }
+
+    public static boolean isReducedWindowHeight(Node node) {
+        return (node.getScene() != null && node.getScene().getWindow().getHeight() < 768);
     }
 
     public MainApp getApplication() {

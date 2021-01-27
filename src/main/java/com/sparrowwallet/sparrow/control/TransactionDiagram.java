@@ -408,15 +408,11 @@ public class TransactionDiagram extends GridPane {
     }
 
     public double getDiagramHeight() {
-        if(isReducedHeight()) {
+        if(AppServices.isReducedWindowHeight(this)) {
             return DIAGRAM_HEIGHT - 40;
         }
 
         return DIAGRAM_HEIGHT;
-    }
-
-    private boolean isReducedHeight() {
-        return (this.getScene() != null && this.getScene().getWindow().getHeight() < 768);
     }
 
     private Node createSpacer() {

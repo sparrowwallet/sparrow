@@ -76,6 +76,8 @@ public class TransactionController implements Initializable {
         } else if(TransactionView.OUTPUT.equals(initialView) && initialIndex >= PageForm.PAGE_SIZE) {
             fetchOutputBlockTransactions(initialIndex, initialIndex + 1);
         }
+
+        Platform.runLater(() -> transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82));
     }
 
     private void initializeTxTree() {
