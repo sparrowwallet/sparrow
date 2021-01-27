@@ -38,6 +38,9 @@ public class TransactionDiagram extends GridPane {
     private WalletTransaction walletTx;
 
     public void update(WalletTransaction walletTx) {
+        setMinHeight(getDiagramHeight());
+        setMaxHeight(getDiagramHeight());
+
         if(walletTx == null) {
             getChildren().clear();
         } else {
@@ -131,7 +134,7 @@ public class TransactionDiagram extends GridPane {
 
             Line topYaxis = new Line();
             topYaxis.setStartX(width * 0.5);
-            topYaxis.setStartY(DIAGRAM_HEIGHT * 0.5 - 20.0);
+            topYaxis.setStartY(getDiagramHeight() * 0.5 - 20.0);
             topYaxis.setEndX(width * 0.5);
             topYaxis.setEndY(0);
             topYaxis.getStyleClass().add("inputs-type");
@@ -145,16 +148,16 @@ public class TransactionDiagram extends GridPane {
 
             Line bottomYaxis = new Line();
             bottomYaxis.setStartX(width * 0.5);
-            bottomYaxis.setStartY(DIAGRAM_HEIGHT);
+            bottomYaxis.setStartY(getDiagramHeight());
             bottomYaxis.setEndX(width * 0.5);
-            bottomYaxis.setEndY(DIAGRAM_HEIGHT * 0.5 + 20.0);
+            bottomYaxis.setEndY(getDiagramHeight() * 0.5 + 20.0);
             bottomYaxis.getStyleClass().add("inputs-type");
 
             Line bottomBracket = new Line();
             bottomBracket.setStartX(width * 0.5);
-            bottomBracket.setStartY(DIAGRAM_HEIGHT);
+            bottomBracket.setStartY(getDiagramHeight());
             bottomBracket.setEndX(width);
-            bottomBracket.setEndY(DIAGRAM_HEIGHT);
+            bottomBracket.setEndY(getDiagramHeight());
             bottomBracket.getStyleClass().add("inputs-type");
 
             group.getChildren().addAll(widthLine, topYaxis, topBracket, bottomYaxis, bottomBracket);
@@ -240,7 +243,7 @@ public class TransactionDiagram extends GridPane {
         yaxisLine.setStartX(0);
         yaxisLine.setStartY(0);
         yaxisLine.setEndX(0);
-        yaxisLine.setEndY(DIAGRAM_HEIGHT);
+        yaxisLine.setEndY(getDiagramHeight());
         yaxisLine.getStyleClass().add("boundary");
         group.getChildren().add(yaxisLine);
 
@@ -259,9 +262,9 @@ public class TransactionDiagram extends GridPane {
             double scaleFactor = (double)i / (numUtxos + 1);
             int nodeHeight = 17;
             double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
-            curve.setStartY(scale(DIAGRAM_HEIGHT, scaleFactor, additional));
+            curve.setStartY(scale(getDiagramHeight(), scaleFactor, additional));
             curve.setEndX(width);
-            curve.setEndY(scale(DIAGRAM_HEIGHT, 0.5, 0));
+            curve.setEndY(scale(getDiagramHeight(), 0.5, 0));
 
             curve.setControlX1(scale(width, 0.2, 0));
             curve.setControlY1(curve.getStartY());
@@ -320,12 +323,12 @@ public class TransactionDiagram extends GridPane {
             curve.getStyleClass().add("output-line");
 
             curve.setStartX(0);
-            curve.setStartY(scale(DIAGRAM_HEIGHT, 0.5, 0));
+            curve.setStartY(scale(getDiagramHeight(), 0.5, 0));
             curve.setEndX(width);
             double scaleFactor = (double)i / (numOutputs + 1);
             int nodeHeight = 20;
             double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
-            curve.setEndY(scale(DIAGRAM_HEIGHT, scaleFactor, additional));
+            curve.setEndY(scale(getDiagramHeight(), scaleFactor, additional));
 
             curve.setControlX1(scale(width, 0.2, 0));
             curve.controlY1Property().bind(curve.startYProperty());
@@ -402,6 +405,18 @@ public class TransactionDiagram extends GridPane {
         txPane.getChildren().add(createSpacer());
 
         return txPane;
+    }
+
+    public double getDiagramHeight() {
+        if(isReducedHeight()) {
+            return DIAGRAM_HEIGHT - 40;
+        }
+
+        return DIAGRAM_HEIGHT;
+    }
+
+    private boolean isReducedHeight() {
+        return (this.getScene() != null && this.getScene().getWindow().getHeight() < 768);
     }
 
     private Node createSpacer() {

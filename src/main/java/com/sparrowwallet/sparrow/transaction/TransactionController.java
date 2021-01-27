@@ -64,6 +64,7 @@ public class TransactionController implements Initializable {
 
     public void initializeView() {
         initializeTxTree();
+        transactionMasterDetail.setDividerPosition(0.82);
         transactionMasterDetail.setShowDetailNode(Config.get().isShowTransactionHex());
         txhex.setTransaction(getTransaction());
         highlightTxHex();

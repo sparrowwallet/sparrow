@@ -65,10 +65,6 @@
     -fx-alignment: center-left;
 }
 
-#transactionDiagram {
-    -fx-min-height: 215px;
-}
-
 #transactionDiagram .boundary {
     -fx-stroke: transparent;
 }

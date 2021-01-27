@@ -265,7 +265,7 @@ public class AppServices {
 
             stage.setTitle("Sparrow");
             stage.setMinWidth(650);
-            stage.setMinHeight(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? 750 : 768);
+            stage.setMinHeight(730);
             stage.setScene(scene);
             stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/image/sparrow.png")));
 
