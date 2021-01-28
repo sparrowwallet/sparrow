@@ -39,7 +39,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         AnchorPane.setRightAnchor(scrollPane, 0.0);
 
         Accordion importAccordion = new Accordion();
-        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig());
+        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new PassportSinglesig());
         for(KeystoreFileImport importer : keystoreImporters) {
             FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
             importAccordion.getPanes().add(importPane);

@@ -57,7 +57,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
             Map<String, JsonElement> map = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), stringStringMap);
 
             if (map.get("xfp") == null) {
-                throw new ImportException("File was not a valid Coldcard wallet export");
+                throw new ImportException("File was not a valid " + getName() + " wallet export");
             }
 
             String masterFingerprint = map.get("xfp").getAsString();
@@ -107,7 +107,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
         try {
             wallet.checkWallet();
         } catch(InvalidWalletException e) {
-            throw new ImportException("Imported Coldcard wallet was invalid: " + e.getMessage());
+            throw new ImportException("Imported " + getName() + " wallet was invalid: " + e.getMessage());
         }
 
         return wallet;

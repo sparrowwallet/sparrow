@@ -16,9 +16,9 @@ public class HwAirgappedController extends KeystoreImportDetailController {
     public void initializeView() {
         List<KeystoreFileImport> importers = Collections.emptyList();
         if(getMasterController().getWallet().getPolicyType().equals(PolicyType.SINGLE)) {
-            importers = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new SpecterDIY());
+            importers = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new PassportSinglesig(), new SpecterDIY());
         } else if(getMasterController().getWallet().getPolicyType().equals(PolicyType.MULTI)) {
-            importers = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new SpecterDIY());
+            importers = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new PassportMultisig(), new SpecterDIY());
         }
 
         for(KeystoreImport importer : importers) {
