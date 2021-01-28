@@ -8,7 +8,7 @@
 
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
-<StackPane prefHeight="420.0" prefWidth="600.0" stylesheets="@about.css, @general.css" fx:controller="com.sparrowwallet.sparrow.AboutController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+<StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@about.css, @general.css" fx:controller="com.sparrowwallet.sparrow.AboutController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="20">
         <HBox styleClass="title-area">
             <HBox alignment="CENTER_LEFT">

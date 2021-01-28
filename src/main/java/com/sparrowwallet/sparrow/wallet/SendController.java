@@ -341,6 +341,9 @@ public class SendController extends WalletFormController implements Initializabl
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
             if(oldScene == null && newScene != null) {
                 transactionDiagram.update(null);
+                newScene.getWindow().heightProperty().addListener((observable1, oldValue, newValue) -> {
+                    transactionDiagram.update(walletTransactionProperty.get());
+                });
             }
         });
     }
