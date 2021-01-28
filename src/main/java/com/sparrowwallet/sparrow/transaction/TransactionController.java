@@ -80,9 +80,6 @@ public class TransactionController implements Initializable {
         transactionMasterDetail.sceneProperty().addListener((observable, oldScene, newScene) -> {
             if(oldScene == null && newScene != null) {
                 transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82);
-                newScene.getWindow().heightProperty().addListener((observable1, oldValue, newValue) -> {
-                    transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82);
-                });
             }
         });
     }
