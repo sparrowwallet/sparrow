@@ -252,7 +252,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
 
         boolean isConnected = AppServices.isConnecting() || AppServices.isConnected();
-        setFieldsEditable(!isConnected);
 
         if(AppServices.isConnecting()) {
             testResults.appendText("Connecting to server, please wait...");
@@ -354,6 +353,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 proxyPort.setText(Integer.toString(server.getPort()));
             }
         }
+
+        setFieldsEditable(!isConnected);
     }
 
     private void startElectrumConnection() {
