@@ -4,10 +4,7 @@ import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
-import com.sparrowwallet.sparrow.net.CoreAuthType;
-import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.net.FeeRatesSource;
-import com.sparrowwallet.sparrow.net.ServerType;
+import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -143,6 +140,10 @@ public class Config {
         flush();
     }
 
+    public boolean isFetchRates() {
+        return getExchangeSource() != ExchangeSource.NONE;
+    }
+
     public ExchangeSource getExchangeSource() {
         return exchangeSource;
     }
@@ -269,8 +270,25 @@ public class Config {
         flush();
     }
 
+    public boolean hasServerAddress() {
+        return getServerAddress() != null && !getServerAddress().isEmpty();
+    }
+
     public String getServerAddress() {
         return getServerType() == ServerType.BITCOIN_CORE ? getCoreServer() : getElectrumServer();
+    }
+
+    public boolean requiresTor() {
+        if(isUseProxy() || !hasServerAddress()) {
+            return false;
+        }
+
+        Protocol protocol = Protocol.getProtocol(getServerAddress());
+        if(protocol == null) {
+            return false;
+        }
+
+        return protocol.isOnionAddress(protocol.getServerHostAndPort(getServerAddress()));
     }
 
     public String getCoreServer() {

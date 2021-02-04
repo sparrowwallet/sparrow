@@ -28,12 +28,13 @@ public enum Protocol {
 
         @Override
         public Transport getTransport(HostAndPort server, HostAndPort proxy) {
-            throw new UnsupportedOperationException("TCP protocol does not support proxying");
+            //Avoid using a TorSocket if a proxy is specified, even if a .onion address
+            return new TcpTransport(server, proxy);
         }
 
         @Override
         public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
-            throw new UnsupportedOperationException("TCP protocol does not support proxying");
+            return getTransport(server, proxy);
         }
     },
     SSL {
@@ -116,7 +117,7 @@ public enum Protocol {
     }
 
     public boolean isOnionAddress(HostAndPort server) {
-        return server.getHost().toLowerCase().endsWith(".onion");
+        return server.getHost().toLowerCase().endsWith(TorService.TOR_ADDRESS_SUFFIX);
     }
 
     public static Protocol getProtocol(String url) {

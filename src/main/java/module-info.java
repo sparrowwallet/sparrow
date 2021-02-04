@@ -26,4 +26,5 @@ open module com.sparrowwallet.sparrow {
     requires jcommander;
     requires slf4j.api;
     requires bwt.jni;
+    requires jtorctl;
 }

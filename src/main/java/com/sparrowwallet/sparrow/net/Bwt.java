@@ -143,7 +143,6 @@ public class Bwt {
         this.terminating = false;
         this.ready = false;
         this.shutdownPtr = null;
-        Platform.runLater(() -> EventManager.get().post(new BwtShutdownEvent()));
     }
 
     public boolean isRunning() {

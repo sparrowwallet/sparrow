@@ -1,9 +1,8 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.google.common.net.HostAndPort;
 import com.google.gson.Gson;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.io.Config;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +50,7 @@ public enum ExchangeSource {
 
         private CoinbaseRates getRates() {
             String url = "https://api.coinbase.com/v2/exchange-rates?currency=BTC";
-            Proxy proxy = getProxy();
+            Proxy proxy = AppServices.getProxy();
 
             try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 Gson gson = new Gson();
@@ -83,7 +81,7 @@ public enum ExchangeSource {
 
         private CoinGeckoRates getRates() {
             String url = "https://api.coingecko.com/api/v3/exchange_rates";
-            Proxy proxy = getProxy();
+            Proxy proxy = AppServices.getProxy();
 
             try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 Gson gson = new Gson();
@@ -114,17 +112,6 @@ public enum ExchangeSource {
         } catch (IllegalArgumentException e) {
             return false;
         }
-    }
-
-    private static Proxy getProxy() {
-        Config config = Config.get();
-        if(config.isUseProxy()) {
-            HostAndPort proxy = HostAndPort.fromString(config.getProxyServer());
-            InetSocketAddress proxyAddress = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
-            return new Proxy(Proxy.Type.SOCKS, proxyAddress);
-        }
-
-        return null;
     }
 
     @Override

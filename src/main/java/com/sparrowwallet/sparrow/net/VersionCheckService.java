@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.MainApp;
 import com.sparrowwallet.sparrow.event.VersionUpdatedEvent;
 import javafx.concurrent.ScheduledService;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
@@ -44,7 +46,8 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
 
     private VersionCheck getVersionCheck() throws IOException {
         URL url = new URL(VERSION_CHECK_URL);
-        HttpsURLConnection conn = (HttpsURLConnection)url.openConnection();
+        Proxy proxy = AppServices.getProxy();
+        HttpsURLConnection conn = (HttpsURLConnection)(proxy == null ? url.openConnection() : url.openConnection(proxy));
 
         try(InputStreamReader reader = new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)) {
             Gson gson = new Gson();

@@ -780,7 +780,6 @@ public class ElectrumServer {
         private final ReentrantLock bwtStartLock = new ReentrantLock();
         private final Condition bwtStartCondition = bwtStartLock.newCondition();
         private Throwable bwtStartException;
-        private final StringProperty statusProperty = new SimpleStringProperty();
 
         public ConnectionService() {
             this(true);
@@ -930,13 +929,16 @@ public class ElectrumServer {
                 Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
                 disconnectionService.setOnSucceeded(workerStateEvent -> {
                     ElectrumServer.bwtElectrumServer = null;
+                    if(subscribe) {
+                        EventManager.get().post(new BwtShutdownEvent());
+                    }
                 });
                 disconnectionService.setOnFailed(workerStateEvent -> {
                     log.error("Failed to stop BWT", workerStateEvent.getSource().getException());
                 });
-                Platform.runLater(disconnectionService::start);
-            } else {
-                Platform.runLater(() -> EventManager.get().post(new DisconnectionEvent()));
+                disconnectionService.start();
+            } else if(subscribe) {
+                EventManager.get().post(new DisconnectionEvent());
             }
         }
 
@@ -949,11 +951,6 @@ public class ElectrumServer {
         @Override
         public void uncaughtException(Thread t, Throwable e) {
             log.error("Uncaught error in ConnectionService", e);
-        }
-
-        @Subscribe
-        public void torStatus(TorStatusEvent event) {
-            statusProperty.set(event.getStatus());
         }
 
         @Subscribe
@@ -983,10 +980,6 @@ public class ElectrumServer {
             } finally {
                 bwtStartLock.unlock();
             }
-        }
-
-        public StringProperty statusProperty() {
-            return statusProperty;
         }
     }
 

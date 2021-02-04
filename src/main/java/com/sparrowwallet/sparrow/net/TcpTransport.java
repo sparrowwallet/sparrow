@@ -47,8 +47,12 @@ public class TcpTransport implements Transport, Closeable {
     private final Gson gson = new Gson();
 
     public TcpTransport(HostAndPort server) {
+        this(server, null);
+    }
+
+    public TcpTransport(HostAndPort server, HostAndPort proxy) {
         this.server = server;
-        this.socketFactory = SocketFactory.getDefault();
+        this.socketFactory = (proxy == null ? SocketFactory.getDefault() : new ProxySocketFactory(proxy));
     }
 
     @Override

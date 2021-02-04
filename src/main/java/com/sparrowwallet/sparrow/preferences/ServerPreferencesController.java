@@ -14,7 +14,6 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
-import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Font;
@@ -22,6 +21,8 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import net.freehaven.tor.control.TorControlError;
+import org.berndpruenster.netlayer.tor.Tor;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -120,6 +121,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private TextArea testResults;
 
     private final ValidationSupport validationSupport = new ValidationSupport();
+
+    private TorService torService;
 
     private ElectrumServer.ConnectionService connectionService;
 
@@ -242,13 +245,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
             proxyHost.setText(proxyHost.getText().trim());
             proxyHost.setDisable(!newValue);
             proxyPort.setDisable(!newValue);
-
-            if(newValue) {
-                electrumUseSsl.setSelected(true);
-                electrumUseSsl.setDisable(true);
-            } else {
-                electrumUseSsl.setDisable(false);
-            }
         });
 
         boolean isConnected = AppServices.isConnecting() || AppServices.isConnected();
@@ -263,7 +259,12 @@ public class ServerPreferencesController extends PreferencesDetailController {
         testConnection.setOnAction(event -> {
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
             testResults.setText("Connecting to " + config.getServerAddress() + "...");
-            startElectrumConnection();
+
+            if(Config.get().requiresTor() && Tor.getDefault() == null) {
+                startTor();
+            } else {
+                startElectrumConnection();
+            }
         });
 
         editConnection.managedProperty().bind(editConnection.visibleProperty());
@@ -340,11 +341,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
         proxyHost.setDisable(!config.isUseProxy());
         proxyPort.setDisable(!config.isUseProxy());
 
-        if(config.isUseProxy()) {
-            electrumUseSsl.setSelected(true);
-            electrumUseSsl.setDisable(true);
-        }
-
         String proxyServer = config.getProxyServer();
         if(proxyServer != null) {
             HostAndPort server = HostAndPort.fromString(proxyServer);
@@ -357,6 +353,32 @@ public class ServerPreferencesController extends PreferencesDetailController {
         setFieldsEditable(!isConnected);
     }
 
+    private void startTor() {
+        if(torService != null && torService.isRunning()) {
+            return;
+        }
+
+        torService = new TorService();
+        torService.setPeriod(Duration.hours(1000));
+        torService.setRestartOnFailure(false);
+
+        torService.setOnRunning(workerStateEvent -> {
+            testResults.setText(testResults.getText() + "\nStarting Tor...");
+        });
+        torService.setOnSucceeded(workerStateEvent -> {
+            Tor.setDefault(torService.getValue());
+            torService.cancel();
+            testResults.setText(testResults.getText() + "\nTor started");
+            startElectrumConnection();
+        });
+        torService.setOnFailed(workerStateEvent -> {
+            testResults.setText(testResults.getText() + "\nTor failed to start");
+            showConnectionFailure(workerStateEvent.getSource().getException());
+        });
+
+        torService.start();
+    }
+
     private void startElectrumConnection() {
         if(connectionService != null && connectionService.isRunning()) {
             connectionService.cancel();
@@ -364,10 +386,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         connectionService = new ElectrumServer.ConnectionService(false);
         connectionService.setPeriod(Duration.hours(1));
+        connectionService.setRestartOnFailure(false);
         EventManager.get().register(connectionService);
-        connectionService.statusProperty().addListener((observable, oldValue, newValue) -> {
-            testResults.setText(testResults.getText() + "\n" + newValue);
-        });
 
         connectionService.setOnSucceeded(successEvent -> {
             EventManager.get().unregister(connectionService);
@@ -379,8 +399,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
         connectionService.setOnFailed(workerStateEvent -> {
             EventManager.get().unregister(connectionService);
-            showConnectionFailure(workerStateEvent);
-            connectionService.cancel();
+            showConnectionFailure(workerStateEvent.getSource().getException());
         });
         connectionService.start();
     }
@@ -421,12 +440,14 @@ public class ServerPreferencesController extends PreferencesDetailController {
         }
     }
 
-    private void showConnectionFailure(WorkerStateEvent failEvent) {
-        Throwable e = failEvent.getSource().getException();
-        log.error("Connection error", e);
-        String reason = e.getCause() != null ? e.getCause().getMessage() : e.getMessage();
-        if(e.getCause() != null && e.getCause() instanceof SSLHandshakeException) {
+    private void showConnectionFailure(Throwable exception) {
+        log.error("Connection error", exception);
+        String reason = exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
+        if(exception.getCause() != null && exception.getCause() instanceof SSLHandshakeException) {
             reason = "SSL Handshake Error\n" + reason;
+        }
+        if(exception.getCause() != null && exception.getCause() instanceof TorControlError && exception.getCause().getMessage().contains("Failed to bind")) {
+            reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
         }
 
         testResults.setText("Could not connect:\n\n" + reason);

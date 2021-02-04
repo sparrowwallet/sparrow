@@ -1274,11 +1274,42 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void connectionStart(ConnectionStartEvent event) {
+        statusUpdated(new StatusEvent(event.getStatus(), 120));
+    }
+
+    @Subscribe
+    public void connectionFailed(ConnectionFailedEvent event) {
+        String reason = event.getException().getCause() != null ? event.getException().getCause().getMessage() : event.getException().getMessage();
+        String status = "Connection error: " + reason;
+        statusUpdated(new StatusEvent(status));
+    }
+
+    @Subscribe
+    public void connection(ConnectionEvent event) {
+        String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
+        statusUpdated(new StatusEvent(status));
+    }
+
+    @Subscribe
+    public void disconnection(DisconnectionEvent event) {
+        serverToggle.setDisable(false);
+        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith("Connection error")) {
+            statusUpdated(new StatusEvent("Disconnected"));
+        }
+        if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+            statusBar.setProgress(0);
+        }
+    }
+
+    @Subscribe
     public void bwtBootStatus(BwtBootStatusEvent event) {
         serverToggle.setDisable(true);
-        statusUpdated(new StatusEvent(event.getStatus(), 60));
-        if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
-            statusBar.setProgress(0.01);
+        if(AppServices.isConnecting()) {
+            statusUpdated(new StatusEvent(event.getStatus(), 60));
+            if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+                statusBar.setProgress(0.01);
+            }
         }
     }
 
@@ -1313,14 +1344,21 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void disconnection(DisconnectionEvent event) {
+    public void torBootStatus(TorBootStatusEvent event) {
+        serverToggle.setDisable(true);
+        statusUpdated(new StatusEvent(event.getStatus(), 120));
+    }
+
+    @Subscribe
+    public void torFailedStatus(TorFailedStatusEvent event) {
         serverToggle.setDisable(false);
-        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith("Connection error")) {
-            statusUpdated(new StatusEvent("Disconnected"));
-        }
-        if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
-            statusBar.setProgress(0);
-        }
+        statusUpdated(new StatusEvent(event.getStatus()));
+    }
+
+    @Subscribe
+    public void torReadyStatus(TorReadyStatusEvent event) {
+        serverToggle.setDisable(false);
+        statusUpdated(new StatusEvent(event.getStatus()));
     }
 
     @Subscribe

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -31,11 +32,14 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
+import org.berndpruenster.netlayer.tor.Tor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -45,9 +49,9 @@ import java.util.stream.Collectors;
 public class AppServices {
     private static final Logger log = LoggerFactory.getLogger(AppServices.class);
 
-    private static final int SERVER_PING_PERIOD = 1 * 60 * 1000;
-    private static final int ENUMERATE_HW_PERIOD = 30 * 1000;
-    private static final int RATES_PERIOD = 5 * 60 * 1000;
+    private static final int SERVER_PING_PERIOD_SECS = 60;
+    private static final int ENUMERATE_HW_PERIOD_SECS = 30;
+    private static final int RATES_PERIOD_SECS = 5 * 60;
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;
     private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
     private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
@@ -68,6 +72,8 @@ public class AppServices {
 
     private VersionCheckService versionCheckService;
 
+    private TorService torService;
+
     private static Integer currentBlockHeight;
 
     private static Map<Integer, Double> targetBlockFeeRates;
@@ -86,14 +92,10 @@ public class AppServices {
         @Override
         public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean online) {
             if(online) {
-                restartService(connectionService);
-
-                if(ratesService.getExchangeSource() != ExchangeSource.NONE) {
-                    restartService(ratesService);
-                }
-
-                if(Config.get().isCheckNewVersions()) {
-                    restartService(versionCheckService);
+                if(Config.get().requiresTor() && !isTorRunning()) {
+                    torService.start();
+                } else {
+                    restartServices();
                 }
             } else {
                 connectionService.cancel();
@@ -102,6 +104,44 @@ public class AppServices {
             }
         }
     };
+
+    public AppServices(MainApp application) {
+        this.application = application;
+        EventManager.get().register(this);
+    }
+
+    public void start() {
+        Config config = Config.get();
+        connectionService = createConnectionService();
+        ratesService = createRatesService(config.getExchangeSource(), config.getFiatCurrency());
+        versionCheckService = createVersionCheckService();
+        torService = createTorService();
+
+        onlineProperty.addListener(onlineServicesListener);
+
+        if(config.getMode() == Mode.ONLINE) {
+            if(config.requiresTor()) {
+                torService.start();
+            } else {
+                restartServices();
+            }
+        }
+    }
+
+    private void restartServices() {
+        Config config = Config.get();
+        if(config.hasServerAddress()) {
+            restartService(connectionService);
+        }
+
+        if(config.isFetchRates()) {
+            restartService(ratesService);
+        }
+
+        if(config.isCheckNewVersions()) {
+            restartService(versionCheckService);
+        }
+    }
 
     private void restartService(ScheduledService<?> service) {
         if(service.isRunning()) {
@@ -117,33 +157,6 @@ public class AppServices {
         }
     }
 
-    public AppServices(MainApp application) {
-        this.application = application;
-        EventManager.get().register(this);
-    }
-
-    public void start() {
-        Config config = Config.get();
-        connectionService = createConnectionService();
-        if(config.getMode() == Mode.ONLINE && config.getServerAddress() != null && !config.getServerAddress().isEmpty()) {
-            connectionService.start();
-        }
-
-        ExchangeSource source = config.getExchangeSource() != null ? config.getExchangeSource() : DEFAULT_EXCHANGE_SOURCE;
-        Currency currency = config.getFiatCurrency() != null ? config.getFiatCurrency() : DEFAULT_FIAT_CURRENCY;
-        ratesService = createRatesService(source, currency);
-        if(config.getMode() == Mode.ONLINE && source != ExchangeSource.NONE) {
-            ratesService.start();
-        }
-
-        versionCheckService = createVersionCheckService();
-        if(config.getMode() == Mode.ONLINE && config.isCheckNewVersions()) {
-            versionCheckService.start();
-        }
-
-        onlineProperty.addListener(onlineServicesListener);
-    }
-
     public void stop() {
         if(connectionService != null) {
             connectionService.cancel();
@@ -156,20 +169,23 @@ public class AppServices {
         if(versionCheckService != null) {
             versionCheckService.cancel();
         }
+
+        if(Tor.getDefault() != null) {
+            Tor.getDefault().shutdown();
+        }
     }
 
     private ElectrumServer.ConnectionService createConnectionService() {
         ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService();
-        connectionService.setPeriod(new Duration(SERVER_PING_PERIOD));
+        connectionService.setPeriod(Duration.seconds(SERVER_PING_PERIOD_SECS));
         connectionService.setRestartOnFailure(true);
-
         EventManager.get().register(connectionService);
-        connectionService.statusProperty().addListener((observable, oldValue, newValue) -> {
-            if(connectionService.isRunning()) {
-                EventManager.get().post(new StatusEvent(newValue));
+
+        connectionService.setOnRunning(workerStateEvent -> {
+            if(!ElectrumServer.isConnected()) {
+                EventManager.get().post(new ConnectionStartEvent(Config.get().getServerAddress()));
             }
         });
-
         connectionService.setOnSucceeded(successEvent -> {
             connectionService.setRestartOnFailure(true);
 
@@ -201,8 +217,10 @@ public class AppServices {
     }
 
     private ExchangeSource.RatesService createRatesService(ExchangeSource exchangeSource, Currency currency) {
-        ExchangeSource.RatesService ratesService = new ExchangeSource.RatesService(exchangeSource, currency);
-        ratesService.setPeriod(new Duration(RATES_PERIOD));
+        ExchangeSource.RatesService ratesService = new ExchangeSource.RatesService(
+                exchangeSource == null ? DEFAULT_EXCHANGE_SOURCE : exchangeSource,
+                currency == null ? DEFAULT_FIAT_CURRENCY : currency);
+        ratesService.setPeriod(Duration.seconds(RATES_PERIOD_SECS));
         ratesService.setRestartOnFailure(true);
 
         ratesService.setOnSucceeded(successEvent -> {
@@ -230,7 +248,7 @@ public class AppServices {
 
     private Hwi.ScheduledEnumerateService createDeviceEnumerateService() {
         Hwi.ScheduledEnumerateService enumerateService = new Hwi.ScheduledEnumerateService(null);
-        enumerateService.setPeriod(new Duration(ENUMERATE_HW_PERIOD));
+        enumerateService.setPeriod(Duration.seconds(ENUMERATE_HW_PERIOD_SECS));
         enumerateService.setOnSucceeded(workerStateEvent -> {
             List<Device> devices = enumerateService.getValue();
 
@@ -245,6 +263,45 @@ public class AppServices {
         });
 
         return enumerateService;
+    }
+
+    private TorService createTorService() {
+        TorService torService = new TorService();
+        torService.setPeriod(Duration.hours(1000));
+        torService.setRestartOnFailure(true);
+
+        torService.setOnRunning(workerStateEvent -> {
+            EventManager.get().post(new TorBootStatusEvent());
+        });
+        torService.setOnSucceeded(workerStateEvent -> {
+            Tor.setDefault(torService.getValue());
+            torService.cancel();
+            restartServices();
+            EventManager.get().post(new TorReadyStatusEvent());
+        });
+        torService.setOnFailed(workerStateEvent -> {
+            EventManager.get().post(new TorFailedStatusEvent(workerStateEvent.getSource().getException()));
+        });
+
+        return torService;
+    }
+
+    public static boolean isTorRunning() {
+        return Tor.getDefault() != null;
+    }
+
+    public static Proxy getProxy() {
+        Config config = Config.get();
+        if(config.isUseProxy()) {
+            HostAndPort proxy = HostAndPort.fromString(config.getProxyServer());
+            InetSocketAddress proxyAddress = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
+            return new Proxy(Proxy.Type.SOCKS, proxyAddress);
+        } else if(AppServices.isTorRunning()) {
+            InetSocketAddress proxyAddress = new InetSocketAddress("localhost", TorService.PROXY_PORT);
+            return new Proxy(Proxy.Type.SOCKS, proxyAddress);
+        }
+
+        return null;
     }
 
     static void initialize(MainApp application) {
@@ -404,16 +461,6 @@ public class AppServices {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
         addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
-        String banner = event.getServerBanner();
-        String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
-        EventManager.get().post(new StatusEvent(status));
-    }
-
-    @Subscribe
-    public void connectionFailed(ConnectionFailedEvent event) {
-        String reason = event.getException().getCause() != null ? event.getException().getCause().getMessage() : event.getException().getMessage();
-        String status = "Connection error: " + reason;
-        EventManager.get().post(new StatusEvent(status));
     }
 
     @Subscribe
