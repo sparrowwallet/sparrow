@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -173,6 +174,13 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
                 .map(e -> e.getBlockTransaction().getTransaction().getOutputs().get((int)e.getHashIndex().getIndex()))
                 .collect(Collectors.toList());
 
+        List<TransactionOutput> consolidationOutputs = transactionEntry.getChildren().stream()
+                .filter(e -> e instanceof HashIndexEntry)
+                .map(e -> (HashIndexEntry)e)
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.getKeyPurpose() == KeyPurpose.RECEIVE)
+                .map(e -> e.getBlockTransaction().getTransaction().getOutputs().get((int)e.getHashIndex().getIndex()))
+                .collect(Collectors.toList());
+
         long changeTotal = ourOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
         Transaction tx = blockTransaction.getTransaction();
         int vSize = tx.getVirtualSize();
@@ -189,6 +197,7 @@ class EntryCell extends TreeTableCell<Entry, Entry> {
 
         List<TransactionOutput> externalOutputs = new ArrayList<>(blockTransaction.getTransaction().getOutputs());
         externalOutputs.removeAll(ourOutputs);
+        externalOutputs.addAll(consolidationOutputs);
         List<Payment> payments = externalOutputs.stream().map(txOutput -> {
             try {
                 return new Payment(txOutput.getScript().getToAddresses()[0], transactionEntry.getLabel(), txOutput.getValue(), false);
