@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -19,7 +20,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
         try {
             SpecterWallet specterWallet = new SpecterWallet();
             specterWallet.label = wallet.getName();
-            specterWallet.blockheight = wallet.getStoredBlockHeight();
+            specterWallet.blockheight = wallet.getTransactions().values().stream().mapToInt(BlockTransactionHash::getHeight).min().orElse(wallet.getStoredBlockHeight());
             specterWallet.descriptor = OutputDescriptor.getOutputDescriptor(wallet).toString(true);
 
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
@@ -80,6 +81,11 @@ public class SpecterDesktop implements WalletImport, WalletExport {
 
     @Override
     public boolean isWalletImportScannable() {
+        return true;
+    }
+
+    @Override
+    public boolean isWalletExportScannable() {
         return true;
     }
 

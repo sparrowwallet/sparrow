@@ -62,4 +62,9 @@ public class CoboVaultMultisig extends ColdcardMultisig {
     public boolean isKeystoreImportScannable() {
         return true;
     }
+
+    @Override
+    public boolean isWalletExportScannable() {
+        return true;
+    }
 }

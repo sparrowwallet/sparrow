@@ -45,7 +45,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
             importAccordion.getPanes().add(importPane);
         }
 
-        List<WalletImport> walletImporters = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new SpecterDesktop());
+        List<WalletImport> walletImporters = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new SpecterDesktop(), new BlueWalletMultisig());
         for(WalletImport importer : walletImporters) {
             FileWalletImportPane importPane = new FileWalletImportPane(importer);
             importAccordion.getPanes().add(importPane);
