@@ -302,7 +302,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private Node getPassphraseEntry() {
-        CustomTextField passphraseField = (CustomTextField)TextFields.createClearableTextField();
+        CustomPasswordField passphraseField = (CustomPasswordField)TextFields.createClearablePasswordField();
         passphrase.bind(passphraseField.textProperty());
         HBox.setHgrow(passphraseField, Priority.ALWAYS);
 
