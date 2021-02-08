@@ -28,7 +28,7 @@ If you prefer to run Sparrow directly from source, it can be launched with
 
 `./sparrow`
 
-Java 14 must be installed.
+Java 14 or higher must be installed.
 
 ## Configuration
 
