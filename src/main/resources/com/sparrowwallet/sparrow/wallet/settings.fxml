@@ -13,6 +13,7 @@
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
+<?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <BorderPane stylesheets="@settings.css, @wallet.css, @../script.css, @../descriptor.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SettingsController">
     <center>
         <GridPane hgap="10.0" vgap="10.0">
@@ -40,6 +41,7 @@
                                 </FXCollections>
                             </items>
                         </ComboBox>
+                        <HelpLabel helpText="Single signature wallets use a single keystore (hardware wallet or seed).\nMultisignature wallets require multiple keystores (N), of which a certain number (M) need to sign." />
                     </Field>
                     <Field text="Script Type:">
                         <ComboBox fx:id="scriptType">
@@ -55,6 +57,7 @@
                                 </FXCollections>
                             </items>
                         </ComboBox>
+                        <HelpLabel helpText="P2WPKH and P2WSH are Native Segwit types and are usually the best choice.\nP2SH-P2WPKH and P2SH-P2WSH are Wrapped Segwit types and a good choice for the widest compatibility.\nP2PKH and P2SH are Legacy types and should be avoided, unless configuring an old wallet." />
                     </Field>
                 </Fieldset>
             </Form>

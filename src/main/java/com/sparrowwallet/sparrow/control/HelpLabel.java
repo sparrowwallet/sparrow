@@ -5,6 +5,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 
 public class HelpLabel extends Label {
@@ -14,6 +15,7 @@ public class HelpLabel extends Label {
         super("", getHelpGlyph());
         tooltip = new Tooltip();
         tooltip.textProperty().bind(helpTextProperty());
+        tooltip.setShowDuration(Duration.seconds(15));
         setTooltip(tooltip);
         getStyleClass().add("help-label");
     }
