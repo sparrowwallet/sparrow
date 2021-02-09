@@ -12,11 +12,17 @@ import java.io.File;
  * Note that all wallet detail controllers that share a WalletForm, and that class posts WalletNodesChangedEvent once it has cleared it's entry caches.
  */
 public class WalletSettingsChangedEvent extends WalletChangedEvent {
+    private final Wallet pastWallet;
     private final File walletFile;
 
-    public WalletSettingsChangedEvent(Wallet wallet, File walletFile) {
+    public WalletSettingsChangedEvent(Wallet wallet, Wallet pastWallet, File walletFile) {
         super(wallet);
+        this.pastWallet = pastWallet;
         this.walletFile = walletFile;
+    }
+
+    public Wallet getPastWallet() {
+        return pastWallet;
     }
 
     public File getWalletFile() {

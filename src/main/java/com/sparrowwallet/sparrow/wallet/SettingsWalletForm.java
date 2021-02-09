@@ -38,6 +38,8 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void saveAndRefresh() throws IOException {
+        Wallet pastWallet = wallet.copy();
+
         boolean refreshAll = isRefreshNecessary(wallet, walletCopy);
         if(refreshAll) {
             walletCopy.clearNodes();
@@ -47,7 +49,7 @@ public class SettingsWalletForm extends WalletForm {
         save();
 
         if(refreshAll) {
-            EventManager.get().post(new WalletSettingsChangedEvent(wallet, getWalletFile()));
+            EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, getWalletFile()));
         }
     }
 

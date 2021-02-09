@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
@@ -32,7 +34,7 @@ public class WalletForm {
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
         this.wallet = currentWallet;
-        refreshHistory(AppServices.getCurrentBlockHeight());
+        refreshHistory(AppServices.getCurrentBlockHeight(), null);
     }
 
     public Wallet getWallet() {
@@ -60,27 +62,28 @@ public class WalletForm {
     }
 
     public void saveAndRefresh() throws IOException {
+        Wallet pastWallet = wallet.copy();
         wallet.clearHistory();
         save();
-        refreshHistory(AppServices.getCurrentBlockHeight());
+        refreshHistory(AppServices.getCurrentBlockHeight(), pastWallet);
     }
 
     public void saveBackup() throws IOException {
         storage.backupWallet();
     }
 
-    public void refreshHistory(Integer blockHeight) {
-        refreshHistory(blockHeight, null);
+    public void refreshHistory(Integer blockHeight, Wallet pastWallet) {
+        refreshHistory(blockHeight, pastWallet, null);
     }
 
-    public void refreshHistory(Integer blockHeight, WalletNode node) {
+    public void refreshHistory(Integer blockHeight, Wallet pastWallet, WalletNode node) {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppServices.isConnected()) {
             log.debug(node == null ? wallet.getName() + " refreshing full wallet history" : wallet.getName() + " requesting node wallet history for " + node.getDerivationPath());
             ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
             historyService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new WalletHistoryStatusEvent(wallet, false));
-                updateWallet(previousWallet, blockHeight);
+                updateWallet(blockHeight, pastWallet, previousWallet);
             });
             historyService.setOnFailed(workerStateEvent -> {
                 log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
@@ -91,15 +94,31 @@ public class WalletForm {
         }
     }
 
-    private void updateWallet(Wallet previousWallet, Integer blockHeight) {
+    private void updateWallet(Integer blockHeight, Wallet pastWallet, Wallet previousWallet) {
         if(blockHeight != null) {
             wallet.setStoredBlockHeight(blockHeight);
         }
 
-        notifyIfChanged(previousWallet, blockHeight);
+        if(pastWallet != null) {
+            copyLabels(pastWallet);
+        }
+
+        notifyIfChanged(blockHeight, previousWallet);
     }
 
-    private void notifyIfChanged(Wallet previousWallet, Integer blockHeight) {
+    private void copyLabels(Wallet pastWallet) {
+        wallet.getNode(KeyPurpose.RECEIVE).copyLabels(pastWallet.getNode(KeyPurpose.RECEIVE));
+        wallet.getNode(KeyPurpose.CHANGE).copyLabels(pastWallet.getNode(KeyPurpose.CHANGE));
+
+        for(Map.Entry<Sha256Hash, BlockTransaction> txEntry : wallet.getTransactions().entrySet()) {
+            BlockTransaction pastBlockTransaction = pastWallet.getTransactions().get(txEntry.getKey());
+            if(pastBlockTransaction != null && txEntry.getValue() != null && txEntry.getValue().getLabel() == null && pastBlockTransaction.getLabel() != null) {
+                txEntry.getValue().setLabel(pastBlockTransaction.getLabel());
+            }
+        }
+    }
+
+    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
@@ -226,7 +245,7 @@ public class WalletForm {
             walletUtxosEntry = null;
             accountEntries.clear();
             EventManager.get().post(new WalletNodesChangedEvent(wallet));
-            refreshHistory(AppServices.getCurrentBlockHeight());
+            refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
         }
     }
 
@@ -234,13 +253,13 @@ public class WalletForm {
     public void newBlock(NewBlockEvent event) {
         //Check if wallet is valid to avoid saving wallets in initial setup
         if(wallet.isValid()) {
-            updateWallet(wallet.copy(), event.getHeight());
+            updateWallet(event.getHeight(), null, wallet.copy());
         }
     }
 
     @Subscribe
     public void connected(ConnectionEvent event) {
-        refreshHistory(event.getBlockHeight());
+        refreshHistory(event.getBlockHeight(), null);
     }
 
     @Subscribe
@@ -249,7 +268,7 @@ public class WalletForm {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
                 log.debug(wallet.getName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
-                refreshHistory(AppServices.getCurrentBlockHeight(), walletNode);
+                refreshHistory(AppServices.getCurrentBlockHeight(), null, walletNode);
             }
         }
     }

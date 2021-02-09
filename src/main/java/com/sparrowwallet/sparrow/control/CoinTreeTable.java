@@ -84,6 +84,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                 WalletBirthDateDialog dlg = new WalletBirthDateDialog(wallet.getBirthDate());
                 Optional<Date> optDate = dlg.showAndWait();
                 if(optDate.isPresent()) {
+                    Wallet pastWallet = wallet.copy();
                     wallet.setBirthDate(optDate.get());
                     Storage storage = AppServices.get().getOpenWallets().get(wallet);
                     if(storage != null) {
@@ -91,7 +92,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                         EventManager.get().post(new WalletDataChangedEvent(wallet));
                         //Trigger full wallet rescan
                         wallet.clearHistory();
-                        EventManager.get().post(new WalletSettingsChangedEvent(wallet, storage.getWalletFile()));
+                        EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, storage.getWalletFile()));
                     }
                 }
             });
