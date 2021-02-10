@@ -10,8 +10,10 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +27,7 @@ public class WalletForm {
 
     private final Storage storage;
     protected Wallet wallet;
+    private Wallet savedPastWallet;
 
     private WalletTransactionsEntry walletTransactionsEntry;
     private WalletUtxosEntry walletUtxosEntry;
@@ -245,6 +248,13 @@ public class WalletForm {
             walletUtxosEntry = null;
             accountEntries.clear();
             EventManager.get().post(new WalletNodesChangedEvent(wallet));
+
+            //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
+            //The savedPastWallet variable can be removed once bwt supports dynamic loading of wallets without needing to disconnect/reconnect
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                savedPastWallet = event.getPastWallet();
+            }
+
             refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
         }
     }
@@ -259,7 +269,8 @@ public class WalletForm {
 
     @Subscribe
     public void connected(ConnectionEvent event) {
-        refreshHistory(event.getBlockHeight(), null);
+        refreshHistory(event.getBlockHeight(), savedPastWallet);
+        savedPastWallet = null;
     }
 
     @Subscribe

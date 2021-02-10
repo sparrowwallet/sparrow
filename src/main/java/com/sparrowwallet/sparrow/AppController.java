@@ -33,6 +33,7 @@ import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -98,6 +99,9 @@ public class AppController implements Initializable {
 
     @FXML
     private CheckMenuItem showTxHex;
+
+    @FXML
+    private MenuItem refreshWallet;
 
     @FXML
     private StackPane rootStack;
@@ -223,6 +227,7 @@ public class AppController implements Initializable {
         hideEmptyUsedAddresses.setSelected(Config.get().isHideEmptyUsedAddresses());
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         exportWallet.setDisable(true);
+        refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
 
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
@@ -826,6 +831,18 @@ public class AppController implements Initializable {
         }
 
         messageSignDialog.showAndWait();
+    }
+
+    public void refreshWallet(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.WALLET) {
+            WalletTabData walletTabData = (WalletTabData) tabData;
+            Wallet wallet = walletTabData.getWallet();
+            Wallet pastWallet = wallet.copy();
+            wallet.clearHistory();
+            EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, walletTabData.getStorage().getWalletFile()));
+        }
     }
 
     public void addWalletTabOrWindow(Storage storage, Wallet wallet, boolean forceSameWindow) {

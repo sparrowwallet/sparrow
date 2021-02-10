@@ -22,7 +22,7 @@
                                 <MenuItem text="File..." onAction="#openTransactionFromFile" accelerator="Shortcut+F"/>
                                 <MenuItem fx:id="openTransactionIdItem" text="From ID..." onAction="#openTransactionFromId" accelerator="Shortcut+I"/>
                                 <MenuItem text="From Text..." onAction="#openTransactionFromText" accelerator="Shortcut+T"/>
-                                <MenuItem text="From QR..." onAction="#openTransactionFromQR" accelerator="Shortcut+R"/>
+                                <MenuItem text="From QR..." onAction="#openTransactionFromQR" accelerator="Shortcut+U"/>
                                 <!-- <MenuItem text="Examples" onAction="#openExamples"/> -->
                             </items>
                         </Menu>
@@ -82,6 +82,8 @@
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets in New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
+                        <SeparatorMenuItem />
+                        <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>
                 <Menu fx:id="toolsMenu" mnemonicParsing="false" text="Tools">
