@@ -32,3 +32,20 @@
 .scroll-pane {
     -fx-background-color: transparent;
 }
+
+.public-warning {
+    -fx-text-fill: rgb(238, 210, 2);
+}
+
+.public-electrum {
+    -fx-text-fill: linear-gradient(to bottom, derive(rgb(238, 210, 2), 30%), rgb(238, 210, 2));
+}
+
+.bitcoin-core {
+    -fx-text-fill: linear-gradient(to bottom, derive(#50a14f, 30%), #50a14f);
+}
+
+.private-electrum {
+    -fx-text-fill: linear-gradient(to bottom, derive(#0b99c9, 30%), #0b99c9);
+}
+

@@ -23,6 +23,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import net.freehaven.tor.control.TorControlError;
 import org.berndpruenster.netlayer.tor.Tor;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -41,12 +42,34 @@ import java.security.cert.CertificateFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Random;
 
 public class ServerPreferencesController extends PreferencesDetailController {
     private static final Logger log = LoggerFactory.getLogger(ServerPreferencesController.class);
 
     @FXML
     private ToggleGroup serverTypeToggleGroup;
+
+    @FXML
+    private SegmentedButton serverTypeSegmentedButton;
+
+    @FXML
+    private ToggleButton publicElectrumToggle;
+
+    @FXML
+    private Form publicElectrumForm;
+
+    @FXML
+    private ComboBox<PublicElectrumServer> publicElectrumServer;
+
+    @FXML
+    private UnlabeledToggleSwitch publicUseProxy;
+
+    @FXML
+    private TextField publicProxyHost;
+
+    @FXML
+    private TextField publicProxyPort;
 
     @FXML
     private Form coreForm;
@@ -135,13 +158,15 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         Platform.runLater(this::setupValidation);
 
+        publicElectrumForm.managedProperty().bind(publicElectrumForm.visibleProperty());
         coreForm.managedProperty().bind(coreForm.visibleProperty());
         electrumForm.managedProperty().bind(electrumForm.visibleProperty());
-        coreForm.visibleProperty().bind(electrumForm.visibleProperty().not());
         serverTypeToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if(serverTypeToggleGroup.getSelectedToggle() != null) {
                 ServerType existingType = config.getServerType();
                 ServerType serverType = (ServerType)newValue.getUserData();
+                publicElectrumForm.setVisible(serverType == ServerType.PUBLIC_ELECTRUM_SERVER);
+                coreForm.setVisible(serverType == ServerType.BITCOIN_CORE);
                 electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER);
                 config.setServerType(serverType);
                 testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, ""));
@@ -153,12 +178,26 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 oldValue.setSelected(true);
             }
         });
-        ServerType serverType = config.getServerType() != null ? config.getServerType() : (config.getCoreServer() == null && config.getElectrumServer() != null ? ServerType.ELECTRUM_SERVER : ServerType.BITCOIN_CORE);
+        ServerType serverType = config.getServerType() != null ?
+                (config.getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && Network.get() != Network.MAINNET ? ServerType.BITCOIN_CORE : config.getServerType()) :
+                    (config.getCoreServer() == null && config.getElectrumServer() != null ? ServerType.ELECTRUM_SERVER :
+                        (config.getCoreServer() != null || Network.get() != Network.MAINNET ? ServerType.BITCOIN_CORE : ServerType.PUBLIC_ELECTRUM_SERVER));
+        if(Network.get() != Network.MAINNET) {
+            serverTypeSegmentedButton.getButtons().remove(publicElectrumToggle);
+            serverTypeToggleGroup.getToggles().remove(publicElectrumToggle);
+        }
         serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == serverType).findFirst().orElse(null));
+
+        publicElectrumServer.getSelectionModel().selectedItemProperty().addListener(getPublicElectrumServerListener(config));
+
+        publicUseProxy.selectedProperty().bindBidirectional(useProxy.selectedProperty());
+        publicProxyHost.textProperty().bindBidirectional(proxyHost.textProperty());
+        publicProxyPort.textProperty().bindBidirectional(proxyPort.textProperty());
 
         corePort.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_INTEGERS, 5).getFormatter());
         electrumPort.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_INTEGERS, 5).getFormatter());
         proxyPort.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_INTEGERS, 5).getFormatter());
+        publicProxyPort.setTextFormatter(new TextFieldValidator(TextFieldValidator.ValidationModus.MAX_INTEGERS, 5).getFormatter());
 
         coreHost.textProperty().addListener(getBitcoinCoreListener(config));
         corePort.textProperty().addListener(getBitcoinCoreListener(config));
@@ -245,6 +284,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
             proxyHost.setText(proxyHost.getText().trim());
             proxyHost.setDisable(!newValue);
             proxyPort.setDisable(!newValue);
+            publicProxyHost.setDisable(!newValue);
+            publicProxyPort.setDisable(!newValue);
         });
 
         boolean isConnected = AppServices.isConnecting() || AppServices.isConnected();
@@ -276,6 +317,13 @@ public class ServerPreferencesController extends PreferencesDetailController {
             editConnection.setVisible(false);
             testConnection.setVisible(true);
         });
+
+        PublicElectrumServer configPublicElectrumServer = PublicElectrumServer.fromUrl(config.getPublicElectrumServer());
+        if(configPublicElectrumServer == null) {
+            publicElectrumServer.setValue(PublicElectrumServer.values()[new Random().nextInt(PublicElectrumServer.values().length)]);
+        } else {
+            publicElectrumServer.setValue(configPublicElectrumServer);
+        }
 
         String coreServer = config.getCoreServer();
         if(coreServer != null) {
@@ -340,6 +388,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         useProxy.setSelected(config.isUseProxy());
         proxyHost.setDisable(!config.isUseProxy());
         proxyPort.setDisable(!config.isUseProxy());
+        publicProxyHost.setDisable(!config.isUseProxy());
+        publicProxyPort.setDisable(!config.isUseProxy());
 
         String proxyServer = config.getProxyServer();
         if(proxyServer != null) {
@@ -407,6 +457,11 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private void setFieldsEditable(boolean editable) {
         serverTypeToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
 
+        publicElectrumServer.setDisable(!editable);
+        publicUseProxy.setDisable(!editable);
+        publicProxyHost.setDisable(!editable);
+        publicProxyPort.setDisable(!editable);
+
         coreHost.setDisable(!editable);
         corePort.setDisable(!editable);
         coreAuthToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
@@ -455,6 +510,15 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private void setupValidation() {
+        validationSupport.registerValidator(publicProxyHost, Validator.combine(
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Proxy host required", publicUseProxy.isSelected() && newValue.isEmpty()),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid host name", getHost(newValue) == null)
+        ));
+
+        validationSupport.registerValidator(publicProxyPort, Validator.combine(
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid proxy port", !newValue.isEmpty() && !isValidPort(Integer.parseInt(newValue)))
+        ));
+
         validationSupport.registerValidator(coreHost, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid Core host", getHost(newValue) == null)
         ));
@@ -497,6 +561,13 @@ public class ServerPreferencesController extends PreferencesDetailController {
         ));
 
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+    }
+
+    @NotNull
+    private ChangeListener<PublicElectrumServer> getPublicElectrumServerListener(Config config) {
+        return (observable, oldValue, newValue) -> {
+            config.setPublicElectrumServer(newValue.getUrl());
+        };
     }
 
     @NotNull

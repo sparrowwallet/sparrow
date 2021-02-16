@@ -53,7 +53,10 @@ public class ElectrumServer {
                 File electrumServerCert = null;
                 String proxyServer = null;
 
-                if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
+                    electrumServer = Config.get().getPublicElectrumServer();
+                    proxyServer = Config.get().getProxyServer();
+                } else if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
                     if(bwtElectrumServer == null) {
                         throw new ServerConfigException("Could not connect to Bitcoin Core RPC");
                     }

@@ -46,7 +46,7 @@ public class PreferencesDialog extends Dialog<Boolean> {
                 dialogPane.getButtonTypes().addAll(newWalletButtonType);
             }
 
-            dialogPane.setPrefWidth(650);
+            dialogPane.setPrefWidth(710);
             dialogPane.setPrefHeight(600);
 
             preferencesController.reconnectOnClosingProperty().set(AppServices.isConnecting() || AppServices.isConnected());

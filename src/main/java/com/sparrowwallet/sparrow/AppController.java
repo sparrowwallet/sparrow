@@ -542,7 +542,18 @@ public class AppController implements Initializable {
     }
 
     private void setServerToggleTooltip(Integer currentBlockHeight) {
-        serverToggle.setTooltip(new Tooltip(AppServices.isConnected() ? "Connected to " + Config.get().getServerAddress() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") : "Disconnected"));
+        Tooltip tooltip = new Tooltip(getServerToggleTooltipText(currentBlockHeight));
+        tooltip.setShowDuration(Duration.seconds(15));
+        serverToggle.setTooltip(tooltip);
+    }
+
+    private String getServerToggleTooltipText(Integer currentBlockHeight) {
+        if(AppServices.isConnected()) {
+            return "Connected to " + Config.get().getServerAddress() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") +
+                    (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? "\nWarning! You are connected to a public server and sharing your transaction data with it.\nFor better privacy, consider using your own Bitcoin Core node or private Electrum server." : "");
+        }
+
+        return "Disconnected";
     }
 
     public void newWallet(ActionEvent event) {
@@ -1069,6 +1080,12 @@ public class AppController implements Initializable {
     }
 
     public void setServerType(ServerType serverType) {
+        if(serverType == ServerType.PUBLIC_ELECTRUM_SERVER && !serverToggle.getStyleClass().contains("public-server")) {
+            serverToggle.getStyleClass().add("public-server");
+        } else {
+            serverToggle.getStyleClass().remove("public-server");
+        }
+
         if(serverType == ServerType.BITCOIN_CORE && !serverToggle.getStyleClass().contains("core-server")) {
             serverToggle.getStyleClass().add("core-server");
         } else {

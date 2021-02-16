@@ -38,6 +38,7 @@ public class Config {
     private File hwi;
     private boolean hdCapture;
     private ServerType serverType;
+    private String publicElectrumServer;
     private String coreServer;
     private CoreAuthType coreAuthType;
     private File coreDataDir;
@@ -275,7 +276,7 @@ public class Config {
     }
 
     public String getServerAddress() {
-        return getServerType() == ServerType.BITCOIN_CORE ? getCoreServer() : getElectrumServer();
+        return getServerType() == ServerType.BITCOIN_CORE ? getCoreServer() : (getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? getPublicElectrumServer() : getElectrumServer());
     }
 
     public boolean requiresTor() {
@@ -289,6 +290,15 @@ public class Config {
         }
 
         return protocol.isOnionAddress(protocol.getServerHostAndPort(getServerAddress()));
+    }
+
+    public String getPublicElectrumServer() {
+        return publicElectrumServer;
+    }
+
+    public void setPublicElectrumServer(String publicElectrumServer) {
+        this.publicElectrumServer = publicElectrumServer;
+        flush();
     }
 
     public String getCoreServer() {

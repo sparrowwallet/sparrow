@@ -16,6 +16,9 @@
 <?import com.sparrowwallet.sparrow.net.ServerType?>
 <?import com.sparrowwallet.sparrow.net.CoreAuthType?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
+<?import javafx.collections.FXCollections?>
+<?import com.sparrowwallet.sparrow.net.PublicElectrumServer?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.ServerPreferencesController">
     <padding>
         <Insets left="25.0" right="25.0" top="25.0" />
@@ -30,23 +33,74 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Server">
             <Field text="Type:">
-                <SegmentedButton>
+                <SegmentedButton fx:id="serverTypeSegmentedButton">
                     <toggleGroup>
                         <ToggleGroup fx:id="serverTypeToggleGroup" />
                     </toggleGroup>
                     <buttons>
+                        <ToggleButton fx:id="publicElectrumToggle" text="Public Electrum" toggleGroup="$serverTypeToggleGroup">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="public-electrum" />
+                            </graphic>
+                            <userData>
+                                <ServerType fx:constant="PUBLIC_ELECTRUM_SERVER"/>
+                            </userData>
+                        </ToggleButton>
                         <ToggleButton text="Bitcoin Core" toggleGroup="$serverTypeToggleGroup">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="bitcoin-core" />
+                            </graphic>
                             <userData>
                                 <ServerType fx:constant="BITCOIN_CORE"/>
                             </userData>
                         </ToggleButton>
-                        <ToggleButton text="Electrum Server" toggleGroup="$serverTypeToggleGroup">
+                        <ToggleButton text="Private Electrum" toggleGroup="$serverTypeToggleGroup">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="private-electrum" />
+                            </graphic>
                             <userData>
                                 <ServerType fx:constant="ELECTRUM_SERVER"/>
                             </userData>
                         </ToggleButton>
                     </buttons>
                 </SegmentedButton>
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Form fx:id="publicElectrumForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <Fieldset inputGrow="SOMETIMES" text="Public Electrum Server">
+            <Field text="URL:">
+                <ComboBox fx:id="publicElectrumServer">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <PublicElectrumServer fx:constant="BLOCKSTREAM_INFO" />
+                            <PublicElectrumServer fx:constant="ELECTRUM_BLOCKSTREAM_INFO" />
+                            <PublicElectrumServer fx:constant="LUKECHILDS_CO" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
+            </Field>
+            <Field text="">
+                <Label alignment="CENTER">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="public-warning" />
+                    </graphic>
+                    <padding>
+                        <Insets right="5" />
+                    </padding>
+                </Label>
+                <CopyableLabel text="Warning!" />
+            </Field>
+            <Field text="">
+                <CopyableLabel text="Using a public server means it can see your transactions."/>
+            </Field>
+            <Field text="Use Proxy:">
+                <UnlabeledToggleSwitch fx:id="publicUseProxy"/>
+            </Field>
+            <Field text="Proxy URL:">
+                <TextField fx:id="publicProxyHost" />
+                <TextField fx:id="publicProxyPort" prefWidth="80" />
             </Field>
         </Fieldset>
     </Form>
@@ -98,7 +152,7 @@
     </Form>
 
     <Form fx:id="electrumForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
-        <Fieldset inputGrow="SOMETIMES" text="Electrum Server">
+        <Fieldset inputGrow="SOMETIMES" text="Private Electrum Server">
             <Field text="URL:">
                 <TextField fx:id="electrumHost" promptText="e.g. 127.0.0.1"/>
                 <TextField fx:id="electrumPort" promptText="e.g. 50002" prefWidth="80" />
