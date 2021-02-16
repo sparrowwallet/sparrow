@@ -29,6 +29,7 @@ public class FontAwesome5 extends GlyphFont {
         EXTERNAL_LINK_ALT('\uf35d'),
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
+        FILE_CSV('\uf6dd'),
         HAND_HOLDING('\uf4bd'),
         HAND_HOLDING_MEDICAL('\ue05c'),
         HISTORY('\uf1da'),

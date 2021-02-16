@@ -25,8 +25,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
-class EntryCell extends TreeTableCell<Entry, Entry> {
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+public class EntryCell extends TreeTableCell<Entry, Entry> {
+    public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     public EntryCell() {
         super();

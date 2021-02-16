@@ -70,6 +70,7 @@ dependencies {
         exclude group: 'org.openjfx', module: 'javafx-media'
     }
     implementation('dev.bwt:bwt-jni:0.1.7')
+    implementation('net.sourceforge.javacsv:javacsv:2.0')
     testImplementation('junit:junit:4.12')
 }
 
