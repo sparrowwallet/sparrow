@@ -9,7 +9,6 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
-import org.controlsfx.control.HyperlinkLabel;
 import org.controlsfx.control.StatusBar;
 import org.controlsfx.control.ToggleSwitch;
 
@@ -47,8 +46,8 @@ public class WelcomeDialog extends Dialog<Mode> {
         content.setPadding(new Insets(20, 20, 20, 20));
         content.getChildren().add(createParagraph("Sparrow can operate in both an online and offline mode. In the online mode it connects to your Bitcoin Core node or Electrum server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator."));
         content.getChildren().add(createParagraph("Connecting Sparrow to your Bitcoin Core node ensures your privacy, while connecting Sparrow to your own Electrum server ensures wallets load quicker, you have access to a full blockchain explorer, and your public keys are always encrypted on disk. Examples of Electrum servers include ElectrumX and electrs."));
-        content.getChildren().add(createParagraph("It's also possible to connect Sparrow to a public Electrum server (such as blockstream.info:700) but this is not recommended as you will share your public key information with that server."));
-        content.getChildren().add(createParagraph("You can change your mode at any time using the toggle in the status bar. A blue toggle indicates you are connected to an Electrum server, while a green toggle indicates you are connected to a Bitcoin Code node."));
+        content.getChildren().add(createParagraph("Sparrow can also be configured to connect to a public Electrum server, but be aware that this configuration means that server can see your transactions."));
+        content.getChildren().add(createParagraph("You can change your mode at any time using the toggle in the status bar. A blue toggle indicates you are connected to an Electrum server, while a green toggle indicates you are connected to a Bitcoin Code node, and a yellow toggle means you are using a public Electrum server."));
         content.getChildren().add(createStatusBar(onlineButtonType, offlineButtonType));
 
         dialogPane.setContent(content);
@@ -82,7 +81,13 @@ public class WelcomeDialog extends Dialog<Mode> {
             offlineButton.setDefaultButton(!newValue);
 
             if(!newValue) {
-                serverType = (serverType == ServerType.BITCOIN_CORE ? ServerType.ELECTRUM_SERVER : ServerType.BITCOIN_CORE);
+                serverType = (serverType == ServerType.BITCOIN_CORE ? ServerType.PUBLIC_ELECTRUM_SERVER : (serverType == ServerType.PUBLIC_ELECTRUM_SERVER ? ServerType.ELECTRUM_SERVER : ServerType.BITCOIN_CORE));
+
+                if(serverType == ServerType.PUBLIC_ELECTRUM_SERVER && !toggleSwitch.getStyleClass().contains("public-server")) {
+                    toggleSwitch.getStyleClass().add("public-server");
+                } else {
+                    toggleSwitch.getStyleClass().remove("public-server");
+                }
 
                 if(serverType == ServerType.BITCOIN_CORE && !toggleSwitch.getStyleClass().contains("core-server")) {
                     toggleSwitch.getStyleClass().add("core-server");
