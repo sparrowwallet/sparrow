@@ -1,10 +1,14 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.event.EventHandler;
+import javafx.geometry.Bounds;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseEvent;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 
@@ -16,8 +20,9 @@ public class HelpLabel extends Label {
         tooltip = new Tooltip();
         tooltip.textProperty().bind(helpTextProperty());
         tooltip.setShowDuration(Duration.seconds(15));
-        setTooltip(tooltip);
         getStyleClass().add("help-label");
+
+        Platform.runLater(() -> setTooltip(tooltip));
     }
 
     private static Glyph getHelpGlyph() {
