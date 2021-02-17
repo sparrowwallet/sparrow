@@ -24,6 +24,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import javafx.util.StringConverter;
 import org.controlsfx.control.RangeSlider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,18 @@ public class SettingsController extends WalletFormController implements Initiali
                 totalKeystores.bind(multisigControl.highValueProperty());
             } else {
                 totalKeystores.set(1);
+            }
+        });
+
+        scriptType.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ScriptType scriptType) {
+                return scriptType.getDescription();
+            }
+
+            @Override
+            public ScriptType fromString(String string) {
+                return ScriptType.fromDescriptor(string);
             }
         });
 

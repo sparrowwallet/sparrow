@@ -57,7 +57,7 @@
                                 </FXCollections>
                             </items>
                         </ComboBox>
-                        <HelpLabel helpText="P2WPKH and P2WSH are Native Segwit types and are usually the best choice.\nP2SH-P2WPKH and P2SH-P2WSH are Wrapped Segwit types and a good choice for the widest compatibility.\nP2PKH and P2SH are Legacy types and should be avoided, unless configuring an old wallet." />
+                        <HelpLabel helpText="Native Segwit types are the default and are usually the best choice.\nNested Segwit types are a good choice for the widest compatibility with older wallets.\nLegacy types should be avoided, unless configuring an old wallet." />
                     </Field>
                 </Fieldset>
             </Form>
