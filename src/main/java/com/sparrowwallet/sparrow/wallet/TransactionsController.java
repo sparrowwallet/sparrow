@@ -216,6 +216,11 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     @Subscribe
+    private void connectionFailed(ConnectionFailedEvent event) {
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), false));
+    }
+
+    @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             transactionsTable.refresh();

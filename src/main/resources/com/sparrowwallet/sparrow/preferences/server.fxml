@@ -77,6 +77,8 @@
                             <PublicElectrumServer fx:constant="BLOCKSTREAM_INFO" />
                             <PublicElectrumServer fx:constant="ELECTRUM_BLOCKSTREAM_INFO" />
                             <PublicElectrumServer fx:constant="LUKECHILDS_CO" />
+                            <PublicElectrumServer fx:constant="EMZY_DE" />
+                            <PublicElectrumServer fx:constant="BITAROO_NET" />
                         </FXCollections>
                     </items>
                 </ComboBox>

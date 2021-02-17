@@ -209,6 +209,12 @@ public class AppServices {
             onlineProperty.setValue(false);
             onlineProperty.addListener(onlineServicesListener);
 
+            if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
+                List<String> otherServers = Arrays.stream(PublicElectrumServer.values()).map(PublicElectrumServer::getUrl).filter(url -> !url.equals(Config.get().getPublicElectrumServer())).collect(Collectors.toList());
+                Config.get().setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
+                restartService(connectionService);
+            }
+
             log.debug("Connection failed", failEvent.getSource().getException());
             EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
         });
