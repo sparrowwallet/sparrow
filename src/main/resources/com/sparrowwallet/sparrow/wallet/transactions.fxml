@@ -41,10 +41,13 @@
                         </Field>
                         <Field text="Transactions:">
                             <CopyableLabel fx:id="transactionCount" />
-                            <Button fx:id="exportCsv" maxHeight="25" onAction="#exportCSV" translateY="-2">
+                            <Button fx:id="exportCsv" maxHeight="25" onAction="#exportCSV" translateY="-1">
                                 <graphic>
-                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="FILE_CSV" fontSize="14" />
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
                                 </graphic>
+                                <tooltip>
+                                    <Tooltip text="Export transactions as CSV" />
+                                </tooltip>
                             </Button>
                         </Field>
                     </Fieldset>
