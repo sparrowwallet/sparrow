@@ -47,7 +47,7 @@ public class WelcomeDialog extends Dialog<Mode> {
         content.getChildren().add(createParagraph("Sparrow can operate in both an online and offline mode. In the online mode it connects to your Bitcoin Core node or Electrum server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator."));
         content.getChildren().add(createParagraph("Connecting Sparrow to your Bitcoin Core node ensures your privacy, while connecting Sparrow to your own Electrum server ensures wallets load quicker, you have access to a full blockchain explorer, and your public keys are always encrypted on disk. Examples of Electrum servers include ElectrumX and electrs."));
         content.getChildren().add(createParagraph("Sparrow can also be configured to connect to a public Electrum server, but be aware that this configuration means that server can see your transactions."));
-        content.getChildren().add(createParagraph("You can change your mode at any time using the toggle in the status bar. A blue toggle indicates you are connected to an Electrum server, while a green toggle indicates you are connected to a Bitcoin Code node, and a yellow toggle means you are using a public Electrum server."));
+        content.getChildren().add(createParagraph("You can change your mode at any time using the toggle in the status bar. A blue toggle indicates you are connected to an Electrum server, while a green toggle indicates you are connected to a Bitcoin Code node, and a yellow toggle means you are using a public server."));
         content.getChildren().add(createStatusBar(onlineButtonType, offlineButtonType));
 
         dialogPane.setContent(content);
