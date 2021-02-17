@@ -109,12 +109,12 @@ public class SettingsController extends WalletFormController implements Initiali
         scriptType.setConverter(new StringConverter<>() {
             @Override
             public String toString(ScriptType scriptType) {
-                return scriptType.getDescription();
+                return scriptType == null ? "" : scriptType.getDescription();
             }
 
             @Override
             public ScriptType fromString(String string) {
-                return ScriptType.fromDescriptor(string);
+                return Arrays.stream(ScriptType.values()).filter(type -> type.getDescription().equals(string)).findFirst().orElse(null);
             }
         });
 
@@ -330,7 +330,10 @@ public class SettingsController extends WalletFormController implements Initiali
                 wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), (int)multisigControl.getLowValue()));
             }
 
-            descriptor.setWallet(wallet);
+            if(ScriptType.getAddressableScriptTypes(wallet.getPolicyType()).contains(wallet.getScriptType())) {
+                descriptor.setWallet(wallet);
+            }
+
             revert.setDisable(false);
             apply.setDisable(!wallet.isValid());
         }
