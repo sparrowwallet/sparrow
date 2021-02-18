@@ -50,6 +50,7 @@ public class AppServices {
     private static final Logger log = LoggerFactory.getLogger(AppServices.class);
 
     private static final int SERVER_PING_PERIOD_SECS = 60;
+    private static final int PUBLIC_SERVER_RETRY_PERIOD_SECS = 3;
     private static final int ENUMERATE_HW_PERIOD_SECS = 30;
     private static final int RATES_PERIOD_SECS = 5 * 60;
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;
@@ -187,6 +188,7 @@ public class AppServices {
             }
         });
         connectionService.setOnSucceeded(successEvent -> {
+            connectionService.setPeriod(Duration.seconds(SERVER_PING_PERIOD_SECS));
             connectionService.setRestartOnFailure(true);
 
             onlineProperty.removeListener(onlineServicesListener);
@@ -212,7 +214,7 @@ public class AppServices {
             if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
                 List<String> otherServers = Arrays.stream(PublicElectrumServer.values()).map(PublicElectrumServer::getUrl).filter(url -> !url.equals(Config.get().getPublicElectrumServer())).collect(Collectors.toList());
                 Config.get().setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
-                restartService(connectionService);
+                connectionService.setPeriod(Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS));
             }
 
             log.debug("Connection failed", failEvent.getSource().getException());

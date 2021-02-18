@@ -1315,7 +1315,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
         String reason = event.getException().getCause() != null ? event.getException().getCause().getMessage() : event.getException().getMessage();
-        String status = "Connection error: " + reason;
+        String status = "Connection failed: " + reason;
         statusUpdated(new StatusEvent(status));
     }
 
