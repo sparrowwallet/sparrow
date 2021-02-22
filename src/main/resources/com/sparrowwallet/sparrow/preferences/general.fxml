@@ -71,6 +71,12 @@
                 </ComboBox>
             </Field>
         </Fieldset>
+        <Fieldset inputGrow="SOMETIMES" text="Wallet" styleClass="wideLabelFieldSet">
+            <Field text="Validate derivations:">
+                <UnlabeledToggleSwitch fx:id="validateDerivationPaths" />
+                <HelpLabel helpText="Disallow keystores to have derivation paths that match the defaults for other script types."/>
+            </Field>
+        </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Coin Selection" styleClass="wideLabelFieldSet">
             <Field text="Group by address:">
                 <UnlabeledToggleSwitch fx:id="groupByAddress" />

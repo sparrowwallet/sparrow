@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.preferences;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
@@ -31,6 +32,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
 
     @FXML
     private ComboBox<ExchangeSource> exchangeSource;
+
+    @FXML
+    private UnlabeledToggleSwitch validateDerivationPaths;
 
     @FXML
     private UnlabeledToggleSwitch groupByAddress;
@@ -92,6 +96,12 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         });
 
         updateCurrencies(exchangeSource.getSelectionModel().getSelectedItem());
+
+        validateDerivationPaths.setSelected(config.isValidateDerivationPaths());
+        validateDerivationPaths.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setValidateDerivationPaths(newValue);
+            System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!newValue));
+        });
 
         groupByAddress.setSelected(config.isGroupByAddress());
         includeMempoolChange.setSelected(config.isIncludeMempoolChange());

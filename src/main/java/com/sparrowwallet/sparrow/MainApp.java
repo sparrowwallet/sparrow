@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.JCommander;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.WelcomeDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
@@ -72,6 +73,8 @@ public class MainApp extends Application {
             Config.get().setCoreMultiWallet(Boolean.TRUE);
             Config.get().setCoreWallet("");
         }
+
+        System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
 
         AppController appController = AppServices.newAppWindow(stage);
 

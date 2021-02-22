@@ -25,6 +25,7 @@ public class Config {
     private FeeRatesSelection feeRatesSelection;
     private Currency fiatCurrency;
     private ExchangeSource exchangeSource;
+    private boolean validateDerivationPaths = true;
     private boolean groupByAddress = true;
     private boolean includeMempoolChange = true;
     private boolean notifyNewTransactions = true;
@@ -151,6 +152,15 @@ public class Config {
 
     public void setExchangeSource(ExchangeSource exchangeSource) {
         this.exchangeSource = exchangeSource;
+        flush();
+    }
+
+    public boolean isValidateDerivationPaths() {
+        return validateDerivationPaths;
+    }
+
+    public void setValidateDerivationPaths(boolean validateDerivationPaths) {
+        this.validateDerivationPaths = validateDerivationPaths;
         flush();
     }
 
