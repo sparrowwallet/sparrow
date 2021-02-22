@@ -665,6 +665,10 @@ public class HeadersController extends TransactionFormController implements Init
 
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
+            if(!file.getName().toLowerCase().endsWith(".psbt")) {
+                file = new File(file.getAbsolutePath() + ".psbt");
+            }
+
             try {
                 try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
                     writer.print(headersForm.getPsbt().toBase64String());

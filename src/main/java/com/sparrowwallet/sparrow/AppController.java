@@ -447,6 +447,10 @@ public class AppController implements Initializable {
 
             File file = fileChooser.showSaveDialog(window);
             if(file != null) {
+                if(!saveTx && !file.getName().toLowerCase().endsWith(".psbt")) {
+                    file = new File(file.getAbsolutePath() + ".psbt");
+                }
+
                 try {
                     try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
                         if(saveTx) {
