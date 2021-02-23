@@ -1,0 +1,64 @@
+.welcome-pane {
+    -fx-padding: 0;
+}
+
+.title-area {
+    -fx-background-color: -fx-control-inner-background;
+    -fx-padding: 10 25 10 25;
+    -fx-border-width: 0px 0px 1px 0px;
+    -fx-border-color: #e5e5e6;
+}
+
+#welcomeBox, .button-bar {
+    -fx-padding: 10 25 25 25;
+}
+
+.button-bar .container {
+    -fx-padding: 0 0 15px 0;
+}
+
+.title-label {
+    -fx-font-size: 24px;
+}
+
+.title-text {
+    -fx-font-size: 20px;
+    -fx-padding: 0 0 15px 0;
+    -fx-graphic-text-gap: 10px;
+}
+
+.content-text {
+    -fx-font-size: 16px;
+    -fx-text-fill: derive(-fx-text-base-color, 15%);
+}
+
+.offline .title-icon {
+    -fx-text-fill: linear-gradient(to bottom, derive(-fx-text-base-color, 30%), -fx-text-base-color);
+}
+
+.public-electrum .title-icon {
+    -fx-text-fill: linear-gradient(to bottom, derive(rgb(238, 210, 2), 30%), rgb(238, 210, 2));
+}
+
+.bitcoin-core .title-icon {
+    -fx-text-fill: linear-gradient(to bottom, derive(#50a14f, 30%), #50a14f);
+}
+
+.private-electrum .title-icon {
+    -fx-text-fill: linear-gradient(to bottom, derive(#0b99c9, 30%), #0b99c9);
+}
+
+.public-electrum .toggle-switch:selected .thumb-area, .offline .toggle-switch:selected .thumb-area {
+    -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -20%), derive(-fx-text-box-border, -30%)), linear-gradient(to bottom, derive(gold, 30%), gold);
+    -fx-background-insets: 0, 1;
+}
+
+.bitcoin-core .toggle-switch:selected .thumb-area {
+    -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -20%), derive(-fx-text-box-border, -30%)), linear-gradient(to bottom, derive(#50a14f, 30%), #50a14f);
+    -fx-background-insets: 0, 1;
+}
+
+.private-electrum .toggle-switch:selected .thumb-area {
+    -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -20%), derive(-fx-text-box-border, -30%)), linear-gradient(to bottom, derive(#0b99c9, 30%), #0b99c9);
+    -fx-background-insets: 0, 1;
+}

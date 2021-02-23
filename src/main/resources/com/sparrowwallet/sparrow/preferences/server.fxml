@@ -38,7 +38,7 @@
                         <ToggleGroup fx:id="serverTypeToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton fx:id="publicElectrumToggle" text="Public Electrum" toggleGroup="$serverTypeToggleGroup">
+                        <ToggleButton fx:id="publicElectrumToggle" text="Public Server" toggleGroup="$serverTypeToggleGroup">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="public-electrum" />
                             </graphic>
@@ -69,20 +69,7 @@
     </Form>
 
     <Form fx:id="publicElectrumForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
-        <Fieldset inputGrow="SOMETIMES" text="Public Electrum Server">
-            <Field text="URL:">
-                <ComboBox fx:id="publicElectrumServer">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <PublicElectrumServer fx:constant="BLOCKSTREAM_INFO" />
-                            <PublicElectrumServer fx:constant="ELECTRUM_BLOCKSTREAM_INFO" />
-                            <PublicElectrumServer fx:constant="LUKECHILDS_CO" />
-                            <PublicElectrumServer fx:constant="EMZY_DE" />
-                            <PublicElectrumServer fx:constant="BITAROO_NET" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-            </Field>
+        <Fieldset inputGrow="SOMETIMES" text="Public Server">
             <Field text="">
                 <Label alignment="CENTER" translateY="-1">
                     <graphic>
@@ -96,6 +83,19 @@
             </Field>
             <Field text="">
                 <CopyableLabel text="Using a public server means it can see your transactions."/>
+            </Field>
+            <Field text="URL:">
+                <ComboBox fx:id="publicElectrumServer">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <PublicElectrumServer fx:constant="BLOCKSTREAM_INFO" />
+                            <PublicElectrumServer fx:constant="ELECTRUM_BLOCKSTREAM_INFO" />
+                            <PublicElectrumServer fx:constant="LUKECHILDS_CO" />
+                            <PublicElectrumServer fx:constant="EMZY_DE" />
+                            <PublicElectrumServer fx:constant="BITAROO_NET" />
+                        </FXCollections>
+                    </items>
+                </ComboBox>
             </Field>
             <Field text="Use Proxy:">
                 <UnlabeledToggleSwitch fx:id="publicUseProxy"/>

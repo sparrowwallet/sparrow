@@ -3,7 +3,6 @@ package com.sparrowwallet.sparrow;
 import com.beust.jcommander.JCommander;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.control.WelcomeDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Config;
@@ -52,7 +51,7 @@ public class MainApp extends Application {
         boolean createNewWallet = false;
         Mode mode = Config.get().getMode();
         if(mode == null) {
-            WelcomeDialog welcomeDialog = new WelcomeDialog(getHostServices());
+            WelcomeDialog welcomeDialog = new WelcomeDialog();
             Optional<Mode> optionalMode = welcomeDialog.showAndWait();
             if(optionalMode.isPresent()) {
                 mode = optionalMode.get();
