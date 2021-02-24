@@ -231,6 +231,7 @@ public class AppController implements Initializable {
 
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
+        serverToggle.setDisable(Config.get().getServerType() == null);
         onlineProperty().bindBidirectional(serverToggle.selectedProperty());
         onlineProperty().addListener((observable, oldValue, newValue) ->  {
             Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
@@ -1095,6 +1096,8 @@ public class AppController implements Initializable {
         } else {
             serverToggle.getStyleClass().remove("core-server");
         }
+
+        serverToggle.setDisable(false);
     }
 
     public void setTheme(ActionEvent event) {

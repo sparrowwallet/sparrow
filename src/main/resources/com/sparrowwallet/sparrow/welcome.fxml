@@ -31,7 +31,7 @@
                 </Label>
                 <Label text="Sparrow is a Bitcoin wallet with a focus on security and usability." wrapText="true" styleClass="content-text" />
                 <Label text="Sparrow can operate in both an online and offline mode. In the online mode it connects to a server to display transaction history. In the offline mode it is useful as a transaction editor and as an airgapped multisig coordinator." wrapText="true" styleClass="content-text" />
-                <Label text="The status bar at the bottom displays the current connection status:" wrapText="true" styleClass="content-text" />
+                <Label text="The status bar at the bottom displays the connection status, as demonstrated below:" wrapText="true" styleClass="content-text" />
             </VBox>
             <VBox fx:id="step2" spacing="15">
                 <Label text="Connecting to a Public Server" styleClass="title-text">

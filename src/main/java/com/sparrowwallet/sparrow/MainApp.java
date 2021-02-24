@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.io.FileType;
 import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.Bwt;
+import com.sparrowwallet.sparrow.net.PublicElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
@@ -62,6 +63,9 @@ public class MainApp extends Application {
                     PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER, true);
                     Optional<Boolean> optNewWallet = preferencesDialog.showAndWait();
                     createNewWallet = optNewWallet.isPresent() && optNewWallet.get();
+                } else if(Network.get() == Network.MAINNET) {
+                    Config.get().setServerType(ServerType.PUBLIC_ELECTRUM_SERVER);
+                    Config.get().setPublicElectrumServer(PublicElectrumServer.values()[new Random().nextInt(PublicElectrumServer.values().length)].getUrl());
                 }
             }
         }
