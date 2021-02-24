@@ -59,7 +59,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)))", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd,coldcard747b698,coldcard7bb026b,coldcard0f05694)))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("6ba6cfd0", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("tpubDFcrvj5n7gyatVbr8dHCUfHT4CGvL8hREBjtxc4ge7HZgqNuPhFimPRtVg6fRRwfXiQthV9EBjNbwbpgV2VoQeL1ZNXoAWXxP2L9vMtRjax", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
@@ -82,7 +82,7 @@ public class ElectrumTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd0,coldcard747b698e,coldcard7bb026be,coldcard0f056943)))", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd,coldcard747b698,coldcard7bb026b,coldcard0f05694)))", wallet.getDefaultPolicy().getMiniscript().getScript());
         Assert.assertEquals("6ba6cfd0", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/1'/0'/1'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("tpubDFcrvj5n7gyatVbr8dHCUfHT4CGvL8hREBjtxc4ge7HZgqNuPhFimPRtVg6fRRwfXiQthV9EBjNbwbpgV2VoQeL1ZNXoAWXxP2L9vMtRjax", wallet.getKeystores().get(0).getExtendedPublicKey().toString());

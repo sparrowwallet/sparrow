@@ -142,6 +142,11 @@ public class MainApp extends Application {
             Network.set(Network.TESTNET);
         }
 
+        File signetFlag = new File(Storage.getSparrowHome(), "network-" + Network.SIGNET.getName());
+        if(signetFlag.exists()) {
+            Network.set(Network.SIGNET);
+        }
+
         if(Network.get() != Network.MAINNET) {
             getLogger().info("Using " + Network.get() + " configuration");
         }

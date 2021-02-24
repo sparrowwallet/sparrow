@@ -45,10 +45,10 @@ Usage: sparrow [options]
       Show usage
     --network, -n
       Network to use
-      Possible Values: [mainnet, testnet, regtest]
+      Possible Values: [mainnet, testnet, regtest, signet]
 ```
 
-As a fallback, the network (mainnet, testnet or regtest) can also be set using an environment variable `SPARROW_NETWORK`. For example:
+As a fallback, the network (mainnet, testnet, regtest or signet) can also be set using an environment variable `SPARROW_NETWORK`. For example:
 
 `export SPARROW_NETWORK=testnet`
 
@@ -64,7 +64,7 @@ OSX      | ~/.sparrow
 Linux    | ~/.sparrow
 Windows  | %APPDATA%/Sparrow
 
-Testnet and regtest configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
+Testnet, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
 
 ## Reporting Issues
 
