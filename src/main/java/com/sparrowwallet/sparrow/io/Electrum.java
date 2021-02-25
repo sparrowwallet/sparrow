@@ -161,8 +161,18 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                         }
 
                         keystore.setSeed(new DeterministicSeed(mnemonic, passphrase, 0, DeterministicSeed.Type.ELECTRUM));
-                        if(derivationPath.equals("m/0")) {
-                            derivationPath = "m/0'";
+
+                        //Ensure the derivation path from the seed matches the provided xpub
+                        String[] possibleDerivations = {"m", "m/0", "m/0'"};
+                        for(String possibleDerivation : possibleDerivations) {
+                            List<ChildNumber> derivation = KeyDerivation.parsePath(possibleDerivation);
+                            DeterministicKey derivedKey = keystore.getExtendedMasterPrivateKey().getKey(derivation);
+                            DeterministicKey derivedKeyPublicOnly = derivedKey.dropPrivateBytes().dropParent();
+                            ExtendedKey xpub = new ExtendedKey(derivedKeyPublicOnly, derivedKey.getParentFingerprint(), derivation.isEmpty() ? ChildNumber.ZERO : derivation.get(derivation.size() - 1));
+                            if(xpub.equals(xPub)) {
+                                derivationPath = possibleDerivation;
+                                break;
+                            }
                         }
                     } else {
                         keystore.setSource(KeystoreSource.SW_WATCH);
