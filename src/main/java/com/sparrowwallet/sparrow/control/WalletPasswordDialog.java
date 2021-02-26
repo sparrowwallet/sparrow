@@ -22,17 +22,24 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private final CustomPasswordField passwordConfirm;
     private final CheckBox backupExisting;
     private final CheckBox changePassword;
+    private final CheckBox deleteBackups;
+    private boolean addingPassword;
 
     public WalletPasswordDialog(PasswordRequirement requirement) {
         this(null, requirement);
     }
 
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement) {
+        this(null, requirement, false);
+    }
+
+    public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword) {
         this.requirement = requirement;
         this.password = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.passwordConfirm = (CustomPasswordField)TextFields.createClearablePasswordField();
         this.backupExisting = new CheckBox("Backup existing wallet first");
         this.changePassword = new CheckBox("Change password");
+        this.deleteBackups = new CheckBox("Delete any backups");
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Wallet Password" + (walletName != null ? " - " + walletName : ""));
@@ -52,13 +59,21 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         content.getChildren().add(password);
         content.getChildren().add(passwordConfirm);
 
-        if(requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_SET) {
-            content.getChildren().add(backupExisting);
-            backupExisting.setSelected(true);
-        }
-
         if(requirement == PasswordRequirement.UPDATE_SET) {
             content.getChildren().add(changePassword);
+            changePassword.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                backupExisting.setVisible(!newValue);
+            });
+            changePassword.setSelected(suggestChangePassword);
+        }
+
+        if(requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_SET) {
+            backupExisting.managedProperty().bind(backupExisting.visibleProperty());
+            deleteBackups.managedProperty().bind(deleteBackups.visibleProperty());
+            deleteBackups.visibleProperty().bind(backupExisting.visibleProperty().not());
+            content.getChildren().addAll(backupExisting, deleteBackups);
+            backupExisting.setSelected(true);
+            deleteBackups.setSelected(true);
         }
 
         dialogPane.setContent(content);
@@ -87,10 +102,14 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
                     okButton.setText("No Password");
                     passwordConfirm.setVisible(false);
                     passwordConfirm.setManaged(false);
+                    backupExisting.setVisible(true);
+                    addingPassword = false;
                 } else {
                     okButton.setText("Set Password");
                     passwordConfirm.setVisible(true);
                     passwordConfirm.setManaged(true);
+                    backupExisting.setVisible(false);
+                    addingPassword = true;
                 }
             });
         }
@@ -103,11 +122,15 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     }
 
     public boolean isBackupExisting() {
-        return backupExisting.isSelected();
+        return !(addingPassword || isChangePassword()) && backupExisting.isSelected();
     }
 
     public boolean isChangePassword() {
         return changePassword.isSelected();
+    }
+
+    public boolean isDeleteBackups() {
+        return (addingPassword || isChangePassword()) && deleteBackups.isSelected();
     }
 
     public enum PasswordRequirement {

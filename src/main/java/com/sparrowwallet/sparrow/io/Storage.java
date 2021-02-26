@@ -184,6 +184,18 @@ public class Storage {
         Files.copy(walletFile, backupFile);
     }
 
+    public void deleteBackups() {
+        File backupDir = getWalletsBackupDir();
+        File[] unencryptedBackups = backupDir.listFiles((dir, name) -> {
+            int dotIndex = name.lastIndexOf('.');
+            return name.startsWith(walletFile.getName() + "-") && name.substring(walletFile.getName().length() + 1, dotIndex > -1 ? dotIndex : name.length()).matches("[0-9]+");
+        });
+
+        for(File unencryptedBackup : unencryptedBackups) {
+            unencryptedBackup.delete();
+        }
+    }
+
     public ECKey getEncryptionPubKey() {
         return encryptionPubKey;
     }

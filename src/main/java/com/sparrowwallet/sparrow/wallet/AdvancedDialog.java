@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.io.Storage;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -11,10 +12,11 @@ import org.controlsfx.tools.Borders;
 
 import java.io.IOException;
 
-public class AdvancedDialog extends Dialog<Void> {
-    public AdvancedDialog(Wallet wallet) {
+public class AdvancedDialog extends Dialog<Boolean> {
+    public AdvancedDialog(WalletForm walletForm) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        Wallet wallet = walletForm.getWallet();
 
         try {
             FXMLLoader advancedLoader = new FXMLLoader(AppServices.class.getResource("wallet/advanced.fxml"));
@@ -22,11 +24,18 @@ public class AdvancedDialog extends Dialog<Void> {
             AdvancedController settingsAdvancedController = advancedLoader.getController();
             settingsAdvancedController.initializeView(wallet);
 
+            boolean noPassword = Storage.NO_PASSWORD_KEY.equals(walletForm.getStorage().getEncryptionPubKey());
             final ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
-            dialogPane.getButtonTypes().addAll(closeButtonType);
+            final ButtonType passwordButtonType = new javafx.scene.control.ButtonType(noPassword ? "Add Password..." : "Change Password...", ButtonBar.ButtonData.LEFT);
+            dialogPane.getButtonTypes().add(closeButtonType);
+            if(wallet.isValid()) {
+                dialogPane.getButtonTypes().add(passwordButtonType);
+            }
 
             dialogPane.setPrefWidth(400);
             dialogPane.setPrefHeight(300);
+
+            setResultConverter(dialogButton -> dialogButton == passwordButtonType);
         }
         catch(IOException e) {
             throw new RuntimeException(e);

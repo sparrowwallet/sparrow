@@ -183,7 +183,7 @@ public class SettingsController extends WalletFormController implements Initiali
         apply.setOnAction(event -> {
             revert.setDisable(true);
             apply.setDisable(true);
-            saveWallet(false);
+            saveWallet(false, false);
         });
 
         setFieldsFromWallet(walletForm.getWallet());
@@ -303,8 +303,13 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     public void showAdvanced(ActionEvent event) {
-        AdvancedDialog advancedDialog = new AdvancedDialog(walletForm.getWallet());
-        advancedDialog.showAndWait();
+        AdvancedDialog advancedDialog = new AdvancedDialog(walletForm);
+        Optional<Boolean> optApply = advancedDialog.showAndWait();
+        if(optApply.isPresent() && optApply.get() && walletForm.getWallet().isValid()) {
+            revert.setDisable(true);
+            apply.setDisable(true);
+            saveWallet(false, true);
+        }
     }
 
     @Override
@@ -355,7 +360,7 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
-    private void saveWallet(boolean changePassword) {
+    private void saveWallet(boolean changePassword, boolean suggestChangePassword) {
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         WalletPasswordDialog.PasswordRequirement requirement;
@@ -380,7 +385,7 @@ public class SettingsController extends WalletFormController implements Initiali
             }
         }
 
-        WalletPasswordDialog dlg = new WalletPasswordDialog(requirement);
+        WalletPasswordDialog dlg = new WalletPasswordDialog(null, requirement, suggestChangePassword);
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(dlg.isBackupExisting()) {
@@ -399,7 +404,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
-                    if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW) {
+                    if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW || requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_CHANGE) {
                         EventManager.get().post(new RequestOpenWalletsEvent());
                     }
                 } catch (IOException e) {
@@ -425,18 +430,28 @@ public class SettingsController extends WalletFormController implements Initiali
                             return;
                         }
 
+                        key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+
                         if(dlg.isChangePassword()) {
+                            if(dlg.isDeleteBackups()) {
+                                walletForm.deleteBackups();
+                            }
+
                             walletForm.getStorage().setEncryptionPubKey(null);
-                            saveWallet(true);
+                            walletForm.getWallet().decrypt(key);
+                            saveWallet(true, false);
                             return;
                         }
 
-                        key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
                         walletForm.getWallet().encrypt(key);
-
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();
-                        if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW) {
+
+                        if(dlg.isDeleteBackups()) {
+                            walletForm.deleteBackups();
+                        }
+
+                        if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW || requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY) {
                             EventManager.get().post(new RequestOpenWalletsEvent());
                         }
                     } catch (Exception e) {
