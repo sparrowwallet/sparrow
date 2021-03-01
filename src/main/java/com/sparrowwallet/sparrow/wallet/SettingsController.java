@@ -443,13 +443,13 @@ public class SettingsController extends WalletFormController implements Initiali
                             return;
                         }
 
-                        walletForm.getWallet().encrypt(key);
-                        walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
-                        walletForm.saveAndRefresh();
-
                         if(dlg.isDeleteBackups()) {
                             walletForm.deleteBackups();
                         }
+
+                        walletForm.getWallet().encrypt(key);
+                        walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
+                        walletForm.saveAndRefresh();
 
                         if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW || requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY) {
                             EventManager.get().post(new RequestOpenWalletsEvent());

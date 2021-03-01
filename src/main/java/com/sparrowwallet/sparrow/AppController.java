@@ -569,7 +569,7 @@ public class AppController implements Initializable {
             File walletFile = Storage.getWalletFile(nameAndBirthDate.getName());
             Storage storage = new Storage(walletFile);
             Wallet wallet = new Wallet(nameAndBirthDate.getName(), PolicyType.SINGLE, ScriptType.P2WPKH, nameAndBirthDate.getBirthDate());
-            addWalletTabOrWindow(storage, wallet, false);
+            addWalletTabOrWindow(storage, wallet, null, false);
         }
     }
 
@@ -594,13 +594,13 @@ public class AppController implements Initializable {
             Storage storage = new Storage(file);
             FileType fileType = IOUtils.getFileType(file);
             if(FileType.JSON.equals(fileType)) {
-                Wallet wallet = storage.loadWallet();
-                checkWalletNetwork(wallet);
-                restorePublicKeysFromSeed(wallet, null);
-                if(!wallet.isValid()) {
+                Storage.WalletBackupAndKey walletBackupAndKey = storage.loadWallet();
+                checkWalletNetwork(walletBackupAndKey.wallet);
+                restorePublicKeysFromSeed(walletBackupAndKey.wallet, null);
+                if(!walletBackupAndKey.wallet.isValid()) {
                     throw new IllegalStateException("Wallet file is not valid.");
                 }
-                addWalletTabOrWindow(storage, wallet, forceSameWindow);
+                addWalletTabOrWindow(storage, walletBackupAndKey.wallet, walletBackupAndKey.backupWallet, forceSameWindow);
             } else if(FileType.BINARY.equals(fileType)) {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
@@ -612,15 +612,15 @@ public class AppController implements Initializable {
                 Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
                 loadWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
-                    Storage.WalletAndKey walletAndKey = loadWalletService.getValue();
+                    Storage.WalletBackupAndKey walletBackupAndKey = loadWalletService.getValue();
                     try {
-                        checkWalletNetwork(walletAndKey.wallet);
-                        restorePublicKeysFromSeed(walletAndKey.wallet, walletAndKey.key);
-                        addWalletTabOrWindow(storage, walletAndKey.wallet, forceSameWindow);
+                        checkWalletNetwork(walletBackupAndKey.wallet);
+                        restorePublicKeysFromSeed(walletBackupAndKey.wallet, walletBackupAndKey.key);
+                        addWalletTabOrWindow(storage, walletBackupAndKey.wallet, walletBackupAndKey.backupWallet, forceSameWindow);
                     } catch(Exception e) {
                         showErrorDialog("Error Opening Wallet", e.getMessage());
                     } finally {
-                        walletAndKey.key.clear();
+                        walletBackupAndKey.key.clear();
                     }
                 });
                 loadWalletService.setOnFailed(workerStateEvent -> {
@@ -779,7 +779,7 @@ public class AppController implements Initializable {
         if(password.isPresent()) {
             if(password.get().length() == 0) {
                 storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
-                addWalletTabOrWindow(storage, wallet, false);
+                addWalletTabOrWindow(storage, wallet, null, false);
             } else {
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
@@ -792,7 +792,7 @@ public class AppController implements Initializable {
                         key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
                         wallet.encrypt(key);
                         storage.setEncryptionPubKey(encryptionPubKey);
-                        addWalletTabOrWindow(storage, wallet, false);
+                        addWalletTabOrWindow(storage, wallet, null, false);
                     } finally {
                         encryptionFullKey.clear();
                         if(key != null) {
@@ -856,12 +856,13 @@ public class AppController implements Initializable {
             WalletTabData walletTabData = (WalletTabData) tabData;
             Wallet wallet = walletTabData.getWallet();
             Wallet pastWallet = wallet.copy();
+            walletTabData.getStorage().backupTempWallet();
             wallet.clearHistory();
             EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, walletTabData.getStorage().getWalletFile()));
         }
     }
 
-    public void addWalletTabOrWindow(Storage storage, Wallet wallet, boolean forceSameWindow) {
+    public void addWalletTabOrWindow(Storage storage, Wallet wallet, Wallet backupWallet, boolean forceSameWindow) {
         Window existingWalletWindow = AppServices.get().getWindowForWallet(storage);
         if(existingWalletWindow instanceof Stage) {
             Stage existingWalletStage = (Stage)existingWalletWindow;
@@ -876,13 +877,13 @@ public class AppController implements Initializable {
             AppController appController = AppServices.newAppWindow(stage);
             stage.toFront();
             stage.setX(AppServices.get().getWalletWindowMaxX() + 30);
-            appController.addWalletTab(storage, wallet);
+            appController.addWalletTab(storage, wallet, backupWallet);
         } else {
-            addWalletTab(storage, wallet);
+            addWalletTab(storage, wallet, backupWallet);
         }
     }
 
-    public void addWalletTab(Storage storage, Wallet wallet) {
+    public void addWalletTab(Storage storage, Wallet wallet, Wallet backupWallet) {
         try {
             String name = storage.getWalletFile().getName();
             if(name.endsWith(".json")) {
@@ -901,7 +902,7 @@ public class AppController implements Initializable {
             EventManager.get().post(new WalletOpeningEvent(storage, wallet));
 
             //Note that only one WalletForm is created per wallet tab, and registered to listen for events. All wallet controllers (except SettingsController) share this instance.
-            WalletForm walletForm = new WalletForm(storage, wallet);
+            WalletForm walletForm = new WalletForm(storage, wallet, backupWallet);
             EventManager.get().register(walletForm);
             controller.setWalletForm(walletForm);
 

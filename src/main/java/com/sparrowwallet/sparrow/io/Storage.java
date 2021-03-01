@@ -10,13 +10,14 @@ import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.MainApp;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.controlsfx.tools.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -26,14 +27,18 @@ import java.security.SecureRandom;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.*;
 
 import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
 
 public class Storage {
+    private static final Logger log = LoggerFactory.getLogger(Storage.class);
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
 
     private static final DateFormat BACKUP_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+    private static final Pattern DATE_PATTERN = Pattern.compile(".+-([0-9]{14}?).*");
 
     public static final String SPARROW_DIR = ".sparrow";
     public static final String WINDOWS_SPARROW_DIR = "Sparrow";
@@ -41,6 +46,7 @@ public class Storage {
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String HEADER_MAGIC_1 = "SPRW1";
     private static final int BINARY_HEADER_LENGTH = 28;
+    public static final String TEMP_BACKUP_EXTENSION = "tmp";
 
     private File walletFile;
     private final Gson gson;
@@ -81,17 +87,49 @@ public class Storage {
         return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
     }
 
-    public Wallet loadWallet() throws IOException {
-        Reader reader = new FileReader(walletFile);
+    public WalletBackupAndKey loadWallet() throws IOException {
+        Wallet wallet = loadWallet(walletFile);
+
+        Wallet backupWallet = null;
+        File[] backups = getBackups("json." + TEMP_BACKUP_EXTENSION);
+        if(backups.length > 0) {
+            try {
+                backupWallet = loadWallet(backups[0]);
+            } catch(Exception e) {
+                log.error("Error loading backup wallet " + TEMP_BACKUP_EXTENSION, e);
+            }
+        }
+
+        encryptionPubKey = NO_PASSWORD_KEY;
+        return new WalletBackupAndKey(wallet, backupWallet, null);
+    }
+
+    public Wallet loadWallet(File jsonFile) throws IOException {
+        Reader reader = new FileReader(jsonFile);
         Wallet wallet = gson.fromJson(reader, Wallet.class);
         reader.close();
 
-        encryptionPubKey = NO_PASSWORD_KEY;
         return wallet;
     }
 
-    public WalletAndKey loadWallet(CharSequence password) throws IOException, StorageException {
-        InputStream fileStream = new FileInputStream(walletFile);
+    public WalletBackupAndKey loadWallet(CharSequence password) throws IOException, StorageException {
+        WalletAndKey walletAndKey = loadWallet(walletFile, password);
+
+        WalletAndKey backupAndKey = new WalletAndKey(null, null);
+        File[] backups = getBackups(TEMP_BACKUP_EXTENSION, "json." + TEMP_BACKUP_EXTENSION);
+        if(backups.length > 0) {
+            try {
+                backupAndKey = loadWallet(backups[0], password);
+            } catch(Exception e) {
+                log.error("Error loading backup wallet " + TEMP_BACKUP_EXTENSION, e);
+            }
+        }
+
+        return new WalletBackupAndKey(walletAndKey.wallet, backupAndKey.wallet, walletAndKey.key);
+    }
+
+    public WalletAndKey loadWallet(File encryptedFile, CharSequence password) throws IOException, StorageException {
+        InputStream fileStream = new FileInputStream(encryptedFile);
         ECKey encryptionKey = getEncryptionKey(password, fileStream);
 
         InputStream inputStream = new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic()));
@@ -168,6 +206,18 @@ public class Storage {
     }
 
     public void backupWallet() throws IOException {
+        backupWallet(null);
+    }
+
+    public void backupTempWallet() {
+        try {
+            backupWallet(TEMP_BACKUP_EXTENSION);
+        } catch(IOException e) {
+            log.error("Error creating ." + TEMP_BACKUP_EXTENSION + " backup wallet", e);
+        }
+    }
+
+    public void backupWallet(String extension) throws IOException {
         File backupDir = getWalletsBackupDir();
 
         Date backupDate = new Date();
@@ -180,20 +230,50 @@ public class Storage {
             backupName += dateSuffix;
         }
 
+        if(extension != null) {
+            backupName += "." + extension;
+        }
+
         File backupFile = new File(backupDir, backupName);
         Files.copy(walletFile, backupFile);
     }
 
     public void deleteBackups() {
+        deleteBackups(null);
+    }
+
+    public void deleteBackups(String extension) {
+        File[] backups = getBackups(extension);
+        for(File backup : backups) {
+            backup.delete();
+        }
+    }
+
+    private File[] getBackups(String extension) {
+        return getBackups(extension, null);
+    }
+
+    private File[] getBackups(String extension, String notExtension) {
         File backupDir = getWalletsBackupDir();
-        File[] unencryptedBackups = backupDir.listFiles((dir, name) -> {
-            int dotIndex = name.lastIndexOf('.');
-            return name.startsWith(walletFile.getName() + "-") && name.substring(walletFile.getName().length() + 1, dotIndex > -1 ? dotIndex : name.length()).matches("[0-9]+");
+        File[] backups = backupDir.listFiles((dir, name) -> {
+            return name.startsWith(Files.getNameWithoutExtension(walletFile.getName()) + "-") &&
+                    getBackupDate(name) != null &&
+                    (extension == null || name.endsWith("." + extension)) &&
+                    (notExtension == null || !name.endsWith("." + notExtension));
         });
 
-        for(File unencryptedBackup : unencryptedBackups) {
-            unencryptedBackup.delete();
+        Arrays.sort(backups, Comparator.comparing(o -> getBackupDate(((File)o).getName())).reversed());
+
+        return backups;
+    }
+
+    private String getBackupDate(String backupFileName) {
+        Matcher matcher = DATE_PATTERN.matcher(backupFileName);
+        if(matcher.matches()) {
+            return matcher.group(1);
         }
+
+        return null;
     }
 
     public ECKey getEncryptionPubKey() {
@@ -250,6 +330,8 @@ public class Storage {
             }
 
             keyDeriver = new Argon2KeyDeriver(salt);
+        } else if(inputStream != null) {
+            inputStream.skip(BINARY_HEADER_LENGTH);
         }
 
         return keyDeriver;
@@ -477,7 +559,16 @@ public class Storage {
         }
     }
 
-    public static class LoadWalletService extends Service<WalletAndKey> {
+    public static class WalletBackupAndKey extends WalletAndKey {
+        public final Wallet backupWallet;
+
+        public WalletBackupAndKey(Wallet wallet, Wallet backupWallet, Key key) {
+            super(wallet, key);
+            this.backupWallet = backupWallet;
+        }
+    }
+
+    public static class LoadWalletService extends Service<WalletBackupAndKey> {
         private final Storage storage;
         private final SecureString password;
 
@@ -487,12 +578,12 @@ public class Storage {
         }
 
         @Override
-        protected Task<WalletAndKey> createTask() {
+        protected Task<WalletBackupAndKey> createTask() {
             return new Task<>() {
-                protected WalletAndKey call() throws IOException, StorageException, MnemonicException {
-                    WalletAndKey walletAndKey = storage.loadWallet(password);
+                protected WalletBackupAndKey call() throws IOException, StorageException {
+                    WalletBackupAndKey walletBackupAndKey = storage.loadWallet(password);
                     password.clear();
-                    return walletAndKey;
+                    return walletBackupAndKey;
                 }
             };
         }

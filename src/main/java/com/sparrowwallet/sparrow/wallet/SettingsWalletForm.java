@@ -17,7 +17,7 @@ public class SettingsWalletForm extends WalletForm {
     private Wallet walletCopy;
 
     public SettingsWalletForm(Storage storage, Wallet currentWallet) {
-        super(storage, currentWallet);
+        super(storage, currentWallet, null, false);
         this.walletCopy = currentWallet.copy();
     }
 
@@ -38,10 +38,13 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void saveAndRefresh() throws IOException {
-        Wallet pastWallet = wallet.copy();
+        Wallet pastWallet = null;
 
         boolean refreshAll = isRefreshNecessary(wallet, walletCopy);
         if(refreshAll) {
+            pastWallet = wallet.copy();
+            save(); //Save here for the temp backup in case password has been changed
+            getStorage().backupTempWallet();
             walletCopy.clearNodes();
         }
 

@@ -34,10 +34,20 @@ public class WalletForm {
     private final List<NodeEntry> accountEntries = new ArrayList<>();
     private final List<Set<WalletNode>> walletTransactionNodes = new ArrayList<>();
 
-    public WalletForm(Storage storage, Wallet currentWallet) {
+    public WalletForm(Storage storage, Wallet currentWallet, Wallet backupWallet) {
+        this(storage, currentWallet, backupWallet, true);
+    }
+
+    public WalletForm(Storage storage, Wallet currentWallet, Wallet backupWallet, boolean refreshHistory) {
         this.storage = storage;
         this.wallet = currentWallet;
-        refreshHistory(AppServices.getCurrentBlockHeight(), null);
+
+        //Unencrypted wallets load before isConnected is true, waiting for the ConnectionEvent to refresh history - save the backup for this event
+        savedPastWallet = backupWallet;
+
+        if(refreshHistory) {
+            refreshHistory(AppServices.getCurrentBlockHeight(), backupWallet);
+        }
     }
 
     public Wallet getWallet() {
@@ -66,6 +76,7 @@ public class WalletForm {
 
     public void saveAndRefresh() throws IOException {
         Wallet pastWallet = wallet.copy();
+        storage.backupTempWallet();
         wallet.clearHistory();
         save();
         refreshHistory(AppServices.getCurrentBlockHeight(), pastWallet);
@@ -106,31 +117,36 @@ public class WalletForm {
             wallet.setStoredBlockHeight(blockHeight);
         }
 
+        boolean labelsChanged = false;
         if(pastWallet != null) {
-            copyLabels(pastWallet);
+            labelsChanged = copyLabels(pastWallet);
         }
 
-        notifyIfChanged(blockHeight, previousWallet);
+        notifyIfChanged(blockHeight, previousWallet, labelsChanged);
     }
 
-    private void copyLabels(Wallet pastWallet) {
-        wallet.getNode(KeyPurpose.RECEIVE).copyLabels(pastWallet.getNode(KeyPurpose.RECEIVE));
-        wallet.getNode(KeyPurpose.CHANGE).copyLabels(pastWallet.getNode(KeyPurpose.CHANGE));
+    private boolean copyLabels(Wallet pastWallet) {
+        boolean changed = wallet.getNode(KeyPurpose.RECEIVE).copyLabels(pastWallet.getNode(KeyPurpose.RECEIVE));
+        changed |= wallet.getNode(KeyPurpose.CHANGE).copyLabels(pastWallet.getNode(KeyPurpose.CHANGE));
 
         for(Map.Entry<Sha256Hash, BlockTransaction> txEntry : wallet.getTransactions().entrySet()) {
             BlockTransaction pastBlockTransaction = pastWallet.getTransactions().get(txEntry.getKey());
             if(pastBlockTransaction != null && txEntry.getValue() != null && txEntry.getValue().getLabel() == null && pastBlockTransaction.getLabel() != null) {
                 txEntry.getValue().setLabel(pastBlockTransaction.getLabel());
+                changed = true;
             }
         }
+
+        storage.deleteBackups(Storage.TEMP_BACKUP_EXTENSION);
+        return changed;
     }
 
-    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet) {
+    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet, boolean labelsChanged) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
-        boolean changed = false;
+        boolean changed = labelsChanged;
         if(!historyChangedNodes.isEmpty()) {
             Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, storage, historyChangedNodes)));
             changed = true;
@@ -254,7 +270,6 @@ public class WalletForm {
             EventManager.get().post(new WalletNodesChangedEvent(wallet));
 
             //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
-            //The savedPastWallet variable can be removed once bwt supports dynamic loading of wallets without needing to disconnect/reconnect
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
                 savedPastWallet = event.getPastWallet();
             }
