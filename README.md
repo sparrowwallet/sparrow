@@ -43,6 +43,9 @@ Usage: sparrow [options]
       Path to Sparrow home folder
     --help, -h
       Show usage
+    --level, -l
+      Set log level
+      Possible Values: [ERROR, WARN, INFO, DEBUG, TRACE]      
     --network, -n
       Network to use
       Possible Values: [mainnet, testnet, regtest, signet]

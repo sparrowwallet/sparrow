@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.JCommander;
+import com.sparrowwallet.drongo.Drongo;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -117,6 +118,10 @@ public class MainApp extends Application {
         if(args.help) {
             jCommander.usage();
             System.exit(0);
+        }
+
+        if(args.level != null) {
+            Drongo.setRootLogLevel(args.level);
         }
 
         if(args.dir != null) {
