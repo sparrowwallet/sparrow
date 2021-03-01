@@ -164,3 +164,7 @@
     -fx-background-color: -fx-box-border, derive(-fx-background, 10%);
     -fx-effect: dropshadow(three-pass-box, #a0a1a7, 14, 0, 0, 0);
 }
+
+.alert .content.label {
+    -fx-padding: 20px 20px 20px 20px;
+}

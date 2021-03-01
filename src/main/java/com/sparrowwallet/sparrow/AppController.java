@@ -627,7 +627,10 @@ public class AppController implements Initializable {
                     EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
                     Throwable exception = loadWalletService.getException();
                     if(exception instanceof InvalidPasswordException) {
-                        showErrorDialog("Invalid Password", "The wallet password was invalid.");
+                        Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                        if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                            Platform.runLater(() -> openWalletFile(file, forceSameWindow));
+                        }
                     } else {
                         if(!attemptImportWallet(file, password)) {
                             log.error("Error Opening Wallet", exception);
