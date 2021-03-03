@@ -49,7 +49,7 @@ public class WelcomeController {
         welcomeBox.getStyleClass().add("offline");
         serverStatus.setText("Offline");
         serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            serverStatus.setText(newValue ? "Connected" : "Offline");
+            serverStatus.setText(newValue ? "Connected (demonstration only)" : "Offline");
         });
     }
 
@@ -62,7 +62,7 @@ public class WelcomeController {
             PauseTransition wait = new PauseTransition(Duration.millis(200));
             wait.setOnFinished((e) -> {
                 serverToggle.setSelected(true);
-                serverStatus.setText("Connected to a Public Server");
+                serverStatus.setText("Connected to a Public Server (demonstration only)");
             });
             wait.play();
             return true;
@@ -74,7 +74,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("bitcoin-core");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to Bitcoin Core");
+            serverStatus.setText("Connected to Bitcoin Core (demonstration only)");
             return true;
         }
 
@@ -84,7 +84,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("private-electrum");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to a Private Electrum Server");
+            serverStatus.setText("Connected to a Private Electrum Server (demonstration only)");
         }
 
         return false;
@@ -111,7 +111,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("public-electrum");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to a Public Server");
+            serverStatus.setText("Connected to a Public Server (demonstration only)");
             return true;
         }
 
@@ -121,7 +121,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("bitcoin-core");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to Bitcoin Core");
+            serverStatus.setText("Connected to Bitcoin Core (demonstration only)");
             return true;
         }
 

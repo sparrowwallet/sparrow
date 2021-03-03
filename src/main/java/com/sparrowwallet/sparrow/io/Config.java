@@ -80,7 +80,7 @@ public class Config {
                 if(config != null) {
                     return config;
                 }
-            } catch (IOException e) {
+            } catch(Exception e) {
                 log.error("Error opening " + configFile.getAbsolutePath(), e);
                 //Ignore and assume no config
             }
