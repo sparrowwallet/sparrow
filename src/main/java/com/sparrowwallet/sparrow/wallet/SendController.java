@@ -272,7 +272,7 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         FeeRatesSelection feeRatesSelection = Config.get().getFeeRatesSelection();
-        feeRatesSelection = (feeRatesSelection == null ? FeeRatesSelection.BLOCK_TARGET : feeRatesSelection);
+        feeRatesSelection = (feeRatesSelection == null ? FeeRatesSelection.MEMPOOL_SIZE : feeRatesSelection);
         setDefaultFeeRate();
         updateFeeRateSelection(feeRatesSelection);
         feeSelectionToggleGroup.selectToggle(feeRatesSelection == FeeRatesSelection.BLOCK_TARGET ? targetBlocksToggle : mempoolSizeToggle);
