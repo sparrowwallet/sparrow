@@ -279,7 +279,7 @@ public class SendController extends WalletFormController implements Initializabl
         feeSelectionToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             FeeRatesSelection newFeeRatesSelection = (FeeRatesSelection)newValue.getUserData();
             Config.get().setFeeRatesSelection(newFeeRatesSelection);
-            EventManager.get().post(new FeeRatesSelectionChangedEvent(newFeeRatesSelection));
+            EventManager.get().post(new FeeRatesSelectionChangedEvent(getWalletForm().getWallet(), newFeeRatesSelection));
         });
 
         fee.setTextFormatter(new CoinTextFormatter());
@@ -327,6 +327,10 @@ public class SendController extends WalletFormController implements Initializabl
                 if(userFeeSet.get()) {
                     setTargetBlocks(getTargetBlocks(feeRate));
                     setFeeRangeRate(feeRate);
+
+                    if(walletTransaction.getFee() != getFeeValueSats()) {
+                        setFeeValueSats(walletTransaction.getFee());
+                    }
                 } else {
                     setFeeValueSats(walletTransaction.getFee());
                 }
@@ -445,7 +449,8 @@ public class SendController extends WalletFormController implements Initializabl
         try {
             if(paymentTabs.getTabs().size() == 1) {
                 PaymentController controller = (PaymentController)paymentTabs.getTabs().get(0).getUserData();
-                updateTransaction(List.of(controller.getPayment(sendAll)));
+                controller.setSendMax(sendAll);
+                updateTransaction(List.of(controller.getPayment()));
             } else {
                 updateTransaction(null);
             }
@@ -810,7 +815,9 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void feeRateSelectionChanged(FeeRatesSelectionChangedEvent event) {
-        updateFeeRateSelection(event.getFeeRateSelection());
+        if(event.getWallet() == getWalletForm().getWallet()) {
+            updateFeeRateSelection(event.getFeeRateSelection());
+        }
     }
 
     @Subscribe

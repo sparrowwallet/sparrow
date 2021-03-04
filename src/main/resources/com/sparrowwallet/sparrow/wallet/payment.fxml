@@ -49,7 +49,7 @@
                 <Label style="-fx-pref-width: 15" />
                 <FiatLabel fx:id="fiatAmount" />
                 <Region style="-fx-pref-width: 20" />
-                <Button fx:id="maxButton" text="Max" onAction="#setMaxInput" />
+                <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
             </Field>
         </Fieldset>
     </Form>

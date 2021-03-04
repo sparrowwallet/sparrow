@@ -60,7 +60,7 @@ public class PaymentController extends WalletFormController implements Initializ
     private FiatLabel fiatAmount;
 
     @FXML
-    private Button maxButton;
+    private ToggleButton maxButton;
 
     @FXML
     private Button addPaymentButton;
@@ -70,6 +70,11 @@ public class PaymentController extends WalletFormController implements Initializ
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
             if(sendController.getUtxoSelector() instanceof MaxUtxoSelector) {
                 sendController.utxoSelectorProperty().setValue(null);
+            }
+
+            for(Tab tab : sendController.getPaymentTabs().getTabs()) {
+                PaymentController controller = (PaymentController) tab.getUserData();
+                controller.setSendMax(false);
             }
 
             Long recipientValueSats = getRecipientValueSats();
@@ -235,7 +240,7 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     public Payment getPayment() {
-        return getPayment(false);
+        return getPayment(isSendMax());
     }
 
     public Payment getPayment(boolean sendAll) {
@@ -273,6 +278,7 @@ public class PaymentController extends WalletFormController implements Initializ
         amount.textProperty().addListener(amountListener);
 
         fiatAmount.setText("");
+        setSendMax(false);
     }
 
     public void setMaxInput(ActionEvent event) {
@@ -287,9 +293,11 @@ public class PaymentController extends WalletFormController implements Initializ
             for(Tab tab : sendController.getPaymentTabs().getTabs()) {
                 PaymentController controller = (PaymentController)tab.getUserData();
                 if(controller != this) {
+                    controller.setSendMax(false);
                     payments.add(controller.getPayment());
                 } else {
-                    payments.add(getPayment(true));
+                    setSendMax(true);
+                    payments.add(getPayment());
                 }
             }
             sendController.updateTransaction(payments);
@@ -331,6 +339,14 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public Button getAddPaymentButton() {
         return addPaymentButton;
+    }
+
+    public boolean isSendMax() {
+        return maxButton.isSelected();
+    }
+
+    public void setSendMax(boolean sendMax) {
+        maxButton.setSelected(sendMax);
     }
 
     @Subscribe
