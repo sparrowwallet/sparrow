@@ -149,6 +149,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
     private ElectrumServer.ConnectionService connectionService;
 
+    private Boolean useSslOriginal;
+
     @Override
     public void initializeView(Config config) {
         EventManager.get().register(this);
@@ -439,6 +441,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         connectionService.setRestartOnFailure(false);
         EventManager.get().register(connectionService);
 
+        useSslOriginal = null;
+
         connectionService.setOnSucceeded(successEvent -> {
             EventManager.get().unregister(connectionService);
             ConnectionEvent connectionEvent = (ConnectionEvent)connectionService.getValue();
@@ -450,6 +454,29 @@ public class ServerPreferencesController extends PreferencesDetailController {
         connectionService.setOnFailed(workerStateEvent -> {
             EventManager.get().unregister(connectionService);
             showConnectionFailure(workerStateEvent.getSource().getException());
+            connectionService.cancel();
+
+            if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
+                if(useSslOriginal == null) {
+                    Integer portAsInteger = getPort(electrumPort.getText());
+                    if(!electrumUseSsl.isSelected() && portAsInteger != null && portAsInteger == TcpOverTlsTransport.DEFAULT_PORT) {
+                        useSslOriginal = false;
+                        electrumUseSsl.setSelected(true);
+                    } else if(electrumUseSsl.isSelected() && portAsInteger != null && portAsInteger == TcpTransport.DEFAULT_PORT) {
+                        useSslOriginal = true;
+                        electrumUseSsl.setSelected(false);
+                    }
+
+                    if(useSslOriginal != null) {
+                        EventManager.get().register(connectionService);
+                        connectionService.reset();
+                        connectionService.start();
+                    }
+                } else {
+                    electrumUseSsl.setSelected(useSslOriginal);
+                    useSslOriginal = null;
+                }
+            }
         });
         connectionService.start();
     }
