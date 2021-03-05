@@ -312,7 +312,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         StackPane wordsPane = (StackPane)getContent();
         StackPane confirmPane = new StackPane();
-        confirmPane.setMaxWidth(300);
+        confirmPane.setMaxWidth(350);
         confirmPane.setMaxHeight(100);
         Region region = new Region();
         region.setMinWidth(confirmPane.getMaxWidth());
