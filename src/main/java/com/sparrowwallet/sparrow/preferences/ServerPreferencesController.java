@@ -414,17 +414,15 @@ public class ServerPreferencesController extends PreferencesDetailController {
         torService.setPeriod(Duration.hours(1000));
         torService.setRestartOnFailure(false);
 
-        torService.setOnRunning(workerStateEvent -> {
-            testResults.setText(testResults.getText() + "\nStarting Tor...");
-        });
         torService.setOnSucceeded(workerStateEvent -> {
             Tor.setDefault(torService.getValue());
             torService.cancel();
-            testResults.setText(testResults.getText() + "\nTor started");
+            testResults.appendText("\nTor running, connecting to " + Config.get().getServerAddress() + "...");
             startElectrumConnection();
         });
         torService.setOnFailed(workerStateEvent -> {
-            testResults.setText(testResults.getText() + "\nTor failed to start");
+            torService.cancel();
+            testResults.appendText("\nTor failed to start");
             showConnectionFailure(workerStateEvent.getSource().getException());
         });
 
@@ -765,5 +763,14 @@ public class ServerPreferencesController extends PreferencesDetailController {
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, null));
             connectionService.cancel();
         }
+    }
+
+    @Subscribe
+    public void torStatus(TorStatusEvent event) {
+        Platform.runLater(() -> {
+            if(torService != null && torService.isRunning()) {
+                testResults.appendText("\n" + event.getStatus());
+            }
+        });
     }
 }
