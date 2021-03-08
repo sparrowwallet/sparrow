@@ -24,6 +24,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
+import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
@@ -257,6 +258,15 @@ public class AppController implements Initializable {
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
             helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
+        }
+    }
+
+    public void showIntroduction(ActionEvent event) {
+        WelcomeDialog welcomeDialog = new WelcomeDialog();
+        Optional<Mode> optionalMode = welcomeDialog.showAndWait();
+        if(optionalMode.isPresent() && optionalMode.get().equals(Mode.ONLINE)) {
+            PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER);
+            preferencesDialog.showAndWait();
         }
     }
 
