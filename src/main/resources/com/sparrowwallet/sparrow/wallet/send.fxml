@@ -91,6 +91,12 @@
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">
                             <CopyableLabel fx:id="feeRate" />
+                            <Region HBox.hgrow="ALWAYS" />
+                            <Label fx:id="feeRatePriority" graphicTextGap="5">
+                                <graphic>
+                                    <Glyph fx:id="feeRatePriorityGlyph" fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CIRCLE" />
+                                </graphic>
+                            </Label>
                         </Field>
                         <Field text="Fee:">
                             <TextField fx:id="fee" styleClass="amount-field"/>

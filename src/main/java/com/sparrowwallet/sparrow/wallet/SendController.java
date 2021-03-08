@@ -11,9 +11,11 @@ import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.FeeRatesSource;
 import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -28,6 +30,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.util.StringConverter;
+import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -78,6 +81,12 @@ public class SendController extends WalletFormController implements Initializabl
 
     @FXML
     private CopyableLabel feeRate;
+
+    @FXML
+    private Label feeRatePriority;
+
+    @FXML
+    private Glyph feeRatePriorityGlyph;
 
     @FXML
     private TextField fee;
@@ -350,6 +359,8 @@ public class SendController extends WalletFormController implements Initializabl
                 });
             }
         });
+
+        addFeeRangeTrackHighlight(0);
     }
 
     private void initializeTabHeader(int count) {
@@ -558,10 +569,12 @@ public class SendController extends WalletFormController implements Initializabl
         Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
         int maxTargetBlocks = 1;
         for(Integer targetBlocks : targetBlocksFeeRates.keySet()) {
-            maxTargetBlocks = Math.max(maxTargetBlocks, targetBlocks);
-            Double candidate = targetBlocksFeeRates.get(targetBlocks);
-            if(Math.round(feeRate) >= Math.round(candidate)) {
-                return targetBlocks;
+            if(TARGET_BLOCKS_RANGE.contains(targetBlocks)) {
+                maxTargetBlocks = Math.max(maxTargetBlocks, targetBlocks);
+                Double candidate = targetBlocksFeeRates.get(targetBlocks);
+                if(Math.round(feeRate) >= Math.round(candidate)) {
+                    return targetBlocks;
+                }
             }
         }
 
@@ -623,6 +636,45 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setFeeRate(Double feeRateAmt) {
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
+        setFeeRatePriority(feeRateAmt);
+    }
+
+    private void setFeeRatePriority(Double feeRateAmt) {
+        Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
+        Integer targetBlocks = getTargetBlocks(feeRateAmt);
+        if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
+            Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
+            if(feeRateAmt <= minFeeRate) {
+                feeRatePriority.setText("Below Minimum");
+                feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
+                feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+                return;
+            }
+
+            Double lowestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(TARGET_BLOCKS_RANGE.size() - 1));
+            if(lowestBlocksRate > minFeeRate && feeRateAmt < (minFeeRate + ((lowestBlocksRate - minFeeRate) / 2))) {
+                feeRatePriority.setText("Try Then Replace");
+                feeRatePriorityGlyph.setStyle("-fx-text-fill: #7eb7c9cc");
+                feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.PLUS_CIRCLE);
+                return;
+            }
+        }
+
+        if(targetBlocks != null) {
+            if(targetBlocks < FeeRatesSource.BLOCKS_IN_HALF_HOUR) {
+                feeRatePriority.setText("High Priority");
+                feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
+                feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
+            } else if(targetBlocks < FeeRatesSource.BLOCKS_IN_HOUR) {
+                feeRatePriority.setText("Medium Priority");
+                feeRatePriorityGlyph.setStyle("-fx-text-fill: #fba71b99");
+                feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
+            } else {
+                feeRatePriority.setText("Low Priority");
+                feeRatePriorityGlyph.setStyle("-fx-text-fill: #41a9c999");
+                feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
+            }
+        }
     }
 
     private Node getSliderThumb() {
@@ -633,6 +685,47 @@ public class SendController extends WalletFormController implements Initializabl
         if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
             fiatFeeAmount.set(currencyRate, amount);
         }
+    }
+
+    private void addFeeRangeTrackHighlight(int count) {
+        Platform.runLater(() -> {
+            Node track = feeRange.lookup(".track");
+            if(track != null) {
+                Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
+                String highlight = "";
+                if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
+                    highlight += "#a0a1a766 " + getPercentageOfFeeRange(targetBlocksFeeRates.get(Integer.MAX_VALUE)) + "%, ";
+                }
+                highlight += "#41a9c966 " + getPercentageOfFeeRange(targetBlocksFeeRates, FeeRatesSource.BLOCKS_IN_TWO_HOURS - 1) + "%, ";
+                highlight += "#fba71b66 " + getPercentageOfFeeRange(targetBlocksFeeRates, FeeRatesSource.BLOCKS_IN_HOUR - 1) + "%, ";
+                highlight += "#c8416466 " + getPercentageOfFeeRange(targetBlocksFeeRates, FeeRatesSource.BLOCKS_IN_HALF_HOUR - 1) + "%";
+
+                track.setStyle("-fx-background-color: " +
+                        "-fx-shadow-highlight-color, " +
+                        "linear-gradient(to bottom, derive(-fx-text-box-border, -10%), -fx-text-box-border), " +
+                        "linear-gradient(to bottom, derive(-fx-control-inner-background, -9%), derive(-fx-control-inner-background, 0%), derive(-fx-control-inner-background, -5%), derive(-fx-control-inner-background, -12%)), " +
+                        "linear-gradient(to right, " + highlight + ")");
+            } else if(count < 20) {
+                addFeeRangeTrackHighlight(count+1);
+            }
+        });
+    }
+
+    private int getPercentageOfFeeRange(Map<Integer, Double> targetBlocksFeeRates, Integer minTargetBlocks) {
+        List<Integer> rates = new ArrayList<>(targetBlocksFeeRates.keySet());
+        Collections.reverse(rates);
+        for(Integer targetBlocks : rates) {
+            if(targetBlocks < minTargetBlocks) {
+                return getPercentageOfFeeRange(targetBlocksFeeRates.get(targetBlocks));
+            }
+        }
+
+        return 100;
+    }
+
+    private int getPercentageOfFeeRange(Double feeRate) {
+        double index = Math.log(feeRate) / Math.log(2);
+        return (int)Math.round(index * 10.0);
     }
 
     private void updateMaxClearButtons(UtxoSelector utxoSelector, UtxoFilter utxoFilter) {
@@ -811,6 +904,7 @@ public class SendController extends WalletFormController implements Initializabl
         if(targetBlocksField.isVisible()) {
             setFeeRate(event.getTargetBlockFeeRates().get(getTargetBlocks()));
         }
+        addFeeRangeTrackHighlight(0);
     }
 
     @Subscribe

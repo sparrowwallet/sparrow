@@ -40,6 +40,7 @@ public class FontAwesome5 extends GlyphFont {
         LOCK_OPEN('\uf3c1'),
         PEN_FANCY('\uf5ac'),
         PLUS('\uf067'),
+        PLUS_CIRCLE('\uf055'),
         QRCODE('\uf029'),
         QUESTION_CIRCLE('\uf059'),
         RANDOM('\uf074'),

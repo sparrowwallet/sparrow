@@ -40,6 +40,9 @@ public enum FeeRatesSource {
     };
 
     private static final Logger log = LoggerFactory.getLogger(FeeRatesSource.class);
+    public static final int BLOCKS_IN_HALF_HOUR = 3;
+    public static final int BLOCKS_IN_HOUR = 6;
+    public static final int BLOCKS_IN_TWO_HOURS = 12;
 
     private final String name;
 
@@ -61,15 +64,19 @@ public enum FeeRatesSource {
             Gson gson = new Gson();
             ThreeTierRates threeTierRates = gson.fromJson(reader, ThreeTierRates.class);
             for(Integer blockTarget : defaultblockTargetFeeRates.keySet()) {
-                if(blockTarget < 3) {
+                if(blockTarget < BLOCKS_IN_HALF_HOUR) {
                     blockTargetFeeRates.put(blockTarget, threeTierRates.fastestFee);
-                } else if(blockTarget < 6) {
+                } else if(blockTarget < BLOCKS_IN_HOUR) {
                     blockTargetFeeRates.put(blockTarget, threeTierRates.halfHourFee);
-                } else if(blockTarget <= 10 || defaultblockTargetFeeRates.get(blockTarget) > threeTierRates.hourFee) {
+                } else if(blockTarget < BLOCKS_IN_TWO_HOURS || defaultblockTargetFeeRates.get(blockTarget) > threeTierRates.hourFee) {
                     blockTargetFeeRates.put(blockTarget, threeTierRates.hourFee);
                 } else {
                     blockTargetFeeRates.put(blockTarget, defaultblockTargetFeeRates.get(blockTarget));
                 }
+            }
+
+            if(threeTierRates.minimumFee != null) {
+                blockTargetFeeRates.put(Integer.MAX_VALUE, threeTierRates.minimumFee);
             }
         } catch (Exception e) {
             log.warn("Error retrieving recommended fee rates from " + url, e);
@@ -98,5 +105,6 @@ public enum FeeRatesSource {
         Double fastestFee;
         Double halfHourFee;
         Double hourFee;
+        Double minimumFee;
     }
 }

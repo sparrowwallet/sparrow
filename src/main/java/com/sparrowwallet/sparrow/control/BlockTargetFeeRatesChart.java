@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.beans.NamedArg;
 import javafx.scene.Node;
 import javafx.scene.chart.Axis;
@@ -27,9 +28,11 @@ public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
 
         for(Iterator<Integer> targetBlocksIter = targetBlocksFeeRates.keySet().iterator(); targetBlocksIter.hasNext(); ) {
             Integer targetBlocks = targetBlocksIter.next();
-            String category = targetBlocks + (targetBlocksIter.hasNext() ? "" : "+");
-            XYChart.Data<String, Number> data = new XYChart.Data<>(category, targetBlocksFeeRates.get(targetBlocks));
-            feeRateSeries.getData().add(data);
+            if(SendController.TARGET_BLOCKS_RANGE.contains(targetBlocks)) {
+                String category = targetBlocks + (targetBlocksIter.hasNext() ? "" : "+");
+                XYChart.Data<String, Number> data = new XYChart.Data<>(category, targetBlocksFeeRates.get(targetBlocks));
+                feeRateSeries.getData().add(data);
+            }
         }
 
         if(selectedTargetBlocks != null) {
