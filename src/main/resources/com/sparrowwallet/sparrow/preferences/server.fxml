@@ -102,7 +102,7 @@
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="publicProxyHost" />
-                <TextField fx:id="publicProxyPort" prefWidth="80" />
+                <TextField fx:id="publicProxyPort" maxWidth="100" />
             </Field>
         </Fieldset>
     </Form>
@@ -111,7 +111,7 @@
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin Core RPC">
             <Field text="URL:">
                 <TextField fx:id="coreHost" promptText="e.g. 127.0.0.1"/>
-                <TextField fx:id="corePort" promptText="e.g. 8332" prefWidth="80" />
+                <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="100" />
             </Field>
             <Field text="Authentication:">
                 <SegmentedButton>
@@ -156,8 +156,8 @@
     <Form fx:id="electrumForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
         <Fieldset inputGrow="SOMETIMES" text="Private Electrum Server">
             <Field text="URL:">
-                <TextField fx:id="electrumHost" promptText="e.g. 127.0.0.1"/>
-                <TextField fx:id="electrumPort" promptText="e.g. 50002" prefWidth="80" />
+                <TextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)"/>
+                <TextField fx:id="electrumPort" promptText="e.g. 50002" maxWidth="100" />
             </Field>
             <Field text="Use SSL:">
                 <UnlabeledToggleSwitch fx:id="electrumUseSsl"/>
@@ -175,7 +175,7 @@
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="proxyHost" />
-                <TextField fx:id="proxyPort" prefWidth="80" />
+                <TextField fx:id="proxyPort" maxWidth="100" />
             </Field>
         </Fieldset>
     </Form>
