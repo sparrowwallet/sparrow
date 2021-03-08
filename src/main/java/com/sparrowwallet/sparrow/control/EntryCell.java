@@ -183,7 +183,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
 
         long changeTotal = ourOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
         Transaction tx = blockTransaction.getTransaction();
-        int vSize = tx.getVirtualSize();
+        double vSize = tx.getVirtualSize();
         int inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
         List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getWalletUtxos().keySet());
         Collections.shuffle(walletUtxos);

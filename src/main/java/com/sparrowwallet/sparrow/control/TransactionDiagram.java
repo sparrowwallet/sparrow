@@ -397,7 +397,7 @@ public class TransactionDiagram extends GridPane {
 
         String txDesc = "Transaction";
         Label txLabel = new Label(txDesc);
-        Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n" + walletTx.getTransaction().getVirtualSize() + " vBytes");
+        Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n" + String.format("%.2f", walletTx.getTransaction().getVirtualSize()) + " vBytes");
         tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         tooltip.getStyleClass().add("transaction-tooltip");
         txLabel.setTooltip(tooltip);

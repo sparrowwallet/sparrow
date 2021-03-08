@@ -29,6 +29,7 @@ import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -451,7 +452,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateSize() {
         size.setText(headersForm.getTransaction().getSize() + " B");
-        virtualSize.setText(headersForm.getTransaction().getVirtualSize() + " vB");
+        virtualSize.setText(String.format("%.2f", headersForm.getTransaction().getVirtualSize()) + " vB");
     }
 
     private Long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
@@ -599,11 +600,21 @@ public class HeadersController extends TransactionFormController implements Init
     private void updateTxId() {
         id.setText(headersForm.getTransaction().calculateTxId(false).toString());
         if(!headersForm.isTransactionFinalized()) {
-            if(!id.getStyleClass().contains(UNFINALIZED_TXID_CLASS)) {
-                id.getStyleClass().add(UNFINALIZED_TXID_CLASS);
-            }
+            addStyleClass(id, UNFINALIZED_TXID_CLASS);
+            addStyleClass(size, UNFINALIZED_TXID_CLASS);
+            addStyleClass(virtualSize, UNFINALIZED_TXID_CLASS);
+            addStyleClass(feeRate, UNFINALIZED_TXID_CLASS);
         } else {
             id.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
+            size.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
+            virtualSize.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
+            feeRate.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
+        }
+    }
+
+    private void addStyleClass(Node node, String styleClass) {
+        if(!node.getStyleClass().contains(styleClass)) {
+            node.getStyleClass().add(styleClass);
         }
     }
 
