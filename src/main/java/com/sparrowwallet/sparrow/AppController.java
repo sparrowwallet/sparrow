@@ -1348,6 +1348,28 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void walletHistoryStarted(WalletHistoryStartedEvent event) {
+        if(AppServices.isConnected() && getOpenWallets().containsKey(event.getWallet())) {
+            statusUpdated(new StatusEvent("Loading transactions...", 120));
+            if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+                statusBar.setProgress(-1);
+            }
+        }
+    }
+
+    @Subscribe
+    public void walletHistoryFinished(WalletHistoryFinishedEvent event) {
+        if(getOpenWallets().containsKey(event.getWallet())) {
+            if(statusBar.getText().equals("Loading transactions...")) {
+                statusBar.setText("");
+            }
+            if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+                statusBar.setProgress(0);
+            }
+        }
+    }
+
+    @Subscribe
     public void bwtBootStatus(BwtBootStatusEvent event) {
         serverToggle.setDisable(true);
         if(AppServices.isConnecting()) {

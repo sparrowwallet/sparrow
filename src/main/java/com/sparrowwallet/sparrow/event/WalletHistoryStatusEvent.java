@@ -24,7 +24,7 @@ public class WalletHistoryStatusEvent {
 
     public WalletHistoryStatusEvent(Wallet wallet, String errorMessage) {
         this.wallet = wallet;
-        this.loading = true;
+        this.loading = false;
         this.statusMessage = null;
         this.errorMessage = errorMessage;
     }
