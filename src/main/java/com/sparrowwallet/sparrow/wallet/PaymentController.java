@@ -326,6 +326,7 @@ public class PaymentController extends WalletFormController implements Initializ
         }
         if(bitcoinURI.getAmount() != null) {
             setRecipientValueSats(bitcoinURI.getAmount());
+            setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), bitcoinURI.getAmount());
         }
         if(bitcoinURI.getPayjoinUrl() != null) {
             AppServices.addPayjoinURI(bitcoinURI);
