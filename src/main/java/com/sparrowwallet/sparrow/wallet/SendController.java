@@ -664,10 +664,19 @@ public class SendController extends WalletFormController implements Initializabl
 
         if(targetBlocks != null) {
             if(targetBlocks < FeeRatesSource.BLOCKS_IN_HALF_HOUR) {
-                feeRatePriority.setText("High Priority");
-                feeRatePriority.setTooltip(new Tooltip("Typically confirms within minutes"));
-                feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
-                feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
+                Double maxFeeRate = FEE_RATES_RANGE.get(FEE_RATES_RANGE.size() - 1).doubleValue();
+                Double highestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(0));
+                if(highestBlocksRate < maxFeeRate && feeRateAmt > (highestBlocksRate + ((maxFeeRate - highestBlocksRate) / 10))) {
+                    feeRatePriority.setText("Overpaid");
+                    feeRatePriority.setTooltip(new Tooltip("Transaction fees at this rate are likely higher than necessary"));
+                    feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
+                    feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+                } else {
+                    feeRatePriority.setText("High Priority");
+                    feeRatePriority.setTooltip(new Tooltip("Typically confirms within minutes"));
+                    feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
+                    feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
+                }
             } else if(targetBlocks < FeeRatesSource.BLOCKS_IN_HOUR) {
                 feeRatePriority.setText("Medium Priority");
                 feeRatePriority.setTooltip(new Tooltip("Typically confirms within an hour or two"));
