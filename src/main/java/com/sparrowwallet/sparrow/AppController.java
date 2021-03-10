@@ -120,6 +120,8 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
+    private final List<Wallet> loadingWallets = new ArrayList<>();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -1371,11 +1373,24 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void walletTabsClosed(WalletTabsClosedEvent event) {
+        if(event.getClosedWalletTabData().stream().map(WalletTabData::getWallet).anyMatch(loadingWallets::remove) && loadingWallets.isEmpty()) {
+            if(statusBar.getText().equals("Loading transactions...")) {
+                statusBar.setText("");
+            }
+            if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+                statusBar.setProgress(0);
+            }
+        }
+    }
+
+    @Subscribe
     public void walletHistoryStarted(WalletHistoryStartedEvent event) {
         if(AppServices.isConnected() && getOpenWallets().containsKey(event.getWallet())) {
             statusUpdated(new StatusEvent("Loading transactions...", 120));
             if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                 statusBar.setProgress(-1);
+                loadingWallets.add(event.getWallet());
             }
         }
     }
@@ -1389,6 +1404,7 @@ public class AppController implements Initializable {
             if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                 statusBar.setProgress(0);
             }
+            loadingWallets.remove(event.getWallet());
         }
     }
 
