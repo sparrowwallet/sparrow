@@ -91,6 +91,8 @@
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>
+                    <MenuItem mnemonicParsing="false" text="Show Online Documentation" onAction="#showDocumentation"/>
+                    <MenuItem mnemonicParsing="false" text="Show Log File" onAction="#showLogFile"/>
                     <MenuItem styleClass="osxHide" mnemonicParsing="false" text="About Sparrow" onAction="#showAbout"/>
                 </Menu>
             </menus>

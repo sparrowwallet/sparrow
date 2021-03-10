@@ -270,6 +270,19 @@ public class AppController implements Initializable {
         }
     }
 
+    public void showDocumentation(ActionEvent event) throws IOException {
+        AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/docs");
+    }
+
+    public void showLogFile(ActionEvent event) throws IOException {
+        File logFile = new File(Storage.getSparrowHome(), "sparrow.log");
+        if(logFile.exists()) {
+            AppServices.get().getApplication().getHostServices().showDocument(logFile.toPath().toUri().toString());
+        } else {
+            AppServices.showErrorDialog("Log file unavailable", "Cannot find log file at " + logFile.getCanonicalPath());
+        }
+    }
+
     public void showAbout(ActionEvent event) {
         Stage aboutStage = getAboutStage();
         aboutStage.show();
