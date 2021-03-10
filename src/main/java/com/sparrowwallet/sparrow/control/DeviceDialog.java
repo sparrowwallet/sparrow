@@ -101,6 +101,7 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
             Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));
         });
         enumerateService.setOnFailed(workerStateEvent -> {
+            deviceAccordion.getPanes().clear();
             scanBox.setVisible(true);
             scanLabel.setText(workerStateEvent.getSource().getException().getMessage());
         });

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -15,7 +16,6 @@ import com.sparrowwallet.sparrow.event.MessageSignedEvent;
 import com.sparrowwallet.sparrow.event.PSBTSignedEvent;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
-import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -25,7 +25,6 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import org.controlsfx.control.textfield.CustomPasswordField;
-import org.controlsfx.control.textfield.CustomTextField;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -36,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DevicePane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(DevicePane.class);
@@ -43,6 +43,7 @@ public class DevicePane extends TitledDescriptionPane {
     private final DeviceOperation deviceOperation;
     private final Wallet wallet;
     private final PSBT psbt;
+    private final OutputDescriptor outputDescriptor;
     private final KeyDerivation keyDerivation;
     private final String message;
     private final Device device;
@@ -63,6 +64,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.deviceOperation = DeviceOperation.IMPORT;
         this.wallet = wallet;
         this.psbt = null;
+        this.outputDescriptor = null;
         this.keyDerivation = null;
         this.message = null;
         this.device = device;
@@ -83,6 +85,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.deviceOperation = DeviceOperation.SIGN;
         this.wallet = null;
         this.psbt = psbt;
+        this.outputDescriptor = null;
         this.keyDerivation = null;
         this.message = null;
         this.device = device;
@@ -98,12 +101,13 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, signButton);
     }
 
-    public DevicePane(Wallet wallet, KeyDerivation keyDerivation, Device device) {
+    public DevicePane(Wallet wallet, OutputDescriptor outputDescriptor, Device device) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.DISPLAY_ADDRESS;
         this.wallet = wallet;
         this.psbt = null;
-        this.keyDerivation = keyDerivation;
+        this.outputDescriptor = outputDescriptor;
+        this.keyDerivation = null;
         this.message = null;
         this.device = device;
 
@@ -123,6 +127,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.deviceOperation = DeviceOperation.SIGN_MESSAGE;
         this.wallet = wallet;
         this.psbt = null;
+        this.outputDescriptor = null;
         this.keyDerivation = keyDerivation;
         this.message = message;
         this.device = device;
@@ -233,7 +238,8 @@ public class DevicePane extends TitledDescriptionPane {
         displayAddressButton.managedProperty().bind(displayAddressButton.visibleProperty());
         displayAddressButton.setVisible(false);
 
-        if(device.getFingerprint() != null && !device.getFingerprint().equals(keyDerivation.getMasterFingerprint())) {
+        List<String> fingerprints = outputDescriptor.getExtendedPublicKeys().stream().map(extKey -> outputDescriptor.getKeyDerivation(extKey).getMasterFingerprint()).collect(Collectors.toList());
+        if(device.getFingerprint() != null && !fingerprints.contains(device.getFingerprint())) {
             displayAddressButton.setDisable(true);
         }
     }
@@ -471,7 +477,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void displayAddress() {
-        Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(device, passphrase.get(), wallet.getScriptType(), keyDerivation.getDerivationPath());
+        Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(device, passphrase.get(), wallet.getScriptType(), outputDescriptor);
         displayAddressService.setOnSucceeded(successEvent -> {
             String address = displayAddressService.getValue();
             EventManager.get().post(new AddressDisplayedEvent(address));

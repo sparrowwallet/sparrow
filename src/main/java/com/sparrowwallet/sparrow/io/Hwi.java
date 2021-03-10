@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
@@ -29,7 +30,7 @@ import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
-    private static final String TEMP_FILE_PREFIX = "hwi-1.2.1-";
+    private static final String VERSION_PREFIX = "hwi-2.0.0-rc.2";
 
     private static boolean isPromptActive = false;
 
@@ -44,6 +45,9 @@ public class Hwi {
 
             String output = execute(command);
             Device[] devices = getGson().fromJson(output, Device[].class);
+            if(devices == null) {
+                throw new ImportException("Error scanning, check devices are ready");
+            }
             return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
             throw new ImportException(e);
@@ -84,32 +88,40 @@ public class Hwi {
             if(result.get("xpub") != null) {
                 return result.get("xpub").getAsString();
             } else {
-                throw new ImportException("Could not retrieve xpub - reconnect your device and try again.");
+                JsonElement error = result.get("error");
+                if(error != null) {
+                    throw new ImportException(error.getAsString());
+                } else {
+                    throw new ImportException("Could not retrieve xpub - reconnect your device and try again.");
+                }
             }
         } catch(IOException e) {
             throw new ImportException(e);
         }
     }
 
-    public String displayAddress(Device device, String passphrase, ScriptType scriptType, String derivationPath) throws DisplayAddressException {
+    public String displayAddress(Device device, String passphrase, ScriptType scriptType, OutputDescriptor outputDescriptor) throws DisplayAddressException {
         try {
-            if(!List.of(ScriptType.P2PKH, ScriptType.P2SH_P2WPKH, ScriptType.P2WPKH).contains(scriptType)) {
-                throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single sig types supported");
+            if(!Arrays.asList(ScriptType.SINGLE_HASH_TYPES).contains(scriptType)) {
+                throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single hash types supported");
             }
 
-            String type = null;
+            String descriptor = outputDescriptor.toString().replace("sortedmulti", "multi");
+            System.out.println(descriptor);
+
+            String addrType = "legacy";
             if(scriptType == ScriptType.P2SH_P2WPKH) {
-                type = "--sh_wpkh";
+                addrType = "sh_wit";
             } else if(scriptType == ScriptType.P2WPKH) {
-                type = "--wpkh";
+                addrType = "wit";
             }
 
             isPromptActive = false;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
-                output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
+                output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--desc", descriptor, "--addr-type", addrType));
             } else {
-                output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--path", derivationPath, type));
+                output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--desc", descriptor, "--addr-type", addrType));
             }
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
@@ -199,7 +211,7 @@ public class Hwi {
     private synchronized File getHwiExecutable(Command command) {
         File hwiExecutable = Config.get().getHwi();
         if(hwiExecutable != null && hwiExecutable.exists()) {
-            if(command.isTestFirst() && (!hwiExecutable.getAbsolutePath().contains(TEMP_FILE_PREFIX) || !testHwi(hwiExecutable))) {
+            if(command.isTestFirst() && (!hwiExecutable.getAbsolutePath().contains(VERSION_PREFIX) || !testHwi(hwiExecutable))) {
                 if(Platform.getCurrent() == Platform.OSX) {
                     deleteDirectory(hwiExecutable.getParentFile());
                 } else {
@@ -218,8 +230,8 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/hwi-1.2.1-mac-amd64-signed.zip");
-                    Path tempHwiDirPath = Files.createTempDirectory(TEMP_FILE_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + VERSION_PREFIX + "-mac-amd64-signed.zip");
+                    Path tempHwiDirPath = Files.createTempDirectory(VERSION_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
                     log.debug("Using temp HWI path: " + tempHwiDir.getAbsolutePath());
@@ -227,16 +239,20 @@ public class Hwi {
                     File tempExec = null;
                     ZipInputStream zis = new ZipInputStream(inputStream);
                     ZipEntry zipEntry = zis.getNextEntry();
-                    while (zipEntry != null) {
-                        File newFile = newFile(tempHwiDir, zipEntry, ownerExecutableWritable);
-                        //newFile.deleteOnExit();
-                        FileOutputStream fos = new FileOutputStream(newFile);
-                        ByteStreams.copy(zis, new FileOutputStream(newFile));
-                        fos.flush();
-                        fos.close();
+                    while(zipEntry != null) {
+                        if(zipEntry.isDirectory()) {
+                            newDirectory(tempHwiDir, zipEntry, ownerExecutableWritable);
+                        } else {
+                            File newFile = newFile(tempHwiDir, zipEntry, ownerExecutableWritable);
+                            //newFile.deleteOnExit();
+                            FileOutputStream fos = new FileOutputStream(newFile);
+                            ByteStreams.copy(zis, new FileOutputStream(newFile));
+                            fos.flush();
+                            fos.close();
 
-                        if (zipEntry.getName().equals("hwi")) {
-                            tempExec = newFile;
+                            if(zipEntry.getName().equals("hwi")) {
+                                tempExec = newFile;
+                            }
                         }
 
                         zipEntry = zis.getNextEntry();
@@ -250,10 +266,10 @@ public class Hwi {
                     Path tempExecPath;
                     if(platform == Platform.WINDOWS) {
                         inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
-                        tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null);
+                        tempExecPath = Files.createTempFile(VERSION_PREFIX, null);
                     } else {
                         inputStream = Hwi.class.getResourceAsStream("/native/linux/x64/hwi");
-                        tempExecPath = Files.createTempFile(TEMP_FILE_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                        tempExecPath = Files.createTempFile(VERSION_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     }
 
                     File tempExec = tempExecPath.toFile();
@@ -299,6 +315,20 @@ public class Hwi {
         return directoryToBeDeleted.delete();
     }
 
+    public static File newDirectory(File destinationDir, ZipEntry zipEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
+        String destDirPath = destinationDir.getCanonicalPath();
+
+        Path path = Path.of(destDirPath, zipEntry.getName());
+        File destDir = Files.createDirectory(path, PosixFilePermissions.asFileAttribute(setFilePermissions)).toFile();
+
+        String destSubDirPath = destDir.getCanonicalPath();
+        if(!destSubDirPath.startsWith(destDirPath + File.separator)) {
+            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+        }
+
+        return destDir;
+    }
+
     public static File newFile(File destinationDir, ZipEntry zipEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
         String destDirPath = destinationDir.getCanonicalPath();
 
@@ -306,7 +336,7 @@ public class Hwi {
         File destFile = Files.createFile(path, PosixFilePermissions.asFileAttribute(setFilePermissions)).toFile();
 
         String destFilePath = destFile.getCanonicalPath();
-        if (!destFilePath.startsWith(destDirPath + File.separator)) {
+        if(!destFilePath.startsWith(destDirPath + File.separator)) {
             throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
         }
 
@@ -324,28 +354,39 @@ public class Hwi {
 
     private List<String> getDeviceCommand(Device device, Command command) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
-        if(Network.get() != Network.MAINNET) {
-            elements.add(elements.size() - 1, "--testnet");
-        }
+        addChainType(elements);
         return elements;
     }
 
     private List<String> getDeviceCommand(Device device, Command command, String... commandData) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
-        if(Network.get() != Network.MAINNET) {
-            elements.add(elements.size() - 1, "--testnet");
-        }
+        addChainType(elements);
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
     }
 
     private List<String> getDeviceCommand(Device device, String passphrase, Command command, String... commandData) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command.toString()));
-        if(Network.get() != Network.MAINNET) {
-            elements.add(elements.size() - 1, "--testnet");
-        }
+        addChainType(elements);
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
+    }
+
+    private void addChainType(List<String> elements) {
+        if(Network.get() != Network.MAINNET) {
+            elements.add(elements.size() - 1, "--chain");
+            elements.add(elements.size() - 1, getChainName(Network.get()));
+        }
+    }
+
+    private String getChainName(Network network) {
+        if(network == Network.MAINNET) {
+            return "main";
+        } else if(network == Network.TESTNET) {
+            return "test";
+        }
+
+        return network.toString();
     }
 
     public static class EnumerateService extends Service<List<Device>> {
@@ -430,13 +471,13 @@ public class Hwi {
         private final Device device;
         private final String passphrase;
         private final ScriptType scriptType;
-        private final String derivationPath;
+        private final OutputDescriptor outputDescriptor;
 
-        public DisplayAddressService(Device device, String passphrase, ScriptType scriptType, String derivationPath) {
+        public DisplayAddressService(Device device, String passphrase, ScriptType scriptType, OutputDescriptor outputDescriptor) {
             this.device = device;
             this.passphrase = passphrase;
             this.scriptType = scriptType;
-            this.derivationPath = derivationPath;
+            this.outputDescriptor = outputDescriptor;
         }
 
         @Override
@@ -444,7 +485,7 @@ public class Hwi {
             return new Task<>() {
                 protected String call() throws DisplayAddressException {
                     Hwi hwi = new Hwi();
-                    return hwi.displayAddress(device, passphrase, scriptType, derivationPath);
+                    return hwi.displayAddress(device, passphrase, scriptType, outputDescriptor);
                 }
             };
         }
