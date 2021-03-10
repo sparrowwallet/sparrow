@@ -32,10 +32,10 @@ public class SubscriptionService {
 
         Set<String> existingStatuses = ElectrumServer.getSubscribedScriptHashes().get(scriptHash);
         if(existingStatuses == null) {
-            log.warn("Received script hash status update for unsubscribed script hash: " + scriptHash);
+            log.debug("Received script hash status update for unsubscribed script hash: " + scriptHash);
             ElectrumServer.updateSubscribedScriptHashStatus(scriptHash, status);
         } else if(existingStatuses.contains(status)) {
-            log.warn("Received script hash status update, but status has not changed");
+            log.debug("Received script hash status update, but status has not changed");
             return;
         } else {
             String oldStatus = Iterables.getLast(existingStatuses);
