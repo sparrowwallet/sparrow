@@ -644,8 +644,9 @@ public class SendController extends WalletFormController implements Initializabl
         Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
-            if(feeRateAmt <= minFeeRate) {
+            if(minFeeRate > 1.0 && feeRateAmt <= minFeeRate) {
                 feeRatePriority.setText("Below Minimum");
+                feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate are currently being purged from the default sized mempool"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
                 return;
@@ -654,6 +655,7 @@ public class SendController extends WalletFormController implements Initializabl
             Double lowestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(TARGET_BLOCKS_RANGE.size() - 1));
             if(lowestBlocksRate > minFeeRate && feeRateAmt < (minFeeRate + ((lowestBlocksRate - minFeeRate) / 2))) {
                 feeRatePriority.setText("Try Then Replace");
+                feeRatePriority.setTooltip(new Tooltip("Send a transaction, verify it appears in the destination wallet, then RBF to get it confirmed or sent to another address"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #7eb7c9cc");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.PLUS_CIRCLE);
                 return;
@@ -663,14 +665,17 @@ public class SendController extends WalletFormController implements Initializabl
         if(targetBlocks != null) {
             if(targetBlocks < FeeRatesSource.BLOCKS_IN_HALF_HOUR) {
                 feeRatePriority.setText("High Priority");
+                feeRatePriority.setTooltip(new Tooltip("Typically confirms within minutes"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
             } else if(targetBlocks < FeeRatesSource.BLOCKS_IN_HOUR) {
                 feeRatePriority.setText("Medium Priority");
+                feeRatePriority.setTooltip(new Tooltip("Typically confirms within an hour or two"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #fba71b99");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
             } else {
                 feeRatePriority.setText("Low Priority");
+                feeRatePriority.setTooltip(new Tooltip("Typically confirms in a day or longer"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #41a9c999");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
             }
