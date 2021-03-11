@@ -106,22 +106,15 @@ public class Hwi {
                 throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single hash types supported");
             }
 
+            //Remove replace once HWI-2.0.0 is released - see https://github.com/bitcoin-core/HWI/pull/488
             String descriptor = outputDescriptor.toString().replace("sortedmulti", "multi");
-            System.out.println(descriptor);
-
-            String addrType = "legacy";
-            if(scriptType == ScriptType.P2SH_P2WPKH) {
-                addrType = "sh_wit";
-            } else if(scriptType == ScriptType.P2WPKH) {
-                addrType = "wit";
-            }
 
             isPromptActive = false;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
-                output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--desc", descriptor, "--addr-type", addrType));
+                output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--desc", descriptor));
             } else {
-                output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--desc", descriptor, "--addr-type", addrType));
+                output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--desc", descriptor));
             }
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
