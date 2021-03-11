@@ -114,7 +114,7 @@ public class TransactionsController extends WalletFormController implements Init
                 writer.writeRecord(new String[] {"Date", "Label", "Value", "Balance"});
                 for(Entry entry : walletTransactionsEntry.getChildren()) {
                     TransactionEntry txEntry = (TransactionEntry)entry;
-                    writer.write(EntryCell.DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
+                    writer.write(txEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
                     writer.write(txEntry.getLabel());
                     writer.write(getCoinValue(txEntry.getValue()));
                     writer.write(getCoinValue(txEntry.getBalance()));
