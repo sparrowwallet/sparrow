@@ -376,7 +376,7 @@ public class DevicePane extends TitledDescriptionPane {
             }
         });
         sendPinService.setOnFailed(workerStateEvent -> {
-            setError(sendPinService.getException().getMessage(), null);
+            setError("Error", sendPinService.getException().getMessage());
             enterPinButton.setDisable(false);
         });
         setDescription("Unlocking...");
