@@ -43,6 +43,7 @@ public class Hwi {
                 command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), Command.ENUMERATE.toString());
             }
 
+            isPromptActive = true;
             String output = execute(command);
             Device[] devices = getGson().fromJson(output, Device[].class);
             if(devices == null) {
@@ -51,6 +52,8 @@ public class Hwi {
             return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
             throw new ImportException(e);
+        } finally {
+            isPromptActive = false;
         }
     }
 
@@ -109,7 +112,7 @@ public class Hwi {
             //Remove replace once HWI-2.0.0 is released - see https://github.com/bitcoin-core/HWI/pull/488
             String descriptor = outputDescriptor.toString().replace("sortedmulti", "multi");
 
-            isPromptActive = false;
+            isPromptActive = true;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--desc", descriptor));
@@ -130,12 +133,14 @@ public class Hwi {
             }
         } catch(IOException e) {
             throw new DisplayAddressException(e);
+        } finally {
+            isPromptActive = false;
         }
     }
 
     public String signMessage(Device device, String passphrase, String message, String derivationPath) throws SignMessageException {
         try {
-            isPromptActive = false;
+            isPromptActive = true;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.SIGN_MESSAGE, message, derivationPath));
@@ -156,6 +161,8 @@ public class Hwi {
             }
         } catch(IOException e) {
             throw new SignMessageException(e);
+        } finally {
+            isPromptActive = false;
         }
     }
 
@@ -170,7 +177,6 @@ public class Hwi {
             } else {
                 output = execute(getDeviceCommand(device, Command.SIGN_TX, psbtBase64));
             }
-            isPromptActive = false;
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
             if(result.get("psbt") != null) {
@@ -192,6 +198,8 @@ public class Hwi {
             throw new SignTransactionException("Could not sign PSBT", e);
         } catch(PSBTParseException e) {
             throw new SignTransactionException("Could not parsed signed PSBT", e);
+        } finally {
+            isPromptActive = false;
         }
     }
 
