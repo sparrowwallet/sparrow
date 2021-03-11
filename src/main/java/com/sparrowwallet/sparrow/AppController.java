@@ -120,7 +120,7 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
-    private final List<Wallet> loadingWallets = new ArrayList<>();
+    private final Set<Wallet> loadingWallets = new LinkedHashSet<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
