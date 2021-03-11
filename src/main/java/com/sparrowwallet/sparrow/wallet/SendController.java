@@ -838,12 +838,16 @@ public class SendController extends WalletFormController implements Initializabl
 
     public void createTransaction(ActionEvent event) {
         if(log.isDebugEnabled()) {
-            Map<WalletNode, String> nodeHashes = walletTransactionProperty.get().getSelectedUtxos().values().stream().collect(Collectors.toMap(Function.identity(), node -> ElectrumServer.getScriptHash(walletForm.getWallet(), node)));
-            Map<WalletNode, String> changeHash = Collections.emptyMap();
-            if(walletTransactionProperty.get().getChangeNode() != null) {
-                changeHash = Map.of(walletTransactionProperty.get().getChangeNode(), ElectrumServer.getScriptHash(walletForm.getWallet(), walletTransactionProperty.get().getChangeNode()));
+            Map<WalletNode, List<String>> inputHashes = new LinkedHashMap<>();
+            for(WalletNode node : walletTransactionProperty.get().getSelectedUtxos().values()) {
+                List<String> nodeHashes = inputHashes.computeIfAbsent(node, k -> new ArrayList<>());
+                nodeHashes.add(ElectrumServer.getScriptHash(walletForm.getWallet(), node));
             }
-            log.debug("Creating tx " + walletTransactionProperty.get().getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + nodeHashes + " and \nchange \n" + changeHash);
+            Map<WalletNode, List<String>> changeHash = Collections.emptyMap();
+            if(walletTransactionProperty.get().getChangeNode() != null) {
+                changeHash = Map.of(walletTransactionProperty.get().getChangeNode(), List.of(ElectrumServer.getScriptHash(walletForm.getWallet(), walletTransactionProperty.get().getChangeNode())));
+            }
+            log.debug("Creating tx " + walletTransactionProperty.get().getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + inputHashes + " and \nchange \n" + changeHash);
         }
 
         addWalletTransactionNodes();
