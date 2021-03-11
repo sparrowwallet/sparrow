@@ -442,14 +442,18 @@ public class DevicePane extends TitledDescriptionPane {
         getXpubService.setOnSucceeded(workerStateEvent -> {
             String xpub = getXpubService.getValue();
 
-            Keystore keystore = new Keystore();
-            keystore.setLabel(device.getModel().toDisplayString());
-            keystore.setSource(KeystoreSource.HW_USB);
-            keystore.setWalletModel(device.getModel());
-            keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
-            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
+            try {
+                Keystore keystore = new Keystore();
+                keystore.setLabel(device.getModel().toDisplayString());
+                keystore.setSource(KeystoreSource.HW_USB);
+                keystore.setWalletModel(device.getModel());
+                keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
+                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
 
-            EventManager.get().post(new KeystoreImportEvent(keystore));
+                EventManager.get().post(new KeystoreImportEvent(keystore));
+            } catch(Exception e) {
+                setError("Could not retrieve xpub", e.getMessage());
+            }
         });
         getXpubService.setOnFailed(workerStateEvent -> {
             setError("Could not retrieve xpub", getXpubService.getException().getMessage());
