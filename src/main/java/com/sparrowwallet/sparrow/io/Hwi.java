@@ -30,7 +30,7 @@ import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
-    private static final String VERSION_PREFIX = "hwi-2.0.0-rc.2";
+    private static final String VERSION_PREFIX = "hwi-2.0.0-rc.3";
 
     private static boolean isPromptActive = false;
 
@@ -109,8 +109,7 @@ public class Hwi {
                 throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single hash types supported");
             }
 
-            //Remove replace once HWI-2.0.0 is released - see https://github.com/bitcoin-core/HWI/pull/488
-            String descriptor = outputDescriptor.toString().replace("sortedmulti", "multi");
+            String descriptor = outputDescriptor.toString();
 
             isPromptActive = true;
             String output;
