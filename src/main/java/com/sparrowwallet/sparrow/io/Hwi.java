@@ -30,7 +30,7 @@ import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
-    private static final String VERSION_PREFIX = "hwi-2.0.0-rc.2";
+    private static final String VERSION_PREFIX = "hwi-2.0.0-rc.3";
 
     private static boolean isPromptActive = false;
 
