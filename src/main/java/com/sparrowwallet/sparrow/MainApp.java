@@ -21,6 +21,7 @@ import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
 import java.util.*;
@@ -156,6 +157,8 @@ public class MainApp extends Application {
             getLogger().info("Using " + Network.get() + " configuration");
         }
 
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
         com.sun.javafx.application.LauncherImpl.launchApplication(MainApp.class, MainAppPreloader.class, argv);
     }
 

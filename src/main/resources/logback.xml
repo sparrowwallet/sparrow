@@ -1,10 +1,11 @@
 <configuration>
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
     <logger name="com.github.sarxos.webcam.Webcam" level="OFF"/>
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamOpenTask" level="OFF"/>
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamCloseTask" level="OFF"/>
-    <logger name="javafx.scene.CssStyleHelper" level="OFF"/>
+    <logger name="javafx.scene.CssStyleHelper" level="ERROR"/>
 
     <define name="appDir" class="com.sparrowwallet.drongo.PropertyDefiner">
         <application>sparrow</application>
