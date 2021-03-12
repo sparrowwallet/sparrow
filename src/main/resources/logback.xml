@@ -1,4 +1,4 @@
-<configuration debug="true">
+<configuration>
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
 
     <logger name="com.github.sarxos.webcam.Webcam" level="OFF"/>
