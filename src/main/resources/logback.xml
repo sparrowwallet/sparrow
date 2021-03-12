@@ -4,6 +4,7 @@
     <logger name="com.github.sarxos.webcam.Webcam" level="OFF"/>
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamOpenTask" level="OFF"/>
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamCloseTask" level="OFF"/>
+    <logger name="javafx.scene.CssStyleHelper" level="OFF"/>
 
     <define name="appDir" class="com.sparrowwallet.drongo.PropertyDefiner">
         <application>sparrow</application>
