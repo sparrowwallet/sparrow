@@ -51,6 +51,7 @@ public class Hwi {
             }
             return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
+            log.error("Error executing " + VERSION_PREFIX, e);
             throw new ImportException(e);
         } finally {
             isPromptActive = false;
