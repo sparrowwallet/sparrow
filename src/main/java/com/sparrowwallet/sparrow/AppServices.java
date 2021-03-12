@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -139,7 +140,7 @@ public class AppServices {
             restartService(ratesService);
         }
 
-        if(config.isCheckNewVersions()) {
+        if(config.isCheckNewVersions() && Network.get() == Network.MAINNET) {
             restartService(versionCheckService);
         }
     }
@@ -520,7 +521,7 @@ public class AppServices {
     public void versionCheckStatus(VersionCheckStatusEvent event) {
         versionCheckService.cancel();
 
-        if(Config.get().getMode() != Mode.OFFLINE && event.isEnabled()) {
+        if(Config.get().getMode() != Mode.OFFLINE && event.isEnabled() && Network.get() == Network.MAINNET) {
             versionCheckService = createVersionCheckService();
             versionCheckService.start();
         }
