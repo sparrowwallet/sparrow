@@ -224,7 +224,7 @@ public class Hwi {
         if(hwiExecutable == null || !hwiExecutable.exists()) {
             try {
                 Platform platform = Platform.getCurrent();
-                Set<PosixFilePermission> ownerExecutableWritable = PosixFilePermissions.fromString("rwxr--r--");
+                Set<PosixFilePermission> allExecutableWritable = PosixFilePermissions.fromString("rwxrwxrwx");
 
                 //A PyInstaller --onefile expands into a new directory on every run triggering OSX Gatekeeper checks.
                 //To avoid doing these with every invocation, use a --onedir packaging and expand into a temp folder on OSX
@@ -232,7 +232,7 @@ public class Hwi {
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
                     InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + VERSION_PREFIX + "-mac-amd64-signed.zip");
-                    Path tempHwiDirPath = Files.createTempDirectory(VERSION_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    Path tempHwiDirPath = Files.createTempDirectory(VERSION_PREFIX, PosixFilePermissions.asFileAttribute(allExecutableWritable));
                     File tempHwiDir = tempHwiDirPath.toFile();
                     //tempHwiDir.deleteOnExit();
                     log.debug("Using temp HWI path: " + tempHwiDir.getAbsolutePath());
@@ -242,9 +242,9 @@ public class Hwi {
                     ZipEntry zipEntry = zis.getNextEntry();
                     while(zipEntry != null) {
                         if(zipEntry.isDirectory()) {
-                            newDirectory(tempHwiDir, zipEntry, ownerExecutableWritable);
+                            newDirectory(tempHwiDir, zipEntry, allExecutableWritable);
                         } else {
-                            File newFile = newFile(tempHwiDir, zipEntry, ownerExecutableWritable);
+                            File newFile = newFile(tempHwiDir, zipEntry, allExecutableWritable);
                             //newFile.deleteOnExit();
                             FileOutputStream fos = new FileOutputStream(newFile);
                             ByteStreams.copy(zis, new FileOutputStream(newFile));
@@ -270,7 +270,7 @@ public class Hwi {
                         tempExecPath = Files.createTempFile(VERSION_PREFIX, null);
                     } else {
                         inputStream = Hwi.class.getResourceAsStream("/native/linux/x64/hwi");
-                        tempExecPath = Files.createTempFile(VERSION_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                        tempExecPath = Files.createTempFile(VERSION_PREFIX, null, PosixFilePermissions.asFileAttribute(allExecutableWritable));
                     }
 
                     File tempExec = tempExecPath.toFile();
