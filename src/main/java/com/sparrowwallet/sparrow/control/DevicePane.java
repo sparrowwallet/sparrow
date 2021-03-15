@@ -4,16 +4,15 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.AddressDisplayedEvent;
-import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
-import com.sparrowwallet.sparrow.event.MessageSignedEvent;
-import com.sparrowwallet.sparrow.event.PSBTSignedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -34,6 +33,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -197,18 +197,31 @@ public class DevicePane extends TitledDescriptionPane {
         importButton.setText("Import Keystore");
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
-            importKeystore(wallet.getScriptType().getDefaultDerivation());
+            importKeystore(wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation());
         });
-        String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
-        int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
-        for(int i = 0; i < scriptAccountsLength; i++) {
-            MenuItem item = new MenuItem(accounts[i]);
-            final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
-            item.setOnAction(event -> {
-                importButton.setDisable(true);
-                importKeystore(derivation);
-            });
-            importButton.getItems().add(item);
+        if(wallet.getScriptType() == null) {
+            ScriptType[] scriptTypes = new ScriptType[] {ScriptType.P2WPKH, ScriptType.P2SH_P2WPKH, ScriptType.P2PKH};
+            for(ScriptType scriptType : scriptTypes) {
+                MenuItem item = new MenuItem(scriptType.getDescription());
+                final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
+                item.setOnAction(event -> {
+                    importButton.setDisable(true);
+                    importKeystore(derivation);
+                });
+                importButton.getItems().add(item);
+            }
+        } else {
+            String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
+            int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
+            for(int i = 0; i < scriptAccountsLength; i++) {
+                MenuItem item = new MenuItem(accounts[i]);
+                final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
+                item.setOnAction(event -> {
+                    importButton.setDisable(true);
+                    importKeystore(derivation);
+                });
+                importButton.getItems().add(item);
+            }
         }
         importButton.managedProperty().bind(importButton.visibleProperty());
         importButton.setVisible(false);
@@ -450,7 +463,18 @@ public class DevicePane extends TitledDescriptionPane {
                 keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
 
-                EventManager.get().post(new KeystoreImportEvent(keystore));
+                if(wallet.getScriptType() == null) {
+                    ScriptType scriptType = Arrays.stream(ScriptType.SINGLE_HASH_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
+                    wallet.setName(device.getModel().toDisplayString());
+                    wallet.setPolicyType(PolicyType.SINGLE);
+                    wallet.setScriptType(scriptType);
+                    wallet.getKeystores().add(keystore);
+                    wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), null));
+
+                    EventManager.get().post(new WalletImportEvent(wallet));
+                } else {
+                    EventManager.get().post(new KeystoreImportEvent(keystore));
+                }
             } catch(Exception e) {
                 setError("Could not retrieve xpub", e.getMessage());
             }
@@ -513,7 +537,7 @@ public class DevicePane extends TitledDescriptionPane {
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
             showHideLink.setVisible(true);
-            setContent(getDerivationEntry(wallet.getScriptType().getDefaultDerivation()));
+            setContent(getDerivationEntry(wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation()));
         } else if(deviceOperation.equals(DeviceOperation.SIGN)) {
             signButton.setVisible(true);
             showHideLink.setVisible(false);
@@ -560,6 +584,10 @@ public class DevicePane extends TitledDescriptionPane {
         contentBox.setPrefHeight(60);
 
         return contentBox;
+    }
+
+    public Device getDevice() {
+        return device;
     }
 
     public enum DeviceOperation {
