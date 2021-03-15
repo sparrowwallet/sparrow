@@ -151,6 +151,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
     private Boolean useSslOriginal;
 
+    private Boolean useProxyOriginal;
+
     @Override
     public void initializeView(Config config) {
         EventManager.get().register(this);
@@ -424,6 +426,18 @@ public class ServerPreferencesController extends PreferencesDetailController {
             torService.cancel();
             testResults.appendText("\nTor failed to start");
             showConnectionFailure(workerStateEvent.getSource().getException());
+
+            Throwable exception = workerStateEvent.getSource().getException();
+            if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER &&
+                    exception.getCause() != null && exception.getCause() instanceof TorControlError && exception.getCause().getMessage().contains("Failed to bind") &&
+                    useProxyOriginal == null && !useProxy.isSelected() && proxyHost.getText().isEmpty() && proxyPort.getText().isEmpty()) {
+                useProxy.setSelected(true);
+                proxyHost.setText("localhost");
+                proxyPort.setText("9050");
+                useProxyOriginal = false;
+                testResults.appendText("\n\nAssuming Tor proxy is running on port 9050 and trying again...");
+                startElectrumConnection();
+            }
         });
 
         torService.start();
@@ -448,6 +462,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             getMasterController().reconnectOnClosingProperty().set(true);
             Config.get().setMode(Mode.ONLINE);
             connectionService.cancel();
+            useProxyOriginal = null;
         });
         connectionService.setOnFailed(workerStateEvent -> {
             EventManager.get().unregister(connectionService);
@@ -474,6 +489,13 @@ public class ServerPreferencesController extends PreferencesDetailController {
                     electrumUseSsl.setSelected(useSslOriginal);
                     useSslOriginal = null;
                 }
+            }
+
+            if(useProxyOriginal != null && !useProxyOriginal) {
+                useProxy.setSelected(false);
+                proxyHost.setText("");
+                proxyPort.setText("");
+                useProxyOriginal = null;
             }
         });
         connectionService.start();
