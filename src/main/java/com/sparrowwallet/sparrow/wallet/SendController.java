@@ -644,7 +644,7 @@ public class SendController extends WalletFormController implements Initializabl
         Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
-            if(minFeeRate > 1.0 && feeRateAmt <= minFeeRate) {
+            if(minFeeRate > 1.0 && feeRateAmt < minFeeRate) {
                 feeRatePriority.setText("Below Minimum");
                 feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate are currently being purged from the default sized mempool"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
@@ -653,7 +653,7 @@ public class SendController extends WalletFormController implements Initializabl
             }
 
             Double lowestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(TARGET_BLOCKS_RANGE.size() - 1));
-            if(lowestBlocksRate > minFeeRate && feeRateAmt < (minFeeRate + ((lowestBlocksRate - minFeeRate) / 2))) {
+            if(lowestBlocksRate >= minFeeRate && feeRateAmt < (minFeeRate + ((lowestBlocksRate - minFeeRate) / 2)) && !isPayjoinTx()) {
                 feeRatePriority.setText("Try Then Replace");
                 feeRatePriority.setTooltip(new Tooltip("Send a transaction, verify it appears in the destination wallet, then RBF to get it confirmed or sent to another address"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #7eb7c9cc");
@@ -689,6 +689,14 @@ public class SendController extends WalletFormController implements Initializabl
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
             }
         }
+    }
+
+    private boolean isPayjoinTx() {
+        if(walletTransactionProperty.get() != null) {
+            return walletTransactionProperty.get().getPayments().stream().anyMatch(payment -> AppServices.getPayjoinURI(payment.getAddress()) != null);
+        }
+
+        return false;
     }
 
     private Node getSliderThumb() {

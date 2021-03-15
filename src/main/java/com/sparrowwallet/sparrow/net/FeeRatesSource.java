@@ -70,6 +70,8 @@ public enum FeeRatesSource {
                     blockTargetFeeRates.put(blockTarget, threeTierRates.halfHourFee);
                 } else if(blockTarget < BLOCKS_IN_TWO_HOURS || defaultblockTargetFeeRates.get(blockTarget) > threeTierRates.hourFee) {
                     blockTargetFeeRates.put(blockTarget, threeTierRates.hourFee);
+                } else if(threeTierRates.minimumFee != null && defaultblockTargetFeeRates.get(blockTarget) < threeTierRates.minimumFee) {
+                    blockTargetFeeRates.put(blockTarget, threeTierRates.minimumFee + (threeTierRates.hourFee > threeTierRates.minimumFee ? threeTierRates.hourFee * 0.2 : 0.0));
                 } else {
                     blockTargetFeeRates.put(blockTarget, defaultblockTargetFeeRates.get(blockTarget));
                 }
