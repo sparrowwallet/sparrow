@@ -19,6 +19,7 @@ import javafx.application.Application;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
+import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -77,6 +78,10 @@ public class MainApp extends Application {
         } else if(Config.get().getServerType() == ServerType.BITCOIN_CORE && Config.get().getCoreWallet() == null) {
             Config.get().setCoreMultiWallet(Boolean.TRUE);
             Config.get().setCoreWallet("");
+        }
+
+        if(Config.get().getHdCapture() == null && Platform.getCurrent() == Platform.OSX) {
+            Config.get().setHdCapture(Boolean.TRUE);
         }
 
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));

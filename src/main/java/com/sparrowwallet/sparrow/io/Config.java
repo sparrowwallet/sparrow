@@ -37,7 +37,7 @@ public class Config {
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
-    private boolean hdCapture;
+    private Boolean hdCapture;
     private ServerType serverType;
     private String publicElectrumServer;
     private String coreServer;
@@ -263,11 +263,15 @@ public class Config {
         flush();
     }
 
-    public boolean isHdCapture() {
+    public Boolean getHdCapture() {
         return hdCapture;
     }
 
-    public void setHdCapture(boolean hdCapture) {
+    public Boolean isHdCapture() {
+        return hdCapture != null && hdCapture;
+    }
+
+    public void setHdCapture(Boolean hdCapture) {
         this.hdCapture = hdCapture;
         flush();
     }
