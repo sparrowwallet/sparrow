@@ -944,7 +944,7 @@ public class ElectrumServer {
                 });
                 disconnectionService.start();
             } else if(subscribe) {
-                EventManager.get().post(new DisconnectionEvent());
+                Platform.runLater(() -> EventManager.get().post(new DisconnectionEvent()));
             }
         }
 

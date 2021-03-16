@@ -374,12 +374,14 @@ public class TransactionController implements Initializable {
 
                 final BlockTransaction blockTx = thisBlockTx;
                 Platform.runLater(() -> {
-                    EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction().getTxId(), blockTx, inputTransactions, indexStart, maxIndex));
+                    EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, inputTransactions, indexStart, maxIndex));
                 });
             });
             transactionReferenceService.setOnFailed(failedEvent -> {
                 log.error("Error fetching transaction or input references", failedEvent.getSource().getException());
+                EventManager.get().post(new TransactionReferencesFailedEvent(getTransaction(), failedEvent.getSource().getException(), indexStart, maxIndex));
             });
+            EventManager.get().post(new TransactionReferencesStartedEvent(getTransaction(), indexStart, maxIndex));
             transactionReferenceService.start();
         }
     }
@@ -391,12 +393,14 @@ public class TransactionController implements Initializable {
             transactionOutputsReferenceService.setOnSucceeded(successEvent -> {
                 List<BlockTransaction> outputTransactions = transactionOutputsReferenceService.getValue();
                 Platform.runLater(() -> {
-                    EventManager.get().post(new BlockTransactionOutputsFetchedEvent(getTransaction().getTxId(), outputTransactions, indexStart, maxIndex));
+                    EventManager.get().post(new BlockTransactionOutputsFetchedEvent(getTransaction(), outputTransactions, indexStart, maxIndex));
                 });
             });
             transactionOutputsReferenceService.setOnFailed(failedEvent -> {
                 log.error("Error fetching transaction output references", failedEvent.getSource().getException());
+                EventManager.get().post(new TransactionReferencesFailedEvent(getTransaction(), failedEvent.getSource().getException(), indexStart, maxIndex));
             });
+            EventManager.get().post(new TransactionReferencesStartedEvent(getTransaction(), indexStart, maxIndex));
             transactionOutputsReferenceService.start();
         }
     }

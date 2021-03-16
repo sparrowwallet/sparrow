@@ -145,6 +145,9 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 String blockHeader = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.block.header").id(idCounter.incrementAndGet()).params(blockHeight).execute());
                 result.put(blockHeight, blockHeader);
+            } catch(ServerException e) {
+                //If there is an error with the server connection, don't keep trying - this may take too long given many blocks
+                throw new ElectrumServerRpcException("Failed to retrieve block header for block height: " + blockHeight, e);
             } catch(JsonRpcException e) {
                 log.warn("Failed to retrieve block header for block height: " + blockHeight + " (" + e.getErrorMessage() + ")");
             } catch(Exception e) {

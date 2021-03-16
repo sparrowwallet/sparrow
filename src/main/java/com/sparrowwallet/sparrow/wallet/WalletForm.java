@@ -105,14 +105,10 @@ public class WalletForm {
             });
             historyService.setOnFailed(workerStateEvent -> {
                 log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
-                EventManager.get().post(new WalletHistoryFinishedEvent(wallet, workerStateEvent.getSource().getException().getMessage()));
+                EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
             });
-            if(node == null && wallet.getTransactions().isEmpty()) {
-                EventManager.get().post(new WalletHistoryStartedEvent(wallet));
-            } else {
-                EventManager.get().post(new WalletHistoryStatusEvent(wallet, true));
-            }
 
+            EventManager.get().post(new WalletHistoryStartedEvent(wallet, node));
             historyService.start();
         }
     }

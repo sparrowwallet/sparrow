@@ -82,6 +82,10 @@
     -fx-bar-fill: rgba(135, 138, 149, 0.5);
 }
 
+.tab-label .failure {
+    -fx-fill: #e06c75;
+}
+
 .root .titled-description-pane .status-error .text, .root .titled-description-pane .description-error .text {
     -fx-fill: #e06c75;
 }

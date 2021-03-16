@@ -846,10 +846,13 @@ public class HeadersController extends TransactionFormController implements Init
                         headersForm.setBlockTransaction(blockTransaction);
                         updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
                     }
+                    EventManager.get().post(new TransactionReferencesFinishedEvent(headersForm.getTransaction(), blockTransaction));
                 });
                 transactionReferenceService.setOnFailed(failedEvent -> {
                     log.error("Error fetching broadcasted transaction", failedEvent.getSource().getException());
+                    EventManager.get().post(new TransactionReferencesFailedEvent(headersForm.getTransaction(), failedEvent.getSource().getException()));
                 });
+                EventManager.get().post(new TransactionReferencesStartedEvent(headersForm.getTransaction()));
                 transactionReferenceService.start();
             }
         });
@@ -1132,10 +1135,13 @@ public class HeadersController extends TransactionFormController implements Init
                     headersForm.setBlockTransaction(blockTransaction);
                     updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
                 }
+                EventManager.get().post(new TransactionReferencesFinishedEvent(headersForm.getTransaction(), blockTransaction));
             });
             transactionReferenceService.setOnFailed(failEvent -> {
                 log.error("Could not update block transaction", failEvent.getSource().getException());
+                EventManager.get().post(new TransactionReferencesFailedEvent(headersForm.getTransaction(), failEvent.getSource().getException()));
             });
+            EventManager.get().post(new TransactionReferencesStartedEvent(headersForm.getTransaction()));
             transactionReferenceService.start();
         }
     }

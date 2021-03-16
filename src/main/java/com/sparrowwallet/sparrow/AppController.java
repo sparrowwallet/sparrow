@@ -21,6 +21,7 @@ import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
@@ -53,6 +54,8 @@ import javafx.stage.*;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
+import org.controlsfx.glyphfont.FontAwesome;
+import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +73,8 @@ public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
 
     public static final String DRAG_OVER_CLASS = "drag-over";
+    public static final double TAB_LABEL_GRAPHIC_OPACITY_INACTIVE = 0.8;
+    public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
 
     @FXML
     private MenuItem saveTransaction;
@@ -163,7 +168,11 @@ public class AppController implements Initializable {
         });
 
         tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
+            tabs.getTabs().forEach(tab -> ((Label)tab.getGraphic()).getGraphic().setOpacity(TAB_LABEL_GRAPHIC_OPACITY_INACTIVE));
             if(selectedTab != null) {
+                Label tabLabel = (Label)selectedTab.getGraphic();
+                tabLabel.getGraphic().setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
+
                 TabData tabData = (TabData)selectedTab.getUserData();
                 if(tabData.getType() == TabData.TabType.TRANSACTION) {
                     EventManager.get().post(new TransactionTabSelectedEvent(selectedTab));
@@ -920,7 +929,14 @@ public class AppController implements Initializable {
             if(!name.equals(wallet.getName())) {
                 wallet.setName(name);
             }
-            Tab tab = new Tab(name);
+            Tab tab = new Tab("");
+            Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
+            glyph.setFontSize(9.0);
+            glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
+            Label tabLabel = new Label(name);
+            tabLabel.setGraphic(glyph);
+            tabLabel.setGraphicTextGap(5.0);
+            tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
@@ -1057,7 +1073,14 @@ public class AppController implements Initializable {
                 tabName = "[" + transaction.getTxId().toString().substring(0, 6) + "]";
             }
 
-            Tab tab = new Tab(tabName);
+            Tab tab = new Tab("");
+            Glyph glyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
+            glyph.setFontSize(9.0);
+            glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
+            Label tabLabel = new Label(tabName);
+            tabLabel.setGraphic(glyph);
+            tabLabel.setGraphicTextGap(5.0);
+            tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             FXMLLoader transactionLoader = new FXMLLoader(getClass().getResource("transaction/transaction.fxml"));
@@ -1136,6 +1159,57 @@ public class AppController implements Initializable {
         }
 
         EventManager.get().post(new ThemeChangedEvent(selectedTheme));
+    }
+
+    private void tabLabelStartAnimation(Wallet wallet) {
+        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == wallet).forEach(this::tabLabelStartAnimation);
+    }
+
+    private void tabLabelStartAnimation(Transaction transaction) {
+        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof TransactionTabData && ((TransactionTabData)tab.getUserData()).getTransaction().getTxId().equals(transaction.getTxId())).forEach(this::tabLabelStartAnimation);
+    }
+
+    private void tabLabelStartAnimation(Tab tab) {
+        Label tabLabel = (Label) tab.getGraphic();
+        if(tabLabel.getUserData() == null) {
+            FadeTransition fadeTransition = new FadeTransition(Duration.millis(1000), tabLabel.getGraphic());
+            fadeTransition.setFromValue(tabLabel.getGraphic().getOpacity());
+            fadeTransition.setToValue(0.1);
+            fadeTransition.setAutoReverse(true);
+            fadeTransition.setCycleCount(Animation.INDEFINITE);
+            fadeTransition.play();
+            tabLabel.setUserData(fadeTransition);
+        }
+    }
+
+    private void tabLabelAddFailure(Tab tab) {
+        Label tabLabel = (Label)tab.getGraphic();
+        if(!tabLabel.getStyleClass().contains("failure")) {
+            tabLabel.getGraphic().getStyleClass().add("failure");
+        }
+    }
+
+    private void tabLabelStopAnimation(Wallet wallet) {
+        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == wallet).forEach(this::tabLabelStopAnimation);
+    }
+
+    private void tabLabelStopAnimation(Transaction transaction) {
+        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof TransactionTabData && ((TransactionTabData)tab.getUserData()).getTransaction().getTxId().equals(transaction.getTxId())).forEach(this::tabLabelStopAnimation);
+    }
+
+    private void tabLabelStopAnimation(Tab tab) {
+        Label tabLabel = (Label) tab.getGraphic();
+        if(tabLabel.getUserData() != null) {
+            FadeTransition fadeTransition = (FadeTransition)tabLabel.getUserData();
+            fadeTransition.stop();
+            tabLabel.setUserData(null);
+            tabLabel.getGraphic().setOpacity(tab.isSelected() ? TAB_LABEL_GRAPHIC_OPACITY_ACTIVE : TAB_LABEL_GRAPHIC_OPACITY_INACTIVE);
+        }
+    }
+
+    private void tabLabelRemoveFailure(Tab tab) {
+        Label tabLabel = (Label)tab.getGraphic();
+        tabLabel.getGraphic().getStyleClass().remove("failure");
     }
 
     @Subscribe
@@ -1384,14 +1458,26 @@ public class AppController implements Initializable {
         }
     }
 
+     @Subscribe
+    public void transactionReferences(TransactionReferencesEvent event) {
+        if(AppServices.isConnected() && event instanceof TransactionReferencesStartedEvent) {
+            tabLabelStartAnimation(event.getTransaction());
+        } else {
+            tabLabelStopAnimation(event.getTransaction());
+        }
+    }
+
     @Subscribe
     public void walletHistoryStarted(WalletHistoryStartedEvent event) {
         if(AppServices.isConnected() && getOpenWallets().containsKey(event.getWallet())) {
-            statusUpdated(new StatusEvent("Loading transactions...", 120));
-            if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
-                statusBar.setProgress(-1);
-                loadingWallets.add(event.getWallet());
+            if(event.getWalletNode() == null && event.getWallet().getTransactions().isEmpty()) {
+                statusUpdated(new StatusEvent("Loading transactions...", 120));
+                if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
+                    statusBar.setProgress(-1);
+                    loadingWallets.add(event.getWallet());
+                }
             }
+            tabLabelStartAnimation(event.getWallet());
         }
     }
 
@@ -1404,8 +1490,16 @@ public class AppController implements Initializable {
             if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                 statusBar.setProgress(0);
             }
+            tabLabelStopAnimation(event.getWallet());
             loadingWallets.remove(event.getWallet());
+            tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == event.getWallet()).forEach(this::tabLabelRemoveFailure);
         }
+    }
+
+    @Subscribe
+    public void walletHistoryFailed(WalletHistoryFailedEvent event) {
+        walletHistoryFinished(new WalletHistoryFinishedEvent(event.getWallet()));
+        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData) tab.getUserData()).getWallet() == event.getWallet()).forEach(this::tabLabelAddFailure);
     }
 
     @Subscribe

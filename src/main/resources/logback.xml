@@ -5,6 +5,8 @@
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamOpenTask" level="OFF"/>
     <logger name="com.github.sarxos.webcam.ds.cgt.WebcamCloseTask" level="OFF"/>
     <logger name="javafx.css" level="ERROR"/>
+    <logger name="javafx.scene.focus" level="INFO"/>
+    <logger name="sun.net.www.protocol.http.HttpURLConnection" level="INFO" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
