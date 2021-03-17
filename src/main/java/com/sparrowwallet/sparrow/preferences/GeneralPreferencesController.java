@@ -34,6 +34,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
     private ComboBox<ExchangeSource> exchangeSource;
 
     @FXML
+    private UnlabeledToggleSwitch loadRecentWallets;
+
+    @FXML
     private UnlabeledToggleSwitch validateDerivationPaths;
 
     @FXML
@@ -96,6 +99,12 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         });
 
         updateCurrencies(exchangeSource.getSelectionModel().getSelectedItem());
+
+        loadRecentWallets.setSelected(config.isLoadRecentWallets());
+        loadRecentWallets.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setLoadRecentWallets(newValue);
+            EventManager.get().post(new RequestOpenWalletsEvent());
+        });
 
         validateDerivationPaths.setSelected(config.isValidateDerivationPaths());
         validateDerivationPaths.selectedProperty().addListener((observableValue, oldValue, newValue) -> {

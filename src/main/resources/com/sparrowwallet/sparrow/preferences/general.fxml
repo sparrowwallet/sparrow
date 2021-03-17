@@ -72,6 +72,10 @@
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Wallet" styleClass="wideLabelFieldSet">
+            <Field text="Load recent wallets:">
+                <UnlabeledToggleSwitch fx:id="loadRecentWallets" />
+                <HelpLabel helpText="Keep a record of open wallets, and reopen them on startup."/>
+            </Field>
             <Field text="Validate derivations:">
                 <UnlabeledToggleSwitch fx:id="validateDerivationPaths" />
                 <HelpLabel helpText="Disallow keystores to have derivation paths that match the defaults for other script types."/>

@@ -25,6 +25,7 @@ public class Config {
     private FeeRatesSelection feeRatesSelection;
     private Currency fiatCurrency;
     private ExchangeSource exchangeSource;
+    private boolean loadRecentWallets = true;
     private boolean validateDerivationPaths = true;
     private boolean groupByAddress = true;
     private boolean includeMempoolChange = true;
@@ -152,6 +153,15 @@ public class Config {
 
     public void setExchangeSource(ExchangeSource exchangeSource) {
         this.exchangeSource = exchangeSource;
+        flush();
+    }
+
+    public boolean isLoadRecentWallets() {
+        return loadRecentWallets;
+    }
+
+    public void setLoadRecentWallets(boolean loadRecentWallets) {
+        this.loadRecentWallets = loadRecentWallets;
         flush();
     }
 

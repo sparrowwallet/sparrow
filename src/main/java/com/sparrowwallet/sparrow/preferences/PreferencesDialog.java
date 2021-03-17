@@ -47,7 +47,7 @@ public class PreferencesDialog extends Dialog<Boolean> {
             }
 
             dialogPane.setPrefWidth(750);
-            dialogPane.setPrefHeight(600);
+            dialogPane.setPrefHeight(630);
 
             preferencesController.reconnectOnClosingProperty().set(AppServices.isConnecting() || AppServices.isConnected());
             setOnCloseRequest(event -> {

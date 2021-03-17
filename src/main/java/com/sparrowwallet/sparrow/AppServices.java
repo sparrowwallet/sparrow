@@ -540,7 +540,7 @@ public class AppServices {
         Platform.runLater(() -> {
             if(!Window.getWindows().isEmpty()) {
                 List<File> walletFiles = allWallets.stream().map(walletTabData -> walletTabData.getStorage().getWalletFile()).collect(Collectors.toList());
-                Config.get().setRecentWalletFiles(walletFiles);
+                Config.get().setRecentWalletFiles(Config.get().isLoadRecentWallets() ? walletFiles : Collections.emptyList());
             }
         });
 
