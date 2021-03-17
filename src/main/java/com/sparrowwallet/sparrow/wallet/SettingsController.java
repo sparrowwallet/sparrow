@@ -276,7 +276,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString);
         dialog.setTitle("Edit wallet output descriptor");
-        dialog.getDialogPane().setHeaderText("Wallet output descriptor:");
+        dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nChanges to the output descriptor will modify the wallet configuration.");
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
             setDescriptorText(text.get());

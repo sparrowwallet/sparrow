@@ -4,6 +4,8 @@ import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 
@@ -17,6 +19,9 @@ public class TextAreaDialog extends Dialog<String> {
 
     public TextAreaDialog(@NamedArg("defaultValue") String defaultValue) {
         final DialogPane dialogPane = getDialogPane();
+
+        Image image = new Image("/image/sparrow-small.png");
+        dialogPane.setGraphic(new ImageView(image));
 
         HBox hbox = new HBox();
         this.textArea = new TextArea(defaultValue);

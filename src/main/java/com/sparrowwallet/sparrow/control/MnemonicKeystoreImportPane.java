@@ -392,6 +392,19 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             label.setAlignment(Pos.CENTER_RIGHT);
             wordField = new TextField();
             wordField.setMaxWidth(100);
+            TextFormatter<?> formatter = new TextFormatter<>((TextFormatter.Change change) -> {
+                String text = change.getText();
+                // if text was added, fix the text to fit the requirements
+                if(!text.isEmpty()) {
+                    String newText = text.replace(" ", "").toLowerCase();
+                    int carretPos = change.getCaretPosition() - text.length() + newText.length();
+                    change.setText(newText);
+                    // fix caret position based on difference in originally added text and fixed text
+                    change.selectRange(carretPos, carretPos);
+                }
+                return change;
+            });
+            wordField.setTextFormatter(formatter);
 
             wordList = Bip39MnemonicCode.INSTANCE.getWordList();
             AutoCompletionBinding<String> autoCompletionBinding = TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));

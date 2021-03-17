@@ -152,6 +152,14 @@
     color-grey: #3e4451;
 }
 
+.root .readonly.text-input {
+    -fx-text-fill: lightgray;
+}
+
+.root .descriptor-text {
+    -fx-fill: lightgray;
+}
+
 .root .success {
     -fx-text-fill: #98c379;
 }

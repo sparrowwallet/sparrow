@@ -34,6 +34,15 @@
     -fx-spacing: 10;
 }
 
+.version-hyperlink {
+    -fx-border-color: transparent;
+    -fx-text-fill: #1e88cf;
+}
+
+.version-hyperlink:visited {
+    -fx-underline: false;
+}
+
 .core-server.toggle-switch:selected .thumb-area {
     -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -20%), derive(-fx-text-box-border, -30%)), linear-gradient(to bottom, derive(#50a14f, 30%), #50a14f);
     -fx-background-insets: 0, 1;

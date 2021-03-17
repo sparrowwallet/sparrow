@@ -252,10 +252,19 @@ public class KeystoreController extends WalletFormController implements Initiali
         importButton.setTooltip(new Tooltip(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import a keystore from an external source" : "Replace this keystore with another source"));
 
         boolean editable = (keystore.getSource() == KeystoreSource.SW_WATCH);
-        fingerprint.setEditable(editable);
-        derivation.setEditable(editable);
-        xpub.setEditable(editable);
+        setEditable(fingerprint, editable);
+        setEditable(derivation, editable);
+        setEditable(xpub, editable);
         scanXpubQR.setVisible(editable);
+    }
+
+    private void setEditable(TextInputControl textInputControl, boolean editable) {
+        textInputControl.setEditable(editable);
+        if(!editable && !textInputControl.getStyleClass().contains("readonly")) {
+            textInputControl.getStyleClass().add("readonly");
+        } else if(editable) {
+            textInputControl.getStyleClass().remove("readonly");
+        }
     }
 
     private String getTypeLabel(Keystore keystore) {

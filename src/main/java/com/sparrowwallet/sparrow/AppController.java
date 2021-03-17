@@ -75,6 +75,7 @@ public class AppController implements Initializable {
     public static final String DRAG_OVER_CLASS = "drag-over";
     public static final double TAB_LABEL_GRAPHIC_OPACITY_INACTIVE = 0.8;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
+    public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
 
     @FXML
     private MenuItem saveTransaction;
@@ -1356,6 +1357,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void versionUpdated(VersionUpdatedEvent event) {
         Hyperlink versionUpdateLabel = new Hyperlink("Sparrow " + event.getVersion() + " available");
+        versionUpdateLabel.getStyleClass().add("version-hyperlink");
         versionUpdateLabel.setOnAction(event1 -> {
             AppServices.get().getApplication().getHostServices().showDocument("https://www.sparrowwallet.com/download");
         });
@@ -1449,7 +1451,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         if(event.getClosedWalletTabData().stream().map(WalletTabData::getWallet).anyMatch(loadingWallets::remove) && loadingWallets.isEmpty()) {
-            if(statusBar.getText().equals("Loading transactions...")) {
+            if(statusBar.getText().equals(LOADING_TRANSACTIONS_MESSAGE)) {
                 statusBar.setText("");
             }
             if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
@@ -1471,7 +1473,7 @@ public class AppController implements Initializable {
     public void walletHistoryStarted(WalletHistoryStartedEvent event) {
         if(AppServices.isConnected() && getOpenWallets().containsKey(event.getWallet())) {
             if(event.getWalletNode() == null && event.getWallet().getTransactions().isEmpty()) {
-                statusUpdated(new StatusEvent("Loading transactions...", 120));
+                statusUpdated(new StatusEvent(LOADING_TRANSACTIONS_MESSAGE, 120));
                 if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                     statusBar.setProgress(-1);
                     loadingWallets.add(event.getWallet());
@@ -1484,7 +1486,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void walletHistoryFinished(WalletHistoryFinishedEvent event) {
         if(getOpenWallets().containsKey(event.getWallet())) {
-            if(statusBar.getText().equals("Loading transactions...")) {
+            if(statusBar.getText().equals(LOADING_TRANSACTIONS_MESSAGE)) {
                 statusBar.setText("");
             }
             if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
