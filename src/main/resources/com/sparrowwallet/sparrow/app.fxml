@@ -88,6 +88,7 @@
                 </Menu>
                 <Menu fx:id="toolsMenu" mnemonicParsing="false" text="Tools">
                     <MenuItem mnemonicParsing="false" text="Sign/Verify Message" accelerator="Shortcut+M" onAction="#signVerifyMessage"/>
+                    <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>

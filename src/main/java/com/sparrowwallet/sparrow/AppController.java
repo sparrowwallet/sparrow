@@ -87,6 +87,9 @@ public class AppController implements Initializable {
     private Menu fileMenu;
 
     @FXML
+    private Menu toolsMenu;
+
+    @FXML
     private Menu helpMenu;
 
     @FXML
@@ -134,7 +137,7 @@ public class AppController implements Initializable {
     }
 
     void initializeView() {
-        setOsxApplicationMenu();
+        setPlatformApplicationMenu();
 
         rootStack.setOnDragOver(event -> {
             if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
@@ -256,8 +259,9 @@ public class AppController implements Initializable {
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
     }
 
-    private void setOsxApplicationMenu() {
-        if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX) {
+    private void setPlatformApplicationMenu() {
+        org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
+        if(platform == org.controlsfx.tools.Platform.OSX) {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
@@ -269,7 +273,10 @@ public class AppController implements Initializable {
             tk.setApplicationMenu(defaultApplicationMenu);
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
+            toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
             helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
+        } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
+            toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("windowsHide"));
         }
     }
 
@@ -321,6 +328,24 @@ public class AppController implements Initializable {
         }
 
         return null;
+    }
+
+    public void installUdevRules(ActionEvent event) {
+        Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(null);
+        enumerateService.setOnSucceeded(workerStateEvent -> {
+            Platform.runLater(this::showInstallUdevMessage);
+        });
+        enumerateService.setOnFailed(workerStateEvent -> {
+            Platform.runLater(this::showInstallUdevMessage);
+        });
+        enumerateService.start();
+    }
+
+    public void showInstallUdevMessage() {
+        TextAreaDialog dialog = new TextAreaDialog("sudo " + Config.get().getHwi().getAbsolutePath() + " installudevrules");
+        dialog.setTitle("Install Udev Rules");
+        dialog.getDialogPane().setHeaderText("Installing udev rules ensures devices can connect over USB.\nThis command requires root privileges.\nOpen a shell and enter the following:");
+        dialog.showAndWait();
     }
 
     public void openTransactionFromFile(ActionEvent event) {
