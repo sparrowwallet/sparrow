@@ -19,14 +19,21 @@ import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class EntryCell extends TreeTableCell<Entry, Entry> {
+    private static final Logger log = LoggerFactory.getLogger(EntryCell.class);
+
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private static final Pattern REPLACED_BY_FEE_SUFFIX = Pattern.compile("(.*)\\(Replaced By Fee( #)?(\\d+)?\\).*");
 
     public EntryCell() {
         super();
@@ -200,11 +207,31 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         externalOutputs.addAll(consolidationOutputs);
         List<Payment> payments = externalOutputs.stream().map(txOutput -> {
             try {
-                return new Payment(txOutput.getScript().getToAddresses()[0], transactionEntry.getLabel(), txOutput.getValue(), false);
+                String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
+                Matcher matcher = REPLACED_BY_FEE_SUFFIX.matcher(label);
+                if(matcher.matches()) {
+                    String base = matcher.group(1);
+                    if(matcher.groupCount() > 2 && matcher.group(3) != null) {
+                        int count = Integer.parseInt(matcher.group(3)) + 1;
+                        label = base + "(Replaced By Fee #" + count + ")";
+                    } else {
+                        label = base + "(Replaced By Fee #2)";
+                    }
+                } else {
+                    label += (label.isEmpty() ? "" : " ") + "(Replaced By Fee)";
+                }
+
+                return new Payment(txOutput.getScript().getToAddresses()[0], label, txOutput.getValue(), false);
             } catch(Exception e) {
+                log.error("Error creating RBF payment", e);
                 return null;
             }
         }).filter(Objects::nonNull).collect(Collectors.toList());
+
+        if(payments.isEmpty()) {
+            AppServices.showErrorDialog("Replace By Fee Error", "Error creating RBF transaction, check log for details");
+            return;
+        }
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, blockTransaction.getFee(), true)));
