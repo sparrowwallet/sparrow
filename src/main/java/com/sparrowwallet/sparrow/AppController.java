@@ -837,7 +837,7 @@ public class AppController implements Initializable {
         }
 
         Storage storage = new Storage(Storage.getWalletFile(wallet.getName()));
-        WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.UPDATE_NEW);
+        WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.UPDATE_NEW);
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(password.get().length() == 0) {

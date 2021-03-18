@@ -716,7 +716,7 @@ public class HeadersController extends TransactionFormController implements Init
         File file = headersForm.getAvailableWallets().get(headersForm.getSigningWallet()).getWalletFile();
 
         if(copy.isEncrypted()) {
-            WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());

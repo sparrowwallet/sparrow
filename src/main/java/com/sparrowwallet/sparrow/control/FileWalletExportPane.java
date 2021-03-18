@@ -93,7 +93,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         Wallet copy = wallet.copy();
 
         if(copy.isEncrypted()) {
-            WalletPasswordDialog dlg = new WalletPasswordDialog(WalletPasswordDialog.PasswordRequirement.LOAD);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 final File walletFile = AppServices.get().getOpenWallets().get(wallet).getWalletFile();

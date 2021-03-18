@@ -25,12 +25,8 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private final CheckBox deleteBackups;
     private boolean addingPassword;
 
-    public WalletPasswordDialog(PasswordRequirement requirement) {
-        this(null, requirement);
-    }
-
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement) {
-        this(null, requirement, false);
+        this(walletName, requirement, false);
     }
 
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword) {
@@ -135,10 +131,10 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
 
     public enum PasswordRequirement {
         LOAD("Please enter the wallet password:", "Unlock"),
-        UPDATE_NEW("Add a password to the wallet?\nLeave empty for none:", "No Password"),
-        UPDATE_EMPTY("This wallet has no password.\nAdd a password to the wallet?\nLeave empty for none:", "No Password"),
+        UPDATE_NEW("Add a password to the wallet?\nLeave empty for no password:", "No Password"),
+        UPDATE_EMPTY("This wallet has no password.\nAdd a password to the wallet?\nLeave empty for no password:", "No Password"),
         UPDATE_SET("Please re-enter the wallet password:", "Verify Password"),
-        UPDATE_CHANGE("Enter the new wallet password.\nLeave empty for none:", "No Password");
+        UPDATE_CHANGE("Enter the new wallet password.\nLeave empty for no password:", "No Password");
 
         private final String description;
         private final String okButtonText;
