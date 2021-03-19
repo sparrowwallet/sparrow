@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 public class SendController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SendController.class);
 
-    public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50, 100, 500);
+    public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
     public static final List<Long> FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L);
 
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
