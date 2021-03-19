@@ -345,7 +345,7 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         updateBirthDate(event.getWalletFile(), event.getWallet());
     }
 
@@ -404,9 +404,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
-                    if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW || requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_CHANGE) {
-                        EventManager.get().post(new RequestOpenWalletsEvent());
-                    }
+                    EventManager.get().post(new RequestOpenWalletsEvent());
                 } catch (IOException e) {
                     log.error("Error saving wallet", e);
                     AppServices.showErrorDialog("Error saving wallet", e.getMessage());
@@ -450,10 +448,7 @@ public class SettingsController extends WalletFormController implements Initiali
                         walletForm.getWallet().encrypt(key);
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();
-
-                        if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_NEW || requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY) {
-                            EventManager.get().post(new RequestOpenWalletsEvent());
-                        }
+                        EventManager.get().post(new RequestOpenWalletsEvent());
                     } catch (Exception e) {
                         log.error("Error saving wallet", e);
                         AppServices.showErrorDialog("Error saving wallet", e.getMessage());

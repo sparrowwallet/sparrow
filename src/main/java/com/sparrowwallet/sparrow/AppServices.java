@@ -585,7 +585,7 @@ public class AppServices {
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         restartBwt(event.getWallet());
     }
 

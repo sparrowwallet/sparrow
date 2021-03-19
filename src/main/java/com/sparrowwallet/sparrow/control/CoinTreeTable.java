@@ -6,7 +6,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletDataChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
-import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
@@ -92,7 +92,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                     EventManager.get().post(new WalletDataChangedEvent(wallet));
                     //Trigger full wallet rescan
                     wallet.clearHistory();
-                    EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, storage.getWalletFile()));
+                    EventManager.get().post(new WalletAddressesChangedEvent(wallet, pastWallet, storage.getWalletFile()));
                 }
             });
             if(wallet.getBirthDate() == null) {

@@ -1,8 +1,10 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
 
@@ -52,6 +54,8 @@ public class SettingsWalletForm extends WalletForm {
         save();
 
         if(refreshAll) {
+            EventManager.get().post(new WalletAddressesChangedEvent(wallet, pastWallet, getWalletFile()));
+        } else {
             EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, getWalletFile()));
         }
     }
@@ -91,6 +95,10 @@ public class SettingsWalletForm extends WalletForm {
 
         //TODO: Determine if Miniscript has changed for custom policies
 
+        if(!Objects.equals(getNumSignaturesRequired(original.getDefaultPolicy()), getNumSignaturesRequired(changed.getDefaultPolicy()))) {
+            return true;
+        }
+
         if(original.getKeystores().size() != changed.getKeystores().size()) {
             return true;
         }
@@ -109,5 +117,9 @@ public class SettingsWalletForm extends WalletForm {
         }
 
         return false;
+    }
+
+    private Integer getNumSignaturesRequired(Policy policy) {
+        return policy == null ? null : policy.getNumSignaturesRequired();
     }
 }

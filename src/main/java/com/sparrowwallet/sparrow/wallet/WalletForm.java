@@ -265,17 +265,20 @@ public class WalletForm {
     public void walletSettingsChanged(WalletSettingsChangedEvent event) {
         if(event.getWalletFile().equals(storage.getWalletFile())) {
             wallet = event.getWallet();
-            walletTransactionsEntry = null;
-            walletUtxosEntry = null;
-            accountEntries.clear();
-            EventManager.get().post(new WalletNodesChangedEvent(wallet));
 
-            //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
-            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                savedPastWallet = event.getPastWallet();
+            if(event instanceof WalletAddressesChangedEvent) {
+                walletTransactionsEntry = null;
+                walletUtxosEntry = null;
+                accountEntries.clear();
+                EventManager.get().post(new WalletNodesChangedEvent(wallet));
+
+                //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
+                if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                    savedPastWallet = event.getPastWallet();
+                }
+
+                refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
             }
-
-            refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
         }
     }
 

@@ -5,7 +5,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.SendActionEvent;
-import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -106,7 +106,7 @@ public class WalletController extends WalletFormController implements Initializa
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         if(event.getWalletFile().equals(walletForm.getWalletFile())) {
             configure(event.getWallet().isValid());
         }

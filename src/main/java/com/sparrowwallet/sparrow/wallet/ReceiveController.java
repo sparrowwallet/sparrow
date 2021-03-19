@@ -258,7 +258,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         displayAddress.setUserData(null);
     }
 

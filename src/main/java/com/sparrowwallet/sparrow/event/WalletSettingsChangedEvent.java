@@ -5,11 +5,9 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.io.File;
 
 /**
- * This event is posted when a wallet's settings are changed (keystores, policy, script type).
- * This event marks a fundamental change that is used to update application level UI, clear node entry caches and similar. It should only be subscribed to by application-level classes.
- * Note that WalletForm does not listen to this event to save the wallet, since the wallet is foreground saved directly in SettingsController before this event is posted.
- * This is because any failure in saving the wallet must be immediately reported to the user.
- * Note that all wallet detail controllers that share a WalletForm, and that class posts WalletNodesChangedEvent once it has cleared it's entry caches.
+ * This event is posted when a wallet's settings are changed in a way that does not update the wallet addresses or history.
+ * For example, changing the keystore source or label will trigger this event, which updates the wallet but avoids a full wallet refresh.
+ * It is impossible for the validity of a wallet to change on this event - listen for WalletAddressesChangedEvent for this
  */
 public class WalletSettingsChangedEvent extends WalletChangedEvent {
     private final Wallet pastWallet;

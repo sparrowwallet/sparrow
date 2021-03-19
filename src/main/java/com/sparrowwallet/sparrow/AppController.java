@@ -921,7 +921,7 @@ public class AppController implements Initializable {
             Wallet pastWallet = wallet.copy();
             walletTabData.getStorage().backupTempWallet();
             wallet.clearHistory();
-            EventManager.get().post(new WalletSettingsChangedEvent(wallet, pastWallet, walletTabData.getStorage().getWalletFile()));
+            EventManager.get().post(new WalletAddressesChangedEvent(wallet, pastWallet, walletTabData.getStorage().getWalletFile()));
         }
     }
 
@@ -1296,7 +1296,7 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         Tab tab = tabs.getSelectionModel().getSelectedItem();
         TabData tabData = (TabData)tab.getUserData();
         if(tabData instanceof WalletTabData) {
