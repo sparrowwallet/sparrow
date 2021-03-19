@@ -65,6 +65,8 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private TabPane keystoreTabs;
 
+    @FXML Button export;
+
     @FXML
     private Button apply;
 
@@ -221,6 +223,7 @@ public class SettingsController extends WalletFormController implements Initiali
             scriptType.getSelectionModel().select(walletForm.getWallet().getScriptType());
         }
 
+        export.setDisable(!walletForm.getWallet().isValid());
         revert.setDisable(true);
         apply.setDisable(true);
     }
@@ -312,6 +315,11 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
+    public void exportWallet(ActionEvent event) {
+        WalletExportDialog dlg = new WalletExportDialog(walletForm.getWallet());
+        dlg.showAndWait();
+    }
+
     @Override
     protected String describeKeystore(Keystore keystore) {
         if(!keystore.isValid()) {
@@ -341,6 +349,14 @@ public class SettingsController extends WalletFormController implements Initiali
 
             revert.setDisable(false);
             apply.setDisable(!wallet.isValid());
+            export.setDisable(true);
+        }
+    }
+
+    @Subscribe
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        if(event.getWalletFile().equals(walletForm.getWalletFile())) {
+            export.setDisable(!event.getWallet().isValid());
         }
     }
 

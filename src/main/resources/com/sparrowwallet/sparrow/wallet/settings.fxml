@@ -112,6 +112,9 @@
             <padding>
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
+            <HBox AnchorPane.leftAnchor="0" spacing="20">
+                <Button fx:id="export" text="Export..." onAction="#exportWallet" />
+            </HBox>
             <HBox AnchorPane.rightAnchor="10" spacing="20">
                 <Button text="Advanced..." onAction="#showAdvanced" />
                 <Button fx:id="revert" text="Revert" cancelButton="true" />
