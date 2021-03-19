@@ -63,6 +63,7 @@ public enum FeeRatesSource {
         try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
             Gson gson = new Gson();
             ThreeTierRates threeTierRates = gson.fromJson(reader, ThreeTierRates.class);
+            Double lastRate = null;
             for(Integer blockTarget : defaultblockTargetFeeRates.keySet()) {
                 if(blockTarget < BLOCKS_IN_HALF_HOUR) {
                     blockTargetFeeRates.put(blockTarget, threeTierRates.fastestFee);
@@ -75,6 +76,11 @@ public enum FeeRatesSource {
                 } else {
                     blockTargetFeeRates.put(blockTarget, defaultblockTargetFeeRates.get(blockTarget));
                 }
+
+                if(lastRate != null) {
+                    blockTargetFeeRates.put(blockTarget, Math.min(lastRate, blockTargetFeeRates.get(blockTarget)));
+                }
+                lastRate = blockTargetFeeRates.get(blockTarget);
             }
 
             if(threeTierRates.minimumFee != null) {
