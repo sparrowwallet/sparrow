@@ -182,15 +182,24 @@ jlink {
     }
 }
 
+task removeGroupWritePermission(type: Exec) {
+    commandLine 'chmod', '-R', 'g-w', "$buildDir/jpackage/Sparrow"
+}
+
 task packageZipDistribution(type: Zip) {
     archiveFileName = "Sparrow-${sparrowVersion}.zip"
     destinationDirectory = file("$buildDir/jpackage")
-    from "$buildDir/jpackage/Sparrow"
+    from("$buildDir/jpackage/") {
+        include "Sparrow/**"
+    }
 }
 
 task packageTarDistribution(type: Tar) {
+    dependsOn removeGroupWritePermission
     archiveFileName = "sparrow-${sparrowVersion}.tar.gz"
     destinationDirectory = file("$buildDir/jpackage")
     compression = Compression.GZIP
-    from "$buildDir/jpackage/Sparrow"
+    from("$buildDir/jpackage/") {
+        include "Sparrow/**"
+    }
 }
