@@ -181,3 +181,16 @@ jlink {
         }
     }
 }
+
+task packageZipDistribution(type: Zip) {
+    archiveFileName = "Sparrow-${sparrowVersion}.zip"
+    destinationDirectory = file("$buildDir/jpackage")
+    from "$buildDir/jpackage/Sparrow"
+}
+
+task packageTarDistribution(type: Tar) {
+    archiveFileName = "sparrow-${sparrowVersion}.tar.gz"
+    destinationDirectory = file("$buildDir/jpackage")
+    compression = Compression.GZIP
+    from "$buildDir/jpackage/Sparrow"
+}

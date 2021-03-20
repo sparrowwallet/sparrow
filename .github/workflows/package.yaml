@@ -32,8 +32,16 @@ jobs:
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
         run: ./gradlew jpackage
+      - name: Package zip distribution
+        if: ${{ runner.os == 'Windows' }}
+        run: ./gradlew packageZipDistribution
+      - name: Package tar distribution
+        if: ${{ runner.os == 'Linux' }}
+        run: ./gradlew packageTarDistribution
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
         with:
           name: Sparrow Build - ${{ runner.os }}
-          path: build/jpackage/*
+          path: |
+            build/jpackage/*
+            !build/jpackage/Sparrow/
