@@ -29,6 +29,8 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ElectrumServer {
@@ -45,6 +47,8 @@ public class ElectrumServer {
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static String bwtElectrumServer;
+
+    private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed:[^\"]*)\".*");
 
     private static synchronized Transport getTransport() throws ServerException {
         if(transport == null) {
@@ -824,11 +828,16 @@ public class ElectrumServer {
                                 bwtStartCondition.await();
 
                                 if(!bwt.isReady()) {
-                                    if(bwtStartException != null && bwtStartException.getMessage().contains("Wallet file not specified")) {
-                                        throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
-                                    } else {
-                                        throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
+                                    if(bwtStartException != null) {
+                                        Matcher walletLoadingMatcher = RPC_WALLET_LOADING_PATTERN.matcher(bwtStartException.getMessage());
+                                        if(bwtStartException.getMessage().contains("Wallet file not specified")) {
+                                            throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
+                                        } else if(walletLoadingMatcher.matches() && walletLoadingMatcher.group(1) != null) {
+                                            throw new ServerException(walletLoadingMatcher.group(1));
+                                        }
                                     }
+
+                                    throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
                                 }
                             } catch(InterruptedException e) {
                                 Thread.currentThread().interrupt();
