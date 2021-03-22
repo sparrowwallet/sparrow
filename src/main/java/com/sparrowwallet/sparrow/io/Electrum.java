@@ -14,6 +14,8 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -22,6 +24,8 @@ import java.util.*;
 import java.util.zip.InflaterInputStream;
 
 public class Electrum implements KeystoreFileImport, WalletImport, WalletExport {
+    private static final Logger log = LoggerFactory.getLogger(Electrum.class);
+
     @Override
     public String getName() {
         return "Electrum";
@@ -246,7 +250,8 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
             return wallet;
         } catch (Exception e) {
-            throw new ImportException(e);
+            log.error("Error importing Electrum Wallet", e);
+            throw new ImportException("Error importing Electrum Wallet", e);
         }
     }
 
@@ -273,7 +278,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
-    public String getExportFileExtension() {
+    public String getExportFileExtension(Wallet wallet) {
         return "json";
     }
 
@@ -350,7 +355,8 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             outputStream.flush();
             outputStream.close();
         } catch (Exception e) {
-            throw new ExportException(e);
+            log.error("Error exporting Electrum Wallet", e);
+            throw new ExportException("Error exporting Electrum Wallet", e);
         }
     }
 
@@ -377,6 +383,11 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     @Override
     public String getWalletExportDescription() {
         return "Export this wallet as an Electrum wallet file.";
+    }
+
+    @Override
+    public boolean walletExportRequiresDecryption() {
+        return true;
     }
 
     private static class ElectrumJsonWallet {

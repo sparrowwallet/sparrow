@@ -9,6 +9,8 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
@@ -18,6 +20,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
+    private static final Logger log = LoggerFactory.getLogger(ColdcardSinglesig.class);
+
     @Override
     public String getName() {
         return "Coldcard";
@@ -82,7 +86,8 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                 }
             }
         } catch (Exception e) {
-            throw new ImportException(e);
+            log.error("Error getting Coldcard keystore", e);
+            throw new ImportException("Error getting Coldcard keystore", e);
         }
 
         throw new ImportException("Correct derivation not found for script type: " + scriptType);

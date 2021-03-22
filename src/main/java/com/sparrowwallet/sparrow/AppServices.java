@@ -334,7 +334,7 @@ public class AppServices {
             stage.setMinWidth(650);
             stage.setMinHeight(730);
             stage.setScene(scene);
-            stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/image/sparrow.png")));
+            stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/image/sparrow-large.png")));
 
             appController.initializeView();
             stage.show();
@@ -453,7 +453,7 @@ public class AppServices {
 
     public static void setStageIcon(Window window) {
         Stage stage = (Stage)window;
-        stage.getIcons().add(new Image(AppServices.class.getResourceAsStream("/image/sparrow.png")));
+        stage.getIcons().add(new Image(AppServices.class.getResourceAsStream("/image/sparrow-large.png")));
 
         if(stage.getScene() != null && Config.get().getTheme() == Theme.DARK) {
             stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());

@@ -7,6 +7,8 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +17,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 public class SpecterDIY implements KeystoreFileImport {
+    private static final Logger log = LoggerFactory.getLogger(SpecterDIY.class);
+
     @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
@@ -34,7 +38,8 @@ public class SpecterDIY implements KeystoreFileImport {
 
             return keystore;
         } catch(IOException e) {
-            throw new ImportException(e);
+            log.error("Error getting Specter DIY keystore", e);
+            throw new ImportException("Error getting Specter DIY keystore", e);
         }
     }
 

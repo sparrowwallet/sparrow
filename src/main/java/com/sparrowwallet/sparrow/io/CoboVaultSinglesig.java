@@ -7,6 +7,8 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
@@ -14,6 +16,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
+    private static final Logger log = LoggerFactory.getLogger(CoboVaultSinglesig.class);
+
     @Override
     public String getName() {
         return "Cobo Vault";
@@ -53,7 +57,8 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
 
             return keystore;
         } catch (Exception e) {
-            throw new ImportException(e);
+            log.error("Error getting Cobo Vault keystore", e);
+            throw new ImportException("Error getting Cobo Vault keystore", e);
         }
     }
 

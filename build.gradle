@@ -115,7 +115,7 @@ run {
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow"]
 
     if(os.macOsX) {
-        applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow.png",
+        applicationDefaultJvmArgs += ["-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow-large.png",
                                       "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
     }
 }

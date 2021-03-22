@@ -7,6 +7,8 @@ import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.InputStream;
@@ -15,6 +17,8 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class SpecterDesktop implements WalletImport, WalletExport {
+    private static final Logger log = LoggerFactory.getLogger(SpecterDesktop.class);
+
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
@@ -29,7 +33,8 @@ public class SpecterDesktop implements WalletImport, WalletExport {
             outputStream.flush();
             outputStream.close();
         } catch(Exception e) {
-            throw new ExportException(e);
+            log.error("Error exporting Specter Desktop wallet", e);
+            throw new ExportException("Error exporting Specter Desktop wallet", e);
         }
     }
 
@@ -39,7 +44,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
     }
 
     @Override
-    public String getExportFileExtension() {
+    public String getExportFileExtension(Wallet wallet) {
         return "json";
     }
 
@@ -68,7 +73,8 @@ public class SpecterDesktop implements WalletImport, WalletExport {
                 return wallet;
             }
         } catch(Exception e) {
-            throw new ImportException(e);
+            log.error("Error importing Specter Desktop wallet", e);
+            throw new ImportException("Error importing Specter Desktop wallet", e);
         }
 
         throw new ImportException("File was not a valid Specter Desktop wallet");
@@ -97,6 +103,11 @@ public class SpecterDesktop implements WalletImport, WalletExport {
     @Override
     public WalletModel getWalletModel() {
         return WalletModel.SPECTER_DESKTOP;
+    }
+
+    @Override
+    public boolean walletExportRequiresDecryption() {
+        return false;
     }
 
     public static class SpecterWallet {

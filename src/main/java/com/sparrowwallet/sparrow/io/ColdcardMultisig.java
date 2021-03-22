@@ -11,6 +11,8 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -19,6 +21,8 @@ import java.util.List;
 import java.util.Set;
 
 public class ColdcardMultisig implements WalletImport, KeystoreFileImport, WalletExport {
+    private static final Logger log = LoggerFactory.getLogger(ColdcardMultisig.class);
+
     @Override
     public String getName() {
         return "Coldcard Multisig";
@@ -81,7 +85,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     }
 
     @Override
-    public String getExportFileExtension() {
+    public String getExportFileExtension(Wallet wallet) {
         return "txt";
     }
 
@@ -146,7 +150,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
             return wallet;
         } catch(Exception e) {
-            throw new ImportException(e);
+            log.error("Error importing Coldcard multisig wallet", e);
+            throw new ImportException("Error importing Coldcard multisig wallet", e);
         }
     }
 
@@ -199,7 +204,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             writer.flush();
             writer.close();
         } catch(Exception e) {
-            throw new ExportException(e);
+            log.error("Error exporting Coldcard multisig wallet", e);
+            throw new ExportException("Error exporting Coldcard multisig wallet", e);
         }
     }
 
@@ -225,6 +231,11 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public boolean isWalletExportScannable() {
+        return false;
+    }
+
+    @Override
+    public boolean walletExportRequiresDecryption() {
         return false;
     }
 }

@@ -81,7 +81,10 @@ public class FileWalletExportPane extends TitledDescriptionPane {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
-        fileChooser.setInitialFileName(wallet.getName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase() + "." + exporter.getExportFileExtension());
+        String extension = exporter.getExportFileExtension(wallet);
+        fileChooser.setInitialFileName(wallet.getName() + "-" +
+                exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "") +
+                (extension == null || extension.isEmpty() ? "" : "." + extension));
 
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
@@ -90,9 +93,8 @@ public class FileWalletExportPane extends TitledDescriptionPane {
     }
 
     private void exportWallet(File file) {
-        Wallet copy = wallet.copy();
-
-        if(copy.isEncrypted()) {
+        if(wallet.isEncrypted() && exporter.walletExportRequiresDecryption()) {
+            Wallet copy = wallet.copy();
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
@@ -101,7 +103,12 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletFile, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
-                    exportWallet(file, decryptedWallet);
+
+                    try {
+                        exportWallet(file, decryptedWallet);
+                    } finally {
+                        decryptedWallet.clearPrivate();
+                    }
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletFile, TimedEvent.Action.END, "Failed"));
@@ -111,19 +118,19 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 decryptWalletService.start();
             }
         } else {
-            exportWallet(file, copy);
+            exportWallet(file, wallet);
         }
     }
 
-    private void exportWallet(File file, Wallet decryptedWallet) {
+    private void exportWallet(File file, Wallet exportWallet) {
         try {
             if(file != null) {
                 OutputStream outputStream = new FileOutputStream(file);
-                exporter.exportWallet(decryptedWallet, outputStream);
-                EventManager.get().post(new WalletExportEvent(decryptedWallet));
+                exporter.exportWallet(exportWallet, outputStream);
+                EventManager.get().post(new WalletExportEvent(exportWallet));
             } else {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                exporter.exportWallet(decryptedWallet, outputStream);
+                exporter.exportWallet(exportWallet, outputStream);
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
@@ -138,8 +145,6 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 errorMessage = e.getCause().getMessage();
             }
             setError("Export Error", errorMessage);
-        } finally {
-            decryptedWallet.clearPrivate();
         }
     }
 }
