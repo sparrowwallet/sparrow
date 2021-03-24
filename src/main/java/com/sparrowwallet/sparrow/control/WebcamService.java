@@ -6,7 +6,9 @@ import com.github.sarxos.webcam.WebcamResolution;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -20,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class WebcamService extends Service<Image> {
     private WebcamResolution resolution;
     private final WebcamListener listener;
+    private BooleanProperty opening = new SimpleBooleanProperty(false);
 
     private final ObjectProperty<Result> resultProperty = new SimpleObjectProperty<>(null);
 
@@ -41,7 +44,9 @@ public class WebcamService extends Service<Image> {
                         cam.addWebcamListener(listener);
                     }
 
+                    opening.set(true);
                     cam.open();
+                    opening.set(false);
                     while(!isCancelled()) {
                         if(cam.isImageNew()) {
                             BufferedImage bimg = cam.getImage();
@@ -49,10 +54,12 @@ public class WebcamService extends Service<Image> {
                             readQR(bimg);
                         }
                     }
-                    cam.close();
                     return getValue();
                 } finally {
-                    cam.close();
+                    opening.set(false);
+                    if(!cam.close()) {
+                        cam.close();
+                    }
                 }
             }
         };
@@ -88,5 +95,13 @@ public class WebcamService extends Service<Image> {
 
     public void setResolution(WebcamResolution resolution) {
         this.resolution = resolution;
+    }
+
+    public boolean isOpening() {
+        return opening.get();
+    }
+
+    public BooleanProperty openingProperty() {
+        return opening;
     }
 }
