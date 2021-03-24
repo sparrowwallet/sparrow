@@ -957,7 +957,7 @@ public class AppController implements Initializable {
             }
             Tab tab = new Tab("");
             Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
-            glyph.setFontSize(9.0);
+            glyph.setFontSize(10.0);
             glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
             Label tabLabel = new Label(name);
             tabLabel.setGraphic(glyph);
@@ -1101,7 +1101,7 @@ public class AppController implements Initializable {
 
             Tab tab = new Tab("");
             Glyph glyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
-            glyph.setFontSize(9.0);
+            glyph.setFontSize(10.0);
             glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
             Label tabLabel = new Label(tabName);
             tabLabel.setGraphic(glyph);
