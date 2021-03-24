@@ -929,6 +929,8 @@ public class SendController extends WalletFormController implements Initializabl
         mempoolSizeFeeRatesChart.update(getMempoolHistogram());
         if(targetBlocksField.isVisible()) {
             setFeeRate(event.getTargetBlockFeeRates().get(getTargetBlocks()));
+        } else {
+            setFeeRatePriority(getFeeRangeRate());
         }
         addFeeRangeTrackHighlight(0);
     }
