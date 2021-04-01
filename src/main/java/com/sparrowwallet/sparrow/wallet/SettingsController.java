@@ -316,8 +316,17 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     public void exportWallet(ActionEvent event) {
-        WalletExportDialog dlg = new WalletExportDialog(walletForm.getWallet());
-        dlg.showAndWait();
+        if(walletForm.getWalletFile() == null) {
+            throw new IllegalStateException("Cannot export unsaved wallet");
+        }
+
+        Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream().filter(entry -> walletForm.getWalletFile().equals(entry.getValue().getWalletFile())).map(Map.Entry::getKey).findFirst();
+        if(optWallet.isPresent()) {
+            WalletExportDialog dlg = new WalletExportDialog(optWallet.get());
+            dlg.showAndWait();
+        } else {
+            AppServices.showErrorDialog("Cannot export wallet", "Wallet cannot be exported, please save it first.");
+        }
     }
 
     @Override
