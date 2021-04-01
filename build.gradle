@@ -51,7 +51,7 @@ dependencies {
     implementation('com.github.arteam:simple-json-rpc-server:1.0') {
         exclude group: 'org.slf4j'
     }
-    implementation('com.sparrowwallet:hummingbird:1.5.4')
+    implementation('com.sparrowwallet:hummingbird:1.5.5')
     implementation('com.nativelibs4java:bridj:0.7-20140918-3') {
         exclude group: 'com.google.android.tools', module: 'dx'
     }
