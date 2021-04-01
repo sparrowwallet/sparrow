@@ -16,6 +16,7 @@ import com.sparrowwallet.drongo.protocol.Base43;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -193,6 +194,10 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         PSBT psbt = PSBT.fromString(complete);
                         result = new Result(psbt);
                         return;
+                    } catch(PSBTParseException e) {
+                        if(PSBT.isPSBT(complete)) {
+                            log.error("Error parsing PSBT", e);
+                        }
                     } catch(Exception e) {
                         //ignore, bytes not parsable as PSBT
                     }
@@ -241,6 +246,10 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     psbt = PSBT.fromString(qrtext);
                     result = new Result(psbt);
                     return;
+                } catch(PSBTParseException e) {
+                    if(PSBT.isPSBT(qrtext)) {
+                        log.error("Error parsing PSBT", e);
+                    }
                 } catch(Exception e) {
                     //Ignore, not parseable as Base64 or hex
                 }
@@ -299,6 +308,10 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     try {
                         PSBT psbt = new PSBT(urBytes);
                         return new Result(psbt);
+                    } catch(PSBTParseException e) {
+                        if(PSBT.isPSBT(urBytes)) {
+                            log.error("Error parsing PSBT", e);
+                        }
                     } catch(Exception e) {
                         //ignore, bytes not parsable as PSBT
                     }
