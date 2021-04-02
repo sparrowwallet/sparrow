@@ -680,10 +680,8 @@ public class HeadersController extends TransactionFormController implements Init
                 file = new File(file.getAbsolutePath() + ".psbt");
             }
 
-            try {
-                try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
-                    writer.print(headersForm.getPsbt().toBase64String());
-                }
+            try(FileOutputStream outputStream = new FileOutputStream(file)) {
+                outputStream.write(headersForm.getPsbt().serialize());
             } catch(IOException e) {
                 log.error("Error saving PSBT", e);
                 AppServices.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());

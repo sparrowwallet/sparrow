@@ -50,7 +50,10 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.StackPane;
-import javafx.stage.*;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
@@ -64,7 +67,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.*;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.*;
@@ -80,6 +82,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem saveTransaction;
+
+    @FXML
+    private Menu savePSBT;
 
     @FXML
     private MenuItem exportWallet;
@@ -243,6 +248,7 @@ public class AppController implements Initializable {
         openWalletsInNewWindows.setSelected(Config.get().isOpenWalletsInNewWindows());
         hideEmptyUsedAddresses.setSelected(Config.get().isHideEmptyUsedAddresses());
         showTxHex.setSelected(Config.get().isShowTransactionHex());
+        savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
 
@@ -482,45 +488,27 @@ public class AppController implements Initializable {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
             Transaction transaction = transactionTabData.getTransaction();
 
-            //Save a transaction if the PSBT is null or transaction has already been extracted, otherwise save PSBT
-            //The PSBT's transaction is not altered with transaction extraction, but the extracted transaction is stored in TransactionData
-            boolean saveTx = (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transaction);
-
             Stage window = new Stage();
             FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Save " + (saveTx ? "Transaction" : "PSBT"));
+            fileChooser.setTitle("Save Transaction");
 
-            String fileName = selectedTab.getText();
+            String fileName = ((Label)selectedTab.getGraphic()).getText();
             if(fileName != null && !fileName.isEmpty()) {
-                if(transactionTabData.getPsbt() != null) {
-                    if(!fileName.endsWith(".psbt")) {
-                        fileName += ".psbt";
-                    }
-                } else if(!fileName.endsWith(".txn")) {
-                    fileName += ".txn";
-                }
+               if(fileName.endsWith(".psbt")) {
+                   fileName = fileName.substring(0, fileName.length() - ".psbt".length());
+               }
 
-                if(saveTx && fileName.endsWith(".psbt")) {
-                    fileName = fileName.replace(".psbt", "") + ".txn";
-                }
+               if(!fileName.endsWith(".txn")) {
+                   fileName += ".txn";
+               }
 
-                fileChooser.setInitialFileName(fileName);
+               fileChooser.setInitialFileName(fileName);
             }
 
             File file = fileChooser.showSaveDialog(window);
             if(file != null) {
-                if(!saveTx && !file.getName().toLowerCase().endsWith(".psbt")) {
-                    file = new File(file.getAbsolutePath() + ".psbt");
-                }
-
-                try {
-                    try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
-                        if(saveTx) {
-                            writer.print(Utils.bytesToHex(transaction.bitcoinSerialize()));
-                        } else {
-                            writer.print(transactionTabData.getPsbt().toBase64String());
-                        }
-                    }
+                try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
+                    writer.print(Utils.bytesToHex(transaction.bitcoinSerialize()));
                 } catch(IOException e) {
                     log.error("Error saving transaction", e);
                     AppServices.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
@@ -529,6 +517,58 @@ public class AppController implements Initializable {
         }
     }
 
+    public void savePSBTBinary(ActionEvent event) {
+        savePSBT(false);
+    }
+
+    public void savePSBTText(ActionEvent event) {
+        savePSBT(true);
+    }
+
+    public void savePSBT(boolean asText) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.TRANSACTION) {
+            TransactionTabData transactionTabData = (TransactionTabData)tabData;
+
+            Stage window = new Stage();
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Save PSBT");
+
+            String fileName = ((Label)selectedTab.getGraphic()).getText();
+            if(fileName != null && !fileName.isEmpty()) {
+                if(!fileName.endsWith(".psbt")) {
+                    fileName += ".psbt";
+                }
+
+                if(asText) {
+                    fileName += ".txt";
+                }
+
+                fileChooser.setInitialFileName(fileName);
+            }
+
+            File file = fileChooser.showSaveDialog(window);
+            if(file != null) {
+                if(!asText && !file.getName().toLowerCase().endsWith(".psbt")) {
+                    file = new File(file.getAbsolutePath() + ".psbt");
+                }
+
+                try(FileOutputStream outputStream = new FileOutputStream(file)) {
+                    if(asText) {
+                        PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
+                        writer.print(transactionTabData.getPsbt().toBase64String());
+                        writer.flush();
+                    } else {
+                        outputStream.write(transactionTabData.getPsbt().serialize());
+                    }
+                } catch(IOException e) {
+                    log.error("Error saving PSBT", e);
+                    AppServices.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());
+                }
+            }
+        }
+    }
 
     public List<WalletTabData> getOpenWalletTabData() {
         List<WalletTabData> openWalletTabData = new ArrayList<>();
@@ -1065,7 +1105,7 @@ public class AppController implements Initializable {
                             //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
                             transactionTabData.getPsbt().combine(psbt);
                             if(name != null && !name.isEmpty()) {
-                                tab.setText(name);
+                                ((Label)tab.getGraphic()).setText(name);
                             }
 
                             EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
@@ -1080,7 +1120,7 @@ public class AppController implements Initializable {
                             }
 
                             if(name != null && !name.isEmpty()) {
-                                tab.setText(name);
+                                ((Label)tab.getGraphic()).setText(name);
                             }
 
                             EventManager.get().post(new PSBTFinalizedEvent(transactionTabData.getPsbt()));
@@ -1268,15 +1308,19 @@ public class AppController implements Initializable {
             if(event instanceof TransactionTabSelectedEvent) {
                 TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
                 TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
-                saveTransaction.setDisable(false);
-                saveTransaction.setText("Save " + (transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction() ? "Transaction..." : "PSBT..."));
+                if(transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction()) {
+                    saveTransaction.setVisible(true);
+                    saveTransaction.setDisable(false);
+                } else {
+                    saveTransaction.setVisible(false);
+                }
                 exportWallet.setDisable(true);
                 showTxHex.setDisable(false);
             } else if(event instanceof WalletTabSelectedEvent) {
                 WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
                 WalletTabData walletTabData = walletTabEvent.getWalletTabData();
+                saveTransaction.setVisible(true);
                 saveTransaction.setDisable(true);
-                saveTransaction.setText("Save Transaction...");
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
                 showTxHex.setDisable(true);
             }
@@ -1290,7 +1334,8 @@ public class AppController implements Initializable {
             if(tabData instanceof TransactionTabData) {
                 TransactionTabData transactionTabData = (TransactionTabData)tabData;
                 if(transactionTabData.getTransaction() == event.getFinalTransaction()) {
-                    saveTransaction.setText("Save Transaction...");
+                    saveTransaction.setVisible(true);
+                    saveTransaction.setDisable(false);
                 }
             }
         }

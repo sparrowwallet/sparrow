@@ -27,6 +27,10 @@
                             </items>
                         </Menu>
                         <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." accelerator="Shortcut+S" onAction="#saveTransaction"/>
+                        <Menu fx:id="savePSBT" mnemonicParsing="false" text="Save PSBT">
+                            <MenuItem text="As Binary..." onAction="#savePSBTBinary" accelerator="Shortcut+S"/>
+                            <MenuItem text="As Base64..." onAction="#savePSBTText"/>
+                        </Menu>
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
