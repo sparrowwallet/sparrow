@@ -78,6 +78,16 @@ public class Hwi {
         }
     }
 
+    public boolean togglePassphrase(Device device) throws ImportException {
+        try {
+            String output = execute(getDeviceCommand(device, Command.TOGGLE_PASSPHRASE));
+            isPromptActive = false;
+            return wasSuccessful(output);
+        } catch(IOException e) {
+            throw new ImportException(e);
+        }
+    }
+
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
         try {
             String output;
@@ -468,6 +478,24 @@ public class Hwi {
         }
     }
 
+    public static class TogglePassphraseService extends Service<Boolean> {
+        private final Device device;
+
+        public TogglePassphraseService(Device device) {
+            this.device = device;
+        }
+
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                protected Boolean call() throws ImportException {
+                    Hwi hwi = new Hwi();
+                    return hwi.togglePassphrase(device);
+                }
+            };
+        }
+    }
+
     public static class DisplayAddressService extends Service<String> {
         private final Device device;
         private final String passphrase;
@@ -595,6 +623,7 @@ public class Hwi {
         ENUMERATE("enumerate", true),
         PROMPT_PIN("promptpin", true),
         SEND_PIN("sendpin", false),
+        TOGGLE_PASSPHRASE("togglepassphrase", true),
         DISPLAY_ADDRESS("displayaddress", true),
         SIGN_MESSAGE("signmessage", true),
         GET_XPUB("getxpub", true),

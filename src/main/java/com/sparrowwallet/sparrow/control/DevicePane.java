@@ -325,11 +325,21 @@ public class DevicePane extends TitledDescriptionPane {
         passphrase.bind(passphraseField.textProperty());
         HBox.setHgrow(passphraseField, Priority.ALWAYS);
 
-        Button sendPassphraseButton = new Button("Send Passphrase");
+        SplitMenuButton sendPassphraseButton = new SplitMenuButton();
+        sendPassphraseButton.setText("Send Passphrase");
         sendPassphraseButton.setOnAction(event -> {
             setExpanded(false);
+            setDescription("Confirm passphrase on device...");
             sendPassphrase(passphrase.get());
         });
+
+        MenuItem removePassphrase = new MenuItem("Toggle Passphrase Off");
+        removePassphrase.setOnAction(event -> {
+            setExpanded(false);
+            setDescription("Toggling passphrase off, check device...");
+            togglePassphraseOff();
+        });
+        sendPassphraseButton.getItems().add(removePassphrase);
 
         HBox contentBox = new HBox();
         contentBox.setAlignment(Pos.TOP_RIGHT);
@@ -341,6 +351,35 @@ public class DevicePane extends TitledDescriptionPane {
         Platform.runLater(passphraseField::requestFocus);
 
         return contentBox;
+    }
+
+    private Node getTogglePassphraseOn() {
+        CopyableLabel label = new CopyableLabel("Passphrase is currently disabled");
+        HBox.setHgrow(label, Priority.ALWAYS);
+
+        Button togglePassphraseOn = new Button("Toggle Passphrase On");
+        togglePassphraseOn.setOnAction(event -> {
+            setExpanded(false);
+            hideButtons(importButton, signButton, displayAddressButton, signMessageButton);
+            setDescription("Toggling passphrase on, check device...");
+            togglePassphraseOn();
+        });
+
+        HBox contentBox = new HBox();
+        contentBox.setSpacing(20);
+        contentBox.setAlignment(Pos.CENTER_LEFT);
+        contentBox.getChildren().addAll(label, togglePassphraseOn);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+
+        return contentBox;
+    }
+
+    private void hideButtons(Node... buttons) {
+        for(Node button : buttons) {
+            if(button != null) {
+                button.setVisible(false);
+            }
+        }
     }
 
     private void promptPin() {
@@ -356,7 +395,7 @@ public class DevicePane extends TitledDescriptionPane {
             }
         });
         promptPinService.setOnFailed(workerStateEvent -> {
-            setError(promptPinService.getException().getMessage(), null);
+            setError("Error", promptPinService.getException().getMessage());
             unlockButton.setDisable(false);
         });
         promptPinService.start();
@@ -379,6 +418,7 @@ public class DevicePane extends TitledDescriptionPane {
                     setExpanded(true);
                 } else {
                     showOperationButton();
+                    setContent(getTogglePassphraseOn());
                 }
             } else {
                 setError("Incorrect PIN", null);
@@ -418,11 +458,41 @@ public class DevicePane extends TitledDescriptionPane {
             }
         });
         enumerateService.setOnFailed(workerStateEvent -> {
-            setError(enumerateService.getException().getMessage(), null);
+            setError("Error", enumerateService.getException().getMessage());
             setPassphraseButton.setDisable(false);
             setPassphraseButton.setVisible(true);
         });
         enumerateService.start();
+    }
+
+    private void togglePassphraseOff() {
+        Hwi.TogglePassphraseService togglePassphraseService = new Hwi.TogglePassphraseService(device);
+        togglePassphraseService.setOnSucceeded(workerStateEvent -> {
+            device.setNeedsPassphraseSent(false);
+            setPassphraseButton.setVisible(false);
+            setDescription("Unlocked");
+            showOperationButton();
+        });
+        togglePassphraseService.setOnFailed(workerStateEvent -> {
+            setError("Error", togglePassphraseService.getException().getMessage());
+        });
+        togglePassphraseService.start();
+    }
+
+    private void togglePassphraseOn() {
+        Hwi.TogglePassphraseService togglePassphraseService = new Hwi.TogglePassphraseService(device);
+        togglePassphraseService.setOnSucceeded(workerStateEvent -> {
+            device.setNeedsPassphraseSent(true);
+            setPassphraseButton.setVisible(true);
+            setPassphraseButton.setDisable(true);
+            setDescription("Enter passphrase");
+            setContent(getPassphraseEntry());
+            setExpanded(true);
+        });
+        togglePassphraseService.setOnFailed(workerStateEvent -> {
+            setError("Error", togglePassphraseService.getException().getMessage());
+        });
+        togglePassphraseService.start();
     }
 
     private void importKeystore(List<ChildNumber> derivation) {
@@ -439,7 +509,7 @@ public class DevicePane extends TitledDescriptionPane {
                 importXpub(derivation);
             });
             enumerateService.setOnFailed(workerStateEvent -> {
-                setError(enumerateService.getException().getMessage(), null);
+                setError("Error", enumerateService.getException().getMessage());
                 importButton.setDisable(false);
             });
             enumerateService.start();
