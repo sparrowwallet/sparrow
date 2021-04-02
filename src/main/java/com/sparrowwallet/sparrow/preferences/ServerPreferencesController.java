@@ -11,6 +11,7 @@ import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -35,13 +36,13 @@ import org.slf4j.LoggerFactory;
 import tornadofx.control.Field;
 import tornadofx.control.Form;
 
-import javax.net.ssl.SSLHandshakeException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.security.cert.CertificateFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 public class ServerPreferencesController extends PreferencesDetailController {
@@ -545,10 +546,27 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private void showConnectionFailure(Throwable exception) {
         log.error("Connection error", exception);
         String reason = exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
-        if(exception.getCause() != null && exception.getCause() instanceof SSLHandshakeException) {
-            reason = "SSL Handshake Error\n" + reason;
-        }
-        if(exception.getCause() != null && exception.getCause() instanceof TorControlError && exception.getCause().getMessage().contains("Failed to bind")) {
+        if(exception instanceof TlsServerException && exception.getCause() != null) {
+            TlsServerException tlsServerException = (TlsServerException)exception;
+            if(exception.getCause().getMessage().contains("PKIX path building failed")) {
+                File configCrtFile = Config.get().getElectrumServerCert();
+                File savedCrtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
+                if(configCrtFile == null && savedCrtFile != null) {
+                    Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
+                            "\n\nThis may indicate a man-in-the-middle attack!" +
+                            "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
+                    if(optButton.isPresent()) {
+                        if(optButton.get() == ButtonType.YES) {
+                            savedCrtFile.delete();
+                            Platform.runLater(this::startElectrumConnection);
+                            return;
+                        }
+                    }
+                }
+            }
+
+            reason = tlsServerException.getMessage() + "\n\n" + reason;
+        } else if(exception.getCause() != null && exception.getCause() instanceof TorControlError && exception.getCause().getMessage().contains("Failed to bind")) {
             reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
         }
 

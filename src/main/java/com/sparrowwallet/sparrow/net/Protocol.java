@@ -39,7 +39,7 @@ public enum Protocol {
     },
     SSL {
         @Override
-        public Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException {
+        public Transport getTransport(HostAndPort server) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
             if(isOnionAddress(server)) {
                 return new TorTcpOverTlsTransport(server);
             }
@@ -57,7 +57,7 @@ public enum Protocol {
         }
 
         @Override
-        public Transport getTransport(HostAndPort server, HostAndPort proxy) throws NoSuchAlgorithmException, KeyManagementException {
+        public Transport getTransport(HostAndPort server, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
             return new ProxyTcpOverTlsTransport(server, proxy);
         }
 
@@ -68,27 +68,27 @@ public enum Protocol {
     },
     HTTP {
         @Override
-        public Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException {
+        public Transport getTransport(HostAndPort server) {
             throw new UnsupportedOperationException("No transport supported for HTTP");
         }
 
         @Override
-        public Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        public Transport getTransport(HostAndPort server, File serverCert) {
             throw new UnsupportedOperationException("No transport supported for HTTP");
         }
 
         @Override
-        public Transport getTransport(HostAndPort server, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        public Transport getTransport(HostAndPort server, HostAndPort proxy) {
             throw new UnsupportedOperationException("No transport supported for HTTP");
         }
 
         @Override
-        public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+        public Transport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
             throw new UnsupportedOperationException("No transport supported for HTTP");
         }
     };
 
-    public abstract Transport getTransport(HostAndPort server) throws KeyManagementException, NoSuchAlgorithmException;
+    public abstract Transport getTransport(HostAndPort server) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
 
     public abstract Transport getTransport(HostAndPort server, File serverCert) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
 

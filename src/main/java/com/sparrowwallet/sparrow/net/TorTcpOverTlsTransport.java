@@ -17,7 +17,7 @@ import java.security.cert.CertificateException;
 public class TorTcpOverTlsTransport extends TcpOverTlsTransport {
     private static final Logger log = LoggerFactory.getLogger(TorTcpOverTlsTransport.class);
 
-    public TorTcpOverTlsTransport(HostAndPort server) throws NoSuchAlgorithmException, KeyManagementException {
+    public TorTcpOverTlsTransport(HostAndPort server) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         super(server);
     }
 
@@ -42,7 +42,7 @@ public class TorTcpOverTlsTransport extends TcpOverTlsTransport {
         }
 
         SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(socket, server.getHost(), server.getPortOrDefault(DEFAULT_PORT), true);
-        sslSocket.startHandshake();
+        startHandshake(sslSocket);
 
         return sslSocket;
     }

@@ -76,6 +76,7 @@ public class AppController implements Initializable {
     public static final double TAB_LABEL_GRAPHIC_OPACITY_INACTIVE = 0.8;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
+    public static final String CONNECTION_FAILED_PREFIX = "Connection failed: ";
 
     @FXML
     private MenuItem saveTransaction;
@@ -1451,8 +1452,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
-        String reason = event.getException().getCause() != null ? event.getException().getCause().getMessage() : event.getException().getMessage();
-        String status = "Connection failed: " + reason;
+        String status = CONNECTION_FAILED_PREFIX + event.getMessage();
         statusUpdated(new StatusEvent(status));
     }
 
@@ -1465,7 +1465,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
         serverToggle.setDisable(false);
-        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith("Connection error")) {
+        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith(CONNECTION_FAILED_PREFIX)) {
             statusUpdated(new StatusEvent("Disconnected"));
         }
         if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {

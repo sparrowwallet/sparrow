@@ -18,7 +18,7 @@ public class ProxyTcpOverTlsTransport extends TcpOverTlsTransport {
 
     private final HostAndPort proxy;
 
-    public ProxyTcpOverTlsTransport(HostAndPort server, HostAndPort proxy) throws KeyManagementException, NoSuchAlgorithmException {
+    public ProxyTcpOverTlsTransport(HostAndPort server, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         super(server);
         this.proxy = proxy;
     }
@@ -34,7 +34,7 @@ public class ProxyTcpOverTlsTransport extends TcpOverTlsTransport {
         Socket underlying = new Socket(new Proxy(Proxy.Type.SOCKS, proxyAddr));
         underlying.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
         SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(underlying, proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT), true);
-        sslSocket.startHandshake();
+        startHandshake(sslSocket);
 
         return sslSocket;
     }

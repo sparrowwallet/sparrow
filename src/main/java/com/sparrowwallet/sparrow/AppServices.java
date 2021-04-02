@@ -208,6 +208,31 @@ public class AppServices {
                 connectionService.setRestartOnFailure(false);
             }
 
+            if(failEvent.getSource().getException() instanceof TlsServerException && failEvent.getSource().getException().getCause() != null) {
+                TlsServerException tlsServerException = (TlsServerException)failEvent.getSource().getException();
+                connectionService.setRestartOnFailure(false);
+                if(tlsServerException.getCause().getMessage().contains("PKIX path building failed")) {
+                    File crtFile = Config.get().getElectrumServerCert();
+                    if(crtFile != null) {
+                        AppServices.showErrorDialog("SSL Handshake Failed", "The configured server certificate at " + crtFile.getAbsolutePath() + " did not match the certificate provided by the server at " + tlsServerException.getServer().getHost() + "." +
+                                "\n\nThis may indicate a man-in-the-middle attack!" +
+                                "\n\nChange the configured server certificate if you would like to proceed.");
+                    } else {
+                        crtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
+                        if(crtFile != null) {
+                            Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
+                                    "\n\nThis may indicate a man-in-the-middle attack!" +
+                                    "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
+                            if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
+                                crtFile.delete();
+                                Platform.runLater(() -> restartService(connectionService));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
             onlineProperty.removeListener(onlineServicesListener);
             onlineProperty.setValue(false);
             onlineProperty.addListener(onlineServicesListener);

@@ -24,6 +24,8 @@ import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -44,6 +46,7 @@ public class Storage {
     public static final String WINDOWS_SPARROW_DIR = "Sparrow";
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
+    public static final String CERTS_DIR = "certs";
     public static final String HEADER_MAGIC_1 = "SPRW1";
     private static final int BINARY_HEADER_LENGTH = 28;
     public static final String TEMP_BACKUP_EXTENSION = "tmp";
@@ -382,6 +385,37 @@ public class Storage {
         }
 
         return walletsDir;
+    }
+
+    public static File getCertificateFile(String host) {
+        File certsDir = getCertsDir();
+        File[] certs = certsDir.listFiles((dir, name) -> name.equals(host));
+        if(certs.length > 0) {
+            return certs[0];
+        }
+
+        return null;
+    }
+
+    public static void saveCertificate(String host, Certificate cert) {
+        try(FileWriter writer = new FileWriter(new File(getCertsDir(), host))) {
+            writer.write("-----BEGIN CERTIFICATE-----\n");
+            writer.write(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
+            writer.write("\n-----END CERTIFICATE-----\n");
+        } catch(CertificateEncodingException e) {
+            log.error("Error encoding PEM certificate", e);
+        } catch(IOException e) {
+            log.error("Error writing PEM certificate", e);
+        }
+    }
+
+    static File getCertsDir() {
+        File certsDir = new File(getSparrowDir(), CERTS_DIR);
+        if(!certsDir.exists()) {
+            certsDir.mkdirs();
+        }
+
+        return certsDir;
     }
 
     static File getSparrowDir() {
