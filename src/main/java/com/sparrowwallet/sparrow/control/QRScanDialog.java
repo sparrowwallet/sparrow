@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.github.sarxos.webcam.WebcamEvent;
 import com.github.sarxos.webcam.WebcamListener;
 import com.github.sarxos.webcam.WebcamResolution;
+import com.github.sarxos.webcam.WebcamUpdater;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
@@ -39,6 +40,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Borders;
 import org.slf4j.Logger;
@@ -67,6 +69,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
     private static final Pattern PART_PATTERN = Pattern.compile("p(\\d+)of(\\d+) (.+)");
 
+    private static final int SCAN_PERIOD_MILLIS = 100;
     private final ObjectProperty<WebcamResolution> webcamResolutionProperty = new SimpleObjectProperty<>(WebcamResolution.VGA);
 
     private final DoubleProperty percentComplete = new SimpleDoubleProperty(0.0);
@@ -79,7 +82,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             webcamResolutionProperty.set(WebcamResolution.HD);
         }
 
-        this.webcamService = new WebcamService(webcamResolutionProperty.get(), new QRScanListener());
+        this.webcamService = new WebcamService(webcamResolutionProperty.get(), new QRScanListener(), new ScanDelayCalculator());
+        webcamService.setPeriod(Duration.millis(SCAN_PERIOD_MILLIS));
+        webcamService.setRestartOnFailure(false);
         WebcamView webcamView = new WebcamView(webcamService);
 
         final DialogPane dialogPane = new QRScanDialogPane();
@@ -701,6 +706,12 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         public URException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    public static class ScanDelayCalculator implements WebcamUpdater.DelayCalculator {
+        public long calculateDelay(long snapshotDuration, double deviceFps) {
+            return Math.max(SCAN_PERIOD_MILLIS - snapshotDuration, 0L);
         }
     }
 }

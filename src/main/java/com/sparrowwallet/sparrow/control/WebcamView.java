@@ -1,7 +1,10 @@
 package com.sparrowwallet.sparrow.control;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
 import org.slf4j.Logger;
@@ -14,7 +17,9 @@ public class WebcamView {
     private final WebcamService service;
     private final Region view;
 
-    private final Label statusPlaceholder ;
+    private final Label statusPlaceholder;
+
+    private final ObjectProperty<Image> imageProperty = new SimpleObjectProperty<>(null);
 
     public WebcamView(WebcamService service) {
         this.service = service ;
@@ -23,22 +28,32 @@ public class WebcamView {
         // make the cam behave like a mirror:
         imageView.setScaleX(-1);
 
+        service.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                imageProperty.set(newValue);
+            }
+        });
+
         this.statusPlaceholder = new Label();
         this.view = new Region() {
             {
                 service.stateProperty().addListener((obs, oldState, newState) -> {
                     switch (newState) {
                         case READY:
-                            statusPlaceholder.setText("Initializing");
-                            getChildren().setAll(statusPlaceholder);
+                            if(imageProperty.get() == null) {
+                                statusPlaceholder.setText("Initializing");
+                                getChildren().setAll(statusPlaceholder);
+                            }
                             break ;
                         case SCHEDULED:
-                            statusPlaceholder.setText("Waiting");
-                            getChildren().setAll(statusPlaceholder);
+                            if(imageProperty.get() == null) {
+                                statusPlaceholder.setText("Waiting");
+                                getChildren().setAll(statusPlaceholder);
+                            }
                             break ;
                         case RUNNING:
                             imageView.imageProperty().unbind();
-                            imageView.imageProperty().bind(service.valueProperty());
+                            imageView.imageProperty().bind(imageProperty);
                             getChildren().setAll(imageView);
                             break ;
                         case CANCELLED:
