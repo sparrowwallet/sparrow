@@ -94,7 +94,7 @@ public class AppServices {
         @Override
         public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean online) {
             if(online) {
-                if(Config.get().requiresTor() && !isTorRunning()) {
+                if(Config.get().requiresInternalTor() && !isTorRunning()) {
                     torService.start();
                 } else {
                     restartServices();
@@ -122,7 +122,7 @@ public class AppServices {
         onlineProperty.addListener(onlineServicesListener);
 
         if(config.getMode() == Mode.ONLINE) {
-            if(config.requiresTor()) {
+            if(config.requiresInternalTor()) {
                 torService.start();
             } else {
                 restartServices();
@@ -233,6 +233,12 @@ public class AppServices {
                 }
             }
 
+            if(failEvent.getSource().getException() instanceof ProxyServerException && Config.get().isUseProxy() && Config.get().requiresTor()) {
+                Config.get().setUseProxy(false);
+                Platform.runLater(() -> restartService(torService));
+                return;
+            }
+
             onlineProperty.removeListener(onlineServicesListener);
             onlineProperty.setValue(false);
             onlineProperty.addListener(onlineServicesListener);
@@ -314,6 +320,23 @@ public class AppServices {
             EventManager.get().post(new TorReadyStatusEvent());
         });
         torService.setOnFailed(workerStateEvent -> {
+            Throwable exception = workerStateEvent.getSource().getException();
+            if(exception instanceof TorServerAlreadyBoundException) {
+                String proxyServer = Config.get().getProxyServer();
+                if(proxyServer == null || proxyServer.equals("")) {
+                    proxyServer = "localhost:9050";
+                    Config.get().setProxyServer(proxyServer);
+                }
+
+                if(proxyServer.equals("localhost:9050") || proxyServer.equals("127.0.0.1:9050")) {
+                    Config.get().setUseProxy(true);
+                    torService.cancel();
+                    restartServices();
+                    EventManager.get().post(new TorExternalStatusEvent());
+                    return;
+                }
+            }
+
             EventManager.get().post(new TorFailedStatusEvent(workerStateEvent.getSource().getException()));
         });
 

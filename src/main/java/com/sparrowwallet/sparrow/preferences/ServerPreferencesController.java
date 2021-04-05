@@ -306,7 +306,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
             testResults.setText("Connecting to " + config.getServerAddress() + "...");
 
-            if(Config.get().requiresTor() && Tor.getDefault() == null) {
+            if(Config.get().requiresInternalTor() && Tor.getDefault() == null) {
                 startTor();
             } else {
                 startElectrumConnection();
@@ -430,8 +430,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
             Throwable exception = workerStateEvent.getSource().getException();
             if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER &&
-                    exception.getCause() != null && exception.getCause() instanceof TorControlError && exception.getCause().getMessage().contains("Failed to bind") &&
-                    useProxyOriginal == null && !useProxy.isSelected() && proxyHost.getText().isEmpty() && proxyPort.getText().isEmpty()) {
+                    exception instanceof TorServerAlreadyBoundException &&
+                    useProxyOriginal == null && !useProxy.isSelected() &&
+                    (proxyHost.getText().isEmpty() || proxyHost.getText().equals("localhost") || proxyHost.getText().equals("127.0.0.1")) &&
+                    (proxyPort.getText().isEmpty() || proxyPort.getText().equals("9050"))) {
                 useProxy.setSelected(true);
                 proxyHost.setText("localhost");
                 proxyPort.setText("9050");
@@ -566,7 +568,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
 
             reason = tlsServerException.getMessage() + "\n\n" + reason;
-        } else if(exception.getCause() != null && exception.getCause() instanceof TorControlError && exception.getCause().getMessage().contains("Failed to bind")) {
+        } else if(exception instanceof ProxyServerException) {
+            reason += ". Check if the proxy server is running.";
+        } else if(exception instanceof TorServerAlreadyBoundException) {
             reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
         }
 

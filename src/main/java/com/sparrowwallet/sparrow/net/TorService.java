@@ -32,7 +32,7 @@ public class TorService extends ScheduledService<NativeTor> {
     @Override
     protected Task<NativeTor> createTask() {
         return new Task<>() {
-            protected NativeTor call() throws IOException {
+            protected NativeTor call() throws IOException, TorServerException {
                 if(Tor.getDefault() == null) {
                     Path path = Files.createTempDirectory(TOR_DIR_PREFIX);
                     File torInstallDir = path.toFile();
@@ -45,11 +45,15 @@ public class TorService extends ScheduledService<NativeTor> {
 
                         return new NativeTor(torInstallDir, Collections.emptyList(), override);
                     } catch(TorCtlException e) {
-                        log.error("Failed to start Tor", e);
                         if(e.getCause() instanceof TorControlError) {
-                            throw new IOException("Failed to start Tor", e.getCause());
+                            if(e.getCause().getMessage().contains("Failed to bind")) {
+                                throw new TorServerAlreadyBoundException("Tor server already bound", e.getCause());
+                            }
+                            log.error("Failed to start Tor", e);
+                            throw new TorServerException("Failed to start Tor", e.getCause());
                         } else {
-                            throw new IOException("Failed to start Tor", e);
+                            log.error("Failed to start Tor", e);
+                            throw new TorServerException("Failed to start Tor", e);
                         }
                     }
                 }

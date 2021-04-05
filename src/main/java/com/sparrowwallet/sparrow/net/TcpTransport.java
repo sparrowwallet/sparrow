@@ -196,6 +196,10 @@ public class TcpTransport implements Transport, Closeable {
         } catch(SSLHandshakeException e) {
             throw new TlsServerException(server, e);
         } catch(IOException e) {
+            if(e.getStackTrace().length > 0 && e.getStackTrace()[0].getClassName().contains("SocksSocketImpl")) {
+                throw new ProxyServerException(e);
+            }
+
             throw new ServerException(e);
         }
     }

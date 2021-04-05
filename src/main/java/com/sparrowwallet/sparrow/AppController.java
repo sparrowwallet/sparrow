@@ -1634,6 +1634,12 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void torExternalStatus(TorExternalStatusEvent event) {
+        serverToggle.setDisable(false);
+        statusUpdated(new StatusEvent(event.getStatus()));
+    }
+
+    @Subscribe
     public void newBlock(NewBlockEvent event) {
         setServerToggleTooltip(event.getHeight());
     }

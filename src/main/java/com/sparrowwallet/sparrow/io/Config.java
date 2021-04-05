@@ -303,8 +303,16 @@ public class Config {
         return getServerType() == ServerType.BITCOIN_CORE ? getCoreServer() : (getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? getPublicElectrumServer() : getElectrumServer());
     }
 
+    public boolean requiresInternalTor() {
+        if(isUseProxy()) {
+            return false;
+        }
+
+        return requiresTor();
+    }
+
     public boolean requiresTor() {
-        if(isUseProxy() || !hasServerAddress()) {
+        if(!hasServerAddress()) {
             return false;
         }
 
