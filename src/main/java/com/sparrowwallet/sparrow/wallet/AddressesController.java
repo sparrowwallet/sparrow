@@ -105,20 +105,17 @@ public class AddressesController extends WalletFormController implements Initial
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Addresses File");
         String extension = "txt";
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-" +
-                "addresses" +
-                (extension == null || extension.isEmpty() ? "" : "." + extension));
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-addresses.txt");
 
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
                 CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                writer.writeRecord(new String[] {"Index", "Payment Address", "Derivation"});
+                writer.writeRecord(new String[] {"Index", "Payment Address"});
                 for(Entry entry : getWalletForm().getNodeEntry(KeyPurpose.RECEIVE).getChildren()) {
                     NodeEntry childEntry = (NodeEntry)entry;
                     writer.write(childEntry.getNode().getIndex() + "");
-                    writer.write(childEntry.getNode().toString());
-                    writer.write(childEntry.getNode().getDerivationPath());
+                    writer.write(childEntry.getAddress().toString());
                     writer.endRecord();
                 }
                 writer.close();
