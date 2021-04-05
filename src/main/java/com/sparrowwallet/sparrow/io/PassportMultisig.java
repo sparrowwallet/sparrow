@@ -35,4 +35,14 @@ public class PassportMultisig extends ColdcardMultisig {
     public boolean isKeystoreImportScannable() {
         return true;
     }
+
+    @Override
+    public String getWalletExportDescription() {
+        return "Export file that can be read by your Passport using the Settings > Multisig Wallets > Import feature.";
+    }
+
+    @Override
+    public boolean isWalletExportScannable() {
+        return true;
+    }
 }

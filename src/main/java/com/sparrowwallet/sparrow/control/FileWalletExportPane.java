@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.CoboVaultMultisig;
+import com.sparrowwallet.sparrow.io.PassportMultisig;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.WalletExport;
 import javafx.geometry.Pos;
@@ -134,6 +135,8 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
+                } else if(exporter instanceof PassportMultisig) {
+                    qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
                 }
