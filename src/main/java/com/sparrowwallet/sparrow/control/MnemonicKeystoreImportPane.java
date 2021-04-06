@@ -30,6 +30,7 @@ import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -275,7 +276,14 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         int mnemonicSeedLength = wordEntriesProperty.get().size() * 11;
         int entropyLength = mnemonicSeedLength - (mnemonicSeedLength/33);
 
-        DeterministicSeed deterministicSeed = new DeterministicSeed(new SecureRandom(), entropyLength, "");
+        SecureRandom secureRandom;
+        try {
+            secureRandom = SecureRandom.getInstanceStrong();
+        } catch(NoSuchAlgorithmException e) {
+            secureRandom = new SecureRandom();
+        }
+
+        DeterministicSeed deterministicSeed = new DeterministicSeed(secureRandom, entropyLength, "");
         generatedMnemonicCode = deterministicSeed.getMnemonicCode();
 
         displayMnemonicCode();
