@@ -21,7 +21,14 @@
     </rowConstraints>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
         <top>
-            <Label styleClass="addresses-treetable-label" text="Receiving Addresses"/>
+            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <left>
+                    <Label styleClass="addresses-treetable-label" text="Receiving Addresses"/>
+                </left>
+                <right>
+                    <Button fx:id="receiveExportButton" text="Export File..." onAction="#exportReceiveAddresses" />
+                </right>
+            </BorderPane>
         </top>
         <center>
             <AddressTreeTable fx:id="receiveTable" />

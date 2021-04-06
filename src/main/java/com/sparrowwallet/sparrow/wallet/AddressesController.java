@@ -1,19 +1,30 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.csvreader.CsvWriter;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
 import com.sparrowwallet.sparrow.event.*;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ResourceBundle;
 
 public class AddressesController extends WalletFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(AddressesController.class);
+
     @FXML
     private AddressTreeTable receiveTable;
 
@@ -81,6 +92,37 @@ public class AddressesController extends WalletFormController implements Initial
         if(event.getWallet().equals(walletForm.getWallet())) {
             receiveTable.updateAll(getWalletForm().getNodeEntry(KeyPurpose.RECEIVE));
             changeTable.updateAll(getWalletForm().getNodeEntry(KeyPurpose.CHANGE));
+        }
+    }
+
+    public void exportReceiveAddresses(ActionEvent event) {
+      exportFile();
+    }
+
+    private void exportFile() {
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export Addresses File");
+        String extension = "txt";
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-addresses.txt");
+
+        File file = fileChooser.showSaveDialog(window);
+        if(file != null) {
+            try(FileOutputStream outputStream = new FileOutputStream(file)) {
+                CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
+                writer.writeRecord(new String[] {"Index", "Payment Address"});
+                for(Entry entry : getWalletForm().getNodeEntry(KeyPurpose.RECEIVE).getChildren()) {
+                    NodeEntry childEntry = (NodeEntry)entry;
+                    writer.write(childEntry.getNode().getIndex() + "");
+                    writer.write(childEntry.getAddress().toString());
+                    writer.endRecord();
+                }
+                writer.close();
+            } catch(IOException e) {
+                log.error("Error exporting addresses as CSV", e);
+                AppServices.showErrorDialog("Error exporting addresses as CSV", e.getMessage());
+            }
         }
     }
 }
