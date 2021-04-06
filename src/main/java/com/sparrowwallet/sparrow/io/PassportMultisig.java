@@ -38,7 +38,7 @@ public class PassportMultisig extends ColdcardMultisig {
 
     @Override
     public String getWalletExportDescription() {
-        return "Export file that can be read by your Passport using the Settings > Multisig Wallets > Import feature.";
+        return "As part of the New Account > Sparrow > Multisig flow, Passport will ask you to scan or import the multisig configuration from Sparrow.";
     }
 
     @Override
