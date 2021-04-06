@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.csvreader.CsvWriter;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -20,10 +21,12 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
 public class AddressesController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AddressesController.class);
+    public static final int DEFAULT_EXPORT_ADDRESSES_LENGTH = 250;
 
     @FXML
     private AddressTreeTable receiveTable;
@@ -96,26 +99,36 @@ public class AddressesController extends WalletFormController implements Initial
     }
 
     public void exportReceiveAddresses(ActionEvent event) {
-      exportFile();
+        exportAddresses(KeyPurpose.RECEIVE);
     }
 
-    private void exportFile() {
+    public void exportChangeAddresses(ActionEvent event) {
+        exportAddresses(KeyPurpose.CHANGE);
+    }
+
+    private void exportAddresses(KeyPurpose keyPurpose) {
         Stage window = new Stage();
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export Addresses File");
-        String extension = "txt";
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-addresses.txt");
+        fileChooser.setTitle("Export Addresses to CSV");
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-" + keyPurpose.name().toLowerCase() + "-addresses.txt");
+
+        Wallet copy = getWalletForm().getWallet().copy();
+        WalletNode purposeNode = copy.getNode(keyPurpose);
+        purposeNode.fillToIndex(Math.max(purposeNode.getChildren().size(), DEFAULT_EXPORT_ADDRESSES_LENGTH));
 
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
                 CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                writer.writeRecord(new String[] {"Index", "Payment Address"});
-                for(Entry entry : getWalletForm().getNodeEntry(KeyPurpose.RECEIVE).getChildren()) {
-                    NodeEntry childEntry = (NodeEntry)entry;
-                    writer.write(childEntry.getNode().getIndex() + "");
-                    writer.write(childEntry.getAddress().toString());
+                writer.writeRecord(new String[] {"Index", "Payment Address", "Derivation", "Label"});
+                for(WalletNode indexNode : purposeNode.getChildren()) {
+                    writer.write(Integer.toString(indexNode.getIndex()));
+                    writer.write(copy.getAddress(indexNode).toString());
+                    writer.write(getDerivationPath(indexNode));
+                    Optional<Entry> optLabelEntry = getWalletForm().getNodeEntry(keyPurpose).getChildren().stream()
+                            .filter(entry -> ((NodeEntry)entry).getNode().getIndex() == indexNode.getIndex()).findFirst();
+                    writer.write(optLabelEntry.isPresent() ? optLabelEntry.get().getLabel() : "");
                     writer.endRecord();
                 }
                 writer.close();

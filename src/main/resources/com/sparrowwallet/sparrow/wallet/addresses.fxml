@@ -8,6 +8,8 @@
 
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.AddressTreeTable?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@addresses.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.AddressesController">
     <padding>
         <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
@@ -21,14 +23,17 @@
     </rowConstraints>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
         <top>
-            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
-                <left>
-                    <Label styleClass="addresses-treetable-label" text="Receiving Addresses"/>
-                </left>
-                <right>
-                    <Button fx:id="receiveExportButton" text="Export File..." onAction="#exportReceiveAddresses" />
-                </right>
-            </BorderPane>
+            <HBox alignment="CENTER_LEFT">
+                <Label styleClass="addresses-treetable-label" text="Receive Addresses"/>
+                <Button onAction="#exportReceiveAddresses" styleClass="icon-button">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Export receive addresses as CSV" />
+                    </tooltip>
+                </Button>
+            </HBox>
         </top>
         <center>
             <AddressTreeTable fx:id="receiveTable" />
@@ -36,7 +41,17 @@
     </BorderPane>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
         <top>
-            <Label styleClass="addresses-treetable-label" text="Change Addresses"/>
+            <HBox alignment="CENTER_LEFT">
+                <Label styleClass="addresses-treetable-label" text="Change Addresses"/>
+                <Button onAction="#exportChangeAddresses" styleClass="icon-button">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Export change addresses as CSV" />
+                    </tooltip>
+                </Button>
+            </HBox>
         </top>
         <center>
             <AddressTreeTable fx:id="changeTable" />

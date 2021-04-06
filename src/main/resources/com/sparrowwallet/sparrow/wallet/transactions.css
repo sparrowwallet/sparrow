@@ -23,15 +23,3 @@
 .chart-line-symbol.selected {
     -fx-background-color: rgba(30, 136, 207, 0.6);
 }
-
-#exportCsv {
-    -fx-border-style: none;
-    -fx-border-width: 0;
-    -fx-border-insets: 0;
-    -fx-background-color: transparent;
-    -fx-opacity: 0.7;
-}
-
-#exportCsv:hover {
-    -fx-opacity: 1.0;
-}

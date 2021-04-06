@@ -117,20 +117,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     private void updateDerivationPath(NodeEntry nodeEntry) {
-        KeyDerivation firstDerivation = getWalletForm().getWallet().getKeystores().get(0).getKeyDerivation();
-        boolean singleDerivationPath = true;
-        for(Keystore keystore : getWalletForm().getWallet().getKeystores()) {
-            if(!keystore.getKeyDerivation().getDerivationPath().equals(firstDerivation.getDerivationPath())) {
-                singleDerivationPath = false;
-                break;
-            }
-        }
-
-        if(singleDerivationPath) {
-            derivationPath.setText(firstDerivation.extend(nodeEntry.getNode().getDerivation()).getDerivationPath());
-        } else {
-            derivationPath.setText(nodeEntry.getNode().getDerivationPath().replace("m", "multi"));
-        }
+        derivationPath.setText(getDerivationPath(nodeEntry.getNode()));
     }
 
     private void updateLastUsed() {

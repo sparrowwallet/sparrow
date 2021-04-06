@@ -41,7 +41,7 @@
                         </Field>
                         <Field text="Transactions:">
                             <CopyableLabel fx:id="transactionCount" />
-                            <Button fx:id="exportCsv" maxHeight="25" onAction="#exportCSV" translateY="-1">
+                            <Button fx:id="exportCsv" maxHeight="25" onAction="#exportCSV" translateY="-1" styleClass="icon-button">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
                                 </graphic>
