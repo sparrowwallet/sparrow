@@ -47,7 +47,7 @@
                 <fx:define>
                     <ToggleGroup fx:id="theme"/>
                 </fx:define>
-                <Menu mnemonicParsing="false" text="View">
+                <Menu fx:id="viewMenu" mnemonicParsing="false" text="View">
                     <items>
                         <Menu mnemonicParsing="false" text="Bitcoin Unit">
                             <items>
@@ -87,6 +87,7 @@
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                         <SeparatorMenuItem />
+                        <MenuItem fx:id="minimizeToTray" mnemonicParsing="false" text="Minimize to System Tray" accelerator="Shortcut+Y" onAction="#minimizeToTray"/>
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>

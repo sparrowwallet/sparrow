@@ -93,6 +93,9 @@ public class AppController implements Initializable {
     private Menu fileMenu;
 
     @FXML
+    private Menu viewMenu;
+
+    @FXML
     private Menu toolsMenu;
 
     @FXML
@@ -115,6 +118,9 @@ public class AppController implements Initializable {
 
     @FXML
     private CheckMenuItem showTxHex;
+
+    @FXML
+    private MenuItem minimizeToTray;
 
     @FXML
     private MenuItem refreshWallet;
@@ -284,6 +290,10 @@ public class AppController implements Initializable {
             helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
         } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
             toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("windowsHide"));
+        }
+
+        if(platform == org.controlsfx.tools.Platform.UNIX || !TrayManager.isSupported()) {
+            viewMenu.getItems().remove(minimizeToTray);
         }
     }
 
@@ -951,6 +961,10 @@ public class AppController implements Initializable {
         }
 
         messageSignDialog.showAndWait();
+    }
+
+    public void minimizeToTray(ActionEvent event) {
+        AppServices.get().minimizeStage((Stage)tabs.getScene().getWindow());
     }
 
     public void refreshWallet(ActionEvent event) {

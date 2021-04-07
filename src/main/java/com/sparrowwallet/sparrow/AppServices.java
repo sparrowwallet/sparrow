@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Device;
@@ -63,6 +64,8 @@ public class AppServices {
     private final MainApp application;
 
     private final Map<Window, List<WalletTabData>> walletWindows = new LinkedHashMap<>();
+
+    private TrayManager trayManager;
 
     private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
 
@@ -399,6 +402,15 @@ public class AppServices {
 
     public MainApp getApplication() {
         return application;
+    }
+
+    public void minimizeStage(Stage stage) {
+        if(trayManager == null) {
+            trayManager = new TrayManager();
+        }
+
+        trayManager.addStage(stage);
+        stage.hide();
     }
 
     public Map<Wallet, Storage> getOpenWallets() {
