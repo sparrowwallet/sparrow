@@ -34,6 +34,10 @@ public class WebcamService extends ScheduledService<Image> {
     private Webcam cam;
     private long lastQrSampleTime;
 
+    static {
+        Webcam.setDriver(new WebcamScanDriver());
+    }
+
     public WebcamService(WebcamResolution resolution, WebcamListener listener, WebcamUpdater.DelayCalculator delayCalculator) {
         this.resolution = resolution;
         this.listener = listener;

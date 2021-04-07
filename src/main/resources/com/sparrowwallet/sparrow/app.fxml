@@ -85,7 +85,7 @@
                         <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets in New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
-                        <CheckMenuItem fx:id="useHdCameraResolution" mnemonicParsing="false" text="Use HD camera resolution" onAction="#useHdCameraResolution"/>
+                        <CheckMenuItem fx:id="useHdCameraResolution" mnemonicParsing="false" text="Use HD Camera Resolution" onAction="#useHdCameraResolution"/>
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                         <SeparatorMenuItem />
                         <MenuItem fx:id="minimizeToTray" mnemonicParsing="false" text="Minimize to System Tray" accelerator="Shortcut+Y" onAction="#minimizeToTray"/>

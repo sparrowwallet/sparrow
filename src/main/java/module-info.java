@@ -29,4 +29,5 @@ open module com.sparrowwallet.sparrow {
     requires jtorctl;
     requires javacsv;
     requires jul.to.slf4j;
+    requires bridj;
 }
