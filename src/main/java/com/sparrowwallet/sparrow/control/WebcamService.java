@@ -18,6 +18,7 @@ import javafx.scene.image.Image;
 
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class WebcamService extends ScheduledService<Image> {
@@ -47,7 +48,12 @@ public class WebcamService extends ScheduledService<Image> {
             protected Image call() throws Exception {
                 try {
                     if(cam == null) {
-                        cam = Webcam.getWebcams(1, TimeUnit.MINUTES).get(0);
+                        List<Webcam> webcams = Webcam.getWebcams(1, TimeUnit.MINUTES);
+                        if(webcams.isEmpty()) {
+                            throw new UnsupportedOperationException("No camera available.");
+                        }
+
+                        cam = webcams.get(0);
                         cam.setCustomViewSizes(resolution.getSize());
                         cam.setViewSize(resolution.getSize());
                         if(!Arrays.asList(cam.getWebcamListeners()).contains(listener)) {
