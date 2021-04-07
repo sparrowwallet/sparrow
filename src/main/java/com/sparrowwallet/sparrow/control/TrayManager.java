@@ -31,9 +31,16 @@ public class TrayManager {
 
         try {
             List<Image> imgList = new ArrayList<>();
-            imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-white-small.png")));
-            imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-white-small@2x.png")));
-            imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-white-small@3x.png")));
+            if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+                imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-black-small.png")));
+                imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-black-small@2x.png")));
+                imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-black-small@3x.png")));
+            } else {
+                imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-white-small.png")));
+                imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-white-small@2x.png")));
+                imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-white-small@3x.png")));
+            }
+
             BaseMultiResolutionImage mrImage = new BaseMultiResolutionImage(imgList.toArray(new Image[0]));
 
             this.trayIcon = new TrayIcon(mrImage, "Sparrow", popupMenu);
