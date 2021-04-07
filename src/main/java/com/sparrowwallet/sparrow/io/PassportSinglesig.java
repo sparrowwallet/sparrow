@@ -14,7 +14,7 @@ public class PassportSinglesig extends ColdcardSinglesig {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import file or QR created from Settings > Pair Software Wallet > Sparrow > Single Sig > microSD/QR on your Passport.";
+        return "Import file or QR created from New Account > Sparrow > Standard > QR Code/microSD on your Passport. For existing accounts, use Manage Account > Export by QR/microSD.";
     }
 
     @Override
