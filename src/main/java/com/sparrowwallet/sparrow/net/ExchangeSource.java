@@ -56,7 +56,11 @@ public enum ExchangeSource {
                 Gson gson = new Gson();
                 return gson.fromJson(reader, CoinbaseRates.class);
             } catch (Exception e) {
-                log.error("Error retrieving currency rates", e);
+                if(log.isDebugEnabled()) {
+                    log.warn("Error retrieving currency rates", e);
+                } else {
+                    log.warn("Error retrieving currency rates (" + e.getMessage() + ")");
+                }
                 return new CoinbaseRates();
             }
         }
@@ -86,8 +90,12 @@ public enum ExchangeSource {
             try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 Gson gson = new Gson();
                 return gson.fromJson(reader, CoinGeckoRates.class);
-            } catch (Exception e) {
-                log.error("Error retrieving currency rates", e);
+            } catch(Exception e) {
+                if(log.isDebugEnabled()) {
+                    log.warn("Error retrieving currency rates", e);
+                } else {
+                    log.warn("Error retrieving currency rates (" + e.getMessage() + ")");
+                }
                 return new CoinGeckoRates();
             }
         }

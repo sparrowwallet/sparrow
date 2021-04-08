@@ -87,7 +87,11 @@ public enum FeeRatesSource {
                 blockTargetFeeRates.put(Integer.MAX_VALUE, threeTierRates.minimumFee);
             }
         } catch (Exception e) {
-            log.warn("Error retrieving recommended fee rates from " + url, e);
+            if(log.isDebugEnabled()) {
+                log.warn("Error retrieving recommended fee rates from " + url, e);
+            } else {
+                log.warn("Error retrieving recommended fee rates from " + url + " (" + e.getMessage() + ")");
+            }
         }
 
         return blockTargetFeeRates;
