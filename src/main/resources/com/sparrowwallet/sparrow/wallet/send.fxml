@@ -83,10 +83,10 @@
                 </HBox>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="2">
                     <Fieldset inputGrow="SOMETIMES">
-                        <Field fx:id="targetBlocksField" text="Block target">
+                        <Field fx:id="targetBlocksField" text="Blocks:">
                             <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
                         </Field>
-                        <Field fx:id="feeRangeField" text="Rate Range:">
+                        <Field fx:id="feeRangeField" text="Range:">
                             <Slider fx:id="feeRange" snapToTicks="false" showTickLabels="true" showTickMarks="true" />
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">
