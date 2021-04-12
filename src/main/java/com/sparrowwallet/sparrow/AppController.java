@@ -532,14 +532,22 @@ public class AppController implements Initializable {
     }
 
     public void savePSBTBinary(ActionEvent event) {
-        savePSBT(false);
+        savePSBT(false, true);
     }
 
     public void savePSBTText(ActionEvent event) {
-        savePSBT(true);
+        savePSBT(true, true);
     }
 
-    public void savePSBT(boolean asText) {
+    public void savePSBTBinaryNoXpubs(ActionEvent event) {
+        savePSBT(false, false);
+    }
+
+    public void savePSBTTextNoXpubs(ActionEvent event) {
+        savePSBT(true, false);
+    }
+
+    public void savePSBT(boolean asText, boolean includeXpubs) {
         Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
         TabData tabData = (TabData)selectedTab.getUserData();
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
@@ -571,10 +579,10 @@ public class AppController implements Initializable {
                 try(FileOutputStream outputStream = new FileOutputStream(file)) {
                     if(asText) {
                         PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-                        writer.print(transactionTabData.getPsbt().toBase64String());
+                        writer.print(transactionTabData.getPsbt().toBase64String(includeXpubs));
                         writer.flush();
                     } else {
-                        outputStream.write(transactionTabData.getPsbt().serialize());
+                        outputStream.write(transactionTabData.getPsbt().serialize(includeXpubs));
                     }
                 } catch(IOException e) {
                     log.error("Error saving PSBT", e);
