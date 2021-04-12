@@ -58,7 +58,7 @@ public class Bwt {
     private void start(Collection<Wallet> wallets, CallbackNotifier callback) {
         List<Wallet> validWallets = wallets.stream().filter(Wallet::isValid).collect(Collectors.toList());
 
-        List<String> outputDescriptors = new ArrayList<>();
+        Set<String> outputDescriptors = new LinkedHashSet<>();
         for(Wallet wallet : validWallets) {
             OutputDescriptor receiveOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE);
             outputDescriptors.add(receiveOutputDescriptor.toString(false, false));
@@ -89,7 +89,7 @@ public class Bwt {
      * @param gapLimit desired gap limit beyond last used address
      * @param callback object receiving notifications
      */
-    private void start(List<String> outputDescriptors, Integer rescanSince, Boolean forceRescan, Integer gapLimit, CallbackNotifier callback) {
+    private void start(Collection<String> outputDescriptors, Integer rescanSince, Boolean forceRescan, Integer gapLimit, CallbackNotifier callback) {
         BwtConfig bwtConfig = new BwtConfig();
         bwtConfig.network = Network.get() == Network.MAINNET ? "bitcoin" : Network.get().getName();
 
@@ -188,7 +188,7 @@ public class Bwt {
         public Boolean createWalletIfMissing;
 
         @SerializedName("descriptors")
-        public List<String> descriptors;
+        public Collection<String> descriptors;
 
         @SerializedName("xpubs")
         public String xpubs;
