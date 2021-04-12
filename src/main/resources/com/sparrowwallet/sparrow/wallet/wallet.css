@@ -43,7 +43,7 @@
 }
 
 .transaction-row.confirming {
-    -fx-opacity: 0.8;
+    -fx-opacity: 0.7;
 }
 
 .utxo-row.unspendable {
