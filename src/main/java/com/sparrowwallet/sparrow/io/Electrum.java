@@ -10,9 +10,7 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -230,6 +228,22 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                                 for(WalletNode addressNode : purposeNode.getChildren()) {
                                     if(address.equals(wallet.getAddress(addressNode))) {
                                         addressNode.setLabel(ew.labels.get(key));
+                                    }
+                                }
+                            }
+
+                            for(BlockTransaction blkTx : ew.transactions.values()) {
+                                if(blkTx.getLabel() == null) {
+                                    Transaction tx = blkTx.getTransaction();
+                                    for(TransactionOutput txOutput : tx.getOutputs()) {
+                                        try {
+                                            Address[] addresses = txOutput.getScript().getToAddresses();
+                                            if(Arrays.asList(addresses).contains(address)) {
+                                                blkTx.setLabel(ew.labels.get(key));
+                                            }
+                                        } catch(NonStandardScriptException ex) {
+                                            //ignore
+                                        }
                                     }
                                 }
                             }
