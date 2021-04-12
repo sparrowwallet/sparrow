@@ -155,6 +155,16 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
     @Override
     public int compareTo(TransactionEntry other) {
+        int blockOrder = blockTransaction.compareBlockOrder(other.blockTransaction);
+        if(blockOrder != 0) {
+            return blockOrder;
+        }
+
+        int valueOrder = Long.compare(other.getValue(), getValue());
+        if(valueOrder != 0) {
+            return valueOrder;
+        }
+
         return blockTransaction.compareTo(other.blockTransaction);
     }
 
