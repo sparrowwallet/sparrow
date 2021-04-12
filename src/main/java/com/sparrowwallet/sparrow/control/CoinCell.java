@@ -66,6 +66,10 @@ class CoinCell extends TreeTableCell<Entry, Number> {
                 } else {
                     setGraphic(null);
                 }
+
+                if(amount.longValue() < 0) {
+                    getStyleClass().add("negative-amount");
+                }
             } else if(entry instanceof UtxoEntry) {
                 setGraphic(null);
             } else if(entry instanceof HashIndexEntry) {

@@ -416,6 +416,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         cell.getStyleClass().remove("address-cell");
         cell.getStyleClass().remove("hashindex-row");
         cell.getStyleClass().remove("confirming");
+        cell.getStyleClass().remove("negative-amount");
         cell.getStyleClass().remove("spent");
         cell.getStyleClass().remove("unspendable");
 
