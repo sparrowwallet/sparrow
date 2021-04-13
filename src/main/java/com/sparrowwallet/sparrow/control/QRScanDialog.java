@@ -465,7 +465,12 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             return wallets;
         }
 
-        private ScriptType getScriptType(List<ScriptExpression> expressions) {
+        private ScriptType getScriptType(List<ScriptExpression> scriptExpressions) {
+            List<ScriptExpression> expressions = new ArrayList<>(scriptExpressions);
+            if(expressions.get(expressions.size() - 1) == ScriptExpression.MULTISIG || expressions.get(expressions.size() - 1) == ScriptExpression.SORTED_MULTISIG) {
+                expressions.remove(expressions.size() - 1);
+            }
+
             if(List.of(ScriptExpression.PUBLIC_KEY_HASH).equals(expressions)) {
                 return ScriptType.P2PKH;
             } else if(List.of(ScriptExpression.SCRIPT_HASH, ScriptExpression.WITNESS_PUBLIC_KEY_HASH).equals(expressions)) {
