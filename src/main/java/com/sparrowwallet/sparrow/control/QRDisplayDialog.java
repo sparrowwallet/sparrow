@@ -37,6 +37,9 @@ public class QRDisplayDialog extends Dialog<UR> {
 
     private static final int ANIMATION_PERIOD_MILLIS = 400;
 
+    private static final int QR_WIDTH = 480;
+    private static final int QR_HEIGHT = 480;
+
     private final UR ur;
     private final UREncoder encoder;
 
@@ -91,8 +94,8 @@ public class QRDisplayDialog extends Dialog<UR> {
             dialogPane.getButtonTypes().add(legacyEncodingButtonType);
         }
 
-        dialogPane.setPrefWidth(500);
-        dialogPane.setPrefHeight(550);
+        dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
+        dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
     }
@@ -113,8 +116,8 @@ public class QRDisplayDialog extends Dialog<UR> {
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
-        dialogPane.setPrefWidth(500);
-        dialogPane.setPrefHeight(550);
+        dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
+        dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
     }
@@ -135,7 +138,7 @@ public class QRDisplayDialog extends Dialog<UR> {
     private Image getQrCode(String fragment) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, 480, 480);
+            BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT);
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MatrixToImageWriter.writeToStream(qrMatrix, "PNG", baos, new MatrixToImageConfig());
