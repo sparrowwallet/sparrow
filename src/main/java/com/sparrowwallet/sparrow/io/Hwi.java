@@ -222,7 +222,9 @@ public class Hwi {
     private synchronized File getHwiExecutable(Command command) {
         File hwiExecutable = Config.get().getHwi();
         if(hwiExecutable != null && hwiExecutable.exists()) {
-            if(command.isTestFirst() && (!hwiExecutable.getAbsolutePath().contains(VERSION_PREFIX) || !testHwi(hwiExecutable))) {
+            String tmpDir = System.getProperty("java.io.tmpdir");
+            String hwiPath = hwiExecutable.getAbsolutePath();
+            if(command.isTestFirst() && hwiPath.startsWith(tmpDir) && (!hwiPath.contains(VERSION_PREFIX) || !testHwi(hwiExecutable))) {
                 if(Platform.getCurrent() == Platform.OSX) {
                     deleteDirectory(hwiExecutable.getParentFile());
                 } else {
