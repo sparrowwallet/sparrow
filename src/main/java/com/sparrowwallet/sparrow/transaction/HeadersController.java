@@ -9,8 +9,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.hummingbird.UR;
-import com.sparrowwallet.hummingbird.registry.RegistryType;
+import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -646,12 +645,9 @@ public class HeadersController extends TransactionFormController implements Init
         //TODO: Remove once Cobo Vault has upgraded to UR2.0
         boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COBO_VAULT) || keystore.getWalletModel().equals(WalletModel.SPARROW));
 
-        try {
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(RegistryType.CRYPTO_PSBT.toString(), headersForm.getPsbt().serialize(), addLegacyEncodingOption);
-            qrDisplayDialog.show();
-        } catch(UR.URException e) {
-            log.error("Error creating PSBT UR", e);
-        }
+        CryptoPSBT cryptoPSBT = new CryptoPSBT(headersForm.getPsbt().serialize());
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), addLegacyEncodingOption);
+        qrDisplayDialog.show();
     }
 
     public void scanPSBT(ActionEvent event) {
