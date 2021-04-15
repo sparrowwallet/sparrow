@@ -3,19 +3,33 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import javafx.application.Platform;
+import javafx.geometry.Point2D;
+import javafx.scene.control.Label;
+import javafx.stage.Popup;
 import org.fxmisc.richtext.CodeArea;
+import org.fxmisc.richtext.event.MouseOverTextEvent;
+import org.fxmisc.richtext.model.StyleSpan;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+
+import static org.fxmisc.richtext.model.TwoDimensional.Bias.Backward;
 
 public class TransactionHexArea extends CodeArea {
     private static final int TRUNCATE_AT = 30000;
     private static final int SEGMENTS_INTERVAL = 250;
 
     private List<TransactionSegment> previousSegmentList = new ArrayList<>();
+
+    public TransactionHexArea() {
+        super();
+        addPopupHandler();
+    }
 
     public void setTransaction(Transaction transaction) {
         try {
@@ -42,6 +56,27 @@ public class TransactionHexArea extends CodeArea {
         changedSegments.removeAll(previousSegmentList);
         applyHighlighting(0, changedSegments);
         previousSegmentList = segments;
+    }
+
+    private void addPopupHandler() {
+        Popup popup = new Popup();
+        Label popupMsg = new Label();
+        popupMsg.getStyleClass().add("tooltip");
+        popup.getContent().add(popupMsg);
+
+        setMouseOverTextDelay(Duration.ofMillis(150));
+        addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, e -> {
+            Position position = getParagraph(0).getStyleSpans().offsetToPosition(e.getCharacterIndex() + 1, Backward);
+            StyleSpan<Collection<String>> styleSpan = getParagraph(0).getStyleSpans().getStyleSpan(position.getMajor());
+            Point2D pos = e.getScreenPosition();
+            popupMsg.setText(describeTransactionPart(styleSpan.getStyle()));
+            if(!popupMsg.getText().isEmpty()) {
+                popup.show(this, pos.getX(), pos.getY() + 10);
+            }
+        });
+        addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_END, e -> {
+            popup.hide();
+        });
     }
 
     private void applyHighlighting(int start, List<TransactionSegment> segments) {
@@ -141,6 +176,30 @@ public class TransactionHexArea extends CodeArea {
         }
 
         return "other";
+    }
+
+    private String describeTransactionPart(Collection<String> styles) {
+        String style = styles.isEmpty() ? "" : styles.iterator().next();
+        return switch(style) {
+            case "version" -> "Transaction version";
+            case "segwit-marker" -> "Segwit marker";
+            case "segwit-flag" -> "Segwit flag";
+            case "num-inputs" -> "Number of inputs";
+            case "input-hash" -> "Input transaction ID";
+            case "input-index" -> "Input transaction index";
+            case "input-sigscript-length" -> "ScriptSig length";
+            case "input-sigscript" -> "ScriptSig";
+            case "input-sequence" -> "Sequence";
+            case "num-outputs" -> "Number of outputs";
+            case "output-value" -> "Output value";
+            case "output-pubkeyscript-length" -> "ScriptPubKey length";
+            case "output-pubkeyscript" -> "ScriptPubKey";
+            case "witness-count" -> "Witness count";
+            case "witness-length" -> "Witness length";
+            case "witness-data" -> "Witness data";
+            case "locktime" -> "Locktime";
+            default -> "";
+        };
     }
 
     private static class TransactionSegment {
