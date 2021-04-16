@@ -13,10 +13,7 @@ import org.fxmisc.richtext.model.StyleSpan;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static org.fxmisc.richtext.model.TwoDimensional.Bias.Backward;
 
@@ -84,7 +81,7 @@ public class TransactionHexArea extends CodeArea {
         for(int i = start; i < end; i++) {
             TransactionSegment segment = segments.get(i);
             if(segment.start < TRUNCATE_AT) {
-                setStyleClass(segment.start, Math.min(TRUNCATE_AT, segment.start + segment.length), segment.style);
+                setStyle(segment.start, Math.min(TRUNCATE_AT, segment.start + segment.length), getStyles(segment));
             }
         }
 
@@ -93,6 +90,18 @@ public class TransactionHexArea extends CodeArea {
                 applyHighlighting(end, segments);
             });
         }
+    }
+
+    private Collection<String> getStyles(TransactionSegment segment) {
+        List<String> styles = new ArrayList<>();
+        styles.add(segment.style);
+        if(segment.index != null) {
+            styles.add("index-" + segment.index);
+        }
+        if(segment.witnessIndex != null) {
+            styles.add("witnessindex-" + segment.witnessIndex);
+        }
+        return Collections.unmodifiableList(styles);
     }
 
     public List<TransactionSegment> getTransactionSegments(Transaction transaction, int selectedInputIndex, int selectedOutputIndex) {
@@ -117,12 +126,12 @@ public class TransactionHexArea extends CodeArea {
         //Inputs
         for(int i = 0; i < transaction.getInputs().size(); i++) {
             TransactionInput input = transaction.getInputs().get(i);
-            cursor = addSegment(segments, cursor, 32 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "hash"));
-            cursor = addSegment(segments, cursor, 4 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "index"));
+            cursor = addSegment(segments, cursor, 32 * 2, i, "input-" + getIndexedStyleClass(i, selectedInputIndex, "hash"));
+            cursor = addSegment(segments, cursor, 4 * 2, i, "input-" + getIndexedStyleClass(i, selectedInputIndex, "index"));
             VarInt scriptLen = new VarInt(input.getScriptBytes().length);
-            cursor = addSegment(segments, cursor, scriptLen.getSizeInBytes() * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript-length"));
-            cursor = addSegment(segments, cursor, (int) scriptLen.value * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript"));
-            cursor = addSegment(segments, cursor, 4 * 2, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sequence"));
+            cursor = addSegment(segments, cursor, scriptLen.getSizeInBytes() * 2, i, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript-length"));
+            cursor = addSegment(segments, cursor, (int) scriptLen.value * 2, i, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sigscript"));
+            cursor = addSegment(segments, cursor, 4 * 2, i, "input-" + getIndexedStyleClass(i, selectedInputIndex, "sequence"));
         }
 
         //Number of outputs
@@ -132,10 +141,10 @@ public class TransactionHexArea extends CodeArea {
         //Outputs
         for(int i = 0; i < transaction.getOutputs().size(); i++) {
             TransactionOutput output = transaction.getOutputs().get(i);
-            cursor = addSegment(segments, cursor, 8 * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value"));
+            cursor = addSegment(segments, cursor, 8 * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value"));
             VarInt scriptLen = new VarInt(output.getScriptBytes().length);
-            cursor = addSegment(segments, cursor, scriptLen.getSizeInBytes() * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript-length"));
-            cursor = addSegment(segments, cursor, (int) scriptLen.value * 2, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"));
+            cursor = addSegment(segments, cursor, scriptLen.getSizeInBytes() * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript-length"));
+            cursor = addSegment(segments, cursor, (int) scriptLen.value * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"));
         }
 
         if(transaction.hasWitnesses()) {
@@ -144,11 +153,12 @@ public class TransactionHexArea extends CodeArea {
                 if (input.hasWitness()) {
                     TransactionWitness witness = input.getWitness();
                     VarInt witnessCount = new VarInt(witness.getPushCount());
-                    cursor = addSegment(segments, cursor, witnessCount.getSizeInBytes() * 2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
-                    for (byte[] push : witness.getPushes()) {
+                    cursor = addSegment(segments, cursor, witnessCount.getSizeInBytes() * 2, i, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
+                    for(int j = 0; j < witness.getPushes().size(); j++) {
+                        byte[] push = witness.getPushes().get(j);
                         VarInt witnessLen = new VarInt(push.length);
-                        cursor = addSegment(segments, cursor, witnessLen.getSizeInBytes() * 2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
-                        cursor = addSegment(segments, cursor, (int) witnessLen.value * 2, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"));
+                        cursor = addSegment(segments, cursor, witnessLen.getSizeInBytes() * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
+                        cursor = addSegment(segments, cursor, (int) witnessLen.value * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"));
                     }
                 }
             }
@@ -166,7 +176,15 @@ public class TransactionHexArea extends CodeArea {
     }
 
     private int addSegment(List<TransactionSegment> segments, int start, int length, String style) {
-        segments.add(new TransactionSegment(start, length, style));
+        return addSegment(segments, start, length, null, style);
+    }
+
+    private int addSegment(List<TransactionSegment> segments, int start, int length, Integer index, String style) {
+        return addSegment(segments, start, length, index, null, style);
+    }
+
+    private int addSegment(List<TransactionSegment> segments, int start, int length, Integer index, Integer witnessIndex, String style) {
+        segments.add(new TransactionSegment(start, length, index, witnessIndex, style));
         return start + length;
     }
 
@@ -179,38 +197,58 @@ public class TransactionHexArea extends CodeArea {
     }
 
     private String describeTransactionPart(Collection<String> styles) {
-        String style = styles.isEmpty() ? "" : styles.iterator().next();
+        String style = "";
+        Integer index = null;
+        Integer witnessIndex = null;
+        Iterator<String> iter = styles.iterator();
+        if(iter.hasNext()) {
+            style = iter.next();
+        }
+        while(iter.hasNext()) {
+            String indexStyle = iter.next();
+            if(indexStyle.startsWith("index-")) {
+                index = Integer.parseInt(indexStyle.substring("index-".length()));
+            }
+            if(indexStyle.startsWith("witnessindex-")) {
+                witnessIndex = Integer.parseInt(indexStyle.substring("witnessindex-".length()));
+            }
+        }
+
         return switch(style) {
             case "version" -> "Transaction version";
             case "segwit-marker" -> "Segwit marker";
             case "segwit-flag" -> "Segwit flag";
             case "num-inputs" -> "Number of inputs";
-            case "input-hash" -> "Input transaction ID";
-            case "input-index" -> "Input transaction index";
-            case "input-sigscript-length" -> "ScriptSig length";
-            case "input-sigscript" -> "ScriptSig";
-            case "input-sequence" -> "Sequence";
+            case "input-hash" -> "Input #" + index + " outpoint txid";
+            case "input-index" -> "Input #" + index + " outpoint index";
+            case "input-sigscript-length" -> "Input #" + index + " scriptSig length";
+            case "input-sigscript" -> "Input #" + index + " scriptSig";
+            case "input-sequence" -> "Input #" + index + " sequence";
             case "num-outputs" -> "Number of outputs";
-            case "output-value" -> "Output value";
-            case "output-pubkeyscript-length" -> "ScriptPubKey length";
-            case "output-pubkeyscript" -> "ScriptPubKey";
-            case "witness-count" -> "Witness count";
-            case "witness-length" -> "Witness length";
-            case "witness-data" -> "Witness data";
+            case "output-value" -> "Output #" + index + " value";
+            case "output-pubkeyscript-length" -> "Output #" + index + " scriptPubKey length";
+            case "output-pubkeyscript" -> "Output #" + index + " scriptPubKey";
+            case "witness-count" -> "Input #" + index + " witness count";
+            case "witness-length" -> "Input #" + index + " witness #" + witnessIndex + " length";
+            case "witness-data" -> "Input #" + index + " witness #" + witnessIndex + " data";
             case "locktime" -> "Locktime";
             default -> "";
         };
     }
 
     private static class TransactionSegment {
-        public TransactionSegment(int start, int length, String style) {
+        public TransactionSegment(int start, int length, Integer index, Integer witnessIndex, String style) {
             this.start = start;
             this.length = length;
+            this.index = index;
+            this.witnessIndex = witnessIndex;
             this.style = style;
         }
 
         public int start;
         public int length;
+        public Integer index;
+        public Integer witnessIndex;
         public String style;
 
         @Override
