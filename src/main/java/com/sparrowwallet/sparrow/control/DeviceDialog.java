@@ -114,7 +114,7 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
 
         if(operationFingerprints != null) {
             dialogDevices.removeIf(device -> {
-                return device.getFingerprint() != null && !operationFingerprints.contains(device.getFingerprint()) && !(device.getNeedsPinSent() || device.getNeedsPassphraseSent());
+                return device.getFingerprint() != null && !operationFingerprints.contains(device.getFingerprint()) && !(device.isNeedsPinSent() || device.isNeedsPassphraseSent());
             });
         }
 

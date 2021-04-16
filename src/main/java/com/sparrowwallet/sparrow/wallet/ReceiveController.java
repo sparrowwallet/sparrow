@@ -148,7 +148,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
         List<Device> addressDevices = devices.stream().filter(device -> walletFingerprints.contains(device.getFingerprint())).collect(Collectors.toList());
         if(addressDevices.isEmpty()) {
-            addressDevices = devices.stream().filter(device -> device.getNeedsPinSent() || device.getNeedsPassphraseSent()).collect(Collectors.toList());
+            addressDevices = devices.stream().filter(device -> device.isNeedsPinSent() || device.isNeedsPassphraseSent()).collect(Collectors.toList());
         }
 
         if(!addressDevices.isEmpty()) {
@@ -198,7 +198,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
             List<Device> possibleDevices = (List<Device>)displayAddress.getUserData();
             if(possibleDevices != null && !possibleDevices.isEmpty()) {
-                if(possibleDevices.size() > 1 || possibleDevices.get(0).getNeedsPinSent() || possibleDevices.get(0).getNeedsPassphraseSent()) {
+                if(possibleDevices.size() > 1 || possibleDevices.get(0).isNeedsPinSent() || possibleDevices.get(0).isNeedsPassphraseSent()) {
                     DeviceAddressDialog dlg = new DeviceAddressDialog(wallet, addressDescriptor);
                     dlg.showAndWait();
                 } else {

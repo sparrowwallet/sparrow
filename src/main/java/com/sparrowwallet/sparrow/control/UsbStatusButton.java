@@ -22,7 +22,7 @@ public class UsbStatusButton extends MenuButton {
     public void setDevices(List<Device> devices) {
         for(Device device : devices) {
             MenuItem deviceItem = new MenuItem(device.getModel().toDisplayString());
-            if(device.getNeedsPinSent()) {
+            if(device.isNeedsPinSent()) {
                 deviceItem.setGraphic(getLockIcon());
             } else {
                 deviceItem.setGraphic(getLockOpenIcon());

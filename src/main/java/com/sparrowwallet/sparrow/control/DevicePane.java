@@ -144,9 +144,9 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void initialise(Device device) {
-        if(device.getNeedsPinSent() != null && device.getNeedsPinSent()) {
+        if(device.isNeedsPinSent()) {
             unlockButton.setVisible(true);
-        } else if(device.getNeedsPassphraseSent() != null && device.getNeedsPassphraseSent()) {
+        } else if(device.isNeedsPassphraseSent()) {
             setPassphraseButton.setVisible(true);
         } else if(device.getError() != null) {
             setError("Error", device.getError());
@@ -165,7 +165,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void setDefaultStatus() {
-        setDescription(device.getNeedsPinSent() ? "Locked" : device.getNeedsPassphraseSent() ? "Passphrase Required" : "Unlocked");
+        setDescription(device.isNeedsPinSent() ? "Locked" : device.isNeedsPassphraseSent() ? "Passphrase Required" : "Unlocked");
     }
 
     private void createUnlockButton() {
@@ -411,7 +411,7 @@ public class DevicePane extends TitledDescriptionPane {
                 setExpanded(false);
                 unlockButton.setVisible(false);
 
-                if(device.getNeedsPassphraseSent()) {
+                if(device.isNeedsPassphraseSent()) {
                     setPassphraseButton.setVisible(true);
                     setPassphraseButton.setDisable(true);
                     setContent(getPassphraseEntry());

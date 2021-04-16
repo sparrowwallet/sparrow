@@ -41,12 +41,20 @@ public class Device {
         return needsPinSent;
     }
 
+    public Boolean isNeedsPinSent() {
+        return needsPinSent != null && needsPinSent;
+    }
+
     public void setNeedsPinSent(Boolean needsPinSent) {
         this.needsPinSent = needsPinSent;
     }
 
     public Boolean getNeedsPassphraseSent() {
         return needsPassphraseSent;
+    }
+
+    public Boolean isNeedsPassphraseSent() {
+        return needsPassphraseSent != null && needsPassphraseSent;
     }
 
     public void setNeedsPassphraseSent(Boolean needsPassphraseSent) {
