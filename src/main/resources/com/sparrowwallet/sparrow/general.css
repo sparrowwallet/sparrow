@@ -15,6 +15,10 @@
     -fx-pref-height: 25px;
 }
 
+.form .fieldset:horizontal .input-container {
+    -fx-alignment: center-left;
+}
+
 .form .input-container {
     -fx-spacing: 2;
 }

@@ -31,10 +31,18 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset inputGrow="ALWAYS">
             <Field text="Pay to:">
-                <CopyableTextField fx:id="address" styleClass="address-text-field"/>
+                <CopyableTextField fx:id="address" styleClass="address-text-field">
+                    <tooltip>
+                        <Tooltip text="Address or bitcoin: URI"/>
+                    </tooltip>
+                </CopyableTextField>
             </Field>
             <Field text="Label:">
-                <TextField fx:id="label" />
+                <TextField fx:id="label">
+                    <tooltip>
+                        <Tooltip text="Required to label the transaction (privately in this wallet)"/>
+                    </tooltip>
+                </TextField>
             </Field>
             <Field text="Amount:">
                 <TextField fx:id="amount" styleClass="amount-field" />
@@ -54,7 +62,7 @@
         </Fieldset>
     </Form>
     <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
-        <Fieldset inputGrow="ALWAYS" style="-fx-padding: 2 0 0 0">
+        <Fieldset inputGrow="ALWAYS" style="-fx-padding: 5 0 0 0">
             <HBox>
                 <Button text="" onAction="#scanQrAddress" prefHeight="30">
                     <graphic>

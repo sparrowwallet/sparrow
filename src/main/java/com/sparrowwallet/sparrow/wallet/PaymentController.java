@@ -110,7 +110,7 @@ public class PaymentController extends WalletFormController implements Initializ
             }
 
             revalidate(amount, amountListener);
-            maxButton.setDisable(!isValidRecipientAddress());
+            maxButton.setDisable(!isValidAddressAndLabel());
             sendController.updateTransaction();
 
             if(validationSupport != null) {
@@ -119,6 +119,7 @@ public class PaymentController extends WalletFormController implements Initializ
         });
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
+            maxButton.setDisable(!isValidAddressAndLabel());
             sendController.getCreateButton().setDisable(sendController.getWalletTransaction() == null || newValue == null || newValue.isEmpty() || sendController.isInsufficientFeeRate());
             sendController.updateTransaction();
         });
@@ -136,7 +137,7 @@ public class PaymentController extends WalletFormController implements Initializ
             }
         });
 
-        maxButton.setDisable(!isValidRecipientAddress());
+        maxButton.setDisable(!isValidAddressAndLabel());
         sendController.utxoLabelSelectionProperty().addListener((observable, oldValue, newValue) -> {
             maxButton.setText("Max" + newValue);
         });
@@ -173,6 +174,10 @@ public class PaymentController extends WalletFormController implements Initializ
         } catch (InvalidAddressException e) {
             return false;
         }
+    }
+
+    private boolean isValidAddressAndLabel() {
+        return isValidRecipientAddress() && !label.getText().isEmpty();
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
