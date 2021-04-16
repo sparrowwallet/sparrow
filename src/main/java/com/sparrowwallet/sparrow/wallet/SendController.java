@@ -286,9 +286,11 @@ public class SendController extends WalletFormController implements Initializabl
         updateFeeRateSelection(feeRatesSelection);
         feeSelectionToggleGroup.selectToggle(feeRatesSelection == FeeRatesSelection.BLOCK_TARGET ? targetBlocksToggle : mempoolSizeToggle);
         feeSelectionToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            FeeRatesSelection newFeeRatesSelection = (FeeRatesSelection)newValue.getUserData();
-            Config.get().setFeeRatesSelection(newFeeRatesSelection);
-            EventManager.get().post(new FeeRatesSelectionChangedEvent(getWalletForm().getWallet(), newFeeRatesSelection));
+            if(newValue != null) {
+                FeeRatesSelection newFeeRatesSelection = (FeeRatesSelection)newValue.getUserData();
+                Config.get().setFeeRatesSelection(newFeeRatesSelection);
+                EventManager.get().post(new FeeRatesSelectionChangedEvent(getWalletForm().getWallet(), newFeeRatesSelection));
+            };
         });
 
         fee.setTextFormatter(new CoinTextFormatter());
