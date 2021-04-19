@@ -815,6 +815,7 @@ public class HeadersController extends TransactionFormController implements Init
                 transactionMempoolService = new ElectrumServer.TransactionMempoolService(headersForm.getSigningWallet(), headersForm.getTransaction().getTxId(), headersForm.getSigningWalletNodes());
                 transactionMempoolService.setDelay(Duration.seconds(3));
                 transactionMempoolService.setPeriod(Duration.seconds(10));
+                transactionMempoolService.setRestartOnFailure(false);
                 transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
                     Set<String> scriptHashes = transactionMempoolService.getValue();
                     if(!scriptHashes.isEmpty()) {
@@ -828,6 +829,13 @@ public class HeadersController extends TransactionFormController implements Init
                         AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not register it in the mempool. It is safe to try broadcasting again.");
                         broadcastButton.setDisable(false);
                     }
+                });
+                transactionMempoolService.setOnFailed(mempoolWorkerStateEvent -> {
+                    transactionMempoolService.cancel();
+                    broadcastProgressBar.setProgress(0);
+                    log.error("Timeout searching for broadcasted transaction");
+                    AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not indicate it had entered the mempool. It is safe to try broadcasting again.");
+                    broadcastButton.setDisable(false);
                 });
                 transactionMempoolService.start();
             } else {
