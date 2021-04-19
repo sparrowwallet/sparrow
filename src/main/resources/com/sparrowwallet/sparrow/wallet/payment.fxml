@@ -67,7 +67,7 @@
                         <Insets left="10" />
                     </padding>
                 </Label>
-                <Region style="-fx-pref-width: 20" />
+                <Region style="-fx-pref-width: 5" />
                 <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
             </Field>
         </Fieldset>
