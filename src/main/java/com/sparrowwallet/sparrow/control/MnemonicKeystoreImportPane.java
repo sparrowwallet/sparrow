@@ -67,7 +67,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     }
 
     public MnemonicKeystoreImportPane(Keystore keystore) {
-        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() ? "Passphrase enabled" : "Passphrase disabled", "", "image/" + WalletModel.SEED.getType() + ".png");
+        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() ? "Passphrase entered" : "No passphrase", "", "image/" + WalletModel.SEED.getType() + ".png");
         this.wallet = null;
         this.importer = null;
         showHideLink.setVisible(false);
@@ -85,13 +85,13 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private void createEnterMnemonicButton() {
         enterMnemonicButton = new SplitMenuButton();
         enterMnemonicButton.setAlignment(Pos.CENTER_RIGHT);
-        enterMnemonicButton.setText("Set Words Size");
+        enterMnemonicButton.setText("Enter 24 Words");
         enterMnemonicButton.setOnAction(event -> {
             enterMnemonic(24);
         });
-        int[] numberWords = new int[] {24, 21, 18, 15, 12};
+        int[] numberWords = new int[] {21, 18, 15, 12};
         for(int i = 0; i < numberWords.length; i++) {
-            MenuItem item = new MenuItem(numberWords[i] + " words");
+            MenuItem item = new MenuItem("Enter " + numberWords[i] + " Words");
             final int words = numberWords[i];
             item.setOnAction(event -> {
                 enterMnemonic(words);
@@ -110,7 +110,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             importButton.setDisable(true);
             importKeystore(wallet.getScriptType().getDefaultDerivation(), false);
         });
-        String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
+        String[] accounts = new String[] {"Import Default Account #0", "Import Account #1", "Import Account #2", "Import Account #3", "Import Account #4", "Import Account #5", "Import Account #6", "Import Account #7", "Import Account #8", "Import Account #9"};
         int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
         for(int i = 0; i < scriptAccountsLength; i++) {
             MenuItem item = new MenuItem(accounts[i]);
@@ -202,14 +202,14 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             confirmButton.setDefaultButton(true);
             confirmButton.setTooltip(new Tooltip("Re-enter the generated word list to confirm your backup is correct"));
 
-            calculateButton = new Button("Calculate Seed");
+            calculateButton = new Button("Create Keystore");
             calculateButton.setDisable(true);
             calculateButton.setDefaultButton(true);
             calculateButton.setOnAction(event -> {
                 prepareImport();
             });
             calculateButton.managedProperty().bind(calculateButton.visibleProperty());
-            calculateButton.setTooltip(new Tooltip("Calculate the seed from the provided word list"));
+            calculateButton.setTooltip(new Tooltip("Create the keystore from the provided word list"));
 
             backButton = new Button("Back");
             backButton.setOnAction(event -> {
@@ -499,7 +499,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         ));
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
 
-        Button importDerivationButton = new Button("Import");
+        Button importDerivationButton = new Button("Import Custom Derivation Keystore");
+        importDerivationButton.setDisable(true);
         importDerivationButton.setOnAction(event -> {
             showHideLink.setVisible(true);
             setExpanded(false);
@@ -508,7 +509,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         });
 
         derivationField.textProperty().addListener((observable, oldValue, newValue) -> {
-            importDerivationButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue));
+            importButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue) || !KeyDerivation.parsePath(newValue).equals(derivation));
+            importDerivationButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue) || KeyDerivation.parsePath(newValue).equals(derivation));
         });
 
         HBox contentBox = new HBox();
