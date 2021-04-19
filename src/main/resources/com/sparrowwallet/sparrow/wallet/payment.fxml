@@ -56,6 +56,17 @@
                 </ComboBox>
                 <Label style="-fx-pref-width: 15" />
                 <FiatLabel fx:id="fiatAmount" />
+                <Label fx:id="amountStatus" text="Insufficient">
+                    <tooltip>
+                        <Tooltip text="Insufficient confirmed transaction value" />
+                    </tooltip>
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" styleClass="failure" />
+                    </graphic>
+                    <padding>
+                        <Insets left="10" />
+                    </padding>
+                </Label>
                 <Region style="-fx-pref-width: 20" />
                 <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
             </Field>

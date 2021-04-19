@@ -14,10 +14,7 @@ import com.sparrowwallet.drongo.wallet.UtxoSelector;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CoinTextFormatter;
-import com.sparrowwallet.sparrow.control.CopyableTextField;
-import com.sparrowwallet.sparrow.control.FiatLabel;
-import com.sparrowwallet.sparrow.control.QRScanDialog;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
@@ -58,6 +55,9 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @FXML
     private FiatLabel fiatAmount;
+
+    @FXML
+    private Label amountStatus;
 
     @FXML
     private ToggleButton maxButton;
@@ -140,6 +140,11 @@ public class PaymentController extends WalletFormController implements Initializ
         maxButton.setDisable(!isValidAddressAndLabel());
         sendController.utxoLabelSelectionProperty().addListener((observable, oldValue, newValue) -> {
             maxButton.setText("Max" + newValue);
+        });
+        amountStatus.managedProperty().bind(amountStatus.visibleProperty());
+        amountStatus.setVisible(sendController.isInsufficientInputs());
+        sendController.insufficientInputsProperty().addListener((observable, oldValue, newValue) -> {
+            amountStatus.setVisible(newValue);
         });
 
         Optional<Tab> firstTab = sendController.getPaymentTabs().getTabs().stream().findFirst();
