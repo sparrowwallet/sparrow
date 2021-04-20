@@ -72,7 +72,7 @@ public class UtxosChart extends BarChart<String, Number> {
 
     private String getCategoryName(Entry entry) {
         if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
-            return entry.getLabel().length() > 15 ? entry.getLabel().substring(0, 15) + "..." : entry.getLabel();
+            return entry.getLabel().length() > 15 ? entry.getLabel().substring(0, 15) + "..." : entry.getLabel() + "\n" + ((UtxoEntry)entry).getDescription();
         }
 
         return ((UtxoEntry)entry).getDescription();

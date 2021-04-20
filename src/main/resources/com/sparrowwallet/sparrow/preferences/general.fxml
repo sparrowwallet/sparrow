@@ -86,9 +86,9 @@
                 <UnlabeledToggleSwitch fx:id="groupByAddress" />
                 <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once."/>
             </Field>
-            <Field text="Use mempool change:">
+            <Field text="Allow unconfirmed:">
                 <UnlabeledToggleSwitch fx:id="includeMempoolChange" />
-                <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool where all their inputs are from that wallet."/>
+                <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Notifications" styleClass="wideLabelFieldSet">
