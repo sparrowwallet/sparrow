@@ -126,6 +126,7 @@ public class ReceiveController extends WalletFormController implements Initializ
             lastUsed.setText("Never");
             lastUsed.setGraphic(getUnusedGlyph());
             address.getStyleClass().remove("error");
+            address.setDisable(false);
         } else if(!currentOutputs.isEmpty()) {
             long count = currentOutputs.size();
             BlockTransactionHashIndex lastUsedReference = currentOutputs.stream().skip(count - 1).findFirst().get();
@@ -133,11 +134,13 @@ public class ReceiveController extends WalletFormController implements Initializ
             lastUsed.setGraphic(getWarningGlyph());
             if(!address.getStyleClass().contains("error")) {
                 address.getStyleClass().add("error");
+                address.setDisable(true);
             }
         } else {
             lastUsed.setText("Unknown");
             lastUsed.setGraphic(null);
             address.getStyleClass().remove("error");
+            address.setDisable(false);
         }
     }
 

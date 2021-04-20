@@ -9,7 +9,6 @@
 <?import tornadofx.control.Fieldset?>
 <?import tornadofx.control.Form?>
 <?import tornadofx.control.Field?>
-<?import com.sparrowwallet.sparrow.control.CopyableTextField?>
 
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
