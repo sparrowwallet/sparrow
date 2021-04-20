@@ -7,10 +7,7 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.QRDisplayDialog;
-import com.sparrowwallet.sparrow.control.QRScanDialog;
-import com.sparrowwallet.sparrow.control.SeedDisplayDialog;
-import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -56,6 +53,9 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @FXML
     private Button viewSeedButton;
+
+    @FXML
+    private Button viewKeyButton;
 
     @FXML
     private Button importButton;
@@ -106,6 +106,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
 
         viewSeedButton.managedProperty().bind(viewSeedButton.visibleProperty());
+        viewKeyButton.managedProperty().bind(viewKeyButton.visibleProperty());
         scanXpubQR.managedProperty().bind(scanXpubQR.visibleProperty());
         displayXpubQR.managedProperty().bind(displayXpubQR.visibleProperty());
         displayXpubQR.visibleProperty().bind(scanXpubQR.visibleProperty().not());
@@ -246,7 +247,8 @@ public class KeystoreController extends WalletFormController implements Initiali
     private void updateType() {
         type.setText(getTypeLabel(keystore));
         type.setGraphic(getTypeIcon(keystore));
-        viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED);
+        viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasSeed());
+        viewKeyButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasMasterPrivateExtendedKey());
 
         importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Replace...");
         importButton.setTooltip(new Tooltip(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import a keystore from an external source" : "Replace this keystore with another source"));
@@ -317,6 +319,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             keystore.setLabel(importedKeystore.getLabel());
             keystore.setKeyDerivation(importedKeystore.getKeyDerivation());
             keystore.setExtendedPublicKey(importedKeystore.getExtendedPublicKey());
+            keystore.setMasterPrivateExtendedKey(importedKeystore.getMasterPrivateExtendedKey());
             keystore.setSeed(importedKeystore.getSeed());
 
             updateType();
@@ -333,7 +336,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
     }
 
-    public void showSeed(ActionEvent event) {
+    public void showPrivate(ActionEvent event) {
         int keystoreIndex = getWalletForm().getWallet().getKeystores().indexOf(keystore);
         Wallet copy = getWalletForm().getWallet().copy();
 
@@ -345,7 +348,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
-                    showSeed(decryptedWallet.getKeystores().get(keystoreIndex));
+                    showPrivate(decryptedWallet.getKeystores().get(keystoreIndex));
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Failed"));
@@ -355,13 +358,18 @@ public class KeystoreController extends WalletFormController implements Initiali
                 decryptWalletService.start();
             }
         } else {
-            showSeed(keystore);
+            showPrivate(keystore);
         }
     }
 
-    private void showSeed(Keystore keystore) {
-        SeedDisplayDialog dlg = new SeedDisplayDialog(keystore);
-        dlg.showAndWait();
+    private void showPrivate(Keystore keystore) {
+        if(keystore.hasSeed()) {
+            SeedDisplayDialog dlg = new SeedDisplayDialog(keystore);
+            dlg.showAndWait();
+        } else if(keystore.hasMasterPrivateExtendedKey()) {
+            MasterKeyDisplayDialog dlg = new MasterKeyDisplayDialog(keystore);
+            dlg.showAndWait();
+        }
     }
 
     public void scanXpubQR(ActionEvent event) {

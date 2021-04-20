@@ -787,7 +787,7 @@ public class AppController implements Initializable {
     }
 
     private void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
-        if(wallet.containsSeeds()) {
+        if(wallet.containsPrivateKeys()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
             Wallet copy = wallet.copy();
             for(Keystore copyKeystore : copy.getKeystores()) {
@@ -823,6 +823,12 @@ public class AppController implements Initializable {
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
                     copyKeystore.getSeed().clear();
+                } else if(keystore.hasMasterPrivateExtendedKey()) {
+                    Keystore copyKeystore = copy.getKeystores().get(i);
+                    Keystore derivedKeystore = Keystore.fromMasterPrivateExtendedKey(copyKeystore.getMasterPrivateExtendedKey(), copyKeystore.getKeyDerivation().getDerivation());
+                    keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                    keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                    copyKeystore.getMasterPrivateKey().clear();
                 }
             }
         }
@@ -966,7 +972,7 @@ public class AppController implements Initializable {
             WalletTabData walletTabData = (WalletTabData)tab.getUserData();
             Wallet wallet = walletTabData.getWallet();
             if(wallet.getKeystores().size() == 1 &&
-                    (wallet.getKeystores().get(0).hasSeed() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
+                    (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
                 //Can sign and verify
                 messageSignDialog = new MessageSignDialog(wallet);
             }

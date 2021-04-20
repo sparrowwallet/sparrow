@@ -527,7 +527,7 @@ public class Storage {
         @Override
         public JsonElement serialize(Keystore keystore, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(keystore);
-            if(keystore.hasSeed()) {
+            if(keystore.hasPrivateKey()) {
                 jsonObject.remove("extendedPublicKey");
                 jsonObject.getAsJsonObject("keyDerivation").remove("masterFingerprint");
             }

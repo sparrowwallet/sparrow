@@ -73,7 +73,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             if(wallet.getKeystores().size() != 1) {
                 throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
             }
-            if(!wallet.getKeystores().get(0).hasSeed() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
+            if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
                 throw new IllegalArgumentException("Cannot sign messages using a wallet without a seed or USB keystore");
             }
         }
@@ -211,7 +211,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             return;
         }
 
-        if(wallet.containsSeeds()) {
+        if(wallet.containsPrivateKeys()) {
             if(wallet.isEncrypted()) {
                 EventManager.get().post(new RequestOpenWalletsEvent());
             } else {
@@ -230,6 +230,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             String signatureText = privKey.signMessage(message.getText().trim(), decryptedWallet.getScriptType(), null);
             signature.clear();
             signature.appendText(signatureText);
+            privKey.clear();
         } catch(Exception e) {
             log.error("Could not sign message", e);
             AppServices.showErrorDialog("Could not sign message", e.getMessage());
@@ -316,6 +317,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
                 Wallet decryptedWallet = decryptWalletService.getValue();
                 signUnencryptedKeystore(decryptedWallet);
+                decryptedWallet.clearPrivate();
             });
             decryptWalletService.setOnFailed(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));

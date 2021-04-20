@@ -328,11 +328,11 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
                     ek.xprv = keystore.getExtendedPrivateKey().toString(xprvHeader);
                     ek.pw_hash_version = 1;
-                    if(keystore.getSeed().getType() == DeterministicSeed.Type.ELECTRUM) {
+                    if(keystore.getSeed() == null || keystore.getSeed().getType() == DeterministicSeed.Type.BIP39) {
+                        ew.seed_type = "bip39";
+                    } else if(keystore.getSeed().getType() == DeterministicSeed.Type.ELECTRUM) {
                         ek.seed = keystore.getSeed().getMnemonicString().asString();
                         ek.passphrase = keystore.getSeed().getPassphrase() == null ? null : keystore.getSeed().getPassphrase().asString();
-                    } else if(keystore.getSeed().getType() == DeterministicSeed.Type.BIP39) {
-                        ew.seed_type = "bip39";
                     }
                     ew.use_encryption = false;
                 } else if(keystore.getSource() == KeystoreSource.SW_WATCH) {

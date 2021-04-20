@@ -115,7 +115,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 actionBox.getChildren().add(receiveButton);
 
                 if(nodeEntry.getWallet().getKeystores().size() == 1 &&
-                        (nodeEntry.getWallet().getKeystores().get(0).hasSeed() || nodeEntry.getWallet().getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
+                        (nodeEntry.getWallet().getKeystores().get(0).hasPrivateKey() || nodeEntry.getWallet().getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
                     Button signMessageButton = new Button("");
                     Glyph signMessageGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.PEN_FANCY);
                     signMessageGlyph.setFontSize(12);

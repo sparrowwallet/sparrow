@@ -698,7 +698,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void signSoftwareKeystores() {
-        if(headersForm.getSigningWallet().getKeystores().stream().noneMatch(Keystore::hasSeed)) {
+        if(headersForm.getSigningWallet().getKeystores().stream().noneMatch(Keystore::hasPrivateKey)) {
             return;
         }
 
