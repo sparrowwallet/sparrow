@@ -44,7 +44,7 @@
                         <CopyableLabel fx:id="derivationPath" />
                     </Field>
                     <Field fx:id="lastUsedField" text="Last Used:">
-                        <Label fx:id="lastUsed" contentDisplay="RIGHT" />
+                        <Label fx:id="lastUsed" />
                     </Field>
                 </Fieldset>
             </Form>

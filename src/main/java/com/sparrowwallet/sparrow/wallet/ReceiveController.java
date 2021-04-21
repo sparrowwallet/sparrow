@@ -7,11 +7,9 @@ import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
-import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
-import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -23,6 +21,7 @@ import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
@@ -30,6 +29,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import org.controlsfx.glyphfont.Glyph;
 import org.fxmisc.richtext.CodeArea;
 import org.slf4j.Logger;
@@ -88,6 +88,15 @@ public class ReceiveController extends WalletFormController implements Initializ
 
         displayAddress.managedProperty().bind(displayAddress.visibleProperty());
         displayAddress.setVisible(false);
+
+        qrCode.setOnMouseClicked(event -> {
+            if(currentEntry != null) {
+                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(currentEntry.getAddress().toString());
+                qrDisplayDialog.showAndWait();
+            }
+        });
+
+        Platform.runLater(this::refreshAddress);
     }
 
     public void setNodeEntry(NodeEntry nodeEntry) {
@@ -138,7 +147,7 @@ public class ReceiveController extends WalletFormController implements Initializ
             }
         } else {
             lastUsed.setText("Unknown");
-            lastUsed.setGraphic(null);
+            lastUsed.setGraphic(getUnknownGlyph());
             address.getStyleClass().remove("error");
             address.setDisable(false);
         }
@@ -189,6 +198,10 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     public void getNewAddress(ActionEvent event) {
+        refreshAddress();
+    }
+
+    public void refreshAddress() {
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
         setNodeEntry(freshEntry);
     }
@@ -252,6 +265,12 @@ public class ReceiveController extends WalletFormController implements Initializ
         return duplicateGlyph;
     }
 
+    public static Glyph getUnknownGlyph() {
+        Glyph duplicateGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QUESTION_CIRCLE);
+        duplicateGlyph.setFontSize(12);
+        return duplicateGlyph;
+    }
+
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         displayAddress.setUserData(null);
@@ -267,7 +286,8 @@ public class ReceiveController extends WalletFormController implements Initializ
     @Subscribe
     public void walletNodesChanged(WalletNodesChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            clear();
+            currentEntry = null;
+            refreshAddress();
         }
     }
 
@@ -275,7 +295,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             if(currentEntry != null && event.getHistoryChangedNodes().contains(currentEntry.getNode())) {
-                updateLastUsed();
+                refreshAddress();
             }
         }
     }
