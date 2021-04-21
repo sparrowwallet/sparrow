@@ -289,6 +289,8 @@ public class PaymentController extends WalletFormController implements Initializ
 
         fiatAmount.setText("");
         setSendMax(false);
+
+        amountStatus.setVisible(false);
     }
 
     public void setMaxInput(ActionEvent event) {

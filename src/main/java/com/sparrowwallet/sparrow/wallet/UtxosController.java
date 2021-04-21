@@ -160,4 +160,9 @@ public class UtxosController extends WalletFormController implements Initializab
             utxosTable.refresh();
         }
     }
+
+    @Subscribe
+    public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
+        utxosTable.refresh();
+    }
 }

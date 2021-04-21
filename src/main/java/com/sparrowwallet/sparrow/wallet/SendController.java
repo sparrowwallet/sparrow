@@ -338,7 +338,7 @@ public class SendController extends WalletFormController implements Initializabl
                     setTargetBlocks(getTargetBlocks(feeRate));
                     setFeeRangeRate(feeRate);
 
-                    if(walletTransaction.getFee() != getFeeValueSats()) {
+                    if(walletTransaction.getFee() != getFeeValueSats() && feeRate > getMinimumFeeRate()) {
                         setFeeValueSats(walletTransaction.getFee());
                     }
                 } else {
@@ -1032,5 +1032,10 @@ public class SendController extends WalletFormController implements Initializabl
                 updateTransaction();
             }
         }
+    }
+
+    @Subscribe
+    public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
+        updateTransaction();
     }
 }

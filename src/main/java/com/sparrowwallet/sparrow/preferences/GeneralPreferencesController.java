@@ -119,6 +119,7 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         });
         includeMempoolOutputs.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
             config.setIncludeMempoolOutputs(newValue);
+            EventManager.get().post(new IncludeMempoolOutputsChangedEvent());
         });
 
         notifyNewTransactions.setSelected(config.isNotifyNewTransactions());

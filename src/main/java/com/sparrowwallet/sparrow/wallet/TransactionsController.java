@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -225,5 +226,10 @@ public class TransactionsController extends WalletFormController implements Init
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             transactionsTable.refresh();
         }
+    }
+
+    @Subscribe
+    public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
+        walletHistoryChanged(new WalletHistoryChangedEvent(getWalletForm().getWallet(), getWalletForm().getStorage(), Collections.emptyList()));
     }
 }
