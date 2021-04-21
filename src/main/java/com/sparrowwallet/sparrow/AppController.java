@@ -323,6 +323,10 @@ public class AppController implements Initializable {
         }
     }
 
+    public void submitBugReport(ActionEvent event) throws IOException {
+        AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/submitbugreport");
+    }
+
     public void showAbout(ActionEvent event) {
         Stage aboutStage = getAboutStage();
         aboutStage.show();
