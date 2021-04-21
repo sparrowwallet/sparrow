@@ -59,7 +59,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     }
 
     public boolean isSpendable() {
-        return !isSpent() && (hashIndex.getHeight() > 0 || Config.get().isIncludeMempoolChange()) && (hashIndex.getStatus() == null || hashIndex.getStatus() != Status.FROZEN);
+        return !isSpent() && (hashIndex.getHeight() > 0 || Config.get().isIncludeMempoolOutputs()) && (hashIndex.getStatus() == null || hashIndex.getStatus() != Status.FROZEN);
     }
 
     @Override

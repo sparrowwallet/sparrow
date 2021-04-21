@@ -38,7 +38,7 @@ public class WalletTransactionsEntry extends Entry {
 
         for(Entry entry : getChildren()) {
             TransactionEntry transactionEntry = (TransactionEntry)entry;
-            if(transactionEntry.getConfirmations() != 0 || transactionEntry.getValue() < 0 || Config.get().isIncludeMempoolChange()) {
+            if(transactionEntry.getConfirmations() != 0 || transactionEntry.getValue() < 0 || Config.get().isIncludeMempoolOutputs()) {
                 balance += entry.getValue();
             }
 

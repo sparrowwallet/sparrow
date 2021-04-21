@@ -43,7 +43,7 @@ public class GeneralPreferencesController extends PreferencesDetailController {
     private UnlabeledToggleSwitch groupByAddress;
 
     @FXML
-    private UnlabeledToggleSwitch includeMempoolChange;
+    private UnlabeledToggleSwitch includeMempoolOutputs;
 
     @FXML
     private UnlabeledToggleSwitch notifyNewTransactions;
@@ -113,12 +113,12 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         });
 
         groupByAddress.setSelected(config.isGroupByAddress());
-        includeMempoolChange.setSelected(config.isIncludeMempoolChange());
+        includeMempoolOutputs.setSelected(config.isIncludeMempoolOutputs());
         groupByAddress.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
             config.setGroupByAddress(newValue);
         });
-        includeMempoolChange.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
-            config.setIncludeMempoolChange(newValue);
+        includeMempoolOutputs.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
+            config.setIncludeMempoolOutputs(newValue);
         });
 
         notifyNewTransactions.setSelected(config.isNotifyNewTransactions());

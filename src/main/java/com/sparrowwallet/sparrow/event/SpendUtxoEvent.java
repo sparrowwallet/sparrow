@@ -11,18 +11,18 @@ public class SpendUtxoEvent {
     private final List<BlockTransactionHashIndex> utxos;
     private final List<Payment> payments;
     private final Long fee;
-    private final boolean includeMempoolInputs;
+    private final boolean includeSpentMempoolOutputs;
 
     public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos) {
         this(wallet, utxos, null, null, false);
     }
 
-    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, Long fee, boolean includeMempoolInputs) {
+    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, Long fee, boolean includeSpentMempoolOutputs) {
         this.wallet = wallet;
         this.utxos = utxos;
         this.payments = payments;
         this.fee = fee;
-        this.includeMempoolInputs = includeMempoolInputs;
+        this.includeSpentMempoolOutputs = includeSpentMempoolOutputs;
     }
 
     public Wallet getWallet() {
@@ -41,7 +41,7 @@ public class SpendUtxoEvent {
         return fee;
     }
 
-    public boolean isIncludeMempoolInputs() {
-        return includeMempoolInputs;
+    public boolean isIncludeSpentMempoolOutputs() {
+        return includeSpentMempoolOutputs;
     }
 }

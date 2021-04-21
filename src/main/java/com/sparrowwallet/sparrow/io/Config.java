@@ -28,7 +28,7 @@ public class Config {
     private boolean loadRecentWallets = true;
     private boolean validateDerivationPaths = true;
     private boolean groupByAddress = true;
-    private boolean includeMempoolChange = true;
+    private boolean includeMempoolOutputs = true;
     private boolean notifyNewTransactions = true;
     private boolean checkNewVersions = true;
     private Theme theme;
@@ -183,12 +183,12 @@ public class Config {
         flush();
     }
 
-    public boolean isIncludeMempoolChange() {
-        return includeMempoolChange;
+    public boolean isIncludeMempoolOutputs() {
+        return includeMempoolOutputs;
     }
 
-    public void setIncludeMempoolChange(boolean includeMempoolChange) {
-        this.includeMempoolChange = includeMempoolChange;
+    public void setIncludeMempoolOutputs(boolean includeMempoolOutputs) {
+        this.includeMempoolOutputs = includeMempoolOutputs;
         flush();
     }
 

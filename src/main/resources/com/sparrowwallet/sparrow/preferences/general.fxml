@@ -87,7 +87,7 @@
                 <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once."/>
             </Field>
             <Field text="Allow unconfirmed:">
-                <UnlabeledToggleSwitch fx:id="includeMempoolChange" />
+                <UnlabeledToggleSwitch fx:id="includeMempoolOutputs" />
                 <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool."/>
             </Field>
         </Fieldset>

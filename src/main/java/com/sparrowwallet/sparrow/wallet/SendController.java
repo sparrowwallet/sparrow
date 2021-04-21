@@ -44,7 +44,6 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class SendController extends WalletFormController implements Initializable {
@@ -128,7 +127,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final StringProperty utxoLabelSelectionProperty = new SimpleStringProperty("");
 
-    private final BooleanProperty includeMempoolInputsProperty = new SimpleBooleanProperty(false);
+    private final BooleanProperty includeSpentMempoolOutputsProperty = new SimpleBooleanProperty(false);
 
     private final ChangeListener<String> feeListener = new ChangeListener<>() {
         @Override
@@ -480,9 +479,9 @@ public class SendController extends WalletFormController implements Initializabl
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 Integer currentBlockHeight = AppServices.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
-                boolean includeMempoolChange = Config.get().isIncludeMempoolChange();
-                boolean includeMempoolInputs = includeMempoolInputsProperty.get();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), payments, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolChange, includeMempoolInputs);
+                boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
+                boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), payments, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 
@@ -791,7 +790,7 @@ public class SendController extends WalletFormController implements Initializabl
         setDefaultFeeRate();
         utxoSelectorProperty.setValue(null);
         utxoFilterProperty.setValue(null);
-        includeMempoolInputsProperty.set(false);
+        includeSpentMempoolOutputsProperty.set(false);
         walletTransactionProperty.setValue(null);
         createdWalletTransactionProperty.set(null);
 
@@ -957,7 +956,7 @@ public class SendController extends WalletFormController implements Initializabl
                 userFeeSet.set(true);
             }
 
-            includeMempoolInputsProperty.set(event.isIncludeMempoolInputs());
+            includeSpentMempoolOutputsProperty.set(event.isIncludeSpentMempoolOutputs());
 
             List<BlockTransactionHashIndex> utxos = event.getUtxos();
             utxoSelectorProperty.set(new PresetUtxoSelector(utxos));
