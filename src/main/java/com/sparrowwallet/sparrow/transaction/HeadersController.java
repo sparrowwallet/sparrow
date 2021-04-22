@@ -941,7 +941,7 @@ public class HeadersController extends TransactionFormController implements Init
         if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
             if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || headersForm.getBlockTransaction() == null)) {
                 updateBlockchainForm(event.getBlockTransaction(), AppServices.getCurrentBlockHeight());
-            } else if(headersForm.getPsbt() == null) {
+            } else if(headersForm.getPsbt() == null && headersForm.getBlockTransaction() == null) {
                 boolean isSigned = true;
                 ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap = FXCollections.observableMap(new LinkedHashMap<>());
                 for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
