@@ -1546,6 +1546,7 @@ public class AppController implements Initializable {
     public void connection(ConnectionEvent event) {
         String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
         statusUpdated(new StatusEvent(status));
+        setServerToggleTooltip(event.getBlockHeight());
     }
 
     @Subscribe
