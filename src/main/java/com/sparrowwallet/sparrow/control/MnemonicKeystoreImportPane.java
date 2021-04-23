@@ -360,7 +360,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             importButton.setDisable(false);
             setDescription("Ready to import");
             showHideLink.setText("Show Derivation...");
-            showHideLink.setVisible(true);
+            showHideLink.setVisible(false);
             setContent(getDerivationEntry(wallet.getScriptType().getDefaultDerivation()));
         }
     }
