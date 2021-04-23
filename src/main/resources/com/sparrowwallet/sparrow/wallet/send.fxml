@@ -90,6 +90,14 @@
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">
                             <CopyableLabel fx:id="feeRate" />
+                            <Label fx:id="cpfpFeeRate" text="CPFP">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="SIGN_OUT_ALT" />
+                                </graphic>
+                                <padding>
+                                    <Insets left="10"/>
+                                </padding>
+                            </Label>
                             <Region HBox.hgrow="ALWAYS" />
                             <Label fx:id="feeRatePriority" graphicTextGap="5" contentDisplay="RIGHT">
                                 <graphic>

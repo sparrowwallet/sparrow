@@ -82,6 +82,9 @@ public class SendController extends WalletFormController implements Initializabl
     private CopyableLabel feeRate;
 
     @FXML
+    private Label cpfpFeeRate;
+
+    @FXML
     private Label feeRatePriority;
 
     @FXML
@@ -281,6 +284,8 @@ public class SendController extends WalletFormController implements Initializabl
 
         FeeRatesSelection feeRatesSelection = Config.get().getFeeRatesSelection();
         feeRatesSelection = (feeRatesSelection == null ? FeeRatesSelection.MEMPOOL_SIZE : feeRatesSelection);
+        cpfpFeeRate.managedProperty().bind(cpfpFeeRate.visibleProperty());
+        cpfpFeeRate.setVisible(false);
         setDefaultFeeRate();
         updateFeeRateSelection(feeRatesSelection);
         feeSelectionToggleGroup.selectToggle(feeRatesSelection == FeeRatesSelection.BLOCK_TARGET ? targetBlocksToggle : mempoolSizeToggle);
@@ -346,6 +351,7 @@ public class SendController extends WalletFormController implements Initializabl
                 }
 
                 setFeeRate(feeRate);
+                setEffectiveFeeRate(walletTransaction);
             }
 
             transactionDiagram.update(walletTransaction);
@@ -354,7 +360,7 @@ public class SendController extends WalletFormController implements Initializabl
 
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
             if(oldScene == null && newScene != null) {
-                transactionDiagram.update(null);
+                transactionDiagram.update(walletTransactionProperty.get());
                 newScene.getWindow().heightProperty().addListener((observable1, oldValue, newValue) -> {
                     transactionDiagram.update(walletTransactionProperty.get());
                 });
@@ -636,8 +642,26 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void setFeeRate(Double feeRateAmt) {
-        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte");
+        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vB");
         setFeeRatePriority(feeRateAmt);
+    }
+
+    private void setEffectiveFeeRate(WalletTransaction walletTransaction) {
+        List<BlockTransaction> unconfirmedUtxoTxs = walletTransaction.getSelectedUtxos().keySet().stream().filter(ref -> ref.getHeight() <= 0)
+                .map(ref -> getWalletForm().getWallet().getTransactions().get(ref.getHash())).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        if(!unconfirmedUtxoTxs.isEmpty()) {
+            cpfpFeeRate.setVisible(true);
+            long utxoTxFee = unconfirmedUtxoTxs.stream().mapToLong(BlockTransaction::getFee).sum();
+            double utxoTxSize = unconfirmedUtxoTxs.stream().mapToDouble(blkTx -> blkTx.getTransaction().getVirtualSize()).sum();
+            long thisFee = walletTransaction.getFee();
+            double thisSize = walletTransaction.getTransaction().getVirtualSize();
+            double effectiveRate = (utxoTxFee + thisFee) / (utxoTxSize + thisSize);
+            Tooltip tooltip = new Tooltip(String.format("%.2f", effectiveRate) + " sats/vB effective rate");
+            cpfpFeeRate.setTooltip(tooltip);
+            cpfpFeeRate.setVisible(true);
+        } else {
+            cpfpFeeRate.setVisible(false);
+        }
     }
 
     private void setFeeRatePriority(Double feeRateAmt) {
@@ -961,7 +985,7 @@ public class SendController extends WalletFormController implements Initializabl
             List<BlockTransactionHashIndex> utxos = event.getUtxos();
             utxoSelectorProperty.set(new PresetUtxoSelector(utxos));
             utxoFilterProperty.set(null);
-            updateTransaction(event.getPayments() == null);
+            updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
         }
     }
 

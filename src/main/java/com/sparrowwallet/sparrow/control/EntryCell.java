@@ -92,6 +92,17 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     actionBox.getChildren().add(increaseFeeButton);
                 }
 
+                if(blockTransaction.getHeight() <= 0 && containsWalletOutputs(transactionEntry)) {
+                    Button cpfpButton = new Button("");
+                    Glyph cpfpGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SIGN_OUT_ALT);
+                    cpfpGlyph.setFontSize(12);
+                    cpfpButton.setGraphic(cpfpGlyph);
+                    cpfpButton.setOnAction(event -> {
+                        createCpfp(transactionEntry);
+                    });
+                    actionBox.getChildren().add(cpfpButton);
+                }
+
                 setGraphic(actionBox);
             } else if(entry instanceof NodeEntry) {
                 NodeEntry nodeEntry = (NodeEntry)entry;
@@ -245,6 +256,37 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         return AppServices.getTargetBlockFeeRates().values().iterator().next();
     }
 
+    private static void createCpfp(TransactionEntry transactionEntry) {
+        BlockTransaction blockTransaction = transactionEntry.getBlockTransaction();
+        List<BlockTransactionHashIndex> ourOutputs = transactionEntry.getChildren().stream()
+                .filter(e -> e instanceof HashIndexEntry)
+                .map(e -> (HashIndexEntry)e)
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT))
+                .map(HashIndexEntry::getHashIndex)
+                .collect(Collectors.toList());
+
+        if(ourOutputs.isEmpty()) {
+            throw new IllegalStateException("Cannot create CPFP without any wallet outputs to spend");
+        }
+
+        BlockTransactionHashIndex utxo = ourOutputs.get(0);
+
+        WalletNode freshNode = transactionEntry.getWallet().getFreshNode(KeyPurpose.RECEIVE);
+        String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
+        label += (label.isEmpty() ? "" : " ") + "(CPFP)";
+        Payment payment = new Payment(transactionEntry.getWallet().getAddress(freshNode), label, utxo.getValue(), true);
+
+        EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), List.of(utxo)));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), blockTransaction.getFee(), false)));
+    }
+
+    private static boolean containsWalletOutputs(TransactionEntry transactionEntry) {
+        return transactionEntry.getChildren().stream()
+                .filter(e -> e instanceof HashIndexEntry)
+                .map(e -> (HashIndexEntry)e)
+                .anyMatch(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT));
+    }
+
     private static void sendSelectedUtxos(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
         List<HashIndexEntry> utxoEntries = treeTableView.getSelectionModel().getSelectedCells().stream()
                 .map(tp -> tp.getTreeItem().getValue())
@@ -286,13 +328,23 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             getItems().add(copyTxid);
 
             if(blockTransaction.getTransaction().isReplaceByFee() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
-                MenuItem increaseFee = new MenuItem("Increase Fee");
+                MenuItem increaseFee = new MenuItem("Increase Fee (RBF)");
                 increaseFee.setOnAction(AE -> {
                     hide();
                     increaseFee(transactionEntry);
                 });
 
                 getItems().add(increaseFee);
+            }
+
+            if(containsWalletOutputs(transactionEntry)) {
+                MenuItem createCpfp = new MenuItem("Increase Effective Fee (CPFP)");
+                createCpfp.setOnAction(AE -> {
+                    hide();
+                    createCpfp(transactionEntry);
+                });
+
+                getItems().add(createCpfp);
             }
         }
     }
