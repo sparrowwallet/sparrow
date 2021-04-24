@@ -650,7 +650,6 @@ public class SendController extends WalletFormController implements Initializabl
         List<BlockTransaction> unconfirmedUtxoTxs = walletTransaction.getSelectedUtxos().keySet().stream().filter(ref -> ref.getHeight() <= 0)
                 .map(ref -> getWalletForm().getWallet().getTransactions().get(ref.getHash())).filter(Objects::nonNull).distinct().collect(Collectors.toList());
         if(!unconfirmedUtxoTxs.isEmpty()) {
-            cpfpFeeRate.setVisible(true);
             long utxoTxFee = unconfirmedUtxoTxs.stream().mapToLong(BlockTransaction::getFee).sum();
             double utxoTxSize = unconfirmedUtxoTxs.stream().mapToDouble(blkTx -> blkTx.getTransaction().getVirtualSize()).sum();
             long thisFee = walletTransaction.getFee();
@@ -808,6 +807,7 @@ public class SendController extends WalletFormController implements Initializabl
         fee.setText("");
         fee.textProperty().addListener(feeListener);
 
+        cpfpFeeRate.setVisible(false);
         fiatFeeAmount.setText("");
 
         userFeeSet.set(false);
@@ -1061,5 +1061,12 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
         updateTransaction();
+    }
+
+    @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        if(cpfpFeeRate.isVisible()) {
+            updateTransaction();
+        }
     }
 }
