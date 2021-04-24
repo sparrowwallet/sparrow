@@ -531,6 +531,7 @@ public class TransactionController implements Initializable {
         if(event.getPsbt().equals(getPSBT())) {
             txhex.setTransaction(getTransaction());
             highlightTxHex();
+            txtree.refresh();
         }
     }
 
