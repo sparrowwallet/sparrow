@@ -342,10 +342,6 @@ public class SendController extends WalletFormController implements Initializabl
                 if(userFeeSet.get()) {
                     setTargetBlocks(getTargetBlocks(feeRate));
                     setFeeRangeRate(feeRate);
-
-                    if(walletTransaction.getFee() != getFeeValueSats() && feeRate > getMinimumFeeRate()) {
-                        setFeeValueSats(walletTransaction.getFee());
-                    }
                 } else {
                     setFeeValueSats(walletTransaction.getFee());
                 }
@@ -483,17 +479,18 @@ public class SendController extends WalletFormController implements Initializabl
             if(!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0)) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
+                double feeRate = getUserFeeRate();
                 Integer currentBlockHeight = AppServices.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), payments, getFeeRate(), getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), payments, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 walletTransactionProperty.setValue(walletTransaction);
                 insufficientInputsProperty.set(false);
 
                 return;
             }
-        } catch(InvalidAddressException | IllegalStateException e) {
+        } catch(InvalidAddressException | IllegalStateException | IllegalArgumentException e) {
             //ignore
         } catch(InsufficientFundsException e) {
             insufficientInputsProperty.set(true);
@@ -508,8 +505,8 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         Wallet wallet = getWalletForm().getWallet();
-        long noInputsFee = wallet.getNoInputsFee(getPayments(), getFeeRate());
-        long costOfChange = wallet.getCostOfChange(getFeeRate(), getMinimumFeeRate());
+        long noInputsFee = wallet.getNoInputsFee(getPayments(), getUserFeeRate());
+        long costOfChange = wallet.getCostOfChange(getUserFeeRate(), getMinimumFeeRate());
 
         return List.of(new BnBUtxoSelector(noInputsFee, costOfChange), new KnapsackUtxoSelector(noInputsFee));
     }
@@ -617,6 +614,17 @@ public class SendController extends WalletFormController implements Initializabl
         feeRange.valueProperty().removeListener(feeRangeListener);
         feeRange.setValue(Math.log(feeRate) / Math.log(2));
         feeRange.valueProperty().addListener(feeRangeListener);
+    }
+
+    /**
+     * This method retrieves the fee rate used as input to constructing the transaction.
+     * Where the user has set a custom fee amount, using the slider fee rate can mean the UTXO selectors underestimate the UTXO effective values and fail to find a solution
+     * In this case, use a fee rate of 1 sat/VB for maximum flexibility
+     *
+     * @return the fee rate to use when constructing a transaction
+     */
+    public Double getUserFeeRate() {
+        return (userFeeSet.get() ? Transaction.DEFAULT_MIN_RELAY_FEE : getFeeRate());
     }
 
     public Double getFeeRate() {

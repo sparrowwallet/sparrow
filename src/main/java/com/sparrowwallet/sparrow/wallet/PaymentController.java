@@ -219,7 +219,7 @@ public class PaymentController extends WalletFormController implements Initializ
         }
 
         TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
-        return address.getScriptType().getDustThreshold(txOutput, sendController.getFeeRate());
+        return address.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
     }
 
     private void setFiatAmount(CurrencyRate currencyRate, Long amount) {
