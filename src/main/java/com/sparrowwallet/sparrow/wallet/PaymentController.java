@@ -235,8 +235,10 @@ public class PaymentController extends WalletFormController implements Initializ
     private void revalidate(TextField field, ChangeListener<String> listener) {
         field.textProperty().removeListener(listener);
         String amt = field.getText();
+        int caret = field.getCaretPosition();
         field.setText(amt + "0");
         field.setText(amt);
+        field.positionCaret(caret);
         field.textProperty().addListener(listener);
     }
 

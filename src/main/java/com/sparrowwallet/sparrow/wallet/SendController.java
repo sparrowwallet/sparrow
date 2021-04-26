@@ -13,15 +13,16 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.net.ElectrumServer;
-import com.sparrowwallet.sparrow.net.FeeRatesSource;
-import com.sparrowwallet.sparrow.net.MempoolRateSize;
+import com.sparrowwallet.sparrow.net.*;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ListChangeListener;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -29,6 +30,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -186,6 +188,8 @@ public class SendController extends WalletFormController implements Initializabl
     };
 
     private ValidationSupport validationSupport;
+
+    private WalletTransactionService walletTransactionService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -484,19 +488,39 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
-                WalletTransaction walletTransaction = wallet.createWalletTransaction(getUtxoSelectors(), getUtxoFilters(), payments, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
-                walletTransactionProperty.setValue(walletTransaction);
-                insufficientInputsProperty.set(false);
 
-                return;
+                if(walletTransactionService != null && walletTransactionService.isRunning()) {
+                    walletTransactionService.cancel();
+                }
+
+                walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(), getUtxoFilters(), payments, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                walletTransactionService.setOnSucceeded(event -> {
+                    walletTransactionProperty.setValue(walletTransactionService.getValue());
+                    insufficientInputsProperty.set(false);
+                });
+                walletTransactionService.setOnFailed(event -> {
+                    transactionDiagram.clear();
+                    walletTransactionProperty.setValue(null);
+                    if(event.getSource().getException() instanceof InsufficientFundsException) {
+                        insufficientInputsProperty.set(true);
+                    }
+                });
+
+                final WalletTransactionService currentWalletTransactionService = walletTransactionService;
+                final KeyFrame delay = new KeyFrame(Duration.millis(200), e -> {
+                    if(currentWalletTransactionService.isRunning()) {
+                        transactionDiagram.update("Selecting UTXOs...");
+                        createButton.setDisable(true);
+                    }
+                });
+                final Timeline timeline = new Timeline(delay);
+                timeline.play();
+
+                walletTransactionService.start();
             }
-        } catch(InvalidAddressException | IllegalStateException | IllegalArgumentException e) {
-            //ignore
-        } catch(InsufficientFundsException e) {
-            insufficientInputsProperty.set(true);
+        } catch(InvalidAddressException | IllegalStateException e) {
+            walletTransactionProperty.setValue(null);
         }
-
-        walletTransactionProperty.setValue(null);
     }
 
     private List<UtxoSelector> getUtxoSelectors() throws InvalidAddressException {
@@ -509,6 +533,43 @@ public class SendController extends WalletFormController implements Initializabl
         long costOfChange = wallet.getCostOfChange(getUserFeeRate(), getMinimumFeeRate());
 
         return List.of(new BnBUtxoSelector(noInputsFee, costOfChange), new KnapsackUtxoSelector(noInputsFee));
+    }
+
+    private static class WalletTransactionService extends Service<WalletTransaction> {
+        private final Wallet wallet;
+        private final List<UtxoSelector> utxoSelectors;
+        private final List<UtxoFilter> utxoFilters;
+        private final List<Payment> payments;
+        private final double feeRate;
+        private final double longTermFeeRate;
+        private final Long fee;
+        private final Integer currentBlockHeight;
+        private final boolean groupByAddress;
+        private final boolean includeMempoolOutputs;
+        private final boolean includeSpentMempoolOutputs;
+
+        public WalletTransactionService(Wallet wallet, List<UtxoSelector> utxoSelectors, List<UtxoFilter> utxoFilters, List<Payment> payments, double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, boolean includeSpentMempoolOutputs) {
+            this.wallet = wallet;
+            this.utxoSelectors = utxoSelectors;
+            this.utxoFilters = utxoFilters;
+            this.payments = payments;
+            this.feeRate = feeRate;
+            this.longTermFeeRate = longTermFeeRate;
+            this.fee = fee;
+            this.currentBlockHeight = currentBlockHeight;
+            this.groupByAddress = groupByAddress;
+            this.includeMempoolOutputs = includeMempoolOutputs;
+            this.includeSpentMempoolOutputs = includeSpentMempoolOutputs;
+        }
+
+        @Override
+        protected Task<WalletTransaction> createTask() {
+            return new Task<>() {
+                protected WalletTransaction call() throws InsufficientFundsException {
+                    return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                }
+            };
+        }
     }
 
     private List<UtxoFilter> getUtxoFilters() {
@@ -872,8 +933,10 @@ public class SendController extends WalletFormController implements Initializabl
     private void revalidate(TextField field, ChangeListener<String> listener) {
         field.textProperty().removeListener(listener);
         String amt = field.getText();
+        int caret = field.getCaretPosition();
         field.setText(amt + "0");
         field.setText(amt);
+        field.positionCaret(caret);
         field.textProperty().addListener(listener);
     }
 

@@ -49,6 +49,30 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
+    public void update(String message) {
+        setMinHeight(getDiagramHeight());
+        setMaxHeight(getDiagramHeight());
+
+        getChildren().clear();
+
+        VBox messagePane = new VBox();
+        messagePane.setPrefHeight(getDiagramHeight());
+        messagePane.setPadding(new Insets(0, 10, 0, 280));
+        messagePane.setAlignment(Pos.CENTER);
+        messagePane.getChildren().add(createSpacer());
+
+        Label messageLabel = new Label(message);
+        messagePane.getChildren().add(messageLabel);
+        messagePane.getChildren().add(createSpacer());
+
+        GridPane.setConstraints(messagePane, 3, 0);
+        getChildren().add(messagePane);
+    }
+
+    public void clear() {
+        getChildren().clear();
+    }
+
     public void update() {
         Map<BlockTransactionHashIndex, WalletNode> displayedUtxos = getDisplayedUtxos();
 
