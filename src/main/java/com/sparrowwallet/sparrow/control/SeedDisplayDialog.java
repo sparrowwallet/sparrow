@@ -44,6 +44,7 @@ public class SeedDisplayDialog extends Dialog<Void> {
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(150 + height);
+        AppServices.moveToActiveWindowScreen(this);
 
         Platform.runLater(() -> keystoreAccordion.setExpandedPane(keystorePane));
     }

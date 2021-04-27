@@ -30,6 +30,7 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
         dialogPane.setPrefWidth(380);
         dialogPane.setPrefHeight(200);
+        AppServices.moveToActiveWindowScreen(this);
 
         Glyph key = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.KEY);
         key.setFontSize(50);

@@ -41,6 +41,7 @@ public class MasterKeyDisplayDialog  extends Dialog<Void> {
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(260);
+        AppServices.moveToActiveWindowScreen(this);
 
         Platform.runLater(() -> keystoreAccordion.setExpandedPane(keystorePane));
     }

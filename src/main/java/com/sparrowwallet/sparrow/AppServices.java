@@ -29,8 +29,11 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
 import javafx.scene.image.Image;
 import javafx.scene.text.Font;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -508,6 +511,7 @@ public class AppServices {
         alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
         alert.setHeaderText(title);
+        moveToActiveWindowScreen(alert);
         return alert.showAndWait();
     }
 
@@ -517,6 +521,31 @@ public class AppServices {
 
         if(stage.getScene() != null && Config.get().getTheme() == Theme.DARK) {
             stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+        }
+    }
+
+    public static void moveToActiveWindowScreen(Dialog<?> dialog) {
+        Window activeWindow = Stage.getWindows().stream().filter(Window::isFocused).findFirst().orElse(get().walletWindows.keySet().iterator().hasNext() ? get().walletWindows.keySet().iterator().next() : null);
+        if(activeWindow != null) {
+            moveToWindowScreen(activeWindow, dialog);
+        }
+    }
+
+    public void moveToWalletWindowScreen(Storage storage, Dialog<?> dialog) {
+        moveToWindowScreen(getWindowForWallet(storage), dialog);
+    }
+
+    public static void moveToWindowScreen(Window currentWindow, Dialog<?> dialog) {
+        Window newWindow = dialog.getDialogPane().getScene().getWindow();
+        DialogPane dialogPane = dialog.getDialogPane();
+        Screen currentScreen = Screen.getScreens().stream().filter(screen -> screen.getVisualBounds().contains(currentWindow.getX(), currentWindow.getY())).findFirst().orElse(null);
+        if(currentScreen != null && !Screen.getPrimary().getVisualBounds().contains(currentWindow.getX(), currentWindow.getY()) && !currentScreen.getVisualBounds().contains(newWindow.getX(), newWindow.getY())) {
+            double dialogWidth = dialogPane.getPrefWidth() > 0.0 ? dialogPane.getPrefWidth() : (dialogPane.getWidth() > 0.0 ? dialogPane.getWidth() : 360);
+            double dialogHeight = dialogPane.getPrefHeight() > 0.0 ? dialogPane.getPrefHeight() : (dialogPane.getHeight() > 0.0 ? dialogPane.getHeight() : 200);
+            double x = currentWindow.getX() + (currentWindow.getWidth() / 2) - (dialogWidth / 2);
+            double y = currentWindow.getY() + (currentWindow.getHeight() / 2.2) - (dialogHeight / 2);
+            newWindow.setX(x);
+            newWindow.setY(y);
         }
     }
 

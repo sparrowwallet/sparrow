@@ -44,6 +44,7 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(460);
         dialogPane.setPrefHeight(requestBirthDate ? 250 : 200);
+        AppServices.moveToActiveWindowScreen(this);
 
         Glyph wallet = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
         wallet.setFontSize(50);

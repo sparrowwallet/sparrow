@@ -46,6 +46,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
             dialogPane.getButtonTypes().addAll(watchOnlyButtonType, cancelButtonType);
             dialogPane.setPrefWidth(650);
             dialogPane.setPrefHeight(620);
+            AppServices.moveToActiveWindowScreen(this);
 
             setResultConverter(dialogButton -> dialogButton != cancelButtonType ? getWatchOnlyKeystore() : null);
         } catch(IOException e) {

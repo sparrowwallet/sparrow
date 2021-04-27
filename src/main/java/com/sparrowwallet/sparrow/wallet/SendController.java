@@ -738,7 +738,7 @@ public class SendController extends WalletFormController implements Initializabl
             long thisFee = walletTransaction.getFee();
             double thisSize = walletTransaction.getTransaction().getVirtualSize();
             double effectiveRate = (utxoTxFee + thisFee) / (utxoTxSize + thisSize);
-            Tooltip tooltip = new Tooltip(String.format("%.2f", effectiveRate) + " sats/vB effective rate");
+            Tooltip tooltip = new Tooltip("Child Pays For Parent\n" + String.format("%.2f", effectiveRate) + " sats/vB effective rate");
             cpfpFeeRate.setTooltip(tooltip);
             cpfpFeeRate.setVisible(true);
         } else {

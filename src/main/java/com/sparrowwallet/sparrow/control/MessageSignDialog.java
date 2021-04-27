@@ -185,6 +185,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             EventManager.get().unregister(this);
         });
 
+        AppServices.moveToActiveWindowScreen(this);
         setResultConverter(dialogButton -> dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : ButtonBar.ButtonData.OK_DONE);
     }
 
@@ -275,6 +276,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 alert.setTitle("Verification Succeeded");
                 alert.setHeaderText("Verification Succeeded");
                 alert.setContentText("The signature verified against the message.");
+                AppServices.moveToActiveWindowScreen(alert);
                 alert.showAndWait();
             } else {
                 AppServices.showErrorDialog("Verification failed", "The provided signature did not match the message for this address.");

@@ -34,6 +34,7 @@ public class AdvancedDialog extends Dialog<Boolean> {
 
             dialogPane.setPrefWidth(400);
             dialogPane.setPrefHeight(300);
+            AppServices.moveToActiveWindowScreen(this);
 
             setResultConverter(dialogButton -> dialogButton == passwordButtonType);
         }

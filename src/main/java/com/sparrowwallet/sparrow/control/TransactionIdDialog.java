@@ -63,5 +63,6 @@ public class TransactionIdDialog extends Dialog<Sha256Hash> {
         txid.setPromptText("f4184fc596403b9d638783cf57adfe4c75c605f6356fbc91338530e9831e9e16");
         Platform.runLater(txid::requestFocus);
         setResultConverter(dialogButton -> dialogButton == okButtonType ? Sha256Hash.wrap(txid.getText()) : null);
+        AppServices.moveToActiveWindowScreen(this);
     }
 }

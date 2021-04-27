@@ -59,6 +59,7 @@ public class TextAreaDialog extends Dialog<String> {
 
         dialogPane.setPrefWidth(700);
         dialogPane.setPrefHeight(400);
+        AppServices.moveToActiveWindowScreen(this);
     }
 
     public final TextArea getEditor() {

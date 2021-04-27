@@ -96,6 +96,7 @@ public class QRDisplayDialog extends Dialog<UR> {
 
         dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
         dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
+        AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
     }
@@ -118,6 +119,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         dialogPane.getButtonTypes().addAll(cancelButtonType);
         dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
         dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
+        AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
     }
