@@ -479,6 +479,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     public void updateTransaction(List<Payment> transactionPayments) {
         if(walletTransactionService != null && walletTransactionService.isRunning()) {
+            walletTransactionService.setIgnoreResult(true);
             walletTransactionService.cancel();
         }
 
@@ -495,14 +496,18 @@ public class SendController extends WalletFormController implements Initializabl
 
                 walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(), getUtxoFilters(), payments, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 walletTransactionService.setOnSucceeded(event -> {
-                    walletTransactionProperty.setValue(walletTransactionService.getValue());
-                    insufficientInputsProperty.set(false);
+                    if(!walletTransactionService.isIgnoreResult()) {
+                        walletTransactionProperty.setValue(walletTransactionService.getValue());
+                        insufficientInputsProperty.set(false);
+                    }
                 });
                 walletTransactionService.setOnFailed(event -> {
-                    transactionDiagram.clear();
-                    walletTransactionProperty.setValue(null);
-                    if(event.getSource().getException() instanceof InsufficientFundsException) {
-                        insufficientInputsProperty.set(true);
+                    if(!walletTransactionService.isIgnoreResult()) {
+                        transactionDiagram.clear();
+                        walletTransactionProperty.setValue(null);
+                        if(event.getSource().getException() instanceof InsufficientFundsException) {
+                            insufficientInputsProperty.set(true);
+                        }
                     }
                 });
 
@@ -547,6 +552,7 @@ public class SendController extends WalletFormController implements Initializabl
         private final boolean groupByAddress;
         private final boolean includeMempoolOutputs;
         private final boolean includeSpentMempoolOutputs;
+        private boolean ignoreResult;
 
         public WalletTransactionService(Wallet wallet, List<UtxoSelector> utxoSelectors, List<UtxoFilter> utxoFilters, List<Payment> payments, double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, boolean includeSpentMempoolOutputs) {
             this.wallet = wallet;
@@ -569,6 +575,14 @@ public class SendController extends WalletFormController implements Initializabl
                     return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 }
             };
+        }
+
+        public boolean isIgnoreResult() {
+            return ignoreResult;
+        }
+
+        public void setIgnoreResult(boolean ignoreResult) {
+            this.ignoreResult = ignoreResult;
         }
     }
 

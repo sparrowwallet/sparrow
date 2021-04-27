@@ -489,7 +489,7 @@ public class HeadersController extends TransactionFormController implements Init
     private void updateFee(Long feeAmt) {
         fee.setValue(feeAmt);
         double feeRateAmt = feeAmt.doubleValue() / headersForm.getTransaction().getVirtualSize();
-        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vByte" + (headersForm.isTransactionFinalized() ? "" : " (non-final)"));
+        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vB" + (headersForm.isTransactionFinalized() ? "" : " (non-final)"));
     }
 
     private void updateBlockchainForm(BlockTransaction blockTransaction, Integer currentHeight) {

@@ -309,4 +309,9 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void connection(ConnectionEvent event) {
         updateLastUsed();
     }
+
+    @Subscribe
+    public void disconnection(DisconnectionEvent event) {
+        updateLastUsed();
+    }
 }
