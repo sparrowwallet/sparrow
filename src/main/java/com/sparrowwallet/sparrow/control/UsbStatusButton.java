@@ -1,8 +1,13 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Device;
+import com.sparrowwallet.sparrow.io.Hwi;
 import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -22,6 +27,22 @@ public class UsbStatusButton extends MenuButton {
     public void setDevices(List<Device> devices) {
         for(Device device : devices) {
             MenuItem deviceItem = new MenuItem(device.getModel().toDisplayString());
+            if(!device.isNeedsPinSent() && (device.getModel() == WalletModel.TREZOR_1 || device.getModel() == WalletModel.TREZOR_T || device.getModel() == WalletModel.KEEPKEY)) {
+                deviceItem = new Menu(device.getModel().toDisplayString());
+                MenuItem toggleItem = new MenuItem("Toggle Passphrase " + (device.isNeedsPassphraseSent() ? "Off" : "On"));
+                toggleItem.setOnAction(event -> {
+                    Hwi.TogglePassphraseService togglePassphraseService = new Hwi.TogglePassphraseService(device);
+                    togglePassphraseService.setOnSucceeded(event1 -> {
+                        EventManager.get().post(new RequestOpenWalletsEvent());
+                    });
+                    togglePassphraseService.setOnFailed(event1 -> {
+                        AppServices.showErrorDialog("Error toggling passphrase", event1.getSource().getException().getMessage());
+                    });
+                    togglePassphraseService.start();
+                });
+                ((Menu)deviceItem).getItems().add(toggleItem);
+            }
+
             if(device.isNeedsPinSent()) {
                 deviceItem.setGraphic(getLockIcon());
             } else {
