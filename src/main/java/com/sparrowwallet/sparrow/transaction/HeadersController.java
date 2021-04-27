@@ -670,6 +670,7 @@ public class HeadersController extends TransactionFormController implements Init
             fileChooser.setInitialFileName(headersForm.getName() + ".psbt");
         }
 
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             if(!file.getName().toLowerCase().endsWith(".psbt")) {
@@ -880,6 +881,7 @@ public class HeadersController extends TransactionFormController implements Init
             fileChooser.setInitialFileName(headersForm.getName().replace(".psbt", "") + ".txn");
         }
 
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             try {

@@ -87,6 +87,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "") +
                 (extension == null || extension.isEmpty() ? "" : "." + extension));
 
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             exportWallet(file);

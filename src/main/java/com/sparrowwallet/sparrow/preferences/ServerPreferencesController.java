@@ -277,6 +277,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
                     new FileChooser.ExtensionFilter("CRT", "*.crt")
             );
 
+            AppServices.moveToActiveWindowScreen(window, 800, 450);
             File file = fileChooser.showOpenDialog(window);
             if(file != null) {
                 electrumCertificate.setText(file.getAbsolutePath());

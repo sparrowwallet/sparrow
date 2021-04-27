@@ -384,6 +384,7 @@ public class AppController implements Initializable {
                 new FileChooser.ExtensionFilter("TXN", "*.txn")
         );
 
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showOpenDialog(window);
         if (file != null) {
             openTransactionFile(file);
@@ -523,6 +524,7 @@ public class AppController implements Initializable {
                fileChooser.setInitialFileName(fileName);
             }
 
+            AppServices.moveToActiveWindowScreen(window, 800, 450);
             File file = fileChooser.showSaveDialog(window);
             if(file != null) {
                 try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
@@ -574,6 +576,7 @@ public class AppController implements Initializable {
                 fileChooser.setInitialFileName(fileName);
             }
 
+            AppServices.moveToActiveWindowScreen(window, 800, 450);
             File file = fileChooser.showSaveDialog(window);
             if(file != null) {
                 if(!asText && !file.getName().toLowerCase().endsWith(".psbt")) {
@@ -715,6 +718,7 @@ public class AppController implements Initializable {
         fileChooser.setTitle("Open Wallet");
         fileChooser.setInitialDirectory(Storage.getWalletsDir());
 
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showOpenDialog(window);
         if(file != null) {
             openWalletFile(file, forceSameWindow);

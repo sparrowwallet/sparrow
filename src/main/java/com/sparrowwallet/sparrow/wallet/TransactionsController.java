@@ -108,6 +108,7 @@ public class TransactionsController extends WalletFormController implements Init
         fileChooser.setTitle("Export Transactions as CSV");
         fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + ".csv");
 
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
