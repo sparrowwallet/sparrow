@@ -478,6 +478,10 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void updateTransaction(List<Payment> transactionPayments) {
+        if(walletTransactionService != null && walletTransactionService.isRunning()) {
+            walletTransactionService.cancel();
+        }
+
         try {
             List<Payment> payments = transactionPayments != null ? transactionPayments : getPayments();
             if(!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0)) {
@@ -488,10 +492,6 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
-
-                if(walletTransactionService != null && walletTransactionService.isRunning()) {
-                    walletTransactionService.cancel();
-                }
 
                 walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(), getUtxoFilters(), payments, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 walletTransactionService.setOnSucceeded(event -> {

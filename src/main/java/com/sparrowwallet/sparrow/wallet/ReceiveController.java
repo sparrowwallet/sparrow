@@ -304,4 +304,9 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void usbDevicesFound(UsbDeviceEvent event) {
         updateDisplayAddress(event.getDevices());
     }
+
+    @Subscribe
+    public void connection(ConnectionEvent event) {
+        updateLastUsed();
+    }
 }
