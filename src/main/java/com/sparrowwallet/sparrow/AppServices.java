@@ -717,9 +717,9 @@ public class AppServices {
 
     @Subscribe
     public void walletHistoryFailed(WalletHistoryFailedEvent event) {
-        if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && connectionService != null && connectionService.isRunning()) {
+        if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && isConnected()) {
             onlineProperty.set(false);
-            log.info("Connection to " + Config.get().getServerAddress() + " failed, reconnecting to another server...");
+            log.info("Failed to fetch wallet history from " + Config.get().getServerAddress() + ", reconnecting to another server...");
             Config.get().changePublicServer();
             onlineProperty.set(true);
         }
