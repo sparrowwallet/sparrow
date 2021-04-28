@@ -7,7 +7,10 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
+import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.fxml.FXML;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
@@ -48,6 +51,10 @@ public class WelcomeController {
 
         welcomeBox.getStyleClass().add("offline");
         serverStatus.setText("Offline");
+        serverToggle.addEventFilter(MouseEvent.MOUSE_RELEASED, Event::consume);
+        Tooltip tooltip = new Tooltip("Demonstration only - you are not connected!");
+        tooltip.setShowDelay(Duration.ZERO);
+        serverToggle.setTooltip(tooltip);
         serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
             serverStatus.setText(newValue ? "Connected (demonstration only)" : "Offline");
         });
