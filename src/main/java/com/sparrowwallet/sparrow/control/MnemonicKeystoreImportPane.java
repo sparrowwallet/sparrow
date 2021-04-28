@@ -8,6 +8,8 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -56,6 +58,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
     private SimpleListProperty<String> wordEntriesProperty;
     private final SimpleStringProperty passphraseProperty = new SimpleStringProperty();
+    private IntegerProperty defaultWordSizeProperty;
 
     public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer) {
         super(importer.getName(), "Seed import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
@@ -86,14 +89,19 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         enterMnemonicButton = new SplitMenuButton();
         enterMnemonicButton.setAlignment(Pos.CENTER_RIGHT);
         enterMnemonicButton.setText("Enter 24 Words");
-        enterMnemonicButton.setOnAction(event -> {
-            enterMnemonic(24);
+        defaultWordSizeProperty = new SimpleIntegerProperty(24);
+        defaultWordSizeProperty.addListener((observable, oldValue, newValue) -> {
+            enterMnemonicButton.setText("Enter " + newValue + " Words");
         });
-        int[] numberWords = new int[] {21, 18, 15, 12};
+        enterMnemonicButton.setOnAction(event -> {
+            enterMnemonic(defaultWordSizeProperty.get());
+        });
+        int[] numberWords = new int[] {24, 21, 18, 15, 12};
         for(int i = 0; i < numberWords.length; i++) {
             MenuItem item = new MenuItem("Enter " + numberWords[i] + " Words");
             final int words = numberWords[i];
             item.setOnAction(event -> {
+                defaultWordSizeProperty.set(words);
                 enterMnemonic(words);
             });
             enterMnemonicButton.getItems().add(item);
