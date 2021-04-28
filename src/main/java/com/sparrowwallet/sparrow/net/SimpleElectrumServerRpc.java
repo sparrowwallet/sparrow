@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(SimpleElectrumServerRpc.class);
     private static final int MAX_TARGET_BLOCKS = 25;
-    private static final int MAX_RETRIES = 10;
+    private static final int MAX_RETRIES = 5;
     private static final int RETRY_DELAY = 1;
 
     private final AtomicLong idCounter = new AtomicLong();

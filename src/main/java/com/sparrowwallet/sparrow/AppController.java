@@ -79,6 +79,7 @@ public class AppController implements Initializable {
     public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
     public static final String CONNECTION_FAILED_PREFIX = "Connection failed: ";
+    public static final String TRYING_ANOTHER_SERVER_MESSAGE = "trying another server...";
 
     @FXML
     private MenuItem saveTransaction;
@@ -1539,7 +1540,9 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void connectionStart(ConnectionStartEvent event) {
-        statusUpdated(new StatusEvent(event.getStatus(), 120));
+        if(!statusBar.getText().contains(TRYING_ANOTHER_SERVER_MESSAGE)) {
+            statusUpdated(new StatusEvent(event.getStatus(), 120));
+        }
     }
 
     @Subscribe
@@ -1558,11 +1561,14 @@ public class AppController implements Initializable {
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
         serverToggle.setDisable(false);
-        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith(CONNECTION_FAILED_PREFIX)) {
+        if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith(CONNECTION_FAILED_PREFIX) && !statusBar.getText().contains(TRYING_ANOTHER_SERVER_MESSAGE)) {
             statusUpdated(new StatusEvent("Disconnected"));
         }
         if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
             statusBar.setProgress(0);
+        }
+        for(Wallet wallet : getOpenWallets().keySet()) {
+            tabLabelStopAnimation(wallet);
         }
     }
 
@@ -1620,6 +1626,9 @@ public class AppController implements Initializable {
     public void walletHistoryFailed(WalletHistoryFailedEvent event) {
         walletHistoryFinished(new WalletHistoryFinishedEvent(event.getWallet()));
         tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData) tab.getUserData()).getWallet() == event.getWallet()).forEach(this::tabLabelAddFailure);
+        if(getOpenWallets().containsKey(event.getWallet())) {
+            statusUpdated(new StatusEvent("Error retrieving wallet history" + (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? ", " + TRYING_ANOTHER_SERVER_MESSAGE : "")));
+        }
     }
 
     @Subscribe

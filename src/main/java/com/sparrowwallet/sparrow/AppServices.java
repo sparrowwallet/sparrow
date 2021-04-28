@@ -250,8 +250,7 @@ public class AppServices {
             onlineProperty.addListener(onlineServicesListener);
 
             if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
-                List<String> otherServers = Arrays.stream(PublicElectrumServer.values()).map(PublicElectrumServer::getUrl).filter(url -> !url.equals(Config.get().getPublicElectrumServer())).collect(Collectors.toList());
-                Config.get().setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
+                Config.get().changePublicServer();
                 connectionService.setPeriod(Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS));
             }
 
@@ -713,6 +712,16 @@ public class AppServices {
         if(onlineProperty().get() && !connectionService.isRunning()) {
             connectionService.reset();
             connectionService.start();
+        }
+    }
+
+    @Subscribe
+    public void walletHistoryFailed(WalletHistoryFailedEvent event) {
+        if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && connectionService != null && connectionService.isRunning()) {
+            onlineProperty.set(false);
+            log.info("Connection to " + Config.get().getServerAddress() + " failed, reconnecting to another server...");
+            Config.get().changePublicServer();
+            onlineProperty.set(true);
         }
     }
 }

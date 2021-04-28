@@ -11,8 +11,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class Config {
     private static final Logger log = LoggerFactory.getLogger(Config.class);
@@ -331,6 +334,11 @@ public class Config {
     public void setPublicElectrumServer(String publicElectrumServer) {
         this.publicElectrumServer = publicElectrumServer;
         flush();
+    }
+
+    public void changePublicServer() {
+        List<String> otherServers = Arrays.stream(PublicElectrumServer.values()).map(PublicElectrumServer::getUrl).filter(url -> !url.equals(getPublicElectrumServer())).collect(Collectors.toList());
+        setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
     }
 
     public String getCoreServer() {

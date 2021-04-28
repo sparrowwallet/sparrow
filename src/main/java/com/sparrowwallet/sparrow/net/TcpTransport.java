@@ -24,6 +24,7 @@ public class TcpTransport implements Transport, Closeable {
 
     public static final int DEFAULT_PORT = 50001;
     private static final int[] READ_TIMEOUT_SECS = {3, 8, 16, 34};
+    public static final int SOCKET_READ_TIMEOUT = 60000;
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -107,8 +108,9 @@ public class TcpTransport implements Transport, Closeable {
                 try {
                     readingCondition.await();
                 } catch(InterruptedException e) {
-                    //Restore interrupt status and continue
+                    //Restore interrupt status and break
                     Thread.currentThread().interrupt();
+                    break;
                 }
             }
 
@@ -192,6 +194,7 @@ public class TcpTransport implements Transport, Closeable {
     public void connect() throws ServerException {
         try {
             socket = createSocket();
+            socket.setSoTimeout(SOCKET_READ_TIMEOUT);
             running = true;
         } catch(SSLHandshakeException e) {
             throw new TlsServerException(server, e);
