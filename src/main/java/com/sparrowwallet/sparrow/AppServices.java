@@ -496,6 +496,10 @@ public class AppServices {
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
 
+    public static void clearTransactionHistoryCache(Wallet wallet) {
+        ElectrumServer.clearRetrievedScriptHashes(wallet);
+    }
+
     public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
         return showAlertDialog(title, content, Alert.AlertType.WARNING, buttons);
     }

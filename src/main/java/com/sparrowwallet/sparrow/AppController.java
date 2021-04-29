@@ -1010,6 +1010,7 @@ public class AppController implements Initializable {
             Wallet pastWallet = wallet.copy();
             walletTabData.getStorage().backupTempWallet();
             wallet.clearHistory();
+            AppServices.clearTransactionHistoryCache(wallet);
             EventManager.get().post(new WalletAddressesChangedEvent(wallet, pastWallet, walletTabData.getStorage().getWalletFile()));
         }
     }
