@@ -113,8 +113,9 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                     importButton.setDisable(true);
                     setExpanded(true);
                 } else {
-                    InputStream inputStream = new BufferedInputStream(new FileInputStream(file));
-                    importFile(file.getName(), inputStream, password);
+                    try(InputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
+                        importFile(file.getName(), inputStream, password);
+                    };
                 }
             } catch (Exception e) {
                 log.error("Error importing file", e);
