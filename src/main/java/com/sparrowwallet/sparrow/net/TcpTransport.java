@@ -13,6 +13,7 @@ import javax.net.SocketFactory;
 import javax.net.ssl.SSLHandshakeException;
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,7 @@ public class TcpTransport implements Transport, Closeable {
 
     public static final int DEFAULT_PORT = 50001;
     private static final int[] READ_TIMEOUT_SECS = {3, 8, 16, 34};
+    public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -181,7 +183,7 @@ public class TcpTransport implements Transport, Closeable {
     }
 
     protected String readInputStream(BufferedReader in) throws IOException {
-        String response = in.readLine();
+        String response = readLine(in);
 
         if(response == null) {
             throw new IOException("Could not connect to server at " + Config.get().getServerAddress());
@@ -190,9 +192,22 @@ public class TcpTransport implements Transport, Closeable {
         return response;
     }
 
+    private String readLine(BufferedReader in) throws IOException {
+        while(!socket.isClosed()) {
+            try {
+                return in.readLine();
+            } catch(SocketTimeoutException e) {
+                //ignore and continue
+            }
+        }
+
+        return null;
+    }
+
     public void connect() throws ServerException {
         try {
             socket = createSocket();
+            socket.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
             running = true;
         } catch(SSLHandshakeException e) {
             throw new TlsServerException(server, e);
@@ -216,7 +231,6 @@ public class TcpTransport implements Transport, Closeable {
     @Override
     public void close() throws IOException {
         if(socket != null) {
-            running = false;
             socket.close();
         }
     }

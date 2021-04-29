@@ -1627,7 +1627,9 @@ public class AppController implements Initializable {
         walletHistoryFinished(new WalletHistoryFinishedEvent(event.getWallet()));
         tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData) tab.getUserData()).getWallet() == event.getWallet()).forEach(this::tabLabelAddFailure);
         if(getOpenWallets().containsKey(event.getWallet())) {
-            statusUpdated(new StatusEvent("Error retrieving wallet history" + (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? ", " + TRYING_ANOTHER_SERVER_MESSAGE : "")));
+            if(AppServices.isConnected()) {
+                statusUpdated(new StatusEvent("Error retrieving wallet history" + (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? ", " + TRYING_ANOTHER_SERVER_MESSAGE : "")));
+            }
         }
     }
 

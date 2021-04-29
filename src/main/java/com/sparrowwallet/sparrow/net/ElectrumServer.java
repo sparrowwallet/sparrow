@@ -1032,11 +1032,15 @@ public class ElectrumServer {
                 protected Boolean call() throws ServerException {
                     walletSynchronizeLocks.putIfAbsent(wallet, new Object());
                     synchronized(walletSynchronizeLocks.get(wallet)) {
-                        ElectrumServer electrumServer = new ElectrumServer();
-                        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));
-                        electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
-                        electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
-                        return true;
+                        if(isConnected()) {
+                            ElectrumServer electrumServer = new ElectrumServer();
+                            Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));
+                            electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
+                            electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
+                            return true;
+                        }
+
+                        return false;
                     }
                 }
             };
