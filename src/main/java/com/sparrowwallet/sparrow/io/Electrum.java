@@ -367,7 +367,6 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             String json = gson.toJson(eJson);
             outputStream.write(json.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
-            outputStream.close();
         } catch (Exception e) {
             log.error("Error exporting Electrum Wallet", e);
             throw new ExportException("Error exporting Electrum Wallet", e);

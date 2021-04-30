@@ -31,7 +31,6 @@ public class SpecterDesktop implements WalletImport, WalletExport {
             String json = gson.toJson(specterWallet);
             outputStream.write(json.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
-            outputStream.close();
         } catch(Exception e) {
             log.error("Error exporting Specter Desktop wallet", e);
             throw new ExportException("Error exporting Specter Desktop wallet", e);

@@ -28,7 +28,6 @@ public class Sparrow implements WalletExport {
             Storage storage = AppServices.get().getOpenWallets().get(wallet);
             Files.copy(storage.getWalletFile().toPath(), outputStream);
             outputStream.flush();
-            outputStream.close();
         } catch(Exception e) {
             log.error("Error exporting Sparrow wallet file", e);
             throw new ExportException("Error exporting Sparrow wallet file", e);

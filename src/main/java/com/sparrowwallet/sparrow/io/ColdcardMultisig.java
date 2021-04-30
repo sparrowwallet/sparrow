@@ -202,7 +202,6 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             }
 
             writer.flush();
-            writer.close();
         } catch(Exception e) {
             log.error("Error exporting Coldcard multisig wallet", e);
             throw new ExportException("Error exporting Coldcard multisig wallet", e);
