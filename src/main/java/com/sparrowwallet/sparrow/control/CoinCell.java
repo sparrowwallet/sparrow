@@ -10,16 +10,24 @@ import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.layout.Region;
+import org.controlsfx.tools.Platform;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 class CoinCell extends TreeTableCell<Entry, Number> {
+    public static final DecimalFormat TABLE_BTC_FORMAT = new DecimalFormat("0.00000000", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+
     private final Tooltip tooltip;
 
     public CoinCell() {
         super();
         tooltip = new Tooltip();
         getStyleClass().add("coin-cell");
+        if(Platform.getCurrent() == Platform.OSX) {
+            getStyleClass().add("number-field");
+        }
     }
 
     @Override
@@ -38,7 +46,8 @@ class CoinCell extends TreeTableCell<Entry, Number> {
             BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
 
             String satsValue = String.format(Locale.ENGLISH, "%,d", amount.longValue());
-            final String btcValue = CoinLabel.getBTCFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
+            DecimalFormat decimalFormat = (amount.longValue() == 0L ? CoinLabel.getBTCFormat() : TABLE_BTC_FORMAT);
+            final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
 
             if(unit.equals(BitcoinUnit.BTC)) {
                 tooltip.setText(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());

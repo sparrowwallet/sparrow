@@ -188,3 +188,7 @@
 .icon-button:hover {
     -fx-opacity: 1.0;
 }
+
+.number-field {
+    -fx-font-family: 'Helvetica Neue', 'System Regular';
+}
