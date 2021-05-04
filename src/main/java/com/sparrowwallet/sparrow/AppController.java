@@ -121,6 +121,9 @@ public class AppController implements Initializable {
     private CheckMenuItem useHdCameraResolution;
 
     @FXML
+    private CheckMenuItem showLoadingLog;
+
+    @FXML
     private CheckMenuItem showTxHex;
 
     @FXML
@@ -259,6 +262,7 @@ public class AppController implements Initializable {
         hideEmptyUsedAddresses.setSelected(Config.get().isHideEmptyUsedAddresses());
         useHdCameraResolution.setSelected(Config.get().isHdCapture());
         showTxHex.setSelected(Config.get().isShowTransactionHex());
+        showLoadingLog.setSelected(Config.get().isShowLoadingLog());
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
@@ -662,6 +666,12 @@ public class AppController implements Initializable {
     public void useHdCameraResolution(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setHdCapture(item.isSelected());
+    }
+
+    public void showLoadingLog(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setShowLoadingLog(item.isSelected());
+        EventManager.get().post(new LoadingLogChangedEvent(item.isSelected()));
     }
 
     public void showTxHex(ActionEvent event) {
@@ -1364,6 +1374,7 @@ public class AppController implements Initializable {
                     saveTransaction.setVisible(false);
                 }
                 exportWallet.setDisable(true);
+                showLoadingLog.setDisable(true);
                 showTxHex.setDisable(false);
             } else if(event instanceof WalletTabSelectedEvent) {
                 WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
@@ -1371,6 +1382,7 @@ public class AppController implements Initializable {
                 saveTransaction.setVisible(true);
                 saveTransaction.setDisable(true);
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
+                showLoadingLog.setDisable(false);
                 showTxHex.setDisable(true);
             }
         }

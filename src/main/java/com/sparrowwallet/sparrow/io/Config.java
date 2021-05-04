@@ -38,6 +38,7 @@ public class Config {
     private boolean openWalletsInNewWindows = false;
     private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
+    private boolean showLoadingLog = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -246,6 +247,15 @@ public class Config {
 
     public void setShowTransactionHex(boolean showTransactionHex) {
         this.showTransactionHex = showTransactionHex;
+        flush();
+    }
+
+    public boolean isShowLoadingLog() {
+        return showLoadingLog;
+    }
+
+    public void setShowLoadingLog(boolean showLoadingLog) {
+        this.showLoadingLog = showLoadingLog;
         flush();
     }
 

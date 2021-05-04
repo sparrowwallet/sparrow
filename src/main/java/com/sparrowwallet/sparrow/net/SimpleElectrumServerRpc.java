@@ -82,7 +82,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 result.put(path, scriptHashTxes);
             } catch(Exception e) {
                 if(failOnError) {
-                    throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);
+                    throw new ElectrumServerRpcException("Failed to retrieve transaction history for path: " + path, e);
                 }
 
                 result.put(path, new ScriptHashTx[] {ScriptHashTx.ERROR_TX});
@@ -104,7 +104,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 result.put(path, scriptHashTxes);
             } catch(Exception e) {
                 if(failOnError) {
-                    throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);
+                    throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for path: " + path, e);
                 }
 
                 result.put(path, new ScriptHashTx[] {ScriptHashTx.ERROR_TX});
@@ -127,7 +127,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 result.put(path, scriptHash);
             } catch(Exception e) {
                 //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
-                throw new ElectrumServerRpcException("Failed to retrieve reference for path: " + path, e);
+                throw new ElectrumServerRpcException("Failed to subscribe to path: " + path, e);
             }
         }
 
@@ -169,6 +169,9 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 String rawTxHex = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid).execute());
                 result.put(txid, rawTxHex);
+            } catch(ServerException e) {
+                //If there is an error with the server connection, don't keep trying - this may take too long given many txids
+                throw new ElectrumServerRpcException("Failed to retrieve transaction for txid [" + txid.substring(0, 6) + "]", e);
             } catch(Exception e) {
                 result.put(txid, Sha256Hash.ZERO_HASH.toString());
             }

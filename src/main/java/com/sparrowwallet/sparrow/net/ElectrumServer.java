@@ -433,6 +433,8 @@ public class ElectrumServer {
             return blockTransactionHashes;
         } catch (IllegalStateException e) {
             throw new ServerException(e.getCause());
+        } catch (ElectrumServerRpcException e) {
+            throw new ServerException(e.getMessage(), e.getCause());
         } catch (Exception e) {
             throw new ServerException(e);
         }
@@ -493,6 +495,8 @@ public class ElectrumServer {
             return blockHeaderMap;
         } catch (IllegalStateException e) {
             throw new ServerException(e.getCause());
+        } catch (ElectrumServerRpcException e) {
+            throw new ServerException(e.getMessage(), e.getCause());
         } catch (Exception e) {
             throw new ServerException(e);
         }
@@ -561,6 +565,8 @@ public class ElectrumServer {
             return transactionMap;
         } catch (IllegalStateException e) {
             throw new ServerException(e.getCause());
+        } catch (ElectrumServerRpcException e) {
+            throw new ServerException(e.getMessage(), e.getCause());
         } catch (Exception e) {
             throw new ServerException(e);
         }

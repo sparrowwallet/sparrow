@@ -9,15 +9,19 @@ import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TreeItem;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.controlsfx.control.MasterDetailPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,12 +30,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class TransactionsController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(TransactionsController.class);
+
+    private static final DateFormat LOG_DATE_FORMAT = new SimpleDateFormat("[MMM dd HH:mm:ss]");
 
     @FXML
     private CoinLabel balance;
@@ -49,7 +58,13 @@ public class TransactionsController extends WalletFormController implements Init
     private CopyableLabel transactionCount;
 
     @FXML
+    private MasterDetailPane transactionsMasterDetail;
+
+    @FXML
     private TransactionsTreeTable transactionsTable;
+
+    @FXML
+    private TextArea loadingLog;
 
     @FXML
     private BalanceChart balanceChart;
@@ -85,6 +100,10 @@ public class TransactionsController extends WalletFormController implements Init
                 balanceChart.select((TransactionEntry)selectedItem.getValue());
             }
         });
+
+        transactionsMasterDetail.setShowDetailNode(Config.get().isShowLoadingLog());
+        loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getName());
+        loadingLog.setEditable(false);
     }
 
     private void setFiatBalance(FiatLabel fiatLabel, CurrencyRate currencyRate, long balance) {
@@ -134,6 +153,15 @@ public class TransactionsController extends WalletFormController implements Init
         return BitcoinUnit.BTC.equals(transactionsTable.getBitcoinUnit()) ?
                 CoinLabel.getBTCFormat().format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) :
                 String.format(Locale.ENGLISH, "%d", value);
+    }
+
+    private void logMessage(String logMessage) {
+        if(logMessage != null) {
+            logMessage = logMessage.replace("m/", "/");
+            String date = LOG_DATE_FORMAT.format(new Date());
+            String logLine = "\n" + date + " " + logMessage;
+            Platform.runLater(() -> loadingLog.appendText(logLine));
+        }
     }
 
     @Subscribe
@@ -200,6 +228,18 @@ public class TransactionsController extends WalletFormController implements Init
     @Subscribe
     public void walletHistoryStatus(WalletHistoryStatusEvent event) {
         transactionsTable.updateHistoryStatus(event);
+
+        if(event.getWallet() != null && getWalletForm().getWallet() == event.getWallet()) {
+            String logMessage = event.getStatusMessage();
+            if(logMessage == null) {
+                if(event instanceof WalletHistoryFinishedEvent) {
+                    logMessage = "Finished loading.";
+                } else if(event instanceof WalletHistoryFailedEvent) {
+                    logMessage = event.getErrorMessage();
+                }
+            }
+            logMessage(logMessage);
+        }
     }
 
     @Subscribe
@@ -232,5 +272,10 @@ public class TransactionsController extends WalletFormController implements Init
     @Subscribe
     public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
         walletHistoryChanged(new WalletHistoryChangedEvent(getWalletForm().getWallet(), getWalletForm().getStorage(), Collections.emptyList()));
+    }
+
+    @Subscribe
+    public void loadingLogChanged(LoadingLogChangedEvent event) {
+        transactionsMasterDetail.setShowDetailNode(event.isVisible());
     }
 }

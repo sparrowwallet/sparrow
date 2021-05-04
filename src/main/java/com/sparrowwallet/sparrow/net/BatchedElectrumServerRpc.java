@@ -5,6 +5,8 @@ import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -12,11 +14,9 @@ import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
@@ -74,7 +74,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions"));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions for " + getScriptHashesAbbreviation(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.get_history", pathScriptHashes.get(path));
@@ -84,7 +84,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch (JsonRpcBatchException e) {
             if(failOnError) {
-                throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + e.getErrors().keySet(), e);
+                throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + getScriptHashesAbbreviation((Collection<String>)e.getErrors().keySet()), e);
             }
 
             Map<String, ScriptHashTx[]> result = (Map<String, ScriptHashTx[]>)e.getSuccesses();
@@ -94,7 +94,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
 
             return result;
         } catch(Exception e) {
-            throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + pathScriptHashes.keySet(), e);
+            throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + getScriptHashesAbbreviation(pathScriptHashes.keySet()), e);
         }
     }
 
@@ -112,7 +112,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             if(failOnError) {
-                throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + e.getErrors().keySet(), e);
+                throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + getScriptHashesAbbreviation((Collection<String>)e.getErrors().keySet()), e);
             }
 
             Map<String, ScriptHashTx[]> result = (Map<String, ScriptHashTx[]>)e.getSuccesses();
@@ -122,15 +122,16 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
 
             return result;
         } catch(Exception e) {
-            throw new ElectrumServerRpcException("Failed to retrieve references for paths: " + pathScriptHashes.keySet(), e);
+            throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + getScriptHashesAbbreviation(pathScriptHashes.keySet()), e);
         }
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions"));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + getScriptHashesAbbreviation(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.subscribe", pathScriptHashes.get(path));
@@ -140,9 +141,9 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
-            throw new ElectrumServerRpcException("Failed to subscribe for updates for paths: " + e.getErrors().keySet(), e);
+            throw new ElectrumServerRpcException("Failed to subscribe to paths: " + getScriptHashesAbbreviation((Collection<String>)e.getErrors().keySet()), e);
         } catch(Exception e) {
-            throw new ElectrumServerRpcException("Failed to subscribe for updates for paths: " + pathScriptHashes.keySet(), e);
+            throw new ElectrumServerRpcException("Failed to subscribe to paths: " + getScriptHashesAbbreviation(pathScriptHashes.keySet()), e);
         }
     }
 
@@ -151,7 +152,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<Integer, String> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(String.class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving blocks"));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + blockHeights.size() + " block headers"));
 
         for(Integer height : blockHeights) {
             batchRequest.add(height, "blockchain.block.header", height);
@@ -162,7 +163,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         } catch(JsonRpcBatchException e) {
             return (Map<Integer, String>)e.getSuccesses();
         } catch(Exception e) {
-            throw new ElectrumServerRpcException("Failed to block headers for block heights: " + blockHeights, e);
+            throw new ElectrumServerRpcException("Failed to retrieve block headers for block heights: " + blockHeights, e);
         }
     }
 
@@ -171,7 +172,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
         JsonRpcClient client = new JsonRpcClient(transport);
         BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving transactions"));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + txids.size() + " transactions"));
 
         for(String txid : txids) {
             batchRequest.add(txid, "blockchain.transaction.get", txid);
@@ -190,7 +191,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
 
             return result;
         } catch(Exception e) {
-            throw new ElectrumServerRpcException("Failed to retrieve transactions for txids: " + txids, e);
+            throw new ElectrumServerRpcException("Failed to retrieve transactions for txids: " + txids.stream().map(txid -> "[" + txid.substring(0, 6) + "]").collect(Collectors.toList()), e);
         }
     }
 
@@ -271,5 +272,66 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error broadcasting transaction", e);
         }
+    }
+
+    private static String getScriptHashesAbbreviation(Collection<String> scriptHashes) {
+        List<String> sortedHashes = new ArrayList<>(scriptHashes);
+
+        if(scriptHashes.isEmpty()) {
+            return "[]";
+        }
+
+        List<List<String>> contiguous = splitToContiguous(sortedHashes);
+
+        String abbrev = "[";
+        for(Iterator<List<String>> iter = contiguous.iterator(); iter.hasNext(); ) {
+            List<String> range = iter.next();
+            abbrev += range.get(0);
+            if(range.size() > 1) {
+                abbrev += "-" + range.get(range.size() - 1);
+            }
+            if(iter.hasNext()) {
+                abbrev += ", ";
+            }
+        }
+        abbrev += "]";
+
+        return abbrev;
+    }
+
+    static List<List<String>> splitToContiguous(List<String> input) {
+        List<List<String>> result = new ArrayList<>();
+        int prev = 0;
+
+        int keyPurpose = getKeyPurpose(input.get(0));
+        int index = getIndex(input.get(0));
+
+        for (int cur = 0; cur < input.size(); cur++) {
+            if(getKeyPurpose(input.get(cur)) != keyPurpose || getIndex(input.get(cur)) != index) {
+                result.add(input.subList(prev, cur));
+                prev = cur;
+            }
+            index = getIndex(input.get(cur)) + 1;
+            keyPurpose = getKeyPurpose(input.get(cur));
+        }
+        result.add(input.subList(prev, input.size()));
+
+        return result;
+    }
+
+    private static int getKeyPurpose(String path) {
+        List<ChildNumber> childNumbers = KeyDerivation.parsePath(path);
+        if(childNumbers.isEmpty()) {
+            return -1;
+        }
+        return childNumbers.get(0).num();
+    }
+
+    private static int getIndex(String path) {
+        List<ChildNumber> childNumbers = KeyDerivation.parsePath(path);
+        if(childNumbers.isEmpty()) {
+            return -1;
+        }
+        return childNumbers.get(childNumbers.size() - 1).num();
     }
 }

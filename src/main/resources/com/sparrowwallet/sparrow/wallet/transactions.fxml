@@ -16,6 +16,7 @@
 <?import com.sparrowwallet.sparrow.control.FiatLabel?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import org.controlsfx.glyphfont.Glyph?>
+<?import org.controlsfx.control.MasterDetailPane?>
 
 <BorderPane stylesheets="@transactions.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.TransactionsController">
     <center>
@@ -61,7 +62,14 @@
                     </yAxis>
                 </BalanceChart>
             </GridPane>
-            <TransactionsTreeTable fx:id="transactionsTable" VBox.vgrow="ALWAYS" />
+            <MasterDetailPane fx:id="transactionsMasterDetail" detailSide="BOTTOM" VBox.vgrow="ALWAYS">
+                <masterNode>
+                    <TransactionsTreeTable fx:id="transactionsTable" />
+                </masterNode>
+                <detailNode>
+                    <TextArea fx:id="loadingLog" styleClass="readonly,fixed-width" />
+                </detailNode>
+            </MasterDetailPane>
         </VBox>
     </center>
 </BorderPane>

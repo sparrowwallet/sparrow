@@ -6,7 +6,7 @@ public class WalletHistoryFailedEvent extends WalletHistoryStatusEvent {
     private final Throwable exception;
 
     public WalletHistoryFailedEvent(Wallet wallet, Throwable exception) {
-        super(wallet, exception.getCause() == null ? exception.getMessage() : exception.getCause().getMessage());
+        super(wallet, exception.getMessage());
         this.exception = exception;
     }
 
