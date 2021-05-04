@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.ListChangeListener;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 
@@ -81,6 +82,10 @@ public class AddressTreeTable extends CoinTreeTable {
                     }
                 }
             }
+        });
+
+        rootEntry.getChildren().addListener((ListChangeListener<Entry>) c -> {
+            this.refresh();
         });
     }
 
