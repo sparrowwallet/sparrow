@@ -444,7 +444,7 @@ public class Config {
         try {
             File configFile = getConfigFile();
             if(!configFile.exists()) {
-                Files.createFile(configFile.toPath(), PosixFilePermissions.asFileAttribute(Storage.getFileOwnerOnlyFilePermissions()));
+                Storage.createOwnerOnlyFile(configFile);
             }
 
             Writer writer = new FileWriter(configFile);

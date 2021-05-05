@@ -170,7 +170,7 @@ public class Storage {
         }
 
         if(!walletFile.exists()) {
-            Files.createFile(walletFile.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyFilePermissions()));
+            createOwnerOnlyFile(walletFile);
         }
 
         Writer writer = new FileWriter(walletFile);
@@ -195,7 +195,7 @@ public class Storage {
         }
 
         if(!walletFile.exists()) {
-            Files.createFile(walletFile.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyFilePermissions()));
+            createOwnerOnlyFile(walletFile);
         }
 
         OutputStream outputStream = new FileOutputStream(walletFile);
@@ -249,7 +249,7 @@ public class Storage {
 
         File backupFile = new File(backupDir, backupName);
         if(!backupFile.exists()) {
-            Files.createFile(backupFile.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyFilePermissions()));
+            createOwnerOnlyFile(backupFile);
         }
         com.google.common.io.Files.copy(walletFile, backupFile);
     }
@@ -468,8 +468,15 @@ public class Storage {
 
     private static boolean createOwnerOnlyDirectory(File directory) {
         try {
-            Files.createDirectories(directory.toPath(), PosixFilePermissions.asFileAttribute(getDirectoryOwnerOnlyFilePermissions()));
+            if(Platform.getCurrent() == Platform.WINDOWS) {
+                Files.createDirectories(directory.toPath());
+                return true;
+            }
+
+            Files.createDirectories(directory.toPath(), PosixFilePermissions.asFileAttribute(getDirectoryOwnerOnlyPosixFilePermissions()));
             return true;
+        } catch(UnsupportedOperationException e) {
+            return directory.mkdirs();
         } catch(IOException e) {
             log.error("Could not create directory " + directory.getAbsolutePath(), e);
         }
@@ -477,14 +484,32 @@ public class Storage {
         return false;
     }
 
-    public static Set<PosixFilePermission> getDirectoryOwnerOnlyFilePermissions() {
-        Set<PosixFilePermission> ownerOnly = getFileOwnerOnlyFilePermissions();
+    public static boolean createOwnerOnlyFile(File file) {
+        try {
+            if(Platform.getCurrent() == Platform.WINDOWS) {
+                Files.createFile(file.toPath());
+                return true;
+            }
+
+            Files.createFile(file.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyPosixFilePermissions()));
+            return true;
+        } catch(UnsupportedOperationException e) {
+            return false;
+        } catch(IOException e) {
+            log.error("Could not create file " + file.getAbsolutePath(), e);
+        }
+
+        return false;
+    }
+
+    private static Set<PosixFilePermission> getDirectoryOwnerOnlyPosixFilePermissions() {
+        Set<PosixFilePermission> ownerOnly = getFileOwnerOnlyPosixFilePermissions();
         ownerOnly.add(PosixFilePermission.OWNER_EXECUTE);
 
         return ownerOnly;
     }
 
-    public static Set<PosixFilePermission> getFileOwnerOnlyFilePermissions() {
+    private static Set<PosixFilePermission> getFileOwnerOnlyPosixFilePermissions() {
         Set<PosixFilePermission> ownerOnly = EnumSet.noneOf(PosixFilePermission.class);
         ownerOnly.add(PosixFilePermission.OWNER_READ);
         ownerOnly.add(PosixFilePermission.OWNER_WRITE);
