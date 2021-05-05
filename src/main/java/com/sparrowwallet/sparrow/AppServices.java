@@ -527,6 +527,7 @@ public class AppServices {
             Label label = new Label();
             hyperlinkLabel.setPrefWidth(Math.max(360, TextUtils.computeTextWidth(label.getFont(), link, 0.0D) + 50));
             hyperlinkLabel.setOnAction(event -> {
+                alert.close();
                 get().getApplication().getHostServices().showDocument(link);
             });
             alert.getDialogPane().setContent(hyperlinkLabel);
