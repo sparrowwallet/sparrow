@@ -221,14 +221,14 @@ public class AppServices {
                 if(tlsServerException.getCause().getMessage().contains("PKIX path building failed")) {
                     File crtFile = Config.get().getElectrumServerCert();
                     if(crtFile != null && Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
-                        AppServices.showErrorDialog("SSL Handshake Failed", "The configured server certificate at " + crtFile.getAbsolutePath() + " did not match the certificate provided by the server at " + tlsServerException.getServer().getHost() + ". " +
-                                "This may indicate a man-in-the-middle attack!" +
+                        AppServices.showErrorDialog("SSL Handshake Failed", "The configured server certificate at " + crtFile.getAbsolutePath() + " did not match the certificate provided by the server at " + tlsServerException.getServer().getHost() + "." +
+                                "\n\nThis may indicate a man-in-the-middle attack!" +
                                 "\n\nChange the configured server certificate if you would like to proceed.");
                     } else {
                         crtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
                         if(crtFile != null) {
-                            Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed. " +
-                                    "This may indicate a man-in-the-middle attack!" +
+                            Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
+                                    "\n\nThis may indicate a man-in-the-middle attack!" +
                                     "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
                             if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
                                 crtFile.delete();
@@ -531,6 +531,11 @@ public class AppServices {
                 get().getApplication().getHostServices().showDocument(link);
             });
             alert.getDialogPane().setContent(hyperlinkLabel);
+        }
+
+        String[] lines = content.split("\r\n|\r|\n");
+        if(lines.length > 3) {
+            alert.getDialogPane().setPrefHeight(180 + lines.length * 20);
         }
 
         moveToActiveWindowScreen(alert);
