@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletSettingsChangedEvent;
@@ -46,7 +47,10 @@ public class SettingsWalletForm extends WalletForm {
         if(refreshAll) {
             pastWallet = wallet.copy();
             save(); //Save here for the temp backup in case password has been changed
-            getStorage().backupTempWallet();
+            if(AppServices.isConnected()) {
+                getStorage().backupTempWallet();
+            }
+
             walletCopy.clearNodes();
         }
 
