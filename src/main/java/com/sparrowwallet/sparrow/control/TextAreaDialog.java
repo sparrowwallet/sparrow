@@ -12,10 +12,14 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.controlsfx.glyphfont.Glyph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 
 public class TextAreaDialog extends Dialog<String> {
+    private static final Logger log = LoggerFactory.getLogger(TextAreaDialog.class);
+
     private final TextArea textArea;
     private final String defaultValue;
 
@@ -99,6 +103,7 @@ public class TextAreaDialog extends Dialog<String> {
                         } else if(result.outputDescriptor != null) {
                             textArea.setText(result.outputDescriptor.toString(true));
                         } else if(result.exception != null) {
+                            log.error("Error scanning QR", result.exception);
                             AppServices.showErrorDialog("Error scanning QR", result.exception.getMessage());
                         }
                     }

@@ -113,7 +113,19 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         webcamService.resultProperty().addListener(new QRResultListener());
         webcamService.setOnFailed(failedEvent -> {
-            Platform.runLater(() -> setResult(new Result(failedEvent.getSource().getException())));
+            Throwable exception = failedEvent.getSource().getException();
+
+            Throwable nested = exception;
+            while(nested.getCause() != null) {
+                nested = nested.getCause();
+            }
+            if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS &&
+                    nested.getMessage().startsWith("Library 'OpenIMAJGrabber' was not loaded successfully from file")) {
+                exception = new WebcamDependencyException("Your system is missing a dependency required for the webcam. Follow the link below for more details.\n\n[https://sparrowwallet.com/docs/faq.html#your-system-is-missing-a-dependency-for-the-webcam]", exception);
+            }
+
+            final Throwable result = exception;
+            Platform.runLater(() -> setResult(new Result(result)));
         });
         webcamService.start();
         webcamResolutionProperty.addListener((observable, oldValue, newResolution) -> {
@@ -711,6 +723,24 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         }
 
         public URException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class WebcamDependencyException extends ScanException {
+        public WebcamDependencyException() {
+            super();
+        }
+
+        public WebcamDependencyException(String message) {
+            super(message);
+        }
+
+        public WebcamDependencyException(Throwable cause) {
+            super(cause);
+        }
+
+        public WebcamDependencyException(String message, Throwable cause) {
             super(message, cause);
         }
     }

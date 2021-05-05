@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -27,10 +28,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogPane;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
@@ -38,6 +36,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.berndpruenster.netlayer.tor.Tor;
+import org.controlsfx.control.HyperlinkLabel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +48,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class AppServices {
@@ -514,6 +515,23 @@ public class AppServices {
         alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
         alert.setHeaderText(title);
+
+        Pattern linkPattern = Pattern.compile("\\[(http.+)]");
+        Matcher matcher = linkPattern.matcher(content);
+        if(matcher.find()) {
+            String link = matcher.group(1);
+            HyperlinkLabel hyperlinkLabel = new HyperlinkLabel(content);
+            hyperlinkLabel.setMaxWidth(Double.MAX_VALUE);
+            hyperlinkLabel.setMaxHeight(Double.MAX_VALUE);
+            hyperlinkLabel.getStyleClass().add("content");
+            Label label = new Label();
+            hyperlinkLabel.setPrefWidth(Math.max(360, TextUtils.computeTextWidth(label.getFont(), link, 0.0D) + 50));
+            hyperlinkLabel.setOnAction(event -> {
+                get().getApplication().getHostServices().showDocument(link);
+            });
+            alert.getDialogPane().setContent(hyperlinkLabel);
+        }
+
         moveToActiveWindowScreen(alert);
         return alert.showAndWait();
     }

@@ -30,13 +30,19 @@ import javafx.scene.control.*;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
 
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+
 public class PaymentController extends WalletFormController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
+
     private SendController sendController;
 
     private ValidationSupport validationSupport;
@@ -327,6 +333,9 @@ public class PaymentController extends WalletFormController implements Initializ
             QRScanDialog.Result result = optionalResult.get();
             if(result.uri != null) {
                 updateFromURI(result.uri);
+            } else if(result.exception != null) {
+                log.error("Error scanning QR", result.exception);
+                showErrorDialog("Error scanning QR", result.exception.getMessage());
             }
         }
     }

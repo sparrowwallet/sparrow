@@ -289,6 +289,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else if(result.payload != null && !result.payload.isEmpty()) {
                 setDescriptorText(result.payload);
             } else if(result.exception != null) {
+                log.error("Error scanning QR", result.exception);
                 AppServices.showErrorDialog("Error scanning QR", result.exception.getMessage());
             }
         }
