@@ -936,8 +936,13 @@ public class AppController implements Initializable {
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(password.get().length() == 0) {
-                storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
-                addWalletTabOrWindow(storage, wallet, null, false);
+                try {
+                    storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+                    storage.storeWallet(wallet);
+                    addWalletTabOrWindow(storage, wallet, null, false);
+                } catch(IOException e) {
+                    log.error("Error saving imported wallet", e);
+                }
             } else {
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
@@ -950,7 +955,10 @@ public class AppController implements Initializable {
                         key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
                         wallet.encrypt(key);
                         storage.setEncryptionPubKey(encryptionPubKey);
+                        storage.storeWallet(wallet);
                         addWalletTabOrWindow(storage, wallet, null, false);
+                    } catch(IOException e) {
+                        log.error("Error saving imported wallet", e);
                     } finally {
                         encryptionFullKey.clear();
                         if(key != null) {

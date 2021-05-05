@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
@@ -67,10 +69,6 @@ public class Config {
 
     private static File getConfigFile() {
         File sparrowDir = Storage.getSparrowDir();
-        if(!sparrowDir.exists()) {
-            sparrowDir.mkdirs();
-        }
-
         return new File(sparrowDir, CONFIG_FILENAME);
     }
 
@@ -445,6 +443,10 @@ public class Config {
         Gson gson = getGson();
         try {
             File configFile = getConfigFile();
+            if(!configFile.exists()) {
+                Files.createFile(configFile.toPath(), PosixFilePermissions.asFileAttribute(Storage.getFileOwnerOnlyFilePermissions()));
+            }
+
             Writer writer = new FileWriter(configFile);
             gson.toJson(this, writer);
             writer.flush();

@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.common.io.Files;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Network;
@@ -23,6 +22,9 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
@@ -153,7 +155,7 @@ public class Storage {
         }
 
         File parent = walletFile.getParentFile();
-        if(!parent.exists() && !parent.mkdirs()) {
+        if(!parent.exists() && !createOwnerOnlyDirectory(parent)) {
             throw new IOException("Could not create folder " + parent);
         }
 
@@ -167,6 +169,10 @@ public class Storage {
             walletFile = jsonFile;
         }
 
+        if(!walletFile.exists()) {
+            Files.createFile(walletFile.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyFilePermissions()));
+        }
+
         Writer writer = new FileWriter(walletFile);
         gson.toJson(wallet, writer);
         writer.close();
@@ -174,7 +180,7 @@ public class Storage {
 
     private void storeWallet(ECKey encryptionPubKey, Wallet wallet) throws IOException {
         File parent = walletFile.getParentFile();
-        if(!parent.exists() && !parent.mkdirs()) {
+        if(!parent.exists() && !createOwnerOnlyDirectory(parent)) {
             throw new IOException("Could not create folder " + parent);
         }
 
@@ -186,6 +192,10 @@ public class Storage {
                 }
             }
             walletFile = noJsonFile;
+        }
+
+        if(!walletFile.exists()) {
+            Files.createFile(walletFile.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyFilePermissions()));
         }
 
         OutputStream outputStream = new FileOutputStream(walletFile);
@@ -238,7 +248,10 @@ public class Storage {
         }
 
         File backupFile = new File(backupDir, backupName);
-        Files.copy(walletFile, backupFile);
+        if(!backupFile.exists()) {
+            Files.createFile(backupFile.toPath(), PosixFilePermissions.asFileAttribute(getFileOwnerOnlyFilePermissions()));
+        }
+        com.google.common.io.Files.copy(walletFile, backupFile);
     }
 
     public void deleteBackups() {
@@ -259,7 +272,7 @@ public class Storage {
     private File[] getBackups(String extension, String notExtension) {
         File backupDir = getWalletsBackupDir();
         File[] backups = backupDir.listFiles((dir, name) -> {
-            return name.startsWith(Files.getNameWithoutExtension(walletFile.getName()) + "-") &&
+            return name.startsWith(com.google.common.io.Files.getNameWithoutExtension(walletFile.getName()) + "-") &&
                     getBackupDate(name) != null &&
                     (extension == null || name.endsWith("." + extension)) &&
                     (notExtension == null || !name.endsWith("." + notExtension));
@@ -372,7 +385,7 @@ public class Storage {
     public static File getWalletsBackupDir() {
         File walletsBackupDir = new File(getWalletsDir(), WALLETS_BACKUP_DIR);
         if(!walletsBackupDir.exists()) {
-            walletsBackupDir.mkdirs();
+            createOwnerOnlyDirectory(walletsBackupDir);
         }
 
         return walletsBackupDir;
@@ -381,7 +394,7 @@ public class Storage {
     public static File getWalletsDir() {
         File walletsDir = new File(getSparrowDir(), WALLETS_DIR);
         if(!walletsDir.exists()) {
-            walletsDir.mkdirs();
+            createOwnerOnlyDirectory(walletsDir);
         }
 
         return walletsDir;
@@ -390,7 +403,7 @@ public class Storage {
     public static File getCertificateFile(String host) {
         File certsDir = getCertsDir();
         File[] certs = certsDir.listFiles((dir, name) -> name.equals(host));
-        if(certs.length > 0) {
+        if(certs != null && certs.length > 0) {
             return certs[0];
         }
 
@@ -412,18 +425,25 @@ public class Storage {
     static File getCertsDir() {
         File certsDir = new File(getSparrowDir(), CERTS_DIR);
         if(!certsDir.exists()) {
-            certsDir.mkdirs();
+            createOwnerOnlyDirectory(certsDir);
         }
 
         return certsDir;
     }
 
     static File getSparrowDir() {
+        File sparrowDir;
         if(Network.get() != Network.MAINNET) {
-            return new File(getSparrowHome(), Network.get().getName());
+            sparrowDir = new File(getSparrowHome(), Network.get().getName());
+        } else {
+            sparrowDir = getSparrowHome();
         }
 
-        return getSparrowHome();
+        if(!sparrowDir.exists()) {
+            createOwnerOnlyDirectory(sparrowDir);
+        }
+
+        return sparrowDir;
     }
 
     public static File getSparrowHome() {
@@ -444,6 +464,32 @@ public class Storage {
         }
 
         return new File(System.getProperty("user.home"));
+    }
+
+    private static boolean createOwnerOnlyDirectory(File directory) {
+        try {
+            Files.createDirectories(directory.toPath(), PosixFilePermissions.asFileAttribute(getDirectoryOwnerOnlyFilePermissions()));
+            return true;
+        } catch(IOException e) {
+            log.error("Could not create directory " + directory.getAbsolutePath(), e);
+        }
+
+        return false;
+    }
+
+    public static Set<PosixFilePermission> getDirectoryOwnerOnlyFilePermissions() {
+        Set<PosixFilePermission> ownerOnly = getFileOwnerOnlyFilePermissions();
+        ownerOnly.add(PosixFilePermission.OWNER_EXECUTE);
+
+        return ownerOnly;
+    }
+
+    public static Set<PosixFilePermission> getFileOwnerOnlyFilePermissions() {
+        Set<PosixFilePermission> ownerOnly = EnumSet.noneOf(PosixFilePermission.class);
+        ownerOnly.add(PosixFilePermission.OWNER_READ);
+        ownerOnly.add(PosixFilePermission.OWNER_WRITE);
+
+        return ownerOnly;
     }
 
     private static class ExtendedPublicKeySerializer implements JsonSerializer<ExtendedKey> {
