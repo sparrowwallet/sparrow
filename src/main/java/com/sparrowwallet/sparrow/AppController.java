@@ -1795,4 +1795,9 @@ public class AppController implements Initializable {
             openTransactionFromQR(null);
         }
     }
+
+    @Subscribe
+    public void sendAction(SendActionEvent event) {
+        selectTab(event.getWallet());
+    }
 }

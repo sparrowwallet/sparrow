@@ -29,7 +29,10 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -40,14 +43,17 @@ import org.controlsfx.control.HyperlinkLabel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -135,6 +141,8 @@ public class AppServices {
                 restartServices();
             }
         }
+
+        addURIHandlers();
     }
 
     private void restartServices() {
@@ -588,6 +596,50 @@ public class AppServices {
             double y = currentWindow.getY() + (currentWindow.getHeight() / 2.2) - (newWindowHeight / 2);
             newWindow.setX(x);
             newWindow.setY(y);
+        }
+    }
+
+    public static void addURIHandlers() {
+        Desktop.getDesktop().setOpenURIHandler(event -> {
+            URI uri = event.getURI();
+            if("bitcoin".equals(uri.getScheme())) {
+                Platform.runLater(() -> openBitcoinUri(uri));
+            } else if("aopp".equals(uri.getScheme())) {
+                log.info(uri.toString());
+            }
+        });
+    }
+
+    private static void openBitcoinUri(URI uri) {
+        try {
+            BitcoinURI bitcoinURI = new BitcoinURI(uri.toString());
+
+            Wallet wallet = null;
+            Set<Wallet> wallets = get().getOpenWallets().keySet();
+            if(wallets.isEmpty()) {
+                showErrorDialog("No wallet available", "Open a wallet to send to the provided bitcoin URI.");
+            } else if(wallets.size() == 1) {
+                wallet = wallets.iterator().next();
+            } else {
+                ChoiceDialog<Wallet> walletChoiceDialog = new ChoiceDialog<>(wallets.iterator().next(), wallets);
+                walletChoiceDialog.setTitle("Choose Wallet");
+                walletChoiceDialog.setHeaderText("Choose a wallet to pay from");
+                Image image = new Image("/image/sparrow-small.png");
+                walletChoiceDialog.getDialogPane().setGraphic(new ImageView(image));
+                AppServices.setStageIcon(walletChoiceDialog.getDialogPane().getScene().getWindow());
+                Optional<Wallet> optWallet = walletChoiceDialog.showAndWait();
+                if(optWallet.isPresent()) {
+                    wallet = optWallet.get();
+                }
+            }
+
+            if(wallet != null) {
+                final Wallet sendingWallet = wallet;
+                EventManager.get().post(new SendActionEvent(sendingWallet, new ArrayList<>(sendingWallet.getWalletUtxos().keySet())));
+                Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(sendingWallet, List.of(bitcoinURI.toPayment()))));
+            }
+        } catch(Exception e) {
+            showErrorDialog("Not a valid bitcoin URI", e.getMessage());
         }
     }
 

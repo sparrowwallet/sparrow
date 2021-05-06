@@ -1075,6 +1075,17 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     @Subscribe
+    public void sendPayments(SendPaymentsEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            if(event.getPayments() != null) {
+                clear(null);
+                setPayments(event.getPayments());
+                updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
+            }
+        }
+    }
+
+    @Subscribe
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         BitcoinUnit unit = getBitcoinUnit(event.getBitcoinUnit());
         feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);

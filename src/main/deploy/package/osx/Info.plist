@@ -35,5 +35,24 @@
   <string>true</string>
   <key>NSCameraUsageDescription</key>
   <string>Sparrow requires access to the camera in order to scan QR codes</string>
+  <key>CFBundleURLTypes</key>
+  <array>
+      <dict>
+          <key>CFBundleURLName</key>
+          <string>com.sparrowwallet.sparrow.bitcoin</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>bitcoin</string>
+          </array>
+      </dict>
+      <dict>
+          <key>CFBundleURLName</key>
+          <string>com.sparrowwallet.sparrow.aopp</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>aopp</string>
+          </array>
+      </dict>
+  </array>
  </dict>
 </plist>
