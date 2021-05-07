@@ -114,7 +114,7 @@ public class WalletController extends WalletFormController implements Initializa
 
     @Subscribe
     public void receiveAction(ReceiveActionEvent event) {
-        if(event.getReceiveEntry().getWallet().equals(walletForm.getWallet())) {
+        if(event.getWallet().equals(walletForm.getWallet())) {
             selectFunction(Function.RECEIVE);
         }
     }

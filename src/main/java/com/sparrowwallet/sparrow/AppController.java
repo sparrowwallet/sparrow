@@ -315,7 +315,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void showDocumentation(ActionEvent event) throws IOException {
+    public void showDocumentation(ActionEvent event) {
         AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/docs");
     }
 
@@ -328,7 +328,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void submitBugReport(ActionEvent event) throws IOException {
+    public void submitBugReport(ActionEvent event) {
         AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/submitbugreport");
     }
 
@@ -1798,6 +1798,11 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void sendAction(SendActionEvent event) {
+        selectTab(event.getWallet());
+    }
+
+    @Subscribe
+    public void recieveAction(ReceiveActionEvent event) {
         selectTab(event.getWallet());
     }
 }

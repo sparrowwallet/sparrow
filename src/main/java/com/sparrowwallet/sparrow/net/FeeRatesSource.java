@@ -1,15 +1,13 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.google.common.net.HostAndPort;
 import com.google.gson.Gson;
-import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -57,7 +55,7 @@ public enum FeeRatesSource {
     }
 
     private static Map<Integer, Double> getThreeTierFeeRates(Map<Integer, Double> defaultblockTargetFeeRates, String url) {
-        Proxy proxy = getProxy();
+        Proxy proxy = AppServices.getProxy();
 
         Map<Integer, Double> blockTargetFeeRates = new LinkedHashMap<>();
         try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
@@ -95,17 +93,6 @@ public enum FeeRatesSource {
         }
 
         return blockTargetFeeRates;
-    }
-
-    private static Proxy getProxy() {
-        Config config = Config.get();
-        if(config.isUseProxy()) {
-            HostAndPort proxy = HostAndPort.fromString(config.getProxyServer());
-            InetSocketAddress proxyAddress = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
-            return new Proxy(Proxy.Type.SOCKS, proxyAddress);
-        }
-
-        return null;
     }
 
     @Override

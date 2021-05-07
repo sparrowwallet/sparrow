@@ -9,6 +9,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -19,17 +20,14 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
+import com.sparrowwallet.sparrow.net.Aopp;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import org.controlsfx.glyphfont.Glyph;
 import org.fxmisc.richtext.CodeArea;
 import org.slf4j.Logger;
@@ -40,10 +38,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.ResourceBundle;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReceiveController extends WalletFormController implements Initializable {
@@ -248,6 +243,28 @@ public class ReceiveController extends WalletFormController implements Initializ
         this.currentEntry = null;
     }
 
+    private void signAndSendProofOfAddress(Aopp aopp) {
+        if(currentEntry == null) {
+            Platform.runLater(() -> signAndSendProofOfAddress(aopp));
+        } else {
+            try {
+                ButtonType signSendButtonType = new ButtonType("Sign & Send", ButtonBar.ButtonData.APPLY);
+                ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+                MessageSignDialog messageSignDialog = new MessageSignDialog(getWalletForm().getWallet(), currentEntry.getNode(), "Send Proof of Address", aopp.getMessage(), signSendButtonType, cancelButtonType);
+                messageSignDialog.setElectrumSignatureFormat(true);
+                Optional<ButtonBar.ButtonData> buttonData = messageSignDialog.showAndWait();
+                if(buttonData.isPresent() && buttonData.get() == ButtonBar.ButtonData.OK_DONE) {
+                    Address address = getWalletForm().getWallet().getAddress(currentEntry.getNode());
+                    String signature = messageSignDialog.getSignature();
+                    aopp.sendProofOfAddress(address, signature);
+                    AppServices.showAlertDialog("Proof of Address Sent", "Proof of ownership of address " + address + " has been successfully sent to " + aopp.getCallback().getHost() + ".", Alert.AlertType.INFORMATION);
+                }
+            } catch(Exception e) {
+                AppServices.showErrorDialog("Cannot send proof of ownership", e.getMessage());
+            }
+        }
+    }
+
     public static Glyph getUnusedGlyph() {
         Glyph checkGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
         checkGlyph.getStyleClass().add("unused-check");
@@ -277,6 +294,13 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void receiveTo(ReceiveToEvent event) {
         if(event.getReceiveEntry().getWallet().equals(getWalletForm().getWallet())) {
             setNodeEntry(event.getReceiveEntry());
+        }
+    }
+
+    @Subscribe
+    public void receiveProof(ReceiveProofEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            Platform.runLater(() -> signAndSendProofOfAddress(event.getAopp()));
         }
     }
 

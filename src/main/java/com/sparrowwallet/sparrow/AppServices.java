@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -605,7 +606,7 @@ public class AppServices {
             if("bitcoin".equals(uri.getScheme())) {
                 Platform.runLater(() -> openBitcoinUri(uri));
             } else if("aopp".equals(uri.getScheme())) {
-                log.info(uri.toString());
+                Platform.runLater(() -> openAddressOwnershipProof(uri));
             }
         });
     }
@@ -613,25 +614,7 @@ public class AppServices {
     private static void openBitcoinUri(URI uri) {
         try {
             BitcoinURI bitcoinURI = new BitcoinURI(uri.toString());
-
-            Wallet wallet = null;
-            Set<Wallet> wallets = get().getOpenWallets().keySet();
-            if(wallets.isEmpty()) {
-                showErrorDialog("No wallet available", "Open a wallet to send to the provided bitcoin URI.");
-            } else if(wallets.size() == 1) {
-                wallet = wallets.iterator().next();
-            } else {
-                ChoiceDialog<Wallet> walletChoiceDialog = new ChoiceDialog<>(wallets.iterator().next(), wallets);
-                walletChoiceDialog.setTitle("Choose Wallet");
-                walletChoiceDialog.setHeaderText("Choose a wallet to pay from");
-                Image image = new Image("/image/sparrow-small.png");
-                walletChoiceDialog.getDialogPane().setGraphic(new ImageView(image));
-                AppServices.setStageIcon(walletChoiceDialog.getDialogPane().getScene().getWindow());
-                Optional<Wallet> optWallet = walletChoiceDialog.showAndWait();
-                if(optWallet.isPresent()) {
-                    wallet = optWallet.get();
-                }
-            }
+            Wallet wallet = selectWallet(null, "pay from");
 
             if(wallet != null) {
                 final Wallet sendingWallet = wallet;
@@ -641,6 +624,44 @@ public class AppServices {
         } catch(Exception e) {
             showErrorDialog("Not a valid bitcoin URI", e.getMessage());
         }
+    }
+
+    public static void openAddressOwnershipProof(URI uri) {
+        try {
+            Aopp aopp = new Aopp(uri);
+            Wallet wallet = selectWallet(aopp.getScriptType(), "send proof of address");
+
+            if(wallet != null) {
+                EventManager.get().post(new ReceiveActionEvent(wallet));
+                Platform.runLater(() -> EventManager.get().post(new ReceiveProofEvent(wallet, aopp)));
+            }
+        } catch(Exception e) {
+            showErrorDialog("Not a valid AOPP URI", e.getMessage());
+        }
+    }
+
+    private static Wallet selectWallet(ScriptType scriptType, String actionDescription) {
+        Wallet wallet = null;
+        List<Wallet> wallets = get().getOpenWallets().keySet().stream().filter(w -> scriptType == null || w.getScriptType() == scriptType).collect(Collectors.toList());
+        if(wallets.isEmpty()) {
+            showErrorDialog("No wallet available", "Open a" + (scriptType == null ? "" : " " + scriptType.getDescription()) + " wallet to " + actionDescription + ".");
+        } else if(wallets.size() == 1) {
+            wallet = wallets.iterator().next();
+        } else {
+            ChoiceDialog<Wallet> walletChoiceDialog = new ChoiceDialog<>(wallets.iterator().next(), wallets);
+            walletChoiceDialog.setTitle("Choose Wallet");
+            walletChoiceDialog.setHeaderText("Choose a wallet to " + actionDescription);
+            Image image = new Image("/image/sparrow-small.png");
+            walletChoiceDialog.getDialogPane().setGraphic(new ImageView(image));
+            setStageIcon(walletChoiceDialog.getDialogPane().getScene().getWindow());
+            moveToActiveWindowScreen(walletChoiceDialog);
+            Optional<Wallet> optWallet = walletChoiceDialog.showAndWait();
+            if(optWallet.isPresent()) {
+                wallet = optWallet.get();
+            }
+        }
+
+        return wallet;
     }
 
     public static Font getMonospaceFont() {
