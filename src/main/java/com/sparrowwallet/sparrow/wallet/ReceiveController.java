@@ -257,7 +257,7 @@ public class ReceiveController extends WalletFormController implements Initializ
                     Address address = getWalletForm().getWallet().getAddress(currentEntry.getNode());
                     String signature = messageSignDialog.getSignature();
                     aopp.sendProofOfAddress(address, signature);
-                    AppServices.showAlertDialog("Proof of Address Sent", "Proof of ownership of address " + address + " has been successfully sent to " + aopp.getCallback().getHost() + ".", Alert.AlertType.INFORMATION);
+                    AppServices.showAlertDialog("Proof of Address Sent", "Proof of ownership of address\n" + address + "\nhas been successfully sent to\n" + aopp.getCallback().getHost() + ".", Alert.AlertType.INFORMATION);
                 }
             } catch(Exception e) {
                 AppServices.showErrorDialog("Cannot send proof of ownership", e.getMessage());
