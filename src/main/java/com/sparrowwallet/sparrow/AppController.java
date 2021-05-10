@@ -432,7 +432,7 @@ public class AppController implements Initializable {
                 showErrorDialog("Invalid PSBT", e.getMessage());
             } catch(TransactionParseException e) {
                 showErrorDialog("Invalid transaction", e.getMessage());
-            } catch(ParseException e) {
+            } catch(Exception e) {
                 showErrorDialog("Invalid file", e.getMessage());
             }
         }
