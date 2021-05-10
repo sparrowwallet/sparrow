@@ -601,14 +601,20 @@ public class AppServices {
     }
 
     public static void addURIHandlers() {
-        Desktop.getDesktop().setOpenURIHandler(event -> {
-            URI uri = event.getURI();
-            if("bitcoin".equals(uri.getScheme())) {
-                Platform.runLater(() -> openBitcoinUri(uri));
-            } else if("aopp".equals(uri.getScheme())) {
-                Platform.runLater(() -> openAddressOwnershipProof(uri));
+        try {
+            if(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
+                Desktop.getDesktop().setOpenURIHandler(event -> {
+                    URI uri = event.getURI();
+                    if("bitcoin".equals(uri.getScheme())) {
+                        Platform.runLater(() -> openBitcoinUri(uri));
+                    } else if("aopp".equals(uri.getScheme())) {
+                        Platform.runLater(() -> openAddressOwnershipProof(uri));
+                    }
+                });
             }
-        });
+        } catch(Exception e) {
+            log.error("Could not add URI handler", e);
+        }
     }
 
     private static void openBitcoinUri(URI uri) {
