@@ -45,6 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
+import java.awt.desktop.OpenURIEvent;
+import java.awt.desktop.OpenURIHandler;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -118,6 +120,15 @@ public class AppServices {
                 ratesService.cancel();
                 versionCheckService.cancel();
             }
+        }
+    };
+
+    private static final OpenURIHandler openURIHandler = event -> {
+        URI uri = event.getURI();
+        if("bitcoin".equals(uri.getScheme())) {
+            Platform.runLater(() -> openBitcoinUri(uri));
+        } else if("aopp".equals(uri.getScheme())) {
+            Platform.runLater(() -> openAddressOwnershipProof(uri));
         }
     };
 
@@ -600,17 +611,14 @@ public class AppServices {
         }
     }
 
+    public static void handleURI(URI uri) {
+        openURIHandler.openURI(new OpenURIEvent(uri));
+    }
+
     public static void addURIHandlers() {
         try {
             if(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
-                Desktop.getDesktop().setOpenURIHandler(event -> {
-                    URI uri = event.getURI();
-                    if("bitcoin".equals(uri.getScheme())) {
-                        Platform.runLater(() -> openBitcoinUri(uri));
-                    } else if("aopp".equals(uri.getScheme())) {
-                        Platform.runLater(() -> openAddressOwnershipProof(uri));
-                    }
-                });
+                Desktop.getDesktop().setOpenURIHandler(openURIHandler);
             }
         } catch(Exception e) {
             log.error("Could not add URI handler", e);

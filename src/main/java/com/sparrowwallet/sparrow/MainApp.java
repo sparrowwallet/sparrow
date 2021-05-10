@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,9 @@ public class MainApp extends Application {
     public static final String NETWORK_ENV_PROPERTY = "SPARROW_NETWORK";
 
     private Stage mainStage;
+
+    private static final List<File> argFiles = new ArrayList<>();
+    private static final List<URI> argUris = new ArrayList<>();
 
     @Override
     public void init() throws Exception {
@@ -108,6 +113,14 @@ public class MainApp extends Application {
             }
         }
 
+        for(File argFile : argFiles) {
+            appController.openFile(argFile);
+        }
+
+        for(URI argUri : argUris) {
+            AppServices.handleURI(argUri);
+        }
+
         AppServices.get().start();
     }
 
@@ -160,6 +173,24 @@ public class MainApp extends Application {
 
         if(Network.get() != Network.MAINNET) {
             getLogger().info("Using " + Network.get() + " configuration");
+        }
+
+        if(!jCommander.getUnknownOptions().isEmpty()) {
+            for(String fileUri : jCommander.getUnknownOptions()) {
+                try {
+                    File file = new File(fileUri);
+                    if(file.exists()) {
+                        argFiles.add(file);
+                        continue;
+                    }
+                    URI uri = new URI(fileUri);
+                    argUris.add(uri);
+                } catch(URISyntaxException e) {
+                    getLogger().warn("Could not parse " + fileUri + " as a valid file or URI");
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
         }
 
         SLF4JBridgeHandler.removeHandlersForRootLogger();

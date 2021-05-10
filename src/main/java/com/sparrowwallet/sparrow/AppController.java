@@ -170,11 +170,7 @@ public class AppController implements Initializable {
             boolean success = false;
             if(db.hasFiles()) {
                 for(File file : db.getFiles()) {
-                    if(isWalletFile(file)) {
-                        openWalletFile(file, true);
-                    } else {
-                        openTransactionFile(file);
-                    }
+                    openFile(file);
                 }
                 success = true;
             }
@@ -685,6 +681,14 @@ public class AppController implements Initializable {
         BitcoinUnit unit = (BitcoinUnit)item.getUserData();
         Config.get().setBitcoinUnit(unit);
         EventManager.get().post(new BitcoinUnitChangedEvent(unit));
+    }
+
+    public void openFile(File file) {
+        if(isWalletFile(file)) {
+            openWalletFile(file, true);
+        } else {
+            openTransactionFile(file);
+        }
     }
 
     private boolean isWalletFile(File file) {
