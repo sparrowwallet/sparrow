@@ -1299,6 +1299,28 @@ public class AppController implements Initializable {
         EventManager.get().post(new ThemeChangedEvent(selectedTheme));
     }
 
+    private void serverToggleStartAnimation() {
+        Node thumbArea = serverToggle.lookup(".thumb-area");
+        if(thumbArea != null) {
+            FadeTransition fadeTransition = new FadeTransition(Duration.millis(1000), thumbArea);
+            fadeTransition.setFromValue(1.0);
+            fadeTransition.setToValue(0.4);
+            fadeTransition.setAutoReverse(true);
+            fadeTransition.setCycleCount(Animation.INDEFINITE);
+            fadeTransition.play();
+            serverToggle.setUserData(fadeTransition);
+        }
+    }
+
+    private void serverToggleStopAnimation() {
+        if(serverToggle.getUserData() != null) {
+            FadeTransition fadeTransition = (FadeTransition)serverToggle.getUserData();
+            fadeTransition.stop();
+            fadeTransition.getNode().setOpacity(1.0);
+            serverToggle.setUserData(null);
+        }
+    }
+
     private void tabLabelStartAnimation(Wallet wallet) {
         tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == wallet).forEach(this::tabLabelStartAnimation);
     }
@@ -1568,12 +1590,14 @@ public class AppController implements Initializable {
         if(!statusBar.getText().contains(TRYING_ANOTHER_SERVER_MESSAGE)) {
             statusUpdated(new StatusEvent(event.getStatus(), 120));
         }
+        serverToggleStartAnimation();
     }
 
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
         String status = CONNECTION_FAILED_PREFIX + event.getMessage();
         statusUpdated(new StatusEvent(status));
+        serverToggleStopAnimation();
     }
 
     @Subscribe
@@ -1581,6 +1605,7 @@ public class AppController implements Initializable {
         String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
         statusUpdated(new StatusEvent(status));
         setServerToggleTooltip(event.getBlockHeight());
+        serverToggleStopAnimation();
     }
 
     @Subscribe
@@ -1595,6 +1620,7 @@ public class AppController implements Initializable {
         for(Wallet wallet : getOpenWallets().keySet()) {
             tabLabelStopAnimation(wallet);
         }
+        serverToggleStopAnimation();
     }
 
     @Subscribe
