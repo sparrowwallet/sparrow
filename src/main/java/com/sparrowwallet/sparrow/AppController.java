@@ -691,11 +691,6 @@ public class AppController implements Initializable {
         }
     }
 
-    private boolean isWalletFile(File file) {
-        FileType fileType = IOUtils.getFileType(file);
-        return FileType.JSON.equals(fileType) || FileType.BINARY.equals(fileType);
-    }
-
     private void setServerToggleTooltip(Integer currentBlockHeight) {
         Tooltip tooltip = new Tooltip(getServerToggleTooltipText(currentBlockHeight));
         tooltip.setShowDuration(Duration.seconds(15));
@@ -1808,14 +1803,22 @@ public class AppController implements Initializable {
     @Subscribe
     public void requestWalletOpen(RequestWalletOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            openWallet(true);
+            if(event.getFile() != null) {
+                openWalletFile(event.getFile(), true);
+            } else {
+                openWallet(true);
+            }
         }
     }
 
     @Subscribe
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            openTransactionFromFile(null);
+            if(event.getFile() != null) {
+                openTransactionFile(event.getFile());
+            } else {
+                openTransactionFromFile(null);
+            }
         }
     }
 

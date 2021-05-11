@@ -54,5 +54,69 @@
           </array>
       </dict>
   </array>
+  <key>UTImportedTypeDeclarations</key>
+  <array>
+      <dict>
+          <key>UTTypeIdentifier</key>
+          <string>org.bitcoin.psbt</string>
+          <key>UTTypeTagSpecification</key>
+          <dict>
+              <key>public.filename-extension</key>
+              <array>
+                  <string>psbt</string>
+              </array>
+          </dict>
+          <key>UTTypeDescription</key>
+          <string>Partially Signed Bitcoin Transaction</string>
+          <key>UTTypeIconFile</key>
+          <string>sparrow.icns</string>
+      </dict>
+      <dict>
+          <key>UTTypeIdentifier</key>
+          <string>org.bitcoin.txn</string>
+          <key>UTTypeTagSpecification</key>
+          <dict>
+              <key>public.filename-extension</key>
+              <array>
+                  <string>txn</string>
+              </array>
+          </dict>
+          <key>UTTypeDescription</key>
+          <string>Bitcoin Transaction</string>
+          <key>UTTypeIconFile</key>
+          <string>sparrow.icns</string>
+      </dict>
+  </array>
+ <key>CFBundleDocumentTypes</key>
+ <array>
+     <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>sparrow.icns</string>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+            <string>psbt</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>Partially Signed Bitcoin Transaction</string>
+        <key>LSHandlerRank</key>
+        <string>Default</string>
+     </dict>
+     <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>sparrow.icns</string>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+            <string>txn</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>Bitcoin Transaction</string>
+        <key>LSHandlerRank</key>
+        <string>Default</string>
+     </dict>
+ </array>
  </dict>
 </plist>

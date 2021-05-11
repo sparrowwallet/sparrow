@@ -71,6 +71,9 @@ dependencies {
     }
     implementation('dev.bwt:bwt-jni:0.1.7')
     implementation('net.sourceforge.javacsv:javacsv:2.0')
+    implementation('tk.pratanumandal:unique4j:1.3') {
+        exclude group: 'com.google.code.gson'
+    }
     implementation('org.slf4j:jul-to-slf4j:1.7.30') {
         exclude group: 'org.slf4j'
     }
@@ -151,7 +154,8 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
                    "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
-                   "--add-reads=com.sparrowwallet.merged.module=java.desktop"]
+                   "--add-reads=com.sparrowwallet.merged.module=java.desktop",
+                   "--add-reads=com.sparrowwallet.merged.module=java.sql"]
 
         if(os.macOsX) {
             jvmArgs += "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"

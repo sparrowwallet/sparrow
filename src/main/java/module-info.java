@@ -11,7 +11,6 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.drongo;
     requires com.google.common;
     requires flowless;
-    requires com.google.gson;
     requires com.google.zxing;
     requires com.google.zxing.javase;
     requires simple.json.rpc.client;
@@ -28,6 +27,7 @@ open module com.sparrowwallet.sparrow {
     requires bwt.jni;
     requires jtorctl;
     requires javacsv;
+    requires unique4j;
     requires jul.to.slf4j;
     requires bridj;
 }

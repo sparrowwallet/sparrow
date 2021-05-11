@@ -23,14 +23,15 @@ import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
+import tk.pratanumandal.unique4j.Unique4jList;
+import tk.pratanumandal.unique4j.exception.Unique4jException;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class MainApp extends Application {
+    public static final String APP_ID = "com.sparrowwallet.sparrow";
     public static final String APP_NAME = "Sparrow";
     public static final String APP_VERSION = "1.4.0";
     public static final String APP_HOME_PROPERTY = "sparrow.home";
@@ -38,8 +39,7 @@ public class MainApp extends Application {
 
     private Stage mainStage;
 
-    private static final List<File> argFiles = new ArrayList<>();
-    private static final List<URI> argUris = new ArrayList<>();
+    private static SparrowUnique sparrowUnique;
 
     @Override
     public void init() throws Exception {
@@ -113,13 +113,7 @@ public class MainApp extends Application {
             }
         }
 
-        for(File argFile : argFiles) {
-            appController.openFile(argFile);
-        }
-
-        for(URI argUri : argUris) {
-            AppServices.handleURI(argUri);
-        }
+        AppServices.openFileUriArguments(stage);
 
         AppServices.get().start();
     }
@@ -128,6 +122,9 @@ public class MainApp extends Application {
     public void stop() throws Exception {
         AppServices.get().stop();
         mainStage.close();
+        if(sparrowUnique != null) {
+            sparrowUnique.freeLock();
+        }
     }
 
     public static void main(String[] argv) {
@@ -175,22 +172,18 @@ public class MainApp extends Application {
             getLogger().info("Using " + Network.get() + " configuration");
         }
 
-        if(!jCommander.getUnknownOptions().isEmpty()) {
-            for(String fileUri : jCommander.getUnknownOptions()) {
+        List<String> fileUriArguments = jCommander.getUnknownOptions();
+        if(!fileUriArguments.isEmpty()) {
+            if(args.network == null && args.dir == null) {
                 try {
-                    File file = new File(fileUri);
-                    if(file.exists()) {
-                        argFiles.add(file);
-                        continue;
-                    }
-                    URI uri = new URI(fileUri);
-                    argUris.add(uri);
-                } catch(URISyntaxException e) {
-                    getLogger().warn("Could not parse " + fileUri + " as a valid file or URI");
-                } catch(Exception e) {
-                    //ignore
+                    sparrowUnique = new SparrowUnique(APP_ID, fileUriArguments);
+                    sparrowUnique.acquireLock(); //Will exit app after sending fileUriArguments if lock cannot be acquired
+                } catch(Unique4jException e) {
+                    getLogger().error("Could not obtain unique lock", e);
                 }
             }
+
+            AppServices.parseFileUriArguments(fileUriArguments);
         }
 
         SLF4JBridgeHandler.removeHandlersForRootLogger();
@@ -200,5 +193,30 @@ public class MainApp extends Application {
 
     private static Logger getLogger() {
         return LoggerFactory.getLogger(MainApp.class);
+    }
+
+    private static class SparrowUnique extends Unique4jList {
+        private final List<String> fileUriArguments;
+
+        public SparrowUnique(String APP_ID, List<String> fileUriArguments) {
+            super(APP_ID + "." + Network.get());
+            this.fileUriArguments = fileUriArguments;
+        }
+
+        @Override
+        protected void receiveMessageList(List<String> messageList) {
+            AppServices.parseFileUriArguments(messageList);
+            AppServices.openFileUriArguments(null);
+        }
+
+        @Override
+        protected List<String> sendMessageList() {
+            return fileUriArguments;
+        }
+
+        @Override
+        protected void beforeExit() {
+            getLogger().info("Opening files/URIs in already running instance, exiting...");
+        }
     }
 }

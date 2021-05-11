@@ -13,10 +13,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
-import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.Device;
-import com.sparrowwallet.sparrow.io.Hwi;
-import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -45,13 +42,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.*;
-import java.awt.desktop.OpenURIEvent;
+import java.awt.desktop.OpenFilesHandler;
 import java.awt.desktop.OpenURIHandler;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -104,6 +102,10 @@ public class AppServices {
 
     private static List<Device> devices;
 
+    private static final List<File> argFiles = new ArrayList<>();
+
+    private static final List<URI> argUris = new ArrayList<>();
+
     private static final Map<Address, BitcoinURI> payjoinURIs = new HashMap<>();
 
     private final ChangeListener<Boolean> onlineServicesListener = new ChangeListener<>() {
@@ -124,12 +126,11 @@ public class AppServices {
     };
 
     private static final OpenURIHandler openURIHandler = event -> {
-        URI uri = event.getURI();
-        if("bitcoin".equals(uri.getScheme())) {
-            Platform.runLater(() -> openBitcoinUri(uri));
-        } else if("aopp".equals(uri.getScheme())) {
-            Platform.runLater(() -> openAddressOwnershipProof(uri));
-        }
+        openURI(event.getURI());
+    };
+
+    private static final OpenFilesHandler openFilesHandler = event -> {
+        openFiles(event.getFiles(), null);
     };
 
     public AppServices(MainApp application) {
@@ -521,6 +522,11 @@ public class AppServices {
         ElectrumServer.clearRetrievedScriptHashes(wallet);
     }
 
+    public static boolean isWalletFile(File file) {
+        FileType fileType = IOUtils.getFileType(file);
+        return FileType.JSON.equals(fileType) || FileType.BINARY.equals(fileType);
+    }
+
     public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
         return showAlertDialog(title, content, Alert.AlertType.WARNING, buttons);
     }
@@ -611,14 +617,71 @@ public class AppServices {
         }
     }
 
-    public static void handleURI(URI uri) {
-        openURIHandler.openURI(new OpenURIEvent(uri));
+    static void parseFileUriArguments(List<String> fileUriArguments) {
+        for(String fileUri : fileUriArguments) {
+            try {
+                File file = new File(fileUri.replace("~", System.getProperty("user.home")));
+                if(file.exists()) {
+                    argFiles.add(file);
+                    continue;
+                }
+                URI uri = new URI(fileUri);
+                argUris.add(uri);
+            } catch(URISyntaxException e) {
+                log.warn("Could not parse " + fileUri + " as a valid file or URI");
+            } catch(Exception e) {
+                //ignore
+            }
+        }
+    }
+
+    public static void openFileUriArguments(Window window) {
+        openFiles(argFiles, window);
+        argFiles.clear();
+
+        for(URI argUri : argUris) {
+            openURI(argUri);
+        }
+        argUris.clear();
+    }
+
+    private static void openFiles(List<File> files, Window window) {
+        final List<File> openFiles = new ArrayList<>(files);
+        Platform.runLater(() -> {
+            Window openWindow = window;
+            if(openWindow == null) {
+                openWindow = getActiveWindow();
+            }
+
+            for(File file : openFiles) {
+                if(isWalletFile(file)) {
+                    EventManager.get().post(new RequestWalletOpenEvent(openWindow, file));
+                } else {
+                    EventManager.get().post(new RequestTransactionOpenEvent(openWindow, file));
+                }
+            }
+        });
+    }
+
+    private static void openURI(URI uri) {
+        Platform.runLater(() -> {
+            if("bitcoin".equals(uri.getScheme())) {
+                openBitcoinUri(uri);
+            } else if("aopp".equals(uri.getScheme())) {
+                openAddressOwnershipProof(uri);
+            }
+        });
     }
 
     public static void addURIHandlers() {
         try {
-            if(Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
-                Desktop.getDesktop().setOpenURIHandler(openURIHandler);
+            if(Desktop.isDesktopSupported()) {
+                if(Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_FILE)) {
+                    Desktop.getDesktop().setOpenFileHandler(openFilesHandler);
+                }
+                if(Desktop.getDesktop().isSupported(Desktop.Action.APP_OPEN_URI)) {
+                    Desktop.getDesktop().setOpenURIHandler(openURIHandler);
+                }
             }
         } catch(Exception e) {
             log.error("Could not add URI handler", e);
