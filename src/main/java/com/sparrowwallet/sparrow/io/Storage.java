@@ -219,7 +219,9 @@ public class Storage {
     }
 
     public void backupWallet() throws IOException {
-        backupWallet(null);
+        if(walletFile.toPath().startsWith(getWalletsDir().toPath())) {
+            backupWallet(null);
+        }
     }
 
     public void backupTempWallet() {
