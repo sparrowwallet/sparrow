@@ -28,6 +28,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
 import org.fxmisc.richtext.CodeArea;
 import org.slf4j.Logger;
@@ -252,6 +253,8 @@ public class ReceiveController extends WalletFormController implements Initializ
                 ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
                 MessageSignDialog messageSignDialog = new MessageSignDialog(getWalletForm().getWallet(), currentEntry.getNode(), "Send Proof of Address", aopp.getMessage(), signSendButtonType, cancelButtonType);
                 messageSignDialog.setElectrumSignatureFormat(true);
+                Stage stage = (Stage)messageSignDialog.getDialogPane().getScene().getWindow();
+                stage.setAlwaysOnTop(true);
                 Optional<ButtonBar.ButtonData> buttonData = messageSignDialog.showAndWait();
                 if(buttonData.isPresent() && buttonData.get() == ButtonBar.ButtonData.OK_DONE) {
                     Address address = getWalletForm().getWallet().getAddress(currentEntry.getNode());
