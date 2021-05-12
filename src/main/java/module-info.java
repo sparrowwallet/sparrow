@@ -27,7 +27,7 @@ open module com.sparrowwallet.sparrow {
     requires bwt.jni;
     requires jtorctl;
     requires javacsv;
-    requires unique4j;
     requires jul.to.slf4j;
     requires bridj;
+    requires com.google.gson;
 }

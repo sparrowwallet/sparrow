@@ -15,6 +15,8 @@ import com.sparrowwallet.sparrow.net.PublicElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
+import com.sparrowwallet.sparrow.instance.InstanceException;
+import com.sparrowwallet.sparrow.instance.InstanceList;
 import javafx.application.Application;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -23,8 +25,6 @@ import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
-import tk.pratanumandal.unique4j.Unique4jList;
-import tk.pratanumandal.unique4j.exception.Unique4jException;
 
 import java.io.File;
 import java.util.*;
@@ -39,7 +39,7 @@ public class MainApp extends Application {
 
     private Stage mainStage;
 
-    private static SparrowUnique sparrowUnique;
+    private static SparrowInstance sparrowInstance;
 
     @Override
     public void init() throws Exception {
@@ -122,8 +122,8 @@ public class MainApp extends Application {
     public void stop() throws Exception {
         AppServices.get().stop();
         mainStage.close();
-        if(sparrowUnique != null) {
-            sparrowUnique.freeLock();
+        if(sparrowInstance != null) {
+            sparrowInstance.freeLock();
         }
     }
 
@@ -175,9 +175,9 @@ public class MainApp extends Application {
         List<String> fileUriArguments = jCommander.getUnknownOptions();
 
         try {
-            sparrowUnique = new SparrowUnique(fileUriArguments);
-            sparrowUnique.acquireLock(); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
-        } catch(Unique4jException e) {
+            sparrowInstance = new SparrowInstance(fileUriArguments);
+            sparrowInstance.acquireLock(); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
+        } catch(InstanceException e) {
             getLogger().error("Could not access application lock", e);
         }
 
@@ -194,10 +194,10 @@ public class MainApp extends Application {
         return LoggerFactory.getLogger(MainApp.class);
     }
 
-    private static class SparrowUnique extends Unique4jList {
+    private static class SparrowInstance extends InstanceList {
         private final List<String> fileUriArguments;
 
-        public SparrowUnique(List<String> fileUriArguments) {
+        public SparrowInstance(List<String> fileUriArguments) {
             super(MainApp.APP_ID + "." + Network.get(), !fileUriArguments.isEmpty());
             this.fileUriArguments = fileUriArguments;
         }
