@@ -1803,10 +1803,6 @@ public class AppController implements Initializable {
     @Subscribe
     public void requestWalletOpen(RequestWalletOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            if(event.getWindow() instanceof Stage) {
-                ((Stage)event.getWindow()).toFront();
-            }
-
             if(event.getFile() != null) {
                 openWalletFile(event.getFile(), true);
             } else {
@@ -1818,10 +1814,6 @@ public class AppController implements Initializable {
     @Subscribe
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            if(event.getWindow() instanceof Stage) {
-                ((Stage)event.getWindow()).toFront();
-            }
-
             if(event.getFile() != null) {
                 openTransactionFile(event.getFile());
             } else {

@@ -653,6 +653,11 @@ public class AppServices {
                 openWindow = getActiveWindow();
             }
 
+            if(openWindow instanceof Stage) {
+                ((Stage)openWindow).setAlwaysOnTop(true);
+                ((Stage)openWindow).setAlwaysOnTop(false);
+            }
+
             for(File file : openFiles) {
                 if(isWalletFile(file)) {
                     EventManager.get().post(new RequestWalletOpenEvent(openWindow, file));
