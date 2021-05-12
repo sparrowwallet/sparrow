@@ -173,16 +173,15 @@ public class MainApp extends Application {
         }
 
         List<String> fileUriArguments = jCommander.getUnknownOptions();
-        if(!fileUriArguments.isEmpty()) {
-            if(args.network == null && args.dir == null) {
-                try {
-                    sparrowUnique = new SparrowUnique(APP_ID, fileUriArguments);
-                    sparrowUnique.acquireLock(); //Will exit app after sending fileUriArguments if lock cannot be acquired
-                } catch(Unique4jException e) {
-                    getLogger().error("Could not obtain unique lock", e);
-                }
-            }
 
+        try {
+            sparrowUnique = new SparrowUnique(fileUriArguments);
+            sparrowUnique.acquireLock(); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
+        } catch(Unique4jException e) {
+            getLogger().error("Could not access application lock", e);
+        }
+
+        if(!fileUriArguments.isEmpty()) {
             AppServices.parseFileUriArguments(fileUriArguments);
         }
 
@@ -198,15 +197,17 @@ public class MainApp extends Application {
     private static class SparrowUnique extends Unique4jList {
         private final List<String> fileUriArguments;
 
-        public SparrowUnique(String APP_ID, List<String> fileUriArguments) {
-            super(APP_ID + "." + Network.get());
+        public SparrowUnique(List<String> fileUriArguments) {
+            super(MainApp.APP_ID + "." + Network.get(), !fileUriArguments.isEmpty());
             this.fileUriArguments = fileUriArguments;
         }
 
         @Override
         protected void receiveMessageList(List<String> messageList) {
-            AppServices.parseFileUriArguments(messageList);
-            AppServices.openFileUriArguments(null);
+            if(messageList != null && !messageList.isEmpty()) {
+                AppServices.parseFileUriArguments(messageList);
+                AppServices.openFileUriArguments(null);
+            }
         }
 
         @Override
