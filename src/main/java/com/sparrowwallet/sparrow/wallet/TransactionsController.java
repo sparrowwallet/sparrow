@@ -197,9 +197,11 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     @Subscribe
-    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+    public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            transactionsTable.updateLabel(event.getEntry());
+            for(Entry entry : event.getEntries()) {
+                transactionsTable.updateLabel(entry);
+            }
             balanceChart.update(getWalletForm().getWalletTransactionsEntry());
         }
     }

@@ -69,10 +69,12 @@ public class AddressesController extends WalletFormController implements Initial
     }
 
     @Subscribe
-    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+    public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            receiveTable.updateLabel(event.getEntry());
-            changeTable.updateLabel(event.getEntry());
+            for(Entry entry : event.getEntries()) {
+                receiveTable.updateLabel(entry);
+                changeTable.updateLabel(entry);
+            }
         }
     }
 

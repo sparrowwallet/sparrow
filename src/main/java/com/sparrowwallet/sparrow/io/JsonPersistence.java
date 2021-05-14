@@ -76,7 +76,7 @@ public class JsonPersistence implements Persistence {
         Map<File, Wallet> loadedWallets = loadWallets(walletFiles, encryptionKey);
         for(Map.Entry<File, Wallet> entry : loadedWallets.entrySet()) {
             Storage storage = new Storage(entry.getKey());
-            storage.setEncryptionPubKey(ECKey.fromPublicOnly(encryptionKey));
+            storage.setEncryptionPubKey(encryptionKey == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(encryptionKey));
             storage.setKeyDeriver(getKeyDeriver());
             Wallet childWallet = entry.getValue();
             childWallet.setMasterWallet(masterWallet);

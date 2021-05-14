@@ -104,22 +104,21 @@ public class AddressTreeTable extends CoinTreeTable {
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
-        //We only ever add or replace child nodes - never remove in order to keep a full sequence
+        //We only ever add child nodes - never remove in order to keep a full sequence
         NodeEntry rootEntry = (NodeEntry)getRoot().getValue();
 
         for(WalletNode updatedNode : updatedNodes) {
-            NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
-
             Optional<Entry> optEntry = rootEntry.getChildren().stream().filter(childEntry -> ((NodeEntry)childEntry).getNode().equals(updatedNode)).findFirst();
             if(optEntry.isPresent()) {
-                int index = rootEntry.getChildren().indexOf(optEntry.get());
-                rootEntry.getChildren().set(index, nodeEntry);
+                NodeEntry existingEntry = (NodeEntry)optEntry.get();
+                existingEntry.refreshChildren();
             } else {
+                NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
                 rootEntry.getChildren().add(nodeEntry);
             }
         }
 
-        sort();
+        refresh();
     }
 
     public void updateLabel(Entry entry) {

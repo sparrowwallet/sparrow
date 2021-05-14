@@ -1026,7 +1026,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     @Subscribe
-    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+    public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             updateTransaction();
         }

@@ -20,6 +20,7 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.payjoin.Payjoin;
 import com.sparrowwallet.sparrow.payjoin.PayjoinReceiverException;
+import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.application.Platform;
@@ -1156,23 +1157,28 @@ public class HeadersController extends TransactionFormController implements Init
         if(headersForm.getSigningWallet() != null && !(headersForm.getSigningWallet() instanceof FinalizingPSBTWallet)) {
             Sha256Hash txid = headersForm.getTransaction().getTxId();
 
+            List<Entry> changedLabelEntries = new ArrayList<>();
             BlockTransaction blockTransaction = event.getWallet().getTransactions().get(txid);
             if(blockTransaction != null && blockTransaction.getLabel() == null) {
                 blockTransaction.setLabel(headersForm.getName());
-                Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelChangedEvent(event.getWallet(), new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()))));
+                changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
             }
 
             for(WalletNode walletNode : event.getHistoryChangedNodes()) {
                 for(BlockTransactionHashIndex output : walletNode.getTransactionOutputs()) {
                     if(output.getHash().equals(txid) && output.getLabel() == null) { //If we send to ourselves, usually change
                         output.setLabel(headersForm.getName() + (walletNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
-                        Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelChangedEvent(event.getWallet(), new HashIndexEntry(event.getWallet(), output, HashIndexEntry.Type.OUTPUT, walletNode.getKeyPurpose()))));
+                        changedLabelEntries.add(new HashIndexEntry(event.getWallet(), output, HashIndexEntry.Type.OUTPUT, walletNode.getKeyPurpose()));
                     }
                     if(output.getSpentBy() != null && output.getSpentBy().getHash().equals(txid) && output.getSpentBy().getLabel() == null) { //The norm - sending out
                         output.getSpentBy().setLabel(headersForm.getName() + " (input)");
-                        Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelChangedEvent(event.getWallet(), new HashIndexEntry(event.getWallet(), output.getSpentBy(), HashIndexEntry.Type.INPUT, walletNode.getKeyPurpose()))));
+                        changedLabelEntries.add(new HashIndexEntry(event.getWallet(), output.getSpentBy(), HashIndexEntry.Type.INPUT, walletNode.getKeyPurpose()));
                     }
                 }
+            }
+
+            if(!changedLabelEntries.isEmpty()) {
+                Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(event.getWallet(), changedLabelEntries)));
             }
         }
     }

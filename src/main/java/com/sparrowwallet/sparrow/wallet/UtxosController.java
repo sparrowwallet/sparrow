@@ -114,9 +114,11 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     @Subscribe
-    public void walletEntryLabelChanged(WalletEntryLabelChangedEvent event) {
+    public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            utxosTable.updateLabel(event.getEntry());
+            for(Entry entry : event.getEntries()) {
+                utxosTable.updateLabel(entry);
+            }
             utxosChart.update(getWalletForm().getWalletUtxosEntry());
         }
     }

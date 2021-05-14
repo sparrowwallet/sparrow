@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
@@ -310,6 +311,85 @@ public class WalletForm {
             if(walletNode != null) {
                 log.debug(wallet.getName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
                 refreshHistory(AppServices.getCurrentBlockHeight(), null, walletNode);
+            }
+        }
+    }
+
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        if(event.getWalletFile().equals(storage.getWalletFile())) {
+            for(WalletNode changedNode : event.getHistoryChangedNodes()) {
+                if(changedNode.getLabel() != null && !changedNode.getLabel().isEmpty()) {
+                    List<Entry> changedLabelEntries = new ArrayList<>();
+                    for(BlockTransactionHashIndex receivedRef : changedNode.getTransactionOutputs()) {
+                        BlockTransaction blockTransaction = wallet.getTransactions().get(receivedRef.getHash());
+                        if(blockTransaction != null && blockTransaction.getLabel() == null) {
+                            blockTransaction.setLabel(changedNode.getLabel());
+                            changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
+                        }
+                    }
+
+                    if(!changedLabelEntries.isEmpty()) {
+                        Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(event.getWallet(), changedLabelEntries)));
+                    }
+                }
+            }
+        }
+    }
+
+    @Subscribe
+    public void walletLabelsChanged(WalletEntryLabelsChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            List<Entry> labelChangedEntries = new ArrayList<>();
+            for(Entry entry : event.getEntries()) {
+                if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
+                    if(entry instanceof TransactionEntry) {
+                        TransactionEntry transactionEntry = (TransactionEntry)entry;
+                        List<KeyPurpose> keyPurposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
+                        for(KeyPurpose keyPurpose : keyPurposes) {
+                            for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
+                                for(BlockTransactionHashIndex receivedRef : childNode.getTransactionOutputs()) {
+                                    if(receivedRef.getHash().equals(transactionEntry.getBlockTransaction().getHash())) {
+                                        if(receivedRef.getLabel() == null) {
+                                            receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? " (change)" : " (received)"));
+                                            labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose));
+                                        }
+                                        if(childNode.getLabel() == null) {
+                                            childNode.setLabel(entry.getLabel());
+                                            labelChangedEntries.add(new NodeEntry(event.getWallet(), childNode));
+                                        }
+                                    }
+                                    if(receivedRef.isSpent() && receivedRef.getSpentBy().getHash().equals(transactionEntry.getBlockTransaction().getHash()) && receivedRef.getSpentBy().getLabel() == null) {
+                                        receivedRef.getSpentBy().setLabel(entry.getLabel() + " (input)");
+                                        labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef.getSpentBy(), HashIndexEntry.Type.INPUT, keyPurpose));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if(entry instanceof NodeEntry) {
+                        NodeEntry nodeEntry = (NodeEntry)entry;
+                        for(BlockTransactionHashIndex receivedRef : nodeEntry.getNode().getTransactionOutputs()) {
+                            BlockTransaction blockTransaction = event.getWallet().getTransactions().get(receivedRef.getHash());
+                            if(blockTransaction.getLabel() == null) {
+                                blockTransaction.setLabel(entry.getLabel());
+                                labelChangedEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
+                            }
+                        }
+                    }
+                    if(entry instanceof HashIndexEntry) {
+                        HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
+                        BlockTransaction blockTransaction = hashIndexEntry.getBlockTransaction();
+                        if(blockTransaction.getLabel() == null) {
+                            blockTransaction.setLabel(entry.getLabel());
+                            labelChangedEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
+                        }
+                    }
+                }
+            }
+
+            if(!labelChangedEntries.isEmpty()) {
+                Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, labelChangedEntries)));
             }
         }
     }
