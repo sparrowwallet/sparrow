@@ -740,13 +740,8 @@ public class AppController implements Initializable {
             Storage storage = new Storage(file);
             FileType fileType = IOUtils.getFileType(file);
             if(FileType.JSON.equals(fileType)) {
-                Storage.WalletBackupAndKey walletBackupAndKey = storage.loadWallet();
-                checkWalletNetwork(walletBackupAndKey.wallet);
-                restorePublicKeysFromSeed(walletBackupAndKey.wallet, null);
-                if(!walletBackupAndKey.wallet.isValid()) {
-                    throw new IllegalStateException("Wallet file is not valid.");
-                }
-                addWalletTabOrWindow(storage, walletBackupAndKey.wallet, walletBackupAndKey.backupWallet, forceSameWindow);
+                WalletBackupAndKey walletBackupAndKey = storage.loadUnencryptedWallet();
+                openWallet(storage, walletBackupAndKey, this, forceSameWindow);
             } else if(FileType.BINARY.equals(fileType)) {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
@@ -758,16 +753,8 @@ public class AppController implements Initializable {
                 Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
                 loadWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
-                    Storage.WalletBackupAndKey walletBackupAndKey = loadWalletService.getValue();
-                    try {
-                        checkWalletNetwork(walletBackupAndKey.wallet);
-                        restorePublicKeysFromSeed(walletBackupAndKey.wallet, walletBackupAndKey.key);
-                        addWalletTabOrWindow(storage, walletBackupAndKey.wallet, walletBackupAndKey.backupWallet, forceSameWindow);
-                    } catch(Exception e) {
-                        showErrorDialog("Error Opening Wallet", e.getMessage());
-                    } finally {
-                        walletBackupAndKey.key.clear();
-                    }
+                    WalletBackupAndKey walletBackupAndKey = loadWalletService.getValue();
+                    openWallet(storage, walletBackupAndKey, this, forceSameWindow);
                 });
                 loadWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
@@ -795,6 +782,25 @@ public class AppController implements Initializable {
                 log.error("Error opening wallet", e);
                 showErrorDialog("Error Opening Wallet", e.getMessage() == null ? "Unsupported file format" : e.getMessage());
             }
+        }
+    }
+
+    private void openWallet(Storage storage, WalletBackupAndKey walletBackupAndKey, AppController appController, boolean forceSameWindow) {
+        try {
+            checkWalletNetwork(walletBackupAndKey.getWallet());
+            restorePublicKeysFromSeed(walletBackupAndKey.getWallet(), walletBackupAndKey.getKey());
+            if(!walletBackupAndKey.getWallet().isValid()) {
+                throw new IllegalStateException("Wallet file is not valid.");
+            }
+            AppController walletAppController = appController.addWalletTabOrWindow(storage, walletBackupAndKey.getWallet(), walletBackupAndKey.getBackupWallet(), forceSameWindow);
+            for(Map.Entry<Storage, WalletBackupAndKey> entry : walletBackupAndKey.getChildWallets().entrySet()) {
+                openWallet(entry.getKey(), entry.getValue(), walletAppController, true);
+            }
+            Platform.runLater(() -> selectTab(walletBackupAndKey.getWallet()));
+        } catch(Exception e) {
+            showErrorDialog("Error Opening Wallet", e.getMessage());
+        } finally {
+            walletBackupAndKey.clear();
         }
     }
 
@@ -937,7 +943,7 @@ public class AppController implements Initializable {
             if(password.get().length() == 0) {
                 try {
                     storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
-                    storage.storeWallet(wallet);
+                    storage.saveWallet(wallet);
                     addWalletTabOrWindow(storage, wallet, null, false);
                 } catch(IOException e) {
                     log.error("Error saving imported wallet", e);
@@ -954,7 +960,7 @@ public class AppController implements Initializable {
                         key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
                         wallet.encrypt(key);
                         storage.setEncryptionPubKey(encryptionPubKey);
-                        storage.storeWallet(wallet);
+                        storage.saveWallet(wallet);
                         addWalletTabOrWindow(storage, wallet, null, false);
                     } catch(IOException e) {
                         log.error("Error saving imported wallet", e);
@@ -1032,14 +1038,14 @@ public class AppController implements Initializable {
         }
     }
 
-    public void addWalletTabOrWindow(Storage storage, Wallet wallet, Wallet backupWallet, boolean forceSameWindow) {
+    public AppController addWalletTabOrWindow(Storage storage, Wallet wallet, Wallet backupWallet, boolean forceSameWindow) {
         Window existingWalletWindow = AppServices.get().getWindowForWallet(storage);
         if(existingWalletWindow instanceof Stage) {
             Stage existingWalletStage = (Stage)existingWalletWindow;
             existingWalletStage.toFront();
 
             EventManager.get().post(new ViewWalletEvent(existingWalletWindow, wallet, storage));
-            return;
+            return this;
         }
 
         if(!forceSameWindow && Config.get().isOpenWalletsInNewWindows() && !getOpenWallets().isEmpty()) {
@@ -1048,8 +1054,10 @@ public class AppController implements Initializable {
             stage.toFront();
             stage.setX(AppServices.get().getWalletWindowMaxX() + 30);
             appController.addWalletTab(storage, wallet, backupWallet);
+            return appController;
         } else {
             addWalletTab(storage, wallet, backupWallet);
+            return this;
         }
     }
 

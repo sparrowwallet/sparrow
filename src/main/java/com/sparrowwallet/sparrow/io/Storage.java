@@ -1,16 +1,10 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.gson.*;
-import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.MainApp;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -19,13 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.lang.reflect.Type;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.security.SecureRandom;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.text.DateFormat;
@@ -33,9 +23,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.*;
-
-import static com.sparrowwallet.drongo.crypto.Argon2KeyDeriver.SPRW1_PARAMETERS;
 
 public class Storage {
     private static final Logger log = LoggerFactory.getLogger(Storage.class);
@@ -49,173 +36,60 @@ public class Storage {
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
-    public static final String HEADER_MAGIC_1 = "SPRW1";
-    private static final int BINARY_HEADER_LENGTH = 28;
     public static final String TEMP_BACKUP_EXTENSION = "tmp";
 
+    private final Persistence persistence;
     private File walletFile;
-    private final Gson gson;
-    private AsymmetricKeyDeriver keyDeriver;
     private ECKey encryptionPubKey;
 
     public Storage(File walletFile) {
+        this.persistence = new JsonPersistence();
         this.walletFile = walletFile;
-        this.gson = getGson();
     }
 
     public File getWalletFile() {
         return walletFile;
     }
 
-    public static Gson getGson() {
-        return getGson(true);
-    }
-
-    private static Gson getGson(boolean includeWalletSerializers) {
-        GsonBuilder gsonBuilder = new GsonBuilder();
-        gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeySerializer());
-        gsonBuilder.registerTypeAdapter(ExtendedKey.class, new ExtendedPublicKeyDeserializer());
-        gsonBuilder.registerTypeAdapter(byte[].class, new ByteArraySerializer());
-        gsonBuilder.registerTypeAdapter(byte[].class, new ByteArrayDeserializer());
-        gsonBuilder.registerTypeAdapter(Sha256Hash.class, new Sha256HashSerializer());
-        gsonBuilder.registerTypeAdapter(Sha256Hash.class, new Sha256HashDeserializer());
-        gsonBuilder.registerTypeAdapter(Date.class, new DateSerializer());
-        gsonBuilder.registerTypeAdapter(Date.class, new DateDeserializer());
-        gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionSerializer());
-        gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
-        if(includeWalletSerializers) {
-            gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
-            gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeSerializer());
-            gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeDeserializer());
-        }
-
-        return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
-    }
-
-    public WalletBackupAndKey loadWallet() throws IOException {
-        Wallet wallet = loadWallet(walletFile);
-
-        Wallet backupWallet = null;
-        File[] backups = getBackups("json." + TEMP_BACKUP_EXTENSION);
-        if(backups.length > 0) {
-            try {
-                backupWallet = loadWallet(backups[0]);
-            } catch(Exception e) {
-                log.error("Error loading backup wallet " + TEMP_BACKUP_EXTENSION, e);
-            }
-        }
+    public WalletBackupAndKey loadUnencryptedWallet() throws IOException, StorageException {
+        Wallet wallet = persistence.loadWallet(walletFile);
+        Wallet backupWallet = loadBackupWallet(null);
+        Map<Storage, WalletBackupAndKey> childWallets = persistence.loadChildWallets(walletFile, wallet, null);
 
         encryptionPubKey = NO_PASSWORD_KEY;
-        return new WalletBackupAndKey(wallet, backupWallet, null);
+        return new WalletBackupAndKey(wallet, backupWallet, null, null, childWallets);
     }
 
-    public Wallet loadWallet(File jsonFile) throws IOException {
-        Reader reader = new FileReader(jsonFile);
-        Wallet wallet = gson.fromJson(reader, Wallet.class);
-        reader.close();
+    public WalletBackupAndKey loadEncryptedWallet(CharSequence password) throws IOException, StorageException {
+        WalletBackupAndKey masterWalletAndKey = persistence.loadWallet(walletFile, password);
+        Wallet backupWallet = loadBackupWallet(masterWalletAndKey.getEncryptionKey());
+        Map<Storage, WalletBackupAndKey> childWallets = persistence.loadChildWallets(walletFile, masterWalletAndKey.getWallet(), masterWalletAndKey.getEncryptionKey());
 
-        return wallet;
+        encryptionPubKey = ECKey.fromPublicOnly(masterWalletAndKey.getEncryptionKey());
+        return new WalletBackupAndKey(masterWalletAndKey.getWallet(), backupWallet, masterWalletAndKey.getEncryptionKey(), persistence.getKeyDeriver(), childWallets);
     }
 
-    public WalletBackupAndKey loadWallet(CharSequence password) throws IOException, StorageException {
-        WalletAndKey walletAndKey = loadWallet(walletFile, password);
-
-        WalletAndKey backupAndKey = new WalletAndKey(null, null);
-        File[] backups = getBackups(TEMP_BACKUP_EXTENSION, "json." + TEMP_BACKUP_EXTENSION);
-        if(backups.length > 0) {
-            try {
-                backupAndKey = loadWallet(backups[0], password);
-            } catch(Exception e) {
-                log.error("Error loading backup wallet " + TEMP_BACKUP_EXTENSION, e);
-            }
+    protected Wallet loadBackupWallet(ECKey encryptionKey) throws IOException, StorageException {
+        Map<File, Wallet> backupWallets;
+        if(encryptionKey != null) {
+            File[] backups = getBackups(TEMP_BACKUP_EXTENSION, persistence.getType().getExtension() + "." + TEMP_BACKUP_EXTENSION);
+            backupWallets = persistence.loadWallets(backups, encryptionKey);
+            return backupWallets.isEmpty() ? null : backupWallets.values().iterator().next();
+        } else {
+            File[] backups = getBackups(persistence.getType().getExtension() + "." + TEMP_BACKUP_EXTENSION);
+            backupWallets = persistence.loadWallets(backups, null);
         }
 
-        return new WalletBackupAndKey(walletAndKey.wallet, backupAndKey.wallet, walletAndKey.key);
+        return backupWallets.isEmpty() ? null : backupWallets.values().iterator().next();
     }
 
-    public WalletAndKey loadWallet(File encryptedFile, CharSequence password) throws IOException, StorageException {
-        InputStream fileStream = new FileInputStream(encryptedFile);
-        ECKey encryptionKey = getEncryptionKey(password, fileStream);
-
-        InputStream inputStream = new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic()));
-        Reader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-        Wallet wallet = gson.fromJson(reader, Wallet.class);
-        reader.close();
-
-        Key key = new Key(encryptionKey.getPrivKeyBytes(), keyDeriver.getSalt(), EncryptionType.Deriver.ARGON2);
-
-        encryptionPubKey = ECKey.fromPublicOnly(encryptionKey);
-        return new WalletAndKey(wallet, key);
-    }
-
-    public void storeWallet(Wallet wallet) throws IOException {
+    public void saveWallet(Wallet wallet) throws IOException {
         if(encryptionPubKey != null && !NO_PASSWORD_KEY.equals(encryptionPubKey)) {
-            storeWallet(encryptionPubKey, wallet);
+            walletFile = persistence.storeWallet(walletFile, wallet, encryptionPubKey);
             return;
         }
 
-        File parent = walletFile.getParentFile();
-        if(!parent.exists() && !createOwnerOnlyDirectory(parent)) {
-            throw new IOException("Could not create folder " + parent);
-        }
-
-        if(!walletFile.getName().endsWith(".json")) {
-            File jsonFile = new File(parent, walletFile.getName() + ".json");
-            if(walletFile.exists()) {
-                if(!walletFile.renameTo(jsonFile)) {
-                    throw new IOException("Could not rename " + walletFile.getName() + " to " + jsonFile.getName());
-                }
-            }
-            walletFile = jsonFile;
-        }
-
-        if(!walletFile.exists()) {
-            createOwnerOnlyFile(walletFile);
-        }
-
-        Writer writer = new FileWriter(walletFile);
-        gson.toJson(wallet, writer);
-        writer.close();
-    }
-
-    private void storeWallet(ECKey encryptionPubKey, Wallet wallet) throws IOException {
-        File parent = walletFile.getParentFile();
-        if(!parent.exists() && !createOwnerOnlyDirectory(parent)) {
-            throw new IOException("Could not create folder " + parent);
-        }
-
-        if(walletFile.getName().endsWith(".json")) {
-            File noJsonFile = new File(parent, walletFile.getName().substring(0, walletFile.getName().lastIndexOf('.')));
-            if(walletFile.exists()) {
-                if(!walletFile.renameTo(noJsonFile)) {
-                    throw new IOException("Could not rename " + walletFile.getName() + " to " + noJsonFile.getName());
-                }
-            }
-            walletFile = noJsonFile;
-        }
-
-        if(!walletFile.exists()) {
-            createOwnerOnlyFile(walletFile);
-        }
-
-        OutputStream outputStream = new FileOutputStream(walletFile);
-        writeBinaryHeader(outputStream);
-
-        OutputStreamWriter writer = new OutputStreamWriter(new DeflaterOutputStream(new ECIESOutputStream(outputStream, encryptionPubKey, getEncryptionMagic())), StandardCharsets.UTF_8);
-        gson.toJson(wallet, writer);
-        writer.close();
-    }
-
-    private void writeBinaryHeader(OutputStream outputStream) throws IOException {
-        ByteBuffer buf = ByteBuffer.allocate(21);
-        buf.put(HEADER_MAGIC_1.getBytes(StandardCharsets.UTF_8));
-        buf.put(keyDeriver.getSalt());
-
-        byte[] encoded = Base64.getEncoder().encode(buf.array());
-        if(encoded.length != BINARY_HEADER_LENGTH) {
-            throw new IllegalStateException("Header length not " + BINARY_HEADER_LENGTH + " bytes");
-        }
-        outputStream.write(encoded);
+        walletFile = persistence.storeWallet(walletFile, wallet);
     }
 
     public void backupWallet() throws IOException {
@@ -232,7 +106,7 @@ public class Storage {
         }
     }
 
-    public void backupWallet(String extension) throws IOException {
+    private void backupWallet(String extension) throws IOException {
         File backupDir = getWalletsBackupDir();
 
         Date backupDate = new Date();
@@ -260,7 +134,11 @@ public class Storage {
         deleteBackups(null);
     }
 
-    public void deleteBackups(String extension) {
+    public void deleteTempBackups() {
+        deleteBackups(Storage.TEMP_BACKUP_EXTENSION);
+    }
+
+    private void deleteBackups(String extension) {
         File[] backups = getBackups(extension);
         for(File backup : backups) {
             backup.delete();
@@ -280,6 +158,7 @@ public class Storage {
                     (notExtension == null || !name.endsWith("." + notExtension));
         });
 
+        backups = backups == null ? new File[0] : backups;
         Arrays.sort(backups, Comparator.comparing(o -> getBackupDate(((File)o).getName())).reversed());
 
         return backups;
@@ -303,77 +182,44 @@ public class Storage {
     }
 
     public ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException {
-        return getEncryptionKey(password, null);
-    }
-
-    private ECKey getEncryptionKey(CharSequence password, InputStream inputStream) throws IOException, StorageException {
-        if(password.equals("")) {
-            return NO_PASSWORD_KEY;
-        }
-
-        return getKeyDeriver(inputStream).deriveECKey(password);
+        return persistence.getEncryptionKey(password);
     }
 
     public AsymmetricKeyDeriver getKeyDeriver() {
-        return keyDeriver;
+        return persistence.getKeyDeriver();
     }
 
     void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
-        this.keyDeriver = keyDeriver;
-    }
-
-    private AsymmetricKeyDeriver getKeyDeriver(InputStream inputStream) throws IOException, StorageException {
-        if(keyDeriver == null) {
-            byte[] salt = new byte[SPRW1_PARAMETERS.saltLength];
-
-            if(inputStream != null) {
-                byte[] header = new byte[BINARY_HEADER_LENGTH];
-                int read = inputStream.read(header);
-                if(read != BINARY_HEADER_LENGTH) {
-                    throw new StorageException("Not a Sparrow wallet - invalid header");
-                }
-                try {
-                    byte[] decodedHeader = Base64.getDecoder().decode(header);
-                    byte[] magic = Arrays.copyOfRange(decodedHeader, 0, HEADER_MAGIC_1.length());
-                    if(!HEADER_MAGIC_1.equals(new String(magic, StandardCharsets.UTF_8))) {
-                        throw new StorageException("Not a Sparrow wallet - invalid magic");
-                    }
-                    salt = Arrays.copyOfRange(decodedHeader, HEADER_MAGIC_1.length(), decodedHeader.length);
-                } catch(IllegalArgumentException e) {
-                    throw new StorageException("Not a Sparrow wallet - invalid header");
-                }
-            } else {
-                SecureRandom secureRandom = new SecureRandom();
-                secureRandom.nextBytes(salt);
-            }
-
-            keyDeriver = new Argon2KeyDeriver(salt);
-        } else if(inputStream != null) {
-            inputStream.skip(BINARY_HEADER_LENGTH);
-        }
-
-        return keyDeriver;
-    }
-
-    private static byte[] getEncryptionMagic() {
-        return "BIE1".getBytes(StandardCharsets.UTF_8);
+        persistence.setKeyDeriver(keyDeriver);
     }
 
     public static boolean walletExists(String walletName) {
         File encrypted = new File(getWalletsDir(), walletName.trim());
-        File unencrypted = new File(getWalletsDir(), walletName.trim() + ".json");
+        if(encrypted.exists()) {
+            return true;
+        }
 
-        return (encrypted.exists() || unencrypted.exists());
+        for(PersistenceType persistenceType : PersistenceType.values()) {
+            File unencrypted = new File(getWalletsDir(), walletName.trim() + "." + persistenceType.getExtension());
+            if(unencrypted.exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static File getExistingWallet(String walletName) {
-        File encrypted = new File(getWalletsDir(), walletName);
-        File unencrypted = new File(getWalletsDir(), walletName + ".json");
-
+        File encrypted = new File(getWalletsDir(), walletName.trim());
         if(encrypted.exists()) {
             return encrypted;
-        } else if(unencrypted.exists()) {
-            return unencrypted;
+        }
+
+        for(PersistenceType persistenceType : PersistenceType.values()) {
+            File unencrypted = new File(getWalletsDir(), walletName.trim() + "." + persistenceType.getExtension());
+            if(unencrypted.exists()) {
+                return unencrypted;
+            }
         }
 
         return null;
@@ -468,7 +314,7 @@ public class Storage {
         return new File(System.getProperty("user.home"));
     }
 
-    private static boolean createOwnerOnlyDirectory(File directory) {
+    public static boolean createOwnerOnlyDirectory(File directory) {
         try {
             if(Platform.getCurrent() == Platform.WINDOWS) {
                 Files.createDirectories(directory.toPath());
@@ -519,162 +365,6 @@ public class Storage {
         return ownerOnly;
     }
 
-    private static class ExtendedPublicKeySerializer implements JsonSerializer<ExtendedKey> {
-        @Override
-        public JsonElement serialize(ExtendedKey src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(src.toString());
-        }
-    }
-
-    private static class ExtendedPublicKeyDeserializer implements JsonDeserializer<ExtendedKey> {
-        @Override
-        public ExtendedKey deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return ExtendedKey.fromDescriptor(json.getAsJsonPrimitive().getAsString());
-        }
-    }
-
-    private static class ByteArraySerializer implements JsonSerializer<byte[]> {
-        @Override
-        public JsonElement serialize(byte[] src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(Utils.bytesToHex(src));
-        }
-    }
-
-    private static class ByteArrayDeserializer implements JsonDeserializer<byte[]> {
-        @Override
-        public byte[] deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return Utils.hexToBytes(json.getAsJsonPrimitive().getAsString());
-        }
-    }
-
-    private static class Sha256HashSerializer implements JsonSerializer<Sha256Hash> {
-        @Override
-        public JsonElement serialize(Sha256Hash src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(src.toString());
-        }
-    }
-
-    private static class Sha256HashDeserializer implements JsonDeserializer<Sha256Hash> {
-        @Override
-        public Sha256Hash deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return Sha256Hash.wrap(json.getAsJsonPrimitive().getAsString());
-        }
-    }
-
-    private static class DateSerializer implements JsonSerializer<Date> {
-        @Override
-        public JsonElement serialize(Date src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(src.getTime());
-        }
-    }
-
-    private static class DateDeserializer implements JsonDeserializer<Date> {
-        @Override
-        public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            return new Date(json.getAsJsonPrimitive().getAsLong());
-        }
-    }
-
-    private static class TransactionSerializer implements JsonSerializer<Transaction> {
-        @Override
-        public JsonElement serialize(Transaction src, Type typeOfSrc, JsonSerializationContext context) {
-            try {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                src.bitcoinSerializeToStream(baos);
-                return new JsonPrimitive(Utils.bytesToHex(baos.toByteArray()));
-            } catch (IOException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-    }
-
-    private static class TransactionDeserializer implements JsonDeserializer<Transaction> {
-        @Override
-        public Transaction deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            byte[] rawTx = Utils.hexToBytes(json.getAsJsonPrimitive().getAsString());
-            return new Transaction(rawTx);
-        }
-    }
-
-    private static class KeystoreSerializer implements JsonSerializer<Keystore> {
-        @Override
-        public JsonElement serialize(Keystore keystore, Type typeOfSrc, JsonSerializationContext context) {
-            JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(keystore);
-            if(keystore.hasPrivateKey()) {
-                jsonObject.remove("extendedPublicKey");
-                jsonObject.getAsJsonObject("keyDerivation").remove("masterFingerprint");
-            }
-
-            return jsonObject;
-        }
-    }
-
-    private static class NodeSerializer implements JsonSerializer<WalletNode> {
-        @Override
-        public JsonElement serialize(WalletNode node, Type typeOfSrc, JsonSerializationContext context) {
-            JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(node);
-
-            JsonArray children = jsonObject.getAsJsonArray("children");
-            Iterator<JsonElement> iter = children.iterator();
-            while(iter.hasNext()) {
-                JsonObject childObject = (JsonObject)iter.next();
-                removeEmptyCollection(childObject, "children");
-                removeEmptyCollection(childObject, "transactionOutputs");
-
-                if(childObject.get("label") == null && childObject.get("children") == null && childObject.get("transactionOutputs") == null) {
-                    iter.remove();
-                }
-            }
-
-            return jsonObject;
-        }
-
-        private void removeEmptyCollection(JsonObject jsonObject, String memberName) {
-            if(jsonObject.get(memberName) != null && jsonObject.getAsJsonArray(memberName).size() == 0) {
-                jsonObject.remove(memberName);
-            }
-        }
-    }
-
-    private static class NodeDeserializer implements JsonDeserializer<WalletNode> {
-        @Override
-        public WalletNode deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            WalletNode node = getGson(false).fromJson(json, typeOfT);
-            node.parseDerivation();
-
-            for(WalletNode childNode : node.getChildren()) {
-                childNode.parseDerivation();
-                if(childNode.getChildren() == null) {
-                    childNode.setChildren(new TreeSet<>());
-                }
-                if(childNode.getTransactionOutputs() == null) {
-                    childNode.setTransactionOutputs(new TreeSet<>());
-                }
-            }
-
-            return node;
-        }
-    }
-
-    public static class WalletAndKey {
-        public final Wallet wallet;
-        public final Key key;
-
-        public WalletAndKey(Wallet wallet, Key key) {
-            this.wallet = wallet;
-            this.key = key;
-        }
-    }
-
-    public static class WalletBackupAndKey extends WalletAndKey {
-        public final Wallet backupWallet;
-
-        public WalletBackupAndKey(Wallet wallet, Wallet backupWallet, Key key) {
-            super(wallet, key);
-            this.backupWallet = backupWallet;
-        }
-    }
-
     public static class LoadWalletService extends Service<WalletBackupAndKey> {
         private final Storage storage;
         private final SecureString password;
@@ -688,7 +378,7 @@ public class Storage {
         protected Task<WalletBackupAndKey> createTask() {
             return new Task<>() {
                 protected WalletBackupAndKey call() throws IOException, StorageException {
-                    WalletBackupAndKey walletBackupAndKey = storage.loadWallet(password);
+                    WalletBackupAndKey walletBackupAndKey = storage.loadEncryptedWallet(password);
                     password.clear();
                     return walletBackupAndKey;
                 }

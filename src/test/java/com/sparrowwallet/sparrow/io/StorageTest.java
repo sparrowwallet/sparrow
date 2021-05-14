@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -15,17 +16,17 @@ public class StorageTest extends IoTest {
     @Test
     public void loadWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
-        Wallet wallet = storage.loadWallet("pass").wallet;
+        Wallet wallet = storage.loadEncryptedWallet("pass").getWallet();
         Assert.assertTrue(wallet.isValid());
     }
 
     @Test
     public void loadSeedWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-seed-wallet"));
-        Storage.WalletAndKey walletAndKey = storage.loadWallet("pass");
-        Wallet wallet = walletAndKey.wallet;
+        WalletBackupAndKey walletAndKey = storage.loadEncryptedWallet("pass");
+        Wallet wallet = walletAndKey.getWallet();
         Wallet copy = wallet.copy();
-        copy.decrypt(walletAndKey.key);
+        copy.decrypt(walletAndKey.getKey());
 
         for(int i = 0; i < wallet.getKeystores().size(); i++) {
             Keystore keystore = wallet.getKeystores().get(i);
@@ -51,12 +52,20 @@ public class StorageTest extends IoTest {
         Assert.assertEquals("xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assert.assertEquals("af6ebd81714c301c3a71fe11a7a9c99ccef4b33d4b36582220767bfa92768a2aa040f88b015b2465f8075a8b9dbf892a7d6e6c49932109f2cbc05ba0bd7f355fbcc34c237f71be5fb4dd7f8184e44cb0", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getEncryptedData().getEncryptedBytes()));
         Assert.assertNull(wallet.getKeystores().get(0).getSeed().getMnemonicCode());
+        Assert.assertEquals("bc1q2mkrttcuzryrdyn9vtu3nfnt3jlngwn476ktus", wallet.getAddress(wallet.getFreshNode(KeyPurpose.RECEIVE)).toString());
+    }
+
+    @Test
+    public void multipleLoadTest() throws IOException, MnemonicException, StorageException {
+        for(int i = 0; i < 100; i++) {
+            loadSeedWallet();
+        }
     }
 
     @Test
     public void saveWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
-        Wallet wallet = storage.loadWallet("pass").wallet;
+        Wallet wallet = storage.loadEncryptedWallet("pass").getWallet();
         Assert.assertTrue(wallet.isValid());
 
         File tempWallet = File.createTempFile("sparrow", "tmp");
@@ -65,10 +74,10 @@ public class StorageTest extends IoTest {
         Storage tempStorage = new Storage(tempWallet);
         tempStorage.setKeyDeriver(storage.getKeyDeriver());
         tempStorage.setEncryptionPubKey(storage.getEncryptionPubKey());
-        tempStorage.storeWallet(wallet);
+        tempStorage.saveWallet(wallet);
 
         Storage temp2Storage = new Storage(tempWallet);
-        wallet = temp2Storage.loadWallet("pass").wallet;
+        wallet = temp2Storage.loadEncryptedWallet("pass").getWallet();
         Assert.assertTrue(wallet.isValid());
     }
 }

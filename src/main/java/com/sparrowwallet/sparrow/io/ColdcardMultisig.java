@@ -36,7 +36,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
-        ColdcardKeystore cck = Storage.getGson().fromJson(reader, ColdcardKeystore.class);
+        ColdcardKeystore cck = JsonPersistence.getGson().fromJson(reader, ColdcardKeystore.class);
 
         Keystore keystore = new Keystore("Coldcard");
         keystore.setSource(KeystoreSource.HW_AIRGAPPED);

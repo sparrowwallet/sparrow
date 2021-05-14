@@ -71,7 +71,7 @@ public class WalletForm {
     }
 
     public void save() throws IOException {
-        storage.storeWallet(wallet);
+        storage.saveWallet(wallet);
     }
 
     public void saveAndRefresh() throws IOException {
@@ -145,7 +145,7 @@ public class WalletForm {
             }
         }
 
-        storage.deleteBackups(Storage.TEMP_BACKUP_EXTENSION);
+        storage.deleteTempBackups();
         return changed;
     }
 
