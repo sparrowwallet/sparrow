@@ -124,6 +124,9 @@ public class AppController implements Initializable {
     private CheckMenuItem showLoadingLog;
 
     @FXML
+    private CheckMenuItem showUtxosChart;
+
+    @FXML
     private CheckMenuItem showTxHex;
 
     @FXML
@@ -259,6 +262,7 @@ public class AppController implements Initializable {
         useHdCameraResolution.setSelected(Config.get().isHdCapture());
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         showLoadingLog.setSelected(Config.get().isShowLoadingLog());
+        showUtxosChart.setSelected(Config.get().isShowUtxosChart());
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
@@ -668,6 +672,12 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setShowLoadingLog(item.isSelected());
         EventManager.get().post(new LoadingLogChangedEvent(item.isSelected()));
+    }
+
+    public void showUtxosChart(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setShowUtxosChart(item.isSelected());
+        EventManager.get().post(new UtxosChartChangedEvent(item.isSelected()));
     }
 
     public void showTxHex(ActionEvent event) {

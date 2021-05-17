@@ -50,6 +50,9 @@ public class UtxosController extends WalletFormController implements Initializab
             utxosChart.select(selectedEntries);
             updateSendSelected(Config.get().getBitcoinUnit());
         });
+
+        utxosChart.managedProperty().bind(utxosChart.visibleProperty());
+        utxosChart.setVisible(Config.get().isShowUtxosChart());
     }
 
     private void updateSendSelected(BitcoinUnit unit) {
@@ -166,5 +169,10 @@ public class UtxosController extends WalletFormController implements Initializab
     @Subscribe
     public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
         utxosTable.refresh();
+    }
+
+    @Subscribe
+    public void utxosChartChanged(UtxosChartChangedEvent event) {
+        utxosChart.setVisible(event.isVisible());
     }
 }

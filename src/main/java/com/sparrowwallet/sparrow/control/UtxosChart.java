@@ -44,16 +44,18 @@ public class UtxosChart extends BarChart<String, Number> {
 
         totalUtxos = utxoDataList.size();
         if(utxoDataList.size() > MAX_BARS) {
-            Long otherTotal = utxoDataList.subList(MAX_BARS - 1, utxoDataList.size()).stream().mapToLong(data -> data.getYValue().longValue()).sum();
+            List<Data<String, Number>> otherDataList = utxoDataList.subList(MAX_BARS - 1, utxoDataList.size());
+            List<Entry> otherEntries = otherDataList.stream().map(data -> (Entry)data.getExtraValue()).collect(Collectors.toList());
+            Long otherTotal = otherDataList.stream().mapToLong(data -> data.getYValue().longValue()).sum();
             utxoDataList = utxoDataList.subList(0, MAX_BARS - 1);
-            utxoDataList.add(new XYChart.Data<>(OTHER_CATEGORY, otherTotal));
+            utxoDataList.add(new XYChart.Data<>(OTHER_CATEGORY, otherTotal, otherEntries));
         }
 
         for(int i = 0; i < utxoDataList.size(); i++) {
             XYChart.Data<String, Number> newData = utxoDataList.get(i);
             if(i < utxoSeries.getData().size()) {
                 XYChart.Data<String, Number> existingData = utxoSeries.getData().get(i);
-                if(!newData.getXValue().equals(existingData.getXValue()) || !newData.getYValue().equals(existingData.getYValue()) || (newData.getExtraValue() != null && !newData.getExtraValue().equals(existingData.getExtraValue()))) {
+                if(!newData.getXValue().equals(existingData.getXValue()) || !newData.getYValue().equals(existingData.getYValue()) || (newData.getExtraValue() instanceof Entry && !newData.getExtraValue().equals(existingData.getExtraValue()))) {
                     utxoSeries.getData().set(i, newData);
                 }
             } else {
@@ -87,7 +89,8 @@ public class UtxosChart extends BarChart<String, Number> {
         for(int i = 0; i < utxoSeries.getData().size(); i++) {
             XYChart.Data<String, Number> data = utxoSeries.getData().get(i);
 
-            if((data.getExtraValue() != null && entries.contains((Entry)data.getExtraValue())) || (data.getExtraValue() == null && entries.size() == totalUtxos)) {
+            if((data.getExtraValue() instanceof Entry && entries.contains((Entry)data.getExtraValue())) ||
+                    (data.getExtraValue() instanceof List && entries.containsAll((List)data.getExtraValue()))) {
                 Node bar = lookup(".data" + i);
                 if(bar != null) {
                     bar.getStyleClass().add("selected");

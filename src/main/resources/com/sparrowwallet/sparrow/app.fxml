@@ -89,6 +89,7 @@
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
                         <CheckMenuItem fx:id="useHdCameraResolution" mnemonicParsing="false" text="Use HD Camera Resolution" onAction="#useHdCameraResolution"/>
                         <CheckMenuItem fx:id="showLoadingLog" mnemonicParsing="false" text="Show Wallet Loading Log" onAction="#showLoadingLog" />
+                        <CheckMenuItem fx:id="showUtxosChart" mnemonicParsing="false" text="Show UTXOs Chart" onAction="#showUtxosChart" />
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                         <SeparatorMenuItem />
                         <MenuItem fx:id="minimizeToTray" mnemonicParsing="false" text="Minimize to System Tray" accelerator="Shortcut+Y" onAction="#minimizeToTray"/>

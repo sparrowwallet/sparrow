@@ -41,6 +41,7 @@ public class Config {
     private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
     private boolean showLoadingLog = false;
+    private boolean showUtxosChart = true;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -254,6 +255,15 @@ public class Config {
 
     public void setShowLoadingLog(boolean showLoadingLog) {
         this.showLoadingLog = showLoadingLog;
+        flush();
+    }
+
+    public boolean isShowUtxosChart() {
+        return showUtxosChart;
+    }
+
+    public void setShowUtxosChart(boolean showUtxosChart) {
+        this.showUtxosChart = showUtxosChart;
         flush();
     }
 

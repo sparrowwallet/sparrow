@@ -19,15 +19,8 @@
         <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
     </padding>
     <center>
-        <GridPane hgap="10.0" vgap="10.0">
-            <columnConstraints>
-                <ColumnConstraints percentWidth="100.0" />
-            </columnConstraints>
-            <rowConstraints>
-                <RowConstraints percentHeight="60" />
-                <RowConstraints percentHeight="40" />
-            </rowConstraints>
-            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+        <VBox spacing="10.0">
+            <BorderPane VBox.vgrow="ALWAYS">
                 <top>
                     <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
                 </top>
@@ -45,18 +38,14 @@
                     </HBox>
                 </bottom>
             </BorderPane>
-            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
-                <center>
-                    <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false">
-                        <xAxis>
-                            <CategoryAxis side="BOTTOM" animated="false" />
-                        </xAxis>
-                        <yAxis>
-                            <NumberAxis side="LEFT" />
-                        </yAxis>
-                    </UtxosChart>
-                </center>
-            </BorderPane>
-        </GridPane>
+            <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false" prefHeight="250">
+                <xAxis>
+                    <CategoryAxis side="BOTTOM" animated="false" />
+                </xAxis>
+                <yAxis>
+                    <NumberAxis side="LEFT" />
+                </yAxis>
+            </UtxosChart>
+        </VBox>
     </center>
 </BorderPane>

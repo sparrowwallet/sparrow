@@ -34,7 +34,7 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
             if(entry instanceof UtxoEntry) {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
                 if(utxoEntry.getHashIndex().getHeight() <= 0) {
-                    setText("Unconfirmed " + (utxoEntry.isSpendable() ? "(Spendable)" : "(Not yet spendable)"));
+                    setText("Unconfirmed " + (utxoEntry.getHashIndex().getHeight() < 0 ? "Parent " : "") + (utxoEntry.isSpendable() ? "(Spendable)" : "(Not yet spendable)"));
                 } else {
                     String date = DATE_FORMAT.format(utxoEntry.getHashIndex().getDate());
                     setText(date);
