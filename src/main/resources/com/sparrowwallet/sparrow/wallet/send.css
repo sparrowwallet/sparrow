@@ -89,7 +89,7 @@
     -fx-stroke-dash-array: 5px 5px;
 }
 
-#transactionDiagram .utxo-label .button {
+#transactionDiagram .utxo-label .button, #transactionDiagram .replace-change-label .button {
     -fx-padding: 0;
     -fx-pref-height: 18;
     -fx-pref-width: 18;
@@ -103,6 +103,10 @@
 
 #transactionDiagram .utxo-label:hover .button .label .text {
     -fx-fill: -fx-text-base-color;
+}
+
+#transactionDiagram .change-warning-icon {
+    -fx-text-fill: rgb(238, 210, 2);
 }
 
 #targetBlocks .track {

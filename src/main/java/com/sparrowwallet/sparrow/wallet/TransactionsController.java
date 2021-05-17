@@ -157,7 +157,7 @@ public class TransactionsController extends WalletFormController implements Init
 
     private void logMessage(String logMessage) {
         if(logMessage != null) {
-            logMessage = logMessage.replace("m/", "/");
+            logMessage = logMessage.replace("m/", "../");
             String date = LOG_DATE_FORMAT.format(new Date());
             String logLine = "\n" + date + " " + logMessage;
             Platform.runLater(() -> {

@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -10,6 +11,7 @@ import com.sparrowwallet.drongo.wallet.WalletTransaction;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
+import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -200,6 +202,7 @@ public class TransactionDiagram extends GridPane {
     private Pane getInputsLabels(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
         VBox inputsBox = new VBox();
         inputsBox.setMaxWidth(150);
+        inputsBox.setPrefWidth(150);
         inputsBox.setPadding(new Insets(0, 10, 0, 10));
         inputsBox.minHeightProperty().bind(minHeightProperty());
         inputsBox.setAlignment(Pos.CENTER_RIGHT);
@@ -388,14 +391,33 @@ public class TransactionDiagram extends GridPane {
         }
 
         if(walletTx.getChangeNode() != null) {
+            WalletNode defaultChangeNode = walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE);
+            boolean overGapLimit = (walletTx.getChangeNode().getIndex() - defaultChangeNode.getIndex()) > walletTx.getWallet().getGapLimit();
+
+            HBox actionBox = new HBox();
             String changeDesc = walletTx.getChangeAddress().toString().substring(0, 8) + "...";
-            Label changeLabel = new Label(changeDesc, getChangeGlyph());
+            Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
-            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + walletTx.getChangeNode().getDerivationPath().replace("m", "..") + "\n" + walletTx.getChangeAddress().toString());
+            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + walletTx.getChangeNode().getDerivationPath().replace("m", "..") + "\n" + walletTx.getChangeAddress().toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeLabel.setTooltip(changeTooltip);
-            outputsBox.getChildren().add(changeLabel);
+
+            Button nextChangeAddressButton = new Button("");
+            nextChangeAddressButton.setGraphic(getChangeReplaceGlyph());
+            nextChangeAddressButton.setOnAction(event -> {
+                EventManager.get().post(new ReplaceChangeAddressEvent(walletTx));
+            });
+            Tooltip replaceChangeTooltip = new Tooltip("Use next change address");
+            nextChangeAddressButton.setTooltip(replaceChangeTooltip);
+            Label replaceChangeLabel = new Label("", nextChangeAddressButton);
+            replaceChangeLabel.getStyleClass().add("replace-change-label");
+            replaceChangeLabel.setVisible(false);
+            actionBox.setOnMouseEntered(event -> replaceChangeLabel.setVisible(true));
+            actionBox.setOnMouseExited(event -> replaceChangeLabel.setVisible(false));
+
+            actionBox.getChildren().addAll(changeLabel, replaceChangeLabel);
+            outputsBox.getChildren().add(actionBox);
             outputsBox.getChildren().add(createSpacer());
         }
 
@@ -482,6 +504,20 @@ public class TransactionDiagram extends GridPane {
         changeGlyph.getStyleClass().add("change-icon");
         changeGlyph.setFontSize(12);
         return changeGlyph;
+    }
+
+    public static Glyph getChangeWarningGlyph() {
+        Glyph changeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
+        changeWarningGlyph.getStyleClass().add("change-warning-icon");
+        changeWarningGlyph.setFontSize(12);
+        return changeWarningGlyph;
+    }
+
+    public static Glyph getChangeReplaceGlyph() {
+        Glyph changeReplaceGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ARROW_DOWN);
+        changeReplaceGlyph.getStyleClass().add("change-replace-icon");
+        changeReplaceGlyph.setFontSize(12);
+        return changeReplaceGlyph;
     }
 
     private Glyph getFeeGlyph() {
