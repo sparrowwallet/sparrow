@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -168,6 +169,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 .map(e -> (HashIndexEntry)e)
                 .filter(e -> e.getType().equals(HashIndexEntry.Type.INPUT) && e.isSpendable())
                 .map(e -> blockTransaction.getTransaction().getInputs().get((int)e.getHashIndex().getIndex()))
+                .filter(TransactionInput::isReplaceByFeeEnabled)
                 .map(txInput -> walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txInput.getOutpoint().getHash()) && txo.getIndex() == txInput.getOutpoint().getIndex()).findFirst().get())
                 .collect(Collectors.toList());
 
@@ -235,7 +237,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
     }
 
     private static Double getMaxFeeRate() {
-        if(AppServices.getTargetBlockFeeRates().isEmpty()) {
+        if(AppServices.getTargetBlockFeeRates() == null || AppServices.getTargetBlockFeeRates().isEmpty()) {
             return 100.0;
         }
 
