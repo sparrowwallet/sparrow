@@ -46,10 +46,7 @@ import java.awt.desktop.OpenFilesHandler;
 import java.awt.desktop.OpenURIHandler;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
@@ -69,6 +66,7 @@ public class AppServices {
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;
     private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
     private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
+    private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
 
     private static AppServices INSTANCE;
 
@@ -375,17 +373,31 @@ public class AppServices {
     }
 
     public static Proxy getProxy() {
+        return getProxy(TOR_DEFAULT_PROXY_CIRCUIT_ID);
+    }
+
+    public static Proxy getProxy(String proxyCircuitId) {
         Config config = Config.get();
+        Proxy proxy = null;
         if(config.isUseProxy()) {
-            HostAndPort proxy = HostAndPort.fromString(config.getProxyServer());
-            InetSocketAddress proxyAddress = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
-            return new Proxy(Proxy.Type.SOCKS, proxyAddress);
+            HostAndPort proxyHostAndPort = HostAndPort.fromString(config.getProxyServer());
+            InetSocketAddress proxyAddress = new InetSocketAddress(proxyHostAndPort.getHost(), proxyHostAndPort.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
+            proxy = new Proxy(Proxy.Type.SOCKS, proxyAddress);
         } else if(AppServices.isTorRunning()) {
             InetSocketAddress proxyAddress = new InetSocketAddress("localhost", TorService.PROXY_PORT);
-            return new Proxy(Proxy.Type.SOCKS, proxyAddress);
+            proxy = new Proxy(Proxy.Type.SOCKS, proxyAddress);
         }
 
-        return null;
+        //Setting new proxy authentication credentials will force a new Tor circuit to be created
+        if(proxy != null) {
+            Authenticator.setDefault(new Authenticator() {
+                public PasswordAuthentication getPasswordAuthentication() {
+                    return (new PasswordAuthentication("user", proxyCircuitId.toCharArray()));
+                }
+            });
+        }
+
+        return proxy;
     }
 
     static void initialize(MainApp application) {

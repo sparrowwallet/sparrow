@@ -1249,6 +1249,19 @@ public class ElectrumServer {
         protected Task<Sha256Hash> createTask() {
             return new Task<>() {
                 protected Sha256Hash call() throws ServerException {
+                    //If Tor proxy is configured, try all external broadcast sources in random order before falling back to connected Electrum server
+                    if(AppServices.getProxy() != null) {
+                        List<BroadcastSource> broadcastSources = new ArrayList<>(Arrays.asList(BroadcastSource.values()));
+                        while(!broadcastSources.isEmpty()) {
+                            try {
+                                BroadcastSource broadcastSource = broadcastSources.remove(new Random().nextInt(broadcastSources.size()));
+                                return broadcastSource.broadcastTransaction(transaction);
+                            } catch(BroadcastSource.BroadcastException e) {
+                                //ignore, already logged
+                            }
+                        }
+                    }
+
                     ElectrumServer electrumServer = new ElectrumServer();
                     return electrumServer.broadcastTransaction(transaction);
                 }
