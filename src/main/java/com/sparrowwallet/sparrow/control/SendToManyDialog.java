@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import org.controlsfx.control.spreadsheet.*;
@@ -50,7 +51,10 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         spreadsheetView.getColumns().get(0).setPrefWidth(400);
         spreadsheetView.getColumns().get(1).setPrefWidth(150);
         spreadsheetView.getColumns().get(2).setPrefWidth(247);
-        dialogPane.setContent(spreadsheetView);
+
+        StackPane stackPane = new StackPane();
+        stackPane.getChildren().add(spreadsheetView);
+        dialogPane.setContent(stackPane);
 
         dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
