@@ -192,3 +192,44 @@
 .number-field {
     -fx-font-family: 'Helvetica Neue', 'System Regular';
 }
+
+VerticalHeader > Label.selected {
+    -fx-background-color: -fx-accent;
+    -fx-text-fill : white;
+}
+
+HorizontalHeaderColumn > TableColumnHeader.column-header.table-column.selected,
+HorizontalHeaderColumn > TableColumnHeader.column-header.table-column.selected > Label {
+    -fx-background-color: -fx-accent;
+    -fx-text-fill : white;
+}
+
+.spreadsheet-cell:filled:selected,
+.spreadsheet-cell:filled:focused:selected,
+.spreadsheet-cell:filled:focused:selected:hover {
+    -fx-background-color: transparent;
+    -fx-text-fill: -fx-text-inner-color;
+}
+
+.spreadsheet-cell:hover,
+.spreadsheet-cell:filled:focused {
+    -fx-background-color: transparent;
+}
+
+.spreadsheet-cell {
+    -fx-border-color: #a9a9a9;
+}
+
+.table-column > .number-value {
+    -fx-alignment: right;
+}
+
+.selection-rectangle{
+    -fx-fill: transparent;
+    -fx-stroke: -fx-accent;
+    -fx-stroke-width: 1;
+}
+
+CellView > .text-input.text-field {
+    -fx-text-fill: -fx-text-inner-color;
+}

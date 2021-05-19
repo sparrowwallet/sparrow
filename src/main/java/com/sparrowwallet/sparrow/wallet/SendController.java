@@ -1084,8 +1084,10 @@ public class SendController extends WalletFormController implements Initializabl
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             if(event.getPayments() != null) {
                 clear(null);
-                setPayments(event.getPayments());
-                updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
+                Platform.runLater(() -> {
+                    setPayments(event.getPayments());
+                    updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
+                });
             }
         }
     }

@@ -136,6 +136,9 @@ public class AppController implements Initializable {
     private MenuItem refreshWallet;
 
     @FXML
+    private MenuItem sendToMany;
+
+    @FXML
     private StackPane rootStack;
 
     @FXML
@@ -266,6 +269,7 @@ public class AppController implements Initializable {
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
+        sendToMany.disableProperty().bind(exportWallet.disableProperty());
 
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
@@ -1030,6 +1034,28 @@ public class AppController implements Initializable {
         messageSignDialog.showAndWait();
     }
 
+    public void sendToMany(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.WALLET) {
+            WalletTabData walletTabData = (WalletTabData) tabData;
+            Wallet wallet = walletTabData.getWallet();
+            BitcoinUnit bitcoinUnit = Config.get().getBitcoinUnit();
+            if(bitcoinUnit == BitcoinUnit.AUTO) {
+                bitcoinUnit = wallet.getAutoUnit();
+            }
+
+            SendToManyDialog sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
+            optPayments.ifPresent(payments -> {
+                if(!payments.isEmpty()) {
+                    EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getWalletUtxos().keySet())));
+                    Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(wallet, payments)));
+                }
+            });
+        }
+    }
+
     public void minimizeToTray(ActionEvent event) {
         AppServices.get().minimizeStage((Stage)tabs.getScene().getWindow());
     }
@@ -1422,6 +1448,7 @@ public class AppController implements Initializable {
                 }
                 exportWallet.setDisable(true);
                 showLoadingLog.setDisable(true);
+                showUtxosChart.setDisable(true);
                 showTxHex.setDisable(false);
             } else if(event instanceof WalletTabSelectedEvent) {
                 WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
@@ -1430,6 +1457,7 @@ public class AppController implements Initializable {
                 saveTransaction.setDisable(true);
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
                 showLoadingLog.setDisable(false);
+                showUtxosChart.setDisable(false);
                 showTxHex.setDisable(true);
             }
         }
