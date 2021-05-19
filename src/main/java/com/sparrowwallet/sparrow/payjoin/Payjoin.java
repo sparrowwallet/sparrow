@@ -14,15 +14,23 @@ import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.MempoolRateSize;
+import com.sparrowwallet.sparrow.net.ServerException;
+import com.sparrowwallet.sparrow.wallet.SendController;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.Proxy;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class Payjoin {
@@ -74,30 +82,42 @@ public class Payjoin {
             URI finalUri = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), uri.getQuery() == null ? appendQuery : uri.getQuery() + "&" + appendQuery, uri.getFragment());
             log.info("Sending PSBT to " + finalUri.toURL());
 
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(finalUri)
-                    .header("Content-Type", "text/plain")
-                    .POST(HttpRequest.BodyPublishers.ofString(base64Psbt))
-                    .build();
+            Proxy proxy = AppServices.getProxy();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpURLConnection connection = proxy == null ? (HttpURLConnection)finalUri.toURL().openConnection() : (HttpURLConnection)finalUri.toURL().openConnection(proxy);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "text/plain");
+            connection.setDoOutput(true);
 
-            if(response.statusCode() != 200) {
+            try(OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream())) {
+                writer.write(base64Psbt);
+                writer.flush();
+            }
+
+            StringBuilder response = new StringBuilder();
+            try(BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String responseLine;
+                while((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+            }
+            int statusCode = connection.getResponseCode();
+
+            if(statusCode != 200) {
                 Gson gson = new Gson();
-                PayjoinReceiverError payjoinReceiverError = gson.fromJson(response.body(), PayjoinReceiverError.class);
+                PayjoinReceiverError payjoinReceiverError = gson.fromJson(response.toString(), PayjoinReceiverError.class);
                 log.warn("Payjoin receiver returned an error of " + payjoinReceiverError.getErrorCode() + " (" + payjoinReceiverError.getMessage() + ")");
                 throw new PayjoinReceiverException(payjoinReceiverError.getSafeMessage());
             }
 
-            PSBT proposalPsbt = PSBT.fromString(response.body());
+            PSBT proposalPsbt = PSBT.fromString(response.toString().trim());
             checkProposal(psbt, proposalPsbt, changeOutputIndex, maxAdditionalFeeContribution, allowOutputSubstitution);
 
             return proposalPsbt;
         } catch(URISyntaxException e) {
             log.error("Invalid payjoin receiver URI", e);
             throw new PayjoinReceiverException("Invalid payjoin receiver URI", e);
-        } catch(IOException | InterruptedException e) {
+        } catch(IOException e) {
             log.error("Payjoin receiver error", e);
             throw new PayjoinReceiverException("Payjoin receiver error", e);
         } catch(PSBTParseException e) {
@@ -316,6 +336,25 @@ public class Payjoin {
         public String getSafeMessage() {
             String message = knownErrors.get(errorCode);
             return (message == null ? "Unknown Error" : message);
+        }
+    }
+
+    public static class RequestPayjoinPSBTService extends Service<PSBT> {
+        private final Payjoin payjoin;
+        private final boolean allowOutputSubstitution;
+
+        public RequestPayjoinPSBTService(Payjoin payjoin, boolean allowOutputSubstitution) {
+            this.payjoin = payjoin;
+            this.allowOutputSubstitution = allowOutputSubstitution;
+        }
+
+        @Override
+        protected Task<PSBT> createTask() {
+            return new Task<>() {
+                protected PSBT call() throws PayjoinReceiverException {
+                    return payjoin.requestPayjoinPSBT(allowOutputSubstitution);
+                }
+            };
         }
     }
 }

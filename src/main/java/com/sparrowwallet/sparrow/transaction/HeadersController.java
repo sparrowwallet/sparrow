@@ -903,13 +903,16 @@ public class HeadersController extends TransactionFormController implements Init
             throw new IllegalStateException("No valid Payjoin URI");
         }
 
-        try {
-            Payjoin payjoin = new Payjoin(payjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
-            PSBT proposalPsbt = payjoin.requestPayjoinPSBT(true);
+        Payjoin payjoin = new Payjoin(payjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
+        Payjoin.RequestPayjoinPSBTService requestPayjoinPSBTService = new Payjoin.RequestPayjoinPSBTService(payjoin, true);
+        requestPayjoinPSBTService.setOnSucceeded(successEvent -> {
+            PSBT proposalPsbt = requestPayjoinPSBTService.getValue();
             EventManager.get().post(new ViewPSBTEvent(payjoinButton.getScene().getWindow(), headersForm.getName() + " Payjoin", null, proposalPsbt));
-        } catch(PayjoinReceiverException e) {
-            AppServices.showErrorDialog("Invalid Payjoin Transaction", e.getMessage());
-        }
+        });
+        requestPayjoinPSBTService.setOnFailed(failedEvent -> {
+            AppServices.showErrorDialog("Error Requesting Payjoin Transaction", failedEvent.getSource().getException().getMessage());
+        });
+        requestPayjoinPSBTService.start();
     }
 
     @Override
