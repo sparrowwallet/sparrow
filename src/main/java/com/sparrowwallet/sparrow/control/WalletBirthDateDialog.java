@@ -52,10 +52,10 @@ public class WalletBirthDateDialog extends Dialog<Date> {
 
         ValidationSupport validationSupport = new ValidationSupport();
         Platform.runLater( () -> {
+            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
             validationSupport.registerValidator(birthDatePicker, Validator.combine(
                     (Control c, LocalDate newValue) -> ValidationResult.fromErrorIf( c, "Birth date not specified", newValue == null)
             ));
-            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         });
 
         final ButtonType okButtonType = new javafx.scene.control.ButtonType("Rescan Wallet", ButtonBar.ButtonData.OK_DONE);

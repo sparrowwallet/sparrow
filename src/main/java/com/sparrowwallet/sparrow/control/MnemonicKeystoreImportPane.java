@@ -427,11 +427,11 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             autoCompletionBinding.setDelay(50);
 
             ValidationSupport validationSupport = new ValidationSupport();
+            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
             validationSupport.registerValidator(wordField, Validator.combine(
                     Validator.createEmptyValidator("Word is required"),
                     (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid word", !wordList.contains(newValue))
             ));
-            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
 
             wordField.textProperty().addListener((observable, oldValue, newValue) -> {
                 wordEntryList.set(wordNumber, newValue);
@@ -501,11 +501,11 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
         ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(derivationField, Validator.combine(
                 Validator.createEmptyValidator("Derivation is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid derivation", !KeyDerivation.isValid(newValue))
         ));
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
 
         Button importDerivationButton = new Button("Import Custom Derivation Keystore");
         importDerivationButton.setDisable(true);

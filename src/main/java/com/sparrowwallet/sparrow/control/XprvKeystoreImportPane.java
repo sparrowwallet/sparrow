@@ -135,11 +135,11 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         }
 
         ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(xprvField, Validator.combine(
                 Validator.createEmptyValidator("xprv is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid private key", !ExtendedKey.isValid(newValue) || ExtendedKey.fromDescriptor(newValue).getKey().isPubKeyOnly())
         ));
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
 
         Button importXprvButton = new Button("Import");
         importXprvButton.setMinWidth(80);
@@ -176,11 +176,11 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
         ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(derivationField, Validator.combine(
                 Validator.createEmptyValidator("Derivation is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid derivation", !KeyDerivation.isValid(newValue))
         ));
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
 
         Button importDerivationButton = new Button("Import Custom Derivation Keystore");
         importDerivationButton.setDisable(true);

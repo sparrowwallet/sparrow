@@ -77,8 +77,8 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
 
         ValidationSupport validationSupport = new ValidationSupport();
         Platform.runLater( () -> {
-            validationSupport.registerValidator(passwordConfirm, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Password confirmation does not match", !passwordConfirm.getText().equals(password.getText())));
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+            validationSupport.registerValidator(passwordConfirm, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Password confirmation does not match", !passwordConfirm.getText().equals(password.getText())));
         });
 
         okButtonType = new javafx.scene.control.ButtonType(requirement.okButtonText, ButtonBar.ButtonData.OK_DONE);

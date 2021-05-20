@@ -219,6 +219,8 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     private void setupValidation() {
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+
         validationSupport.registerValidator(label, Validator.combine(
                 Validator.createEmptyValidator("Label is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is not unique", walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore).map(Keystore::getLabel).collect(Collectors.toList()).contains(newValue)),
@@ -240,8 +242,6 @@ public class KeystoreController extends WalletFormController implements Initiali
                 Validator.createEmptyValidator("Master fingerprint is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Master fingerprint is invalid", (newValue == null || newValue.length() != 8 || !Utils.isHex(newValue)))
         ));
-
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
     }
 
     private void updateType() {

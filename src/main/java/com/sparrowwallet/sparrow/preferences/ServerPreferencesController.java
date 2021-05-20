@@ -580,6 +580,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private void setupValidation() {
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+
         validationSupport.registerValidator(publicProxyHost, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Proxy host required", publicUseProxy.isSelected() && newValue.isEmpty()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid host name", getHost(newValue) == null)
@@ -629,8 +631,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
         validationSupport.registerValidator(electrumCertificate, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid certificate file", newValue != null && !newValue.isEmpty() && getCertificate(newValue) == null)
         ));
-
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
     }
 
     @NotNull

@@ -93,6 +93,7 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
 
         ValidationSupport validationSupport = new ValidationSupport();
         Platform.runLater( () -> {
+            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
             validationSupport.registerValidator(name, Validator.combine(
                     Validator.createEmptyValidator("Wallet name is required"),
                     (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Wallet name is not unique", Storage.walletExists(newValue))
@@ -100,7 +101,6 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
             validationSupport.registerValidator(existingPicker, Validator.combine(
                     (Control c, LocalDate newValue) -> ValidationResult.fromErrorIf( c, "Birth date not specified", existingCheck.isSelected() && newValue == null)
             ));
-            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         });
 
         final ButtonType okButtonType = new javafx.scene.control.ButtonType("Create Wallet", ButtonBar.ButtonData.OK_DONE);

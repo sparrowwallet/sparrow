@@ -8,6 +8,7 @@
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.Theme?>
+<?import impl.org.controlsfx.skin.DecorationPane?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1020.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
     <children>
@@ -110,11 +111,11 @@
                 </Menu>
             </menus>
         </MenuBar>
-        <StackPane fx:id="rootStack" VBox.vgrow="ALWAYS">
+        <DecorationPane fx:id="rootStack" VBox.vgrow="ALWAYS">
             <Rectangle styleClass="background-box" width="400" height="125" />
             <Text styleClass="background-text" text="Drag files here to open" />
             <TabPane fx:id="tabs" />
-        </StackPane>
+        </DecorationPane>
 
         <StatusBar fx:id="statusBar" text="" minHeight="36">
             <rightItems>

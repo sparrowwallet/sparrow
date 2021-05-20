@@ -627,11 +627,11 @@ public class DevicePane extends TitledDescriptionPane {
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
         ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(derivationField, Validator.combine(
                 Validator.createEmptyValidator("Derivation is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid derivation", !KeyDerivation.isValid(newValue))
         ));
-        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
 
         Button importDerivationButton = new Button("Import");
         importDerivationButton.setOnAction(event -> {

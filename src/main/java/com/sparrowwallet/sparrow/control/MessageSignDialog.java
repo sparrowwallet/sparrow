@@ -193,8 +193,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
             ValidationSupport validationSupport = new ValidationSupport();
             Platform.runLater(() -> {
-                validationSupport.registerValidator(address, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Invalid address", !isValidAddress()));
                 validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+                validationSupport.registerValidator(address, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Invalid address", !isValidAddress()));
             });
 
             address.textProperty().addListener((observable, oldValue, newValue) -> {
