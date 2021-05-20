@@ -49,6 +49,22 @@ public enum BroadcastSource {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
         }
+    },
+    MEMPOOL_EMZY_DE("mempool.emzy.de", "https://mempool.emzy.de", "http://mempool4t6mypeemozyterviq3i5de4kpoua65r3qkn5i3kknu5l2cad.onion") {
+        public Sha256Hash broadcastTransaction(Transaction transaction) throws BroadcastException {
+            String data = Utils.bytesToHex(transaction.bitcoinSerialize());
+            return postTransactionData(data);
+        }
+
+        protected URL getURL(Proxy proxy) throws MalformedURLException {
+            if(Network.get() == Network.MAINNET) {
+                return new URL(getBaseUrl(proxy) + "/api/tx");
+            } else if(Network.get() == Network.TESTNET) {
+                return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+            } else {
+                throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
+            }
+        }
     };
 
     private final String name;
