@@ -286,6 +286,8 @@ public class WalletForm {
                     savedPastWallet = event.getPastWallet();
                 }
 
+                //Clear the cache - we will need to fetch everything again
+                AppServices.clearTransactionHistoryCache(wallet);
                 refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
             }
         }
@@ -324,7 +326,7 @@ public class WalletForm {
                     List<Entry> changedLabelEntries = new ArrayList<>();
                     for(BlockTransactionHashIndex receivedRef : changedNode.getTransactionOutputs()) {
                         BlockTransaction blockTransaction = wallet.getTransactions().get(receivedRef.getHash());
-                        if(blockTransaction != null && blockTransaction.getLabel() == null) {
+                        if(blockTransaction != null && (blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty())) {
                             blockTransaction.setLabel(changedNode.getLabel());
                             changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
                         }
@@ -351,16 +353,16 @@ public class WalletForm {
                             for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
                                 for(BlockTransactionHashIndex receivedRef : childNode.getTransactionOutputs()) {
                                     if(receivedRef.getHash().equals(transactionEntry.getBlockTransaction().getHash())) {
-                                        if(receivedRef.getLabel() == null) {
+                                        if(receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) {
                                             receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? " (change)" : " (received)"));
                                             labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose));
                                         }
-                                        if(childNode.getLabel() == null) {
+                                        if(childNode.getLabel() == null || childNode.getLabel().isEmpty()) {
                                             childNode.setLabel(entry.getLabel());
                                             labelChangedEntries.add(new NodeEntry(event.getWallet(), childNode));
                                         }
                                     }
-                                    if(receivedRef.isSpent() && receivedRef.getSpentBy().getHash().equals(transactionEntry.getBlockTransaction().getHash()) && receivedRef.getSpentBy().getLabel() == null) {
+                                    if(receivedRef.isSpent() && receivedRef.getSpentBy().getHash().equals(transactionEntry.getBlockTransaction().getHash()) && (receivedRef.getSpentBy().getLabel() == null || receivedRef.getSpentBy().getLabel().isEmpty())) {
                                         receivedRef.getSpentBy().setLabel(entry.getLabel() + " (input)");
                                         labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef.getSpentBy(), HashIndexEntry.Type.INPUT, keyPurpose));
                                     }
@@ -372,7 +374,7 @@ public class WalletForm {
                         NodeEntry nodeEntry = (NodeEntry)entry;
                         for(BlockTransactionHashIndex receivedRef : nodeEntry.getNode().getTransactionOutputs()) {
                             BlockTransaction blockTransaction = event.getWallet().getTransactions().get(receivedRef.getHash());
-                            if(blockTransaction.getLabel() == null) {
+                            if(blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) {
                                 blockTransaction.setLabel(entry.getLabel());
                                 labelChangedEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
                             }
@@ -381,7 +383,7 @@ public class WalletForm {
                     if(entry instanceof HashIndexEntry) {
                         HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                         BlockTransaction blockTransaction = hashIndexEntry.getBlockTransaction();
-                        if(blockTransaction.getLabel() == null) {
+                        if(blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) {
                             blockTransaction.setLabel(entry.getLabel());
                             labelChangedEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
                         }
