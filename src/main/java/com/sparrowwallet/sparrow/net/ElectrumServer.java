@@ -17,8 +17,6 @@ import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -26,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -89,7 +88,7 @@ public class ElectrumServer {
                 }
 
                 //If changing server, don't rely on previous transaction history
-                if(!electrumServer.equals(previousServerAddress)) {
+                if(previousServerAddress != null && !electrumServer.equals(previousServerAddress)) {
                     retrievedScriptHashes.clear();
                 }
                 previousServerAddress = electrumServer;
@@ -158,6 +157,51 @@ public class ElectrumServer {
         } catch (IOException e) {
             throw new ServerException(e);
         }
+    }
+
+    public static void addCalculatedScriptHashes(Wallet wallet) {
+        calculateScriptHashes(wallet, KeyPurpose.RECEIVE).forEach(retrievedScriptHashes::putIfAbsent);
+        calculateScriptHashes(wallet, KeyPurpose.CHANGE).forEach(retrievedScriptHashes::putIfAbsent);
+    }
+
+    private static Map<String, String> calculateScriptHashes(Wallet wallet, KeyPurpose keyPurpose) {
+        Map<String, String> calculatedScriptHashes = new LinkedHashMap<>();
+        for(WalletNode walletNode : wallet.getNode(keyPurpose).getChildren()) {
+            String scriptHash = getScriptHash(wallet, walletNode);
+
+            List<BlockTransactionHashIndex> txos  = new ArrayList<>(walletNode.getTransactionOutputs());
+            txos.addAll(walletNode.getTransactionOutputs().stream().filter(BlockTransactionHashIndex::isSpent).map(BlockTransactionHashIndex::getSpentBy).collect(Collectors.toList()));
+            Set<Sha256Hash> unique = new HashSet<>(txos.size());
+            txos.removeIf(ref -> !unique.add(ref.getHash()));
+            txos.sort((txo1, txo2) -> {
+                if(txo1.getHeight() != txo2.getHeight()) {
+                    return txo1.getComparisonHeight() - txo2.getComparisonHeight();
+                }
+
+                if(txo1.isSpent() && txo1.getSpentBy().equals(txo2)) {
+                    return -1;
+                }
+
+                if(txo2.isSpent() && txo2.getSpentBy().equals(txo1)) {
+                    return 1;
+                }
+
+                //We cannot further sort by order within a block, so sometimes multiple txos to an address will mean an incorrect status
+                return 0;
+            });
+            if(!txos.isEmpty()) {
+                StringBuilder scriptHashStatus = new StringBuilder();
+                for(BlockTransactionHashIndex txo : txos) {
+                    scriptHashStatus.append(txo.getHash().toString()).append(":").append(txo.getHeight()).append(":");
+                }
+
+                calculatedScriptHashes.put(scriptHash, Utils.bytesToHex(Sha256Hash.hash(scriptHashStatus.toString().getBytes(StandardCharsets.UTF_8))));
+            } else {
+                calculatedScriptHashes.put(scriptHash, null);
+            }
+        }
+
+        return calculatedScriptHashes;
     }
 
     public static void clearRetrievedScriptHashes(Wallet wallet) {

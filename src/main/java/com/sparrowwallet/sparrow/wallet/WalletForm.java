@@ -46,7 +46,8 @@ public class WalletForm {
         //Unencrypted wallets load before isConnected is true, waiting for the ConnectionEvent to refresh history - save the backup for this event
         savedPastWallet = backupWallet;
 
-        if(refreshHistory) {
+        if(refreshHistory && wallet.isValid()) {
+            ElectrumServer.addCalculatedScriptHashes(wallet);
             refreshHistory(AppServices.getCurrentBlockHeight(), backupWallet);
         }
     }
