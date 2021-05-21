@@ -37,6 +37,8 @@ public class ElectrumServer {
 
     private static final String[] SUPPORTED_VERSIONS = new String[]{"1.3", "1.4.2"};
 
+    private static final int MINIMUM_BROADCASTS = 2;
+
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
 
     private static Transport transport;
@@ -1295,14 +1297,22 @@ public class ElectrumServer {
                 protected Sha256Hash call() throws ServerException {
                     //If Tor proxy is configured, try all external broadcast sources in random order before falling back to connected Electrum server
                     if(AppServices.getProxy() != null) {
-                        List<BroadcastSource> broadcastSources = new ArrayList<>(Arrays.asList(BroadcastSource.values()));
-                        while(!broadcastSources.isEmpty()) {
+                        List<BroadcastSource> broadcastSources = Arrays.stream(BroadcastSource.values()).filter(src -> src.getSupportedNetworks().contains(Network.get())).collect(Collectors.toList());
+                        Sha256Hash txid = null;
+                        for(int i = 1; !broadcastSources.isEmpty(); i++) {
                             try {
                                 BroadcastSource broadcastSource = broadcastSources.remove(new Random().nextInt(broadcastSources.size()));
-                                return broadcastSource.broadcastTransaction(transaction);
+                                txid = broadcastSource.broadcastTransaction(transaction);
+                                if(Network.get() != Network.MAINNET || i >= MINIMUM_BROADCASTS || broadcastSources.isEmpty()) {
+                                    return txid;
+                                }
                             } catch(BroadcastSource.BroadcastException e) {
                                 //ignore, already logged
                             }
+                        }
+
+                        if(txid != null) {
+                            return txid;
                         }
                     }
 

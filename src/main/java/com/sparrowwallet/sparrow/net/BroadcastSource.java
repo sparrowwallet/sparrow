@@ -15,6 +15,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.List;
 
 public enum BroadcastSource {
     BLOCKSTREAM_INFO("blockstream.info", "https://blockstream.info", "http://explorerzydxu5ecjrkwceayqybizmpjjznk5izmitf2modhcusuqlid.onion") {
@@ -22,6 +23,11 @@ public enum BroadcastSource {
         public Sha256Hash broadcastTransaction(Transaction transaction) throws BroadcastException {
             String data = Utils.bytesToHex(transaction.bitcoinSerialize());
             return postTransactionData(data);
+        }
+
+        @Override
+        public List<Network> getSupportedNetworks() {
+            return List.of(Network.MAINNET, Network.TESTNET);
         }
 
         protected URL getURL(Proxy proxy) throws MalformedURLException {
@@ -40,6 +46,11 @@ public enum BroadcastSource {
             return postTransactionData(data);
         }
 
+        @Override
+        public List<Network> getSupportedNetworks() {
+            return List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET);
+        }
+
         protected URL getURL(Proxy proxy) throws MalformedURLException {
             if(Network.get() == Network.MAINNET) {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
@@ -54,6 +65,32 @@ public enum BroadcastSource {
         public Sha256Hash broadcastTransaction(Transaction transaction) throws BroadcastException {
             String data = Utils.bytesToHex(transaction.bitcoinSerialize());
             return postTransactionData(data);
+        }
+
+        @Override
+        public List<Network> getSupportedNetworks() {
+            return List.of(Network.MAINNET);
+        }
+
+        protected URL getURL(Proxy proxy) throws MalformedURLException {
+            if(Network.get() == Network.MAINNET) {
+                return new URL(getBaseUrl(proxy) + "/api/tx");
+            } else if(Network.get() == Network.TESTNET) {
+                return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+            } else {
+                throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
+            }
+        }
+    },
+    MEMPOOL_BISQ_SERVICES("mempool.bisq.services", "https://mempool.bisq.services", "http://mempoolcutehjtynu4k4rd746acmssvj2vz4jbz4setb72clbpx2dfqd.onion") {
+        public Sha256Hash broadcastTransaction(Transaction transaction) throws BroadcastException {
+            String data = Utils.bytesToHex(transaction.bitcoinSerialize());
+            return postTransactionData(data);
+        }
+
+        @Override
+        public List<Network> getSupportedNetworks() {
+            return List.of(Network.MAINNET);
         }
 
         protected URL getURL(Proxy proxy) throws MalformedURLException {
@@ -97,6 +134,8 @@ public enum BroadcastSource {
     }
 
     public abstract Sha256Hash broadcastTransaction(Transaction transaction) throws BroadcastException;
+
+    public abstract List<Network> getSupportedNetworks();
 
     protected abstract URL getURL(Proxy proxy) throws MalformedURLException;
 
