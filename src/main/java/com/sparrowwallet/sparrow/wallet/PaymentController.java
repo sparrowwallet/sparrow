@@ -278,7 +278,9 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public void setPayment(Payment payment) {
         if(getRecipientValueSats() == null || payment.getAmount() != getRecipientValueSats()) {
-            address.setText(payment.getAddress().toString());
+            if(payment.getAddress() != null) {
+                address.setText(payment.getAddress().toString());
+            }
             if(payment.getLabel() != null && !label.getText().equals(payment.getLabel())) {
                 label.setText(payment.getLabel());
             }

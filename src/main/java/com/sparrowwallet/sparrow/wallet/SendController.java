@@ -1063,6 +1063,9 @@ public class SendController extends WalletFormController implements Initializabl
             if(event.getPayments() != null) {
                 clear(null);
                 setPayments(event.getPayments());
+            } else if(paymentTabs.getTabs().size() == 1) {
+                Payment payment = new Payment(null, null, event.getUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum(), true);
+                setPayments(List.of(payment));
             }
 
             if(event.getFee() != null) {
