@@ -14,6 +14,7 @@ import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -236,12 +237,14 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<Long, Long> getFeeRateHistogram(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            Long[][] feesArray = new RetryLogic<Long[][]>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
-                    client.createRequest().returnAs(Long[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
+            BigInteger[][] feesArray = new RetryLogic<BigInteger[][]>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(BigInteger[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
 
             Map<Long, Long> feeRateHistogram = new TreeMap<>();
-            for(Long[] feePair : feesArray) {
-                feeRateHistogram.put(feePair[0], feePair[1]);
+            for(BigInteger[] feePair : feesArray) {
+                if(feePair[0].longValue() > 0) {
+                    feeRateHistogram.put(feePair[0].longValue(), feePair[1].longValue());
+                }
             }
 
             return feeRateHistogram;
