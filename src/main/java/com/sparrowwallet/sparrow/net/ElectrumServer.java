@@ -37,6 +37,8 @@ public class ElectrumServer {
 
     private static final String[] SUPPORTED_VERSIONS = new String[]{"1.3", "1.4.2"};
 
+    private static final Version ELECTRS_MIN_BATCHING_VERSION = new Version("0.9.0");
+
     private static final int MINIMUM_BROADCASTS = 2;
 
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
@@ -839,7 +841,26 @@ public class ElectrumServer {
     }
 
     public static boolean supportsBatching(List<String> serverVersion) {
-        return serverVersion.size() > 0 && serverVersion.get(0).toLowerCase().contains("electrumx");
+        if(serverVersion.size() > 0) {
+            String server = serverVersion.get(0).toLowerCase();
+            if(server.contains("electrumx")) {
+                return true;
+            }
+
+            if(server.startsWith("electrs/")) {
+                String electrsVersion = server.substring("electrs/".length());
+                try {
+                    Version version = new Version(electrsVersion);
+                    if(version.compareTo(ELECTRS_MIN_BATCHING_VERSION) >= 0) {
+                        return true;
+                    }
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+        }
+
+        return false;
     }
 
     public static class ServerVersionService extends Service<List<String>> {

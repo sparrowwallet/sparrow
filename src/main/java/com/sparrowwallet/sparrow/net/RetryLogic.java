@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import java.util.List;
+import java.util.Random;
 
 /**
  * Generic retry logic. Delegate must throw the specified exception type to trigger the retry logic.
@@ -21,7 +22,7 @@ public class RetryLogic<T> {
 
     public RetryLogic(int maxAttempts, int retryWaitSeconds, @SuppressWarnings("rawtypes") List<Class> retryExceptionTypes) {
         this.maxAttempts = maxAttempts;
-        this.retryWaitSeconds = retryWaitSeconds;
+        this.retryWaitSeconds = Math.max(retryWaitSeconds, 1);
         this.retryExceptionTypes = retryExceptionTypes;
     }
 
@@ -37,7 +38,8 @@ public class RetryLogic<T> {
                         throw new ServerException("Retries exhausted", e);
                     } else {
                         try {
-                            Thread.sleep((1000 * retryWaitSeconds));
+                            //Sleep with a +/- 2 seconds random wait time to avoid simultaneous retries
+                            Thread.sleep((1000L * (retryWaitSeconds - 1)) + new Random().nextInt(2000));
                         } catch(InterruptedException ie) {
                             //ignore
                         }

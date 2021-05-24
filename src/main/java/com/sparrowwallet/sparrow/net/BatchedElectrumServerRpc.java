@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
-    private static final int MAX_RETRIES = 3;
-    private static final int RETRY_DELAY = 0;
+    private static final int MAX_RETRIES = 5;
+    private static final int RETRY_DELAY = 1;
 
     private final AtomicLong idCounter = new AtomicLong();
 
@@ -82,7 +82,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
         } catch (JsonRpcBatchException e) {
             if(failOnError) {
                 throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + getScriptHashesAbbreviation((Collection<String>)e.getErrors().keySet()), e);
@@ -110,7 +110,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             if(failOnError) {
                 throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + getScriptHashesAbbreviation((Collection<String>)e.getErrors().keySet()), e);
@@ -139,7 +139,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
         } catch(JsonRpcBatchException e) {
             //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
             throw new ElectrumServerRpcException("Failed to subscribe to paths: " + getScriptHashesAbbreviation((Collection<String>)e.getErrors().keySet()), e);

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
+import com.google.common.base.Splitter;
 import com.google.common.net.HostAndPort;
 import com.google.gson.Gson;
 import com.sparrowwallet.sparrow.io.Config;
@@ -24,7 +25,8 @@ public class TcpTransport implements Transport, Closeable {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
-    private static final int[] READ_TIMEOUT_SECS = {3, 8, 16, 34};
+    private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, 34};
+    public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
 
     protected final HostAndPort server;
@@ -42,6 +44,7 @@ public class TcpTransport implements Transport, Closeable {
     private volatile boolean reading = true;
     private boolean firstRead = true;
     private int readTimeoutIndex;
+    private int requestIdCount = 1;
 
     private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
     private final SubscriptionService subscriptionService = new SubscriptionService();
@@ -66,6 +69,8 @@ public class TcpTransport implements Transport, Closeable {
             Rpc recvRpc;
             String recv;
 
+            //Count number of requests in batched query to increase read timeout appropriately
+            requestIdCount = Splitter.on("\"id\"").splitToList(request).size() - 1;
             writeRequest(request);
             do {
                 recv = readResponse();
@@ -86,16 +91,16 @@ public class TcpTransport implements Transport, Closeable {
 
     private String readResponse() throws IOException {
         try {
-            if(!readLock.tryLock(READ_TIMEOUT_SECS[readTimeoutIndex], TimeUnit.SECONDS)) {
-                readTimeoutIndex = Math.min(readTimeoutIndex + 1, READ_TIMEOUT_SECS.length - 1);
-                log.debug("No response from server, setting read timeout to " + READ_TIMEOUT_SECS[readTimeoutIndex] + " secs");
+            if(!readLock.tryLock((BASE_READ_TIMEOUT_SECS[readTimeoutIndex] * 1000) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
+                readTimeoutIndex = Math.min(readTimeoutIndex + 1, BASE_READ_TIMEOUT_SECS.length - 1);
+                log.info("No response from server, setting read timeout to " + BASE_READ_TIMEOUT_SECS[readTimeoutIndex] + " secs");
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {
             throw new IOException("Read thread interrupted");
         }
 
-        if(readTimeoutIndex == READ_TIMEOUT_SECS.length - 1) {
+        if(readTimeoutIndex == BASE_READ_TIMEOUT_SECS.length - 1) {
             readTimeoutIndex--;
         }
 
