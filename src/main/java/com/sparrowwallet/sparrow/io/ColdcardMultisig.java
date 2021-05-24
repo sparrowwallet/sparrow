@@ -180,7 +180,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         }
 
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
             writer.append("# " + getName() + " setup file (created by Sparrow)\n");
             writer.append("#\n");
             writer.append("Name: ").append(wallet.getName()).append("\n");
