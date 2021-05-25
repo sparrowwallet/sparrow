@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContentDisplay;
@@ -32,7 +33,7 @@ public class AddressCell extends TreeTableCell<Entry, Entry> {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
                 Address address = utxoEntry.getAddress();
                 setText(address.toString());
-                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), null));
+                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode())));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setText(getTooltipText(utxoEntry));
                 setTooltip(tooltip);

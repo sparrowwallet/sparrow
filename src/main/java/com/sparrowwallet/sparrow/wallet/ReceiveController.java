@@ -92,7 +92,7 @@ public class ReceiveController extends WalletFormController implements Initializ
             }
         });
 
-        Platform.runLater(this::refreshAddress);
+        refreshAddress();
     }
 
     public void setNodeEntry(NodeEntry nodeEntry) {
