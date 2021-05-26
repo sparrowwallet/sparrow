@@ -269,6 +269,7 @@ public class AppController implements Initializable {
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         showLoadingLog.setSelected(Config.get().isShowLoadingLog());
         showUtxosChart.setSelected(Config.get().isShowUtxosChart());
+        saveTransaction.setDisable(true);
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
         exportWallet.setDisable(true);
