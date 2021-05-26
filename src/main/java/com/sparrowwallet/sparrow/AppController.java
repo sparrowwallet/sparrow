@@ -235,6 +235,8 @@ public class AppController implements Initializable {
                 if(tabs.getTabs().isEmpty()) {
                     Stage tabStage = (Stage)tabs.getScene().getWindow();
                     tabStage.setTitle("Sparrow");
+                    saveTransaction.setVisible(true);
+                    saveTransaction.setDisable(true);
                 }
             }
         });
