@@ -29,7 +29,7 @@
                         </Menu>
                         <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." accelerator="Shortcut+S" onAction="#saveTransaction"/>
                         <Menu fx:id="savePSBT" mnemonicParsing="false" text="Save PSBT">
-                            <MenuItem text="As Binary..." onAction="#savePSBTBinary" accelerator="Shortcut+S"/>
+                            <MenuItem fx:id="savePSBTBinary" text="As Binary..." onAction="#savePSBTBinary" accelerator="Shortcut+S"/>
                             <MenuItem text="As Base64..." onAction="#savePSBTText"/>
                             <MenuItem text="As Binary (No Xpubs)..." onAction="#savePSBTBinaryNoXpubs"/>
                             <MenuItem text="As Base64 (No Xpubs)..." onAction="#savePSBTTextNoXpubs"/>

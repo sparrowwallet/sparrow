@@ -88,6 +88,9 @@ public class AppController implements Initializable {
     private Menu savePSBT;
 
     @FXML
+    private MenuItem savePSBTBinary;
+
+    @FXML
     private MenuItem exportWallet;
 
     @FXML
@@ -267,6 +270,7 @@ public class AppController implements Initializable {
         showLoadingLog.setSelected(Config.get().isShowLoadingLog());
         showUtxosChart.setSelected(Config.get().isShowUtxosChart());
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
+        savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
         exportWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
