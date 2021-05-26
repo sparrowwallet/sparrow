@@ -31,6 +31,7 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -447,6 +448,14 @@ public class AppServices {
 
         trayManager.addStage(stage);
         stage.hide();
+    }
+
+    public static void onEscapePressed(Scene scene, Runnable runnable) {
+        scene.setOnKeyPressed(event -> {
+            if(event.getCode() == KeyCode.ESCAPE) {
+                runnable.run();
+            }
+        });
     }
 
     public Map<Wallet, Storage> getOpenWallets() {
