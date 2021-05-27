@@ -88,6 +88,9 @@ public class AppController implements Initializable {
     private Menu savePSBT;
 
     @FXML
+    private MenuItem savePSBTBinary;
+
+    @FXML
     private MenuItem exportWallet;
 
     @FXML
@@ -232,6 +235,8 @@ public class AppController implements Initializable {
                 if(tabs.getTabs().isEmpty()) {
                     Stage tabStage = (Stage)tabs.getScene().getWindow();
                     tabStage.setTitle("Sparrow");
+                    saveTransaction.setVisible(true);
+                    saveTransaction.setDisable(true);
                 }
             }
         });
@@ -266,7 +271,9 @@ public class AppController implements Initializable {
         showTxHex.setSelected(Config.get().isShowTransactionHex());
         showLoadingLog.setSelected(Config.get().isShowLoadingLog());
         showUtxosChart.setSelected(Config.get().isShowUtxosChart());
+        saveTransaction.setDisable(true);
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
+        savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
         exportWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
