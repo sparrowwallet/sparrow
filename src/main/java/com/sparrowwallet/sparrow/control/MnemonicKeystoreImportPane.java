@@ -36,7 +36,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
@@ -159,15 +158,20 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         ObservableList<String> wordEntryList = FXCollections.observableArrayList(words);
         wordEntriesProperty = new SimpleListProperty<>(wordEntryList);
+        List<WordEntry> wordEntries = new ArrayList<>(numWords);
         for(int i = 0; i < numWords; i++) {
-            WordEntry wordEntry = new WordEntry(i, wordEntryList);
-            wordsPane.getChildren().add(wordEntry);
+            wordEntries.add(new WordEntry(i, wordEntryList));
         }
+        for(int i = 0; i < numWords - 1; i++) {
+            wordEntries.get(i).setNext(wordEntries.get(i + 1).getEditor());
+        }
+        wordsPane.getChildren().addAll(wordEntries);
 
         vBox.getChildren().add(wordsPane);
 
         if(!displayWordsOnly) {
             PassphraseEntry passphraseEntry = new PassphraseEntry();
+            wordEntries.get(wordEntries.size() - 1).setNext(passphraseEntry.getEditor());
             passphraseEntry.setPadding(new Insets(0, 26, 10, 10));
             vBox.getChildren().add(passphraseEntry);
 
@@ -397,6 +401,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private static class WordEntry extends HBox {
         private static List<String> wordList;
         private final TextField wordField;
+        private Node next;
 
         public WordEntry(int wordNumber, ObservableList<String> wordEntryList) {
             super();
@@ -425,6 +430,11 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             wordList = Bip39MnemonicCode.INSTANCE.getWordList();
             AutoCompletionBinding<String> autoCompletionBinding = TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));
             autoCompletionBinding.setDelay(50);
+            autoCompletionBinding.setOnAutoCompleted(event -> {
+                if (next != null) {
+                    next.requestFocus();
+                }
+            });
 
             ValidationSupport validationSupport = new ValidationSupport();
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
@@ -444,6 +454,10 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             return wordField;
         }
 
+        public void setNext(Node node) {
+            next = node;
+        }
+
         public static boolean isValid(String word) {
             return wordList.contains(word);
         }
@@ -461,10 +475,6 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             List<String> suggestions = new ArrayList<>();
             if(!request.getUserText().isEmpty()) {
                 for(String word : wordList) {
-                    if(word.equals(request.getUserText())) {
-                        return Collections.emptyList();
-                    }
-
                     if(word.startsWith(request.getUserText())) {
                         suggestions.add(word);
                     }
@@ -476,13 +486,15 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     }
 
     private class PassphraseEntry extends HBox {
+        private final CustomTextField passphraseField;
+
         public PassphraseEntry() {
             super();
 
             setAlignment(Pos.CENTER_LEFT);
             setSpacing(10);
             Label passphraseLabel = new Label("Passphrase:");
-            CustomTextField passphraseField = (CustomTextField) TextFields.createClearableTextField();
+            passphraseField = (CustomTextField) TextFields.createClearableTextField();
             passphraseProperty.bind(passphraseField.textProperty());
             passphraseField.setPromptText("Leave blank for none");
 
@@ -491,6 +503,10 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             helpLabel.setHelpText("A passphrase provides optional added security - it is not stored so it must be remembered!");
 
             getChildren().addAll(passphraseLabel, passphraseField, helpLabel);
+        }
+
+        public TextField getEditor() {
+            return passphraseField;
         }
     }
 
