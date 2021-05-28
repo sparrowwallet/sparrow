@@ -209,7 +209,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 if(parts.stream().filter(Objects::nonNull).count() == n) {
                     String complete = String.join("", parts);
                     try {
-                        PSBT psbt = PSBT.fromString(complete);
+                        PSBT psbt = PSBT.fromString(complete, false);
                         result = new Result(psbt);
                         return;
                     } catch(PSBTParseException e) {
@@ -261,7 +261,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 try {
-                    psbt = PSBT.fromString(qrtext);
+                    psbt = PSBT.fromString(qrtext, false);
                     result = new Result(psbt);
                     return;
                 } catch(PSBTParseException e) {
@@ -273,7 +273,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 }
 
                 try {
-                    psbt = new PSBT(qrResult.getRawBytes());
+                    psbt = new PSBT(qrResult.getRawBytes(), false);
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -298,7 +298,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
                 //Try Base43 used by Electrum
                 try {
-                    psbt = new PSBT(Base43.decode(qrtext));
+                    psbt = new PSBT(Base43.decode(qrtext), false);
                     result = new Result(psbt);
                     return;
                 } catch(Exception e) {
@@ -324,7 +324,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 if(urRegistryType.equals(RegistryType.BYTES)) {
                     byte[] urBytes = (byte[])ur.decodeFromRegistry();
                     try {
-                        PSBT psbt = new PSBT(urBytes);
+                        PSBT psbt = new PSBT(urBytes, false);
                         return new Result(psbt);
                     } catch(PSBTParseException e) {
                         if(PSBT.isPSBT(urBytes)) {
@@ -354,7 +354,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 } else if(urRegistryType.equals(RegistryType.CRYPTO_PSBT)) {
                     CryptoPSBT cryptoPSBT = (CryptoPSBT)ur.decodeFromRegistry();
                     try {
-                        PSBT psbt = new PSBT(cryptoPSBT.getPsbt());
+                        PSBT psbt = new PSBT(cryptoPSBT.getPsbt(), false);
                         return new Result(psbt);
                     } catch(Exception e) {
                         log.error("Error parsing PSBT from UR type " + urRegistryType, e);

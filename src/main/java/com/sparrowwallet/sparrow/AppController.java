@@ -18,6 +18,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.drongo.psbt.PSBTSignatureException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -1176,7 +1177,8 @@ public class AppController implements Initializable {
 
     private void addTransactionTab(String name, File file, byte[] bytes) throws PSBTParseException, ParseException, TransactionParseException {
         if(PSBT.isPSBT(bytes)) {
-            PSBT psbt = new PSBT(bytes);
+            //Don't verify signatures here - provided PSBT may omit UTXO data that can be found when combining with an existing PSBT
+            PSBT psbt = new PSBT(bytes, false);
             addTransactionTab(name, file, psbt);
         } else if(Transaction.isTransaction(bytes)) {
             try {
@@ -1249,6 +1251,16 @@ public class AppController implements Initializable {
                     tabs.getSelectionModel().select(tab);
                     return;
                 }
+            }
+        }
+
+        if(psbt != null) {
+            try {
+                //Any PSBTs that have reached this point could not be combined with an existing PSBT. Verify signatures before continuing
+                psbt.verifySignatures();
+            } catch(PSBTSignatureException e) {
+                AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+                return;
             }
         }
 
