@@ -30,7 +30,10 @@ import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
-    private static final String VERSION_PREFIX = "hwi-2.0.1";
+    private static final String HWI_HOME_DIR = "hwi";
+    private static final String HWI_VERSION_PREFIX = "hwi-";
+    private static final String HWI_VERSION = "2.0.2";
+    private static final String HWI_VERSION_DIR = HWI_VERSION_PREFIX + HWI_VERSION;
 
     private static boolean isPromptActive = false;
 
@@ -51,7 +54,7 @@ public class Hwi {
             }
             return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
-            log.error("Error executing " + VERSION_PREFIX, e);
+            log.error("Error executing " + HWI_VERSION_DIR, e);
             throw new ImportException(e);
         } finally {
             isPromptActive = false;
@@ -222,9 +225,10 @@ public class Hwi {
     private synchronized File getHwiExecutable(Command command) {
         File hwiExecutable = Config.get().getHwi();
         if(hwiExecutable != null && hwiExecutable.exists()) {
+            File homeDir = getHwiHomeDir();
             String tmpDir = System.getProperty("java.io.tmpdir");
             String hwiPath = hwiExecutable.getAbsolutePath();
-            if(command.isTestFirst() && hwiPath.startsWith(tmpDir) && (!hwiPath.contains(VERSION_PREFIX) || !testHwi(hwiExecutable))) {
+            if(command.isTestFirst() && (hwiPath.contains(tmpDir) || hwiPath.startsWith(homeDir.getAbsolutePath())) && (!hwiPath.contains(HWI_VERSION_DIR) || !testHwi(hwiExecutable))) {
                 if(Platform.getCurrent() == Platform.OSX) {
                     deleteDirectory(hwiExecutable.getParentFile());
                 } else {
@@ -243,55 +247,65 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + VERSION_PREFIX + "-mac-amd64-signed.zip");
-                    Path tempHwiDirPath = Files.createTempDirectory(VERSION_PREFIX, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
-                    File tempHwiDir = tempHwiDirPath.toFile();
-                    //tempHwiDir.deleteOnExit();
-                    log.debug("Using temp HWI path: " + tempHwiDir.getAbsolutePath());
-
-                    File tempExec = null;
-                    ZipInputStream zis = new ZipInputStream(inputStream);
-                    ZipEntry zipEntry = zis.getNextEntry();
-                    while(zipEntry != null) {
-                        if(zipEntry.isDirectory()) {
-                            newDirectory(tempHwiDir, zipEntry, ownerExecutableWritable);
-                        } else {
-                            File newFile = newFile(tempHwiDir, zipEntry, ownerExecutableWritable);
-                            //newFile.deleteOnExit();
-                            FileOutputStream fos = new FileOutputStream(newFile);
-                            ByteStreams.copy(zis, new FileOutputStream(newFile));
-                            fos.flush();
-                            fos.close();
-
-                            if(zipEntry.getName().equals("hwi")) {
-                                tempExec = newFile;
-                            }
-                        }
-
-                        zipEntry = zis.getNextEntry();
+                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + HWI_VERSION_DIR + "-mac-amd64-signed.zip");
+                    if(inputStream == null) {
+                        throw new IllegalStateException("Cannot load " + HWI_VERSION_DIR + " from classpath");
                     }
-                    zis.closeEntry();
-                    zis.close();
 
-                    hwiExecutable = tempExec;
+                    File hwiHomeDir = getHwiHomeDir();
+                    File hwiVersionDir = new File(hwiHomeDir, HWI_VERSION_DIR);
+                    if(!hwiVersionDir.exists()) {
+                        Files.createDirectories(hwiVersionDir.toPath(), PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    }
+
+                    log.debug("Using HWI path: " + hwiVersionDir.getAbsolutePath());
+
+                    File hwiExec = null;
+                    try(ZipInputStream zis = new ZipInputStream(inputStream)) {
+                        ZipEntry zipEntry = zis.getNextEntry();
+                        while(zipEntry != null) {
+                            if(zipEntry.isDirectory()) {
+                                newDirectory(hwiVersionDir, zipEntry, ownerExecutableWritable);
+                            } else {
+                                File newFile = newFile(hwiVersionDir, zipEntry, ownerExecutableWritable);
+                                try(FileOutputStream fos = new FileOutputStream(newFile)) {
+                                    ByteStreams.copy(zis, new FileOutputStream(newFile));
+                                    fos.flush();
+                                };
+
+                                if(zipEntry.getName().equals("hwi")) {
+                                    hwiExec = newFile;
+                                }
+                            }
+
+                            zipEntry = zis.getNextEntry();
+                        }
+                        zis.closeEntry();
+                    }
+
+                    hwiExecutable = hwiExec;
                 } else {
                     InputStream inputStream;
                     Path tempExecPath;
                     if(platform == Platform.WINDOWS) {
                         inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
-                        tempExecPath = Files.createTempFile(VERSION_PREFIX, null);
+                        tempExecPath = Files.createTempFile(HWI_VERSION_DIR, null);
                     } else {
                         inputStream = Hwi.class.getResourceAsStream("/native/linux/x64/hwi");
-                        tempExecPath = Files.createTempFile(VERSION_PREFIX, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                        tempExecPath = Files.createTempFile(HWI_VERSION_DIR, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
+                    }
+
+                    if(inputStream == null) {
+                        throw new IllegalStateException("Cannot load " + HWI_VERSION_DIR + " from classpath");
                     }
 
                     File tempExec = tempExecPath.toFile();
                     tempExec.deleteOnExit();
-                    OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec));
-                    ByteStreams.copy(inputStream, tempExecStream);
-                    inputStream.close();
-                    tempExecStream.flush();
-                    tempExecStream.close();
+                    try(OutputStream tempExecStream = new BufferedOutputStream(new FileOutputStream(tempExec))) {
+                        ByteStreams.copy(inputStream, tempExecStream);
+                        inputStream.close();
+                        tempExecStream.flush();
+                    };
 
                     hwiExecutable = tempExec;
                 }
@@ -303,6 +317,14 @@ public class Hwi {
         }
 
         return hwiExecutable;
+    }
+
+    private File getHwiHomeDir() {
+        if(Platform.getCurrent() == Platform.OSX) {
+            return new File(Storage.getSparrowHome(), HWI_HOME_DIR);
+        }
+
+        return new File(System.getProperty("java.io.tmpdir"));
     }
 
     private boolean testHwi(File hwiExecutable) {
