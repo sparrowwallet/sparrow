@@ -145,7 +145,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             wallet.setScriptType(scriptType);
 
             if(!wallet.isValid()) {
-                throw new IllegalStateException("This file does not describe a valid wallet. Please use the Settings > Multisig Wallets > Export XPUB feature on your Coldcard.");
+                throw new IllegalStateException("This file does not describe a valid wallet. " + getKeystoreImportDescription());
             }
 
             return wallet;
