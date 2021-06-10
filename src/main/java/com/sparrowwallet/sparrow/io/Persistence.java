@@ -6,17 +6,23 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
+import java.io.OutputStream;
 
 public interface Persistence {
-    Wallet loadWallet(File walletFile) throws IOException;
-    WalletBackupAndKey loadWallet(File walletFile, CharSequence password) throws IOException, StorageException;
-    Map<File, Wallet> loadWallets(File[] walletFiles, ECKey encryptionKey) throws IOException, StorageException;
-    Map<Storage, WalletBackupAndKey> loadChildWallets(File walletFile, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException;
-    File storeWallet(File walletFile, Wallet wallet) throws IOException;
-    File storeWallet(File walletFile, Wallet wallet, ECKey encryptionPubKey) throws IOException;
+    WalletBackupAndKey loadWallet(Storage storage) throws IOException, StorageException;
+    WalletBackupAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException;
+    WalletBackupAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException;
+    File storeWallet(Storage storage, Wallet wallet) throws IOException, StorageException;
+    File storeWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException, StorageException;
+    void updateWallet(Storage storage, Wallet wallet) throws IOException, StorageException;
+    void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException, StorageException;
     ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException;
     AsymmetricKeyDeriver getKeyDeriver();
     void setKeyDeriver(AsymmetricKeyDeriver keyDeriver);
     PersistenceType getType();
+    boolean isEncrypted(File walletFile) throws IOException;
+    String getWalletId(Storage storage, Wallet wallet);
+    String getWalletName(File walletFile, Wallet wallet);
+    void copyWallet(File walletFile, OutputStream outputStream) throws IOException;
+    void close();
 }

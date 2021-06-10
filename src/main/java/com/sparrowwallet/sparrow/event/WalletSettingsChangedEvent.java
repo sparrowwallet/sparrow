@@ -5,25 +5,24 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.io.File;
 
 /**
- * This event is posted when a wallet's settings are changed in a way that does not update the wallet addresses or history.
- * For example, changing the keystore source or label will trigger this event, which updates the wallet but avoids a full wallet refresh.
- * It is impossible for the validity of a wallet to change on this event - listen for WalletAddressesChangedEvent for this
+ * This is the base class for events posted when a wallet's settings are changed
+ * Do not listen for this event directly - listen for a subclass, for example KeystoreLabelsChangedEvent or WalletAddressesChangedEvent
  */
 public class WalletSettingsChangedEvent extends WalletChangedEvent {
     private final Wallet pastWallet;
-    private final File walletFile;
+    private final String walletId;
 
-    public WalletSettingsChangedEvent(Wallet wallet, Wallet pastWallet, File walletFile) {
+    public WalletSettingsChangedEvent(Wallet wallet, Wallet pastWallet, String walletId) {
         super(wallet);
         this.pastWallet = pastWallet;
-        this.walletFile = walletFile;
+        this.walletId = walletId;
     }
 
     public Wallet getPastWallet() {
         return pastWallet;
     }
 
-    public File getWalletFile() {
-        return walletFile;
+    public String getWalletId() {
+        return walletId;
     }
 }

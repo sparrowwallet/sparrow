@@ -23,8 +23,8 @@ public class WalletHistoryChangedEvent extends WalletChangedEvent {
         this.historyChangedNodes = historyChangedNodes;
     }
 
-    public File getWalletFile() {
-        return storage.getWalletFile();
+    public String getWalletId() {
+        return storage.getWalletId(getWallet());
     }
 
     public List<WalletNode> getHistoryChangedNodes() {

@@ -26,8 +26,10 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         this.keyPurpose = keyPurpose;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
-            hashIndex.setLabel(newValue);
-            EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
+            if(!Objects.equals(hashIndex.getLabel(), newValue)) {
+                hashIndex.setLabel(newValue);
+                EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
+            }
         });
     }
 

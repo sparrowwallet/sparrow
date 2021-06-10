@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -34,56 +35,75 @@ public class JsonPersistence implements Persistence {
         this.gson = getGson();
     }
 
-    public Wallet loadWallet(File jsonFile) throws IOException {
-        try(Reader reader = new FileReader(jsonFile)) {
-            return gson.fromJson(reader, Wallet.class);
+    @Override
+    public WalletBackupAndKey loadWallet(Storage storage) throws IOException, StorageException {
+        Wallet wallet;
+
+        try(Reader reader = new FileReader(storage.getWalletFile())) {
+            wallet = gson.fromJson(reader, Wallet.class);
         }
+
+        Map<Storage, WalletBackupAndKey> childWallets = loadChildWallets(storage, wallet, null);
+        wallet.setChildWallets(childWallets.values().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+
+        File backupFile = storage.getTempBackup();
+        Wallet backupWallet = backupFile == null ? null : loadWallet(backupFile, null);
+
+        return new WalletBackupAndKey(wallet, backupWallet, null, null, childWallets);
     }
 
-    public WalletBackupAndKey loadWallet(File walletFile, CharSequence password) throws IOException, StorageException {
+    @Override
+    public WalletBackupAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException {
+        return loadWallet(storage, password, null);
+    }
+
+    @Override
+    public WalletBackupAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
         Wallet wallet;
         ECKey encryptionKey;
 
-        try(InputStream fileStream = new FileInputStream(walletFile)) {
-            encryptionKey = getEncryptionKey(password, fileStream, null);
+        try(InputStream fileStream = new FileInputStream(storage.getWalletFile())) {
+            encryptionKey = getEncryptionKey(password, fileStream, alreadyDerivedKey);
             Reader reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
             wallet = gson.fromJson(reader, Wallet.class);
         }
 
-        return new WalletBackupAndKey(wallet, null, encryptionKey, keyDeriver, null);
+        Map<Storage, WalletBackupAndKey> childWallets = loadChildWallets(storage, wallet, encryptionKey);
+        wallet.setChildWallets(childWallets.values().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+
+        File backupFile = storage.getTempBackup();
+        Wallet backupWallet = backupFile == null ? null : loadWallet(backupFile, encryptionKey);
+
+        return new WalletBackupAndKey(wallet, backupWallet, encryptionKey, keyDeriver, childWallets);
     }
 
-    public Map<File, Wallet> loadWallets(File[] walletFiles, ECKey encryptionKey) throws IOException, StorageException {
-        Map<File, Wallet> walletsMap = new LinkedHashMap<>();
-        for(File file : walletFiles) {
-            if(encryptionKey != null) {
-                try(InputStream fileStream = new FileInputStream(file)) {
-                    encryptionKey = getEncryptionKey(null, fileStream, encryptionKey);
-                    Reader reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
-                    walletsMap.put(file, gson.fromJson(reader, Wallet.class));
-                }
-            } else {
-                walletsMap.put(file, loadWallet(file));
-            }
-        }
-
-        return walletsMap;
-    }
-
-    public Map<Storage, WalletBackupAndKey> loadChildWallets(File walletFile, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException {
-        File[] walletFiles = getChildWalletFiles(walletFile, masterWallet);
+    private Map<Storage, WalletBackupAndKey> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException {
+        File[] walletFiles = getChildWalletFiles(storage.getWalletFile(), masterWallet);
         Map<Storage, WalletBackupAndKey> childWallets = new LinkedHashMap<>();
-        Map<File, Wallet> loadedWallets = loadWallets(walletFiles, encryptionKey);
-        for(Map.Entry<File, Wallet> entry : loadedWallets.entrySet()) {
-            Storage storage = new Storage(entry.getKey());
-            storage.setEncryptionPubKey(encryptionKey == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(encryptionKey));
-            storage.setKeyDeriver(getKeyDeriver());
-            Wallet childWallet = entry.getValue();
+        for(File childFile : walletFiles) {
+            Wallet childWallet = loadWallet(childFile, encryptionKey);
+            Storage childStorage = new Storage(childFile);
+            childStorage.setEncryptionPubKey(encryptionKey == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(encryptionKey));
+            childStorage.setKeyDeriver(getKeyDeriver());
             childWallet.setMasterWallet(masterWallet);
-            childWallets.put(storage, new WalletBackupAndKey(childWallet, null, encryptionKey, keyDeriver, Collections.emptyMap()));
+            childWallets.put(childStorage, new WalletBackupAndKey(childWallet, null, encryptionKey, keyDeriver, Collections.emptyMap()));
         }
 
         return childWallets;
+    }
+
+    private Wallet loadWallet(File walletFile, ECKey encryptionKey) throws IOException, StorageException {
+        if(encryptionKey != null) {
+            try(InputStream fileStream = new FileInputStream(walletFile)) {
+                encryptionKey = getEncryptionKey(null, fileStream, encryptionKey);
+                Reader reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
+                return gson.fromJson(reader, Wallet.class);
+            }
+        } else {
+            try(Reader reader = new FileReader(walletFile)) {
+                return gson.fromJson(reader, Wallet.class);
+            }
+        }
     }
 
     private File[] getChildWalletFiles(File walletFile, Wallet masterWallet) {
@@ -100,14 +120,12 @@ public class JsonPersistence implements Persistence {
         return childFiles == null ? new File[0] : childFiles;
     }
 
-    public File storeWallet(File walletFile, Wallet wallet) throws IOException {
-        File parent = walletFile.getParentFile();
-        if(!parent.exists() && !Storage.createOwnerOnlyDirectory(parent)) {
-            throw new IOException("Could not create folder " + parent);
-        }
+    @Override
+    public File storeWallet(Storage storage, Wallet wallet) throws IOException {
+        File walletFile = storage.getWalletFile();
 
         if(!walletFile.getName().endsWith(".json")) {
-            File jsonFile = new File(parent, walletFile.getName() + ".json");
+            File jsonFile = new File(walletFile.getParentFile(), walletFile.getName() + ".json");
             if(walletFile.exists()) {
                 if(!walletFile.renameTo(jsonFile)) {
                     throw new IOException("Could not rename " + walletFile.getName() + " to " + jsonFile.getName());
@@ -127,14 +145,12 @@ public class JsonPersistence implements Persistence {
         return walletFile;
     }
 
-    public File storeWallet(File walletFile, Wallet wallet, ECKey encryptionPubKey) throws IOException {
-        File parent = walletFile.getParentFile();
-        if(!parent.exists() && !Storage.createOwnerOnlyDirectory(parent)) {
-            throw new IOException("Could not create folder " + parent);
-        }
+    @Override
+    public File storeWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException {
+        File walletFile = storage.getWalletFile();
 
         if(walletFile.getName().endsWith(".json")) {
-            File noJsonFile = new File(parent, walletFile.getName().substring(0, walletFile.getName().lastIndexOf('.')));
+            File noJsonFile = new File(walletFile.getParentFile(), walletFile.getName().substring(0, walletFile.getName().lastIndexOf('.')));
             if(walletFile.exists()) {
                 if(!walletFile.renameTo(noJsonFile)) {
                     throw new IOException("Could not rename " + walletFile.getName() + " to " + noJsonFile.getName());
@@ -158,6 +174,16 @@ public class JsonPersistence implements Persistence {
         return walletFile;
     }
 
+    @Override
+    public void updateWallet(Storage storage, Wallet wallet) throws IOException {
+        storeWallet(storage, wallet);
+    }
+
+    @Override
+    public void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException {
+        storeWallet(storage, wallet, encryptionPubKey);
+    }
+
     private void writeBinaryHeader(OutputStream outputStream) throws IOException {
         ByteBuffer buf = ByteBuffer.allocate(21);
         buf.put(HEADER_MAGIC_1.getBytes(StandardCharsets.UTF_8));
@@ -174,6 +200,7 @@ public class JsonPersistence implements Persistence {
         return "BIE1".getBytes(StandardCharsets.UTF_8);
     }
 
+    @Override
     public ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException {
         return getEncryptionKey(password, null, null);
     }
@@ -187,10 +214,12 @@ public class JsonPersistence implements Persistence {
         return alreadyDerivedKey == null ?  keyDeriver.deriveECKey(password) : alreadyDerivedKey;
     }
 
+    @Override
     public AsymmetricKeyDeriver getKeyDeriver() {
         return keyDeriver;
     }
 
+    @Override
     public void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
         this.keyDeriver = keyDeriver;
     }
@@ -232,8 +261,51 @@ public class JsonPersistence implements Persistence {
         return new Argon2KeyDeriver(salt);
     }
 
+    @Override
     public PersistenceType getType() {
         return PersistenceType.JSON;
+    }
+
+    @Override
+    public boolean isEncrypted(File walletFile) throws IOException {
+        FileType fileType = IOUtils.getFileType(walletFile);
+        if(FileType.JSON.equals(fileType)) {
+            return false;
+        } else if(FileType.BINARY.equals(fileType)) {
+            try(FileInputStream fileInputStream = new FileInputStream(walletFile)) {
+                getWalletKeyDeriver(fileInputStream);
+                return true;
+            } catch(StorageException e) {
+                return false;
+            }
+        }
+
+        throw new IOException("Unsupported file type");
+    }
+
+    @Override
+    public String getWalletId(Storage storage, Wallet wallet) {
+        return storage.getWalletFile().getParentFile().getAbsolutePath() + File.separator + getWalletName(storage.getWalletFile(), null) + ":" + (wallet == null || wallet.isMasterWallet() ? "master" : wallet.getName());
+    }
+
+    @Override
+    public String getWalletName(File walletFile, Wallet wallet) {
+        String name = walletFile.getName();
+        if(name.endsWith("." + getType().getExtension())) {
+            name = name.substring(0, name.lastIndexOf('.'));
+        }
+
+        return name;
+    }
+
+    @Override
+    public void copyWallet(File walletFile, OutputStream outputStream) throws IOException {
+        com.google.common.io.Files.copy(walletFile, outputStream);
+    }
+
+    @Override
+    public void close() {
+        //Nothing required
     }
 
     public static Gson getGson() {
@@ -261,7 +333,7 @@ public class JsonPersistence implements Persistence {
         gsonBuilder.addSerializationExclusionStrategy(new ExclusionStrategy() {
             @Override
             public boolean shouldSkipField(FieldAttributes field) {
-                return field.getDeclaringClass() == Wallet.class && field.getName().equals("masterWallet");
+                return field.getName().equals("id") || field.getName().equals("masterWallet") || field.getName().equals("childWallets");
             }
 
             @Override

@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class WalletForm {
     private static final Logger log = LoggerFactory.getLogger(WalletForm.class);
@@ -60,6 +62,10 @@ public class WalletForm {
         return storage;
     }
 
+    public String getWalletId() {
+        return storage.getWalletId(wallet);
+    }
+
     public File getWalletFile() {
         return storage.getWalletFile();
     }
@@ -72,11 +78,11 @@ public class WalletForm {
         throw new UnsupportedOperationException("Only SettingsWalletForm supports revert");
     }
 
-    public void save() throws IOException {
+    public void save() throws IOException, StorageException {
         storage.saveWallet(wallet);
     }
 
-    public void saveAndRefresh() throws IOException {
+    public void saveAndRefresh() throws IOException, StorageException {
         Wallet pastWallet = wallet.copy();
         storage.backupTempWallet();
         wallet.clearHistory();
@@ -86,6 +92,15 @@ public class WalletForm {
 
     public void saveBackup() throws IOException {
         storage.backupWallet();
+    }
+
+    protected void backgroundUpdate() {
+        try {
+            storage.updateWallet(wallet);
+        } catch (IOException | StorageException e) {
+            //Background save failed
+            log.error("Background wallet save failed", e);
+        }
     }
 
     public void deleteBackups() {
@@ -127,36 +142,61 @@ public class WalletForm {
             wallet.setStoredBlockHeight(blockHeight);
         }
 
-        boolean labelsChanged = false;
+        //After the wallet settings are changed, the previous wallet is copied to pastWallet and used here to copy labels from past nodes, txos and txes
+        Set<Entry> labelChangedEntries = Collections.emptySet();
         if(pastWallet != null) {
-            labelsChanged = copyLabels(pastWallet);
+            labelChangedEntries = copyLabels(pastWallet);
         }
 
-        notifyIfChanged(blockHeight, previousWallet, labelsChanged);
+        notifyIfChanged(blockHeight, previousWallet, labelChangedEntries);
     }
 
-    private boolean copyLabels(Wallet pastWallet) {
-        boolean changed = wallet.getNode(KeyPurpose.RECEIVE).copyLabels(pastWallet.getNode(KeyPurpose.RECEIVE));
-        changed |= wallet.getNode(KeyPurpose.CHANGE).copyLabels(pastWallet.getNode(KeyPurpose.CHANGE));
+    private Set<Entry> copyLabels(Wallet pastWallet) {
+        Set<Entry> changedEntries = new LinkedHashSet<>();
 
+        //On a full wallet refresh, walletUtxosEntry and walletTransactionsEntry will have no children yet, but AddressesController may have created accountEntries on a walletNodesChangedEvent
+        //Copy nodeEntry labels
+        List<KeyPurpose> keyPurposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
+        for(KeyPurpose keyPurpose : keyPurposes) {
+            NodeEntry purposeEntry = getNodeEntry(keyPurpose);
+            changedEntries.addAll(purposeEntry.copyLabels(pastWallet.getNode(purposeEntry.getNode().getKeyPurpose())));
+        }
+
+        //Copy node and txo labels
+        for(KeyPurpose keyPurpose : keyPurposes) {
+            if(wallet.getNode(keyPurpose).copyLabels(pastWallet.getNode(keyPurpose))) {
+                changedEntries.add(getWalletUtxosEntry());
+            }
+        }
+
+        //Copy tx labels
         for(Map.Entry<Sha256Hash, BlockTransaction> txEntry : wallet.getTransactions().entrySet()) {
             BlockTransaction pastBlockTransaction = pastWallet.getTransactions().get(txEntry.getKey());
             if(pastBlockTransaction != null && txEntry.getValue() != null && txEntry.getValue().getLabel() == null && pastBlockTransaction.getLabel() != null) {
                 txEntry.getValue().setLabel(pastBlockTransaction.getLabel());
-                changed = true;
+                changedEntries.add(getWalletTransactionsEntry());
             }
         }
 
         storage.deleteTempBackups();
-        return changed;
+        return changedEntries;
     }
 
-    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet, boolean labelsChanged) {
+    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet, Set<Entry> labelChangedEntries) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
-        boolean changed = labelsChanged;
+        boolean changed = false;
+        if(!labelChangedEntries.isEmpty()) {
+            List<Entry> eventEntries = labelChangedEntries.stream().filter(entry -> entry != getWalletTransactionsEntry() && entry != getWalletUtxosEntry()).collect(Collectors.toList());
+            if(!eventEntries.isEmpty()) {
+                Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, eventEntries)));
+            }
+
+            changed = true;
+        }
+
         if(!historyChangedNodes.isEmpty()) {
             Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, storage, historyChangedNodes)));
             changed = true;
@@ -257,39 +297,43 @@ public class WalletForm {
     @Subscribe
     public void walletDataChanged(WalletDataChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
-            backgroundSaveWallet();
-        }
-    }
-
-    private void backgroundSaveWallet() {
-        try {
-            save();
-        } catch (IOException e) {
-            //Background save failed
-            log.error("Background wallet save failed", e);
+            backgroundUpdate();
         }
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
-        if(event.getWalletFile().equals(storage.getWalletFile())) {
+    public void walletHistoryCleared(WalletHistoryClearedEvent event) {
+        if(event.getWalletId().equals(getWalletId())) {
+            //Replacing the WalletForm's wallet here is only possible because we immediately clear all derived structures and do a full wallet refresh
             wallet = event.getWallet();
 
-            if(event instanceof WalletAddressesChangedEvent) {
-                walletTransactionsEntry = null;
-                walletUtxosEntry = null;
-                accountEntries.clear();
-                EventManager.get().post(new WalletNodesChangedEvent(wallet));
+            walletTransactionsEntry = null;
+            walletUtxosEntry = null;
+            accountEntries.clear();
+            EventManager.get().post(new WalletNodesChangedEvent(wallet));
 
-                //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
-                if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                    savedPastWallet = event.getPastWallet();
-                }
-
-                //Clear the cache - we will need to fetch everything again
-                AppServices.clearTransactionHistoryCache(wallet);
-                refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
+            //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                savedPastWallet = event.getPastWallet();
             }
+
+            //Clear the cache - we will need to fetch everything again
+            AppServices.clearTransactionHistoryCache(wallet);
+            refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
+        }
+    }
+
+    @Subscribe
+    public void keystoreLabelsChanged(KeystoreLabelsChangedEvent event) {
+        if(event.getWalletId().equals(getWalletId())) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
+    public void walletPasswordChanged(WalletPasswordChangedEvent event) {
+        if(event.getWalletId().equals(getWalletId())) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
         }
     }
 
@@ -320,7 +364,7 @@ public class WalletForm {
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        if(event.getWalletFile().equals(storage.getWalletFile())) {
+        if(event.getWalletId().equals(getWalletId())) {
             for(WalletNode changedNode : event.getHistoryChangedNodes()) {
                 if(changedNode.getLabel() != null && !changedNode.getLabel().isEmpty()) {
                     List<Entry> changedLabelEntries = new ArrayList<>();
@@ -393,7 +437,16 @@ public class WalletForm {
 
             if(!labelChangedEntries.isEmpty()) {
                 Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, labelChangedEntries)));
+            } else {
+                Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
             }
+        }
+    }
+
+    @Subscribe
+    public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
         }
     }
 
@@ -401,6 +454,7 @@ public class WalletForm {
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {
+                storage.close();
                 AppServices.clearTransactionHistoryCache(wallet);
                 EventManager.get().unregister(this);
             }

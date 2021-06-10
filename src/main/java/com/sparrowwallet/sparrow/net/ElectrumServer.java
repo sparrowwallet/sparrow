@@ -45,7 +45,7 @@ public class ElectrumServer {
 
     private static Transport transport;
 
-    private static final Map<String, Set<String>> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, List<String>> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
     private static String previousServerAddress;
 
@@ -822,21 +822,21 @@ public class ElectrumServer {
         return Utils.bytesToHex(reversed);
     }
 
-    public static Map<String, Set<String>> getSubscribedScriptHashes() {
+    public static Map<String, List<String>> getSubscribedScriptHashes() {
         return subscribedScriptHashes;
     }
 
     public static String getSubscribedScriptHashStatus(String scriptHash) {
-        Set<String> existingStatuses = subscribedScriptHashes.get(scriptHash);
-        if(existingStatuses != null) {
-            return Iterables.getLast(existingStatuses);
+        List<String> existingStatuses = subscribedScriptHashes.get(scriptHash);
+        if(existingStatuses != null && !existingStatuses.isEmpty()) {
+            return existingStatuses.get(existingStatuses.size() - 1);
         }
 
         return null;
     }
 
     public static void updateSubscribedScriptHashStatus(String scriptHash, String status) {
-        Set<String> existingStatuses = subscribedScriptHashes.computeIfAbsent(scriptHash, k -> new LinkedHashSet<>());
+        List<String> existingStatuses = subscribedScriptHashes.computeIfAbsent(scriptHash, k -> new ArrayList<>());
         existingStatuses.add(status);
     }
 
@@ -1147,9 +1147,20 @@ public class ElectrumServer {
                             electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
 
                             //Add all of the script hashes we have now fetched the history for so we don't need to fetch again until the script hash status changes
-                            for(WalletNode node : nodeTransactionMap.keySet()) {
+                            for(WalletNode node : (nodes == null ? nodeTransactionMap.keySet() : nodes)) {
                                 String scriptHash = getScriptHash(wallet, node);
                                 retrievedScriptHashes.put(scriptHash, getSubscribedScriptHashStatus(scriptHash));
+                            }
+
+                            //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool
+                            if(nodes != null) {
+                                for(WalletNode node : nodes) {
+                                    String scriptHash = getScriptHash(wallet, node);
+                                    if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()) {
+                                        log.debug("Clearing transaction history for " + node);
+                                        node.getTransactionOutputs().clear();
+                                    }
+                                }
                             }
 
                             return true;

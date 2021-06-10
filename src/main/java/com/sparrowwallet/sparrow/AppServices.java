@@ -469,8 +469,8 @@ public class AppServices {
         return openWallets;
     }
 
-    public Window getWindowForWallet(Storage storage) {
-        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getStorage().getWalletFile().equals(storage.getWalletFile()))).map(Map.Entry::getKey).findFirst();
+    public Window getWindowForWallet(String walletId) {
+        Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getWalletForm().getWalletId().equals(walletId))).map(Map.Entry::getKey).findFirst();
         return optWindow.orElse(null);
     }
 
@@ -544,8 +544,7 @@ public class AppServices {
     }
 
     public static boolean isWalletFile(File file) {
-        FileType fileType = IOUtils.getFileType(file);
-        return FileType.JSON.equals(fileType) || FileType.BINARY.equals(fileType);
+        return Storage.isWalletFile(file);
     }
 
     public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
@@ -614,10 +613,6 @@ public class AppServices {
         if(activeWindow != null) {
             moveToWindowScreen(activeWindow, newWindow, newWindowWidth, newWindowHeight);
         }
-    }
-
-    public void moveToWalletWindowScreen(Storage storage, Dialog<?> dialog) {
-        moveToWindowScreen(getWindowForWallet(storage), dialog);
     }
 
     public static void moveToWindowScreen(Window currentWindow, Dialog<?> dialog) {

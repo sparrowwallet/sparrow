@@ -2,14 +2,14 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Script;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelsChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class NodeEntry extends Entry implements Comparable<NodeEntry> {
@@ -20,8 +20,10 @@ public class NodeEntry extends Entry implements Comparable<NodeEntry> {
         this.node = node;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
-            node.setLabel(newValue);
-            EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
+            if(!Objects.equals(node.getLabel(), newValue)) {
+                node.setLabel(newValue);
+                EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
+            }
         });
     }
 
@@ -77,5 +79,46 @@ public class NodeEntry extends Entry implements Comparable<NodeEntry> {
     @Override
     public int compareTo(NodeEntry other) {
         return node.compareTo(other.node);
+    }
+
+    public Set<Entry> copyLabels(WalletNode pastNode) {
+        if(pastNode == null) {
+            return Collections.emptySet();
+        }
+
+        Set<Entry> changedEntries = new LinkedHashSet<>();
+
+        if(node.getLabel() == null && pastNode.getLabel() != null) {
+            node.setLabel(pastNode.getLabel());
+            labelProperty().set(pastNode.getLabel());
+            changedEntries.add(this);
+        }
+
+        for(Entry childEntry : getChildren()) {
+            if(childEntry instanceof HashIndexEntry) {
+                HashIndexEntry hashIndexEntry = (HashIndexEntry)childEntry;
+                BlockTransactionHashIndex txo = hashIndexEntry.getHashIndex();
+                Optional<BlockTransactionHashIndex> optPastTxo = pastNode.getTransactionOutputs().stream().filter(pastTxo -> pastTxo.equals(txo)).findFirst();
+                if(optPastTxo.isPresent()) {
+                    BlockTransactionHashIndex pastTxo = optPastTxo.get();
+                    if(txo.getLabel() == null && pastTxo.getLabel() != null) {
+                        txo.setLabel(pastTxo.getLabel());
+                        changedEntries.add(childEntry);
+                    }
+                    if(txo.isSpent() && pastTxo.isSpent() && txo.getSpentBy().getLabel() == null && pastTxo.getSpentBy().getLabel() != null) {
+                        txo.getSpentBy().setLabel(pastTxo.getSpentBy().getLabel());
+                        changedEntries.add(childEntry);
+                    }
+                }
+            }
+
+            if(childEntry instanceof NodeEntry) {
+                NodeEntry childNodeEntry = (NodeEntry)childEntry;
+                Optional<WalletNode> optPastChildNodeEntry = pastNode.getChildren().stream().filter(childNodeEntry.node::equals).findFirst();
+                optPastChildNodeEntry.ifPresent(pastChildNode -> changedEntries.addAll(childNodeEntry.copyLabels(pastChildNode)));
+            }
+        }
+
+        return changedEntries;
     }
 }

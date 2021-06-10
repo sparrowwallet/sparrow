@@ -368,16 +368,16 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         if(password.isPresent()) {
             Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
             decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Done"));
+                EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                 Wallet decryptedWallet = decryptWalletService.getValue();
                 signUnencryptedKeystore(decryptedWallet);
                 decryptedWallet.clearPrivate();
             });
             decryptWalletService.setOnFailed(workerStateEvent -> {
-                EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.END, "Failed"));
+                EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
                 AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
             });
-            EventManager.get().post(new StorageEvent(storage.getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
+            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
             decryptWalletService.start();
         }
     }

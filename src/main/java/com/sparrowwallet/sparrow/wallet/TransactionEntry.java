@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
@@ -30,8 +31,10 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         this.blockTransaction = blockTransaction;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
-            blockTransaction.setLabel(newValue);
-            EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
+            if(!Objects.equals(blockTransaction.getLabel(), newValue)) {
+                blockTransaction.setLabel(newValue);
+                EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
+            }
         });
 
         setConfirmations(calculateConfirmations());
@@ -68,7 +71,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     }
 
     public int calculateConfirmations() {
-        return blockTransaction.getConfirmations(getWallet().getStoredBlockHeight());
+        return blockTransaction.getConfirmations(AppServices.getCurrentBlockHeight() == null ? getWallet().getStoredBlockHeight() : AppServices.getCurrentBlockHeight());
     }
 
     public String getConfirmationsDescription() {

@@ -11,8 +11,8 @@ import java.io.File;
  * This is because any failure in saving the wallet must be immediately reported to the user.
  * Note that all wallet detail controllers that share a WalletForm, and that class posts WalletNodesChangedEvent once it has cleared it's entry caches.
  */
-public class WalletAddressesChangedEvent extends WalletSettingsChangedEvent {
-    public WalletAddressesChangedEvent(Wallet wallet, Wallet pastWallet, File walletFile) {
-        super(wallet, pastWallet, walletFile);
+public class WalletAddressesChangedEvent extends WalletHistoryClearedEvent {
+    public WalletAddressesChangedEvent(Wallet wallet, Wallet pastWallet, String walletId) {
+        super(wallet, pastWallet, walletId);
     }
 }

@@ -7,9 +7,8 @@ import java.util.List;
 
 /**
  * This event is fired when a wallet entry (transaction, txi or txo) label is changed.
- * Extends WalletDataChangedEvent so triggers a background save.
  */
-public class WalletEntryLabelsChangedEvent extends WalletDataChangedEvent {
+public class WalletEntryLabelsChangedEvent extends WalletChangedEvent {
     private final List<Entry> entries;
 
     public WalletEntryLabelsChangedEvent(Wallet wallet, Entry entry) {

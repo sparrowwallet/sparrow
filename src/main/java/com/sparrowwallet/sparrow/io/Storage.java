@@ -36,14 +36,23 @@ public class Storage {
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
-    public static final String TEMP_BACKUP_EXTENSION = "tmp";
+    public static final String TEMP_BACKUP_PREFIX = "tmp";
 
-    private final Persistence persistence;
+    private Persistence persistence;
     private File walletFile;
     private ECKey encryptionPubKey;
 
     public Storage(File walletFile) {
-        this.persistence = new JsonPersistence();
+        this(!walletFile.exists() || walletFile.getName().endsWith("." + PersistenceType.DB.getExtension()) ? PersistenceType.DB : PersistenceType.JSON, walletFile);
+    }
+
+    public Storage(PersistenceType persistenceType, File walletFile) {
+        this.persistence = persistenceType.getInstance();
+        this.walletFile = walletFile;
+    }
+
+    public Storage(Persistence persistence, File walletFile) {
+        this.persistence = persistence;
         this.walletFile = walletFile;
     }
 
@@ -51,45 +60,63 @@ public class Storage {
         return walletFile;
     }
 
-    public WalletBackupAndKey loadUnencryptedWallet() throws IOException, StorageException {
-        Wallet wallet = persistence.loadWallet(walletFile);
-        Wallet backupWallet = loadBackupWallet(null);
-        Map<Storage, WalletBackupAndKey> childWallets = persistence.loadChildWallets(walletFile, wallet, null);
+    public boolean isEncrypted() throws IOException {
+        return persistence.isEncrypted(walletFile);
+    }
 
+    public String getWalletId(Wallet wallet) {
+        return persistence.getWalletId(this, wallet);
+    }
+
+    public String getWalletName(Wallet wallet) {
+        return persistence.getWalletName(walletFile, wallet);
+    }
+
+    public String getWalletFileExtension() {
+        if(walletFile.getName().endsWith("." + getType().getExtension())) {
+            return getType().getExtension();
+        }
+
+        return "";
+    }
+
+    public WalletBackupAndKey loadUnencryptedWallet() throws IOException, StorageException {
+        WalletBackupAndKey masterWalletAndKey = persistence.loadWallet(this);
         encryptionPubKey = NO_PASSWORD_KEY;
-        return new WalletBackupAndKey(wallet, backupWallet, null, null, childWallets);
+        return migrateToDb(masterWalletAndKey);
     }
 
     public WalletBackupAndKey loadEncryptedWallet(CharSequence password) throws IOException, StorageException {
-        WalletBackupAndKey masterWalletAndKey = persistence.loadWallet(walletFile, password);
-        Wallet backupWallet = loadBackupWallet(masterWalletAndKey.getEncryptionKey());
-        Map<Storage, WalletBackupAndKey> childWallets = persistence.loadChildWallets(walletFile, masterWalletAndKey.getWallet(), masterWalletAndKey.getEncryptionKey());
-
+        WalletBackupAndKey masterWalletAndKey = persistence.loadWallet(this, password);
         encryptionPubKey = ECKey.fromPublicOnly(masterWalletAndKey.getEncryptionKey());
-        return new WalletBackupAndKey(masterWalletAndKey.getWallet(), backupWallet, masterWalletAndKey.getEncryptionKey(), persistence.getKeyDeriver(), childWallets);
+        return migrateToDb(masterWalletAndKey);
     }
 
-    protected Wallet loadBackupWallet(ECKey encryptionKey) throws IOException, StorageException {
-        Map<File, Wallet> backupWallets;
-        if(encryptionKey != null) {
-            File[] backups = getBackups(TEMP_BACKUP_EXTENSION, persistence.getType().getExtension() + "." + TEMP_BACKUP_EXTENSION);
-            backupWallets = persistence.loadWallets(backups, encryptionKey);
-            return backupWallets.isEmpty() ? null : backupWallets.values().iterator().next();
-        } else {
-            File[] backups = getBackups(persistence.getType().getExtension() + "." + TEMP_BACKUP_EXTENSION);
-            backupWallets = persistence.loadWallets(backups, null);
+    public void saveWallet(Wallet wallet) throws IOException, StorageException {
+        File parent = walletFile.getParentFile();
+        if(!parent.exists() && !Storage.createOwnerOnlyDirectory(parent)) {
+            throw new IOException("Could not create folder " + parent);
         }
 
-        return backupWallets.isEmpty() ? null : backupWallets.values().iterator().next();
-    }
-
-    public void saveWallet(Wallet wallet) throws IOException {
         if(encryptionPubKey != null && !NO_PASSWORD_KEY.equals(encryptionPubKey)) {
-            walletFile = persistence.storeWallet(walletFile, wallet, encryptionPubKey);
+            walletFile = persistence.storeWallet(this, wallet, encryptionPubKey);
             return;
         }
 
-        walletFile = persistence.storeWallet(walletFile, wallet);
+        walletFile = persistence.storeWallet(this, wallet);
+    }
+
+    public void updateWallet(Wallet wallet) throws IOException, StorageException {
+        if(encryptionPubKey != null && !NO_PASSWORD_KEY.equals(encryptionPubKey)) {
+            persistence.updateWallet(this, wallet, encryptionPubKey);
+        } else {
+            persistence.updateWallet(this, wallet);
+        }
+    }
+
+    public void close() {
+        ClosePersistenceService closePersistenceService = new ClosePersistenceService();
+        closePersistenceService.start();
     }
 
     public void backupWallet() throws IOException {
@@ -100,34 +127,36 @@ public class Storage {
 
     public void backupTempWallet() {
         try {
-            backupWallet(TEMP_BACKUP_EXTENSION);
+            backupWallet(TEMP_BACKUP_PREFIX);
         } catch(IOException e) {
-            log.error("Error creating ." + TEMP_BACKUP_EXTENSION + " backup wallet", e);
+            log.error("Error creating " + TEMP_BACKUP_PREFIX + " backup wallet", e);
         }
     }
 
-    private void backupWallet(String extension) throws IOException {
+    private void backupWallet(String prefix) throws IOException {
         File backupDir = getWalletsBackupDir();
 
         Date backupDate = new Date();
-        String backupName = walletFile.getName();
+        String walletName = persistence.getWalletName(walletFile, null);
         String dateSuffix = "-" + BACKUP_DATE_FORMAT.format(backupDate);
-        int lastDot = backupName.lastIndexOf('.');
-        if(lastDot > 0) {
-            backupName = backupName.substring(0, lastDot) + dateSuffix + backupName.substring(lastDot);
-        } else {
-            backupName += dateSuffix;
-        }
+        String backupName = walletName + dateSuffix + walletFile.getName().substring(walletName.length());
 
-        if(extension != null) {
-            backupName += "." + extension;
+        if(prefix != null) {
+            backupName = prefix + "_" + backupName;
         }
 
         File backupFile = new File(backupDir, backupName);
         if(!backupFile.exists()) {
             createOwnerOnlyFile(backupFile);
         }
-        com.google.common.io.Files.copy(walletFile, backupFile);
+
+        try(FileOutputStream outputStream = new FileOutputStream(backupFile)) {
+            copyWallet(outputStream);
+        }
+    }
+
+    public void copyWallet(OutputStream outputStream) throws IOException {
+        persistence.copyWallet(walletFile, outputStream);
     }
 
     public void deleteBackups() {
@@ -135,27 +164,29 @@ public class Storage {
     }
 
     public void deleteTempBackups() {
-        deleteBackups(Storage.TEMP_BACKUP_EXTENSION);
+        deleteBackups(Storage.TEMP_BACKUP_PREFIX);
     }
 
-    private void deleteBackups(String extension) {
-        File[] backups = getBackups(extension);
+    private void deleteBackups(String prefix) {
+        File[] backups = getBackups(prefix);
         for(File backup : backups) {
             backup.delete();
         }
     }
 
-    private File[] getBackups(String extension) {
-        return getBackups(extension, null);
+    public File getTempBackup() {
+        File[] backups = getBackups(TEMP_BACKUP_PREFIX);
+        return backups.length == 0 ? null : backups[0];
     }
 
-    private File[] getBackups(String extension, String notExtension) {
+    File[] getBackups(String prefix) {
         File backupDir = getWalletsBackupDir();
+        String walletName = persistence.getWalletName(walletFile, null);
+        String extension = walletFile.getName().substring(walletName.length());
         File[] backups = backupDir.listFiles((dir, name) -> {
-            return name.startsWith(com.google.common.io.Files.getNameWithoutExtension(walletFile.getName()) + "-") &&
+            return name.startsWith((prefix == null ? "" : prefix + "_") + walletName + "-") &&
                     getBackupDate(name) != null &&
-                    (extension == null || name.endsWith("." + extension)) &&
-                    (notExtension == null || !name.endsWith("." + notExtension));
+                    (extension.isEmpty() || name.endsWith(extension));
         });
 
         backups = backups == null ? new File[0] : backups;
@@ -171,6 +202,49 @@ public class Storage {
         }
 
         return null;
+    }
+
+    private WalletBackupAndKey migrateToDb(WalletBackupAndKey masterWalletAndKey) throws IOException, StorageException {
+        if(getType() == PersistenceType.JSON) {
+            log.info("Migrating " + masterWalletAndKey.getWallet().getName() + " from JSON to DB persistence");
+            masterWalletAndKey = migrateType(PersistenceType.DB, masterWalletAndKey.getWallet(), masterWalletAndKey.getEncryptionKey());
+        }
+
+        return masterWalletAndKey;
+    }
+
+    private WalletBackupAndKey migrateType(PersistenceType type, Wallet wallet, ECKey encryptionKey) throws IOException, StorageException {
+        File existingFile = walletFile;
+
+        try {
+            AsymmetricKeyDeriver keyDeriver = persistence.getKeyDeriver();
+            persistence = type.getInstance();
+            persistence.setKeyDeriver(keyDeriver);
+            walletFile = new File(walletFile.getParentFile(), wallet.getName() + "." + type.getExtension());
+            if(walletFile.exists()) {
+                walletFile.delete();
+            }
+
+            saveWallet(wallet);
+            if(type == PersistenceType.DB) {
+                for(Wallet childWallet : wallet.getChildWallets()) {
+                    saveWallet(childWallet);
+                }
+            }
+
+            if(NO_PASSWORD_KEY.equals(encryptionPubKey)) {
+                return persistence.loadWallet(this);
+            }
+
+            return persistence.loadWallet(this, null, encryptionKey);
+        } catch(Exception e) {
+            existingFile = null;
+            throw e;
+        } finally {
+            if(existingFile != null) {
+                existingFile.delete();
+            }
+        }
     }
 
     public ECKey getEncryptionPubKey() {
@@ -191,6 +265,10 @@ public class Storage {
 
     void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
         persistence.setKeyDeriver(keyDeriver);
+    }
+
+    public PersistenceType getType() {
+        return persistence.getType();
     }
 
     public static boolean walletExists(String walletName) {
@@ -228,6 +306,38 @@ public class Storage {
     public static File getWalletFile(String walletName) {
         //TODO: Check for existing file
         return new File(getWalletsDir(), walletName);
+    }
+
+    public static boolean isWalletFile(File walletFile) {
+        for(PersistenceType type : PersistenceType.values()) {
+            if(walletFile.getName().endsWith("." + type.getExtension())) {
+                return true;
+            }
+
+            try {
+                if(type == PersistenceType.JSON && type.getInstance().isEncrypted(walletFile)) {
+                    return true;
+                }
+            } catch(IOException e) {
+                //ignore
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean isEncrypted(File walletFile) {
+        try {
+            for(PersistenceType type : PersistenceType.values()) {
+                if(walletFile.getName().endsWith("." + type.getExtension())) {
+                    return type.getInstance().isEncrypted(walletFile);
+                }
+            }
+        } catch(IOException e) {
+            //ignore
+        }
+
+        return FileType.BINARY.equals(IOUtils.getFileType(walletFile));
     }
 
     public static File getWalletsBackupDir() {
@@ -428,6 +538,18 @@ public class Storage {
                     } finally {
                         password.clear();
                     }
+                }
+            };
+        }
+    }
+
+    public class ClosePersistenceService extends Service<Void> {
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                protected Void call() {
+                    persistence.close();
+                    return null;
                 }
             };
         }

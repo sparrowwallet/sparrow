@@ -709,7 +709,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         Wallet copy = headersForm.getSigningWallet().copy();
-        File file = headersForm.getAvailableWallets().get(headersForm.getSigningWallet()).getWalletFile();
+        String walletId = headersForm.getAvailableWallets().get(headersForm.getSigningWallet()).getWalletId(headersForm.getSigningWallet());
 
         if(copy.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
@@ -717,15 +717,15 @@ public class HeadersController extends TransactionFormController implements Init
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Done"));
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
                     signUnencryptedKeystores(decryptedWallet);
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(file, TimedEvent.Action.END, "Failed"));
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
                     AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
                 });
-                EventManager.get().post(new StorageEvent(file, TimedEvent.Action.START, "Decrypting wallet..."));
+                EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
             }
         } else {

@@ -346,15 +346,15 @@ public class KeystoreController extends WalletFormController implements Initiali
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Done"));
+                    EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
                     showPrivate(decryptedWallet.getKeystores().get(keystoreIndex));
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.END, "Failed"));
+                    EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Failed"));
                     AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
                 });
-                EventManager.get().post(new StorageEvent(getWalletForm().getWalletFile(), TimedEvent.Action.START, "Decrypting wallet..."));
+                EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
             }
         } else {

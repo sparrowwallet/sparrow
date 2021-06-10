@@ -17,6 +17,9 @@
 
 package com.sparrowwallet.sparrow.instance;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
@@ -85,6 +88,7 @@ import java.nio.channels.FileLock;
  *
  */
 public abstract class Instance {
+    private static final Logger log = LoggerFactory.getLogger(Instance.class);
 	
 	// starting position of port check
 	private static final int PORT_START = 7221;
@@ -513,7 +517,7 @@ public abstract class Instance {
 	 * @param exception exception occurring while first instance is listening for subsequent instances
 	 */
 	protected void handleException(Exception exception) {
-		exception.printStackTrace();
+        log.error("Error listening for instances", exception);
 	}
 	
 	/**

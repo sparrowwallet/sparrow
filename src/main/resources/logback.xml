@@ -7,6 +7,15 @@
     <logger name="javafx.css" level="ERROR"/>
     <logger name="javafx.scene.focus" level="INFO"/>
     <logger name="sun.net.www.protocol.http.HttpURLConnection" level="INFO" />
+    <logger name="h2database" level="ERROR" />
+    <logger name="com.zaxxer.hikari.HikariDataSource" level="WARN" />
+    <logger name="org.flywaydb.core.internal.command.DbValidate" level="WARN" />
+    <logger name="org.flywaydb.core.internal.command.DbMigrate" level="WARN" />
+    <logger name="org.flywaydb.core.internal.command.DbClean" level="ERROR" />
+    <logger name="org.flywaydb.core.internal.database.base.BaseDatabaseType" level="WARN" />
+    <logger name="org.flywaydb.core.internal.database.base.Schema" level="WARN" />
+    <logger name="org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory" level="WARN" />
+    <logger name="org.flywaydb.core.internal.license.VersionPrinter" level="WARN" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 

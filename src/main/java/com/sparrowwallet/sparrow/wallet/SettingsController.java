@@ -17,6 +17,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.StorageException;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -399,7 +400,16 @@ public class SettingsController extends WalletFormController implements Initiali
 
         Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream().filter(entry -> walletForm.getWalletFile().equals(entry.getValue().getWalletFile())).map(Map.Entry::getKey).findFirst();
         if(optWallet.isPresent()) {
-            WalletExportDialog dlg = new WalletExportDialog(optWallet.get());
+            Wallet wallet = optWallet.get();
+            if(!walletForm.getWallet().getName().equals(wallet.getName())) {
+                wallet = wallet.getChildWallet(walletForm.getWallet().getName());
+            }
+
+            if(wallet == null) {
+                throw new IllegalStateException("Cannot find child wallet " + walletForm.getWallet().getName() + " to export");
+            }
+
+            WalletExportDialog dlg = new WalletExportDialog(wallet);
             dlg.showAndWait();
         } else {
             AppServices.showErrorDialog("Cannot export wallet", "Wallet cannot be exported, please save it first.");
@@ -441,25 +451,23 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
-        if(event.getWalletFile().equals(walletForm.getWalletFile())) {
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
+        if(event.getWalletId().equals(walletForm.getWalletId())) {
             export.setDisable(!event.getWallet().isValid());
             scanDescriptorQR.setVisible(!event.getWallet().isValid());
+            updateBirthDate(event.getWallet());
         }
     }
 
     @Subscribe
-    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
-        updateBirthDate(event.getWalletFile(), event.getWallet());
-    }
-
-    @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        updateBirthDate(event.getWalletFile(), event.getWallet());
+        if(event.getWalletId().equals(walletForm.getWalletId())) {
+            updateBirthDate(event.getWallet());
+        }
     }
 
-    private void updateBirthDate(File walletFile, Wallet wallet) {
-        if(walletFile.equals(walletForm.getWalletFile()) && !Objects.equals(wallet.getBirthDate(), walletForm.getWallet().getBirthDate())) {
+    private void updateBirthDate(Wallet wallet) {
+        if(!Objects.equals(wallet.getBirthDate(), walletForm.getWallet().getBirthDate())) {
             walletForm.getWallet().setBirthDate(wallet.getBirthDate());
         }
     }
@@ -509,7 +517,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
                     EventManager.get().post(new RequestOpenWalletsEvent());
-                } catch (IOException e) {
+                } catch (IOException | StorageException e) {
                     log.error("Error saving wallet", e);
                     AppServices.showErrorDialog("Error saving wallet", e.getMessage());
                     revert.setDisable(false);
@@ -518,7 +526,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else {
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.END, "Done"));
+                    EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.END, "Done"));
                     ECKey encryptionFullKey = keyDerivationService.getValue();
                     Key key = null;
 
@@ -566,12 +574,12 @@ public class SettingsController extends WalletFormController implements Initiali
                     }
                 });
                 keyDerivationService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.END, "Failed"));
+                    EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.END, "Failed"));
                     AppServices.showErrorDialog("Error saving wallet", keyDerivationService.getException().getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
                 });
-                EventManager.get().post(new StorageEvent(walletForm.getWalletFile(), TimedEvent.Action.START, "Encrypting wallet..."));
+                EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.START, "Encrypting wallet..."));
                 keyDerivationService.start();
             }
         } else {

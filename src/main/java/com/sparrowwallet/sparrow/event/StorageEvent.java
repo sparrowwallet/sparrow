@@ -8,9 +8,9 @@ import java.util.Map;
 
 public class StorageEvent extends TimedEvent {
     private static boolean firstRunDone = false;
-    private static final Map<File, Long> eventTime = new HashMap<>();
+    private static final Map<String, Long> eventTime = new HashMap<>();
 
-    public StorageEvent(File file, Action action, String status) {
+    public StorageEvent(String walletId, Action action, String status) {
         super(action, status);
 
         Integer keyDerivationPeriod = Config.get().getKeyDerivationPeriod();
@@ -19,10 +19,10 @@ public class StorageEvent extends TimedEvent {
         }
 
         if(action == Action.START) {
-            eventTime.put(file, System.currentTimeMillis());
+            eventTime.put(walletId, System.currentTimeMillis());
             timeMills = keyDerivationPeriod;
         } else if(action == Action.END) {
-            long start = eventTime.get(file);
+            long start = eventTime.get(walletId);
             if(firstRunDone) {
                 keyDerivationPeriod = (int)(System.currentTimeMillis() - start);
                 Config.get().setKeyDerivationPeriod(keyDerivationPeriod);

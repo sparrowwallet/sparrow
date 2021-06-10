@@ -7,8 +7,6 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.io.FileType;
-import com.sparrowwallet.sparrow.io.IOUtils;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.Bwt;
 import com.sparrowwallet.sparrow.net.PublicElectrumServer;
@@ -99,9 +97,8 @@ public class MainApp extends Application {
 
         List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
         if(recentWalletFiles != null) {
-            //Re-sort to preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
-            List<File> encryptedWalletFiles = recentWalletFiles.stream().filter(file -> FileType.BINARY.equals(IOUtils.getFileType(file))).collect(Collectors.toList());
-            Collections.reverse(encryptedWalletFiles);
+            //Preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
+            List<File> encryptedWalletFiles = recentWalletFiles.stream().filter(Storage::isEncrypted).collect(Collectors.toList());
             List<File> sortedWalletFiles = new ArrayList<>(recentWalletFiles);
             sortedWalletFiles.removeAll(encryptedWalletFiles);
             sortedWalletFiles.addAll(encryptedWalletFiles);

@@ -269,7 +269,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
             return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
-                    client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(idCounter.incrementAndGet()).param("raw_tx", txHex).execute());
+                    client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(idCounter.incrementAndGet()).params(txHex).execute());
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException(e.getErrorMessage().getMessage(), e);
         } catch(Exception e) {

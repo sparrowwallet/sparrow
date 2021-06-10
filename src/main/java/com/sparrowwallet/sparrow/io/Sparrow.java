@@ -26,7 +26,7 @@ public class Sparrow implements WalletExport {
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
             Storage storage = AppServices.get().getOpenWallets().get(wallet);
-            Files.copy(storage.getWalletFile().toPath(), outputStream);
+            storage.copyWallet(outputStream);
             outputStream.flush();
         } catch(Exception e) {
             log.error("Error exporting Sparrow wallet file", e);
@@ -42,11 +42,7 @@ public class Sparrow implements WalletExport {
     @Override
     public String getExportFileExtension(Wallet wallet) {
         Storage storage = AppServices.get().getOpenWallets().get(wallet);
-        if(storage != null && (storage.getEncryptionPubKey() == null || Storage.NO_PASSWORD_KEY.equals(storage.getEncryptionPubKey()))) {
-            return "json";
-        }
-
-        return "";
+        return storage.getWalletFileExtension();
     }
 
     @Override

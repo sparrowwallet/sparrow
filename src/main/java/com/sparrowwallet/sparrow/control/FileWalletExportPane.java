@@ -100,10 +100,10 @@ public class FileWalletExportPane extends TitledDescriptionPane {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
-                final File walletFile = AppServices.get().getOpenWallets().get(wallet).getWalletFile();
+                final String walletId = AppServices.get().getOpenWallets().get(wallet).getWalletId(wallet);
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(walletFile, TimedEvent.Action.END, "Done"));
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
 
                     try {
@@ -113,10 +113,10 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                     }
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(walletFile, TimedEvent.Action.END, "Failed"));
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
                     setError("Export Error", decryptWalletService.getException().getMessage());
                 });
-                EventManager.get().post(new StorageEvent(walletFile, TimedEvent.Action.START, "Decrypting wallet..."));
+                EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
                 decryptWalletService.start();
             }
         } else {

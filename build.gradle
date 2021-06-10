@@ -44,6 +44,13 @@ dependencies {
     }
     implementation('com.google.guava:guava:28.2-jre')
     implementation('com.google.code.gson:gson:2.8.6')
+    implementation('com.h2database:h2:1.4.200')
+    implementation('com.zaxxer:HikariCP:4.0.3')
+    implementation('org.jdbi:jdbi3-core:3.20.0') {
+        exclude group: 'org.slf4j'
+    }
+    implementation('org.jdbi:jdbi3-sqlobject:3.20.0')
+    implementation('org.flywaydb:flyway-core:7.9.1')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('com.google.zxing:javase:3.4.0')

@@ -23,11 +23,16 @@ open module com.sparrowwallet.sparrow {
     requires hummingbird;
     requires centerdevice.nsmenufx;
     requires jcommander;
-    requires slf4j.api;
+    requires org.slf4j;
     requires bwt.jni;
     requires jtorctl;
     requires javacsv;
     requires jul.to.slf4j;
     requires bridj;
     requires com.google.gson;
+    requires org.jdbi.v3.core;
+    requires org.jdbi.v3.sqlobject;
+    requires org.flywaydb.core;
+    requires com.zaxxer.hikari;
+    requires com.h2database;
 }
