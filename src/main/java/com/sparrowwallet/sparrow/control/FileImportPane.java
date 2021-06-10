@@ -4,6 +4,7 @@ import com.google.gson.JsonParseException;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -172,11 +173,15 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         if(wallets != null) {
             for(Wallet wallet : wallets) {
                 if(scriptType.equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
-                    return wallet.getKeystores().get(0);
+                    Keystore keystore = wallet.getKeystores().get(0);
+                    keystore.setLabel(importer.getName().replace(" Multisig", ""));
+                    keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+                    keystore.setWalletModel(importer.getWalletModel());
+                    return keystore;
                 }
             }
 
-            throw new ImportException("Script type " + scriptType + " is not supported");
+            throw new ImportException("Script type " + scriptType.getDescription() + " is not supported in this QR. Check you are displaying the correct QR code.");
         }
 
         return null;

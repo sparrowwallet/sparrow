@@ -451,10 +451,16 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     @Subscribe
-    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
             export.setDisable(!event.getWallet().isValid());
             scanDescriptorQR.setVisible(!event.getWallet().isValid());
+        }
+    }
+
+    @Subscribe
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
+        if(event.getWalletId().equals(walletForm.getWalletId())) {
             updateBirthDate(event.getWallet());
         }
     }

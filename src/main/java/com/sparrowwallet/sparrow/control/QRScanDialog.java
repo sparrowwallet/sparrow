@@ -180,7 +180,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     }
                 } else {
                     decoder.receivePart(qrtext);
-                    Platform.runLater(() -> percentComplete.setValue(decoder.getEstimatedPercentComplete()));
+                    Platform.runLater(() -> percentComplete.setValue(decoder.getProcessedPartsCount() > 0 ? decoder.getEstimatedPercentComplete() : 0));
 
                     if(decoder.getResult() != null) {
                         URDecoder.Result urResult = decoder.getResult();
@@ -469,7 +469,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 ExtendedKey extendedKey = outputDescriptor.getSingletonExtendedPublicKey();
                 wallet.setScriptType(outputDescriptor.getScriptType());
                 Keystore keystore = new Keystore();
-                keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, outputDescriptor.getKeyDerivation(extendedKey).getDerivationPath()));
+                keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, KeyDerivation.writePath(outputDescriptor.getKeyDerivation(extendedKey).getDerivation())));
                 keystore.setExtendedPublicKey(extendedKey);
                 wallet.getKeystores().add(keystore);
                 wallets.add(wallet);

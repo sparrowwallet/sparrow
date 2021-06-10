@@ -896,7 +896,8 @@ public class AppController implements Initializable {
                 new Electrum(),
                 new SpecterDesktop(),
                 new CoboVaultSinglesig(), new CoboVaultMultisig(),
-                new PassportSinglesig());
+                new PassportSinglesig(),
+                new KeystoneSinglesig(), new KeystoneMultisig());
         for(WalletImport importer : walletImporters) {
             try(FileInputStream inputStream = new FileInputStream(file)) {
                 if(importer.isEncrypted(file) && password == null) {
