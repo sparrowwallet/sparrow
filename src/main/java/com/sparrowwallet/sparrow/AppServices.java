@@ -858,10 +858,6 @@ public class AppServices {
                     deviceEnumerateService = createDeviceEnumerateService();
                 }
 
-                if(deviceEnumerateService.isRunning()) {
-                    deviceEnumerateService.cancel();
-                }
-
                 if(deviceEnumerateService.getState() == Worker.State.CANCELLED) {
                     deviceEnumerateService.reset();
                 }

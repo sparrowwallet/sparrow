@@ -37,6 +37,7 @@ public class Storage {
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
     public static final String TEMP_BACKUP_PREFIX = "tmp";
+    public static final List<String> RESERVED_WALLET_NAMES = List.of("temp");
 
     private Persistence persistence;
     private File walletFile;
@@ -284,7 +285,7 @@ public class Storage {
             }
         }
 
-        return false;
+        return RESERVED_WALLET_NAMES.contains(walletName);
     }
 
     public static File getExistingWallet(String walletName) {

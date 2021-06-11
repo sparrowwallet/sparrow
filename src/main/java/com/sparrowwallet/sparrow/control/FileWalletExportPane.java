@@ -9,10 +9,7 @@ import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.io.CoboVaultMultisig;
-import com.sparrowwallet.sparrow.io.PassportMultisig;
-import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.io.WalletExport;
+import com.sparrowwallet.sparrow.io.*;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
@@ -83,8 +80,8 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
         String extension = exporter.getExportFileExtension(wallet);
-        fileChooser.setInitialFileName(wallet.getName() + "-" +
-                exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "") +
+        fileChooser.setInitialFileName(wallet.getName() +
+                (exporter instanceof Sparrow ? "" : "-" + exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "")) +
                 (extension == null || extension.isEmpty() ? "" : "." + extension));
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
@@ -137,7 +134,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
-                } else if(exporter instanceof PassportMultisig) {
+                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
