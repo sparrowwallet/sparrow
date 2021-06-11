@@ -17,7 +17,7 @@ import java.util.List;
 public interface WalletNodeDao {
     @SqlQuery("select walletNode.id, walletNode.derivationPath, walletNode.label, walletNode.parent, " +
             "blockTransactionHashIndex.id, blockTransactionHashIndex.hash, blockTransactionHashIndex.height, blockTransactionHashIndex.date, blockTransactionHashIndex.fee, blockTransactionHashIndex.label, " +
-            "blockTransactionHashIndex.index, blockTransactionHashIndex.value, blockTransactionHashIndex.status, blockTransactionHashIndex.spentBy, blockTransactionHashIndex.node " +
+            "blockTransactionHashIndex.index, blockTransactionHashIndex.outputValue, blockTransactionHashIndex.status, blockTransactionHashIndex.spentBy, blockTransactionHashIndex.node " +
             "from walletNode left join blockTransactionHashIndex on walletNode.id = blockTransactionHashIndex.node where walletNode.wallet = ? order by walletNode.parent asc nulls first, blockTransactionHashIndex.spentBy asc nulls first")
     @RegisterRowMapper(WalletNodeMapper.class)
     @RegisterRowMapper(BlockTransactionHashIndexMapper.class)
@@ -28,11 +28,11 @@ public interface WalletNodeDao {
     @GetGeneratedKeys("id")
     long insertWalletNode(String derivationPath, String label, long wallet, Long parent);
 
-    @SqlUpdate("insert into blockTransactionHashIndex (hash, height, date, fee, label, index, value, status, spentBy, node) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    @SqlUpdate("insert into blockTransactionHashIndex (hash, height, date, fee, label, index, outputValue, status, spentBy, node) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
     long insertBlockTransactionHashIndex(byte[] hash, int height, Date date, Long fee, String label, long index, long value, Integer status, Long spentBy, long node);
 
-    @SqlUpdate("update blockTransactionHashIndex set hash = ?, height = ?, date = ?, fee = ?, label = ?, index = ?, value = ?, status = ?, spentBy = ?, node = ? where id = ?")
+    @SqlUpdate("update blockTransactionHashIndex set hash = ?, height = ?, date = ?, fee = ?, label = ?, index = ?, outputValue = ?, status = ?, spentBy = ?, node = ? where id = ?")
     void updateBlockTransactionHashIndex(byte[] hash, int height, Date date, Long fee, String label, long index, long value, Integer status, Long spentBy, long node, long id);
 
     @SqlUpdate("update walletNode set label = :label where id = :id")

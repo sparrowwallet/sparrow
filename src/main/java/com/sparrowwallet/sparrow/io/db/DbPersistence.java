@@ -306,8 +306,11 @@ public class DbPersistence implements Persistence {
 
     private void cleanAndMigrate(Storage storage, String schema, String password) throws StorageException {
         try {
+            boolean existing = (dataSource == null);
             Flyway flyway = getFlyway(storage, schema, password);
-            flyway.clean();
+            if(existing) {
+                flyway.clean();
+            }
             flyway.migrate();
         } catch(FlywayException e) {
             log.error("Failed to save wallet file.", e);

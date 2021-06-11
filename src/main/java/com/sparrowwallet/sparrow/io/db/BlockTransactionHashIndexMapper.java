@@ -14,7 +14,7 @@ public class BlockTransactionHashIndexMapper implements RowMapper<BlockTransacti
     public BlockTransactionHashIndex map(ResultSet rs, StatementContext ctx) throws SQLException {
         BlockTransactionHashIndex blockTransactionHashIndex = new BlockTransactionHashIndex(Sha256Hash.wrap(rs.getBytes("blockTransactionHashIndex.hash")),
                 rs.getInt("blockTransactionHashIndex.height"), rs.getTimestamp("blockTransactionHashIndex.date"), rs.getLong("blockTransactionHashIndex.fee"),
-                rs.getLong("blockTransactionHashIndex.index"), rs.getLong("blockTransactionHashIndex.value"), null, rs.getString("blockTransactionHashIndex.label"));
+                rs.getLong("blockTransactionHashIndex.index"), rs.getLong("blockTransactionHashIndex.outputValue"), null, rs.getString("blockTransactionHashIndex.label"));
         blockTransactionHashIndex.setId(rs.getLong("blockTransactionHashIndex.id"));
         int statusIndex = rs.getInt("blockTransactionHashIndex.status");
         if(!rs.wasNull()) {

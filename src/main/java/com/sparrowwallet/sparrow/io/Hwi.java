@@ -321,7 +321,7 @@ public class Hwi {
 
     private File getHwiHomeDir() {
         if(Platform.getCurrent() == Platform.OSX) {
-            return new File(Storage.getSparrowHome(), HWI_HOME_DIR);
+            return new File(Storage.getSparrowDir(), HWI_HOME_DIR);
         }
 
         return new File(System.getProperty("java.io.tmpdir"));
