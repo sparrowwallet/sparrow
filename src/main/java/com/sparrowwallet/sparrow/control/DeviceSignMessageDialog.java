@@ -26,8 +26,8 @@ public class DeviceSignMessageDialog extends DeviceDialog<String> {
     }
 
     @Override
-    protected DevicePane getDevicePane(Device device) {
-        return new DevicePane(wallet, message, keyDerivation, device);
+    protected DevicePane getDevicePane(Device device, boolean defaultDevice) {
+        return new DevicePane(wallet, message, keyDerivation, device, defaultDevice);
     }
 
     @Subscribe

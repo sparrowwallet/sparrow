@@ -22,8 +22,8 @@ public class DeviceSignDialog extends DeviceDialog<PSBT> {
     }
 
     @Override
-    protected DevicePane getDevicePane(Device device) {
-        return new DevicePane(psbt, device);
+    protected DevicePane getDevicePane(Device device, boolean defaultDevice) {
+        return new DevicePane(psbt, device, defaultDevice);
     }
 
     @Subscribe

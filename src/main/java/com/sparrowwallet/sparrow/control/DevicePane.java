@@ -59,7 +59,9 @@ public class DevicePane extends TitledDescriptionPane {
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
 
-    public DevicePane(Wallet wallet, Device device) {
+    private boolean defaultDevice;
+
+    public DevicePane(Wallet wallet, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.IMPORT;
         this.wallet = wallet;
@@ -68,6 +70,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.keyDerivation = null;
         this.message = null;
         this.device = device;
+        this.defaultDevice = defaultDevice;
 
         setDefaultStatus();
         showHideLink.setVisible(false);
@@ -80,7 +83,7 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, importButton);
     }
 
-    public DevicePane(PSBT psbt, Device device) {
+    public DevicePane(PSBT psbt, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.SIGN;
         this.wallet = null;
@@ -89,6 +92,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.keyDerivation = null;
         this.message = null;
         this.device = device;
+        this.defaultDevice = defaultDevice;
 
         setDefaultStatus();
         showHideLink.setVisible(false);
@@ -101,7 +105,7 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, signButton);
     }
 
-    public DevicePane(Wallet wallet, OutputDescriptor outputDescriptor, Device device) {
+    public DevicePane(Wallet wallet, OutputDescriptor outputDescriptor, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.DISPLAY_ADDRESS;
         this.wallet = wallet;
@@ -110,6 +114,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.keyDerivation = null;
         this.message = null;
         this.device = device;
+        this.defaultDevice = defaultDevice;
 
         setDefaultStatus();
         showHideLink.setVisible(false);
@@ -122,7 +127,7 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, displayAddressButton);
     }
 
-    public DevicePane(Wallet wallet, String message, KeyDerivation keyDerivation, Device device) {
+    public DevicePane(Wallet wallet, String message, KeyDerivation keyDerivation, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.SIGN_MESSAGE;
         this.wallet = wallet;
@@ -131,6 +136,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.keyDerivation = keyDerivation;
         this.message = message;
         this.device = device;
+        this.defaultDevice = defaultDevice;
 
         setDefaultStatus();
         showHideLink.setVisible(false);
@@ -145,6 +151,7 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void initialise(Device device) {
         if(device.isNeedsPinSent()) {
+            unlockButton.setDefaultButton(defaultDevice);
             unlockButton.setVisible(true);
         } else if(device.isNeedsPassphraseSent()) {
             setPassphraseButton.setVisible(true);
@@ -229,7 +236,6 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void createSignButton() {
         signButton = new Button("Sign");
-        signButton.setDefaultButton(true);
         signButton.setAlignment(Pos.CENTER_RIGHT);
         signButton.setMinWidth(44);
         signButton.setOnAction(event -> {
@@ -242,7 +248,6 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void createDisplayAddressButton() {
         displayAddressButton = new Button("Display Address");
-        displayAddressButton.setDefaultButton(true);
         displayAddressButton.setAlignment(Pos.CENTER_RIGHT);
         displayAddressButton.setOnAction(event -> {
             displayAddressButton.setDisable(true);
@@ -259,7 +264,6 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void createSignMessageButton() {
         signMessageButton = new Button("Sign Message");
-        signMessageButton.setDefaultButton(true);
         signMessageButton.setAlignment(Pos.CENTER_RIGHT);
         signMessageButton.setOnAction(event -> {
             signMessageButton.setDisable(true);
@@ -284,7 +288,9 @@ public class DevicePane extends TitledDescriptionPane {
         vBox.setMaxHeight(120);
         vBox.setSpacing(42);
         pinField = (CustomPasswordField)TextFields.createClearablePasswordField();
+        Platform.runLater(() -> pinField.requestFocus());
         enterPinButton = new Button("Enter PIN");
+        enterPinButton.setDefaultButton(true);
         enterPinButton.setOnAction(event -> {
             enterPinButton.setDisable(true);
             sendPin(pinField.getText());
@@ -324,9 +330,15 @@ public class DevicePane extends TitledDescriptionPane {
         CustomPasswordField passphraseField = (CustomPasswordField)TextFields.createClearablePasswordField();
         passphrase.bind(passphraseField.textProperty());
         HBox.setHgrow(passphraseField, Priority.ALWAYS);
+        passphraseField.setOnAction(event -> {
+            setExpanded(false);
+            setDescription("Confirm passphrase on device...");
+            sendPassphrase(passphrase.get());
+        });
 
         SplitMenuButton sendPassphraseButton = new SplitMenuButton();
         sendPassphraseButton.setText("Send Passphrase");
+        sendPassphraseButton.getStyleClass().add("default-button");
         sendPassphraseButton.setOnAction(event -> {
             setExpanded(false);
             setDescription("Confirm passphrase on device...");
@@ -604,17 +616,23 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void showOperationButton() {
         if(deviceOperation.equals(DeviceOperation.IMPORT)) {
+            if(defaultDevice) {
+                importButton.getStyleClass().add("default-button");
+            }
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
             showHideLink.setVisible(true);
             setContent(getDerivationEntry(wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation()));
         } else if(deviceOperation.equals(DeviceOperation.SIGN)) {
+            signButton.setDefaultButton(defaultDevice);
             signButton.setVisible(true);
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.DISPLAY_ADDRESS)) {
+            displayAddressButton.setDefaultButton(defaultDevice);
             displayAddressButton.setVisible(true);
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.SIGN_MESSAGE)) {
+            signMessageButton.setDefaultButton(defaultDevice);
             signMessageButton.setVisible(true);
             showHideLink.setVisible(false);
         }

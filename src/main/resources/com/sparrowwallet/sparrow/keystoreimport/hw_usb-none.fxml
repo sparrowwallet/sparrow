@@ -10,5 +10,5 @@
 <VBox alignment="CENTER" spacing="30" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.HwUsbScanController">
     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="50" icon="EXCLAMATION_CIRCLE" />
     <Label fx:id="message" />
-    <Button fx:id="scan" text="Scan Again..." wrapText="true" prefWidth="120" prefHeight="60" onAction="#scan"/>
+    <Button fx:id="scan" text="Scan Again..." defaultButton="true" wrapText="true" prefWidth="120" prefHeight="60" onAction="#scan"/>
 </VBox>

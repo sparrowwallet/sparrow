@@ -22,6 +22,7 @@ import java.util.Objects;
 public abstract class DeviceDialog<R> extends Dialog<R> {
     private final List<String> operationFingerprints;
     private final Accordion deviceAccordion;
+    private final Button scanButton;
     private final VBox scanBox;
     private final Label scanLabel;
 
@@ -57,18 +58,19 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         Glyph usb = new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
         usb.setFontSize(50);
         scanLabel = new Label("Connect Hardware Wallet");
-        Button button = new Button("Scan...");
-        button.setPrefSize(120, 60);
-        button.setOnAction(event -> {
+        scanButton = new Button("Scan...");
+        scanButton.setPrefSize(120, 60);
+        scanButton.setOnAction(event -> {
             scan();
         });
-        scanBox.getChildren().addAll(usb, scanLabel, button);
+        scanBox.getChildren().addAll(usb, scanLabel, scanButton);
         scanBox.managedProperty().bind(scanBox.visibleProperty());
 
         stackPane.getChildren().addAll(anchorPane, scanBox);
 
         List<Device> devices = AppServices.getDevices();
         if(devices == null || devices.isEmpty()) {
+            scanButton.setDefaultButton(true);
             scanBox.setVisible(true);
         } else {
             Platform.runLater(() -> setDevices(devices));
@@ -97,14 +99,20 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
     private void scan() {
         Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(null);
         enumerateService.setOnSucceeded(workerStateEvent -> {
+            scanButton.setText("Scan...");
             List<Device> devices = enumerateService.getValue();
             setDevices(devices);
             Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));
         });
         enumerateService.setOnFailed(workerStateEvent -> {
+            scanButton.setText("Scan...");
             deviceAccordion.getPanes().clear();
+            scanButton.setDefaultButton(true);
             scanBox.setVisible(true);
             scanLabel.setText(workerStateEvent.getSource().getException().getMessage());
+        });
+        enumerateService.setOnRunning(workerStateEvent -> {
+            scanButton.setText("Scanning...");
         });
         enumerateService.start();
     }
@@ -122,16 +130,17 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         deviceAccordion.getPanes().clear();
 
         if(dialogDevices.isEmpty()) {
+            scanButton.setDefaultButton(true);
             scanBox.setVisible(true);
             scanLabel.setText("No matching devices found");
         } else {
             scanBox.setVisible(false);
             for(Device device : dialogDevices) {
-                DevicePane devicePane = getDevicePane(device);
+                DevicePane devicePane = getDevicePane(device, dialogDevices.size() == 1);
                 deviceAccordion.getPanes().add(devicePane);
             }
         }
     }
 
-    protected abstract DevicePane getDevicePane(Device device);
+    protected abstract DevicePane getDevicePane(Device device, boolean defaultDevice);
 }

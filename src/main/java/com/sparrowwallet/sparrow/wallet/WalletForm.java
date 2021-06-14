@@ -462,7 +462,9 @@ public class WalletForm {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {
                 storage.close();
-                AppServices.clearTransactionHistoryCache(wallet);
+                if(wallet.isValid()) {
+                    AppServices.clearTransactionHistoryCache(wallet);
+                }
                 EventManager.get().unregister(this);
             }
         }

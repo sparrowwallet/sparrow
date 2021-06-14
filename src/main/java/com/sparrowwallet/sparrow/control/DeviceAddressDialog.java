@@ -25,8 +25,8 @@ public class DeviceAddressDialog extends DeviceDialog<String> {
     }
 
     @Override
-    protected DevicePane getDevicePane(Device device) {
-        return new DevicePane(wallet, outputDescriptor, device);
+    protected DevicePane getDevicePane(Device device, boolean defaultDevice) {
+        return new DevicePane(wallet, outputDescriptor, device, defaultDevice);
     }
 
     @Subscribe
