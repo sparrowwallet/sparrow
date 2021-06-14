@@ -1,10 +1,13 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.KeystoreEncryptionChangedEvent;
 import com.sparrowwallet.sparrow.event.KeystoreLabelsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletPasswordChangedEvent;
@@ -82,20 +85,18 @@ public class SettingsWalletForm extends WalletForm {
 
             EventManager.get().post(new WalletAddressesChangedEvent(wallet, addressChange ? null : pastWallet, getWalletId()));
         } else {
-            List<Keystore> changedKeystores = new ArrayList<>();
-            for(int i = 0; i < wallet.getKeystores().size(); i++) {
-                Keystore keystore = wallet.getKeystores().get(i);
-                Keystore keystoreCopy = walletCopy.getKeystores().get(i);
-                if(!Objects.equals(keystore.getLabel(), keystoreCopy.getLabel())) {
-                    keystore.setLabel(keystoreCopy.getLabel());
-                    changedKeystores.add(keystore);
-                }
+            List<Keystore> labelChangedKeystores = getLabelChangedKeystores(wallet, walletCopy);
+            if(!labelChangedKeystores.isEmpty()) {
+                EventManager.get().post(new KeystoreLabelsChangedEvent(wallet, pastWallet, getWalletId(), labelChangedKeystores));
             }
 
-            if(!changedKeystores.isEmpty()) {
-                EventManager.get().post(new KeystoreLabelsChangedEvent(wallet, pastWallet, getWalletId(), changedKeystores));
-            } else {
-                //Can only be a password update at this point
+            List<Keystore> encryptionChangedKeystores = getEncryptionChangedKeystores(wallet, walletCopy);
+            if(!encryptionChangedKeystores.isEmpty()) {
+                EventManager.get().post(new KeystoreEncryptionChangedEvent(wallet, pastWallet, getWalletId(), encryptionChangedKeystores));
+            }
+
+            if(labelChangedKeystores.isEmpty() && encryptionChangedKeystores.isEmpty()) {
+                //Can only be a wallet password change on a wallet without private keys
                 EventManager.get().post(new WalletPasswordChangedEvent(wallet, pastWallet, getWalletId()));
             }
         }
@@ -185,5 +186,48 @@ public class SettingsWalletForm extends WalletForm {
 
     private Integer getNumSignaturesRequired(Policy policy) {
         return policy == null ? null : policy.getNumSignaturesRequired();
+    }
+
+    private List<Keystore> getLabelChangedKeystores(Wallet original, Wallet changed) {
+        List<Keystore> changedKeystores = new ArrayList<>();
+        for(int i = 0; i < original.getKeystores().size(); i++) {
+            Keystore originalKeystore = original.getKeystores().get(i);
+            Keystore changedKeystore = changed.getKeystores().get(i);
+
+            if(!Objects.equals(originalKeystore.getLabel(), changedKeystore.getLabel())) {
+                originalKeystore.setLabel(changedKeystore.getLabel());
+                changedKeystores.add(originalKeystore);
+            }
+        }
+
+        return changedKeystores;
+    }
+
+    private List<Keystore> getEncryptionChangedKeystores(Wallet original, Wallet changed) {
+        List<Keystore> changedKeystores = new ArrayList<>();
+        for(int i = 0; i < original.getKeystores().size(); i++) {
+            Keystore originalKeystore = original.getKeystores().get(i);
+            Keystore changedKeystore = changed.getKeystores().get(i);
+
+            if(originalKeystore.hasSeed() && changedKeystore.hasSeed()) {
+                if(!Objects.equals(originalKeystore.getSeed().getEncryptedData(), changedKeystore.getSeed().getEncryptedData())) {
+                    DeterministicSeed changedSeed = changedKeystore.getSeed().copy();
+                    changedSeed.setId(originalKeystore.getSeed().getId());
+                    originalKeystore.setSeed(changedSeed);
+                    changedKeystores.add(originalKeystore);
+                }
+            }
+
+            if(originalKeystore.hasMasterPrivateExtendedKey() && changedKeystore.hasMasterPrivateExtendedKey()) {
+                if(!Objects.equals(originalKeystore.getMasterPrivateExtendedKey().getEncryptedData(), changedKeystore.getMasterPrivateExtendedKey().getEncryptedData())) {
+                    MasterPrivateExtendedKey changedMpek = changedKeystore.getMasterPrivateExtendedKey().copy();
+                    changedMpek.setId(originalKeystore.getMasterPrivateExtendedKey().getId());
+                    originalKeystore.setMasterPrivateExtendedKey(changedMpek);
+                    changedKeystores.add(originalKeystore);
+                }
+            }
+        }
+
+        return changedKeystores;
     }
 }

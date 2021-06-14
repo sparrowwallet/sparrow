@@ -766,7 +766,7 @@ public class AppController implements Initializable {
                 WalletBackupAndKey walletBackupAndKey = storage.loadUnencryptedWallet();
                 openWallet(storage, walletBackupAndKey, this, forceSameWindow);
             } else {
-                WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                WalletPasswordDialog dlg = new WalletPasswordDialog(storage.getWalletName(null), WalletPasswordDialog.PasswordRequirement.LOAD);
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
                 if(optionalPassword.isEmpty()) {
                     return;

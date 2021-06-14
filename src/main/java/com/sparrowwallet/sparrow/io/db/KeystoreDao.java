@@ -28,9 +28,15 @@ public interface KeystoreDao {
     @GetGeneratedKeys("id")
     long insertMasterPrivateExtendedKey(byte[] privateKey, byte[] chainCode, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, long creationTimeSeconds);
 
+    @SqlUpdate("update masterPrivateExtendedKey set privateKey = ?, chainCode = ?, initialisationVector = ?, encryptedBytes = ?, keySalt = ?, deriver = ?, crypter = ?, creationTimeSeconds = ? where id = ?")
+    void updateMasterPrivateExtendedKey(byte[] privateKey, byte[] chainCode, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, long creationTimeSeconds, long id);
+
     @SqlUpdate("insert into seed (type, mnemonicString, initialisationVector, encryptedBytes, keySalt, deriver, crypter, needsPassphrase, creationTimeSeconds) values (?, ?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
     long insertSeed(int type, String mnemonicString, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, boolean needsPassphrase, long creationTimeSeconds);
+
+    @SqlUpdate("update seed set type = ?, mnemonicString = ?, initialisationVector = ?, encryptedBytes = ?, keySalt = ?, deriver = ?, crypter = ?, needsPassphrase = ?, creationTimeSeconds = ? where id = ?")
+    void updateSeed(int type, String mnemonicString, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, boolean needsPassphrase, long creationTimeSeconds, long id);
 
     @SqlUpdate("update keystore set label = ? where id = ?")
     void updateLabel(String label, long id);
@@ -38,7 +44,7 @@ public interface KeystoreDao {
     default void addKeystores(Wallet wallet) {
         for(int i = 0; i < wallet.getKeystores().size(); i++) {
             Keystore keystore = wallet.getKeystores().get(i);
-            if(keystore.getMasterPrivateExtendedKey() != null) {
+            if(keystore.hasMasterPrivateExtendedKey()) {
                 MasterPrivateExtendedKey mpek = keystore.getMasterPrivateExtendedKey();
                 if(mpek.isEncrypted()) {
                     EncryptedData data = mpek.getEncryptedData();
@@ -50,7 +56,7 @@ public interface KeystoreDao {
                 }
             }
 
-            if(keystore.getSeed() != null) {
+            if(keystore.hasSeed()) {
                 DeterministicSeed seed = keystore.getSeed();
                 if(seed.isEncrypted()) {
                     EncryptedData data = seed.getEncryptedData();
@@ -69,6 +75,28 @@ public interface KeystoreDao {
                     keystore.getMasterPrivateExtendedKey() == null ? null : keystore.getMasterPrivateExtendedKey().getId(),
                     keystore.getSeed() == null ? null : keystore.getSeed().getId(), wallet.getId(), i);
             keystore.setId(id);
+        }
+    }
+
+    default void updateKeystoreEncryption(Keystore keystore) {
+        if(keystore.hasMasterPrivateExtendedKey()) {
+            MasterPrivateExtendedKey mpek = keystore.getMasterPrivateExtendedKey();
+            if(mpek.isEncrypted()) {
+                EncryptedData data = mpek.getEncryptedData();
+                updateMasterPrivateExtendedKey(null, null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), mpek.getCreationTimeSeconds(), mpek.getId());
+            } else {
+                updateMasterPrivateExtendedKey(mpek.getPrivateKey().getPrivKeyBytes(), mpek.getPrivateKey().getChainCode(), null, null, null, null, null, mpek.getCreationTimeSeconds(), mpek.getId());
+            }
+        }
+
+        if(keystore.hasSeed()) {
+            DeterministicSeed seed = keystore.getSeed();
+            if(seed.isEncrypted()) {
+                EncryptedData data = seed.getEncryptedData();
+                updateSeed(seed.getType().ordinal(), null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), seed.needsPassphrase(), seed.getCreationTimeSeconds(), seed.getId());
+            } else {
+                updateSeed(seed.getType().ordinal(), seed.getMnemonicString().asString(), null, null, null, null, null, seed.needsPassphrase(), seed.getCreationTimeSeconds(), seed.getId());
+            }
         }
     }
 }

@@ -269,6 +269,13 @@ public class DbPersistence implements Persistence {
                     }
                 }
 
+                if(!dirtyPersistables.encryptionKeystores.isEmpty()) {
+                    KeystoreDao keystoreDao = handle.attach(KeystoreDao.class);
+                    for(Keystore keystore : dirtyPersistables.encryptionKeystores) {
+                        keystoreDao.updateKeystoreEncryption(keystore);
+                    }
+                }
+
                 dirtyPersistablesMap.remove(wallet);
             } finally {
                 walletDao.setSchema(DEFAULT_SCHEMA);
@@ -346,7 +353,7 @@ public class DbPersistence implements Persistence {
         String newPassword = getFilePassword(encryptionPubKey);
         String currentPassword = getDatasourcePassword();
 
-        //The password only needs to be changed if the datasource is null - either we have loaded the wallet from a datasource, or it is a new wallet and the datasource is still to be created
+        //The password only needs to be changed if the datasource is not null - if we have not loaded the wallet from a datasource, it is a new wallet and the database is still to be created
         if(dataSource != null && !Objects.equals(currentPassword, newPassword)) {
             if(!dataSource.isClosed()) {
                 dataSource.close();
@@ -587,6 +594,13 @@ public class DbPersistence implements Persistence {
         }
     }
 
+    @Subscribe
+    public void keystoreEncryptionChanged(KeystoreEncryptionChangedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).encryptionKeystores.addAll(event.getChangedKeystores());
+        }
+    }
+
     private static class DirtyPersistables {
         public boolean clearHistory;
         public final List<WalletNode> historyNodes = new ArrayList<>();
@@ -594,6 +608,7 @@ public class DbPersistence implements Persistence {
         public final List<Entry> labelEntries = new ArrayList<>();
         public final List<BlockTransactionHashIndex> utxoStatuses = new ArrayList<>();
         public final List<Keystore> labelKeystores = new ArrayList<>();
+        public final List<Keystore> encryptionKeystores = new ArrayList<>();
 
         public String toString() {
             return "Dirty Persistables" +
@@ -604,7 +619,8 @@ public class DbPersistence implements Persistence {
                     "\nAddress labels:" + labelEntries.stream().filter(entry -> entry instanceof NodeEntry).map(entry -> ((NodeEntry)entry).getNode().toString() + " " + entry.getLabel()).collect(Collectors.toList()) +
                     "\nUTXO labels:" + labelEntries.stream().filter(entry -> entry instanceof HashIndexEntry).map(entry -> ((HashIndexEntry)entry).getHashIndex().toString()).collect(Collectors.toList()) +
                     "\nUTXO statuses:" + utxoStatuses +
-                    "\nKeystore labels:" + labelKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList());
+                    "\nKeystore labels:" + labelKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
+                    "\nKeystore encryptions:" + encryptionKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList());
         }
     }
 }
