@@ -165,6 +165,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             utxosTable.refresh();
+            updateSendSelected(Config.get().getBitcoinUnit());
         }
     }
 
