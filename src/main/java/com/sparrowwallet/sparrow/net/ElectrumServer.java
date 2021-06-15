@@ -1328,7 +1328,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected Sha256Hash call() throws ServerException {
                     //If Tor proxy is configured, try all external broadcast sources in random order before falling back to connected Electrum server
-                    if(AppServices.getProxy() != null) {
+                    if(AppServices.isUsingProxy()) {
                         List<BroadcastSource> broadcastSources = Arrays.stream(BroadcastSource.values()).filter(src -> src.getSupportedNetworks().contains(Network.get())).collect(Collectors.toList());
                         Sha256Hash txid = null;
                         for(int i = 1; !broadcastSources.isEmpty(); i++) {

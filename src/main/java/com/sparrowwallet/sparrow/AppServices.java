@@ -373,6 +373,10 @@ public class AppServices {
         return Tor.getDefault() != null;
     }
 
+    public static boolean isUsingProxy() {
+        return isTorRunning() || Config.get().isUseProxy();
+    }
+
     public static Proxy getProxy() {
         return getProxy(TOR_DEFAULT_PROXY_CIRCUIT_ID);
     }

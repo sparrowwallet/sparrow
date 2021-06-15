@@ -25,7 +25,7 @@ public enum FeeRatesSource {
     MEMPOOL_SPACE("mempool.space") {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
-            String url = "https://mempool.space/api/v1/fees/recommended";
+            String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/fees/recommended" : "https://mempool.space/api/v1/fees/recommended";
             return getThreeTierFeeRates(defaultblockTargetFeeRates, url);
         }
     },
