@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io.db;
 
 import com.google.common.eventbus.Subscribe;
+import com.google.common.io.Files;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
@@ -29,6 +30,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,6 +48,7 @@ public class DbPersistence implements Persistence {
     public static final byte[] HEADER_MAGIC_1 = "SPRW1\n".getBytes(StandardCharsets.UTF_8);
     private static final String H2_USER = "sa";
     private static final String H2_PASSWORD = "";
+    public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
@@ -299,8 +302,9 @@ public class DbPersistence implements Persistence {
     }
 
     private void migrate(Storage storage, String schema, ECKey encryptionKey) throws StorageException {
+        File migrationDir = getMigrationDir();
         try {
-            Flyway flyway = getFlyway(storage, schema, getFilePassword(encryptionKey));
+            Flyway flyway = getFlyway(storage, schema, getFilePassword(encryptionKey), migrationDir);
             flyway.migrate();
         } catch(FlywayValidateException e) {
             log.error("Failed to open wallet file. Validation error during schema migration.", e);
@@ -308,20 +312,22 @@ public class DbPersistence implements Persistence {
         } catch(FlywayException e) {
             log.error("Failed to open wallet file. ", e);
             throw new StorageException("Failed to open wallet file.\n" + e.getMessage(), e);
+        } finally {
+            IOUtils.deleteDirectory(migrationDir);
         }
     }
 
     private void cleanAndMigrate(Storage storage, String schema, String password) throws StorageException {
+        File migrationDir = getMigrationDir();
         try {
-            boolean existing = (dataSource == null);
-            Flyway flyway = getFlyway(storage, schema, password);
-            if(existing) {
-                flyway.clean();
-            }
+            Flyway flyway = getFlyway(storage, schema, password, migrationDir);
+            flyway.clean();
             flyway.migrate();
         } catch(FlywayException e) {
             log.error("Failed to save wallet file.", e);
             throw new StorageException("Failed to save wallet file.\n" + e.getMessage(), e);
+        } finally {
+            IOUtils.deleteDirectory(migrationDir);
         }
     }
 
@@ -504,8 +510,30 @@ public class DbPersistence implements Persistence {
         return jdbi;
     }
 
-    private Flyway getFlyway(Storage storage, String schema, String password) throws StorageException {
-        return Flyway.configure().dataSource(getDataSource(storage, password)).locations("com/sparrowwallet/sparrow/sql").schemas(schema).load();
+    private Flyway getFlyway(Storage storage, String schema, String password, File resourcesDir) throws StorageException {
+        return Flyway.configure().dataSource(getDataSource(storage, password)).locations("filesystem:" + resourcesDir.getAbsolutePath()).schemas(schema).failOnMissingLocations(true).load();
+    }
+
+    //Flyway does not support JPMS yet, so the migration files are extracted to a temp dir in order to avoid classloader encapsulation issues
+    private File getMigrationDir() {
+        File migrationDir = Files.createTempDir();
+        try {
+            String[] files = IOUtils.getResourceListing(DbPersistence.class, MIGRATION_RESOURCES_DIR);
+            for(String name : files) {
+                File targetFile = new File(migrationDir, name);
+                try(InputStream inputStream = DbPersistence.class.getResourceAsStream("/" + MIGRATION_RESOURCES_DIR + name)) {
+                    if(inputStream != null) {
+                        java.nio.file.Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } else {
+                        log.error("Could not load resource at /" + MIGRATION_RESOURCES_DIR + name);
+                    }
+                }
+            }
+        } catch(Exception e) {
+            log.error("Could not extract migration resources", e);
+        }
+
+        return migrationDir;
     }
 
     private HikariDataSource getDataSource(Storage storage, String password) throws StorageException {
@@ -518,11 +546,15 @@ public class DbPersistence implements Persistence {
 
     private HikariDataSource createDataSource(File walletFile, String password) throws StorageException {
         try {
+            Class.forName("org.h2.Driver");
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl(getUrl(walletFile, password));
             config.setUsername(H2_USER);
             config.setPassword(password == null ? H2_PASSWORD : password + " " + H2_PASSWORD);
             return new HikariDataSource(config);
+        } catch(ClassNotFoundException e) {
+            log.error("Cannot find H2 driver", e);
+            throw new StorageException("Cannot find H2 driver", e);
         } catch(HikariPool.PoolInitializationException e) {
             if(e.getMessage() != null && e.getMessage().contains("Database may be already in use")) {
                 log.error("Wallet file may already be in use. Make sure the application is not running elsewhere.", e);

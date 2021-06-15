@@ -230,7 +230,7 @@ public class Hwi {
             String hwiPath = hwiExecutable.getAbsolutePath();
             if(command.isTestFirst() && (hwiPath.contains(tmpDir) || hwiPath.startsWith(homeDir.getAbsolutePath())) && (!hwiPath.contains(HWI_VERSION_DIR) || !testHwi(hwiExecutable))) {
                 if(Platform.getCurrent() == Platform.OSX) {
-                    deleteDirectory(hwiExecutable.getParentFile());
+                    IOUtils.deleteDirectory(hwiExecutable.getParentFile());
                 } else {
                     hwiExecutable.delete();
                 }
@@ -337,17 +337,6 @@ public class Hwi {
         } catch (Exception e) {
             return false;
         }
-    }
-
-    private boolean deleteDirectory(File directoryToBeDeleted) {
-        File[] allContents = directoryToBeDeleted.listFiles();
-        if (allContents != null) {
-            for (File file : allContents) {
-                deleteDirectory(file);
-            }
-        }
-
-        return directoryToBeDeleted.delete();
     }
 
     public static File newDirectory(File destinationDir, ZipEntry zipEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {

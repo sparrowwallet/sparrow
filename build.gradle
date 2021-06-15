@@ -5,7 +5,7 @@ plugins {
     id 'org.beryx.jlink' version '2.22.0'
 }
 
-def sparrowVersion = '1.4.1'
+def sparrowVersion = '1.4.2'
 def os = org.gradle.internal.os.OperatingSystem.current()
 def osName = os.getFamilyName()
 if(os.macOsX) {
@@ -50,7 +50,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('org.jdbi:jdbi3-sqlobject:3.20.0')
-    implementation('org.flywaydb:flyway-core:7.10.1-SNAPSHOT')
+    implementation('org.flywaydb:flyway-core:7.10.5-SNAPSHOT')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('com.google.zxing:javase:3.4.0')
@@ -138,6 +138,8 @@ jlink {
         requires 'com.fasterxml.jackson.databind'
         requires 'jdk.crypto.cryptoki'
         requires 'java.management'
+        uses 'org.flywaydb.core.extensibility.FlywayExtension'
+        uses 'org.flywaydb.core.internal.database.DatabaseType'
     }
 
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png']
@@ -161,7 +163,8 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop",
-                   "--add-reads=com.sparrowwallet.merged.module=java.sql"]
+                   "--add-reads=com.sparrowwallet.merged.module=java.sql",
+                   "--add-reads=com.sparrowwallet.merged.module=com.sparrowwallet.sparrow"]
 
         if(os.macOsX) {
             jvmArgs += "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"

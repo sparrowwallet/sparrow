@@ -9,6 +9,7 @@
     <logger name="sun.net.www.protocol.http.HttpURLConnection" level="INFO" />
     <logger name="h2database" level="ERROR" />
     <logger name="com.zaxxer.hikari.HikariDataSource" level="WARN" />
+    <logger name="com.zaxxer.hikari.pool.HikariPool" level="ERROR" />
     <logger name="org.flywaydb.core.internal.command.DbValidate" level="WARN" />
     <logger name="org.flywaydb.core.internal.command.DbMigrate" level="WARN" />
     <logger name="org.flywaydb.core.internal.command.DbClean" level="ERROR" />
