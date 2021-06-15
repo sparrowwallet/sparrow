@@ -126,13 +126,6 @@ public class DbPersistence implements Persistence {
         File walletFile = storage.getWalletFile();
         walletFile = renameToDbFile(walletFile);
 
-        if(walletFile.exists() && isEncrypted(walletFile)) {
-            if(dataSource != null && !dataSource.isClosed()) {
-                dataSource.close();
-            }
-            walletFile.delete();
-        }
-
         updatePassword(storage, null);
         cleanAndAddWallet(storage, wallet, null);
 
@@ -143,13 +136,6 @@ public class DbPersistence implements Persistence {
     public File storeWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException, StorageException {
         File walletFile = storage.getWalletFile();
         walletFile = renameToDbFile(walletFile);
-
-        if(walletFile.exists() && !isEncrypted(walletFile)) {
-            if(dataSource != null && !dataSource.isClosed()) {
-                dataSource.close();
-            }
-            walletFile.delete();
-        }
 
         boolean existing = walletFile.exists();
         updatePassword(storage, encryptionPubKey);
@@ -344,6 +330,10 @@ public class DbPersistence implements Persistence {
     }
 
     private void writeBinaryHeader(File walletFile) throws IOException {
+        if(dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+        }
+
         ByteBuffer header = ByteBuffer.allocate(HEADER_MAGIC_1.length + SALT_LENGTH_BYTES);
         header.put(HEADER_MAGIC_1);
         header.put(keyDeriver.getSalt());
@@ -454,6 +444,10 @@ public class DbPersistence implements Persistence {
 
     @Override
     public boolean isEncrypted(File walletFile) throws IOException {
+        if(dataSource != null) {
+            return getDatasourcePassword() != null;
+        }
+
         byte[] header = new byte[H2_ENCRYPT_HEADER.length];
         try(InputStream inputStream = new FileInputStream(walletFile)) {
             inputStream.read(header, 0, H2_ENCRYPT_HEADER.length);
