@@ -95,6 +95,17 @@ public class SettingsWalletForm extends WalletForm {
                 EventManager.get().post(new KeystoreEncryptionChangedEvent(wallet, pastWallet, getWalletId(), encryptionChangedKeystores));
             }
 
+            for(Wallet childWallet : wallet.getChildWallets()) {
+                Wallet childWalletCopy = walletCopy.getChildWallet(childWallet.getName());
+                if(childWalletCopy != null) {
+                    Wallet pastChildWallet = childWallet.copy();
+                    List<Keystore> childEncryptionChangedKeystores = getEncryptionChangedKeystores(childWallet, childWalletCopy);
+                    if(!childEncryptionChangedKeystores.isEmpty()) {
+                        EventManager.get().post(new KeystoreEncryptionChangedEvent(childWallet, pastChildWallet, getStorage().getWalletId(childWallet), childEncryptionChangedKeystores));
+                    }
+                }
+            }
+
             if(labelChangedKeystores.isEmpty() && encryptionChangedKeystores.isEmpty()) {
                 //Can only be a wallet password change on a wallet without private keys
                 EventManager.get().post(new WalletPasswordChangedEvent(wallet, pastWallet, getWalletId()));

@@ -61,6 +61,9 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
             keystore.setExtendedPublicKey(xpub);
 
             return keystore;
+        } catch (IllegalArgumentException e) {
+            log.error("Error getting Keystone keystore - not an output descriptor");
+            throw new ImportException("Error getting Keystone keystore", e);
         } catch (Exception e) {
             log.error("Error getting Keystone keystore", e);
             throw new ImportException("Error getting Keystone keystore", e);

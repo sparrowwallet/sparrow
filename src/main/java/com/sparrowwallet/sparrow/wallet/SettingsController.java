@@ -555,6 +555,9 @@ public class SettingsController extends WalletFormController implements Initiali
 
                             walletForm.getStorage().setEncryptionPubKey(null);
                             walletForm.getWallet().decrypt(key);
+                            for(Wallet childWallet : walletForm.getWallet().getChildWallets()) {
+                                childWallet.decrypt(key);
+                            }
                             saveWallet(true, false);
                             return;
                         }
@@ -564,6 +567,9 @@ public class SettingsController extends WalletFormController implements Initiali
                         }
 
                         walletForm.getWallet().encrypt(key);
+                        for(Wallet childWallet : walletForm.getWallet().getChildWallets()) {
+                            childWallet.encrypt(key);
+                        }
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();
                         EventManager.get().post(new RequestOpenWalletsEvent());

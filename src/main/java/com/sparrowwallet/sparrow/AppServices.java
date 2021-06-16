@@ -836,7 +836,10 @@ public class AppServices {
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         if(event.getWalletTabDataList().isEmpty()) {
-            walletWindows.remove(event.getWindow());
+            List<WalletTabData> closedTabData = walletWindows.remove(event.getWindow());
+            if(closedTabData != null && !closedTabData.isEmpty()) {
+                EventManager.get().post(new WalletTabsClosedEvent(closedTabData));
+            }
         } else {
             walletWindows.put(event.getWindow(), event.getWalletTabDataList());
         }

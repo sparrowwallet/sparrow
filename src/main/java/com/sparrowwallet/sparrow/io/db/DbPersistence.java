@@ -86,6 +86,7 @@ public class DbPersistence implements Persistence {
         Wallet backupWallet = null;
         if(backupFile != null) {
             Persistence backupPersistence = PersistenceType.DB.getInstance();
+            backupPersistence.setKeyDeriver(keyDeriver);
             backupWallet = backupPersistence.loadWallet(new Storage(backupPersistence, backupFile), password, encryptionKey).getWallet();
         }
 
@@ -392,16 +393,16 @@ public class DbPersistence implements Persistence {
     }
 
     private ECKey getEncryptionKey(CharSequence password, File walletFile, ECKey alreadyDerivedKey) throws IOException {
-        if(password != null && password.equals("")) {
+        if(alreadyDerivedKey != null) {
+            return alreadyDerivedKey;
+        } else if(password == null) {
+            return null;
+        } else if(password.equals("")) {
             return Storage.NO_PASSWORD_KEY;
         }
 
         AsymmetricKeyDeriver keyDeriver = getKeyDeriver(walletFile);
-        if(alreadyDerivedKey != null) {
-            return alreadyDerivedKey;
-        }
-
-        return password == null ? null : keyDeriver.deriveECKey(password);
+        return keyDeriver.deriveECKey(password);
     }
 
     @Override
