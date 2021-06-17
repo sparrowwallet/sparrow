@@ -461,7 +461,9 @@ public class WalletForm {
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {
-                storage.close();
+                if(wallet.isMasterWallet()) {
+                    storage.close();
+                }
                 if(wallet.isValid()) {
                     AppServices.clearTransactionHistoryCache(wallet);
                 }
