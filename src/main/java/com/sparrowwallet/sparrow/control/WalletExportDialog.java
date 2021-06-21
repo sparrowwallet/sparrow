@@ -11,6 +11,7 @@ import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class WalletExportDialog extends Dialog<Wallet> {
@@ -53,6 +54,8 @@ public class WalletExportDialog extends Dialog<Wallet> {
             FileWalletExportPane exportPane = new FileWalletExportPane(wallet, exporter);
             exportAccordion.getPanes().add(exportPane);
         }
+
+        exportAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));
         scrollPane.setContent(exportAccordion);
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);

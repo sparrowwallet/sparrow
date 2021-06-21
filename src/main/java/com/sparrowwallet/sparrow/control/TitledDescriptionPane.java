@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.OptionalDouble;
 
 public class TitledDescriptionPane extends TitledPane {
+    private Label mainLabel;
     private Label descriptionLabel;
     protected Hyperlink showHideLink;
     protected HBox buttonBox;
@@ -50,7 +51,7 @@ public class TitledDescriptionPane extends TitledPane {
         VBox labelsBox = new VBox();
         labelsBox.setSpacing(5);
         labelsBox.setAlignment(Pos.CENTER_LEFT);
-        Label mainLabel = new Label();
+        mainLabel = new Label();
         mainLabel.setText(title);
         mainLabel.getStyleClass().add("main-label");
         labelsBox.getChildren().add(mainLabel);
@@ -97,6 +98,10 @@ public class TitledDescriptionPane extends TitledPane {
     protected Control createButton() {
         //No buttons by default
         return null;
+    }
+
+    public String getTitle() {
+        return mainLabel.getText();
     }
 
     protected void setDescription(String text) {

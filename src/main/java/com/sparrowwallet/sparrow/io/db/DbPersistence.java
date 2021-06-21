@@ -555,7 +555,7 @@ public class DbPersistence implements Persistence {
                 log.error("Wallet file may already be in use. Make sure the application is not running elsewhere.", e);
                 throw new StorageException("Wallet file may already be in use. Make sure the application is not running elsewhere.", e);
             } else if(e.getMessage() != null && (e.getMessage().contains("Wrong user name or password") || e.getMessage().contains("Encryption error in file"))) {
-                throw new InvalidPasswordException("Incorrect password for wallet file.", e);
+                throw new InvalidPasswordException("Incorrect password for wallet file " + walletFile.getAbsolutePath(), e);
             } else {
                 log.error("Failed to open database file", e);
                 throw new StorageException("Failed to open database file.\n" + e.getMessage(), e);

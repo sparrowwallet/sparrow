@@ -91,7 +91,9 @@ public class Sparrow implements WalletImport, WalletExport {
             if(!isEncrypted(tempFile)) {
                 return storage.loadUnencryptedWallet().getWallet();
             } else {
-                return storage.loadEncryptedWallet(password).getWallet();
+                WalletBackupAndKey walletBackupAndKey = storage.loadEncryptedWallet(password);
+                walletBackupAndKey.getWallet().decrypt(walletBackupAndKey.getKey());
+                return walletBackupAndKey.getWallet();
             }
         } catch(IOException | StorageException e) {
             log.error("Error importing Sparrow wallet", e);

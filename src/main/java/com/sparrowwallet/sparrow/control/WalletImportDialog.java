@@ -16,6 +16,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.glyphfont.Glyph;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class WalletImportDialog extends Dialog<Wallet> {
@@ -58,6 +59,8 @@ public class WalletImportDialog extends Dialog<Wallet> {
             FileWalletImportPane importPane = new FileWalletImportPane(importer);
             importAccordion.getPanes().add(importPane);
         }
+
+        importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));
         scrollPane.setContent(importAccordion);
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);

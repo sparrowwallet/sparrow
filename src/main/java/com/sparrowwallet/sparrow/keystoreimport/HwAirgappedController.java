@@ -2,11 +2,13 @@ package com.sparrowwallet.sparrow.keystoreimport;
 
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.sparrow.control.FileKeystoreImportPane;
+import com.sparrowwallet.sparrow.control.TitledDescriptionPane;
 import com.sparrowwallet.sparrow.io.*;
 import javafx.fxml.FXML;
 import javafx.scene.control.Accordion;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class HwAirgappedController extends KeystoreImportDetailController {
@@ -25,5 +27,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             FileKeystoreImportPane importPane = new FileKeystoreImportPane(getMasterController().getWallet(), (KeystoreFileImport)importer);;
             importAccordion.getPanes().add(importPane);
         }
+
+        importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));
     }
 }

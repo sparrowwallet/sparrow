@@ -961,6 +961,10 @@ public class AppController implements Initializable {
             walletFile.delete();
         }
 
+        if(wallet.isEncrypted()) {
+            throw new IllegalArgumentException("Imported wallet must be unencrypted");
+        }
+
         Storage storage = new Storage(Storage.getWalletFile(wallet.getName()));
         WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.UPDATE_NEW);
         Optional<SecureString> password = dlg.showAndWait();
@@ -969,8 +973,10 @@ public class AppController implements Initializable {
                 try {
                     storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     storage.saveWallet(wallet);
+                    checkWalletNetwork(wallet);
+                    restorePublicKeysFromSeed(wallet, null);
                     addWalletTabOrWindow(storage, wallet, null, false);
-                } catch(IOException | StorageException e) {
+                } catch(IOException | StorageException | MnemonicException e) {
                     log.error("Error saving imported wallet", e);
                 }
             } else {
@@ -986,8 +992,10 @@ public class AppController implements Initializable {
                         wallet.encrypt(key);
                         storage.setEncryptionPubKey(encryptionPubKey);
                         storage.saveWallet(wallet);
+                        checkWalletNetwork(wallet);
+                        restorePublicKeysFromSeed(wallet, key);
                         addWalletTabOrWindow(storage, wallet, null, false);
-                    } catch(IOException | StorageException e) {
+                    } catch(IOException | StorageException | MnemonicException e) {
                         log.error("Error saving imported wallet", e);
                     } finally {
                         encryptionFullKey.clear();
