@@ -289,13 +289,17 @@ public class Storage {
     }
 
     public static File getExistingWallet(String walletName) {
-        File encrypted = new File(getWalletsDir(), walletName.trim());
+        return getExistingWallet(getWalletsDir(), walletName);
+    }
+
+    public static File getExistingWallet(File walletsDir, String walletName) {
+        File encrypted = new File(walletsDir, walletName.trim());
         if(encrypted.exists()) {
             return encrypted;
         }
 
         for(PersistenceType persistenceType : PersistenceType.values()) {
-            File unencrypted = new File(getWalletsDir(), walletName.trim() + "." + persistenceType.getExtension());
+            File unencrypted = new File(walletsDir, walletName.trim() + "." + persistenceType.getExtension());
             if(unencrypted.exists()) {
                 return unencrypted;
             }

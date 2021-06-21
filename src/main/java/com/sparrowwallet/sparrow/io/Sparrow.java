@@ -83,23 +83,38 @@ public class Sparrow implements WalletImport, WalletExport {
 
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+        Storage storage = null;
+        Wallet wallet = null;
         File tempFile = null;
         try {
             tempFile = File.createTempFile("sparrow", null);
             java.nio.file.Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            Storage storage = new Storage(PersistenceType.JSON, tempFile);
+            storage = new Storage(PersistenceType.JSON, tempFile);
             if(!isEncrypted(tempFile)) {
-                return storage.loadUnencryptedWallet().getWallet();
+                wallet = storage.loadUnencryptedWallet().getWallet();
             } else {
                 WalletBackupAndKey walletBackupAndKey = storage.loadEncryptedWallet(password);
-                walletBackupAndKey.getWallet().decrypt(walletBackupAndKey.getKey());
-                return walletBackupAndKey.getWallet();
+                wallet = walletBackupAndKey.getWallet();
+                wallet.decrypt(walletBackupAndKey.getKey());
             }
+
+            return wallet;
         } catch(IOException | StorageException e) {
             log.error("Error importing Sparrow wallet", e);
             throw new ImportException("Error importing Sparrow wallet", e);
         } finally {
+            if(storage != null) {
+                storage.close();
+            }
+
             if(tempFile != null) {
+                if(wallet != null) {
+                    File migratedWalletFile = Storage.getExistingWallet(tempFile.getParentFile(), wallet.getName());
+                    if(migratedWalletFile != null) {
+                        migratedWalletFile.delete();
+                    }
+                }
+
                 tempFile.delete();
             }
         }
