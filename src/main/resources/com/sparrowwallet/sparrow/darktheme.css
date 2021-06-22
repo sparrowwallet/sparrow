@@ -5,6 +5,7 @@
     -fx-control-inner-background: derive(-fx-base, 35%);
     -fx-control-inner-background-alt: -fx-control-inner-background ;
     -fx-default-button: -fx-accent;
+    -fx-box-border: ladder(-fx-color, black 20%, derive(-fx-color,40%) 30%);
 }
 
 .label{
@@ -71,7 +72,7 @@
 }
 
 .status-bar {
-    -fx-background-color: black, -fx-body-color;
+    -fx-background-color: derive(-fx-color,-15%), -fx-body-color;
 }
 
 .chart .default-color0.chart-series-line {
@@ -115,13 +116,13 @@
 }
 
 .root .etched-raised-border {
-    -fx-border-color: #ffffff, #000000;
+    -fx-border-color: #ffffff, derive(-fx-color,-15%);
     -fx-border-style: solid, solid;
     -fx-border-width: 1px, 1px;
 }
 
 .root .line-border {
-    -fx-border-color: #000000;
+    -fx-border-color: derive(-fx-color,-15%);
     -fx-border-style: solid;
     -fx-border-width: 1px;
 }
@@ -195,4 +196,8 @@
 
 .root .box-overlay .label {
     -fx-text-fill: white;
+}
+
+.root #loadingLog {
+    -fx-background-color: transparent;
 }
