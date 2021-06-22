@@ -255,6 +255,9 @@ public class ReceiveController extends WalletFormController implements Initializ
                 messageSignDialog.setElectrumSignatureFormat(true);
                 Stage stage = (Stage)messageSignDialog.getDialogPane().getScene().getWindow();
                 stage.setAlwaysOnTop(true);
+                messageSignDialog.setOnShown(event -> {
+                    stage.setAlwaysOnTop(false);
+                });
                 Optional<ButtonBar.ButtonData> buttonData = messageSignDialog.showAndWait();
                 if(buttonData.isPresent() && buttonData.get() == ButtonBar.ButtonData.OK_DONE) {
                     Address address = getWalletForm().getWallet().getAddress(currentEntry.getNode());

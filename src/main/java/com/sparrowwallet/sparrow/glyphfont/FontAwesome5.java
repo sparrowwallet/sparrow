@@ -19,6 +19,7 @@ public class FontAwesome5 extends GlyphFont {
         ANGLE_DOUBLE_RIGHT('\uf101'),
         ARROW_DOWN('\uf063'),
         ARROW_UP('\uf062'),
+        BAN('\uf05e'),
         BTC('\uf15a'),
         CAMERA('\uf030'),
         CHECK_CIRCLE('\uf058'),

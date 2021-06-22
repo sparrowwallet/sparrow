@@ -24,6 +24,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
@@ -44,6 +45,9 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private final TextField address;
     private final TextArea message;
     private final TextArea signature;
+    private final ToggleGroup formatGroup;
+    private final ToggleButton formatTrezor;
+    private final ToggleButton formatElectrum;
     private final Wallet wallet;
     private WalletNode walletNode;
     private boolean electrumSignatureFormat;
@@ -144,7 +148,22 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         signature.setWrapText(true);
         signatureField.getInputs().add(signature);
 
-        fieldset.getChildren().addAll(addressField, messageField, signatureField);
+        Field formatField = new Field();
+        formatField.setText("Format:");
+        formatGroup = new ToggleGroup();
+        formatElectrum = new ToggleButton("Standard (Electrum)");
+        formatTrezor = new ToggleButton("BIP137 (Trezor)");
+        SegmentedButton formatButtons = new SegmentedButton(formatElectrum, formatTrezor);
+        formatButtons.setToggleGroup(formatGroup);
+        formatField.getInputs().add(formatButtons);
+
+        formatGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            electrumSignatureFormat = (newValue == formatElectrum);
+        });
+
+        formatButtons.setDisable(wallet != null && walletNode != null && wallet.getScriptType() == ScriptType.P2PKH);
+
+        fieldset.getChildren().addAll(addressField, messageField, signatureField, formatField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -153,6 +172,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             address.setEditable(false);
             message.setEditable(false);
             signature.setEditable(false);
+            formatButtons.setDisable(true);
         }
 
         ButtonType signButtonType = new javafx.scene.control.ButtonType("Sign", ButtonBar.ButtonData.BACK_PREVIOUS);
@@ -225,6 +245,16 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         AppServices.moveToActiveWindowScreen(this);
         setResultConverter(dialogButton -> dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : dialogButton.getButtonData());
+
+        Platform.runLater(() -> {
+            if(address.getText().isEmpty()) {
+                address.requestFocus();
+            } else if(message.getText().isEmpty()) {
+                message.requestFocus();
+            }
+
+            formatGroup.selectToggle(formatElectrum);
+        });
     }
 
     private Address getAddress()throws InvalidAddressException {
@@ -241,6 +271,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
      * @param electrumSignatureFormat
      */
     public void setElectrumSignatureFormat(boolean electrumSignatureFormat) {
+        formatGroup.selectToggle(electrumSignatureFormat ? formatElectrum : formatTrezor);
         this.electrumSignatureFormat = electrumSignatureFormat;
     }
 
