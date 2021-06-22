@@ -4,7 +4,11 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
 import javafx.application.Platform;
 import javafx.geometry.Point2D;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.stage.Popup;
 import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
@@ -33,7 +37,8 @@ public class TransactionHexArea extends CodeArea {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             transaction.bitcoinSerializeToStream(baos);
 
-            String hex = Utils.bytesToHex(baos.toByteArray());
+            String fullHex = Utils.bytesToHex(baos.toByteArray());
+            String hex = fullHex;
             if(hex.length() > TRUNCATE_AT) {
                 hex = hex.substring(0, TRUNCATE_AT);
                 hex += "[truncated]";
@@ -42,6 +47,7 @@ public class TransactionHexArea extends CodeArea {
             clear();
             appendText(hex);
             previousSegmentList = new ArrayList<>();
+            setContextMenu(new TransactionHexContextMenu(fullHex));
         } catch (IOException e) {
             throw new IllegalStateException("Can't happen");
         }
@@ -264,6 +270,20 @@ public class TransactionHexArea extends CodeArea {
         @Override
         public int hashCode() {
             return Objects.hash(start, length, style);
+        }
+    }
+
+    private static class TransactionHexContextMenu extends ContextMenu {
+        public TransactionHexContextMenu(String hex) {
+            MenuItem copy = new MenuItem("Copy All");
+            copy.setOnAction(AE -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(hex);
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+
+            getItems().add(copy);
         }
     }
 }

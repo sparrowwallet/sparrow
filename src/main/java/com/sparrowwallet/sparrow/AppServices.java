@@ -585,7 +585,7 @@ public class AppServices {
 
         String[] lines = content.split("\r\n|\r|\n");
         if(lines.length > 3) {
-            alert.getDialogPane().setPrefHeight(180 + lines.length * 20);
+            alert.getDialogPane().setPrefHeight(200 + lines.length * 20);
         }
 
         moveToActiveWindowScreen(alert);
