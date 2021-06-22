@@ -57,8 +57,8 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
 
             return keystore;
         } catch (Exception e) {
-            log.error("Error getting Cobo Vault keystore", e);
-            throw new ImportException("Error getting Cobo Vault keystore", e);
+            log.error("Error getting " + getName() + " keystore", e);
+            throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }
 
@@ -81,7 +81,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
         try {
             wallet.checkWallet();
         } catch(InvalidWalletException e) {
-            throw new ImportException("Imported Cobo Vault wallet was invalid: " + e.getMessage());
+            throw new ImportException("Imported " + getName() + " wallet was invalid: " + e.getMessage());
         }
 
         return wallet;

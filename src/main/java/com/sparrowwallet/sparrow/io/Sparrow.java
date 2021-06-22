@@ -46,7 +46,7 @@ public class Sparrow implements WalletImport, WalletExport {
 
     @Override
     public String getWalletExportDescription() {
-        return "Exports your Sparrow wallet file, which can be imported into another Sparrow instance running on any supported platform.";
+        return "Exports your Sparrow wallet file, which can be imported into another Sparrow instance running on any supported platform. If the wallet is encrypted, the same password is used to encrypt the exported file.";
     }
 
     @Override

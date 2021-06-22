@@ -30,8 +30,8 @@ public class SpecterDesktop implements WalletImport, WalletExport {
             outputStream.write(json.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
         } catch(Exception e) {
-            log.error("Error exporting Specter Desktop wallet", e);
-            throw new ExportException("Error exporting Specter Desktop wallet", e);
+            log.error("Error exporting " + getName() + " wallet", e);
+            throw new ExportException("Error exporting " + getName() + " wallet", e);
         }
     }
 
@@ -87,17 +87,17 @@ public class SpecterDesktop implements WalletImport, WalletExport {
                 try {
                     wallet.checkWallet();
                 } catch(InvalidWalletException e) {
-                    throw new ImportException("Imported Specter wallet was invalid: " + e.getMessage());
+                    throw new ImportException("Imported " + getName() + " wallet was invalid: " + e.getMessage());
                 }
 
                 return wallet;
             }
         } catch(Exception e) {
-            log.error("Error importing Specter Desktop wallet", e);
-            throw new ImportException("Error importing Specter Desktop wallet", e);
+            log.error("Error importing " + getName() + " wallet", e);
+            throw new ImportException("Error importing " + getName() + " wallet", e);
         }
 
-        throw new ImportException("File was not a valid Specter Desktop wallet");
+        throw new ImportException("File was not a valid " + getName() + " wallet");
     }
 
     @Override

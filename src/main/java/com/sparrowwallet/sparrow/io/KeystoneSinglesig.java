@@ -62,11 +62,11 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
 
             return keystore;
         } catch (IllegalArgumentException e) {
-            log.error("Error getting Keystone keystore - not an output descriptor");
-            throw new ImportException("Error getting Keystone keystore", e);
+            log.error("Error getting " + getName() + " keystore - not an output descriptor");
+            throw new ImportException("Error getting " + getName() + " keystore", e);
         } catch (Exception e) {
-            log.error("Error getting Keystone keystore", e);
-            throw new ImportException("Error getting Keystone keystore", e);
+            log.error("Error getting " + getName() + " keystore", e);
+            throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }
 
@@ -89,7 +89,7 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
         try {
             wallet.checkWallet();
         } catch(InvalidWalletException e) {
-            throw new ImportException("Imported Keystone wallet was invalid: " + e.getMessage());
+            throw new ImportException("Imported " + getName() + " wallet was invalid: " + e.getMessage());
         }
 
         return wallet;

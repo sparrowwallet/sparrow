@@ -150,8 +150,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
             return wallet;
         } catch(Exception e) {
-            log.error("Error importing Coldcard multisig wallet", e);
-            throw new ImportException("Error importing Coldcard multisig wallet", e);
+            log.error("Error importing " + getName() + " wallet", e);
+            throw new ImportException("Error importing " + getName() + " wallet", e);
         }
     }
 
@@ -203,8 +203,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
             writer.flush();
         } catch(Exception e) {
-            log.error("Error exporting Coldcard multisig wallet", e);
-            throw new ExportException("Error exporting Coldcard multisig wallet", e);
+            log.error("Error exporting " + getName() + " wallet", e);
+            throw new ExportException("Error exporting " + getName() + " wallet", e);
         }
     }
 

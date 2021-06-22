@@ -161,8 +161,11 @@ public class TransactionsController extends WalletFormController implements Init
             String date = LOG_DATE_FORMAT.format(new Date());
             String logLine = "\n" + date + " " + logMessage;
             Platform.runLater(() -> {
-                loadingLog.appendText(logLine);
-                loadingLog.setScrollLeft(0);
+                int lastLineStart = loadingLog.getText().lastIndexOf("\n");
+                if(lastLineStart < 0 || !loadingLog.getText().substring(lastLineStart).equals(logLine)) {
+                    loadingLog.appendText(logLine);
+                    loadingLog.setScrollLeft(0);
+                }
             });
         }
     }

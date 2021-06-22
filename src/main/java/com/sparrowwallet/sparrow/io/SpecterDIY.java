@@ -35,8 +35,8 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
 
             return keystore;
         } catch(IOException e) {
-            log.error("Error getting Specter DIY keystore", e);
-            throw new ImportException("Error getting Specter DIY keystore", e);
+            log.error("Error getting " + getName() + " keystore", e);
+            throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }
 
@@ -72,8 +72,8 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
             writer.append("addwallet ").append(wallet.getName()).append("&").append(OutputDescriptor.getOutputDescriptor(wallet).toString().replace('\'', 'h')).append("\n");
             writer.flush();
         } catch(Exception e) {
-            log.error("Error exporting Specter DIY wallet", e);
-            throw new ExportException("Error exporting Specter DIY wallet", e);
+            log.error("Error exporting " + getName() + " wallet", e);
+            throw new ExportException("Error exporting " + getName() + " wallet", e);
         }
     }
 
