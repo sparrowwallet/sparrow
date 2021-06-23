@@ -112,8 +112,14 @@
             </menus>
         </MenuBar>
         <DecorationPane fx:id="rootStack" VBox.vgrow="ALWAYS">
-            <Rectangle styleClass="background-box" width="400" height="125" />
-            <Text styleClass="background-text" text="Drag files here to open" />
+            <Rectangle styleClass="background-box" width="450" height="170" />
+            <HBox alignment="CENTER">
+                <VBox alignment="CENTER_LEFT" spacing="15">
+                    <Text styleClass="background-text" text="File menu → New Wallet or" />
+                    <Text styleClass="background-text" text="File menu → Import Wallet or" />
+                    <Text styleClass="background-text" text="Drag files here to open" />
+                </VBox>
+            </HBox>
             <TabPane fx:id="tabs" />
         </DecorationPane>
 
