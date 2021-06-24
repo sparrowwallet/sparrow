@@ -573,6 +573,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
             reason += ". Check if the proxy server is running.";
         } else if(exception instanceof TorServerAlreadyBoundException) {
             reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
+        } else if(reason != null && reason.contains("Check if Bitcoin Core is running")) {
+            reason += "\n\nSee https://sparrowwallet.com/docs/connect-node.html";
         }
 
         testResults.setText("Could not connect:\n\n" + reason);
