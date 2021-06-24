@@ -945,7 +945,7 @@ public class ElectrumServer {
                                         }
                                     }
 
-                                    throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
+                                    throw new ServerException("Check if Bitcoin Core is running in server mode, and the authentication details are correct.\n\nSee https://sparrowwallet.com/docs/connect-node.html");
                                 }
                             } catch(InterruptedException e) {
                                 Thread.currentThread().interrupt();
