@@ -90,7 +90,9 @@ public class IOUtils {
                         // if it is a subdirectory, we just return the directory name
                         entry = entry.substring(0, checkSubdir);
                     }
-                    result.add(entry);
+                    if(!entry.isEmpty()) {
+                        result.add(entry);
+                    }
                 }
             }
 

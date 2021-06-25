@@ -19,7 +19,6 @@ import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.payjoin.Payjoin;
-import com.sparrowwallet.sparrow.payjoin.PayjoinReceiverException;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;

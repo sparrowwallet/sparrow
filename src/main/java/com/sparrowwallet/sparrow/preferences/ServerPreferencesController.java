@@ -22,7 +22,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import net.freehaven.tor.control.TorControlError;
 import org.berndpruenster.netlayer.tor.Tor;
 import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;

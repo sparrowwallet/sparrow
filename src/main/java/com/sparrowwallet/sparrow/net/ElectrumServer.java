@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
-import com.google.common.collect.Iterables;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;

@@ -1,8 +1,8 @@
 plugins {
     id 'application'
-    id 'org.openjfx.javafxplugin' version '0.0.9'
-    id 'org.kordamp.gradle.jdeps' version '0.9.0'
-    id 'org.beryx.jlink' version '2.22.0'
+    id 'extra-java-module-info'
+    id 'com.dua3.javafxgradle7plugin' version '0.0.9'
+    id 'org.beryx.jlink' version '2.24.0'
 }
 
 def sparrowVersion = '1.4.2'
@@ -29,7 +29,7 @@ tasks.withType(AbstractArchiveTask) {
 }
 
 javafx {
-    version = "15"
+    version = "16"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 
@@ -53,19 +53,28 @@ dependencies {
     implementation('org.flywaydb:flyway-core:7.10.5-SNAPSHOT')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
-    implementation('com.google.zxing:javase:3.4.0')
-    implementation('com.github.arteam:simple-json-rpc-client:1.0')
+    implementation('com.google.zxing:javase:3.4.0') {
+        exclude group: 'com.beust', module: 'jcommander'
+    }
+    implementation('com.beust:jcommander:1.81')
+    implementation('com.github.arteam:simple-json-rpc-core:1.0')
+    implementation('com.github.arteam:simple-json-rpc-client:1.0') {
+        exclude group: 'com.github.arteam', module: 'simple-json-rpc-core'
+    }
     implementation('com.github.arteam:simple-json-rpc-server:1.0') {
         exclude group: 'org.slf4j'
     }
-    implementation('com.sparrowwallet:hummingbird:1.6.0')
+    implementation('com.sparrowwallet:hummingbird:1.6.1')
     implementation('com.nativelibs4java:bridj:0.7-20140918-3') {
         exclude group: 'com.google.android.tools', module: 'dx'
     }
     implementation('com.github.sarxos:webcam-capture:0.3.13-SNAPSHOT') {
         exclude group: 'com.nativelibs4java', module: 'bridj'
     }
-    implementation("com.sparrowwallet:netlayer-jpms-${osName}:0.6.8")
+    implementation("com.sparrowwallet:netlayer-jpms-${osName}:0.6.8") {
+        exclude group: 'org.jetbrains.kotlin'
+    }
+    implementation('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.20')
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.1.0' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'
@@ -76,7 +85,7 @@ dependencies {
         exclude group: 'org.openjfx', module: 'javafx-web'
         exclude group: 'org.openjfx', module: 'javafx-media'
     }
-    implementation('dev.bwt:bwt-jni:0.1.7')
+    implementation('dev.bwt:bwt-jni:0.1.8')
     implementation('net.sourceforge.javacsv:javacsv:2.0')
     implementation('org.slf4j:jul-to-slf4j:1.7.30') {
         exclude group: 'org.slf4j'
@@ -84,7 +93,10 @@ dependencies {
     testImplementation('junit:junit:4.12')
 }
 
-mainClassName = 'com.sparrowwallet.sparrow/com.sparrowwallet.sparrow.MainApp'
+application {
+    mainModule = 'com.sparrowwallet.sparrow'
+    mainClass = 'com.sparrowwallet.sparrow.MainApp'
+}
 
 compileJava {
     options.with {
@@ -135,9 +147,9 @@ jlink {
         requires 'java.xml'
         requires 'java.logging'
         requires 'javafx.base'
-        requires 'com.fasterxml.jackson.databind'
         requires 'jdk.crypto.cryptoki'
         requires 'java.management'
+        requires 'io.leangen.geantyref'
         uses 'org.flywaydb.core.extensibility.FlywayExtension'
         uses 'org.flywaydb.core.internal.database.DatabaseType'
     }
@@ -154,17 +166,18 @@ jlink {
                    "--add-opens=javafx.controls/javafx.scene.control.cell=com.sparrowwallet.sparrow",
                    "--add-opens=org.controlsfx.controls/impl.org.controlsfx.skin=com.sparrowwallet.sparrow",
                    "--add-opens=org.controlsfx.controls/impl.org.controlsfx.skin=javafx.fxml",
-                   "--add-opens=javafx.graphics/com.sun.javafx.tk=com.sparrowwallet.merged.module",
-                   "--add-opens=javafx.graphics/com.sun.javafx.tk.quantum=com.sparrowwallet.merged.module",
-                   "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.merged.module",
-                   "--add-opens=javafx.controls/com.sun.javafx.scene.control=com.sparrowwallet.merged.module",
-                   "--add-opens=javafx.graphics/com.sun.javafx.menu=com.sparrowwallet.merged.module",
+                   "--add-opens=javafx.graphics/com.sun.javafx.tk=centerdevice.nsmenufx",
+                   "--add-opens=javafx.graphics/com.sun.javafx.tk.quantum=centerdevice.nsmenufx",
+                   "--add-opens=javafx.graphics/com.sun.glass.ui=centerdevice.nsmenufx",
+                   "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
+                   "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
                    "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop",
                    "--add-reads=com.sparrowwallet.merged.module=java.sql",
-                   "--add-reads=com.sparrowwallet.merged.module=com.sparrowwallet.sparrow"]
+                   "--add-reads=com.sparrowwallet.merged.module=com.sparrowwallet.sparrow",
+                   "--add-reads=com.sparrowwallet.merged.module=logback.classic"]
 
         if(os.macOsX) {
             jvmArgs += "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"
@@ -215,4 +228,197 @@ task packageTarDistribution(type: Tar) {
     from("$buildDir/jpackage/") {
         include "Sparrow/**"
     }
+}
+
+extraJavaModuleInfo {
+    module('tornadofx-controls-1.0.4.jar', 'tornadofx.controls', '1.0.4') {
+        exports('tornadofx.control')
+        requires('javafx.controls')
+    }
+    module('simple-json-rpc-core-1.0.jar', 'simple.json.rpc.core', '1.0') {
+        exports('com.github.arteam.simplejsonrpc.core.annotation')
+        exports('com.github.arteam.simplejsonrpc.core.domain')
+        requires('com.fasterxml.jackson.core')
+        requires('com.fasterxml.jackson.annotation')
+        requires('com.fasterxml.jackson.databind')
+        requires('org.jetbrains.annotations')
+    }
+    module('simple-json-rpc-client-1.0.jar', 'simple.json.rpc.client', '1.0') {
+        exports('com.github.arteam.simplejsonrpc.client')
+        exports('com.github.arteam.simplejsonrpc.client.builder')
+        exports('com.github.arteam.simplejsonrpc.client.exception')
+        requires('com.fasterxml.jackson.databind')
+        requires('simple.json.rpc.core')
+    }
+    module('simple-json-rpc-server-1.0.jar', 'simple.json.rpc.server', '1.0') {
+        exports('com.github.arteam.simplejsonrpc.server')
+        requires('simple.json.rpc.core')
+        requires('com.google.common')
+        requires('org.slf4j')
+        requires('com.fasterxml.jackson.databind')
+    }
+    module('bridj-0.7-20140918-3.jar', 'com.nativelibs4java.bridj', '0.7-20140918-3') {
+        exports('org.bridj')
+        exports('org.bridj.cpp')
+        requires('java.logging')
+    }
+    module('webcam-capture-0.3.13-SNAPSHOT.jar', 'com.github.sarxos.webcam.capture', '0.3.13-SNAPSHOT') {
+        exports('com.github.sarxos.webcam')
+        exports('com.github.sarxos.webcam.ds.buildin')
+        exports('com.github.sarxos.webcam.ds.buildin.natives')
+        requires('java.desktop')
+        requires('com.nativelibs4java.bridj')
+        requires('org.slf4j')
+    }
+    module('centerdevice-nsmenufx-2.1.7.jar', 'centerdevice.nsmenufx', '2.1.7') {
+        exports('de.codecentric.centerdevice')
+        requires('javafx.base')
+        requires('javafx.controls')
+        requires('javafx.graphics')
+    }
+    module('javacsv-2.0.jar', 'net.sourceforge.javacsv', '2.0') {
+        exports('com.csvreader')
+    }
+    module('jul-to-slf4j-1.7.30.jar', 'org.slf4j.jul.to.slf4j', '1.7.30') {
+        exports('org.slf4j.bridge')
+        requires('java.logging')
+    }
+    module('jeromq-0.5.0.jar', 'jeromq', '0.5.0') {
+        exports('org.zeromq')
+    }
+    module('json-simple-1.1.1.jar', 'json.simple', '1.1.1') {
+        exports('org.json.simple')
+    }
+    module('logback-classic-1.2.3.jar', 'logback.classic', '1.2.3') {
+        exports('ch.qos.logback.classic')
+        requires('org.slf4j')
+        requires('logback.core')
+        requires('java.xml')
+        requires('java.logging')
+    }
+    module('kotlin-logging-1.5.4.jar', 'io.github.microutils.kotlin.logging', '1.5.4') {
+        exports('mu')
+        requires('kotlin.stdlib')
+        requires('org.slf4j')
+    }
+    module('failureaccess-1.0.1.jar', 'failureaccess', '1.0.1') {
+        exports('com.google.common.util.concurrent.internal')
+    }
+    module('listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar', 'com.google.guava.listenablefuture', '9999.0-empty-to-avoid-conflict-with-guava')
+    module('guava-28.2-jre.jar', 'com.google.common', '28.2-jre') {
+        exports('com.google.common.eventbus')
+        exports('com.google.common.net')
+        exports('com.google.common.base')
+        exports('com.google.common.collect')
+        exports('com.google.common.io')
+        requires('failureaccess')
+        requires('java.logging')
+    }
+    module('jsr305-3.0.2.jar', 'com.google.code.findbugs.jsr305', '3.0.2')
+    module('j2objc-annotations-1.3.jar', 'com.google.j2objc.j2objc.annotations', '1.3')
+    module('jdbi3-core-3.20.0.jar', 'org.jdbi.v3.core', '3.20.0') {
+        exports('org.jdbi.v3.core')
+        exports('org.jdbi.v3.core.mapper')
+        exports('org.jdbi.v3.core.statement')
+        exports('org.jdbi.v3.core.result')
+        exports('org.jdbi.v3.core.h2')
+        exports('org.jdbi.v3.core.spi')
+        requires('io.leangen.geantyref')
+        requires('java.sql')
+        requires('org.slf4j')
+    }
+    module('geantyref-1.3.11.jar', 'io.leangen.geantyref', '1.3.11') {
+        exports('io.leangen.geantyref')
+    }
+    module('richtextfx-0.10.4.jar', 'org.fxmisc.richtext', '0.10.4') {
+        exports('org.fxmisc.richtext')
+        exports('org.fxmisc.richtext.event')
+        exports('org.fxmisc.richtext.model')
+        requires('javafx.base')
+        requires('javafx.controls')
+        requires('javafx.graphics')
+        requires('org.fxmisc.flowless')
+        requires('org.reactfx.reactfx')
+        requires('org.fxmisc.undo.undofx')
+        requires('org.fxmisc.wellbehaved')
+    }
+    module('undofx-2.1.0.jar', 'org.fxmisc.undo.undofx', '2.1.0') {
+        requires('javafx.base')
+        requires('javafx.controls')
+        requires('javafx.graphics')
+        requires('org.reactfx.reactfx')
+    }
+    module('flowless-0.6.1.jar', 'org.fxmisc.flowless', '0.6.1') {
+        exports('org.fxmisc.flowless')
+        requires('javafx.base')
+        requires('javafx.controls')
+        requires('javafx.graphics')
+        requires('org.reactfx.reactfx')
+    }
+    module('reactfx-2.0-M5.jar', 'org.reactfx.reactfx', '2.0-M5') {
+        exports('org.reactfx')
+        exports('org.reactfx.value')
+        exports('org.reactfx.collection')
+        exports('org.reactfx.util')
+        requires('javafx.base')
+        requires('javafx.graphics')
+        requires('javafx.controls')
+    }
+    module('wellbehavedfx-0.3.3.jar', 'org.fxmisc.wellbehaved', '0.3.3') {
+        requires('javafx.base')
+        requires('javafx.graphics')
+    }
+    module('jai-imageio-core-1.4.0.jar', 'com.github.jai.imageio.jai.imageio.core', '1.4.0')
+    module('kotlin-stdlib-jdk8-1.5.20.jar', 'org.jetbrains.kotlin.kotlin.stdlib.jdk8', '1.5.20')
+    module('kotlin-stdlib-jdk7-1.5.20.jar', 'org.jetbrains.kotlin.kotlin.stdlib.jdk7', '1.5.20')
+    module('kotlin-stdlib-1.5.20.jar', 'kotlin.stdlib', '1.5.20') {
+        exports('kotlin')
+    }
+    module('hummingbird-1.6.1.jar', 'com.sparrowwallet.hummingbird', '1.6.1') {
+        exports('com.sparrowwallet.hummingbird')
+        exports('com.sparrowwallet.hummingbird.registry')
+        requires('co.nstant.in.cbor')
+    }
+    module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
+        exports('co.nstant.in.cbor')
+    }
+    module("netlayer-jpms-${osName}-0.6.8.jar", 'netlayer.jpms', '0.6.8') {
+        exports('org.berndpruenster.netlayer.tor')
+        requires('com.github.ravn.jsocks')
+        requires('com.github.JesusMcCloud.jtorctl')
+        requires('kotlin.stdlib')
+        requires('commons.compress')
+        requires('org.tukaani.xz')
+        requires('java.management')
+        requires('io.github.microutils.kotlin.logging')
+    }
+    module('jtorctl-1.5.jar', 'com.github.JesusMcCloud.jtorctl', '1.5') {
+        exports('net.freehaven.tor.control')
+    }
+    module('commons-compress-1.18.jar', 'commons.compress', '1.18') {
+        exports('org.apache.commons.compress')
+        requires('org.tukaani.xz')
+    }
+    module('xz-1.6.jar', 'org.tukaani.xz', '1.6') {
+        exports('org.tukaani.xz')
+    }
+    module('jsocks-1.0.jar', 'com.github.ravn.jsocks', '1.0') {
+        exports('com.runjva.sourceforge.jsocks.protocol')
+        requires('org.slf4j')
+    }
+    module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
+    module('logback-core-1.2.3.jar', 'logback.core', '1.2.3') {
+        requires('java.xml')
+    }
+    module('kotlin-stdlib-common-1.5.20.jar', 'org.jetbrains.kotlin.kotlin.stdlib.common', '1.5.20') {
+        exports('kotlin.jvm')
+        exports('kotlin.collections')
+    }
+    module('jcommander-1.81.jar', 'com.beust.jcommander', '1.81') {
+        exports('com.beust.jcommander')
+    }
+    module('junit-4.12.jar', 'junit', '4.12') {
+        exports('org.junit')
+    }
+    module('hamcrest-core-1.3.jar', 'org.hamcrest.core', '1.3')
 }

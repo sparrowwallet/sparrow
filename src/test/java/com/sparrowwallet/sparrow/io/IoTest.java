@@ -1,13 +1,23 @@
 package com.sparrowwallet.sparrow.io;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class IoTest {
     public static final String IO_TEST_PATH = "/com/sparrowwallet/sparrow/io/";
 
     protected File getFile(String filename) {
-        return new File(this.getClass().getResource(IO_TEST_PATH + filename).getFile());
+        try {
+            Path tempFile = Files.createTempFile(filename, null);
+            Files.copy(getInputStream(filename), tempFile, StandardCopyOption.REPLACE_EXISTING);
+            return tempFile.toFile();
+        } catch(IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     protected InputStream getInputStream(String filename) {
