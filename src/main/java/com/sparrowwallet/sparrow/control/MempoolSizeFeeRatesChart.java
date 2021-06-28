@@ -68,19 +68,6 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         categoryAxis.setTickLabelRotation(0);
 
         NumberAxis numberAxis = (NumberAxis)getYAxis();
-        numberAxis.setTickLabelFormatter(new StringConverter<Number>() {
-            @Override
-            public String toString(Number object) {
-                long vSizeBytes = object.longValue();
-                return (vSizeBytes / (1000 * 1000)) + " MvB";
-            }
-
-            @Override
-            public Number fromString(String string) {
-                return null;
-            }
-        });
-
         this.setOnMouseMoved(mouseEvent -> {
             Point2D sceneCoords = this.localToScene(mouseEvent.getX(), mouseEvent.getY());
             String category = categoryAxis.getValueForDisplay(categoryAxis.sceneToLocal(sceneCoords).getX());
@@ -115,6 +102,24 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
 
             previousFeeRate = feeRate;
         }
+
+        final double maxMvB = getMaxMvB(getData());
+        numberAxis.setTickLabelFormatter(new StringConverter<Number>() {
+            @Override
+            public String toString(Number object) {
+                long vSizeBytes = object.longValue();
+                if(maxMvB > 1.0) {
+                    return (vSizeBytes / (1000 * 1000)) + " MvB";
+                } else {
+                    return (vSizeBytes / (1000)) + " kvB";
+                }
+            }
+
+            @Override
+            public Number fromString(String string) {
+                return null;
+            }
+        });
 
         if(categories.keySet().iterator().hasNext()) {
             String time = categories.values().iterator().next();
@@ -159,20 +164,42 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         return categories;
     }
 
+    private static double getMaxMvB(List<Series<String, Number>> seriesList) {
+        double maxTotal = 0d;
+        for(Series<String, Number> series : seriesList) {
+            maxTotal = Math.max(maxTotal, getMaxMvB(series));
+        }
+
+        return maxTotal;
+    }
+
+    private static double getMaxMvB(Series<String, Number> series) {
+        double total = 0d;
+        for(XYChart.Data<String, Number> data : series.getData()) {
+            double mvb = data.getYValue().doubleValue() / (1000 * 1000);
+            total += mvb;
+        }
+
+        return total;
+    }
+
     private static class ChartTooltip extends VBox {
         public ChartTooltip(String category, String time, List<Series<String, Number>> seriesList) {
             Label title = new Label("At " + time);
             HBox titleBox = new HBox(title);
             title.setStyle("-fx-alignment: center; -fx-font-size: 12px; -fx-padding: 0 0 5 0;");
             getChildren().add(titleBox);
+            double maxMvB = getMaxMvB(seriesList);
 
             for(int i = seriesList.size() - 1; i >= 0; i--) {
                 Series<String, Number> series = seriesList.get(i);
                 for(XYChart.Data<String, Number> data : series.getData()) {
                     if(data.getXValue().equals(category)) {
-                        double mvb = data.getYValue().doubleValue() / (1000 * 1000);
-                        if(mvb >= 0.01) {
-                            Label label = new Label(series.getName() + ": " + String.format("%.2f", mvb) + " MvB");
+                        double kvb = data.getYValue().doubleValue() / 1000;
+                        double mvb = kvb / 1000;
+                        if(mvb >= 0.01 || (maxMvB < 1.0 && mvb > 0.001)) {
+                            String amount = (maxMvB < 1.0 ? (int)kvb + " kvB" : String.format("%.2f", mvb) + " MvB");
+                            Label label = new Label(series.getName() + ": " + amount);
                             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CIRCLE);
                             if(i < 8) {
                                 circle.setStyle("-fx-text-fill: CHART_COLOR_" + (i+1));
