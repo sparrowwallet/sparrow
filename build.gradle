@@ -282,6 +282,7 @@ extraJavaModuleInfo {
     module('jul-to-slf4j-1.7.30.jar', 'org.slf4j.jul.to.slf4j', '1.7.30') {
         exports('org.slf4j.bridge')
         requires('java.logging')
+        requires('org.slf4j')
     }
     module('jeromq-0.5.0.jar', 'jeromq', '0.5.0') {
         exports('org.zeromq')

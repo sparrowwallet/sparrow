@@ -48,7 +48,7 @@ public class InputForm extends IndexedTransactionForm {
 
     public boolean isWalletTxo() {
         TransactionInput txInput = getTransactionInput();
-        return getSigningWallet() != null && getSigningWallet().getWalletTxos().keySet().stream().anyMatch(ref -> ref.getHash().equals(txInput.getOutpoint().getHash()) && ref.getIndex() == txInput.getOutpoint().getIndex());
+        return getSigningWallet() != null && getSigningWallet().isWalletTxo(txInput);
     }
 
     @Override
