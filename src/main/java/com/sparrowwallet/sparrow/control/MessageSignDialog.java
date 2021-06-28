@@ -51,6 +51,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private final Wallet wallet;
     private WalletNode walletNode;
     private boolean electrumSignatureFormat;
+    private boolean closed;
 
     /**
      * Verification only constructor
@@ -177,7 +178,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         ButtonType signButtonType = new javafx.scene.control.ButtonType("Sign", ButtonBar.ButtonData.BACK_PREVIOUS);
         ButtonType verifyButtonType = new javafx.scene.control.ButtonType("Verify", ButtonBar.ButtonData.NEXT_FORWARD);
-        ButtonType doneButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.OK_DONE);
+        ButtonType doneButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         if(buttons.length > 0) {
             dialogPane.getButtonTypes().addAll(buttons);
@@ -189,7 +190,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 customSignButton.setOnAction(event -> {
                     customSignButton.setDisable(true);
                     signMessage();
-                    setResult(ButtonBar.ButtonData.OK_DONE);
+                    setResult(ButtonBar.ButtonData.CANCEL_CLOSE);
                 });
             }
         } else {
@@ -240,9 +241,13 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 return;
             }
 
-            EventManager.get().unregister(this);
+            if(!closed) {
+                EventManager.get().unregister(this);
+                closed = true;
+            }
         });
 
+        AppServices.onEscapePressed(dialogPane.getScene(), () -> setResult(ButtonBar.ButtonData.CANCEL_CLOSE));
         AppServices.moveToActiveWindowScreen(this);
         setResultConverter(dialogButton -> dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : dialogButton.getButtonData());
 
