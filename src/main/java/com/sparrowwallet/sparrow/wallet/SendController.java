@@ -170,7 +170,7 @@ public class SendController extends WalletFormController implements Initializabl
             userFeeSet.set(false);
             for(Tab tab : paymentTabs.getTabs()) {
                 PaymentController controller = (PaymentController)tab.getUserData();
-                controller.revalidate();
+                controller.revalidateAmount();
             }
             updateTransaction();
         }
@@ -183,7 +183,7 @@ public class SendController extends WalletFormController implements Initializabl
             userFeeSet.set(false);
             for(Tab tab : paymentTabs.getTabs()) {
                 PaymentController controller = (PaymentController)tab.getUserData();
-                controller.revalidate();
+                controller.revalidateAmount();
             }
             updateTransaction();
         }
@@ -228,7 +228,7 @@ public class SendController extends WalletFormController implements Initializabl
         insufficientInputsProperty.addListener((observable, oldValue, newValue) -> {
             for(Tab tab : paymentTabs.getTabs()) {
                 PaymentController controller = (PaymentController)tab.getUserData();
-                controller.revalidate();
+                controller.revalidateAmount();
             }
             revalidate(fee, feeListener);
         });
@@ -905,6 +905,7 @@ public class SendController extends WalletFormController implements Initializabl
         excludedChangeNodes.clear();
         walletTransactionProperty.setValue(null);
         createdWalletTransactionProperty.set(null);
+        insufficientInputsProperty.set(false);
 
         validationSupport.setErrorDecorationEnabled(false);
     }

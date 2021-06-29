@@ -21,6 +21,8 @@ import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -66,10 +68,17 @@ public class PaymentController extends WalletFormController implements Initializ
     private Label amountStatus;
 
     @FXML
+    private Label dustStatus;
+
+    @FXML
     private ToggleButton maxButton;
 
     @FXML
     private Button addPaymentButton;
+
+    private final BooleanProperty emptyAmountProperty = new SimpleBooleanProperty(true);
+
+    private final BooleanProperty dustAmountProperty = new SimpleBooleanProperty();
 
     private final ChangeListener<String> amountListener = new ChangeListener<>() {
         @Override
@@ -86,8 +95,12 @@ public class PaymentController extends WalletFormController implements Initializ
             Long recipientValueSats = getRecipientValueSats();
             if(recipientValueSats != null) {
                 setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), recipientValueSats);
+                dustAmountProperty.set(recipientValueSats <= getRecipientDustThreshold());
+                emptyAmountProperty.set(false);
             } else {
                 fiatAmount.setText("");
+                dustAmountProperty.set(false);
+                emptyAmountProperty.set(true);
             }
 
             sendController.updateTransaction();
@@ -115,7 +128,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 //ignore, not a URI
             }
 
-            revalidate(amount, amountListener);
+            revalidateAmount();
             maxButton.setDisable(!isValidAddressAndLabel());
             sendController.updateTransaction();
 
@@ -148,10 +161,9 @@ public class PaymentController extends WalletFormController implements Initializ
             maxButton.setText("Max" + newValue);
         });
         amountStatus.managedProperty().bind(amountStatus.visibleProperty());
-        amountStatus.setVisible(sendController.isInsufficientInputs());
-        sendController.insufficientInputsProperty().addListener((observable, oldValue, newValue) -> {
-            amountStatus.setVisible(newValue);
-        });
+        amountStatus.visibleProperty().bind(sendController.insufficientInputsProperty().and(dustAmountProperty.not()).and(emptyAmountProperty.not()));
+        dustStatus.managedProperty().bind(dustStatus.visibleProperty());
+        dustStatus.visibleProperty().bind(dustAmountProperty);
 
         Optional<Tab> firstTab = sendController.getPaymentTabs().getTabs().stream().findFirst();
         if(firstTab.isPresent()) {
@@ -173,7 +185,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 Validator.createEmptyValidator("Label is required")
         ));
         validationSupport.registerValidator(amount, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", sendController.isInsufficientInputs()),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", getRecipientValueSats() != null && sendController.isInsufficientInputs()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() <= getRecipientDustThreshold())
         ));
     }
@@ -234,8 +246,11 @@ public class PaymentController extends WalletFormController implements Initializ
         }
     }
 
-    public void revalidate() {
+    public void revalidateAmount() {
         revalidate(amount, amountListener);
+        Long recipientValueSats = getRecipientValueSats();
+        dustAmountProperty.set(recipientValueSats != null && recipientValueSats <= getRecipientDustThreshold());
+        emptyAmountProperty.set(recipientValueSats == null);
     }
 
     private void revalidate(TextField field, ChangeListener<String> listener) {
@@ -302,7 +317,7 @@ public class PaymentController extends WalletFormController implements Initializ
         fiatAmount.setText("");
         setSendMax(false);
 
-        amountStatus.setVisible(false);
+        dustAmountProperty.set(false);
     }
 
     public void setMaxInput(ActionEvent event) {
