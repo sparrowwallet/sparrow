@@ -7,6 +7,7 @@ import com.github.sarxos.webcam.WebcamUpdater;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
+import com.google.zxing.qrcode.QRCodeReader;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -29,10 +30,11 @@ public class WebcamService extends ScheduledService<Image> {
 
     private final ObjectProperty<Result> resultProperty = new SimpleObjectProperty<>(null);
 
-    private static final int QR_SAMPLE_PERIOD_MILLIS = 400;
+    private static final int QR_SAMPLE_PERIOD_MILLIS = 200;
 
     private Webcam cam;
     private long lastQrSampleTime;
+    private final Reader qrReader;
 
     static {
         Webcam.setDriver(new WebcamScanDriver());
@@ -43,6 +45,7 @@ public class WebcamService extends ScheduledService<Image> {
         this.listener = listener;
         this.delayCalculator = delayCalculator;
         this.lastQrSampleTime = System.currentTimeMillis();
+        this.qrReader = new QRCodeReader();
     }
 
     @Override
@@ -106,9 +109,9 @@ public class WebcamService extends ScheduledService<Image> {
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 
         try {
-            Result result = new MultiFormatReader().decode(bitmap);
+            Result result = qrReader.decode(bitmap);
             resultProperty.set(result);
-        } catch(NotFoundException e) {
+        } catch(ReaderException e) {
             // fall thru, it means there is no QR code in image
         }
     }
