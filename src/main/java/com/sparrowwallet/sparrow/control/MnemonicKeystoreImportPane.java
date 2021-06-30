@@ -20,6 +20,7 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
 import javafx.scene.layout.*;
 import javafx.util.Callback;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
@@ -163,7 +164,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             wordEntries.add(new WordEntry(i, wordEntryList));
         }
         for(int i = 0; i < numWords - 1; i++) {
-            wordEntries.get(i).setNext(wordEntries.get(i + 1).getEditor());
+            wordEntries.get(i).setNextEntry(wordEntries.get(i + 1));
+            wordEntries.get(i).setNextField(wordEntries.get(i + 1).getEditor());
         }
         wordsPane.getChildren().addAll(wordEntries);
 
@@ -171,7 +173,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
 
         if(!displayWordsOnly) {
             PassphraseEntry passphraseEntry = new PassphraseEntry();
-            wordEntries.get(wordEntries.size() - 1).setNext(passphraseEntry.getEditor());
+            wordEntries.get(wordEntries.size() - 1).setNextField(passphraseEntry.getEditor());
             passphraseEntry.setPadding(new Insets(0, 26, 10, 10));
             vBox.getChildren().add(passphraseEntry);
 
@@ -401,7 +403,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     private static class WordEntry extends HBox {
         private static List<String> wordList;
         private final TextField wordField;
-        private Node next;
+        private WordEntry nextEntry;
+        private TextField nextField;
 
         public WordEntry(int wordNumber, ObservableList<String> wordEntryList) {
             super();
@@ -411,7 +414,29 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             Label label = new Label((wordNumber+1) + ".");
             label.setPrefWidth(22);
             label.setAlignment(Pos.CENTER_RIGHT);
-            wordField = new TextField();
+            wordField = new TextField() {
+                @Override
+                public void paste() {
+                    Clipboard clipboard = Clipboard.getSystemClipboard();
+                    if(clipboard.hasString() && clipboard.getString().matches("(?m).+[\\n\\s][\\S\\s]*")) {
+                        String[] words = clipboard.getString().split("[\\n\\s]");
+                        WordEntry entry = WordEntry.this;
+                        for(String word : words) {
+                            if(entry.nextField != null) {
+                                entry.nextField.requestFocus();
+                            }
+
+                            entry.wordField.setText(word);
+                            entry = entry.nextEntry;
+                            if(entry == null) {
+                                break;
+                            }
+                        }
+                    } else {
+                        super.paste();
+                    }
+                }
+            };
             wordField.setMaxWidth(100);
             TextFormatter<?> formatter = new TextFormatter<>((TextFormatter.Change change) -> {
                 String text = change.getText();
@@ -431,8 +456,8 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             AutoCompletionBinding<String> autoCompletionBinding = TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));
             autoCompletionBinding.setDelay(50);
             autoCompletionBinding.setOnAutoCompleted(event -> {
-                if (next != null) {
-                    next.requestFocus();
+                if(nextField != null) {
+                    nextField.requestFocus();
                 }
             });
 
@@ -454,8 +479,12 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             return wordField;
         }
 
-        public void setNext(Node node) {
-            next = node;
+        public void setNextEntry(WordEntry nextEntry) {
+            this.nextEntry = nextEntry;
+        }
+
+        public void setNextField(TextField field) {
+            this.nextField = field;
         }
 
         public static boolean isValid(String word) {
