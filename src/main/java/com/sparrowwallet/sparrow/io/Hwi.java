@@ -254,6 +254,7 @@ public class Hwi {
 
                     File hwiHomeDir = getHwiHomeDir();
                     File hwiVersionDir = new File(hwiHomeDir, HWI_VERSION_DIR);
+                    IOUtils.deleteDirectory(hwiVersionDir);
                     if(!hwiVersionDir.exists()) {
                         Files.createDirectories(hwiVersionDir.toPath(), PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     }
