@@ -292,14 +292,28 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(hashIndexEntry.getWallet(), spendingUtxos)));
     }
 
-    private static void freezeUtxo(HashIndexEntry hashIndexEntry) {
-        hashIndexEntry.getHashIndex().setStatus(Status.FROZEN);
-        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), hashIndexEntry.getHashIndex()));
+    private static void freezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
+        List<BlockTransactionHashIndex> utxos = treeTableView.getSelectionModel().getSelectedCells().stream()
+                .map(tp -> tp.getTreeItem().getValue())
+                .filter(e -> e instanceof HashIndexEntry && ((HashIndexEntry)e).getType().equals(HashIndexEntry.Type.OUTPUT))
+                .map(e -> ((HashIndexEntry)e).getHashIndex())
+                .filter(ref -> ref.getStatus() != Status.FROZEN)
+                .collect(Collectors.toList());
+
+        utxos.forEach(ref -> ref.setStatus(Status.FROZEN));
+        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), utxos));
     }
 
-    private static void unfreezeUtxo(HashIndexEntry hashIndexEntry) {
-        hashIndexEntry.getHashIndex().setStatus(null);
-        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), hashIndexEntry.getHashIndex()));
+    private static void unfreezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
+        List<BlockTransactionHashIndex> utxos = treeTableView.getSelectionModel().getSelectedCells().stream()
+                .map(tp -> tp.getTreeItem().getValue())
+                .filter(e -> e instanceof HashIndexEntry && ((HashIndexEntry)e).getType().equals(HashIndexEntry.Type.OUTPUT))
+                .map(e -> ((HashIndexEntry)e).getHashIndex())
+                .filter(ref -> ref.getStatus() == Status.FROZEN)
+                .collect(Collectors.toList());
+
+        utxos.forEach(ref -> ref.setStatus(null));
+        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), utxos));
     }
 
     private static Glyph getViewTransactionGlyph() {
@@ -514,7 +528,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     freezeUtxo.setGraphic(getFreezeGlyph());
                     freezeUtxo.setOnAction(AE -> {
                         hide();
-                        freezeUtxo(hashIndexEntry);
+                        freezeUtxo(treeTableView, hashIndexEntry);
                     });
                     getItems().add(freezeUtxo);
                 } else {
@@ -522,7 +536,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     unfreezeUtxo.setGraphic(getUnfreezeGlyph());
                     unfreezeUtxo.setOnAction(AE -> {
                         hide();
-                        unfreezeUtxo(hashIndexEntry);
+                        unfreezeUtxo(treeTableView, hashIndexEntry);
                     });
                     getItems().add(unfreezeUtxo);
                 }

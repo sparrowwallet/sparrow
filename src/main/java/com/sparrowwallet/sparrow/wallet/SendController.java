@@ -1164,7 +1164,7 @@ public class SendController extends WalletFormController implements Initializabl
                 updateTransaction(true);
             } else if(utxoSelectorProperty().get() instanceof PresetUtxoSelector) {
                 PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(((PresetUtxoSelector)utxoSelector).getPresetUtxos());
-                presetUtxoSelector.getPresetUtxos().remove(event.getUtxo());
+                presetUtxoSelector.getPresetUtxos().removeAll(event.getUtxos());
                 utxoSelectorProperty.set(presetUtxoSelector);
                 updateTransaction(true);
             } else {

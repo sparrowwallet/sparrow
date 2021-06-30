@@ -610,7 +610,7 @@ public class DbPersistence implements Persistence {
     @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).utxoStatuses.add(event.getUtxo());
+            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).utxoStatuses.addAll(event.getUtxos());
         }
     }
 
