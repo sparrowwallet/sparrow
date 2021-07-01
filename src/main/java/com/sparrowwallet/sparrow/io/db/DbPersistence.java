@@ -237,8 +237,20 @@ public class DbPersistence implements Persistence {
                     for(Entry entry : dirtyPersistables.labelEntries) {
                         if(entry instanceof TransactionEntry && ((TransactionEntry)entry).getBlockTransaction().getId() != null) {
                             blockTransactionDao.updateLabel(((TransactionEntry)entry).getBlockTransaction().getId(), entry.getLabel());
-                        } else if(entry instanceof NodeEntry && ((NodeEntry)entry).getNode().getId() != null) {
-                            walletNodeDao.updateNodeLabel(((NodeEntry)entry).getNode().getId(), entry.getLabel());
+                        } else if(entry instanceof NodeEntry) {
+                            WalletNode addressNode = ((NodeEntry)entry).getNode();
+                            if(addressNode.getId() == null) {
+                                WalletNode purposeNode = wallet.getNode(addressNode.getKeyPurpose());
+                                if(purposeNode.getId() == null) {
+                                    long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null);
+                                    purposeNode.setId(purposeNodeId);
+                                }
+
+                                long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId());
+                                addressNode.setId(nodeId);
+                            }
+
+                            walletNodeDao.updateNodeLabel(addressNode.getId(), entry.getLabel());
                         } else if(entry instanceof HashIndexEntry && ((HashIndexEntry)entry).getHashIndex().getId() != null) {
                             walletNodeDao.updateTxoLabel(((HashIndexEntry)entry).getHashIndex().getId(), entry.getLabel());
                         }
