@@ -8,9 +8,7 @@ import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
-import com.sparrowwallet.drongo.wallet.MaxUtxoSelector;
-import com.sparrowwallet.drongo.wallet.Payment;
-import com.sparrowwallet.drongo.wallet.UtxoSelector;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
@@ -25,6 +23,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -129,7 +128,7 @@ public class PaymentController extends WalletFormController implements Initializ
             }
 
             revalidateAmount();
-            maxButton.setDisable(!isValidAddressAndLabel());
+            maxButton.setDisable(!isMaxButtonEnabled());
             sendController.updateTransaction();
 
             if(validationSupport != null) {
@@ -138,7 +137,7 @@ public class PaymentController extends WalletFormController implements Initializ
         });
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
-            maxButton.setDisable(!isValidAddressAndLabel());
+            maxButton.setDisable(!isMaxButtonEnabled());
             sendController.getCreateButton().setDisable(sendController.getWalletTransaction() == null || newValue == null || newValue.isEmpty() || sendController.isInsufficientFeeRate());
             sendController.updateTransaction();
         });
@@ -156,7 +155,13 @@ public class PaymentController extends WalletFormController implements Initializ
             }
         });
 
-        maxButton.setDisable(!isValidAddressAndLabel());
+        maxButton.setDisable(!isMaxButtonEnabled());
+        sendController.utxoSelectorProperty().addListener((observable, oldValue, newValue) -> {
+            maxButton.setDisable(!isMaxButtonEnabled());
+        });
+        sendController.getPaymentTabs().getTabs().addListener((ListChangeListener<Tab>) c -> {
+            maxButton.setDisable(!isMaxButtonEnabled());
+        });
         sendController.utxoLabelSelectionProperty().addListener((observable, oldValue, newValue) -> {
             maxButton.setText("Max" + newValue);
         });
@@ -201,6 +206,10 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private boolean isValidAddressAndLabel() {
         return isValidRecipientAddress() && !label.getText().isEmpty();
+    }
+
+    private boolean isMaxButtonEnabled() {
+        return isValidAddressAndLabel() || (sendController.utxoSelectorProperty().get() instanceof PresetUtxoSelector && sendController.getPaymentTabs().getTabs().size() == 1);
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
@@ -325,6 +334,11 @@ public class PaymentController extends WalletFormController implements Initializ
         if(utxoSelector == null) {
             MaxUtxoSelector maxUtxoSelector = new MaxUtxoSelector();
             sendController.utxoSelectorProperty().set(maxUtxoSelector);
+        } else if(utxoSelector instanceof PresetUtxoSelector && !isValidAddressAndLabel() && sendController.getPaymentTabs().getTabs().size() == 1) {
+            PresetUtxoSelector presetUtxoSelector = (PresetUtxoSelector)utxoSelector;
+            Payment payment = new Payment(null, null, presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum(), true);
+            setPayment(payment);
+            return;
         }
 
         try {
