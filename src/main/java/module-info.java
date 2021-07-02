@@ -36,4 +36,5 @@ open module com.sparrowwallet.sparrow {
     requires net.sourceforge.javacsv;
     requires com.nativelibs4java.bridj;
     requires org.reactfx.reactfx;
+    requires dev.bwt.jni;
 }
