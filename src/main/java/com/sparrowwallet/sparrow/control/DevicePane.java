@@ -546,7 +546,7 @@ public class DevicePane extends TitledDescriptionPane {
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
 
                 if(wallet.getScriptType() == null) {
-                    ScriptType scriptType = Arrays.stream(ScriptType.SINGLE_HASH_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
+                    ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
                     wallet.setName(device.getModel().toDisplayString());
                     wallet.setPolicyType(PolicyType.SINGLE);
                     wallet.setScriptType(scriptType);

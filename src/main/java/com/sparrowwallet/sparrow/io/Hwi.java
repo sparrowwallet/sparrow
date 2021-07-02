@@ -119,8 +119,8 @@ public class Hwi {
 
     public String displayAddress(Device device, String passphrase, ScriptType scriptType, OutputDescriptor outputDescriptor) throws DisplayAddressException {
         try {
-            if(!Arrays.asList(ScriptType.SINGLE_HASH_TYPES).contains(scriptType)) {
-                throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only single hash types supported");
+            if(!Arrays.asList(ScriptType.ADDRESSABLE_TYPES).contains(scriptType)) {
+                throw new IllegalArgumentException("Cannot display address for script type " + scriptType + ": Only addressable types supported");
             }
 
             String descriptor = outputDescriptor.toString();
