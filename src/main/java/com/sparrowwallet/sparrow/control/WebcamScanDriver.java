@@ -8,15 +8,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WebcamScanDriver extends WebcamDefaultDriver {
+    private List<WebcamDevice> foundScanDevices;
+
     @Override
     public List<WebcamDevice> getDevices() {
-        List<WebcamDevice> devices = super.getDevices();
-        List<WebcamDevice> scanDevices = new ArrayList<>();
-        for(WebcamDevice device : devices) {
-            WebcamDefaultDevice defaultDevice = (WebcamDefaultDevice)device;
-            scanDevices.add(new WebcamScanDevice(defaultDevice.getDeviceRef()));
+        if(foundScanDevices == null || foundScanDevices.isEmpty()) {
+            List<WebcamDevice> devices = super.getDevices();
+            List<WebcamDevice> scanDevices = new ArrayList<>();
+            for(WebcamDevice device : devices) {
+                WebcamDefaultDevice defaultDevice = (WebcamDefaultDevice)device;
+                scanDevices.add(new WebcamScanDevice(defaultDevice.getDeviceRef()));
+            }
+
+            foundScanDevices = scanDevices;
         }
 
-        return scanDevices;
+        return foundScanDevices;
     }
 }
