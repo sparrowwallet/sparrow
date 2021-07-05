@@ -131,6 +131,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS &&
                     nested.getMessage().startsWith("Library 'OpenIMAJGrabber' was not loaded successfully from file")) {
                 exception = new WebcamDependencyException("Your system is missing a dependency required for the webcam. Follow the link below for more details.\n\n[https://sparrowwallet.com/docs/faq.html#your-system-is-missing-a-dependency-for-the-webcam]", exception);
+            } else if(nested.getMessage().startsWith("Cannot start native grabber") && Config.get().getWebcamDevice() != null) {
+                exception = new WebcamOpenException("Cannot open configured webcam " + Config.get().getWebcamDevice() + ", reverting to the default webcam");
+                Config.get().setWebcamDevice(null);
             }
 
             final Throwable result = exception;
@@ -597,7 +600,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
 
             if(button instanceof Region) {
-                ((Region)button).setMaxWidth(140);
+                ((Region)button).setMaxWidth(150);
             }
 
             button.disableProperty().bind(webcamService.openingProperty());
@@ -779,6 +782,24 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         }
 
         public WebcamDependencyException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    public static class WebcamOpenException extends ScanException {
+        public WebcamOpenException() {
+            super();
+        }
+
+        public WebcamOpenException(String message) {
+            super(message);
+        }
+
+        public WebcamOpenException(Throwable cause) {
+            super(cause);
+        }
+
+        public WebcamOpenException(String message, Throwable cause) {
             super(message, cause);
         }
     }

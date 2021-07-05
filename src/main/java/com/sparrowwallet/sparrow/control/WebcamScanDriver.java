@@ -20,7 +20,10 @@ public class WebcamScanDriver extends WebcamDefaultDriver {
             List<WebcamDevice> scanDevices = new ArrayList<>();
             for(WebcamDevice device : devices) {
                 WebcamDefaultDevice defaultDevice = (WebcamDefaultDevice)device;
-                scanDevices.add(new WebcamScanDevice(defaultDevice.getDeviceRef()));
+                WebcamScanDevice scanDevice = new WebcamScanDevice(defaultDevice.getDeviceRef());
+                if(scanDevices.stream().noneMatch(dev -> ((WebcamScanDevice)dev).getDeviceName().equals(scanDevice.getDeviceName()))) {
+                    scanDevices.add(scanDevice);
+                }
             }
 
             List<WebcamDevice> newDevices = new ArrayList<>(scanDevices);
