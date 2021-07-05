@@ -3,16 +3,19 @@ package com.sparrowwallet.sparrow.control;
 import com.github.sarxos.webcam.WebcamDevice;
 import com.github.sarxos.webcam.ds.buildin.WebcamDefaultDevice;
 import com.github.sarxos.webcam.ds.buildin.WebcamDefaultDriver;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class WebcamScanDriver extends WebcamDefaultDriver {
-    private List<WebcamDevice> foundScanDevices;
+    private static final ObservableList<WebcamDevice> webcamDevices = FXCollections.observableArrayList();
+    private static boolean rescan;
 
     @Override
     public List<WebcamDevice> getDevices() {
-        if(foundScanDevices == null || foundScanDevices.isEmpty()) {
+        if(rescan || webcamDevices.isEmpty()) {
             List<WebcamDevice> devices = super.getDevices();
             List<WebcamDevice> scanDevices = new ArrayList<>();
             for(WebcamDevice device : devices) {
@@ -20,9 +23,20 @@ public class WebcamScanDriver extends WebcamDefaultDriver {
                 scanDevices.add(new WebcamScanDevice(defaultDevice.getDeviceRef()));
             }
 
-            foundScanDevices = scanDevices;
+            List<WebcamDevice> newDevices = new ArrayList<>(scanDevices);
+            newDevices.removeAll(webcamDevices);
+            webcamDevices.addAll(newDevices);
+            webcamDevices.removeIf(device -> !scanDevices.contains(device));
         }
 
-        return foundScanDevices;
+        return webcamDevices;
+    }
+
+    public static ObservableList<WebcamDevice> getFoundDevices() {
+        return webcamDevices;
+    }
+
+    public static void rescan() {
+        rescan = true;
     }
 }

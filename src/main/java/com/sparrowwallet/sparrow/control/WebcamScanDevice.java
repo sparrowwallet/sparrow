@@ -14,6 +14,7 @@ import java.awt.image.*;
 import java.nio.ByteBuffer;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -310,6 +311,23 @@ public class WebcamScanDevice implements WebcamDevice, WebcamDevice.BufferAccess
 
     public double getFPS() {
         return this.fps;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if(this == o) {
+            return true;
+        }
+        if(o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        WebcamScanDevice that = (WebcamScanDevice) o;
+        return Objects.equals(fullname, that.fullname);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(fullname);
     }
 
     static {

@@ -232,7 +232,7 @@ public class QRDisplayDialog extends Dialog<UR> {
             if(useLegacyEncoding) {
                 legacy.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE));
             } else {
-                legacy.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE));
+                legacy.setGraphic(getGlyph(FontAwesome5.Glyph.BAN));
             }
         }
 

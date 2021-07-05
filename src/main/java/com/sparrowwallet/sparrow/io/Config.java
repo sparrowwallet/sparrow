@@ -46,6 +46,7 @@ public class Config {
     private Integer keyDerivationPeriod;
     private File hwi;
     private Boolean hdCapture;
+    private String webcamDevice;
     private ServerType serverType;
     private String publicElectrumServer;
     private String coreServer;
@@ -304,6 +305,15 @@ public class Config {
 
     public void setHdCapture(Boolean hdCapture) {
         this.hdCapture = hdCapture;
+        flush();
+    }
+
+    public String getWebcamDevice() {
+        return webcamDevice;
+    }
+
+    public void setWebcamDevice(String webcamDevice) {
+        this.webcamDevice = webcamDevice;
         flush();
     }
 

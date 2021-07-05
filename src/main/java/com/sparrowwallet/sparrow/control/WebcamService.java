@@ -1,13 +1,11 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.github.sarxos.webcam.Webcam;
-import com.github.sarxos.webcam.WebcamListener;
-import com.github.sarxos.webcam.WebcamResolution;
-import com.github.sarxos.webcam.WebcamUpdater;
+import com.github.sarxos.webcam.*;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -24,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 
 public class WebcamService extends ScheduledService<Image> {
     private WebcamResolution resolution;
+    private WebcamDevice device;
     private final WebcamListener listener;
     private final WebcamUpdater.DelayCalculator delayCalculator;
     private final BooleanProperty opening = new SimpleBooleanProperty(false);
@@ -40,8 +39,9 @@ public class WebcamService extends ScheduledService<Image> {
         Webcam.setDriver(new WebcamScanDriver());
     }
 
-    public WebcamService(WebcamResolution resolution, WebcamListener listener, WebcamUpdater.DelayCalculator delayCalculator) {
+    public WebcamService(WebcamResolution resolution, WebcamDevice device, WebcamListener listener, WebcamUpdater.DelayCalculator delayCalculator) {
         this.resolution = resolution;
+        this.device = device;
         this.listener = listener;
         this.delayCalculator = delayCalculator;
         this.lastQrSampleTime = System.currentTimeMillis();
@@ -61,6 +61,23 @@ public class WebcamService extends ScheduledService<Image> {
                         }
 
                         cam = webcams.get(0);
+
+                        if(device != null) {
+                            for(Webcam webcam : webcams) {
+                                if(webcam.getDevice().getName().equals(device.getName())) {
+                                    cam = webcam;
+                                }
+                            }
+                        } else if(Config.get().getWebcamDevice() != null) {
+                            for(Webcam webcam : webcams) {
+                                if(webcam.getDevice().getName().equals(Config.get().getWebcamDevice())) {
+                                    cam = webcam;
+                                }
+                            }
+                        }
+
+                        device = cam.getDevice();
+
                         cam.setCustomViewSizes(resolution.getSize());
                         cam.setViewSize(resolution.getSize());
                         if(!Arrays.asList(cam.getWebcamListeners()).contains(listener)) {
@@ -73,6 +90,10 @@ public class WebcamService extends ScheduledService<Image> {
                     }
 
                     BufferedImage bimg = cam.getImage();
+                    if(bimg == null) {
+                        return null;
+                    }
+
                     Image image = SwingFXUtils.toFXImage(bimg, null);
                     updateValue(image);
 
@@ -134,6 +155,14 @@ public class WebcamService extends ScheduledService<Image> {
 
     public void setResolution(WebcamResolution resolution) {
         this.resolution = resolution;
+    }
+
+    public WebcamDevice getDevice() {
+        return device;
+    }
+
+    public void setDevice(WebcamDevice device) {
+        this.device = device;
     }
 
     public boolean isOpening() {
