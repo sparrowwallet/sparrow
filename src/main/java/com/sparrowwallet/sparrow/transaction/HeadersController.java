@@ -442,7 +442,7 @@ public class HeadersController extends TransactionFormController implements Init
         String type = "Legacy";
         if(headersForm.getTransaction().isSegwit() || (headersForm.getPsbt() != null && headersForm.getPsbt().getPsbtInputs().stream().anyMatch(in -> in.getWitnessUtxo() != null))) {
             type = "Segwit";
-            if(headersForm.getTransaction().getSegwitVersion() == 2) {
+            if(headersForm.getTransaction().getSegwitFlag() == 2) {
                 type = "Taproot";
             }
         }

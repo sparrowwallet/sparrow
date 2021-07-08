@@ -600,6 +600,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
 
             if(button instanceof Region) {
+                ((Region)button).setPrefWidth(150);
                 ((Region)button).setMaxWidth(150);
             }
 
