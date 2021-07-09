@@ -33,9 +33,9 @@ public class QRDisplayDialog extends Dialog<UR> {
     private static final Logger log = LoggerFactory.getLogger(QRDisplayDialog.class);
 
     private static final int MIN_FRAGMENT_LENGTH = 10;
-    private static final int MAX_FRAGMENT_LENGTH = 100;
+    private static final int MAX_FRAGMENT_LENGTH = 250;
 
-    private static final int ANIMATION_PERIOD_MILLIS = 400;
+    private static final int ANIMATION_PERIOD_MILLIS = 200;
 
     private static final int QR_WIDTH = 480;
     private static final int QR_HEIGHT = 480;
