@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -118,8 +119,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 });
                 actionBox.getChildren().add(receiveButton);
 
-                if(nodeEntry.getWallet().getKeystores().size() == 1 &&
-                        (nodeEntry.getWallet().getKeystores().get(0).hasPrivateKey() || nodeEntry.getWallet().getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
+                if(canSignMessage(nodeEntry.getWallet())) {
                     Button signMessageButton = new Button("");
                     signMessageButton.setGraphic(getSignMessageGlyph());
                     signMessageButton.setOnAction(event -> {
@@ -127,7 +127,6 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                         messageSignDialog.showAndWait();
                     });
                     actionBox.getChildren().add(signMessageButton);
-                    setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
                 }
 
                 setGraphic(actionBox);
@@ -266,6 +265,11 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), List.of(utxo)));
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), blockTransaction.getFee(), false)));
+    }
+
+    private static boolean canSignMessage(Wallet wallet) {
+        return wallet.getKeystores().size() == 1 && wallet.getScriptType() != ScriptType.P2TR &&
+                (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB);
     }
 
     private static boolean containsWalletOutputs(TransactionEntry transactionEntry) {
@@ -463,7 +467,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             });
             getItems().add(receiveToAddress);
 
-            if(nodeEntry != null) {
+            if(nodeEntry != null && canSignMessage(nodeEntry.getWallet())) {
                 MenuItem signVerifyMessage = new MenuItem("Sign/Verify Message");
                 signVerifyMessage.setGraphic(getSignMessageGlyph());
                 signVerifyMessage.setOnAction(AE -> {
