@@ -316,7 +316,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             Keystore keystore = decryptedWallet.getKeystores().get(0);
             ECKey privKey = keystore.getKey(walletNode);
             ScriptType scriptType = electrumSignatureFormat ? ScriptType.P2PKH : decryptedWallet.getScriptType();
-            String signatureText = privKey.signMessage(message.getText().trim(), scriptType, null);
+            String signatureText = privKey.signMessage(message.getText().trim(), scriptType);
             signature.clear();
             signature.appendText(signatureText);
             privKey.clear();
