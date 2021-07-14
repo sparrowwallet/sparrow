@@ -409,10 +409,10 @@ public class HeadersController extends TransactionFormController implements Init
                     psbtSigHash = psbtInput.getSigHash();
                 }
             }
-            sigHash.setValue(psbtSigHash);
+            sigHash.setValue(psbtSigHash == SigHash.ALL_TAPROOT ? SigHash.ALL : psbtSigHash);
             sigHash.valueProperty().addListener((observable, oldValue, newValue) -> {
                 for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
-                    psbtInput.setSigHash(newValue);
+                    psbtInput.setSigHash(psbtInput.isTaproot() && newValue == SigHash.ALL ? SigHash.ALL_TAPROOT : newValue);
                 }
             });
 
