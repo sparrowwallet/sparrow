@@ -3,10 +3,7 @@ package com.sparrowwallet.sparrow;
 import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
-import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.Network;
-import com.sparrowwallet.drongo.SecureString;
-import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
@@ -801,7 +798,10 @@ public class AppController implements Initializable {
         } catch(StorageException e) {
             showErrorDialog("Error Opening Wallet", e.getMessage());
         } catch(Exception e) {
-            if(!attemptImportWallet(file, null)) {
+            if(e instanceof IOException && e.getMessage().startsWith("The process cannot access the file because another process has locked")) {
+                log.error("Error opening wallet", e);
+                showErrorDialog("Error Opening Wallet", "The wallet file is locked. Is another instance of " + MainApp.APP_NAME + " already running?");
+            } else if(!attemptImportWallet(file, null)) {
                 log.error("Error opening wallet", e);
                 showErrorDialog("Error Opening Wallet", e.getMessage() == null ? "Unsupported file format" : e.getMessage());
             }
@@ -897,7 +897,8 @@ public class AppController implements Initializable {
                 new SpecterDesktop(),
                 new CoboVaultSinglesig(), new CoboVaultMultisig(),
                 new PassportSinglesig(),
-                new KeystoneSinglesig(), new KeystoneMultisig());
+                new KeystoneSinglesig(), new KeystoneMultisig(),
+                new CaravanMultisig());
         for(WalletImport importer : walletImporters) {
             try(FileInputStream inputStream = new FileInputStream(file)) {
                 if(importer.isEncrypted(file) && password == null) {

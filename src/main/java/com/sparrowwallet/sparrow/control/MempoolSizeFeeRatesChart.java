@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
     private static final DateFormat dateFormatter = new SimpleDateFormat("HH:mm");
     public static final int MAX_PERIOD_HOURS = 2;
+    private static final double Y_VALUE_BREAK_MVB = 3.0;
 
     private Tooltip tooltip;
 
@@ -108,7 +109,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             @Override
             public String toString(Number object) {
                 long vSizeBytes = object.longValue();
-                if(maxMvB > 1.0) {
+                if(maxMvB > Y_VALUE_BREAK_MVB) {
                     return (vSizeBytes / (1000 * 1000)) + " MvB";
                 } else {
                     return (vSizeBytes / (1000)) + " kvB";
@@ -197,8 +198,8 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                     if(data.getXValue().equals(category)) {
                         double kvb = data.getYValue().doubleValue() / 1000;
                         double mvb = kvb / 1000;
-                        if(mvb >= 0.01 || (maxMvB < 1.0 && mvb > 0.001)) {
-                            String amount = (maxMvB < 1.0 ? (int)kvb + " kvB" : String.format("%.2f", mvb) + " MvB");
+                        if(mvb >= 0.01 || (maxMvB < Y_VALUE_BREAK_MVB && mvb > 0.001)) {
+                            String amount = (maxMvB < Y_VALUE_BREAK_MVB ? (int)kvb + " kvB" : String.format("%.2f", mvb) + " MvB");
                             Label label = new Label(series.getName() + ": " + amount);
                             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CIRCLE);
                             if(i < 8) {

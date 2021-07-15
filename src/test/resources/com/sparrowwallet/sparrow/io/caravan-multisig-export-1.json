@@ -1,0 +1,36 @@
+{
+  "name": "Test Wallet",
+  "addressType": "P2WSH",
+  "network": "mainnet",
+  "client": {
+    "type": "public"
+  },
+  "quorum": {
+    "requiredSigners": 2,
+    "totalSigners": 3
+  },
+  "extendedPublicKeys": [
+    {
+      "name": "Mercury",
+      "bip32Path": "m/48'/0'/0'/2'",
+      "xpub": "xpub6EMVvcTUbaABdaPLaVWE72CjcN72URa5pKK1knrKLz1hKaDwUkgddc3832a8MHEpLyuow7MfjMRomt2iMtwPH4pWrFLft4JsquHjeZfKsYp",
+      "xfp": "8188029f",
+      "method": "trezor"
+    },
+    {
+      "name": "Venus",
+      "bip32Path": "m/48'/0'/0'/2'",
+      "xpub": "xpub6EbTHAgvzZtVppjLPXia2prt6T2w7DD2VQ8gysgV6ECzmKkA6zt4WR3hX4bgciTDrnaneZoJbA19tYKBMrWuA89SbgYAdbMNWmtzrgLhqco",
+      "xfp": "a15e8133",
+      "method": "ledger"
+    },
+    {
+      "name": "Earth",
+      "bip32Path": "m/48'/0'/0'/2'",
+      "xpub": "xpub6Ea6qWGr6BWpCSyLo8ggypvXg1MwadiAGZxAHvrBUwvT2ki6pNVG61bg3YEdxkj7FRJ1cLFK7Vvqd9rcDvwCLX7VfEMfJJfdbA1NGsFazvz",
+      "xfp": "d31cf7f9",
+      "method": "coldcard"
+    }
+  ],
+  "startingAddressIndex": 0
+}
