@@ -50,10 +50,16 @@ public class CaravanMultisig implements WalletImport, WalletExport {
             Wallet wallet = new Wallet();
             wallet.setName(cf.name);
             wallet.setPolicyType(PolicyType.MULTI);
+            ScriptType scriptType = ScriptType.valueOf(cf.addressType);
 
             for(ExtPublicKey extKey : cf.extendedPublicKeys) {
                 Keystore keystore = new Keystore(extKey.name);
-                keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path));
+                try {
+                    keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path));
+                } catch(NumberFormatException e) {
+                    keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, scriptType.getDefaultDerivationPath()));
+                }
+
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(extKey.xpub));
 
                 WalletModel walletModel = WalletModel.fromType(extKey.method);
@@ -67,7 +73,6 @@ public class CaravanMultisig implements WalletImport, WalletExport {
                 wallet.getKeystores().add(keystore);
             }
 
-            ScriptType scriptType = ScriptType.valueOf(cf.addressType);
             wallet.setScriptType(scriptType);
             wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.MULTI, scriptType, wallet.getKeystores(), cf.quorum.requiredSigners));
 
