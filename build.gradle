@@ -38,6 +38,7 @@ java {
 }
 
 dependencies {
+    //Any changes to the dependencies must be reflected in the module definitions below!
     implementation(project(':drongo')) {
         exclude group: 'org.hamcrest'
         exclude group: 'junit'
@@ -375,7 +376,7 @@ extraJavaModuleInfo {
     module('kotlin-stdlib-1.5.20.jar', 'kotlin.stdlib', '1.5.20') {
         exports('kotlin')
     }
-    module('hummingbird-1.6.1.jar', 'com.sparrowwallet.hummingbird', '1.6.1') {
+    module('hummingbird-1.6.2.jar', 'com.sparrowwallet.hummingbird', '1.6.2') {
         exports('com.sparrowwallet.hummingbird')
         exports('com.sparrowwallet.hummingbird.registry')
         requires('co.nstant.in.cbor')
