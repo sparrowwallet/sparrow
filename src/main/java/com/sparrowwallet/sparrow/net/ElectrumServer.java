@@ -50,6 +50,8 @@ public class ElectrumServer {
 
     private static Map<String, String> retrievedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
+    private static Map<Sha256Hash, BlockTransaction> retrievedTransactions = Collections.synchronizedMap(new HashMap<>());
+
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static String bwtElectrumServer;
@@ -93,6 +95,7 @@ public class ElectrumServer {
                 //If changing server, don't rely on previous transaction history
                 if(previousServerAddress != null && !electrumServer.equals(previousServerAddress)) {
                     retrievedScriptHashes.clear();
+                    retrievedTransactions.clear();
                 }
                 previousServerAddress = electrumServer;
 
@@ -1229,8 +1232,30 @@ public class ElectrumServer {
         protected Task<Map<Sha256Hash, BlockTransaction>> createTask() {
             return new Task<>() {
                 protected Map<Sha256Hash, BlockTransaction> call() throws ServerException {
-                    ElectrumServer electrumServer = new ElectrumServer();
-                    return electrumServer.getReferencedTransactions(references, scriptHash);
+                    Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
+                    for(Sha256Hash ref : references) {
+                        if(retrievedTransactions.get(ref) != null) {
+                            transactionMap.put(ref, retrievedTransactions.get(ref));
+                        }
+                    }
+
+                    Set<Sha256Hash> fetchReferences = new HashSet<>(references);
+                    fetchReferences.removeAll(transactionMap.keySet());
+
+                    if(!fetchReferences.isEmpty()) {
+                        ElectrumServer electrumServer = new ElectrumServer();
+                        Map<Sha256Hash, BlockTransaction> fetchedTransactions = electrumServer.getReferencedTransactions(fetchReferences, scriptHash);
+                        transactionMap.putAll(fetchedTransactions);
+
+                        for(Map.Entry<Sha256Hash, BlockTransaction> fetchedEntry : fetchedTransactions.entrySet()) {
+                            if(fetchedEntry.getValue() != null && !Sha256Hash.ZERO_HASH.equals(fetchedEntry.getValue().getBlockHash()) &&
+                                    AppServices.getCurrentBlockHeight() != null && fetchedEntry.getValue().getConfirmations(AppServices.getCurrentBlockHeight()) >= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+                                retrievedTransactions.put(fetchedEntry.getKey(), fetchedEntry.getValue());
+                            }
+                        }
+                    }
+
+                    return transactionMap;
                 }
             };
         }
