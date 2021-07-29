@@ -381,6 +381,11 @@ public class WalletForm {
                             blockTransaction.setLabel(changedNode.getLabel());
                             changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
                         }
+
+                        if(receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) {
+                            receivedRef.setLabel(changedNode.getLabel() + (changedNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
+                            changedLabelEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, changedNode.getKeyPurpose()));
+                        }
                     }
 
                     if(!changedLabelEntries.isEmpty()) {
