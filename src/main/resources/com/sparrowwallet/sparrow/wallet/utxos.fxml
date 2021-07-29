@@ -22,7 +22,17 @@
         <VBox spacing="10.0">
             <BorderPane VBox.vgrow="ALWAYS">
                 <top>
-                    <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
+                        <Button onAction="#exportUtxos" styleClass="icon-button">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
+                            </graphic>
+                            <tooltip>
+                                <Tooltip text="Export UTXOs as CSV" />
+                            </tooltip>
+                        </Button>
+                    </HBox>
                 </top>
                 <center>
                     <UtxosTreeTable fx:id="utxosTable" />
