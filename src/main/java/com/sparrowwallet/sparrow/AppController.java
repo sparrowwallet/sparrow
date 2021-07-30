@@ -158,6 +158,8 @@ public class AppController implements Initializable {
 
     private final Set<Wallet> loadingWallets = new LinkedHashSet<>();
 
+    private final Set<Wallet> emptyLoadingWallets = new LinkedHashSet<>();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -1465,7 +1467,7 @@ public class AppController implements Initializable {
     }
 
     private void tabLabelStartAnimation(Wallet wallet) {
-        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == wallet).forEach(this::tabLabelStartAnimation);
+        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((TabPane)tab.getContent()).getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWallet()).anyMatch(tabWallet -> tabWallet == wallet)).forEach(this::tabLabelStartAnimation);
     }
 
     private void tabLabelStartAnimation(Transaction transaction) {
@@ -1493,7 +1495,15 @@ public class AppController implements Initializable {
     }
 
     private void tabLabelStopAnimation(Wallet wallet) {
-        tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == wallet).forEach(this::tabLabelStopAnimation);
+        Set<Wallet> relatedWallets = new HashSet<>(wallet.isMasterWallet() ? wallet.getChildWallets() : wallet.getMasterWallet().getChildWallets());
+        relatedWallets.remove(wallet);
+        if(!wallet.isMasterWallet()) {
+            relatedWallets.add(wallet.getMasterWallet());
+        }
+
+        if(loadingWallets.stream().noneMatch(relatedWallets::contains)) {
+            tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((TabPane)tab.getContent()).getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWallet()).anyMatch(tabWallet -> tabWallet == wallet)).forEach(this::tabLabelStopAnimation);
+        }
     }
 
     private void tabLabelStopAnimation(Transaction transaction) {
@@ -1768,7 +1778,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void walletTabsClosed(WalletTabsClosedEvent event) {
-        if(event.getClosedWalletTabData().stream().map(WalletTabData::getWallet).anyMatch(loadingWallets::remove) && loadingWallets.isEmpty()) {
+        if(event.getClosedWalletTabData().stream().map(WalletTabData::getWallet).anyMatch(emptyLoadingWallets::remove) && emptyLoadingWallets.isEmpty()) {
             if(statusBar.getText().equals(LOADING_TRANSACTIONS_MESSAGE)) {
                 statusBar.setText("");
             }
@@ -1794,9 +1804,10 @@ public class AppController implements Initializable {
                 statusUpdated(new StatusEvent(LOADING_TRANSACTIONS_MESSAGE, 120));
                 if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                     statusBar.setProgress(-1);
-                    loadingWallets.add(event.getWallet());
+                    emptyLoadingWallets.add(event.getWallet());
                 }
             }
+            loadingWallets.add(event.getWallet());
             tabLabelStartAnimation(event.getWallet());
         }
     }
@@ -1810,8 +1821,9 @@ public class AppController implements Initializable {
             if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                 statusBar.setProgress(0);
             }
-            tabLabelStopAnimation(event.getWallet());
+            emptyLoadingWallets.remove(event.getWallet());
             loadingWallets.remove(event.getWallet());
+            tabLabelStopAnimation(event.getWallet());
             tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData && ((WalletTabData)tab.getUserData()).getWallet() == event.getWallet()).forEach(this::tabLabelRemoveFailure);
         }
     }
