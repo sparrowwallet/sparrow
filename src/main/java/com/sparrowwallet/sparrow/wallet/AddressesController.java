@@ -113,7 +113,7 @@ public class AddressesController extends WalletFormController implements Initial
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Addresses to CSV");
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-" + keyPurpose.name().toLowerCase() + "-addresses.csv");
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + "-" + keyPurpose.name().toLowerCase() + "-addresses.csv");
 
         Wallet copy = getWalletForm().getWallet().copy();
         WalletNode purposeNode = copy.getNode(keyPurpose);

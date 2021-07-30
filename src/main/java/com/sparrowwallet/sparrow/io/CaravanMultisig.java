@@ -100,7 +100,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
 
         try {
             CaravanFile cf = new CaravanFile();
-            cf.name = wallet.getName();
+            cf.name = wallet.getFullName();
             cf.addressType = wallet.getScriptType().toString().replace('-', '_');
             cf.network = Network.get().getName();
             cf.client = new Client();

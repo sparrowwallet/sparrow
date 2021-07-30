@@ -253,7 +253,7 @@ public class ElectrumServer {
 
         if(!newReferences.isEmpty()) {
             //Look for additional nodes to fetch history for by considering the inputs and outputs of new transactions found
-            log.debug(wallet.getName() + " found new transactions: " + newReferences);
+            log.debug(wallet.getFullName() + " found new transactions: " + newReferences);
             Set<WalletNode> additionalNodes = new HashSet<>();
             Map<String, WalletNode> walletScriptHashes = getAllScriptHashes(wallet);
             for(BlockTransactionHash reference : newReferences) {
@@ -394,7 +394,7 @@ public class ElectrumServer {
             Map<String, String> pathScriptHashes = new LinkedHashMap<>();
             for(WalletNode node : nodes) {
                 if(node == null) {
-                    log.error("Null node for wallet " + wallet.getName() + " subscribing nodes " + nodes + " startIndex " + startIndex, new Throwable());
+                    log.error("Null node for wallet " + wallet.getFullName() + " subscribing nodes " + nodes + " startIndex " + startIndex, new Throwable());
                 }
 
                 if(node != null && node.getIndex() >= startIndex) {

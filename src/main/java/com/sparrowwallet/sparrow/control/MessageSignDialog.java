@@ -399,7 +399,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             return;
         }
 
-        WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+        WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());

@@ -28,7 +28,7 @@ public abstract class WalletFormController extends BaseController {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == walletForm) {
                 EventManager.get().unregister(this);
-            } else if(walletForm instanceof SettingsWalletForm && tabData.getStorage() == walletForm.getStorage()) {
+            } else if(walletForm instanceof SettingsWalletForm && tabData.getStorage().getWalletId(tabData.getWallet()).equals(walletForm.getWalletId())) {
                 EventManager.get().unregister(this);
             }
         }

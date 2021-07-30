@@ -93,7 +93,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             if(optRef.isPresent()) {
                 validEntries++;
                 if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().equals(optRef.get().getSpentBy()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.INPUT))) {
-                    log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getName() + " missing child for input " + optRef.get().getSpentBy() + " on output " + optRef.get());
+                    log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " missing child for input " + optRef.get().getSpentBy() + " on output " + optRef.get());
                     return false;
                 }
             }
@@ -103,14 +103,14 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             if(optRef.isPresent()) {
                 validEntries++;
                 if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().equals(optRef.get()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.OUTPUT))) {
-                    log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getName() + " missing child for output " + optRef.get());
+                    log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " missing child for output " + optRef.get());
                     return false;
                 }
             }
         }
 
         if(getChildren().size() != validEntries) {
-            log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getName() + " has incorrect number of children " + getChildren().size() + " (should be " + validEntries + ")");
+            log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " has incorrect number of children " + getChildren().size() + " (should be " + validEntries + ")");
             return false;
         }
 

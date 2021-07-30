@@ -102,7 +102,7 @@ public class TransactionsController extends WalletFormController implements Init
         });
 
         transactionsMasterDetail.setShowDetailNode(Config.get().isShowLoadingLog());
-        loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getName());
+        loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getFullName());
         loadingLog.setEditable(false);
     }
 
@@ -125,7 +125,7 @@ public class TransactionsController extends WalletFormController implements Init
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Transactions as CSV");
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + ".csv");
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + ".csv");
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);

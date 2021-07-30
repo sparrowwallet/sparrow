@@ -113,7 +113,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export UTXOs to CSV");
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getName() + "-utxos.csv");
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + "-utxos.csv");
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);

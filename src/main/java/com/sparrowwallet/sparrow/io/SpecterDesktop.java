@@ -21,7 +21,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
             SpecterWallet specterWallet = new SpecterWallet();
-            specterWallet.label = wallet.getName();
+            specterWallet.label = wallet.getFullName();
             specterWallet.blockheight = wallet.getTransactions().values().stream().mapToInt(BlockTransactionHash::getHeight).min().orElse(wallet.getStoredBlockHeight());
             specterWallet.descriptor = OutputDescriptor.getOutputDescriptor(wallet).toString(true);
 

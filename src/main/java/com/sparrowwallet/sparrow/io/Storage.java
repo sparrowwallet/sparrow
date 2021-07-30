@@ -338,11 +338,34 @@ public class Storage {
                     return type.getInstance().isEncrypted(walletFile);
                 }
             }
+
+            PersistenceType detectedType = detectPersistenceType(walletFile);
+            if(detectedType != null) {
+                return detectedType.getInstance().isEncrypted(walletFile);
+            }
         } catch(IOException e) {
             //ignore
         }
 
         return FileType.BINARY.equals(IOUtils.getFileType(walletFile));
+    }
+
+    public static PersistenceType detectPersistenceType(File walletFile) {
+        try(Reader reader = new FileReader(walletFile)) {
+            int firstChar = reader.read();
+
+            if(firstChar == 'U' || firstChar == '{') {
+                return PersistenceType.JSON;
+            }
+
+            if(firstChar == 'H') {
+                return PersistenceType.DB;
+            }
+        } catch(IOException e) {
+            log.error("Error detecting persistence type", e);
+        }
+
+        return null;
     }
 
     public static File getWalletsBackupDir() {

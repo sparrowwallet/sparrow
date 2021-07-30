@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
 
 public class Sparrow implements WalletImport, WalletExport {
     private static final Logger log = LoggerFactory.getLogger(Sparrow.class);
@@ -29,12 +30,20 @@ public class Sparrow implements WalletImport, WalletExport {
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
-            Storage storage = AppServices.get().getOpenWallets().get(wallet);
-            File tempFile = File.createTempFile(wallet.getName(), null);
-            Storage tempStorage = new Storage(PersistenceType.JSON, tempFile);
+            Wallet exportedWallet = !wallet.isMasterWallet() ? wallet.getMasterWallet() : wallet;
+            PersistenceType persistenceType = exportedWallet.getChildWallets().isEmpty() ? PersistenceType.JSON : PersistenceType.DB;
+            Persistence persistence = persistenceType.getInstance();
+            Storage storage = AppServices.get().getOpenWallets().get(exportedWallet);
+            File tempFile = File.createTempFile(exportedWallet.getName(), "." + persistenceType.getExtension());
+            tempFile.delete();
+            Storage tempStorage = new Storage(persistence, tempFile);
             tempStorage.setKeyDeriver(storage.getKeyDeriver());
             tempStorage.setEncryptionPubKey(storage.getEncryptionPubKey());
-            tempStorage.saveWallet(wallet);
+            tempStorage.saveWallet(exportedWallet);
+            for(Wallet childWallet : exportedWallet.getChildWallets()) {
+                tempStorage.saveWallet(childWallet);
+            }
+            persistence.close();
             Files.copy(tempStorage.getWalletFile(), outputStream);
             outputStream.flush();
             tempStorage.getWalletFile().delete();
@@ -53,7 +62,8 @@ public class Sparrow implements WalletImport, WalletExport {
     public String getExportFileExtension(Wallet wallet) {
         try {
             Storage storage = AppServices.get().getOpenWallets().get(wallet);
-            return storage.isEncrypted() ? "" : PersistenceType.JSON.getExtension();
+            Wallet exportedWallet = !wallet.isMasterWallet() ? wallet.getMasterWallet() : wallet;
+            return !exportedWallet.getChildWallets().isEmpty() ? PersistenceType.DB.getExtension() : (storage.isEncrypted() ? "" : PersistenceType.JSON.getExtension());
         } catch(IOException e) {
             //ignore
         }
@@ -89,13 +99,21 @@ public class Sparrow implements WalletImport, WalletExport {
         try {
             tempFile = File.createTempFile("sparrow", null);
             java.nio.file.Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            storage = new Storage(PersistenceType.JSON, tempFile);
+            PersistenceType persistenceType = Storage.detectPersistenceType(tempFile);
+            persistenceType = (persistenceType == null ? PersistenceType.JSON : persistenceType);
+            File tempTypedFile = new File(tempFile.getParentFile(), tempFile.getName() + "." + persistenceType.getExtension());
+            tempFile.renameTo(tempTypedFile);
+            tempFile = tempTypedFile;
+            storage = new Storage(persistenceType, tempFile);
             if(!isEncrypted(tempFile)) {
                 wallet = storage.loadUnencryptedWallet().getWallet();
             } else {
                 WalletBackupAndKey walletBackupAndKey = storage.loadEncryptedWallet(password);
                 wallet = walletBackupAndKey.getWallet();
                 wallet.decrypt(walletBackupAndKey.getKey());
+                for(Map.Entry<Storage, WalletBackupAndKey> entry : walletBackupAndKey.getChildWallets().entrySet()) {
+                    entry.getValue().getWallet().decrypt(entry.getValue().getKey());
+                }
             }
 
             return wallet;

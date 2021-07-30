@@ -69,7 +69,7 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-            writer.append("addwallet ").append(wallet.getName()).append("&").append(OutputDescriptor.getOutputDescriptor(wallet).toString().replace('\'', 'h')).append("\n");
+            writer.append("addwallet ").append(wallet.getFullName()).append("&").append(OutputDescriptor.getOutputDescriptor(wallet).toString().replace('\'', 'h')).append("\n");
             writer.flush();
         } catch(Exception e) {
             log.error("Error exporting " + getName() + " wallet", e);

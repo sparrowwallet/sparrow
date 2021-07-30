@@ -180,7 +180,7 @@ public class DbPersistence implements Persistence {
             return;
         }
 
-        log.debug("Updating " + wallet.getName() + " on " + Thread.currentThread().getName());
+        log.debug("Updating " + wallet.getFullName() + " on " + Thread.currentThread().getName());
         log.debug(dirtyPersistables.toString());
 
         Jdbi jdbi = getJdbi(storage, password);

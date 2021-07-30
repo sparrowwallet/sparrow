@@ -341,7 +341,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         Wallet copy = getWalletForm().getWallet().copy();
 
         if(copy.isEncrypted()) {
-            WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());

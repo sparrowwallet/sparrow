@@ -80,9 +80,11 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
         String extension = exporter.getExportFileExtension(wallet);
-        fileChooser.setInitialFileName(wallet.getName() +
-                (exporter instanceof Sparrow ? "" : "-" + exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "")) +
-                (extension == null || extension.isEmpty() ? "" : "." + extension));
+        String fileName = wallet.getFullName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "");
+        if(exporter instanceof Sparrow) {
+            fileName = wallet.getMasterName();
+        }
+        fileChooser.setInitialFileName(fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
@@ -94,7 +96,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
     private void exportWallet(File file) {
         if(wallet.isEncrypted() && exporter.walletExportRequiresDecryption()) {
             Wallet copy = wallet.copy();
-            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 final String walletId = AppServices.get().getOpenWallets().get(wallet).getWalletId(wallet);

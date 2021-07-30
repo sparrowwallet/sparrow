@@ -847,7 +847,7 @@ public class AppController implements Initializable {
             for(Keystore copyKeystore : copy.getKeystores()) {
                 if(copyKeystore.hasSeed()) {
                     if(copyKeystore.getSeed().needsPassphrase()) {
-                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getName(), copyKeystore);
+                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getFullName(), copyKeystore);
                         Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
                         if(optionalPassphrase.isPresent()) {
                             copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
@@ -985,6 +985,14 @@ public class AppController implements Initializable {
                     checkWalletNetwork(wallet);
                     restorePublicKeysFromSeed(wallet, null);
                     addWalletTabOrWindow(storage, wallet, null, false);
+
+                    for(Wallet childWallet : wallet.getChildWallets()) {
+                        storage.saveWallet(childWallet);
+                        checkWalletNetwork(childWallet);
+                        restorePublicKeysFromSeed(childWallet, null);
+                        addWalletTabOrWindow(storage, childWallet, null, false);
+                    }
+                    Platform.runLater(() -> selectTab(wallet));
                 } catch(IOException | StorageException | MnemonicException e) {
                     log.error("Error saving imported wallet", e);
                 }
@@ -1004,6 +1012,15 @@ public class AppController implements Initializable {
                         checkWalletNetwork(wallet);
                         restorePublicKeysFromSeed(wallet, key);
                         addWalletTabOrWindow(storage, wallet, null, false);
+
+                        for(Wallet childWallet : wallet.getChildWallets()) {
+                            childWallet.encrypt(key);
+                            storage.saveWallet(childWallet);
+                            checkWalletNetwork(childWallet);
+                            restorePublicKeysFromSeed(childWallet, key);
+                            addWalletTabOrWindow(storage, childWallet, null, false);
+                        }
+                        Platform.runLater(() -> selectTab(wallet));
                     } catch(IOException | StorageException | MnemonicException e) {
                         log.error("Error saving imported wallet", e);
                     } finally {
@@ -1140,16 +1157,21 @@ public class AppController implements Initializable {
             subTabs.getStyleClass().add("master-only");
             tab.setContent(subTabs);
 
+            WalletForm walletForm = addWalletSubTab(subTabs, storage, wallet, backupWallet);
+            TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
+            tab.setUserData(tabData);
+
             subTabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
                 if(selectedTab != null) {
                     EventManager.get().post(new WalletTabSelectedEvent(tab));
                 }
             });
 
-            WalletForm walletForm = addWalletSubTab(subTabs, storage, wallet, backupWallet);
-
-            TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
-            tab.setUserData(tabData);
+            subTabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
+                if(c.next() && (c.wasAdded() || c.wasRemoved())) {
+                    EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
+                }
+            });
 
             tabs.getTabs().add(tab);
             tabs.getSelectionModel().select(tab);
@@ -1608,7 +1630,7 @@ public class AppController implements Initializable {
 
             Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
             Notifications notificationBuilder = Notifications.create()
-                    .title("Sparrow - " + event.getWallet().getName())
+                    .title("Sparrow - " + event.getWallet().getFullName())
                     .text(text)
                     .graphic(new ImageView(image))
                     .hideAfter(Duration.seconds(15))
