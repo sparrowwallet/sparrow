@@ -40,6 +40,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -218,8 +219,8 @@ public class AppController implements Initializable {
                     EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
                 }
 
-                List<WalletTabData> closedWalletTabs = c.getRemoved().stream().map(tab -> (TabData)tab.getUserData())
-                        .filter(tabData -> tabData.getType() == TabData.TabType.WALLET).map(tabData -> (WalletTabData)tabData).collect(Collectors.toList());
+                List<WalletTabData> closedWalletTabs = c.getRemoved().stream().filter(tab -> tab.getUserData() instanceof WalletTabData)
+                        .flatMap(tab -> ((TabPane)tab.getContent()).getTabs().stream().map(subTab -> (WalletTabData)subTab.getUserData())).collect(Collectors.toList());
                 if(!closedWalletTabs.isEmpty()) {
                     EventManager.get().post(new WalletTabsClosedEvent(closedWalletTabs));
                 }
@@ -619,9 +620,11 @@ public class AppController implements Initializable {
         List<WalletTabData> openWalletTabData = new ArrayList<>();
 
         for(Tab tab : tabs.getTabs()) {
-            TabData tabData = (TabData)tab.getUserData();
-            if(tabData.getType() == TabData.TabType.WALLET) {
-                openWalletTabData.add((WalletTabData)tabData);
+            if(tab.getUserData() instanceof WalletTabData) {
+                TabPane subTabs = (TabPane)tab.getContent();
+                for(Tab subTab : subTabs.getTabs()) {
+                    openWalletTabData.add((WalletTabData)subTab.getUserData());
+                }
             }
         }
 
@@ -640,11 +643,14 @@ public class AppController implements Initializable {
 
     public void selectTab(Wallet wallet) {
         for(Tab tab : tabs.getTabs()) {
-            TabData tabData = (TabData) tab.getUserData();
-            if(tabData.getType() == TabData.TabType.WALLET) {
-                WalletTabData walletTabData = (WalletTabData) tabData;
-                if(walletTabData.getWallet() == wallet) {
-                    tabs.getSelectionModel().select(tab);
+            if(tab.getUserData() instanceof WalletTabData) {
+                TabPane subTabs = (TabPane)tab.getContent();
+                for(Tab subTab : subTabs.getTabs()) {
+                    WalletTabData walletTabData = (WalletTabData)subTab.getUserData();
+                    if(walletTabData.getWallet() == wallet) {
+                        tabs.getSelectionModel().select(tab);
+                        subTabs.getSelectionModel().select(subTab);
+                    }
                 }
             }
         }
@@ -950,11 +956,13 @@ public class AppController implements Initializable {
             //Close existing wallet first if open
             for(Iterator<Tab> iter = tabs.getTabs().iterator(); iter.hasNext(); ) {
                 Tab tab = iter.next();
-                TabData tabData = (TabData)tab.getUserData();
-                if(tabData.getType() == TabData.TabType.WALLET) {
-                    WalletTabData walletTabData = (WalletTabData) tabData;
-                    if(walletTabData.getStorage().getWalletFile().equals(walletFile)) {
-                        iter.remove();
+                if(tab.getUserData() instanceof WalletTabData) {
+                    TabPane subTabs = (TabPane)tab.getContent();
+                    for(Tab subTab : subTabs.getTabs()) {
+                        WalletTabData walletTabData = (WalletTabData)subTab.getUserData();
+                        if(walletTabData.getStorage().getWalletFile().equals(walletFile)) {
+                            iter.remove();
+                        }
                     }
                 }
             }
@@ -1016,11 +1024,9 @@ public class AppController implements Initializable {
     }
 
     public void exportWallet(ActionEvent event) {
-        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
-        TabData tabData = (TabData)selectedTab.getUserData();
-        if(tabData.getType() == TabData.TabType.WALLET) {
-            WalletTabData walletTabData = (WalletTabData)tabData;
-            WalletExportDialog dlg = new WalletExportDialog(walletTabData.getWallet());
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            WalletExportDialog dlg = new WalletExportDialog(selectedWalletForm.getWallet());
             Optional<Wallet> wallet = dlg.showAndWait();
             if(wallet.isPresent()) {
                 //Successful export
@@ -1035,10 +1041,9 @@ public class AppController implements Initializable {
 
     public void signVerifyMessage(ActionEvent event) {
         MessageSignDialog messageSignDialog = null;
-        Tab tab = tabs.getSelectionModel().getSelectedItem();
-        if(tab != null && tab.getUserData() instanceof WalletTabData) {
-            WalletTabData walletTabData = (WalletTabData)tab.getUserData();
-            Wallet wallet = walletTabData.getWallet();
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            Wallet wallet = selectedWalletForm.getWallet();
             if(wallet.getKeystores().size() == 1 &&
                     (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
                 //Can sign and verify
@@ -1055,11 +1060,9 @@ public class AppController implements Initializable {
     }
 
     public void sendToMany(ActionEvent event) {
-        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
-        TabData tabData = (TabData)selectedTab.getUserData();
-        if(tabData.getType() == TabData.TabType.WALLET) {
-            WalletTabData walletTabData = (WalletTabData) tabData;
-            Wallet wallet = walletTabData.getWallet();
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            Wallet wallet = selectedWalletForm.getWallet();
             BitcoinUnit bitcoinUnit = Config.get().getBitcoinUnit();
             if(bitcoinUnit == BitcoinUnit.AUTO) {
                 bitcoinUnit = wallet.getAutoUnit();
@@ -1081,16 +1084,14 @@ public class AppController implements Initializable {
     }
 
     public void refreshWallet(ActionEvent event) {
-        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
-        TabData tabData = (TabData)selectedTab.getUserData();
-        if(tabData.getType() == TabData.TabType.WALLET) {
-            WalletTabData walletTabData = (WalletTabData) tabData;
-            Wallet wallet = walletTabData.getWallet();
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            Wallet wallet = selectedWalletForm.getWallet();
             Wallet pastWallet = wallet.copy();
-            walletTabData.getStorage().backupTempWallet();
+            selectedWalletForm.getStorage().backupTempWallet();
             wallet.clearHistory();
             AppServices.clearTransactionHistoryCache(wallet);
-            EventManager.get().post(new WalletHistoryClearedEvent(wallet, pastWallet, walletTabData.getWalletForm().getWalletId()));
+            EventManager.get().post(new WalletHistoryClearedEvent(wallet, pastWallet, selectedWalletForm.getWalletId()));
         }
     }
 
@@ -1118,7 +1119,7 @@ public class AppController implements Initializable {
     }
 
     public void addWalletTab(Storage storage, Wallet wallet, Wallet backupWallet) {
-        try {
+        if(wallet.isMasterWallet()) {
             String name = storage.getWalletName(wallet);
             if(!name.equals(wallet.getName())) {
                 wallet.setName(name);
@@ -1133,8 +1134,46 @@ public class AppController implements Initializable {
             tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
+
+            TabPane subTabs = new TabPane();
+            subTabs.setSide(Side.RIGHT);
+            subTabs.getStyleClass().add("master-only");
+            tab.setContent(subTabs);
+
+            subTabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
+                if(selectedTab != null) {
+                    EventManager.get().post(new WalletTabSelectedEvent(tab));
+                }
+            });
+
+            WalletForm walletForm = addWalletSubTab(subTabs, storage, wallet, backupWallet);
+
+            TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
+            tab.setUserData(tabData);
+
+            tabs.getTabs().add(tab);
+            tabs.getSelectionModel().select(tab);
+        } else {
+            for(Tab walletTab : tabs.getTabs()) {
+                TabData tabData = (TabData)walletTab.getUserData();
+                if(tabData instanceof WalletTabData) {
+                    WalletTabData walletTabData = (WalletTabData)tabData;
+                    if(walletTabData.getWallet() == wallet.getMasterWallet()) {
+                        TabPane subTabs = (TabPane)walletTab.getContent();
+                        subTabs.getStyleClass().remove("master-only");
+                        addWalletSubTab(subTabs, storage, wallet, backupWallet);
+                    }
+                }
+            }
+        }
+    }
+
+    public WalletForm addWalletSubTab(TabPane subTabs, Storage storage, Wallet wallet, Wallet backupWallet) {
+        try {
+            Tab subTab = new Tab(wallet.getName());
+            subTab.setClosable(false);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
-            tab.setContent(walletLoader.load());
+            subTab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
 
             EventManager.get().post(new WalletOpeningEvent(storage, wallet));
@@ -1145,13 +1184,28 @@ public class AppController implements Initializable {
             controller.setWalletForm(walletForm);
 
             TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
-            tab.setUserData(tabData);
+            subTab.setUserData(tabData);
 
-            tabs.getTabs().add(tab);
-            tabs.getSelectionModel().select(tab);
+            subTabs.getTabs().add(subTab);
+            subTabs.getSelectionModel().select(subTab);
+
+            return walletForm;
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public WalletForm getSelectedWalletForm() {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData instanceof WalletTabData) {
+            TabPane subTabs = (TabPane)selectedTab.getContent();
+            Tab selectedSubTab = subTabs.getSelectionModel().getSelectedItem();
+            WalletTabData subWalletTabData = (WalletTabData)selectedSubTab.getUserData();
+            return subWalletTabData.getWalletForm();
+        }
+
+        return null;
     }
 
     public void openExamples(ActionEvent event) {
@@ -1507,11 +1561,9 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
-        Tab tab = tabs.getSelectionModel().getSelectedItem();
-        TabData tabData = (TabData)tab.getUserData();
-        if(tabData instanceof WalletTabData) {
-            WalletTabData walletTabData = (WalletTabData)tabData;
-            if(walletTabData.getWalletForm().getWalletId().equals(event.getWalletId())) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            if(selectedWalletForm.getWalletId().equals(event.getWalletId())) {
                 exportWallet.setDisable(!event.getWallet().isValid());
             }
         }
@@ -1827,23 +1879,29 @@ public class AppController implements Initializable {
     public void viewWallet(ViewWalletEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             for(Tab tab : tabs.getTabs()) {
-                TabData tabData = (TabData) tab.getUserData();
-                if(tabData.getType() == TabData.TabType.WALLET) {
-                    WalletTabData walletTabData = (WalletTabData) tabData;
-                    if(event.getStorage().getWalletId(event.getWallet()).equals(walletTabData.getWalletForm().getWalletId())) {
-                        tabs.getSelectionModel().select(tab);
-                        return;
+                if(tab.getUserData() instanceof WalletTabData) {
+                    TabPane subTabs = (TabPane)tab.getContent();
+                    for(Tab subTab : subTabs.getTabs()) {
+                        WalletTabData walletTabData = (WalletTabData)subTab.getUserData();
+                        if(event.getStorage().getWalletId(event.getWallet()).equals(walletTabData.getWalletForm().getWalletId())) {
+                            tabs.getSelectionModel().select(tab);
+                            subTabs.getSelectionModel().select(subTab);
+                            return;
+                        }
                     }
                 }
             }
 
             for(Tab tab : tabs.getTabs()) {
-                TabData tabData = (TabData) tab.getUserData();
-                if(tabData.getType() == TabData.TabType.WALLET) {
-                    WalletTabData walletTabData = (WalletTabData) tabData;
-                    if(event.getStorage().getWalletFile().equals(walletTabData.getStorage().getWalletFile())) {
-                        tabs.getSelectionModel().select(tab);
-                        return;
+                if(tab.getUserData() instanceof WalletTabData) {
+                    TabPane subTabs = (TabPane)tab.getContent();
+                    for(Tab subTab : subTabs.getTabs()) {
+                        WalletTabData walletTabData = (WalletTabData)subTab.getUserData();
+                        if(event.getStorage().getWalletFile().equals(walletTabData.getStorage().getWalletFile())) {
+                            tabs.getSelectionModel().select(tab);
+                            subTabs.getSelectionModel().select(subTab);
+                            return;
+                        }
                     }
                 }
             }

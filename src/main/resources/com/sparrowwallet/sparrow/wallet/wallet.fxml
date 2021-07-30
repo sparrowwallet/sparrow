@@ -8,7 +8,7 @@
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import com.sparrowwallet.sparrow.wallet.Function?>
 
-<BorderPane fx:id="tabContent" stylesheets="@wallet.css, @../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.WalletController">
+<BorderPane stylesheets="@wallet.css, @../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.WalletController">
     <left>
         <VBox styleClass="list-menu">
             <ToggleButton VBox.vgrow="ALWAYS" text="Transactions" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity">
