@@ -1778,6 +1778,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void walletTabsClosed(WalletTabsClosedEvent event) {
+        event.getClosedWalletTabData().stream().map(WalletTabData::getWallet).forEach(loadingWallets::remove);
         if(event.getClosedWalletTabData().stream().map(WalletTabData::getWallet).anyMatch(emptyLoadingWallets::remove) && emptyLoadingWallets.isEmpty()) {
             if(statusBar.getText().equals(LOADING_TRANSACTIONS_MESSAGE)) {
                 statusBar.setText("");
