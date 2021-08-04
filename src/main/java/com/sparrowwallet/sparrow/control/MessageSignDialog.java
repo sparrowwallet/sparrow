@@ -190,7 +190,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 customSignButton.setOnAction(event -> {
                     customSignButton.setDisable(true);
                     signMessage();
-                    setResult(ButtonBar.ButtonData.CANCEL_CLOSE);
+                    setResult(ButtonBar.ButtonData.OK_DONE);
                 });
             }
         } else {
