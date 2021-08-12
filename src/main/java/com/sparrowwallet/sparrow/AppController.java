@@ -30,6 +30,7 @@ import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
+import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
@@ -819,13 +820,13 @@ public class AppController implements Initializable {
     private void openWallet(Storage storage, WalletBackupAndKey walletBackupAndKey, AppController appController, boolean forceSameWindow) {
         try {
             checkWalletNetwork(walletBackupAndKey.getWallet());
-            restorePublicKeysFromSeed(walletBackupAndKey.getWallet(), walletBackupAndKey.getKey());
+            restorePublicKeysFromSeed(storage, walletBackupAndKey.getWallet(), walletBackupAndKey.getKey());
             if(!walletBackupAndKey.getWallet().isValid()) {
                 throw new IllegalStateException("Wallet file is not valid.");
             }
             AppController walletAppController = appController.addWalletTabOrWindow(storage, walletBackupAndKey.getWallet(), walletBackupAndKey.getBackupWallet(), forceSameWindow);
-            for(Map.Entry<Storage, WalletBackupAndKey> entry : walletBackupAndKey.getChildWallets().entrySet()) {
-                openWallet(entry.getKey(), entry.getValue(), walletAppController, true);
+            for(Map.Entry<WalletBackupAndKey, Storage> entry : walletBackupAndKey.getChildWallets().entrySet()) {
+                openWallet(entry.getValue(), entry.getKey(), walletAppController, true);
             }
             Platform.runLater(() -> selectTab(walletBackupAndKey.getWallet()));
         } catch(Exception e) {
@@ -842,7 +843,7 @@ public class AppController implements Initializable {
         }
     }
 
-    private void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
+    private void restorePublicKeysFromSeed(Storage storage, Wallet wallet, Key key) throws MnemonicException {
         if(wallet.containsPrivateKeys()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
             Wallet copy = wallet.copy();
@@ -868,6 +869,12 @@ public class AppController implements Initializable {
                 }
 
                 copy.decrypt(key);
+            }
+
+            if(wallet.isWhirlpoolMasterWallet()) {
+                String walletId = storage.getWalletId(wallet);
+                Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
+                whirlpool.setHDWallet(copy);
             }
 
             for(int i = 0; i < wallet.getKeystores().size(); i++) {
@@ -985,13 +992,13 @@ public class AppController implements Initializable {
                     storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     storage.saveWallet(wallet);
                     checkWalletNetwork(wallet);
-                    restorePublicKeysFromSeed(wallet, null);
+                    restorePublicKeysFromSeed(storage, wallet, null);
                     addWalletTabOrWindow(storage, wallet, null, false);
 
                     for(Wallet childWallet : wallet.getChildWallets()) {
                         storage.saveWallet(childWallet);
                         checkWalletNetwork(childWallet);
-                        restorePublicKeysFromSeed(childWallet, null);
+                        restorePublicKeysFromSeed(storage, childWallet, null);
                         addWalletTabOrWindow(storage, childWallet, null, false);
                     }
                     Platform.runLater(() -> selectTab(wallet));
@@ -1012,14 +1019,14 @@ public class AppController implements Initializable {
                         storage.setEncryptionPubKey(encryptionPubKey);
                         storage.saveWallet(wallet);
                         checkWalletNetwork(wallet);
-                        restorePublicKeysFromSeed(wallet, key);
+                        restorePublicKeysFromSeed(storage, wallet, key);
                         addWalletTabOrWindow(storage, wallet, null, false);
 
                         for(Wallet childWallet : wallet.getChildWallets()) {
                             childWallet.encrypt(key);
                             storage.saveWallet(childWallet);
                             checkWalletNetwork(childWallet);
-                            restorePublicKeysFromSeed(childWallet, key);
+                            restorePublicKeysFromSeed(storage, childWallet, key);
                             addWalletTabOrWindow(storage, childWallet, null, false);
                         }
                         Platform.runLater(() -> selectTab(wallet));
@@ -1184,8 +1191,8 @@ public class AppController implements Initializable {
                     WalletTabData walletTabData = (WalletTabData)tabData;
                     if(walletTabData.getWallet() == wallet.getMasterWallet()) {
                         TabPane subTabs = (TabPane)walletTab.getContent();
-                        subTabs.getStyleClass().remove("master-only");
                         addWalletSubTab(subTabs, storage, wallet, backupWallet);
+                        Platform.runLater(() -> subTabs.getStyleClass().remove("master-only"));
                     }
                 }
             }
@@ -1194,7 +1201,7 @@ public class AppController implements Initializable {
 
     public WalletForm addWalletSubTab(TabPane subTabs, Storage storage, Wallet wallet, Wallet backupWallet) {
         try {
-            Tab subTab = new Tab(wallet.getName());
+            Tab subTab = new Tab(wallet.isMasterWallet() ? getAutomaticName(wallet) : wallet.getName());
             subTab.setClosable(false);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             subTab.setContent(walletLoader.load());
@@ -1217,6 +1224,11 @@ public class AppController implements Initializable {
         } catch(IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String getAutomaticName(Wallet wallet) {
+        int account = wallet.getAccountIndex();
+        return account < 0 ? wallet.getName() : "Account #" + account;
     }
 
     public WalletForm getSelectedWalletForm() {
@@ -2015,5 +2027,15 @@ public class AppController implements Initializable {
     @Subscribe
     public void recieveAction(ReceiveActionEvent event) {
         selectTab(event.getWallet());
+    }
+
+    @Subscribe
+    public void childWalletAdded(ChildWalletAddedEvent event) {
+        Storage storage = AppServices.get().getOpenWallets().get(event.getWallet());
+        if(storage == null) {
+            throw new IllegalStateException("Cannot find storage for master wallet");
+        }
+
+        addWalletTab(storage, event.getChildWallet(), null);
     }
 }

@@ -2,8 +2,10 @@ package com.sparrowwallet.sparrow;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
+import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -15,6 +17,7 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
+import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -89,7 +92,11 @@ public class AppServices {
 
     private TorService torService;
 
+    private final Map<String, Whirlpool> whirlpoolMap = new HashMap<>();
+
     private static Integer currentBlockHeight;
+
+    private static BlockHeader latestBlockHeader;
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
@@ -445,6 +452,37 @@ public class AppServices {
         return application;
     }
 
+    public Whirlpool getWhirlpool(String walletId) {
+        Whirlpool whirlpool = whirlpoolMap.get(walletId);
+        if(whirlpool == null) {
+            HostAndPort torProxy = AppServices.isTorRunning() ? HostAndPort.fromParts("localhost", TorService.PROXY_PORT) : (Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
+            whirlpool = new Whirlpool(Network.get(), torProxy, Config.get().getScode(), 1, 15);
+            whirlpoolMap.put(walletId, whirlpool);
+        }
+
+        return whirlpool;
+    }
+
+    private void startAllWhirlpool() {
+        for(Whirlpool whirlpool : whirlpoolMap.values().stream().filter(whirlpool -> whirlpool.hasWallet() && !whirlpool.isStarted()).collect(Collectors.toList())) {
+            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
+            startupService.setOnFailed(workerStateEvent -> {
+                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
+            });
+            startupService.start();
+        }
+    }
+
+    private void stopAllWhirlpool() {
+        for(Whirlpool whirlpool : whirlpoolMap.values().stream().filter(Whirlpool::isStarted).collect(Collectors.toList())) {
+            Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
+            shutdownService.setOnFailed(workerStateEvent -> {
+                log.error("Failed to stop whirlpool", workerStateEvent.getSource().getException());
+            });
+            shutdownService.start();
+        }
+    }
+
     public void minimizeStage(Stage stage) {
         if(trayManager == null) {
             trayManager = new TrayManager();
@@ -501,6 +539,10 @@ public class AppServices {
 
     public static Integer getCurrentBlockHeight() {
         return currentBlockHeight;
+    }
+
+    public static BlockHeader getLatestBlockHeader() {
+        return latestBlockHeader;
     }
 
     public static Map<Integer, Double> getTargetBlockFeeRates() {
@@ -776,6 +818,13 @@ public class AppServices {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
         addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
+        latestBlockHeader = event.getBlockHeader();
+        startAllWhirlpool();
+    }
+
+    @Subscribe
+    public void disconnection(DisconnectionEvent event) {
+        stopAllWhirlpool();
     }
 
     @Subscribe
@@ -786,6 +835,7 @@ public class AppServices {
     @Subscribe
     public void newBlock(NewBlockEvent event) {
         currentBlockHeight = event.getHeight();
+        latestBlockHeader = event.getBlockHeader();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
     }
@@ -901,6 +951,40 @@ public class AppServices {
     @Subscribe
     public void walletOpening(WalletOpeningEvent event) {
         restartBwt(event.getWallet());
+
+        String walletId = event.getStorage().getWalletId(event.getWallet());
+        Whirlpool whirlpool = whirlpoolMap.get(walletId);
+        if(whirlpool != null && !whirlpool.isStarted() && isConnected()) {
+            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
+            startupService.setOnFailed(workerStateEvent -> {
+                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
+            });
+            startupService.start();
+        }
+    }
+
+    @Subscribe
+    public void walletTabsClosed(WalletTabsClosedEvent event) {
+        for(WalletTabData walletTabData : event.getClosedWalletTabData()) {
+            String walletId = walletTabData.getStorage().getWalletId(walletTabData.getWallet());
+            Whirlpool whirlpool = whirlpoolMap.remove(walletId);
+            if(whirlpool != null) {
+                if(whirlpool.isStarted()) {
+                    Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
+                    shutdownService.setOnSucceeded(workerStateEvent -> {
+                        WhirlpoolEventService.getInstance().unregister(whirlpool);
+                    });
+                    shutdownService.setOnFailed(workerStateEvent -> {
+                        log.error("Failed to stop whirlpool", workerStateEvent.getSource().getException());
+                    });
+                    shutdownService.start();
+                } else {
+                    //Ensure http clients are shutdown
+                    whirlpool.shutdown();
+                    WhirlpoolEventService.getInstance().unregister(whirlpool);
+                }
+            }
+        }
     }
 
     private void restartBwt(Wallet wallet) {

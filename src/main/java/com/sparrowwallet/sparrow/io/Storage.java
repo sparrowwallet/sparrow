@@ -115,6 +115,10 @@ public class Storage {
         }
     }
 
+    public boolean isPersisted(Wallet wallet) {
+        return persistence.isPersisted(this, wallet);
+    }
+
     public void close() {
         ClosePersistenceService closePersistenceService = new ClosePersistenceService();
         closePersistenceService.start();

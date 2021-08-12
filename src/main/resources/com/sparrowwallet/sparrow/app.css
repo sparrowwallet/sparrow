@@ -28,7 +28,7 @@
     -fx-tab-max-height: 0;
 }
 
-.master-only .tab-header-area {
+.master-only > .tab-header-area {
     visibility: hidden;
 }
 

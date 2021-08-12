@@ -37,4 +37,5 @@ open module com.sparrowwallet.sparrow {
     requires com.nativelibs4java.bridj;
     requires org.reactfx.reactfx;
     requires dev.bwt.jni;
+    requires com.sparrowwallet.nightjar;
 }

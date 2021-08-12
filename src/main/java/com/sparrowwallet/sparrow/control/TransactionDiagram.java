@@ -377,12 +377,13 @@ public class TransactionDiagram extends GridPane {
         outputsBox.getChildren().add(createSpacer());
 
         for(Payment payment : displayedPayments) {
-            boolean isConsolidation = walletTx.isConsolidationSend(payment);
-            String recipientDesc = payment instanceof AdditionalPayment ? payment.getLabel() : payment.getAddress().toString().substring(0, 8) + "...";
-            Label recipientLabel = new Label(recipientDesc, isConsolidation ? getConsolidationGlyph() : getPaymentGlyph());
+            Glyph outputGlyph = getOutputGlyph(payment);
+            boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon").contains(style)) || payment instanceof AdditionalPayment;
+            String recipientDesc = labelledPayment ? payment.getLabel() : payment.getAddress().toString().substring(0, 8) + "...";
+            Label recipientLabel = new Label(recipientDesc, outputGlyph);
             recipientLabel.getStyleClass().add("output-label");
-            recipientLabel.getStyleClass().add(payment instanceof AdditionalPayment ? "additional-label" : "recipient-label");
-            Tooltip recipientTooltip = new Tooltip((isConsolidation ? "Consolidate " : "Pay ") + getSatsValue(payment.getAmount()) + " sats to " + (payment instanceof AdditionalPayment ? "\n" + payment : payment.getLabel() + "\n" + payment.getAddress().toString()));
+            recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
+            Tooltip recipientTooltip = new Tooltip((walletTx.isConsolidationSend(payment) ? "Consolidate " : "Pay ") + getSatsValue(payment.getAmount()) + " sats to " + (payment instanceof AdditionalPayment ? "\n" + payment : payment.getLabel() + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientLabel.setTooltip(recipientTooltip);
@@ -467,6 +468,22 @@ public class TransactionDiagram extends GridPane {
         return spacer;
     }
 
+    public Glyph getOutputGlyph(Payment payment) {
+        if(walletTx.isConsolidationSend(payment)) {
+            return getConsolidationGlyph();
+        } else if(walletTx.isPremixSend(payment)) {
+            return getPremixGlyph();
+        } else if(walletTx.isBadbankSend(payment)) {
+            return getBadbankGlyph();
+        } else if(payment.getType().equals(Payment.Type.WHIRLPOOL_FEE)) {
+            return getWhirlpoolFeeGlyph();
+        } else if(payment instanceof AdditionalPayment) {
+            return ((AdditionalPayment)payment).getOutputGlyph(this);
+        }
+
+        return getPaymentGlyph();
+    }
+
     public static Glyph getExcludeGlyph() {
         Glyph excludeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.TIMES_CIRCLE);
         excludeGlyph.getStyleClass().add("exclude-utxo");
@@ -486,6 +503,27 @@ public class TransactionDiagram extends GridPane {
         consolidationGlyph.getStyleClass().add("consolidation-icon");
         consolidationGlyph.setFontSize(12);
         return consolidationGlyph;
+    }
+
+    public static Glyph getPremixGlyph() {
+        Glyph premixGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
+        premixGlyph.getStyleClass().add("premix-icon");
+        premixGlyph.setFontSize(12);
+        return premixGlyph;
+    }
+
+    public static Glyph getBadbankGlyph() {
+        Glyph badbankGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.BIOHAZARD);
+        badbankGlyph.getStyleClass().add("badbank-icon");
+        badbankGlyph.setFontSize(12);
+        return badbankGlyph;
+    }
+
+    public static Glyph getWhirlpoolFeeGlyph() {
+        Glyph whirlpoolFeeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HAND_HOLDING_WATER);
+        whirlpoolFeeGlyph.getStyleClass().add("whirlpoolfee-icon");
+        whirlpoolFeeGlyph.setFontSize(12);
+        return whirlpoolFeeGlyph;
     }
 
     public static Glyph getTxoGlyph() {
@@ -576,6 +614,20 @@ public class TransactionDiagram extends GridPane {
         public AdditionalPayment(List<Payment> additionalPayments) {
             super(null, additionalPayments.size() + " more...", additionalPayments.stream().map(Payment::getAmount).mapToLong(v -> v).sum(), false);
             this.additionalPayments = additionalPayments;
+        }
+
+        public Glyph getOutputGlyph(TransactionDiagram transactionDiagram) {
+            Glyph glyph = null;
+            for(Payment payment : additionalPayments) {
+                Glyph paymentGlyph = transactionDiagram.getOutputGlyph(payment);
+                if(glyph != null && !paymentGlyph.getStyleClass().equals(glyph.getStyleClass())) {
+                    return getPaymentGlyph();
+                }
+
+                glyph = paymentGlyph;
+            }
+
+            return glyph;
         }
 
         public String toString() {

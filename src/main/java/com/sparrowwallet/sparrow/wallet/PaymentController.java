@@ -73,6 +73,9 @@ public class PaymentController extends WalletFormController implements Initializ
     private ToggleButton maxButton;
 
     @FXML
+    private Button scanQrButton;
+
+    @FXML
     private Button addPaymentButton;
 
     private final BooleanProperty emptyAmountProperty = new SimpleBooleanProperty(true);
@@ -287,11 +290,16 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public Payment getPayment(boolean sendAll) {
         try {
-            Address address = getRecipientAddress();
+            Address recipientAddress = getRecipientAddress();
             Long value = sendAll ? Long.valueOf(getRecipientDustThreshold() + 1) : getRecipientValueSats();
 
             if(!label.getText().isEmpty() && value != null && value > getRecipientDustThreshold()) {
-                return new Payment(address, label.getText(), value, sendAll);
+                Payment payment = new Payment(recipientAddress, label.getText(), value, sendAll);
+                if(address.getUserData() != null) {
+                    payment.setType((Payment.Type)address.getUserData());
+                }
+
+                return payment;
             }
         } catch(InvalidAddressException e) {
             //ignore
@@ -304,6 +312,7 @@ public class PaymentController extends WalletFormController implements Initializ
         if(getRecipientValueSats() == null || payment.getAmount() != getRecipientValueSats()) {
             if(payment.getAddress() != null) {
                 address.setText(payment.getAddress().toString());
+                address.setUserData(payment.getType());
             }
             if(payment.getLabel() != null && !label.getText().equals(payment.getLabel())) {
                 label.setText(payment.getLabel());
@@ -404,6 +413,16 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public void setSendMax(boolean sendMax) {
         maxButton.setSelected(sendMax);
+    }
+
+    public void setInputFieldsDisabled(boolean disable) {
+        address.setDisable(disable);
+        label.setDisable(disable);
+        amount.setDisable(disable);
+        amountUnit.setDisable(disable);
+        maxButton.setDisable(disable);
+        scanQrButton.setDisable(disable);
+        addPaymentButton.setDisable(disable);
     }
 
     @Subscribe

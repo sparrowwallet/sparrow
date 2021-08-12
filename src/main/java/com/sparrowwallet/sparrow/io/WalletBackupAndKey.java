@@ -5,14 +5,14 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 
 import java.util.Map;
 
-public class WalletBackupAndKey {
+public class WalletBackupAndKey implements Comparable<WalletBackupAndKey> {
     private final Wallet wallet;
     private final Wallet backupWallet;
     private final ECKey encryptionKey;
     private final Key key;
-    private final Map<Storage, WalletBackupAndKey> childWallets;
+    private final Map<WalletBackupAndKey, Storage> childWallets;
 
-    public WalletBackupAndKey(Wallet wallet, Wallet backupWallet, ECKey encryptionKey, AsymmetricKeyDeriver keyDeriver, Map<Storage, WalletBackupAndKey> childWallets) {
+    public WalletBackupAndKey(Wallet wallet, Wallet backupWallet, ECKey encryptionKey, AsymmetricKeyDeriver keyDeriver, Map<WalletBackupAndKey, Storage> childWallets) {
         this.wallet = wallet;
         this.backupWallet = backupWallet;
         this.encryptionKey = encryptionKey;
@@ -36,7 +36,7 @@ public class WalletBackupAndKey {
         return key;
     }
 
-    public Map<Storage, WalletBackupAndKey> getChildWallets() {
+    public Map<WalletBackupAndKey, Storage> getChildWallets() {
         return childWallets;
     }
 
@@ -47,5 +47,14 @@ public class WalletBackupAndKey {
         if(key != null) {
             key.clear();
         }
+    }
+
+    @Override
+    public int compareTo(WalletBackupAndKey other) {
+        if(wallet.getStandardAccountType() != null && other.wallet.getStandardAccountType() != null) {
+            return wallet.getStandardAccountType().ordinal() - other.wallet.getStandardAccountType().ordinal();
+        }
+
+        return wallet.getAccountIndex() - other.wallet.getAccountIndex();
     }
 }

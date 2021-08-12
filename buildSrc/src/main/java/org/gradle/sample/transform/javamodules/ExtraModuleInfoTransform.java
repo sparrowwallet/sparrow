@@ -122,7 +122,11 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
 
     private static void addModuleDescriptor(File originalJar, File moduleJar, ModuleInfo moduleInfo) {
         try (JarInputStream inputStream = new JarInputStream(new FileInputStream(originalJar))) {
-            try (JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(moduleJar), inputStream.getManifest())) {
+            Manifest manifest = inputStream.getManifest();
+            if(manifest == null) {
+                manifest = new Manifest();
+            }
+            try (JarOutputStream outputStream = new JarOutputStream(new FileOutputStream(moduleJar), manifest)) {
                 copyEntries(inputStream, outputStream);
                 outputStream.putNextEntry(new JarEntry("module-info.class"));
                 outputStream.write(addModuleInfo(moduleInfo));

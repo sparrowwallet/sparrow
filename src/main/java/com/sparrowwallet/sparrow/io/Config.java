@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
@@ -59,6 +57,7 @@ public class Config {
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
+    private String scode;
 
     private static Config INSTANCE;
 
@@ -456,6 +455,15 @@ public class Config {
 
     public void setProxyServer(String proxyServer) {
         this.proxyServer = proxyServer;
+        flush();
+    }
+
+    public String getScode() {
+        return scode;
+    }
+
+    public void setScode(String scode) {
+        this.scode = scode;
         flush();
     }
 

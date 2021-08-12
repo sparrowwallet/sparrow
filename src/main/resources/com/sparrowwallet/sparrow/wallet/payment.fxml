@@ -82,7 +82,7 @@
     <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
         <Fieldset inputGrow="ALWAYS" style="-fx-padding: 5 0 0 0">
             <HBox>
-                <Button text="" onAction="#scanQrAddress" prefHeight="30">
+                <Button text="" fx:id="scanQrButton" onAction="#scanQrAddress" prefHeight="30">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                     </graphic>

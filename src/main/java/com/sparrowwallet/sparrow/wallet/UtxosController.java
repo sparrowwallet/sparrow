@@ -2,17 +2,20 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.csvreader.CsvWriter;
 import com.google.common.eventbus.Subscribe;
+import com.samourai.whirlpool.client.tx0.Tx0Preview;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CoinLabel;
-import com.sparrowwallet.sparrow.control.EntryCell;
-import com.sparrowwallet.sparrow.control.UtxosChart;
-import com.sparrowwallet.sparrow.control.UtxosTreeTable;
+import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.whirlpool.WhirlpoolDialog;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
@@ -30,9 +33,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Locale;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class UtxosController extends WalletFormController implements Initializable {
@@ -43,6 +44,9 @@ public class UtxosController extends WalletFormController implements Initializab
 
     @FXML
     private Button sendSelected;
+
+    @FXML
+    private Button mixSelected;
 
     @FXML
     private UtxosChart utxosChart;
@@ -58,23 +62,33 @@ public class UtxosController extends WalletFormController implements Initializab
         utxosChart.initialize(getWalletForm().getWalletUtxosEntry());
         sendSelected.setDisable(true);
         sendSelected.setTooltip(new Tooltip("Send selected UTXOs. Use " + (org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? "Cmd" : "Ctrl") + "+click to select multiple." ));
+        mixSelected.managedProperty().bind(mixSelected.visibleProperty());
+        mixSelected.setVisible(canWalletMix());
+        mixSelected.setDisable(true);
+        AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
+            mixSelected.setDisable(getSelectedEntries().isEmpty() || !newValue);
+        });
 
         utxosTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
             List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
             utxosChart.select(selectedEntries);
-            updateSendSelected(Config.get().getBitcoinUnit());
+            updateButtons(Config.get().getBitcoinUnit());
         });
 
         utxosChart.managedProperty().bind(utxosChart.visibleProperty());
         utxosChart.setVisible(Config.get().isShowUtxosChart());
     }
 
-    private void updateSendSelected(BitcoinUnit unit) {
-        List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().map(tp -> tp.getTreeItem().getValue())
-                .filter(entry -> ((HashIndexEntry)entry).isSpendable())
-                .collect(Collectors.toList());
+    private boolean canWalletMix() {
+        return Network.get() == Network.TESTNET && getWalletForm().getWallet().getKeystores().size() == 1 && getWalletForm().getWallet().getKeystores().get(0).hasSeed();
+    }
+
+    private void updateButtons(BitcoinUnit unit) {
+        List<Entry> selectedEntries = getSelectedEntries();
 
         sendSelected.setDisable(selectedEntries.isEmpty());
+        mixSelected.setDisable(selectedEntries.isEmpty() || !AppServices.isConnected());
+
         long selectedTotal = selectedEntries.stream().mapToLong(Entry::getValue).sum();
         if(selectedTotal > 0) {
             if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
@@ -83,25 +97,83 @@ public class UtxosController extends WalletFormController implements Initializab
 
             if(unit.equals(BitcoinUnit.BTC)) {
                 sendSelected.setText("Send Selected (" + CoinLabel.getBTCFormat().format((double)selectedTotal / Transaction.SATOSHIS_PER_BITCOIN) + " BTC)");
+                mixSelected.setText("Mix Selected (" + CoinLabel.getBTCFormat().format((double)selectedTotal / Transaction.SATOSHIS_PER_BITCOIN) + " BTC)");
             } else {
                 sendSelected.setText("Send Selected (" + String.format(Locale.ENGLISH, "%,d", selectedTotal) + " sats)");
+                mixSelected.setText("Mix Selected (" + String.format(Locale.ENGLISH, "%,d", selectedTotal) + " sats)");
             }
         } else {
             sendSelected.setText("Send Selected");
+            sendSelected.setText("Mix Selected");
         }
     }
 
-    public void sendSelected(ActionEvent event) {
-        List<HashIndexEntry> utxoEntries = utxosTable.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
-                .filter(e -> e instanceof HashIndexEntry)
-                .map(e -> (HashIndexEntry)e)
-                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
+    private List<Entry> getSelectedEntries() {
+        return utxosTable.getSelectionModel().getSelectedCells().stream().map(tp -> tp.getTreeItem().getValue())
+                .filter(entry -> ((HashIndexEntry)entry).isSpendable())
                 .collect(Collectors.toList());
+    }
 
+    public void sendSelected(ActionEvent event) {
+        List<UtxoEntry> utxoEntries = getSelectedUtxos();
         final List<BlockTransactionHashIndex> spendingUtxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
         EventManager.get().post(new SendActionEvent(getWalletForm().getWallet(), spendingUtxos));
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(getWalletForm().getWallet(), spendingUtxos)));
+    }
+
+    public void mixSelected(ActionEvent event) {
+        List<UtxoEntry> selectedEntries = getSelectedUtxos();
+        WhirlpoolDialog whirlpoolDialog = new WhirlpoolDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), selectedEntries);
+        Optional<Tx0Preview> optTx0Preview = whirlpoolDialog.showAndWait();
+        optTx0Preview.ifPresent(tx0Preview -> previewPremixTransaction(getWalletForm().getWallet(), tx0Preview, selectedEntries));
+    }
+
+    public void previewPremixTransaction(Wallet wallet, Tx0Preview tx0Preview, List<UtxoEntry> utxoEntries) {
+        for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
+            if(wallet.getChildWallet(whirlpoolAccount) == null) {
+                Wallet childWallet = wallet.addChildWallet(whirlpoolAccount);
+                EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), wallet, childWallet));
+            }
+        }
+
+        Wallet premixWallet = wallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
+        Wallet badbankWallet = wallet.getChildWallet(StandardAccount.WHIRLPOOL_BADBANK);
+
+        List<Payment> payments = new ArrayList<>();
+        try {
+            Address whirlpoolFeeAddress = Address.fromString(tx0Preview.getTx0Data().getFeeAddress());
+            Payment whirlpoolFeePayment = new Payment(whirlpoolFeeAddress, "Whirlpool Fee", tx0Preview.getFeeValue(), false);
+            whirlpoolFeePayment.setType(Payment.Type.WHIRLPOOL_FEE);
+            payments.add(whirlpoolFeePayment);
+        } catch(InvalidAddressException e) {
+            throw new IllegalStateException("Cannot parse whirlpool fee address " + tx0Preview.getTx0Data().getFeeAddress(), e);
+        }
+
+        WalletNode badbankNode = badbankWallet.getFreshNode(KeyPurpose.RECEIVE);
+        Payment changePayment = new Payment(badbankWallet.getAddress(badbankNode), "Badbank Change", tx0Preview.getChangeValue(), false);
+        payments.add(changePayment);
+
+        WalletNode premixNode = null;
+        for(int i = 0; i < tx0Preview.getNbPremix(); i++) {
+            premixNode = premixWallet.getFreshNode(KeyPurpose.RECEIVE, premixNode);
+            Address premixAddress = premixWallet.getAddress(premixNode);
+            payments.add(new Payment(premixAddress, "Premix #" + i, tx0Preview.getPremixValue(), false));
+        }
+
+        final List<BlockTransactionHashIndex> utxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
+        Platform.runLater(() -> {
+            EventManager.get().post(new SendActionEvent(getWalletForm().getWallet(), utxos));
+            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(getWalletForm().getWallet(), utxos, payments, tx0Preview.getTx0MinerFee(), tx0Preview.getPool())));
+        });
+    }
+
+    private List<UtxoEntry> getSelectedUtxos() {
+        return utxosTable.getSelectionModel().getSelectedCells().stream()
+                .map(tp -> tp.getTreeItem().getValue())
+                .filter(e -> e instanceof HashIndexEntry)
+                .map(e -> (UtxoEntry)e)
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
+                .collect(Collectors.toList());
     }
 
     public void clear(ActionEvent event) {
@@ -150,6 +222,7 @@ public class UtxosController extends WalletFormController implements Initializab
             WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
             utxosTable.updateAll(walletUtxosEntry);
             utxosChart.update(walletUtxosEntry);
+            mixSelected.setVisible(canWalletMix());
         }
     }
 
@@ -180,7 +253,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         utxosTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
         utxosChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
-        updateSendSelected(event.getBitcoinUnit());
+        updateButtons(event.getBitcoinUnit());
     }
 
     @Subscribe
@@ -213,7 +286,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             utxosTable.refresh();
-            updateSendSelected(Config.get().getBitcoinUnit());
+            updateButtons(Config.get().getBitcoinUnit());
         }
     }
 

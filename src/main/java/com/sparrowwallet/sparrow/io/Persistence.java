@@ -16,6 +16,7 @@ public interface Persistence {
     File storeWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException, StorageException;
     void updateWallet(Storage storage, Wallet wallet) throws IOException, StorageException;
     void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException, StorageException;
+    boolean isPersisted(Storage storage, Wallet wallet);
     ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException;
     AsymmetricKeyDeriver getKeyDeriver();
     void setKeyDeriver(AsymmetricKeyDeriver keyDeriver);

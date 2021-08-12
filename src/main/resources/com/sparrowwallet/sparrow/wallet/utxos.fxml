@@ -40,6 +40,11 @@
                 <bottom>
                     <HBox styleClass="utxos-buttons-box" spacing="20" alignment="BOTTOM_RIGHT">
                         <Button text="Clear" onAction="#clear"/>
+                        <Button fx:id="mixSelected" text="Mix Selected" graphicTextGap="5" onAction="#mixSelected">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" icon="RANDOM" fontSize="12" />
+                            </graphic>
+                        </Button>
                         <Button fx:id="sendSelected" text="Send Selected" graphicTextGap="5" onAction="#sendSelected">
                             <graphic>
                                 <Glyph fontFamily="FontAwesome" icon="SEND" fontSize="12" />

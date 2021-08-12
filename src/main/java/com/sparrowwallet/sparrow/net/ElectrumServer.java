@@ -100,8 +100,9 @@ public class ElectrumServer {
                 previousServerAddress = electrumServer;
 
                 HostAndPort server = protocol.getServerHostAndPort(electrumServer);
+                boolean localNetworkAddress = !protocol.isOnionAddress(server) && IpAddressMatcher.isLocalNetworkAddress(server.getHost());
 
-                if(Config.get().isUseProxy() && proxyServer != null && !proxyServer.isBlank()) {
+                if(!localNetworkAddress && Config.get().isUseProxy() && proxyServer != null && !proxyServer.isBlank()) {
                     HostAndPort proxy = HostAndPort.fromString(proxyServer);
                     if(electrumServerCert != null) {
                         transport = protocol.getTransport(server, electrumServerCert, proxy);
@@ -765,6 +766,31 @@ public class ElectrumServer {
         return Transaction.DEFAULT_MIN_RELAY_FEE;
     }
 
+    public Sha256Hash broadcastTransactionPrivately(Transaction transaction) throws ServerException {
+        //If Tor proxy is configured, try all external broadcast sources in random order before falling back to connected Electrum server
+        if(AppServices.isUsingProxy()) {
+            List<BroadcastSource> broadcastSources = Arrays.stream(BroadcastSource.values()).filter(src -> src.getSupportedNetworks().contains(Network.get())).collect(Collectors.toList());
+            Sha256Hash txid = null;
+            for(int i = 1; !broadcastSources.isEmpty(); i++) {
+                try {
+                    BroadcastSource broadcastSource = broadcastSources.remove(new Random().nextInt(broadcastSources.size()));
+                    txid = broadcastSource.broadcastTransaction(transaction);
+                    if(Network.get() != Network.MAINNET || i >= MINIMUM_BROADCASTS || broadcastSources.isEmpty()) {
+                        return txid;
+                    }
+                } catch(BroadcastSource.BroadcastException e) {
+                    //ignore, already logged
+                }
+            }
+
+            if(txid != null) {
+                return txid;
+            }
+        }
+
+        return broadcastTransaction(transaction);
+    }
+
     public Sha256Hash broadcastTransaction(Transaction transaction) throws ServerException {
         byte[] rawtxBytes = transaction.bitcoinSerialize();
         String rawtxHex = Utils.bytesToHex(rawtxBytes);
@@ -1351,29 +1377,8 @@ public class ElectrumServer {
         protected Task<Sha256Hash> createTask() {
             return new Task<>() {
                 protected Sha256Hash call() throws ServerException {
-                    //If Tor proxy is configured, try all external broadcast sources in random order before falling back to connected Electrum server
-                    if(AppServices.isUsingProxy()) {
-                        List<BroadcastSource> broadcastSources = Arrays.stream(BroadcastSource.values()).filter(src -> src.getSupportedNetworks().contains(Network.get())).collect(Collectors.toList());
-                        Sha256Hash txid = null;
-                        for(int i = 1; !broadcastSources.isEmpty(); i++) {
-                            try {
-                                BroadcastSource broadcastSource = broadcastSources.remove(new Random().nextInt(broadcastSources.size()));
-                                txid = broadcastSource.broadcastTransaction(transaction);
-                                if(Network.get() != Network.MAINNET || i >= MINIMUM_BROADCASTS || broadcastSources.isEmpty()) {
-                                    return txid;
-                                }
-                            } catch(BroadcastSource.BroadcastException e) {
-                                //ignore, already logged
-                            }
-                        }
-
-                        if(txid != null) {
-                            return txid;
-                        }
-                    }
-
                     ElectrumServer electrumServer = new ElectrumServer();
-                    return electrumServer.broadcastTransaction(transaction);
+                    return electrumServer.broadcastTransactionPrivately(transaction);
                 }
             };
         }

@@ -90,20 +90,20 @@ public class DbPersistence implements Persistence {
             backupWallet = backupPersistence.loadWallet(new Storage(backupPersistence, backupFile), password, encryptionKey).getWallet();
         }
 
-        Map<Storage, WalletBackupAndKey> childWallets = loadChildWallets(storage, masterWallet, backupWallet, encryptionKey);
-        masterWallet.setChildWallets(childWallets.values().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+        Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, backupWallet, encryptionKey);
+        masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
 
         return new WalletBackupAndKey(masterWallet, backupWallet, encryptionKey, keyDeriver, childWallets);
     }
 
-    private Map<Storage, WalletBackupAndKey> loadChildWallets(Storage storage, Wallet masterWallet, Wallet backupWallet, ECKey encryptionKey) throws StorageException {
+    private Map<WalletBackupAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, Wallet backupWallet, ECKey encryptionKey) throws StorageException {
         Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
         List<String> schemas = jdbi.withHandle(handle -> {
            return handle.createQuery("show schemas").mapTo(String.class).list();
         });
 
         List<String> childSchemas = schemas.stream().filter(schema -> schema.startsWith(WALLET_SCHEMA_PREFIX) && !schema.equals(MASTER_SCHEMA)).collect(Collectors.toList());
-        Map<Storage, WalletBackupAndKey> childWallets = new LinkedHashMap<>();
+        Map<WalletBackupAndKey, Storage> childWallets = new TreeMap<>();
         for(String schema : childSchemas) {
             migrate(storage, schema, encryptionKey);
 
@@ -116,7 +116,7 @@ public class DbPersistence implements Persistence {
                 return childWallet;
             });
             Wallet backupChildWallet = backupWallet == null ? null : backupWallet.getChildWallets().stream().filter(child -> wallet.getName().equals(child.getName())).findFirst().orElse(null);
-            childWallets.put(storage, new WalletBackupAndKey(wallet, backupChildWallet, encryptionKey, keyDeriver, Collections.emptyMap()));
+            childWallets.put(new WalletBackupAndKey(wallet, backupChildWallet, encryptionKey, keyDeriver, Collections.emptyMap()), storage);
         }
 
         return childWallets;
@@ -184,6 +184,14 @@ public class DbPersistence implements Persistence {
         log.debug(dirtyPersistables.toString());
 
         Jdbi jdbi = getJdbi(storage, password);
+        List<String> schemas = jdbi.withHandle(handle -> {
+            return handle.createQuery("show schemas").mapTo(String.class).list();
+        });
+        if(!schemas.contains(getSchema(wallet))) {
+            log.debug("Not persisting update for missing schema " + getSchema(wallet));
+            return;
+        }
+
         jdbi.useHandle(handle -> {
             WalletDao walletDao = handle.attach(WalletDao.class);
             try {
@@ -397,6 +405,11 @@ public class DbPersistence implements Persistence {
         }
 
         return null;
+    }
+
+    @Override
+    public boolean isPersisted(Storage storage, Wallet wallet) {
+        return wallet.getId() != null;
     }
 
     @Override

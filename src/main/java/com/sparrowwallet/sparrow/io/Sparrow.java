@@ -111,8 +111,8 @@ public class Sparrow implements WalletImport, WalletExport {
                 WalletBackupAndKey walletBackupAndKey = storage.loadEncryptedWallet(password);
                 wallet = walletBackupAndKey.getWallet();
                 wallet.decrypt(walletBackupAndKey.getKey());
-                for(Map.Entry<Storage, WalletBackupAndKey> entry : walletBackupAndKey.getChildWallets().entrySet()) {
-                    entry.getValue().getWallet().decrypt(entry.getValue().getKey());
+                for(Map.Entry<WalletBackupAndKey, Storage> entry : walletBackupAndKey.getChildWallets().entrySet()) {
+                    entry.getKey().getWallet().decrypt(entry.getKey().getKey());
                 }
             }
 

@@ -17,6 +17,23 @@
     <logger name="org.flywaydb.core.internal.database.base.Schema" level="WARN" />
     <logger name="org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory" level="WARN" />
     <logger name="org.flywaydb.core.internal.license.VersionPrinter" level="WARN" />
+    <logger name="org.eclipse.jetty.util.thread.ReservedThreadExecutor" level="OFF" />
+    <logger name="org.eclipse.jetty.util.thread.QueuedThreadPool" level="OFF" />
+    <logger name="org.eclipse.jetty.io.ManagedSelector" level="OFF" />
+    <logger name="org.eclipse.jetty.util.component.AbstractLifeCycle" level="OFF" />
+    <logger name="org.eclipse.jetty.io.ChannelEndPoint" level="OFF" />
+    <logger name="org.eclipse.jetty.io.ssl.SslConnection" level="OFF" />
+    <logger name="org.eclipse.jetty.client.HttpReceiver" level="OFF" />
+    <logger name="org.eclipse.jetty.client.TimeoutCompleteListener" level="OFF" />
+    <logger name="org.eclipse.jetty.client.AbstractConnectionPool" level="OFF" />
+    <logger name="org.eclipse.jetty.client.HttpDestination" level="OFF" />
+    <logger name="org.eclipse.jetty.client.HttpChannel" level="OFF" />
+    <logger name="org.eclipse.jetty.client.HttpExchange" level="OFF" />
+    <logger name="org.eclipse.jetty.client.HttpParser" level="OFF" />
+    <logger name="org.eclipse.jetty.http.HttpParser" level="OFF" />
+    <logger name="org.eclipse.jetty.util.log.Log" level="OFF" />
+    <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler" level="OFF" />
+    <logger name="org.bitcoinj.crypto.MnemonicCode" level="OFF" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 

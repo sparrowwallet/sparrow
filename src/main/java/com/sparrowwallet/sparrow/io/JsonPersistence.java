@@ -43,8 +43,8 @@ public class JsonPersistence implements Persistence {
             wallet = gson.fromJson(reader, Wallet.class);
         }
 
-        Map<Storage, WalletBackupAndKey> childWallets = loadChildWallets(storage, wallet, null);
-        wallet.setChildWallets(childWallets.values().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+        Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, wallet, null);
+        wallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
 
         File backupFile = storage.getTempBackup();
         Wallet backupWallet = backupFile == null ? null : loadWallet(backupFile, null);
@@ -68,8 +68,8 @@ public class JsonPersistence implements Persistence {
             wallet = gson.fromJson(reader, Wallet.class);
         }
 
-        Map<Storage, WalletBackupAndKey> childWallets = loadChildWallets(storage, wallet, encryptionKey);
-        wallet.setChildWallets(childWallets.values().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+        Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, wallet, encryptionKey);
+        wallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
 
         File backupFile = storage.getTempBackup();
         Wallet backupWallet = backupFile == null ? null : loadWallet(backupFile, encryptionKey);
@@ -77,16 +77,16 @@ public class JsonPersistence implements Persistence {
         return new WalletBackupAndKey(wallet, backupWallet, encryptionKey, keyDeriver, childWallets);
     }
 
-    private Map<Storage, WalletBackupAndKey> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException {
+    private Map<WalletBackupAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException {
         File[] walletFiles = getChildWalletFiles(storage.getWalletFile(), masterWallet);
-        Map<Storage, WalletBackupAndKey> childWallets = new LinkedHashMap<>();
+        Map<WalletBackupAndKey, Storage> childWallets = new TreeMap<>();
         for(File childFile : walletFiles) {
             Wallet childWallet = loadWallet(childFile, encryptionKey);
             Storage childStorage = new Storage(childFile);
             childStorage.setEncryptionPubKey(encryptionKey == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(encryptionKey));
             childStorage.setKeyDeriver(getKeyDeriver());
             childWallet.setMasterWallet(masterWallet);
-            childWallets.put(childStorage, new WalletBackupAndKey(childWallet, null, encryptionKey, keyDeriver, Collections.emptyMap()));
+            childWallets.put(new WalletBackupAndKey(childWallet, null, encryptionKey, keyDeriver, Collections.emptyMap()), storage);
         }
 
         return childWallets;
@@ -198,6 +198,11 @@ public class JsonPersistence implements Persistence {
 
     private static byte[] getEncryptionMagic() {
         return "BIE1".getBytes(StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public boolean isPersisted(Storage storage, Wallet wallet) {
+        return storage.getWalletFile().exists();
     }
 
     @Override

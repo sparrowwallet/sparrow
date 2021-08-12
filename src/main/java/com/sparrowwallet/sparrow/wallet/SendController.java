@@ -1,8 +1,11 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
@@ -13,7 +16,9 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
+import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -116,6 +121,9 @@ public class SendController extends WalletFormController implements Initializabl
     @FXML
     private Button createButton;
 
+    @FXML
+    private Button premixButton;
+
     private StackPane tabHeader;
 
     private final BooleanProperty userFeeSet = new SimpleBooleanProperty(false);
@@ -123,6 +131,8 @@ public class SendController extends WalletFormController implements Initializabl
     private final ObjectProperty<UtxoSelector> utxoSelectorProperty = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<UtxoFilter> utxoFilterProperty = new SimpleObjectProperty<>(null);
+
+    private final ObjectProperty<Pool> whirlpoolProperty = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
@@ -370,6 +380,14 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         addFeeRangeTrackHighlight(0);
+
+        createButton.managedProperty().bind(createButton.visibleProperty());
+        premixButton.managedProperty().bind(premixButton.visibleProperty());
+        createButton.visibleProperty().bind(premixButton.visibleProperty().not());
+        premixButton.setVisible(false);
+        AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
+            premixButton.setDisable(!newValue);
+        });
     }
 
     private void initializeTabHeader(int count) {
@@ -379,7 +397,7 @@ public class SendController extends WalletFormController implements Initializabl
             if(stackPane != null) {
                 tabHeader = stackPane;
                 tabHeader.managedProperty().bind(tabHeader.visibleProperty());
-                tabHeader.setVisible(false);
+                tabHeader.setVisible(paymentTabs.getTabs().size() > 1);
                 paymentTabs.getStyleClass().remove("initial");
             } else if(lookupCount < 20) {
                 initializeTabHeader(lookupCount+1);
@@ -908,6 +926,8 @@ public class SendController extends WalletFormController implements Initializabl
         insufficientInputsProperty.set(false);
 
         validationSupport.setErrorDecorationEnabled(false);
+
+        setInputFieldsDisabled(false);
     }
 
     public UtxoSelector getUtxoSelector() {
@@ -991,6 +1011,88 @@ public class SendController extends WalletFormController implements Initializabl
 
         //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
         walletForm.addWalletTransactionNodes(nodes);
+    }
+
+    public void broadcastPremix(ActionEvent event) {
+        //Ensure all child wallets have been saved
+        for(Wallet childWallet : getWalletForm().getWallet().getChildWallets()) {
+            Storage storage = AppServices.get().getOpenWallets().get(childWallet);
+            if(!storage.isPersisted(childWallet)) {
+                try {
+                    storage.saveWallet(childWallet);
+                } catch(Exception e) {
+                    AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
+                }
+            }
+        }
+
+        Wallet copy = getWalletForm().getWallet().copy();
+        String walletId = walletForm.getWalletId();
+
+        if(copy.isEncrypted()) {
+            WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            Optional<SecureString> password = dlg.showAndWait();
+            if(password.isPresent()) {
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
+                decryptWalletService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+                    Wallet decryptedWallet = decryptWalletService.getValue();
+                    broadcastPremixUnencrypted(decryptedWallet);
+                });
+                decryptWalletService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                    AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                });
+                EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
+                decryptWalletService.start();
+            }
+        } else {
+            broadcastPremixUnencrypted(copy);
+        }
+    }
+
+    public void broadcastPremixUnencrypted(Wallet decryptedWallet) {
+        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
+        whirlpool.setScode(Config.get().getScode());
+        whirlpool.setHDWallet(decryptedWallet);
+        Map<BlockTransactionHashIndex, WalletNode> utxos = walletTransactionProperty.get().getSelectedUtxos();
+        Whirlpool.Tx0BroadcastService tx0BroadcastService = new Whirlpool.Tx0BroadcastService(whirlpool, whirlpoolProperty.get(), utxos.keySet());
+        tx0BroadcastService.setOnRunning(workerStateEvent -> {
+            premixButton.setDisable(true);
+            addWalletTransactionNodes();
+        });
+        tx0BroadcastService.setOnSucceeded(workerStateEvent -> {
+            premixButton.setDisable(false);
+            Sha256Hash txid = tx0BroadcastService.getValue();
+            decryptedWallet.clearPrivate();
+            clear(null);
+        });
+        tx0BroadcastService.setOnFailed(workerStateEvent -> {
+            premixButton.setDisable(false);
+            decryptedWallet.clearPrivate();
+            Throwable exception = workerStateEvent.getSource().getException();
+            while(exception.getCause() != null) {
+                exception = exception.getCause();
+            }
+
+            AppServices.showErrorDialog("Error broadcasting premix transaction", exception.getMessage());
+        });
+        ServiceProgressDialog progressDialog = new ServiceProgressDialog("Whirlpool", "Broadcast Premix Transaction", "/image/whirlpool.png", tx0BroadcastService);
+        tx0BroadcastService.start();
+    }
+
+    private void setInputFieldsDisabled(boolean disable) {
+        for(int i = 0; i < paymentTabs.getTabs().size(); i++) {
+            Tab tab = paymentTabs.getTabs().get(i);
+            tab.setClosable(!disable);
+            PaymentController controller = (PaymentController)tab.getUserData();
+            controller.setInputFieldsDisabled(disable);
+
+            feeRange.setDisable(disable);
+            targetBlocks.setDisable(disable);
+            fee.setDisable(disable);
+            feeAmountUnit.setDisable(disable);
+        }
     }
 
     @Subscribe
@@ -1079,7 +1181,13 @@ public class SendController extends WalletFormController implements Initializabl
             List<BlockTransactionHashIndex> utxos = event.getUtxos();
             utxoSelectorProperty.set(new PresetUtxoSelector(utxos));
             utxoFilterProperty.set(null);
+            whirlpoolProperty.set(event.getPool());
             updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
+
+            boolean isWhirlpoolPremix = (event.getPayments() != null && event.getPayments().stream().anyMatch(payment -> payment.getType().equals(Payment.Type.WHIRLPOOL_FEE)));
+            setInputFieldsDisabled(isWhirlpoolPremix);
+            premixButton.setVisible(isWhirlpoolPremix);
+            premixButton.setDefaultButton(isWhirlpoolPremix);
         }
     }
 
