@@ -90,6 +90,11 @@ public class MainApp extends Application {
 
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
 
+        if(Config.get().getAppHeight() != null && Config.get().getAppWidth() != null) {
+            mainStage.setWidth(Config.get().getAppWidth());
+            mainStage.setHeight(Config.get().getAppHeight());
+        }
+
         AppController appController = AppServices.newAppWindow(stage);
 
         if(createNewWallet) {
@@ -119,6 +124,8 @@ public class MainApp extends Application {
     @Override
     public void stop() throws Exception {
         AppServices.get().stop();
+        Config.get().setAppWidth(mainStage.getWidth());
+        Config.get().setAppHeight(mainStage.getHeight());
         mainStage.close();
         if(sparrowInstance != null) {
             sparrowInstance.freeLock();

@@ -57,6 +57,8 @@ public class Config {
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
+    private Double appWidth;
+    private Double appHeight;
     private String scode;
 
     private static Config INSTANCE;
@@ -455,6 +457,24 @@ public class Config {
 
     public void setProxyServer(String proxyServer) {
         this.proxyServer = proxyServer;
+        flush();
+    }
+
+    public Double getAppWidth() {
+        return appWidth;
+    }
+
+    public void setAppWidth(Double appWidth) {
+        this.appWidth = appWidth;
+        flush();
+    }
+
+    public Double getAppHeight() {
+        return appHeight;
+    }
+
+    public void setAppHeight(Double appHeight) {
+        this.appHeight = appHeight;
         flush();
     }
 
