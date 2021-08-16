@@ -898,7 +898,7 @@ public class AppServices {
 
         Platform.runLater(() -> {
             if(!Window.getWindows().isEmpty()) {
-                List<File> walletFiles = allWallets.stream().filter(walletTabData -> walletTabData.getWallet().getMasterWallet() == null).map(walletTabData -> walletTabData.getStorage().getWalletFile()).collect(Collectors.toList());
+                List<File> walletFiles = allWallets.stream().filter(walletTabData -> walletTabData.getWallet().getMasterWallet() == null).map(walletTabData -> walletTabData.getStorage().getWalletFile()).filter(File::exists).collect(Collectors.toList());
                 Config.get().setRecentWalletFiles(Config.get().isLoadRecentWallets() ? walletFiles : Collections.emptyList());
             }
         });

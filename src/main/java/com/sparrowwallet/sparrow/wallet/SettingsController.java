@@ -142,6 +142,11 @@ public class SettingsController extends WalletFormController implements Initiali
         multisigControl.lowValueProperty().addListener((observable, oldValue, threshold) -> {
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.MUTLISIG_THRESHOLD));
         });
+        multisigControl.highValueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue.doubleValue() == multisigControl.getMax() && newValue.doubleValue() <= 49.0) {
+                multisigControl.setMax(newValue.doubleValue() + 1.0);
+            }
+        });
 
         multisigFieldset.managedProperty().bind(multisigFieldset.visibleProperty());
 
@@ -223,6 +228,7 @@ public class SettingsController extends WalletFormController implements Initiali
         if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
             totalKeystores.setValue(1);
         } else if(wallet.getPolicyType().equals(PolicyType.MULTI)) {
+            multisigControl.setMax(Math.max(multisigControl.getMax(), wallet.getKeystores().size()));
             multisigControl.lowValueProperty().set(wallet.getDefaultPolicy().getNumSignaturesRequired());
             multisigControl.highValueProperty().set(wallet.getKeystores().size());
             totalKeystores.bind(multisigControl.highValueProperty());
