@@ -149,7 +149,7 @@ public class SettingsController extends WalletFormController implements Initiali
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.MUTLISIG_THRESHOLD));
         });
         multisigControl.highValueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue.doubleValue() == multisigControl.getMax() && newValue.doubleValue() <= 49.0) {
+            if(newValue.doubleValue() == multisigControl.getMax() && newValue.doubleValue() <= 19.0) {
                 multisigControl.setMax(newValue.doubleValue() + 1.0);
             }
         });
