@@ -93,7 +93,7 @@ public interface WalletDao {
             setSchema(schema);
             createPolicyDao().addPolicy(wallet.getDefaultPolicy());
 
-            long id = insert(wallet.getName(), wallet.getNetwork().ordinal(), wallet.getPolicyType().ordinal(), wallet.getScriptType().ordinal(), wallet.getStoredBlockHeight(), wallet.gapLimit(), wallet.getBirthDate(), wallet.getDefaultPolicy().getId());
+            long id = insert(truncate(wallet.getName()), wallet.getNetwork().ordinal(), wallet.getPolicyType().ordinal(), wallet.getScriptType().ordinal(), wallet.getStoredBlockHeight(), wallet.gapLimit(), wallet.getBirthDate(), wallet.getDefaultPolicy().getId());
             wallet.setId(id);
 
             createKeystoreDao().addKeystores(wallet);
@@ -102,5 +102,9 @@ public interface WalletDao {
         } finally {
             setSchema(DbPersistence.DEFAULT_SCHEMA);
         }
+    }
+
+    default String truncate(String label) {
+        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
     }
 }

@@ -58,10 +58,10 @@ public interface WalletNodeDao {
 
     default void addWalletNodes(Wallet wallet) {
         for(WalletNode purposeNode : wallet.getPurposeNodes()) {
-            long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null);
+            long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null);
             purposeNode.setId(purposeNodeId);
             for(WalletNode addressNode : purposeNode.getChildren()) {
-                long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNodeId);
+                long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId);
                 addressNode.setId(addressNodeId);
                 addTransactionOutputs(addressNode);
             }
@@ -84,22 +84,22 @@ public interface WalletNodeDao {
         if(txo.isSpent()) {
             BlockTransactionHashIndex spentBy = txo.getSpentBy();
             if(spentBy.getId() == null) {
-                spentById = insertBlockTransactionHashIndex(spentBy.getHash().getBytes(), spentBy.getHeight(), spentBy.getDate(), spentBy.getFee(), spentBy.getLabel(), spentBy.getIndex(), spentBy.getValue(),
+                spentById = insertBlockTransactionHashIndex(spentBy.getHash().getBytes(), spentBy.getHeight(), spentBy.getDate(), spentBy.getFee(), truncate(spentBy.getLabel()), spentBy.getIndex(), spentBy.getValue(),
                         spentBy.getStatus() == null ? null : spentBy.getStatus().ordinal(), null, addressNode.getId());
                 spentBy.setId(spentById);
             } else {
-                updateBlockTransactionHashIndex(spentBy.getHash().getBytes(), spentBy.getHeight(), spentBy.getDate(), spentBy.getFee(), spentBy.getLabel(), spentBy.getIndex(), spentBy.getValue(),
+                updateBlockTransactionHashIndex(spentBy.getHash().getBytes(), spentBy.getHeight(), spentBy.getDate(), spentBy.getFee(), truncate(spentBy.getLabel()), spentBy.getIndex(), spentBy.getValue(),
                         spentBy.getStatus() == null ? null : spentBy.getStatus().ordinal(), null, addressNode.getId(), spentBy.getId());
                 spentById = spentBy.getId();
             }
         }
 
         if(txo.getId() == null) {
-            long txoId = insertBlockTransactionHashIndex(txo.getHash().getBytes(), txo.getHeight(), txo.getDate(), txo.getFee(), txo.getLabel(), txo.getIndex(), txo.getValue(),
+            long txoId = insertBlockTransactionHashIndex(txo.getHash().getBytes(), txo.getHeight(), txo.getDate(), txo.getFee(), truncate(txo.getLabel()), txo.getIndex(), txo.getValue(),
                     txo.getStatus() == null ? null : txo.getStatus().ordinal(), spentById, addressNode.getId());
             txo.setId(txoId);
         } else {
-            updateBlockTransactionHashIndex(txo.getHash().getBytes(), txo.getHeight(), txo.getDate(), txo.getFee(), txo.getLabel(), txo.getIndex(), txo.getValue(),
+            updateBlockTransactionHashIndex(txo.getHash().getBytes(), txo.getHeight(), txo.getDate(), txo.getFee(), truncate(txo.getLabel()), txo.getIndex(), txo.getValue(),
                     txo.getStatus() == null ? null : txo.getStatus().ordinal(), spentById, addressNode.getId(), txo.getId());
         }
     }
@@ -112,5 +112,9 @@ public interface WalletNodeDao {
     default void clearHistory(Wallet wallet) {
         clearSpentHistory(wallet.getId());
         clearHistory(wallet.getId());
+    }
+
+    default String truncate(String label) {
+        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
     }
 }

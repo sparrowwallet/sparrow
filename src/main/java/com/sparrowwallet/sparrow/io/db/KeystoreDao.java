@@ -68,7 +68,7 @@ public interface KeystoreDao {
                 }
             }
 
-            long id = insert(keystore.getLabel(), keystore.getSource().ordinal(), keystore.getWalletModel().ordinal(),
+            long id = insert(truncate(keystore.getLabel()), keystore.getSource().ordinal(), keystore.getWalletModel().ordinal(),
                     keystore.hasPrivateKey() ? null : keystore.getKeyDerivation().getMasterFingerprint(),
                     keystore.getKeyDerivation().getDerivationPath(),
                     keystore.hasPrivateKey() ? null : keystore.getExtendedPublicKey().toString(),
@@ -98,5 +98,9 @@ public interface KeystoreDao {
                 updateSeed(seed.getType().ordinal(), seed.getMnemonicString().asString(), null, null, null, null, null, seed.needsPassphrase(), seed.getCreationTimeSeconds(), seed.getId());
             }
         }
+    }
+
+    default String truncate(String label) {
+        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
     }
 }

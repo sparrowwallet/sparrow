@@ -45,16 +45,20 @@ public interface BlockTransactionDao {
         Map<Sha256Hash, BlockTransaction> existing = getForTxId(txid.getBytes());
 
         if(existing.isEmpty() && blkTx.getId() == null) {
-            long id = insertBlockTransaction(txid.getBytes(), blkTx.getHash().getBytes(), blkTx.getHeight(), blkTx.getDate(), blkTx.getFee(), blkTx.getLabel(),
+            long id = insertBlockTransaction(txid.getBytes(), blkTx.getHash().getBytes(), blkTx.getHeight(), blkTx.getDate(), blkTx.getFee(), truncate(blkTx.getLabel()),
                     blkTx.getTransaction() == null ? null : blkTx.getTransaction().bitcoinSerialize(),
                     blkTx.getBlockHash() == null ? null : blkTx.getBlockHash().getBytes(), wallet.getId());
             blkTx.setId(id);
         } else {
             Long existingId = existing.get(txid) != null ? existing.get(txid).getId() : blkTx.getId();
-            updateBlockTransaction(txid.getBytes(), blkTx.getHash().getBytes(), blkTx.getHeight(), blkTx.getDate(), blkTx.getFee(), blkTx.getLabel(),
+            updateBlockTransaction(txid.getBytes(), blkTx.getHash().getBytes(), blkTx.getHeight(), blkTx.getDate(), blkTx.getFee(), truncate(blkTx.getLabel()),
                     blkTx.getTransaction() == null ? null : blkTx.getTransaction().bitcoinSerialize(),
                     blkTx.getBlockHash() == null ? null : blkTx.getBlockHash().getBytes(), wallet.getId(), existingId);
             blkTx.setId(existingId);
         }
+    }
+
+    default String truncate(String label) {
+        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
     }
 }
