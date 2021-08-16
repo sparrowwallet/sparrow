@@ -229,8 +229,8 @@ public class SettingsController extends WalletFormController implements Initiali
             totalKeystores.setValue(1);
         } else if(wallet.getPolicyType().equals(PolicyType.MULTI)) {
             multisigControl.setMax(Math.max(multisigControl.getMax(), wallet.getKeystores().size()));
-            multisigControl.lowValueProperty().set(wallet.getDefaultPolicy().getNumSignaturesRequired());
             multisigControl.highValueProperty().set(wallet.getKeystores().size());
+            multisigControl.lowValueProperty().set(wallet.getDefaultPolicy().getNumSignaturesRequired());
             totalKeystores.bind(multisigControl.highValueProperty());
         }
 
