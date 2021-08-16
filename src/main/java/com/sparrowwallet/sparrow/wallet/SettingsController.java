@@ -54,6 +54,12 @@ public class SettingsController extends WalletFormController implements Initiali
     private Button showDescriptorQR;
 
     @FXML
+    private Button editDescriptor;
+
+    @FXML
+    private Button showDescriptor;
+
+    @FXML
     private ComboBox<ScriptType> scriptType;
 
     @FXML
@@ -190,6 +196,9 @@ public class SettingsController extends WalletFormController implements Initiali
         showDescriptorQR.managedProperty().bind(showDescriptorQR.visibleProperty());
         showDescriptorQR.prefHeightProperty().bind(descriptor.prefHeightProperty());
         showDescriptorQR.visibleProperty().bind(scanDescriptorQR.visibleProperty().not());
+        editDescriptor.managedProperty().bind(editDescriptor.visibleProperty());
+        showDescriptor.managedProperty().bind(showDescriptor.visibleProperty());
+        showDescriptor.visibleProperty().bind(editDescriptor.visibleProperty().not());
 
         revert.setOnAction(event -> {
             keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
@@ -207,6 +216,7 @@ public class SettingsController extends WalletFormController implements Initiali
         });
 
         setFieldsFromWallet(walletForm.getWallet());
+        setInputFieldsDisabled(!walletForm.getWallet().isMasterWallet() || !walletForm.getWallet().getChildWallets().isEmpty());
     }
 
     private void clearKeystoreTabs() {
@@ -389,6 +399,16 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
+    public void showDescriptor(ActionEvent event) {
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet());
+        String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
+
+        TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString, false);
+        dialog.setTitle("Show wallet output descriptor");
+        dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nThis wallet is no longer editable - create a new wallet to change the descriptor.");
+        dialog.showAndWait();
+    }
+
     public void showAdvanced(ActionEvent event) {
         AdvancedDialog advancedDialog = new AdvancedDialog(walletForm);
         Optional<Boolean> optApply = advancedDialog.showAndWait();
@@ -420,6 +440,13 @@ public class SettingsController extends WalletFormController implements Initiali
         } else {
             AppServices.showErrorDialog("Cannot export wallet", "Wallet cannot be exported, please save it first.");
         }
+    }
+
+    private void setInputFieldsDisabled(boolean disabled) {
+        policyType.setDisable(disabled);
+        scriptType.setDisable(disabled);
+        multisigControl.setDisable(disabled);
+        editDescriptor.setVisible(!disabled);
     }
 
     @Override
@@ -481,6 +508,13 @@ public class SettingsController extends WalletFormController implements Initiali
     private void updateBirthDate(Wallet wallet) {
         if(!Objects.equals(wallet.getBirthDate(), walletForm.getWallet().getBirthDate())) {
             walletForm.getWallet().setBirthDate(wallet.getBirthDate());
+        }
+    }
+
+    @Subscribe
+    public void childWalletAdded(ChildWalletAddedEvent event) {
+        if(event.getMasterWalletId().equals(walletForm.getWalletId())) {
+            setInputFieldsDisabled(true);
         }
     }
 

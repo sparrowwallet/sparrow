@@ -27,7 +27,11 @@ public class TextAreaDialog extends Dialog<String> {
         this("");
     }
 
-    public TextAreaDialog(@NamedArg("defaultValue") String defaultValue) {
+    public TextAreaDialog(String defaultValue) {
+        this(defaultValue, true);
+    }
+
+    public TextAreaDialog(@NamedArg("defaultValue") String defaultValue, @NamedArg("editable") boolean editable) {
         final DialogPane dialogPane = new TextAreaDialogPane();
         setDialogPane(dialogPane);
 
@@ -39,6 +43,7 @@ public class TextAreaDialog extends Dialog<String> {
         this.textArea.setMaxWidth(Double.MAX_VALUE);
         this.textArea.setWrapText(true);
         this.textArea.getStyleClass().add("fixed-width");
+        this.textArea.setEditable(editable);
         hbox.getChildren().add(textArea);
         HBox.setHgrow(this.textArea, Priority.ALWAYS);
 
@@ -49,10 +54,13 @@ public class TextAreaDialog extends Dialog<String> {
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         dialogPane.getStyleClass().add("text-input-dialog");
-        dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        dialogPane.getButtonTypes().add(ButtonType.OK);
+        if(editable) {
+            dialogPane.getButtonTypes().add(ButtonType.CANCEL);
 
-        final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.LEFT);
-        dialogPane.getButtonTypes().add(scanButtonType);
+            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.LEFT);
+            dialogPane.getButtonTypes().add(scanButtonType);
+        }
 
         Platform.runLater(textArea::requestFocus);
 

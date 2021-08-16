@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
+import com.sparrowwallet.sparrow.event.ChildWalletAddedEvent;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -161,6 +162,8 @@ public class KeystoreController extends WalletFormController implements Initiali
             }
             scanXpubQR.setVisible(!valid);
         });
+
+        setInputFieldsDisabled(!walletForm.getWallet().isMasterWallet() || !walletForm.getWallet().getChildWallets().isEmpty());
     }
 
     private void setXpubContext(ExtendedKey extendedKey) {
@@ -405,6 +408,20 @@ public class KeystoreController extends WalletFormController implements Initiali
                 xpub.setText(xPub);
                 switchXpubHeader.setTooltip(new Tooltip("Show as " + header.getDisplayName()));
             }
+        }
+    }
+
+    private void setInputFieldsDisabled(boolean disabled) {
+        setEditable(fingerprint, !disabled);
+        setEditable(derivation, !disabled);
+        setEditable(xpub, !disabled);
+        importButton.setDisable(disabled);
+    }
+
+    @Subscribe
+    public void childWalletAdded(ChildWalletAddedEvent event) {
+        if(event.getMasterWalletId().equals(walletForm.getWalletId())) {
+            setInputFieldsDisabled(true);
         }
     }
 

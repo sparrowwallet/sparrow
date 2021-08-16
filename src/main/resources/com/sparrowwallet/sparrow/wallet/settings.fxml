@@ -99,7 +99,8 @@
                                 <Tooltip text="Show as QR code" />
                             </tooltip>
                         </Button>
-                        <Button text="Edit..." onAction="#editDescriptor" />
+                        <Button fx:id="editDescriptor" text="Edit..." onAction="#editDescriptor" />
+                        <Button fx:id="showDescriptor" text="Show..." onAction="#showDescriptor" />
                     </Field>
                 </Fieldset>
             </Form>
