@@ -619,6 +619,27 @@ public class AppController implements Initializable {
         }
     }
 
+    public void copyPSBTHex(ActionEvent event) {
+        copyPSBT(false);
+    }
+
+    public void copyPSBTBase64(ActionEvent event) {
+        copyPSBT(true);
+    }
+
+    public void copyPSBT(boolean asBase64) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.TRANSACTION) {
+            TransactionTabData transactionTabData = (TransactionTabData)tabData;
+            String data = asBase64 ? transactionTabData.getPsbt().toBase64String() : transactionTabData.getPsbt().toString();
+
+            ClipboardContent content = new ClipboardContent();
+            content.putString(data);
+            Clipboard.getSystemClipboard().setContent(content);
+        }
+    }
+
     public List<WalletTabData> getOpenWalletTabData() {
         List<WalletTabData> openWalletTabData = new ArrayList<>();
 
