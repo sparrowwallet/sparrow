@@ -3,17 +3,25 @@ package com.sparrowwallet.sparrow.whirlpool;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.samourai.tor.client.TorClientService;
-import com.samourai.wallet.api.backend.BackendApi;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.hd.HD_Wallet;
-import com.samourai.wallet.hd.java.HD_WalletFactoryJava;
-import com.samourai.whirlpool.client.event.*;
+import com.samourai.wallet.hd.HD_WalletFactoryGeneric;
+import com.samourai.whirlpool.client.event.MixFailEvent;
+import com.samourai.whirlpool.client.event.MixSuccessEvent;
+import com.samourai.whirlpool.client.event.WalletStartEvent;
+import com.samourai.whirlpool.client.event.WalletStopEvent;
 import com.samourai.whirlpool.client.tx0.*;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletConfig;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletService;
-import com.samourai.whirlpool.client.wallet.beans.*;
+import com.samourai.whirlpool.client.wallet.beans.Tx0FeeTarget;
+import com.samourai.whirlpool.client.wallet.beans.WhirlpoolAccount;
+import com.samourai.whirlpool.client.wallet.beans.WhirlpoolServer;
+import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersisterFactory;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.FileDataPersister;
+import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceFactory;
 import com.samourai.whirlpool.client.wallet.data.pool.PoolData;
 import com.samourai.whirlpool.client.wallet.data.utxo.UtxoSupplier;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
@@ -36,7 +44,9 @@ import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Whirlpool {
@@ -51,26 +61,27 @@ public class Whirlpool {
     private final WhirlpoolWalletConfig config;
     private HD_Wallet hdWallet;
 
-    public Whirlpool(Network network, HostAndPort torProxy, String sCode, int maxClients, int clientDelay) {
+    public Whirlpool(Network network, HostAndPort torProxy, String sCode, int maxClients) {
         this.torProxy = torProxy;
         this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase());
         this.httpClientService = new JavaHttpClientService(torProxy);
         this.stompClientService = new JavaStompClientService(httpClientService);
         this.torClientService = new WhirlpoolTorClientService();
-        this.whirlpoolWalletService = new WhirlpoolWalletService();
-        this.config = computeWhirlpoolWalletConfig(sCode, maxClients, clientDelay);
+
+        DataPersisterFactory dataPersisterFactory = (config, bip44w, walletIdentifier) -> new FileDataPersister(config, bip44w, walletIdentifier);
+        DataSourceFactory dataSourceFactory = (config, bip44w, walletIdentifier, dataPersister) -> new SparrowDataSource(config, bip44w, walletIdentifier, dataPersister);
+        this.whirlpoolWalletService = new WhirlpoolWalletService(dataPersisterFactory, dataSourceFactory);
+        this.config = computeWhirlpoolWalletConfig(sCode, maxClients);
 
         WhirlpoolEventService.getInstance().register(this);
     }
 
-    private WhirlpoolWalletConfig computeWhirlpoolWalletConfig(String sCode, int maxClients, int clientDelay) {
+    private WhirlpoolWalletConfig computeWhirlpoolWalletConfig(String sCode, int maxClients) {
         boolean onion = (torProxy != null);
         String serverUrl = whirlpoolServer.getServerUrl(onion);
-
         ServerApi serverApi = new ServerApi(serverUrl, httpClientService);
-        BackendApi backendApi = new SparrowBackendApi();
 
-        WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(httpClientService, stompClientService, torClientService, serverApi, whirlpoolServer, false, backendApi);
+        WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(httpClientService, stompClientService, torClientService, serverApi, whirlpoolServer.getParams(), false);
         whirlpoolWalletConfig.setScode(sCode);
 
         return whirlpoolWalletConfig;
@@ -114,7 +125,7 @@ public class Whirlpool {
 
     private Tx0ParamService getTx0ParamService() {
         try {
-            SparrowMinerFeeSupplier minerFeeSupplier = new SparrowMinerFeeSupplier(config.getFeeMin(), config.getFeeMax(), config.getFeeFallback(), config.getBackendApi().fetchMinerFee());
+            SparrowMinerFeeSupplier minerFeeSupplier = SparrowMinerFeeSupplier.getInstance();
             return new Tx0ParamService(minerFeeSupplier, config);
         } catch(Exception e) {
             log.error("Error fetching miner fees", e);
@@ -134,17 +145,17 @@ public class Whirlpool {
             int purpose = scriptType.getDefaultDerivation().get(0).num();
             List<String> words = keystore.getSeed().getMnemonicCode();
             String passphrase = keystore.getSeed().getPassphrase().asString();
-            HD_WalletFactoryJava hdWalletFactory = HD_WalletFactoryJava.getInstance();
+            HD_WalletFactoryGeneric hdWalletFactory = HD_WalletFactoryGeneric.getInstance();
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
-            hdWallet = new HD_Wallet(purpose, words, whirlpoolServer, seed, passphrase, 1);
+            hdWallet = new HD_Wallet(purpose, words, config.getNetworkParameters(), seed, passphrase, 1);
         } catch(Exception e) {
             throw new IllegalStateException("Could not create Whirlpool HD wallet ", e);
         }
     }
 
     public WhirlpoolWallet getWhirlpoolWallet() throws WhirlpoolException {
-        if(whirlpoolWalletService.whirlpoolWallet() != null) {
-            return whirlpoolWalletService.whirlpoolWallet();
+        if(whirlpoolWalletService.getWhirlpoolWalletOrNull() != null) {
+            return whirlpoolWalletService.getWhirlpoolWalletOrNull();
         }
 
         if(hdWallet == null) {
@@ -167,11 +178,11 @@ public class Whirlpool {
     }
 
     public boolean isStarted() {
-        if(whirlpoolWalletService.whirlpoolWallet() == null) {
+        if(whirlpoolWalletService.getWhirlpoolWalletOrNull() == null) {
             return false;
         }
 
-        return whirlpoolWalletService.whirlpoolWallet().isStarted();
+        return whirlpoolWalletService.getWhirlpoolWalletOrNull().isStarted();
     }
 
     public void shutdown() {
@@ -226,7 +237,7 @@ public class Whirlpool {
 
     @Subscribe
     public void onMixFail(MixFailEvent e) {
-        log.info("Mix failed for utxo " + e.getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getWhirlpoolUtxo().getUtxo().tx_output_n);
+        log.info("Mix failed for utxo " + e.getMixFail().getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getMixFail().getWhirlpoolUtxo().getUtxo().tx_output_n);
     }
 
     @Subscribe
