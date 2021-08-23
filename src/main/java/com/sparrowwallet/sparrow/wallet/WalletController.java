@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
@@ -72,10 +73,13 @@ public class WalletController extends WalletFormController implements Initializa
             }
         });
 
-        configure(walletForm.getWallet().isValid());
+        configure(walletForm.getWallet());
     }
 
-    public void configure(boolean validWallet) {
+    public void configure(Wallet wallet) {
+        boolean validWallet = wallet.isValid();
+        boolean whirlpoolMixWallet = wallet.isWhirlpoolMixWallet();
+
         for(Toggle toggle : walletMenu.getToggles()) {
             if(toggle.getUserData().equals(Function.SETTINGS)) {
                 if(!validWallet) {
@@ -86,7 +90,7 @@ public class WalletController extends WalletFormController implements Initializa
                     toggle.setSelected(true);
                 }
 
-                ((ToggleButton)toggle).setDisable(!validWallet);
+                ((ToggleButton)toggle).setDisable(!validWallet || (whirlpoolMixWallet && toggle.getUserData().equals(Function.RECEIVE)));
             }
         }
     }
@@ -104,7 +108,7 @@ public class WalletController extends WalletFormController implements Initializa
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
-            configure(event.getWallet().isValid());
+            configure(event.getWallet());
         }
     }
 

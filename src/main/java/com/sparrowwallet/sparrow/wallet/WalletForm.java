@@ -3,10 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
@@ -17,6 +14,7 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
+import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +34,8 @@ public class WalletForm {
     private WalletUtxosEntry walletUtxosEntry;
     private final List<NodeEntry> accountEntries = new ArrayList<>();
     private final List<Set<WalletNode>> walletTransactionNodes = new ArrayList<>();
+
+    private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
     public WalletForm(Storage storage, Wallet currentWallet, Wallet backupWallet) {
         this(storage, currentWallet, backupWallet, true);
@@ -146,6 +146,7 @@ public class WalletForm {
         Set<Entry> labelChangedEntries = Collections.emptySet();
         if(pastWallet != null) {
             labelChangedEntries = copyLabels(pastWallet);
+            copyMixData(pastWallet);
         }
 
         notifyIfChanged(blockHeight, previousWallet, labelChangedEntries);
@@ -156,14 +157,13 @@ public class WalletForm {
 
         //On a full wallet refresh, walletUtxosEntry and walletTransactionsEntry will have no children yet, but AddressesController may have created accountEntries on a walletNodesChangedEvent
         //Copy nodeEntry labels
-        List<KeyPurpose> keyPurposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
-        for(KeyPurpose keyPurpose : keyPurposes) {
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
             NodeEntry purposeEntry = getNodeEntry(keyPurpose);
             changedEntries.addAll(purposeEntry.copyLabels(pastWallet.getNode(purposeEntry.getNode().getKeyPurpose())));
         }
 
         //Copy node and txo labels
-        for(KeyPurpose keyPurpose : keyPurposes) {
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
             if(wallet.getNode(keyPurpose).copyLabels(pastWallet.getNode(keyPurpose))) {
                 changedEntries.add(getWalletUtxosEntry());
             }
@@ -180,6 +180,10 @@ public class WalletForm {
 
         storage.deleteTempBackups();
         return changedEntries;
+    }
+
+    private void copyMixData(Wallet pastWallet) {
+        wallet.getUtxoMixes().forEach(pastWallet.getUtxoMixes()::putIfAbsent);
     }
 
     private void notifyIfChanged(Integer blockHeight, Wallet previousWallet, Set<Entry> labelChangedEntries) {
@@ -361,6 +365,10 @@ public class WalletForm {
     @Subscribe
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
         if(wallet.isValid()) {
+            if(transactionMempoolService != null) {
+                transactionMempoolService.cancel();
+            }
+
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
                 log.debug(wallet.getFullName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
@@ -382,7 +390,7 @@ public class WalletForm {
                             changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
                         }
 
-                        if(receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) {
+                        if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
                             receivedRef.setLabel(changedNode.getLabel() + (changedNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
                             changedLabelEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, changedNode.getKeyPurpose()));
                         }
@@ -404,12 +412,11 @@ public class WalletForm {
                 if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
                     if(entry instanceof TransactionEntry) {
                         TransactionEntry transactionEntry = (TransactionEntry)entry;
-                        List<KeyPurpose> keyPurposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
-                        for(KeyPurpose keyPurpose : keyPurposes) {
+                        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
                             for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
                                 for(BlockTransactionHashIndex receivedRef : childNode.getTransactionOutputs()) {
                                     if(receivedRef.getHash().equals(transactionEntry.getBlockTransaction().getHash())) {
-                                        if(receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) {
+                                        if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
                                             receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? " (change)" : " (received)"));
                                             labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose));
                                         }
@@ -459,6 +466,38 @@ public class WalletForm {
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
+    public void walletUtxoMixesChanged(WalletUtxoMixesChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
+    public void whirlpoolMixSuccess(WhirlpoolMixSuccessEvent event) {
+        if(event.getWallet() == wallet && event.getWalletNode() != null) {
+            if(transactionMempoolService != null) {
+                transactionMempoolService.cancel();
+            }
+
+            transactionMempoolService = new ElectrumServer.TransactionMempoolService(event.getWallet(), Sha256Hash.wrap(event.getNextUtxo().getHash()), Set.of(event.getWalletNode()));
+            transactionMempoolService.setDelay(Duration.seconds(5));
+            transactionMempoolService.setPeriod(Duration.seconds(5));
+            transactionMempoolService.setRestartOnFailure(false);
+            transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
+                Set<String> scriptHashes = transactionMempoolService.getValue();
+                if(!scriptHashes.isEmpty()) {
+                    Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHashes.iterator().next())));
+                }
+
+                if(transactionMempoolService.getIterationCount() > 10) {
+                    transactionMempoolService.cancel();
+                }
+            });
+            transactionMempoolService.start();
         }
     }
 

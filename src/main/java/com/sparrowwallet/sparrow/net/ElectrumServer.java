@@ -700,6 +700,21 @@ public class ElectrumServer {
 
         if(!transactionOutputs.equals(node.getTransactionOutputs())) {
             node.updateTransactionOutputs(transactionOutputs);
+            copyPostmixLabels(wallet, transactionOutputs);
+        }
+    }
+
+    public void copyPostmixLabels(Wallet wallet, Set<BlockTransactionHashIndex> newTransactionOutputs) {
+        if(wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX) {
+            for(BlockTransactionHashIndex newRef : newTransactionOutputs) {
+                BlockTransactionHashIndex prevRef = wallet.getWalletTxos().keySet().stream()
+                        .filter(txo -> wallet.getMasterWallet().getUtxoMixData(txo) != null && txo.isSpent() && txo.getSpentBy().getHash().equals(newRef.getHash())).findFirst().orElse(null);
+                if(prevRef != null && wallet.getMasterWallet().getUtxoMixData(newRef) != null) {
+                    if(newRef.getLabel() == null && prevRef.getLabel() != null) {
+                        newRef.setLabel(prevRef.getLabel());
+                    }
+                }
+            }
         }
     }
 
@@ -828,8 +843,7 @@ public class ElectrumServer {
 
     public static Map<String, WalletNode> getAllScriptHashes(Wallet wallet) {
         Map<String, WalletNode> scriptHashes = new HashMap<>();
-        List<KeyPurpose> purposes = List.of(KeyPurpose.RECEIVE, KeyPurpose.CHANGE);
-        for(KeyPurpose keyPurpose : purposes) {
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
             for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
                 scriptHashes.put(getScriptHash(wallet, childNode), childNode);
             }

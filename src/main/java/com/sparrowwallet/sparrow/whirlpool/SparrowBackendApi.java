@@ -244,12 +244,12 @@ public class SparrowBackendApi extends BackendApi {
 
     private Wallet getWallet(String zpub) {
         return AppServices.get().getOpenWallets().keySet().stream()
+                .filter(Wallet::isValid)
                 .filter(wallet -> {
                     List<ExtendedKey.Header> headers = ExtendedKey.Header.getHeaders(Network.get());
                     ExtendedKey.Header header = headers.stream().filter(head -> head.getDefaultScriptType().equals(wallet.getScriptType()) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
-                    ExtendedKey.Header p2pkhHeader = headers.stream().filter(head -> head.getDefaultScriptType().equals(ScriptType.P2PKH) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
                     ExtendedKey extPubKey = wallet.getKeystores().get(0).getExtendedPublicKey();
-                    return extPubKey.toString(header).equals(zpub) || extPubKey.toString(p2pkhHeader).equals(zpub);
+                    return extPubKey.toString(header).equals(zpub);
                 })
                 .findFirst()
                 .orElse(null);

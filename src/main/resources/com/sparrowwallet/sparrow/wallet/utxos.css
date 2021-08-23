@@ -4,6 +4,10 @@
     -fx-padding: 10 0 10 0;
 }
 
+.utxos-treetable .progress-bar > .bar {
+    -fx-padding: 0.6em;
+}
+
 .utxos-buttons-box {
     -fx-padding: 15 0 0 0;
 }

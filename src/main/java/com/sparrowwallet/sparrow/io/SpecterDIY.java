@@ -30,7 +30,7 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
 
             Keystore keystore = wallet.getKeystores().get(0);
             keystore.setLabel(getName());
-            keystore.setWalletModel(WalletModel.SPECTER_DIY);
+            keystore.setWalletModel(getWalletModel());
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
 
             return keystore;

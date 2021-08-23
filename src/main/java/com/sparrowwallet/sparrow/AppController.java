@@ -35,6 +35,8 @@ import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -161,6 +163,10 @@ public class AppController implements Initializable {
 
     private final Set<Wallet> emptyLoadingWallets = new LinkedHashSet<>();
 
+    private final ChangeListener<Boolean> serverToggleOnlineListener = (observable, oldValue, newValue) -> {
+        Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -284,9 +290,7 @@ public class AppController implements Initializable {
         serverToggle.setSelected(isConnected());
         serverToggle.setDisable(Config.get().getServerType() == null);
         onlineProperty().bindBidirectional(serverToggle.selectedProperty());
-        onlineProperty().addListener((observable, oldValue, newValue) ->  {
-            Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
-        });
+        onlineProperty().addListener(new WeakChangeListener<>(serverToggleOnlineListener));
         serverToggle.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             Config.get().setMode(serverToggle.isSelected() ? Mode.ONLINE : Mode.OFFLINE);
         });
@@ -895,7 +899,7 @@ public class AppController implements Initializable {
             if(wallet.isWhirlpoolMasterWallet()) {
                 String walletId = storage.getWalletId(wallet);
                 Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
-                whirlpool.setHDWallet(copy);
+                whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
             }
 
             for(int i = 0; i < wallet.getKeystores().size(); i++) {
@@ -1184,7 +1188,8 @@ public class AppController implements Initializable {
 
             TabPane subTabs = new TabPane();
             subTabs.setSide(Side.RIGHT);
-            subTabs.getStyleClass().add("master-only");
+            subTabs.getStyleClass().addAll("master-only", "wallet-subtabs");
+            subTabs.rotateGraphicProperty().set(true);
             tab.setContent(subTabs);
 
             WalletForm walletForm = addWalletSubTab(subTabs, storage, wallet, backupWallet);
@@ -1222,8 +1227,13 @@ public class AppController implements Initializable {
 
     public WalletForm addWalletSubTab(TabPane subTabs, Storage storage, Wallet wallet, Wallet backupWallet) {
         try {
-            Tab subTab = new Tab(wallet.isMasterWallet() ? getAutomaticName(wallet) : wallet.getName());
+            Tab subTab = new Tab();
             subTab.setClosable(false);
+            Label subTabLabel = new Label(wallet.isMasterWallet() ? getAutomaticName(wallet) : wallet.getName());
+            subTabLabel.setGraphic(getSubTabGlyph(wallet));
+            subTabLabel.setContentDisplay(ContentDisplay.TOP);
+            subTabLabel.setAlignment(Pos.TOP_CENTER);
+            subTab.setGraphic(subTabLabel);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             subTab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
@@ -1247,9 +1257,26 @@ public class AppController implements Initializable {
         }
     }
 
+    private Glyph getSubTabGlyph(Wallet wallet) {
+        Glyph tabGlyph;
+        StandardAccount standardAccount = wallet.getStandardAccountType();
+        if(standardAccount == StandardAccount.WHIRLPOOL_PREMIX) {
+            tabGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
+        } else if(standardAccount == StandardAccount.WHIRLPOOL_POSTMIX) {
+            tabGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
+        } else if(standardAccount == StandardAccount.WHIRLPOOL_BADBANK) {
+            tabGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.BIOHAZARD);
+        } else {
+            tabGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ARROW_DOWN);
+        }
+
+        tabGlyph.setFontSize(12);
+        return tabGlyph;
+    }
+
     private String getAutomaticName(Wallet wallet) {
         int account = wallet.getAccountIndex();
-        return account < 0 ? wallet.getName() : "Account #" + account;
+        return account < 0 ? wallet.getName() : (!wallet.isWhirlpoolMasterWallet() || account > 1 ? "Account #" + account : "Deposit");
     }
 
     public WalletForm getSelectedWalletForm() {
@@ -1637,9 +1664,30 @@ public class AppController implements Initializable {
     @Subscribe
     public void newWalletTransactions(NewWalletTransactionsEvent event) {
         if(Config.get().isNotifyNewTransactions() && getOpenWallets().containsKey(event.getWallet())) {
-            String text;
-            if(event.getBlockTransactions().size() == 1) {
-                BlockTransaction blockTransaction = event.getBlockTransactions().get(0);
+            List<BlockTransaction> blockTransactions = new ArrayList<>(event.getBlockTransactions());
+            List<BlockTransaction> whirlpoolTransactions = event.getWhirlpoolMixTransactions();
+            blockTransactions.removeAll(whirlpoolTransactions);
+
+            if(!whirlpoolTransactions.isEmpty()) {
+                BlockTransaction blockTransaction = whirlpoolTransactions.get(0);
+                String status;
+                String walletName = event.getWallet().getMasterName() + " " + event.getWallet().getName().toLowerCase();
+                long value = blockTransaction.getTransaction().getOutputs().iterator().next().getValue();
+                long mempoolValue = whirlpoolTransactions.stream().filter(tx -> tx.getHeight() <= 0).mapToLong(tx -> value).sum();
+                long blockchainValue = whirlpoolTransactions.stream().filter(tx -> tx.getHeight() > 0).mapToLong(tx -> value).sum();
+
+                if(mempoolValue > 0) {
+                    status = "New " + walletName + " mempool transaction" + (mempoolValue > value ? "s: " : ": ") + event.getValueAsText(mempoolValue);
+                } else {
+                    status = "Confirming " + walletName + " transaction" + (blockchainValue > value ? "s: " : ": ") + event.getValueAsText(blockchainValue);
+                }
+
+                statusUpdated(new StatusEvent(status));
+            }
+
+            String text = null;
+            if(blockTransactions.size() == 1) {
+                BlockTransaction blockTransaction = blockTransactions.get(0);
                 if(blockTransaction.getHeight() <= 0) {
                     text = "New mempool transaction: ";
                 } else {
@@ -1654,7 +1702,7 @@ public class AppController implements Initializable {
                 }
 
                 text += event.getValueAsText(event.getTotalValue());
-            } else {
+            } else if(blockTransactions.size() > 1) {
                 if(event.getTotalBlockchainValue() > 0 && event.getTotalMempoolValue() > 0) {
                     text = "New transactions: " + event.getValueAsText(event.getTotalValue()) + " total (" + event.getValueAsText(event.getTotalMempoolValue())  + " in mempool)";
                 } else if(event.getTotalMempoolValue() > 0) {
@@ -1664,29 +1712,31 @@ public class AppController implements Initializable {
                 }
             }
 
-            Window.getWindows().forEach(window -> {
-                String notificationStyles = AppController.class.getResource("notificationpopup.css").toExternalForm();
-                if(!window.getScene().getStylesheets().contains(notificationStyles)) {
-                    window.getScene().getStylesheets().add(notificationStyles);
+            if(text != null) {
+                Window.getWindows().forEach(window -> {
+                    String notificationStyles = AppController.class.getResource("notificationpopup.css").toExternalForm();
+                    if(!window.getScene().getStylesheets().contains(notificationStyles)) {
+                        window.getScene().getStylesheets().add(notificationStyles);
+                    }
+                });
+
+                Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
+                Notifications notificationBuilder = Notifications.create()
+                        .title("Sparrow - " + event.getWallet().getFullName())
+                        .text(text)
+                        .graphic(new ImageView(image))
+                        .hideAfter(Duration.seconds(15))
+                        .position(Pos.TOP_RIGHT)
+                        .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
+                        .onAction(e -> selectTab(event.getWallet()));
+
+                //If controlsfx can't find our window, we must set the window ourselves (unfortunately notification is then shown within this window)
+                if(org.controlsfx.tools.Utils.getWindow(null) == null) {
+                    notificationBuilder.owner(tabs.getScene().getWindow());
                 }
-            });
 
-            Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-            Notifications notificationBuilder = Notifications.create()
-                    .title("Sparrow - " + event.getWallet().getFullName())
-                    .text(text)
-                    .graphic(new ImageView(image))
-                    .hideAfter(Duration.seconds(15))
-                    .position(Pos.TOP_RIGHT)
-                    .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
-                    .onAction(e -> selectTab(event.getWallet()));
-
-            //If controlsfx can't find our window, we must set the window ourselves (unfortunately notification is then shown within this window)
-            if(org.controlsfx.tools.Utils.getWindow(null) == null) {
-                notificationBuilder.owner(tabs.getScene().getWindow());
+                notificationBuilder.show();
             }
-
-            notificationBuilder.show();
         }
     }
 

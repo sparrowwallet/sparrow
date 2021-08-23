@@ -25,6 +25,7 @@ import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.beans.value.WeakChangeListener;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -197,6 +198,10 @@ public class SendController extends WalletFormController implements Initializabl
             }
             updateTransaction();
         }
+    };
+
+    private final ChangeListener<Boolean> premixButtonOnlineListener = (observable, oldValue, newValue) -> {
+        premixButton.setDisable(!newValue);
     };
 
     private ValidationSupport validationSupport;
@@ -385,9 +390,7 @@ public class SendController extends WalletFormController implements Initializabl
         premixButton.managedProperty().bind(premixButton.visibleProperty());
         createButton.visibleProperty().bind(premixButton.visibleProperty().not());
         premixButton.setVisible(false);
-        AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
-            premixButton.setDisable(!newValue);
-        });
+        AppServices.onlineProperty().addListener(new WeakChangeListener<>(premixButtonOnlineListener));
     }
 
     private void initializeTabHeader(int count) {
@@ -1054,7 +1057,7 @@ public class SendController extends WalletFormController implements Initializabl
     public void broadcastPremixUnencrypted(Wallet decryptedWallet) {
         Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
         whirlpool.setScode(Config.get().getScode());
-        whirlpool.setHDWallet(decryptedWallet);
+        whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
         Map<BlockTransactionHashIndex, WalletNode> utxos = walletTransactionProperty.get().getSelectedUtxos();
         Whirlpool.Tx0BroadcastService tx0BroadcastService = new Whirlpool.Tx0BroadcastService(whirlpool, whirlpoolProperty.get(), utxos.keySet());
         tx0BroadcastService.setOnRunning(workerStateEvent -> {
