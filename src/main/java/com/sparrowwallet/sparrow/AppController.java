@@ -1188,7 +1188,7 @@ public class AppController implements Initializable {
 
             TabPane subTabs = new TabPane();
             subTabs.setSide(Side.RIGHT);
-            subTabs.getStyleClass().addAll("master-only", "wallet-subtabs");
+            subTabs.getStyleClass().add("master-only");
             subTabs.rotateGraphicProperty().set(true);
             tab.setContent(subTabs);
 
@@ -1218,7 +1218,13 @@ public class AppController implements Initializable {
                     if(walletTabData.getWallet() == wallet.getMasterWallet()) {
                         TabPane subTabs = (TabPane)walletTab.getContent();
                         addWalletSubTab(subTabs, storage, wallet, backupWallet);
-                        Platform.runLater(() -> subTabs.getStyleClass().remove("master-only"));
+                        Tab masterTab = subTabs.getTabs().get(0);
+                        Label masterLabel = (Label)masterTab.getGraphic();
+                        masterLabel.setText(getAutomaticName(wallet.getMasterWallet()));
+                        Platform.runLater(() -> {
+                            subTabs.getStyleClass().remove("master-only");
+                            subTabs.getStyleClass().add("wallet-subtabs");
+                        });
                     }
                 }
             }
