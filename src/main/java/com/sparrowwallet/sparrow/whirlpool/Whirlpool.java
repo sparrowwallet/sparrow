@@ -344,10 +344,10 @@ public class Whirlpool {
 
     @Subscribe
     public void onMixSuccess(MixSuccessEvent e) {
-        log.debug("Mix success, new utxo " + e.getMixSuccess().getReceiveUtxo().getHash() + ":" + e.getMixSuccess().getReceiveUtxo().getIndex());
-        persistMixData();
         WalletUtxo walletUtxo = getUtxo(e.getWhirlpoolUtxo());
         if(walletUtxo != null) {
+            log.debug("Mix success, new utxo " + e.getMixSuccess().getReceiveUtxo().getHash() + ":" + e.getMixSuccess().getReceiveUtxo().getIndex());
+            persistMixData();
             Platform.runLater(() -> EventManager.get().post(new WhirlpoolMixSuccessEvent(walletUtxo.wallet, walletUtxo.utxo, e.getMixSuccess().getReceiveUtxo(), getReceiveNode(e, walletUtxo))));
         }
     }
@@ -364,30 +364,34 @@ public class Whirlpool {
 
     @Subscribe
     public void onMixFail(MixFailEvent e) {
-        log.debug("Mix failed for utxo " + e.getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getWhirlpoolUtxo().getUtxo().tx_output_n + " " + e.getMixFailReason());
         WalletUtxo walletUtxo = getUtxo(e.getWhirlpoolUtxo());
         if(walletUtxo != null) {
+            log.debug("Mix failed for utxo " + e.getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getWhirlpoolUtxo().getUtxo().tx_output_n + " " + e.getMixFailReason());
             Platform.runLater(() -> EventManager.get().post(new WhirlpoolMixEvent(walletUtxo.wallet, walletUtxo.utxo, e.getMixFailReason())));
         }
     }
 
     @Subscribe
     public void onMixProgress(MixProgressEvent e) {
-        log.debug("Mix progress for utxo " + e.getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getWhirlpoolUtxo().getUtxo().tx_output_n + " " + e.getWhirlpoolUtxo().getMixsDone() + " " + e.getMixProgress().getMixStep() + " " + e.getWhirlpoolUtxo().getUtxoState().getStatus());
         WalletUtxo walletUtxo = getUtxo(e.getWhirlpoolUtxo());
         if(walletUtxo != null && isMixing()) {
+            log.debug("Mix progress for utxo " + e.getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getWhirlpoolUtxo().getUtxo().tx_output_n + " " + e.getWhirlpoolUtxo().getMixsDone() + " " + e.getMixProgress().getMixStep() + " " + e.getWhirlpoolUtxo().getUtxoState().getStatus());
             Platform.runLater(() -> EventManager.get().post(new WhirlpoolMixEvent(walletUtxo.wallet, walletUtxo.utxo, e.getMixProgress())));
         }
     }
 
     @Subscribe
     public void onWalletStart(WalletStartEvent e) {
-        mixingProperty.set(true);
+        if(e.getWhirlpoolWallet() == whirlpoolWalletService.whirlpoolWallet()) {
+            mixingProperty.set(true);
+        }
     }
 
     @Subscribe
     public void onWalletStop(WalletStopEvent e) {
-        mixingProperty.set(false);
+        if(e.getWhirlpoolWallet() == whirlpoolWalletService.whirlpoolWallet()) {
+            mixingProperty.set(false);
+        }
     }
 
     public static class PoolsService extends Service<Collection<Pool>> {
