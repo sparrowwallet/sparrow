@@ -79,8 +79,6 @@ public final class IpAddressMatcher {
         int nMaskFullBytes = nMaskBits / 8;
         byte finalByte = (byte) (0xFF00 >> (nMaskBits & 0x07));
 
-        // System.out.println("Mask is " + new sun.misc.HexDumpEncoder().encode(mask));
-
         for (int i = 0; i < nMaskFullBytes; i++) {
             if (remAddr[i] != reqAddr[i]) {
                 return false;

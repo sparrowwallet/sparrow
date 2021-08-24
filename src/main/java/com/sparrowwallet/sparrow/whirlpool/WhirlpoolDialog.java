@@ -1,9 +1,9 @@
 package com.sparrowwallet.sparrow.whirlpool;
 
 import com.samourai.whirlpool.client.tx0.Tx0Preview;
-import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -27,9 +27,10 @@ public class WhirlpoolDialog extends Dialog<Tx0Preview> {
             whirlpoolController.initializeView(walletId, wallet, utxoEntries);
 
             dialogPane.setPrefWidth(600);
-            dialogPane.setPrefHeight(520);
+            dialogPane.setPrefHeight(550);
             AppServices.moveToActiveWindowScreen(this);
 
+            dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
             dialogPane.getStylesheets().add(AppServices.class.getResource("whirlpool/whirlpool.css").toExternalForm());
 
             final ButtonType nextButtonType = new javafx.scene.control.ButtonType("Next", ButtonBar.ButtonData.OK_DONE);
@@ -53,7 +54,9 @@ public class WhirlpoolDialog extends Dialog<Tx0Preview> {
             backButton.managedProperty().bind(backButton.visibleProperty());
             previewButton.managedProperty().bind(previewButton.visibleProperty());
 
-            backButton.setDisable(true);
+            if(Config.get().getScode() == null) {
+                backButton.setDisable(true);
+            }
             previewButton.visibleProperty().bind(nextButton.visibleProperty().not());
 
             nextButton.addEventFilter(ActionEvent.ACTION, event -> {

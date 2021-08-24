@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io.db;
 
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.UtxoMixData;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
@@ -28,6 +29,9 @@ public interface WalletDao {
 
     @CreateSqlObject
     BlockTransactionDao createBlockTransactionDao();
+
+    @CreateSqlObject
+    UtxoMixDataDao createUtxoMixDataDao();
 
     @SqlQuery("select wallet.id, wallet.name, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.birthDate, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id")
     @RegisterRowMapper(WalletMapper.class)
@@ -86,6 +90,9 @@ public interface WalletDao {
 
         Map<Sha256Hash, BlockTransaction> blockTransactions = createBlockTransactionDao().getForWalletId(wallet.getId()); //.stream().collect(Collectors.toMap(BlockTransaction::getHash, Function.identity(), (existing, replacement) -> existing, LinkedHashMap::new));
         wallet.updateTransactions(blockTransactions);
+
+        Map<Sha256Hash, UtxoMixData> utxoMixes = createUtxoMixDataDao().getForWalletId(wallet.getId());
+        wallet.getUtxoMixes().putAll(utxoMixes);
     }
 
     default void addWallet(String schema, Wallet wallet) {
@@ -99,6 +106,7 @@ public interface WalletDao {
             createKeystoreDao().addKeystores(wallet);
             createWalletNodeDao().addWalletNodes(wallet);
             createBlockTransactionDao().addBlockTransactions(wallet);
+            createUtxoMixDataDao().addUtxoMixData(wallet);
         } finally {
             setSchema(DbPersistence.DEFAULT_SCHEMA);
         }

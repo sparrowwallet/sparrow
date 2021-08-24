@@ -69,10 +69,7 @@ public class WalletTransactionsEntry extends Entry {
 
         List<Entry> entriesComplete = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).isComplete()).collect(Collectors.toList());
         if(!entriesComplete.isEmpty()) {
-            List<BlockTransaction> blockTransactions = entriesAdded.stream().map(txEntry -> ((TransactionEntry)txEntry).getBlockTransaction()).collect(Collectors.toList());
-            long totalBlockchainValue = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).getConfirmations() > 0).mapToLong(Entry::getValue).sum();
-            long totalMempoolValue = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).getConfirmations() == 0).mapToLong(Entry::getValue).sum();
-            EventManager.get().post(new NewWalletTransactionsEvent(getWallet(), blockTransactions, totalBlockchainValue, totalMempoolValue));
+            EventManager.get().post(new NewWalletTransactionsEvent(getWallet(), entriesAdded.stream().map(entry -> (TransactionEntry)entry).collect(Collectors.toList())));
         }
 
         if(entriesAdded.size() > entriesComplete.size()) {

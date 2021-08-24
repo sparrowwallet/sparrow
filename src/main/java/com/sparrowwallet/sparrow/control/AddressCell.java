@@ -11,55 +11,44 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
 import org.controlsfx.glyphfont.Glyph;
 
-public class AddressCell extends TreeTableCell<Entry, Entry> {
+public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
     public AddressCell() {
         super();
         setAlignment(Pos.CENTER_LEFT);
         setContentDisplay(ContentDisplay.RIGHT);
+        getStyleClass().add("address-cell");
     }
 
     @Override
-    protected void updateItem(Entry entry, boolean empty) {
-        super.updateItem(entry, empty);
+    protected void updateItem(UtxoEntry.AddressStatus addressStatus, boolean empty) {
+        super.updateItem(addressStatus, empty);
 
-        EntryCell.applyRowStyles(this, entry);
-        getStyleClass().add("address-cell");
+        UtxoEntry utxoEntry = addressStatus == null ? null : addressStatus.getUtxoEntry();
+        EntryCell.applyRowStyles(this, utxoEntry);
 
         if (empty) {
             setText(null);
             setGraphic(null);
         } else {
-            if(entry instanceof UtxoEntry) {
-                UtxoEntry utxoEntry = (UtxoEntry)entry;
-                Address address = utxoEntry.getAddress();
+            if(utxoEntry != null) {
+                Address address = addressStatus.getAddress();
                 setText(address.toString());
                 setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode())));
                 Tooltip tooltip = new Tooltip();
-                tooltip.setText(getTooltipText(utxoEntry));
+                tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate()));
                 setTooltip(tooltip);
 
-                if(utxoEntry.isDuplicateAddress()) {
+                if(addressStatus.isDuplicate()) {
                     setGraphic(getDuplicateGlyph());
                 } else {
                     setGraphic(null);
                 }
-
-                utxoEntry.duplicateAddressProperty().addListener((observable, oldValue, newValue) -> {
-                    if(newValue) {
-                        setGraphic(getDuplicateGlyph());
-                        Tooltip tt = new Tooltip();
-                        tt.setText(getTooltipText(utxoEntry));
-                        setTooltip(tt);
-                    } else {
-                        setGraphic(null);
-                    }
-                });
             }
         }
     }
 
-    private String getTooltipText(UtxoEntry utxoEntry) {
-        return utxoEntry.getNode().getDerivationPath().replace("m", "..") + (utxoEntry.isDuplicateAddress() ? " (Duplicate address)" : "");
+    private String getTooltipText(UtxoEntry utxoEntry, boolean duplicate) {
+        return utxoEntry.getNode().getDerivationPath().replace("m", "..") + (duplicate ? " (Duplicate address)" : "");
     }
 
     public static Glyph getDuplicateGlyph() {

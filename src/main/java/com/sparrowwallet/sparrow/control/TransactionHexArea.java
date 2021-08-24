@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.protocol.*;
 import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.IndexRange;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.Clipboard;
@@ -25,6 +26,7 @@ public class TransactionHexArea extends CodeArea {
     private static final int TRUNCATE_AT = 30000;
     private static final int SEGMENTS_INTERVAL = 250;
 
+    private String fullHex;
     private List<TransactionSegment> previousSegmentList = new ArrayList<>();
 
     public TransactionHexArea() {
@@ -37,7 +39,7 @@ public class TransactionHexArea extends CodeArea {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             transaction.bitcoinSerializeToStream(baos);
 
-            String fullHex = Utils.bytesToHex(baos.toByteArray());
+            fullHex = Utils.bytesToHex(baos.toByteArray());
             String hex = fullHex;
             if(hex.length() > TRUNCATE_AT) {
                 hex = hex.substring(0, TRUNCATE_AT);
@@ -240,6 +242,18 @@ public class TransactionHexArea extends CodeArea {
             case "locktime" -> "Locktime";
             default -> "";
         };
+    }
+
+    @Override
+    public void copy() {
+        IndexRange selection = getSelection();
+        if(fullHex != null && selection.getLength() == getLength()) {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(fullHex);
+            Clipboard.getSystemClipboard().setContent(content);
+        } else {
+            super.copy();
+        }
     }
 
     private static class TransactionSegment {

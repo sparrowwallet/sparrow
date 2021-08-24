@@ -7,6 +7,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class UtxosTreeTable extends CoinTreeTable {
@@ -38,18 +39,25 @@ public class UtxosTreeTable extends CoinTreeTable {
         });
         getColumns().add(outputCol);
 
-        TreeTableColumn<Entry, Entry> addressCol = new TreeTableColumn<>("Address");
-        addressCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
-            return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
-        });
-        addressCol.setCellFactory(p -> new AddressCell());
-        addressCol.setSortable(true);
-        addressCol.setComparator((o1, o2) -> {
-            UtxoEntry entry1 = (UtxoEntry)o1;
-            UtxoEntry entry2 = (UtxoEntry)o2;
-            return entry1.getAddress().toString().compareTo(entry2.getAddress().toString());
-        });
-        getColumns().add(addressCol);
+        if(rootEntry.getWallet().isWhirlpoolMixWallet()) {
+            TreeTableColumn<Entry, UtxoEntry.MixStatus> mixStatusCol = new TreeTableColumn<>("Mixes");
+            mixStatusCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, UtxoEntry.MixStatus> param) -> {
+                return ((UtxoEntry)param.getValue().getValue()).mixStatusProperty();
+            });
+            mixStatusCol.setCellFactory(p -> new MixStatusCell());
+            mixStatusCol.setSortable(true);
+            mixStatusCol.setComparator(Comparator.comparingInt(UtxoEntry.MixStatus::getMixesDone));
+            getColumns().add(mixStatusCol);
+        } else {
+            TreeTableColumn<Entry, UtxoEntry.AddressStatus> addressCol = new TreeTableColumn<>("Address");
+            addressCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, UtxoEntry.AddressStatus> param) -> {
+                return ((UtxoEntry)param.getValue().getValue()).addressStatusProperty();
+            });
+            addressCol.setCellFactory(p -> new AddressCell());
+            addressCol.setSortable(true);
+            addressCol.setComparator(Comparator.comparing(o -> o.getAddress().toString()));
+            getColumns().add(addressCol);
+        }
 
         TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>("Label");
         labelCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {

@@ -94,6 +94,11 @@ public class WhirlpoolController {
             Config.get().setScode(newValue);
         });
 
+        if(Config.get().getScode() != null) {
+            step1.setVisible(false);
+            step3.setVisible(true);
+        }
+
         pool.setConverter(new StringConverter<Pool>() {
             @Override
             public String toString(Pool pool) {
@@ -219,6 +224,10 @@ public class WhirlpoolController {
     }
 
     private void fetchTx0Preview(Pool pool) {
+        if(Config.get().getScode() == null) {
+            Config.get().setScode("");
+        }
+
         Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
         whirlpool.setScode(Config.get().getScode());
 

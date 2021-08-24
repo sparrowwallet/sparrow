@@ -31,9 +31,12 @@
     <logger name="org.eclipse.jetty.client.HttpExchange" level="OFF" />
     <logger name="org.eclipse.jetty.client.HttpParser" level="OFF" />
     <logger name="org.eclipse.jetty.http.HttpParser" level="OFF" />
-    <logger name="org.eclipse.jetty.util.log.Log" level="OFF" />
+    <logger name="org.eclipse.jetty.util.log" level="OFF" />
     <logger name="org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler" level="OFF" />
     <logger name="org.bitcoinj.crypto.MnemonicCode" level="OFF" />
+    <logger name="org.springframework.core.KotlinDetector" level="OFF" />
+    <logger name="org.springframework.http.converter.json.Jackson2ObjectMapperBuilder" level="OFF" />
+    <logger name="org.springframework.web.HttpLogging" level="OFF" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 

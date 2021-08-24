@@ -130,6 +130,12 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 setGraphic(actionBox);
+
+                if(nodeEntry.getWallet().isWhirlpoolMixWallet()) {
+                    setText(address.toString().substring(0, 20) + "...");
+                    setContextMenu(null);
+                    setGraphic(new HBox());
+                }
             } else if(entry instanceof HashIndexEntry) {
                 HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                 setText(hashIndexEntry.getDescription());

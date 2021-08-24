@@ -452,6 +452,19 @@ public class AppServices {
         return application;
     }
 
+    public Whirlpool getWhirlpool(Wallet wallet) {
+        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+        for(List<WalletTabData> walletTabDataList : walletWindows.values()) {
+            for(WalletTabData walletTabData : walletTabDataList) {
+                if(walletTabData.getWallet() == masterWallet) {
+                    return whirlpoolMap.get(walletTabData.getWalletForm().getWalletId());
+                }
+            }
+        }
+
+        return null;
+    }
+
     public Whirlpool getWhirlpool(String walletId) {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
@@ -473,11 +486,11 @@ public class AppServices {
         }
     }
 
-    private void stopAllWhirlpool() {
+    private void shutdownAllWhirlpool() {
         for(Whirlpool whirlpool : whirlpoolMap.values().stream().filter(Whirlpool::isStarted).collect(Collectors.toList())) {
             Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
             shutdownService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to stop whirlpool", workerStateEvent.getSource().getException());
+                log.error("Failed to shutdown whirlpool", workerStateEvent.getSource().getException());
             });
             shutdownService.start();
         }
@@ -509,6 +522,10 @@ public class AppServices {
         }
 
         return openWallets;
+    }
+
+    public Wallet getWallet(String walletId) {
+        return getOpenWallets().entrySet().stream().filter(entry -> entry.getValue().getWalletId(entry.getKey()).equals(walletId)).map(Map.Entry::getKey).findFirst().orElse(null);
     }
 
     public Window getWindowForWallet(String walletId) {
@@ -824,7 +841,7 @@ public class AppServices {
 
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
-        stopAllWhirlpool();
+        shutdownAllWhirlpool();
     }
 
     @Subscribe
@@ -975,7 +992,7 @@ public class AppServices {
                         WhirlpoolEventService.getInstance().unregister(whirlpool);
                     });
                     shutdownService.setOnFailed(workerStateEvent -> {
-                        log.error("Failed to stop whirlpool", workerStateEvent.getSource().getException());
+                        log.error("Failed to shutdown whirlpool", workerStateEvent.getSource().getException());
                     });
                     shutdownService.start();
                 } else {
@@ -984,6 +1001,14 @@ public class AppServices {
                     WhirlpoolEventService.getInstance().unregister(whirlpool);
                 }
             }
+        }
+    }
+
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        Whirlpool whirlpool = getWhirlpool(event.getWallet());
+        if(whirlpool != null) {
+            whirlpool.refreshUtxos();
         }
     }
 

@@ -247,7 +247,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         //ignore, bytes not parsable as tx
                     }
 
-                    result = new Result(new ScanException("Parsed QR parts were not a PSBT or transaction"));
+                    result = new Result(complete);
                 }
             } else {
                 PSBT psbt;
