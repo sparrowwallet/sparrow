@@ -938,7 +938,8 @@ public class AppController implements Initializable {
                 new CoboVaultSinglesig(), new CoboVaultMultisig(),
                 new PassportSinglesig(),
                 new KeystoneSinglesig(), new KeystoneMultisig(),
-                new CaravanMultisig());
+                new CaravanMultisig(),
+                new NthKeyMultisig());
         for(WalletImport importer : walletImporters) {
             try(FileInputStream inputStream = new FileInputStream(file)) {
                 if(importer.isEncrypted(file) && password == null) {
