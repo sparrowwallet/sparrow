@@ -469,7 +469,7 @@ public class AppServices {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
             HostAndPort torProxy = AppServices.isTorRunning() ? HostAndPort.fromParts("localhost", TorService.PROXY_PORT) : (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
-            whirlpool = new Whirlpool(Network.get(), torProxy, Config.get().getScode(), 1);
+            whirlpool = new Whirlpool(Network.get(), torProxy, Config.get().getScode());
             whirlpoolMap.put(walletId, whirlpool);
         }
 

@@ -91,7 +91,7 @@ dependencies {
     implementation('org.slf4j:jul-to-slf4j:1.7.30') {
         exclude group: 'org.slf4j'
     }
-    implementation('com.sparrowwallet.nightjar:nightjar:0.2.10')
+    implementation('com.sparrowwallet.nightjar:nightjar:0.2.11-SNAPSHOT')
     testImplementation('junit:junit:4.12')
 }
 
@@ -387,7 +387,7 @@ extraJavaModuleInfo {
     module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
         exports('co.nstant.in.cbor')
     }
-    module('nightjar-0.2.10.jar', 'com.sparrowwallet.nightjar', '0.2.10') {
+    module('nightjar-0.2.11-SNAPSHOT.jar', 'com.sparrowwallet.nightjar', '0.2.11-SNAPSHOT') {
         requires('com.google.common')
         requires('net.sourceforge.streamsupport')
         requires('org.slf4j')
@@ -399,6 +399,7 @@ extraJavaModuleInfo {
         exports('com.samourai.tor.client')
         exports('com.samourai.wallet.api.backend')
         exports('com.samourai.wallet.api.backend.beans')
+        exports('com.samourai.wallet.client.indexHandler')
         exports('com.samourai.wallet.hd')
         exports('com.samourai.whirlpool.client.event')
         exports('com.samourai.whirlpool.client.wallet')
@@ -411,6 +412,7 @@ extraJavaModuleInfo {
         exports('com.samourai.whirlpool.client.wallet.data.utxo')
         exports('com.samourai.whirlpool.client.wallet.data.utxoConfig')
         exports('com.samourai.whirlpool.client.wallet.data.supplier')
+        exports('com.samourai.whirlpool.client.mix.handler')
         exports('com.samourai.whirlpool.client.mix.listener')
         exports('com.samourai.whirlpool.protocol.beans')
         exports('com.samourai.whirlpool.protocol.rest')

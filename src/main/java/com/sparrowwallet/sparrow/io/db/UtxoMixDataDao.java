@@ -13,20 +13,20 @@ import java.util.List;
 import java.util.Map;
 
 public interface UtxoMixDataDao {
-    @SqlQuery("select id, hash, poolId, mixesDone, forwarding from utxoMixData where wallet = ? order by id")
+    @SqlQuery("select id, hash, mixesDone, expired from utxoMixData where wallet = ? order by id")
     @RegisterRowMapper(UtxoMixDataMapper.class)
     Map<Sha256Hash, UtxoMixData> getForWalletId(Long id);
 
-    @SqlQuery("select id, hash, poolId, mixesDone, forwarding from utxoMixData where hash = ?")
+    @SqlQuery("select id, hash, mixesDone, expired from utxoMixData where hash = ?")
     @RegisterRowMapper(UtxoMixDataMapper.class)
     Map<Sha256Hash, UtxoMixData> getForHash(byte[] hash);
 
-    @SqlUpdate("insert into utxoMixData (hash, poolId, mixesDone, forwarding, wallet) values (?, ?, ?, ?, ?)")
+    @SqlUpdate("insert into utxoMixData (hash, mixesDone, expired, wallet) values (?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insertUtxoMixData(byte[] hash, String poolId, int mixesDone, Long forwarding, long wallet);
+    long insertUtxoMixData(byte[] hash, int mixesDone, Long expired, long wallet);
 
-    @SqlUpdate("update utxoMixData set hash = ?, poolId = ?, mixesDone = ?, forwarding = ?, wallet = ? where id = ?")
-    void updateUtxoMixData(byte[] hash, String poolId, int mixesDone, Long forwarding, long wallet, long id);
+    @SqlUpdate("update utxoMixData set hash = ?, mixesDone = ?, expired = ?, wallet = ? where id = ?")
+    void updateUtxoMixData(byte[] hash, int mixesDone, Long expired, long wallet, long id);
 
     @SqlUpdate("delete from utxoMixData where id in (<ids>)")
     void deleteUtxoMixData(@BindList("ids") List<Long> ids);
@@ -45,11 +45,11 @@ public interface UtxoMixDataDao {
         Map<Sha256Hash, UtxoMixData> existing = getForHash(hash.getBytes());
 
         if(existing.isEmpty() && utxoMixData.getId() == null) {
-            long id = insertUtxoMixData(hash.getBytes(), utxoMixData.getPoolId(), utxoMixData.getMixesDone(), utxoMixData.getForwarding(), wallet.getId());
+            long id = insertUtxoMixData(hash.getBytes(), utxoMixData.getMixesDone(), utxoMixData.getExpired(), wallet.getId());
             utxoMixData.setId(id);
         } else {
             Long existingId = existing.get(hash) != null ? existing.get(hash).getId() : utxoMixData.getId();
-            updateUtxoMixData(hash.getBytes(), utxoMixData.getPoolId(), utxoMixData.getMixesDone(), utxoMixData.getForwarding(), wallet.getId(), existingId);
+            updateUtxoMixData(hash.getBytes(), utxoMixData.getMixesDone(), utxoMixData.getExpired(), wallet.getId(), existingId);
             utxoMixData.setId(existingId);
         }
     }

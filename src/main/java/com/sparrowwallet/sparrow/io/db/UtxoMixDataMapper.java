@@ -14,12 +14,12 @@ public class UtxoMixDataMapper implements RowMapper<Map.Entry<Sha256Hash, UtxoMi
     public Map.Entry<Sha256Hash, UtxoMixData> map(ResultSet rs, StatementContext ctx) throws SQLException {
         Sha256Hash hash = Sha256Hash.wrap(rs.getBytes("hash"));
 
-        Long forwarding = rs.getLong("forwarding");
+        Long expired = rs.getLong("expired");
         if(rs.wasNull()) {
-            forwarding = null;
+            expired = null;
         }
 
-        UtxoMixData utxoMixData = new UtxoMixData(rs.getString("poolId"), rs.getInt("mixesDone"), forwarding);
+        UtxoMixData utxoMixData = new UtxoMixData(rs.getInt("mixesDone"), expired);
         utxoMixData.setId(rs.getLong("id"));
 
         return new Map.Entry<>() {

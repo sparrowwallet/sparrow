@@ -40,9 +40,9 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                 setContextMenu(null);
             }
 
-            if(mixStatus.getPoolId() != null) {
+            if(mixStatus.getMixProgress() != null) {
                 Tooltip tooltip = new Tooltip();
-                tooltip.setText("Pool: " + mixStatus.getPoolId().replace("btc", " BTC"));
+                tooltip.setText("Pool: " + mixStatus.getMixProgress().getPoolId().replace("btc", " BTC"));
                 setTooltip(tooltip);
             }
 
@@ -81,7 +81,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
     private void setMixProgress(MixProgress mixProgress) {
         if(mixProgress.getMixStep() != MixStep.FAIL) {
             ProgressIndicator progressIndicator = getProgressIndicator();
-            progressIndicator.setProgress(mixProgress.getProgressPercent() == 100 ? -1 : mixProgress.getProgressPercent() / 100.0);
+            progressIndicator.setProgress(mixProgress.getMixStep().getProgressPercent() == 100 ? -1 : mixProgress.getMixStep().getProgressPercent() / 100.0);
             setGraphic(progressIndicator);
             Tooltip tt = new Tooltip();
             tt.setText(mixProgress.getMixStep().getMessage().substring(0, 1).toUpperCase() + mixProgress.getMixStep().getMessage().substring(1));

@@ -157,15 +157,11 @@ public class UtxoEntry extends HashIndexEntry {
                 }
             }
 
-            return new UtxoMixData("Unknown Pool", getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX ? 1 : 0, null);
+            return new UtxoMixData(getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX ? 1 : 0, null);
         }
 
         public int getMixesDone() {
             return getUtxoMixData().getMixesDone();
-        }
-
-        public String getPoolId() {
-            return  getUtxoMixData().getPoolId();
         }
 
         public MixProgress getMixProgress() {
