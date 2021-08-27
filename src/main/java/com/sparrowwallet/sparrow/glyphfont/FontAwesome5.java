@@ -33,6 +33,7 @@ public class FontAwesome5 extends GlyphFont {
         EXTERNAL_LINK_ALT('\uf35d'),
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
+        FEATHER_ALT('\uf56b'),
         FILE_CSV('\uf6dd'),
         HAND_HOLDING('\uf4bd'),
         HAND_HOLDING_MEDICAL('\ue05c'),
@@ -42,6 +43,7 @@ public class FontAwesome5 extends GlyphFont {
         LAPTOP('\uf109'),
         LOCK('\uf023'),
         LOCK_OPEN('\uf3c1'),
+        MINUS_CIRCLE('\uf056'),
         PEN_FANCY('\uf5ac'),
         PLUS('\uf067'),
         PLAY_CIRCLE('\uf144'),
@@ -58,13 +60,15 @@ public class FontAwesome5 extends GlyphFont {
         SQUARE('\uf0c8'),
         SNOWFLAKE('\uf2dc'),
         SUN('\uf185'),
+        THEATER_MASKS('\uf630'),
         TIMES_CIRCLE('\uf057'),
         TOGGLE_OFF('\uf204'),
         TOGGLE_ON('\uf205'),
         TOOLS('\uf7d9'),
         UNDO('\uf0e2'),
         USER_FRIENDS('\uf500'),
-        WALLET('\uf555');
+        WALLET('\uf555'),
+        WEIGHT('\uf496');
 
         private final char ch;
 

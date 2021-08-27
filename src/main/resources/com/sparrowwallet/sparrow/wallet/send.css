@@ -6,7 +6,7 @@
     -fx-pref-height: 40px;
 }
 
-.send-form .form .fieldset:horizontal .label-container {
+.send-form .form .fieldset:horizontal .label-container, .buttonRowLabel {
     -fx-pref-width: 90px;
 }
 

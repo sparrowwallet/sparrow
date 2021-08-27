@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
+import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public class Config {
     private BitcoinUnit bitcoinUnit;
     private FeeRatesSource feeRatesSource;
     private FeeRatesSelection feeRatesSelection;
+    private OptimizationStrategy sendOptimizationStrategy;
     private Currency fiatCurrency;
     private ExchangeSource exchangeSource;
     private boolean loadRecentWallets = true;
@@ -136,6 +138,15 @@ public class Config {
 
     public void setFeeRatesSelection(FeeRatesSelection feeRatesSelection) {
         this.feeRatesSelection = feeRatesSelection;
+        flush();
+    }
+
+    public OptimizationStrategy getSendOptimizationStrategy() {
+        return sendOptimizationStrategy;
+    }
+
+    public void setSendOptimizationStrategy(OptimizationStrategy sendOptimizationStrategy) {
+        this.sendOptimizationStrategy = sendOptimizationStrategy;
         flush();
     }
 

@@ -162,28 +162,28 @@ public class TransactionDiagram extends GridPane {
             topYaxis.setStartX(width * 0.5);
             topYaxis.setStartY(getDiagramHeight() * 0.5 - 20.0);
             topYaxis.setEndX(width * 0.5);
-            topYaxis.setEndY(0);
+            topYaxis.setEndY(10);
             topYaxis.getStyleClass().add("inputs-type");
 
             Line topBracket = new Line();
             topBracket.setStartX(width * 0.5);
-            topBracket.setStartY(0);
+            topBracket.setStartY(10);
             topBracket.setEndX(width);
-            topBracket.setEndY(0);
+            topBracket.setEndY(10);
             topBracket.getStyleClass().add("inputs-type");
 
             Line bottomYaxis = new Line();
             bottomYaxis.setStartX(width * 0.5);
-            bottomYaxis.setStartY(getDiagramHeight());
+            bottomYaxis.setStartY(getDiagramHeight() - 10);
             bottomYaxis.setEndX(width * 0.5);
             bottomYaxis.setEndY(getDiagramHeight() * 0.5 + 20.0);
             bottomYaxis.getStyleClass().add("inputs-type");
 
             Line bottomBracket = new Line();
             bottomBracket.setStartX(width * 0.5);
-            bottomBracket.setStartY(getDiagramHeight());
+            bottomBracket.setStartY(getDiagramHeight() - 10);
             bottomBracket.setEndX(width);
-            bottomBracket.setEndY(getDiagramHeight());
+            bottomBracket.setEndY(getDiagramHeight() - 10);
             bottomBracket.getStyleClass().add("inputs-type");
 
             group.getChildren().addAll(widthLine, topYaxis, topBracket, bottomYaxis, bottomBracket);
@@ -344,7 +344,7 @@ public class TransactionDiagram extends GridPane {
         group.getChildren().add(yaxisLine);
 
         double width = 140.0;
-        int numOutputs = displayedPayments.size() + (walletTx.getChangeNode() == null ? 1 : 2);
+        int numOutputs = displayedPayments.size() + walletTx.getChangeMap().size() + 1;
         for(int i = 1; i <= numOutputs; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("output-line");
@@ -391,15 +391,16 @@ public class TransactionDiagram extends GridPane {
             outputsBox.getChildren().add(createSpacer());
         }
 
-        if(walletTx.getChangeNode() != null) {
+        for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
+            WalletNode changeNode = changeEntry.getKey();
             WalletNode defaultChangeNode = walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE);
-            boolean overGapLimit = (walletTx.getChangeNode().getIndex() - defaultChangeNode.getIndex()) > walletTx.getWallet().getGapLimit();
+            boolean overGapLimit = (changeNode.getIndex() - defaultChangeNode.getIndex()) > walletTx.getWallet().getGapLimit();
 
             HBox actionBox = new HBox();
-            String changeDesc = walletTx.getChangeAddress().toString().substring(0, 8) + "...";
+            String changeDesc = walletTx.getChangeAddress(changeNode).toString().substring(0, 8) + "...";
             Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
-            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(walletTx.getChangeAmount()) + " sats to " + walletTx.getChangeNode().getDerivationPath().replace("m", "..") + "\n" + walletTx.getChangeAddress().toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
+            Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(changeEntry.getValue()) + " sats to " + changeNode.getDerivationPath().replace("m", "..") + "\n" + walletTx.getChangeAddress(changeNode).toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeLabel.setTooltip(changeTooltip);
@@ -469,7 +470,9 @@ public class TransactionDiagram extends GridPane {
     }
 
     public Glyph getOutputGlyph(Payment payment) {
-        if(walletTx.isConsolidationSend(payment)) {
+        if(payment.getType().equals(Payment.Type.FAKE_MIX)) {
+            return getFakeMixGlyph();
+        } else if(walletTx.isConsolidationSend(payment)) {
             return getConsolidationGlyph();
         } else if(walletTx.isPremixSend(payment)) {
             return getPremixGlyph();
@@ -524,6 +527,13 @@ public class TransactionDiagram extends GridPane {
         whirlpoolFeeGlyph.getStyleClass().add("whirlpoolfee-icon");
         whirlpoolFeeGlyph.setFontSize(12);
         return whirlpoolFeeGlyph;
+    }
+
+    public static Glyph getFakeMixGlyph() {
+        Glyph fakeMixGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.THEATER_MASKS);
+        fakeMixGlyph.getStyleClass().add("fakemix-icon");
+        fakeMixGlyph.setFontSize(12);
+        return fakeMixGlyph;
     }
 
     public static Glyph getTxoGlyph() {

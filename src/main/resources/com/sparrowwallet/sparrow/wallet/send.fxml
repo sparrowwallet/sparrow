@@ -23,6 +23,8 @@
 <?import com.sparrowwallet.sparrow.control.MempoolSizeFeeRatesChart?>
 <?import org.controlsfx.control.SegmentedButton?>
 <?import com.sparrowwallet.sparrow.wallet.FeeRatesSelection?>
+<?import com.sparrowwallet.sparrow.wallet.OptimizationStrategy?>
+<?import com.sparrowwallet.sparrow.control.HelpLabel?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
@@ -149,6 +151,33 @@
             <padding>
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
+            <HBox AnchorPane.leftAnchor="5" alignment="CENTER_LEFT">
+                <Label text="Optimize:" styleClass="buttonRowLabel" />
+                <SegmentedButton>
+                    <toggleGroup>
+                        <ToggleGroup fx:id="optimizationToggleGroup" />
+                    </toggleGroup>
+                    <buttons>
+                        <ToggleButton fx:id="efficiencyToggle" text="Efficiency" toggleGroup="$optimizationToggleGroup">
+                            <tooltip>
+                                <Tooltip text="Smallest transaction size for lowest fees"/>
+                            </tooltip>
+                            <userData>
+                                <OptimizationStrategy fx:constant="EFFICIENCY"/>
+                            </userData>
+                        </ToggleButton>
+                        <ToggleButton fx:id="privacyToggle" text="Privacy" toggleGroup="$optimizationToggleGroup">
+                            <tooltip>
+                                <Tooltip text="Higher entropy transactions that reduce probabilities in blockchain analysis"/>
+                            </tooltip>
+                            <userData>
+                                <OptimizationStrategy fx:constant="PRIVACY"/>
+                            </userData>
+                        </ToggleButton>
+                    </buttons>
+                </SegmentedButton>
+                <HelpLabel fx:id="privacyAnalysis" />
+            </HBox>
             <HBox AnchorPane.rightAnchor="10">
                 <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
                 <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
