@@ -7,9 +7,7 @@ import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.hd.HD_WalletFactoryGeneric;
 import com.samourai.whirlpool.client.event.*;
-import com.samourai.whirlpool.client.tx0.Tx0;
-import com.samourai.whirlpool.client.tx0.Tx0Config;
-import com.samourai.whirlpool.client.tx0.Tx0Preview;
+import com.samourai.whirlpool.client.tx0.*;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletConfig;
@@ -17,6 +15,7 @@ import com.samourai.whirlpool.client.wallet.WhirlpoolWalletService;
 import com.samourai.whirlpool.client.wallet.beans.*;
 import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersisterFactory;
 import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceFactory;
+import com.samourai.whirlpool.client.wallet.data.pool.PoolData;
 import com.samourai.whirlpool.client.wallet.data.utxo.UtxoSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfig;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
@@ -40,6 +39,7 @@ import com.sparrowwallet.sparrow.event.WhirlpoolMixSuccessEvent;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.whirlpool.dataPersister.SparrowDataPersister;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowDataSource;
+import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowMinerFeeSupplier;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -98,19 +98,21 @@ public class Whirlpool {
     }
 
     public Collection<Pool> getPools() throws Exception {
-        WhirlpoolWallet whirlpoolWallet = getWhirlpoolWallet();
-        return whirlpoolWallet.getPoolSupplier().getPools();
+        Tx0ParamService tx0ParamService = getTx0ParamService();
+        PoolData poolData = new PoolData(config.getServerApi().fetchPools(), tx0ParamService);
+        return poolData.getPools();
     }
 
     public Tx0Preview getTx0Preview(Pool pool, Collection<UnspentOutput> utxos) throws Exception {
-        WhirlpoolWallet whirlpoolWallet = getWhirlpoolWallet();
-
         Tx0Config tx0Config = new Tx0Config();
         tx0Config.setChangeWallet(WhirlpoolAccount.BADBANK);
         Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
         Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
 
-        return whirlpoolWallet.tx0Preview(pool, tx0Config, utxos, tx0FeeTarget, mixFeeTarget);
+        Tx0ParamService tx0ParamService = getTx0ParamService();
+
+        Tx0Service tx0Service = new Tx0Service(config);
+        return tx0Service.tx0Preview(utxos, tx0Config, tx0ParamService.getTx0Param(pool, tx0FeeTarget, mixFeeTarget));
     }
 
     public Tx0 broadcastTx0(Pool pool, Collection<BlockTransactionHashIndex> utxos) throws Exception {
@@ -129,6 +131,17 @@ public class Whirlpool {
         Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
 
         return whirlpoolWallet.tx0(whirlpoolUtxos, pool, tx0Config, tx0FeeTarget, mixFeeTarget);
+    }
+
+    private Tx0ParamService getTx0ParamService() {
+        try {
+            SparrowMinerFeeSupplier minerFeeSupplier = SparrowMinerFeeSupplier.getInstance();
+            return new Tx0ParamService(minerFeeSupplier, config);
+        } catch(Exception e) {
+            log.error("Error fetching miner fees", e);
+        }
+
+        return null;
     }
 
     public void setHDWallet(String walletId, Wallet wallet) {

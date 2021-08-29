@@ -25,8 +25,8 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
-import com.sparrowwallet.sparrow.event.NewWalletTransactionsEvent;
 import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import org.slf4j.Logger;
@@ -37,12 +37,17 @@ import java.util.*;
 public class SparrowDataSource extends WalletResponseDataSource {
     private static final Logger log = LoggerFactory.getLogger(SparrowDataSource.class);
 
+    private final String walletIdentifierPrefix;
+
     public SparrowDataSource(
             WhirlpoolWallet whirlpoolWallet,
             HD_Wallet bip44w,
             DataPersister dataPersister)
             throws Exception {
         super(whirlpoolWallet, bip44w, dataPersister);
+
+        // prefix matching <prefix>:master, :Premix, :Postmix
+        this.walletIdentifierPrefix = getWhirlpoolWallet().getWalletIdentifier().replace(":master", "");
     }
 
     @Override
@@ -187,27 +192,30 @@ public class SparrowDataSource extends WalletResponseDataSource {
     }
 
     @Subscribe
-    public void newWalletTransactions(NewWalletTransactionsEvent event) {
-        try {
-            refresh();
-        } catch (Exception e) {
-            log.error("", e);
-        }
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        refreshWallet(event.getWalletId());
     }
 
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
-        try {
-            refresh();
-        } catch (Exception e) {
-            log.error("", e);
-        }
+        refreshWallet(event.getWalletId());
     }
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
         try {
             refresh();
+        } catch (Exception e) {
+            log.error("", e);
+        }
+    }
+
+    private void refreshWallet(String eventWalletId) {
+        try {
+            // match <prefix>:master, :Premix, :Postmix
+            if (eventWalletId.startsWith(walletIdentifierPrefix)) {
+                refresh();
+            }
         } catch (Exception e) {
             log.error("", e);
         }
