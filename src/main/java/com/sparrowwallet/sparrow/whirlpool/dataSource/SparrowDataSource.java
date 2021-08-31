@@ -1,108 +1,69 @@
-package com.sparrowwallet.sparrow.whirlpool;
+package com.sparrowwallet.sparrow.whirlpool.dataSource;
 
-import com.samourai.wallet.api.backend.BackendApi;
+import com.google.common.eventbus.Subscribe;
 import com.samourai.wallet.api.backend.MinerFee;
 import com.samourai.wallet.api.backend.MinerFeeTarget;
-import com.samourai.wallet.api.backend.beans.*;
+import com.samourai.wallet.api.backend.beans.UnspentOutput;
+import com.samourai.wallet.api.backend.beans.WalletResponse;
+import com.samourai.wallet.hd.HD_Wallet;
+import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
+import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersister;
+import com.samourai.whirlpool.client.wallet.data.dataSource.WalletResponseDataSource;
+import com.samourai.whirlpool.client.wallet.data.minerFee.MinerFeeSupplier;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.address.Address;
-import com.sparrowwallet.drongo.protocol.*;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.NewBlockEvent;
+import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-@SuppressWarnings("deprecation")
-public class SparrowBackendApi extends BackendApi {
-    private static final Logger log = LoggerFactory.getLogger(SparrowBackendApi.class);
-    private static final int FALLBACK_FEE_RATE = 75;
+public class SparrowDataSource extends WalletResponseDataSource {
+    private static final Logger log = LoggerFactory.getLogger(SparrowDataSource.class);
 
-    public SparrowBackendApi() {
-        super(null, null);
+    private final String walletIdentifierPrefix;
+
+    public SparrowDataSource(
+            WhirlpoolWallet whirlpoolWallet,
+            HD_Wallet bip44w,
+            DataPersister dataPersister)
+            throws Exception {
+        super(whirlpoolWallet, bip44w, dataPersister);
+
+        // prefix matching <prefix>:master, :Premix, :Postmix
+        this.walletIdentifierPrefix = getWhirlpoolWallet().getWalletIdentifier().replace(":master", "");
     }
 
     @Override
-    public TxsResponse fetchTxs(String[] zpubs, int page, int count) throws Exception {
-        List<TxsResponse.Tx> txes = new ArrayList<>();
-
-        for(String zpub : zpubs) {
-            Wallet wallet = getWallet(zpub);
-            if(wallet == null) {
-                log.debug("No wallet for " + zpub + " found");
-                continue;
-            }
-
-            for(BlockTransaction blockTransaction : wallet.getTransactions().values()) {
-                TxsResponse.Tx tx = new TxsResponse.Tx();
-                tx.block_height = blockTransaction.getHeight();
-                tx.hash = blockTransaction.getHashAsString();
-                tx.locktime = blockTransaction.getTransaction().getLocktime();
-                tx.time = blockTransaction.getDate().getTime();
-                tx.version = (int)blockTransaction.getTransaction().getVersion();
-
-                tx.inputs = new TxsResponse.TxInput[blockTransaction.getTransaction().getInputs().size()];
-                for(int i = 0; i < blockTransaction.getTransaction().getInputs().size(); i++) {
-                    TransactionInput txInput = blockTransaction.getTransaction().getInputs().get(i);
-                    tx.inputs[i] = new TxsResponse.TxInput();
-                    tx.inputs[i].vin = txInput.getIndex();
-                    tx.inputs[i].sequence = txInput.getSequenceNumber();
-                    tx.inputs[i].prev_out = new TxsResponse.TxOut();
-                    tx.inputs[i].prev_out.txid = txInput.getOutpoint().getHash().toString();
-                    tx.inputs[i].prev_out.vout = (int)txInput.getOutpoint().getIndex();
-
-                    BlockTransaction spentTransaction = wallet.getTransactions().get(txInput.getOutpoint().getHash());
-                    if(spentTransaction != null) {
-                        TransactionOutput spentOutput = spentTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
-                        tx.inputs[i].prev_out.value = spentOutput.getValue();
-                        Address[] addresses = spentOutput.getScript().getToAddresses();
-                        if(addresses.length > 0) {
-                            tx.inputs[i].prev_out.addr = addresses[0].toString();
-                        }
-                    }
-                }
-
-                tx.out = new TxsResponse.TxOutput[blockTransaction.getTransaction().getOutputs().size()];
-                for(int i = 0; i < blockTransaction.getTransaction().getOutputs().size(); i++) {
-                    TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get(i);
-                    tx.out[i].n = txOutput.getIndex();
-                    tx.out[i].value = txOutput.getValue();
-                    Address[] addresses = txOutput.getScript().getToAddresses();
-                    if(addresses.length > 0) {
-                        tx.out[i].addr = addresses[0].toString();
-                    }
-                }
-
-                txes.add(tx);
-            }
-        }
-
-        List<TxsResponse.Tx> pageTxes;
-        if(txes.size() < count) {
-            pageTxes = txes;
-        } else {
-            pageTxes = txes.subList(page * count, Math.min((page * count) + count, txes.size()));
-        }
-
-        TxsResponse txsResponse = new TxsResponse();
-        txsResponse.n_tx = txes.size();
-        txsResponse.page = page;
-        txsResponse.n_tx_page = pageTxes.size();
-        txsResponse.txs = pageTxes.toArray(new TxsResponse.Tx[0]);
-
-        return txsResponse;
+    public void open() throws Exception {
+        super.open();
+        EventManager.get().register(this);
     }
 
     @Override
-    public WalletResponse fetchWallet(String[] zpubs) throws Exception {
+    public void close() throws Exception {
+        EventManager.get().unregister(this);
+        super.close();
+    }
+
+    @Override
+    protected WalletResponse fetchWalletResponse() throws Exception {
         WalletResponse walletResponse = new WalletResponse();
         walletResponse.wallet = new WalletResponse.Wallet();
 
@@ -113,6 +74,7 @@ public class SparrowBackendApi extends BackendApi {
         List<UnspentOutput> unspentOutputs = new ArrayList<>();
         int storedBlockHeight = 0;
 
+        String[] zpubs = getWalletSupplier().getPubs(true);
         for(String zpub : zpubs) {
             Wallet wallet = getWallet(zpub);
             if(wallet == null) {
@@ -196,21 +158,12 @@ public class SparrowBackendApi extends BackendApi {
         walletResponse.info.latest_block.time = AppServices.getLatestBlockHeader() == null ? 1 : AppServices.getLatestBlockHeader().getTime();
 
         walletResponse.info.fees = new LinkedHashMap<>();
+        MinerFee minerFee = getMinerFeeSupplier().getValue();
         for(MinerFeeTarget target : MinerFeeTarget.values()) {
-            walletResponse.info.fees.put(target.getValue(), AppServices.getTargetBlockFeeRates() == null ? FALLBACK_FEE_RATE : getMinimumFeeForTarget(Integer.parseInt(target.getValue())));
+            walletResponse.info.fees.put(target.getValue(), minerFee.get(target));
         }
 
         return walletResponse;
-    }
-
-    @Override
-    public MinerFee fetchMinerFee() throws Exception {
-        Map<String, Integer> fees = new LinkedHashMap<>();
-        for(MinerFeeTarget target : MinerFeeTarget.values()) {
-           fees.put(target.getValue(), AppServices.getTargetBlockFeeRates() == null ? FALLBACK_FEE_RATE : getMinimumFeeForTarget(Integer.parseInt(target.getValue())));
-        }
-
-        return new MinerFee(fees);
     }
 
     @Override
@@ -221,25 +174,8 @@ public class SparrowBackendApi extends BackendApi {
     }
 
     @Override
-    public boolean testConnectivity() {
-        return AppServices.isConnected();
-    }
-
-    private Integer getMinimumFeeForTarget(int targetBlocks) {
-        List<Map.Entry<Integer, Double>> feeRates = new ArrayList<>(AppServices.getTargetBlockFeeRates().entrySet());
-        Collections.reverse(feeRates);
-        for(Map.Entry<Integer, Double> feeRate : feeRates) {
-            if(feeRate.getKey() <= targetBlocks) {
-                return feeRate.getValue().intValue();
-            }
-        }
-
-        return feeRates.get(0).getValue().intValue();
-    }
-
-    @Override
-    public void initBip84(String zpub) throws Exception {
-        //nothing required
+    public MinerFeeSupplier getMinerFeeSupplier() {
+        return SparrowMinerFeeSupplier.getInstance();
     }
 
     private Wallet getWallet(String zpub) {
@@ -255,23 +191,33 @@ public class SparrowBackendApi extends BackendApi {
                 .orElse(null);
     }
 
-    @Override
-    public List<UnspentOutput> fetchUtxos(String zpub) throws Exception {
-        throw new UnsupportedOperationException();
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        refreshWallet(event.getWalletId());
     }
 
-    @Override
-    public List<UnspentOutput> fetchUtxos(String[] zpubs) throws Exception {
-        throw new UnsupportedOperationException();
+    @Subscribe
+    public void walletAddressesChanged(WalletAddressesChangedEvent event) {
+        refreshWallet(event.getWalletId());
     }
 
-    @Override
-    public Map<String, MultiAddrResponse.Address> fetchAddresses(String[] zpubs) throws Exception {
-        throw new UnsupportedOperationException();
+    @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        try {
+            refresh();
+        } catch (Exception e) {
+            log.error("", e);
+        }
     }
 
-    @Override
-    public MultiAddrResponse.Address fetchAddress(String zpub) throws Exception {
-        throw new UnsupportedOperationException();
+    private void refreshWallet(String eventWalletId) {
+        try {
+            // match <prefix>:master, :Premix, :Postmix
+            if (eventWalletId.startsWith(walletIdentifierPrefix)) {
+                refresh();
+            }
+        } catch (Exception e) {
+            log.error("", e);
+        }
     }
 }
