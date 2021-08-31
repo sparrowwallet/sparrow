@@ -6,8 +6,10 @@ import com.samourai.whirlpool.client.tx0.Tx0Preview;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -15,6 +17,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolDialog;
 import javafx.application.Platform;
@@ -160,17 +163,70 @@ public class UtxosController extends WalletFormController implements Initializab
         List<UtxoEntry> selectedEntries = getSelectedUtxos();
         WhirlpoolDialog whirlpoolDialog = new WhirlpoolDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), selectedEntries);
         Optional<Tx0Preview> optTx0Preview = whirlpoolDialog.showAndWait();
-        optTx0Preview.ifPresent(tx0Preview -> previewPremixTransaction(getWalletForm().getWallet(), tx0Preview, selectedEntries));
+        optTx0Preview.ifPresent(tx0Preview -> previewPremix(tx0Preview, selectedEntries));
     }
 
-    public void previewPremixTransaction(Wallet wallet, Tx0Preview tx0Preview, List<UtxoEntry> utxoEntries) {
+    public void previewPremix(Tx0Preview tx0Preview, List<UtxoEntry> utxoEntries) {
+        Wallet wallet = getWalletForm().getWallet();
+        String walletId = walletForm.getWalletId();
+
+        if(!wallet.isWhirlpoolMasterWallet() && wallet.isEncrypted()) {
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            Optional<SecureString> password = dlg.showAndWait();
+            if(password.isPresent()) {
+                Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
+                keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+                    ECKey encryptionFullKey = keyDerivationService.getValue();
+                    Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                    wallet.decrypt(key);
+
+                    try {
+                        prepareWhirlpoolWallet(wallet);
+                    } finally {
+                        wallet.encrypt(key);
+                        for(Wallet childWallet : wallet.getChildWallets()) {
+                            if(!childWallet.isEncrypted()) {
+                                childWallet.encrypt(key);
+                            }
+                        }
+                        key.clear();
+                        encryptionFullKey.clear();
+                        password.get().clear();
+                    }
+
+                    previewPremix(wallet, tx0Preview, utxoEntries);
+                });
+                keyDerivationService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                    AppServices.showErrorDialog("Incorrect Password", keyDerivationService.getException().getMessage());
+                });
+                EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
+                keyDerivationService.start();
+            }
+        } else {
+            if(!wallet.isWhirlpoolMasterWallet()) {
+                prepareWhirlpoolWallet(wallet);
+            }
+
+            previewPremix(wallet, tx0Preview, utxoEntries);
+        }
+    }
+
+    private void prepareWhirlpoolWallet(Wallet decryptedWallet) {
+        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
+        whirlpool.setScode(Config.get().getScode());
+        whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
+
         for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
-            if(wallet.getChildWallet(whirlpoolAccount) == null) {
-                Wallet childWallet = wallet.addChildWallet(whirlpoolAccount);
-                EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), wallet, childWallet));
+            if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {
+                Wallet childWallet = decryptedWallet.addChildWallet(whirlpoolAccount);
+                EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), decryptedWallet, childWallet));
             }
         }
+    }
 
+    private void previewPremix(Wallet wallet, Tx0Preview tx0Preview, List<UtxoEntry> utxoEntries) {
         Wallet premixWallet = wallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
         Wallet badbankWallet = wallet.getChildWallet(StandardAccount.WHIRLPOOL_BADBANK);
 

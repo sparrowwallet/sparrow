@@ -1229,6 +1229,8 @@ public class AppController implements Initializable {
                 }
             }
         }
+
+        EventManager.get().post(new WalletOpenedEvent(storage, wallet));
     }
 
     public WalletForm addWalletSubTab(TabPane subTabs, Storage storage, Wallet wallet, Wallet backupWallet) {

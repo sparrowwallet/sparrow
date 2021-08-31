@@ -27,10 +27,10 @@ public class HelpLabel extends Label {
     }
 
     private static Glyph getHelpGlyph() {
-        Glyph lockGlyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.QUESTION_CIRCLE);
-        lockGlyph.getStyleClass().add("help-icon");
-        lockGlyph.setFontSize(12);
-        return lockGlyph;
+        Glyph glyph = new Glyph("Font Awesome 5 Free Solid", FontAwesome5.Glyph.QUESTION_CIRCLE);
+        glyph.getStyleClass().add("help-icon");
+        glyph.setFontSize(11);
+        return glyph;
     }
 
     public final StringProperty helpTextProperty() {

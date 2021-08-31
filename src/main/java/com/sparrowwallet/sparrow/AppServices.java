@@ -968,7 +968,10 @@ public class AppServices {
     @Subscribe
     public void walletOpening(WalletOpeningEvent event) {
         restartBwt(event.getWallet());
+    }
 
+    @Subscribe
+    public void walletOpened(WalletOpenedEvent event) {
         String walletId = event.getStorage().getWalletId(event.getWallet());
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool != null && !whirlpool.isStarted() && isConnected()) {

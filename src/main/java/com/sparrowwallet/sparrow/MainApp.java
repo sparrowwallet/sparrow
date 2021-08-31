@@ -42,7 +42,13 @@ public class MainApp extends Application {
 
     @Override
     public void init() throws Exception {
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> LoggerFactory.getLogger(MainApp.class).error("Exception in thread \"" + t.getName() + "\"", e));
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            if(e instanceof IndexOutOfBoundsException && Arrays.stream(e.getStackTrace()).anyMatch(element -> element.getClassName().equals("javafx.scene.chart.BarChart"))) {
+                LoggerFactory.getLogger(MainApp.class).debug("Exception in thread \"" + t.getName() + "\"", e);;
+            } else {
+                LoggerFactory.getLogger(MainApp.class).error("Exception in thread \"" + t.getName() + "\"", e);
+            }
+        });
         super.init();
     }
 

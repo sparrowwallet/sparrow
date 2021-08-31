@@ -128,7 +128,10 @@ public class SendController extends WalletFormController implements Initializabl
     private ToggleButton privacyToggle;
 
     @FXML
-    private HelpLabel privacyAnalysis;
+    private HelpLabel optimizationHelp;
+
+    @FXML
+    private Label privacyAnalysis;
 
     @FXML
     private Button clearButton;
@@ -417,6 +420,9 @@ public class SendController extends WalletFormController implements Initializabl
         });
         setPreferredOptimizationStrategy();
         updatePrivacyAnalysis(null);
+        optimizationHelp.managedProperty().bind(optimizationHelp.visibleProperty());
+        privacyAnalysis.managedProperty().bind(privacyAnalysis.visibleProperty());
+        optimizationHelp.visibleProperty().bind(privacyAnalysis.visibleProperty().not());
 
         createButton.managedProperty().bind(createButton.visibleProperty());
         premixButton.managedProperty().bind(premixButton.visibleProperty());
@@ -971,11 +977,15 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void updatePrivacyAnalysis(WalletTransaction walletTransaction) {
         if(walletTransaction == null) {
-            privacyAnalysis.setHelpText("Determines whether to optimize the transaction for low fees or greater privacy");
-            privacyAnalysis.setHelpGraphic(null);
+            privacyAnalysis.setVisible(false);
+            privacyAnalysis.setTooltip(null);
         } else {
-            privacyAnalysis.setHelpText("");
-            privacyAnalysis.setHelpGraphic(new PrivacyAnalysisTooltip(walletTransaction));
+            privacyAnalysis.setVisible(true);
+            Tooltip tooltip = new Tooltip();
+            tooltip.setShowDelay(new Duration(50));
+            tooltip.setShowDuration(Duration.INDEFINITE);
+            tooltip.setGraphic(new PrivacyAnalysisTooltip(walletTransaction));
+            privacyAnalysis.setTooltip(tooltip);
         }
     }
 
@@ -1012,6 +1022,9 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.setErrorDecorationEnabled(false);
 
         setInputFieldsDisabled(false);
+
+        premixButton.setVisible(false);
+        createButton.setDefaultButton(true);
     }
 
     public UtxoSelector getUtxoSelector() {
@@ -1108,35 +1121,8 @@ public class SendController extends WalletFormController implements Initializabl
             }
         }
 
-        Wallet copy = getWalletForm().getWallet().copy();
-        String walletId = walletForm.getWalletId();
-
-        if(copy.isEncrypted()) {
-            WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
-            Optional<SecureString> password = dlg.showAndWait();
-            if(password.isPresent()) {
-                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
-                decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                    Wallet decryptedWallet = decryptWalletService.getValue();
-                    broadcastPremixUnencrypted(decryptedWallet);
-                });
-                decryptWalletService.setOnFailed(workerStateEvent -> {
-                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
-                    AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
-                });
-                EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
-                decryptWalletService.start();
-            }
-        } else {
-            broadcastPremixUnencrypted(copy);
-        }
-    }
-
-    public void broadcastPremixUnencrypted(Wallet decryptedWallet) {
+        //The WhirlpoolWallet has already been configured for the tx0 preview
         Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
-        whirlpool.setScode(Config.get().getScode());
-        whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
         Map<BlockTransactionHashIndex, WalletNode> utxos = walletTransactionProperty.get().getSelectedUtxos();
         Whirlpool.Tx0BroadcastService tx0BroadcastService = new Whirlpool.Tx0BroadcastService(whirlpool, whirlpoolProperty.get(), utxos.keySet());
         tx0BroadcastService.setOnRunning(workerStateEvent -> {
@@ -1146,12 +1132,10 @@ public class SendController extends WalletFormController implements Initializabl
         tx0BroadcastService.setOnSucceeded(workerStateEvent -> {
             premixButton.setDisable(false);
             Sha256Hash txid = tx0BroadcastService.getValue();
-            decryptedWallet.clearPrivate();
             clear(null);
         });
         tx0BroadcastService.setOnFailed(workerStateEvent -> {
             premixButton.setDisable(false);
-            decryptedWallet.clearPrivate();
             Throwable exception = workerStateEvent.getSource().getException();
             while(exception.getCause() != null) {
                 exception = exception.getCause();

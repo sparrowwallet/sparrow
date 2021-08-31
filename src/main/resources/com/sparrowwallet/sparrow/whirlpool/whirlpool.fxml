@@ -100,7 +100,7 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
                     </graphic>
                 </Label>
-                <Label text="Choose which pool to use below. You will then be able to preview your premix transaction." wrapText="true" styleClass="content-text" />
+                <Label text="Choose which pool to use below. You will then be able to preview your premix transaction. Your wallet password may be required to add the premix wallet." wrapText="true" styleClass="content-text" />
                 <HBox spacing="20" alignment="CENTER_LEFT">
                     <padding>
                         <Insets top="20" bottom="5" />

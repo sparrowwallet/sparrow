@@ -67,7 +67,7 @@ public class Whirlpool {
     private HD_Wallet hdWallet;
     private String walletId;
 
-    private BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
+    private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
     public Whirlpool(Network network, HostAndPort torProxy, String sCode) {
         this.torProxy = torProxy;
@@ -134,14 +134,8 @@ public class Whirlpool {
     }
 
     private Tx0ParamService getTx0ParamService() {
-        try {
-            SparrowMinerFeeSupplier minerFeeSupplier = SparrowMinerFeeSupplier.getInstance();
-            return new Tx0ParamService(minerFeeSupplier, config);
-        } catch(Exception e) {
-            log.error("Error fetching miner fees", e);
-        }
-
-        return null;
+        SparrowMinerFeeSupplier minerFeeSupplier = SparrowMinerFeeSupplier.getInstance();
+        return new Tx0ParamService(minerFeeSupplier, config);
     }
 
     public void setHDWallet(String walletId, Wallet wallet) {

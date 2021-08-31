@@ -9,8 +9,8 @@ import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowWalletStateSupplier;
 
 public class SparrowDataPersister implements DataPersister {
-    private WalletStateSupplier walletStateSupplier;
-    private UtxoConfigSupplier utxoConfigSupplier;
+    private final WalletStateSupplier walletStateSupplier;
+    private final UtxoConfigSupplier utxoConfigSupplier;
 
     public SparrowDataPersister(WhirlpoolWallet whirlpoolWallet) throws Exception {
         WhirlpoolWalletConfig config = whirlpoolWallet.getConfig();

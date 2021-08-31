@@ -4,8 +4,8 @@ import com.samourai.wallet.client.indexHandler.AbstractIndexHandler;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 
 public class SparrowIndexHandler extends AbstractIndexHandler {
-    private WalletNode walletNode;
-    private int defaultValue;
+    private final WalletNode walletNode;
+    private final int defaultValue;
 
     public SparrowIndexHandler(WalletNode walletNode) {
         this(walletNode, 0);
@@ -19,8 +19,7 @@ public class SparrowIndexHandler extends AbstractIndexHandler {
     @Override
     public synchronized int get() {
         Integer currentIndex = walletNode.getHighestUsedIndex();
-        int nextIndex = currentIndex == null ? defaultValue : currentIndex + 1;
-        return nextIndex;
+        return currentIndex == null ? defaultValue : currentIndex + 1;
     }
 
     @Override

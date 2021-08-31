@@ -39,6 +39,7 @@ public class FontAwesome5 extends GlyphFont {
         HAND_HOLDING_MEDICAL('\ue05c'),
         HAND_HOLDING_WATER('\uf4c1'),
         HISTORY('\uf1da'),
+        INFO_CIRCLE('\uf05a'),
         KEY('\uf084'),
         LAPTOP('\uf109'),
         LOCK('\uf023'),

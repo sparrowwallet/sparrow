@@ -15,13 +15,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SparrowWalletStateSupplier implements WalletStateSupplier {
-    private String walletId;
-    private Map<String, IIndexHandler> indexHandlerWallets;
+    private final String walletId;
+    private final Map<String, IIndexHandler> indexHandlerWallets;
     // private int externalIndexDefault;
 
     public SparrowWalletStateSupplier(String walletId, ExternalDestination externalDestination) throws Exception {
         this.walletId = walletId;
-        this.indexHandlerWallets = new LinkedHashMap();
+        this.indexHandlerWallets = new LinkedHashMap<>();
         // this.externalIndexDefault = externalDestination != null ? externalDestination.getStartIndex() : 0;
     }
 

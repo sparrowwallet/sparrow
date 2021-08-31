@@ -176,7 +176,12 @@
                         </ToggleButton>
                     </buttons>
                 </SegmentedButton>
-                <HelpLabel fx:id="privacyAnalysis" />
+                <HelpLabel fx:id="optimizationHelp" helpText="Determines whether to optimize the transaction for low fees or greater privacy" />
+                <Label fx:id="privacyAnalysis" graphicTextGap="5" text="Analysis..." styleClass="help-label">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="11" icon="INFO_CIRCLE" />
+                    </graphic>
+                </Label>
             </HBox>
             <HBox AnchorPane.rightAnchor="10">
                 <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
