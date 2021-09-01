@@ -4,9 +4,12 @@ import com.samourai.whirlpool.client.tx0.Tx0Preview;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
+import com.sparrowwallet.sparrow.event.WalletMixConfigChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
@@ -72,6 +75,7 @@ public class WhirlpoolController {
 
     private String walletId;
     private Wallet wallet;
+    private MixConfig mixConfig;
     private List<UtxoEntry> utxoEntries;
     private final ObjectProperty<Tx0Preview> tx0PreviewProperty = new SimpleObjectProperty<>(null);
 
@@ -79,6 +83,7 @@ public class WhirlpoolController {
         this.walletId = walletId;
         this.wallet = wallet;
         this.utxoEntries = utxoEntries;
+        this.mixConfig = wallet.isMasterWallet() ? wallet.getOrCreateMixConfig() : wallet.getMasterWallet().getOrCreateMixConfig();
 
         step1.managedProperty().bind(step1.visibleProperty());
         step2.managedProperty().bind(step2.visibleProperty());
@@ -89,12 +94,13 @@ public class WhirlpoolController {
         step3.setVisible(false);
         step4.setVisible(false);
 
-        scode.setText(Config.get().getScode() == null ? "" : Config.get().getScode());
+        scode.setText(mixConfig.getScode() == null ? "" : mixConfig.getScode());
         scode.textProperty().addListener((observable, oldValue, newValue) -> {
-            Config.get().setScode(newValue);
+            mixConfig.setScode(newValue);
+            EventManager.get().post(new WalletMixConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
         });
 
-        if(Config.get().getScode() != null) {
+        if(mixConfig.getScode() != null) {
             step1.setVisible(false);
             step3.setVisible(true);
         }
@@ -193,7 +199,7 @@ public class WhirlpoolController {
             List<Pool> availablePools = poolsService.getValue().stream().filter(pool1 -> totalUtxoValue >= (pool1.getPremixValueMin() + pool1.getFeeValue())).toList();
             if(availablePools.isEmpty()) {
                 pool.setVisible(false);
-                OptionalLong optMinValue = poolsService.getValue().stream().mapToLong(Pool::getMustMixBalanceMin).min();
+                OptionalLong optMinValue = poolsService.getValue().stream().mapToLong(pool1 -> pool1.getPremixValueMin() + pool1.getFeeValue()).min();
                 if(optMinValue.isPresent()) {
                     String satsValue = String.format(Locale.ENGLISH, "%,d", optMinValue.getAsLong()) + " sats";
                     String btcValue = CoinLabel.BTC_FORMAT.format((double)optMinValue.getAsLong() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
@@ -224,17 +230,20 @@ public class WhirlpoolController {
     }
 
     private void fetchTx0Preview(Pool pool) {
-        if(Config.get().getScode() == null) {
-            Config.get().setScode("");
+        if(mixConfig.getScode() == null) {
+            mixConfig.setScode("");
+            EventManager.get().post(new WalletMixConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
         }
 
         Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
-        whirlpool.setScode(Config.get().getScode());
+        whirlpool.setScode(mixConfig.getScode());
 
         Whirlpool.Tx0PreviewService tx0PreviewService = new Whirlpool.Tx0PreviewService(whirlpool, wallet, pool, utxoEntries);
         tx0PreviewService.setOnRunning(workerStateEvent -> {
             nbOutputsBox.setVisible(true);
             nbOutputsLoading.setText("Calculating...");
+            nbOutputs.setVisible(false);
+            discountFeeBox.setVisible(false);
         });
         tx0PreviewService.setOnSucceeded(workerStateEvent -> {
             Tx0Preview tx0Preview = tx0PreviewService.getValue();

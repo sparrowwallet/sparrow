@@ -1110,7 +1110,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     public void broadcastPremix(ActionEvent event) {
         //Ensure all child wallets have been saved
-        for(Wallet childWallet : getWalletForm().getWallet().getChildWallets()) {
+        Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
+        for(Wallet childWallet : masterWallet.getChildWallets()) {
             Storage storage = AppServices.get().getOpenWallets().get(childWallet);
             if(!storage.isPersisted(childWallet)) {
                 try {
@@ -1122,7 +1123,7 @@ public class SendController extends WalletFormController implements Initializabl
         }
 
         //The WhirlpoolWallet has already been configured for the tx0 preview
-        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
+        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getStorage().getWalletId(masterWallet));
         Map<BlockTransactionHashIndex, WalletNode> utxos = walletTransactionProperty.get().getSelectedUtxos();
         Whirlpool.Tx0BroadcastService tx0BroadcastService = new Whirlpool.Tx0BroadcastService(whirlpool, whirlpoolProperty.get(), utxos.keySet());
         tx0BroadcastService.setOnRunning(workerStateEvent -> {

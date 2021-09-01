@@ -54,7 +54,8 @@ public class WhirlpoolDialog extends Dialog<Tx0Preview> {
             backButton.managedProperty().bind(backButton.visibleProperty());
             previewButton.managedProperty().bind(previewButton.visibleProperty());
 
-            if(Config.get().getScode() == null) {
+            Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+            if(masterWallet.getOrCreateMixConfig().getScode() == null) {
                 backButton.setDisable(true);
             }
             previewButton.visibleProperty().bind(nextButton.visibleProperty().not());

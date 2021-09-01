@@ -31,6 +31,9 @@ public interface WalletDao {
     BlockTransactionDao createBlockTransactionDao();
 
     @CreateSqlObject
+    MixConfigDao createMixConfigDao();
+
+    @CreateSqlObject
     UtxoMixDataDao createUtxoMixDataDao();
 
     @SqlQuery("select wallet.id, wallet.name, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.birthDate, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id")
@@ -91,6 +94,8 @@ public interface WalletDao {
         Map<Sha256Hash, BlockTransaction> blockTransactions = createBlockTransactionDao().getForWalletId(wallet.getId()); //.stream().collect(Collectors.toMap(BlockTransaction::getHash, Function.identity(), (existing, replacement) -> existing, LinkedHashMap::new));
         wallet.updateTransactions(blockTransactions);
 
+        wallet.setMixConfig(createMixConfigDao().getForWalletId(wallet.getId()));
+
         Map<Sha256Hash, UtxoMixData> utxoMixes = createUtxoMixDataDao().getForWalletId(wallet.getId());
         wallet.getUtxoMixes().putAll(utxoMixes);
     }
@@ -106,6 +111,7 @@ public interface WalletDao {
             createKeystoreDao().addKeystores(wallet);
             createWalletNodeDao().addWalletNodes(wallet);
             createBlockTransactionDao().addBlockTransactions(wallet);
+            createMixConfigDao().addMixConfig(wallet);
             createUtxoMixDataDao().addUtxoMixData(wallet);
         } finally {
             setSchema(DbPersistence.DEFAULT_SCHEMA);

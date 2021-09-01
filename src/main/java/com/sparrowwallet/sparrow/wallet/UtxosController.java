@@ -170,7 +170,7 @@ public class UtxosController extends WalletFormController implements Initializab
         Wallet wallet = getWalletForm().getWallet();
         String walletId = walletForm.getWalletId();
 
-        if(!wallet.isWhirlpoolMasterWallet() && wallet.isEncrypted()) {
+        if(wallet.isMasterWallet() && !wallet.isWhirlpoolMasterWallet() && wallet.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
@@ -205,7 +205,7 @@ public class UtxosController extends WalletFormController implements Initializab
                 keyDerivationService.start();
             }
         } else {
-            if(!wallet.isWhirlpoolMasterWallet()) {
+            if(wallet.isMasterWallet() && !wallet.isWhirlpoolMasterWallet()) {
                 prepareWhirlpoolWallet(wallet);
             }
 
@@ -215,7 +215,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     private void prepareWhirlpoolWallet(Wallet decryptedWallet) {
         Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
-        whirlpool.setScode(Config.get().getScode());
+        whirlpool.setScode(decryptedWallet.getOrCreateMixConfig().getScode());
         whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
 
         for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
@@ -227,8 +227,10 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private void previewPremix(Wallet wallet, Tx0Preview tx0Preview, List<UtxoEntry> utxoEntries) {
-        Wallet premixWallet = wallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
-        Wallet badbankWallet = wallet.getChildWallet(StandardAccount.WHIRLPOOL_BADBANK);
+        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+
+        Wallet premixWallet = masterWallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
+        Wallet badbankWallet = masterWallet.getChildWallet(StandardAccount.WHIRLPOOL_BADBANK);
 
         List<Payment> payments = new ArrayList<>();
         try {
@@ -284,6 +286,10 @@ public class UtxosController extends WalletFormController implements Initializab
             });
             startupService.start();
         }
+
+        Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
+        masterWallet.getOrCreateMixConfig().setMixOnStartup(Boolean.TRUE);
+        EventManager.get().post(new WalletMixConfigChangedEvent(masterWallet));
     }
 
     public void stopMixing(ActionEvent event) {
@@ -302,6 +308,10 @@ public class UtxosController extends WalletFormController implements Initializab
             //Ensure http clients are shutdown
             whirlpool.shutdown();
         }
+
+        Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
+        masterWallet.getOrCreateMixConfig().setMixOnStartup(Boolean.FALSE);
+        EventManager.get().post(new WalletMixConfigChangedEvent(masterWallet));
     }
 
     public void exportUtxos(ActionEvent event) {

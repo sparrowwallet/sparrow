@@ -469,7 +469,7 @@ public class AppServices {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
             HostAndPort torProxy = AppServices.isTorRunning() ? HostAndPort.fromParts("localhost", TorService.PROXY_PORT) : (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
-            whirlpool = new Whirlpool(Network.get(), torProxy, Config.get().getScode());
+            whirlpool = new Whirlpool(Network.get(), torProxy);
             whirlpoolMap.put(walletId, whirlpool);
         }
 
@@ -477,12 +477,15 @@ public class AppServices {
     }
 
     private void startAllWhirlpool() {
-        for(Whirlpool whirlpool : whirlpoolMap.values().stream().filter(whirlpool -> whirlpool.hasWallet() && !whirlpool.isStarted()).collect(Collectors.toList())) {
-            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
-            startupService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
-            });
-            startupService.start();
+        for(Map.Entry<String, Whirlpool> entry : whirlpoolMap.entrySet().stream().filter(entry -> entry.getValue().hasWallet() && !entry.getValue().isStarted()).collect(Collectors.toList())) {
+            Wallet wallet = getWallet(entry.getKey());
+            if(wallet.getMixConfig() != null && wallet.getMixConfig().getMixOnStartup() != Boolean.FALSE) {
+                Whirlpool.StartupService startupService = new Whirlpool.StartupService(entry.getValue());
+                startupService.setOnFailed(workerStateEvent -> {
+                    log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
+                });
+                startupService.start();
+            }
         }
     }
 
@@ -974,7 +977,7 @@ public class AppServices {
     public void walletOpened(WalletOpenedEvent event) {
         String walletId = event.getStorage().getWalletId(event.getWallet());
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
-        if(whirlpool != null && !whirlpool.isStarted() && isConnected()) {
+        if(whirlpool != null && !whirlpool.isStarted() && isConnected() && event.getWallet().getMixConfig() != null && event.getWallet().getMixConfig().getMixOnStartup() != Boolean.FALSE) {
             Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
             startupService.setOnFailed(workerStateEvent -> {
                 log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());

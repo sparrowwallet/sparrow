@@ -69,7 +69,7 @@ public class Whirlpool {
 
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
-    public Whirlpool(Network network, HostAndPort torProxy, String sCode) {
+    public Whirlpool(Network network, HostAndPort torProxy) {
         this.torProxy = torProxy;
         this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase());
         this.httpClientService = new JavaHttpClientService(torProxy);
@@ -77,12 +77,12 @@ public class Whirlpool {
         this.torClientService = new WhirlpoolTorClientService();
 
         this.whirlpoolWalletService = new WhirlpoolWalletService();
-        this.config = computeWhirlpoolWalletConfig(sCode);
+        this.config = computeWhirlpoolWalletConfig();
 
         WhirlpoolEventService.getInstance().register(this);
     }
 
-    private WhirlpoolWalletConfig computeWhirlpoolWalletConfig(String sCode) {
+    private WhirlpoolWalletConfig computeWhirlpoolWalletConfig() {
         DataPersisterFactory dataPersisterFactory = (whirlpoolWallet, bip44w) -> new SparrowDataPersister(whirlpoolWallet);
         DataSourceFactory dataSourceFactory = (whirlpoolWallet, bip44w, dataPersister) -> new SparrowDataSource(whirlpoolWallet, bip44w, dataPersister);
 
@@ -92,7 +92,6 @@ public class Whirlpool {
 
         WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(dataSourceFactory, httpClientService, stompClientService, torClientService, serverApi, whirlpoolServer.getParams(), false);
         whirlpoolWalletConfig.setDataPersisterFactory(dataPersisterFactory);
-        whirlpoolWalletConfig.setScode(sCode);
 
         return whirlpoolWalletConfig;
     }
@@ -341,6 +340,14 @@ public class Whirlpool {
 
     public void setScode(String scode) {
         config.setScode(scode);
+    }
+
+    public void setExternalDestination(ExternalDestination externalDestination) {
+        if(whirlpoolWalletService.whirlpoolWallet() != null) {
+            throw new IllegalStateException("Cannot set external destination while WhirlpoolWallet is running");
+        }
+
+        config.setExternalDestination(externalDestination);
     }
 
     public boolean isMixing() {

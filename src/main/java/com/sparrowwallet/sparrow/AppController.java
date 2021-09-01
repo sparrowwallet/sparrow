@@ -899,6 +899,7 @@ public class AppController implements Initializable {
             if(wallet.isWhirlpoolMasterWallet()) {
                 String walletId = storage.getWalletId(wallet);
                 Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
+                whirlpool.setScode(wallet.getOrCreateMixConfig().getScode());
                 whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
             }
 

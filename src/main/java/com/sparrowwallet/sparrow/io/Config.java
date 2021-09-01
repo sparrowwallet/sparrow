@@ -61,7 +61,6 @@ public class Config {
     private String proxyServer;
     private Double appWidth;
     private Double appHeight;
-    private String scode;
 
     private static Config INSTANCE;
 
@@ -486,15 +485,6 @@ public class Config {
 
     public void setAppHeight(Double appHeight) {
         this.appHeight = appHeight;
-        flush();
-    }
-
-    public String getScode() {
-        return scode;
-    }
-
-    public void setScode(String scode) {
-        this.scode = scode;
         flush();
     }
 
