@@ -3,7 +3,6 @@ package com.sparrowwallet.sparrow.whirlpool;
 import com.samourai.whirlpool.client.tx0.Tx0Preview;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -54,8 +53,7 @@ public class WhirlpoolDialog extends Dialog<Tx0Preview> {
             backButton.managedProperty().bind(backButton.visibleProperty());
             previewButton.managedProperty().bind(previewButton.visibleProperty());
 
-            Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
-            if(masterWallet.getOrCreateMixConfig().getScode() == null) {
+            if(wallet.getMasterMixConfig().getScode() == null) {
                 backButton.setDisable(true);
             }
             previewButton.visibleProperty().bind(nextButton.visibleProperty().not());

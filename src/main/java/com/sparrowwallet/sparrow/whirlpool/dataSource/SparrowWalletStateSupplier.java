@@ -7,6 +7,7 @@ import com.samourai.whirlpool.client.wallet.beans.ExternalDestination;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolAccount;
 import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
@@ -17,12 +18,13 @@ import java.util.Map;
 public class SparrowWalletStateSupplier implements WalletStateSupplier {
     private final String walletId;
     private final Map<String, IIndexHandler> indexHandlerWallets;
-    // private int externalIndexDefault;
+    private final ExternalDestination externalDestination;
+    private IIndexHandler externalIndexHandler;
 
     public SparrowWalletStateSupplier(String walletId, ExternalDestination externalDestination) throws Exception {
         this.walletId = walletId;
         this.indexHandlerWallets = new LinkedHashMap<>();
-        // this.externalIndexDefault = externalDestination != null ? externalDestination.getStartIndex() : 0;
+        this.externalDestination = externalDestination;
     }
 
     @Override
@@ -39,7 +41,22 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
 
     @Override
     public IIndexHandler getIndexHandlerExternal() {
-        throw new UnsupportedOperationException();
+        if(externalDestination == null) {
+            throw new IllegalStateException("External destination has not been set");
+        }
+
+        if(externalIndexHandler == null) {
+            Wallet externalWallet = SparrowDataSource.getWallet(externalDestination.getXpub());
+            if(externalWallet == null) {
+                throw new IllegalStateException("Cannot find wallet for external destination xpub " + externalDestination.getXpub());
+            }
+
+            KeyPurpose keyPurpose = KeyPurpose.fromChildNumber(new ChildNumber(externalDestination.getChain()));
+            WalletNode externalNode = externalWallet.getNode(keyPurpose);
+            externalIndexHandler = new SparrowIndexHandler(externalNode, externalDestination.getStartIndex());
+        }
+
+        return externalIndexHandler;
     }
 
     @Override

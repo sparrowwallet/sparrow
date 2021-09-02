@@ -83,7 +83,7 @@ public class WhirlpoolController {
         this.walletId = walletId;
         this.wallet = wallet;
         this.utxoEntries = utxoEntries;
-        this.mixConfig = wallet.isMasterWallet() ? wallet.getOrCreateMixConfig() : wallet.getMasterWallet().getOrCreateMixConfig();
+        this.mixConfig = wallet.getMasterMixConfig();
 
         step1.managedProperty().bind(step1.visibleProperty());
         step2.managedProperty().bind(step2.visibleProperty());
@@ -97,7 +97,7 @@ public class WhirlpoolController {
         scode.setText(mixConfig.getScode() == null ? "" : mixConfig.getScode());
         scode.textProperty().addListener((observable, oldValue, newValue) -> {
             mixConfig.setScode(newValue);
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
+            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
         });
 
         if(mixConfig.getScode() != null) {
@@ -232,7 +232,7 @@ public class WhirlpoolController {
     private void fetchTx0Preview(Pool pool) {
         if(mixConfig.getScode() == null) {
             mixConfig.setScode("");
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
+            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
         }
 
         Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);

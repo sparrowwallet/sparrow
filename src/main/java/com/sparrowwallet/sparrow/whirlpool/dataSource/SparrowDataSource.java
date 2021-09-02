@@ -178,7 +178,7 @@ public class SparrowDataSource extends WalletResponseDataSource {
         return SparrowMinerFeeSupplier.getInstance();
     }
 
-    private Wallet getWallet(String zpub) {
+    static Wallet getWallet(String zpub) {
         return AppServices.get().getOpenWallets().keySet().stream()
                 .filter(Wallet::isValid)
                 .filter(wallet -> {

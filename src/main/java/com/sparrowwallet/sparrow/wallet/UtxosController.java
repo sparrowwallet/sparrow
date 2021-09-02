@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
@@ -32,6 +33,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,9 @@ public class UtxosController extends WalletFormController implements Initializab
     private Button stopMix;
 
     @FXML
+    private Button mixTo;
+
+    @FXML
     private Button sendSelected;
 
     @FXML
@@ -71,6 +76,11 @@ public class UtxosController extends WalletFormController implements Initializab
         mixSelected.setDisable(getSelectedEntries().isEmpty() || !newValue);
         startMix.setDisable(!newValue);
         stopMix.setDisable(!newValue);
+    };
+
+    private final ChangeListener<Boolean> mixingStartingListener = (observable, oldValue, newValue) -> {
+        startMix.setDisable(newValue);
+        mixTo.setDisable(newValue);
     };
 
     @Override
@@ -93,10 +103,15 @@ public class UtxosController extends WalletFormController implements Initializab
             stopMix.setDisable(!newValue);
             startMix.setDisable(newValue);
         });
+        mixTo.managedProperty().bind(mixTo.visibleProperty());
+        mixTo.setVisible(getWalletForm().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX);
+
         if(mixButtonsBox.isVisible()) {
             Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWallet());
             if(whirlpool != null) {
                 stopMix.visibleProperty().bind(whirlpool.mixingProperty());
+                whirlpool.startingProperty().addListener(new WeakChangeListener<>(mixingStartingListener));
+                updateMixToButton();
             }
         }
 
@@ -143,6 +158,25 @@ public class UtxosController extends WalletFormController implements Initializab
         } else {
             sendSelected.setText("Send Selected");
             mixSelected.setText("Mix Selected");
+        }
+    }
+
+    private void updateMixToButton() {
+        MixConfig mixConfig = getWalletForm().getWallet().getMasterMixConfig();
+        if(mixConfig != null && mixConfig.getMixToWalletName() != null) {
+            mixTo.setText("Mix to " + mixConfig.getMixToWalletName());
+            try {
+                AppServices.get().getWhirlpoolMixToWalletId(mixConfig);
+                mixTo.setGraphic(getExternalGlyph());
+                mixTo.setTooltip(new Tooltip("Mixing to " + mixConfig.getMixToWalletName() + " after at least " + (mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes()) + " mixes"));
+            } catch(NoSuchElementException e) {
+                mixTo.setGraphic(getErrorGlyph());
+                mixTo.setTooltip(new Tooltip(mixConfig.getMixToWalletName() + " is not open - open this wallet to mix to it!"));
+            }
+        } else {
+            mixTo.setText("Mix to...");
+            mixTo.setGraphic(null);
+            mixTo.setTooltip(null);
         }
     }
 
@@ -215,7 +249,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     private void prepareWhirlpoolWallet(Wallet decryptedWallet) {
         Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
-        whirlpool.setScode(decryptedWallet.getOrCreateMixConfig().getScode());
+        whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());
         whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
 
         for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
@@ -287,9 +321,8 @@ public class UtxosController extends WalletFormController implements Initializab
             startupService.start();
         }
 
-        Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
-        masterWallet.getOrCreateMixConfig().setMixOnStartup(Boolean.TRUE);
-        EventManager.get().post(new WalletMixConfigChangedEvent(masterWallet));
+        getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.TRUE);
+        EventManager.get().post(new WalletMixConfigChangedEvent(getWalletForm().getWallet()));
     }
 
     public void stopMixing(ActionEvent event) {
@@ -309,9 +342,36 @@ public class UtxosController extends WalletFormController implements Initializab
             whirlpool.shutdown();
         }
 
-        Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
-        masterWallet.getOrCreateMixConfig().setMixOnStartup(Boolean.FALSE);
-        EventManager.get().post(new WalletMixConfigChangedEvent(masterWallet));
+        getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.FALSE);
+        EventManager.get().post(new WalletMixConfigChangedEvent(getWalletForm().getWallet()));
+    }
+
+    public void showMixToDialog(ActionEvent event) {
+        MixToDialog mixToDialog = new MixToDialog(getWalletForm().getWallet());
+        Optional<Boolean> optApply = mixToDialog.showAndWait();
+        if(optApply.isPresent() && optApply.get()) {
+            Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWallet());
+            MixConfig mixConfig = getWalletForm().getWallet().getMasterMixConfig();
+
+            try {
+                String mixToWalletId = AppServices.get().getWhirlpoolMixToWalletId(mixConfig);
+                whirlpool.setMixToWallet(mixToWalletId, mixConfig.getMinMixes());
+            } catch(NoSuchElementException e) {
+                mixConfig.setMixToWalletName(null);
+                mixConfig.setMixToWalletFile(null);
+                EventManager.get().post(new WalletMixConfigChangedEvent(getWalletForm().getWallet()));
+                whirlpool.setMixToWallet(null, null);
+            }
+
+            updateMixToButton();
+            if(whirlpool.isStarted()) {
+                Whirlpool.RestartService restartService = new Whirlpool.RestartService(whirlpool);
+                restartService.setOnFailed(workerStateEvent -> {
+                    log.error("Failed to restart whirlpool", workerStateEvent.getSource().getException());
+                });
+                restartService.start();
+            }
+        }
     }
 
     public void exportUtxos(ActionEvent event) {
@@ -348,6 +408,19 @@ public class UtxosController extends WalletFormController implements Initializab
         return BitcoinUnit.BTC.equals(utxosTable.getBitcoinUnit()) ?
                 CoinLabel.getBTCFormat().format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) :
                 String.format(Locale.ENGLISH, "%d", value);
+    }
+
+    private static Glyph getExternalGlyph() {
+        Glyph externalGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXTERNAL_LINK_ALT);
+        externalGlyph.setFontSize(12);
+        return externalGlyph;
+    }
+
+    private static Glyph getErrorGlyph() {
+        Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+        glyph.getStyleClass().add("failure");
+        glyph.setFontSize(12);
+        return glyph;
     }
 
     @Subscribe
@@ -432,6 +505,11 @@ public class UtxosController extends WalletFormController implements Initializab
     @Subscribe
     public void utxosChartChanged(UtxosChartChangedEvent event) {
         utxosChart.setVisible(event.isVisible() && !getWalletForm().getWallet().isWhirlpoolMixWallet());
+    }
+
+    @Subscribe
+    public void openWallets(OpenWalletsEvent event) {
+        Platform.runLater(this::updateMixToButton);
     }
 
     @Subscribe

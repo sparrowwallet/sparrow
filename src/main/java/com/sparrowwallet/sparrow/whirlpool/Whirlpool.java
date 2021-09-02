@@ -24,6 +24,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -57,6 +58,9 @@ import java.util.stream.Collectors;
 public class Whirlpool {
     private static final Logger log = LoggerFactory.getLogger(Whirlpool.class);
 
+    public static final int DEFAULT_MIXTO_MIN_MIXES = 5;
+    public static final int DEFAULT_MIXTO_RANDOM_FACTOR = 4;
+
     private final HostAndPort torProxy;
     private final WhirlpoolServer whirlpoolServer;
     private final JavaHttpClientService httpClientService;
@@ -66,7 +70,9 @@ public class Whirlpool {
     private final WhirlpoolWalletConfig config;
     private HD_Wallet hdWallet;
     private String walletId;
+    private String mixToWalletId;
 
+    private final BooleanProperty startingProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
     public Whirlpool(Network network, HostAndPort torProxy) {
@@ -342,12 +348,39 @@ public class Whirlpool {
         config.setScode(scode);
     }
 
-    public void setExternalDestination(ExternalDestination externalDestination) {
-        if(whirlpoolWalletService.whirlpoolWallet() != null) {
-            throw new IllegalStateException("Cannot set external destination while WhirlpoolWallet is running");
+    public String getWalletId() {
+        return walletId;
+    }
+
+    public String getMixToWalletId() {
+        return mixToWalletId;
+    }
+
+    public void setMixToWallet(String mixToWalletId, Integer minMixes) {
+        if(mixToWalletId == null) {
+            config.setExternalDestination(null);
+        } else {
+            Wallet mixToWallet = getWallet(mixToWalletId);
+            if(mixToWallet == null) {
+                throw new IllegalStateException("Cannot find mix to wallet with id " + mixToWalletId);
+            }
+
+            if(mixToWallet.getPolicyType() != PolicyType.SINGLE) {
+                throw new IllegalStateException("Only single signature mix to wallets are currently supported");
+            }
+
+            List<ExtendedKey.Header> headers = ExtendedKey.Header.getHeaders(Network.get());
+            ExtendedKey.Header header = headers.stream().filter(head -> head.getDefaultScriptType().equals(mixToWallet.getScriptType()) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
+            ExtendedKey extPubKey = mixToWallet.getKeystores().get(0).getExtendedPublicKey();
+            String xpub = extPubKey.toString(header);
+            Integer highestUsedIndex = mixToWallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex();
+            int mixes = minMixes == null ? DEFAULT_MIXTO_MIN_MIXES : minMixes;
+
+            ExternalDestination externalDestination = new ExternalDestination(xpub, 0, highestUsedIndex == null ? 0 : highestUsedIndex + 1, mixes, DEFAULT_MIXTO_RANDOM_FACTOR);
+            config.setExternalDestination(externalDestination);
         }
 
-        config.setExternalDestination(externalDestination);
+        this.mixToWalletId = mixToWalletId;
     }
 
     public boolean isMixing() {
@@ -356,6 +389,14 @@ public class Whirlpool {
 
     public BooleanProperty mixingProperty() {
         return mixingProperty;
+    }
+
+    public boolean isStarting() {
+        return startingProperty.get();
+    }
+
+    public BooleanProperty startingProperty() {
+        return startingProperty;
     }
 
     @Subscribe
@@ -398,6 +439,7 @@ public class Whirlpool {
     @Subscribe
     public void onWalletStart(WalletStartEvent e) {
         if(e.getWhirlpoolWallet() == whirlpoolWalletService.whirlpoolWallet()) {
+            log.info("Mixing to " + e.getWhirlpoolWallet().getConfig().getExternalDestination());
             mixingProperty.set(true);
         }
     }
@@ -492,9 +534,11 @@ public class Whirlpool {
                     updateProgress(-1, 1);
                     updateMessage("Starting Whirlpool...");
 
+                    whirlpool.startingProperty.set(true);
                     WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
                     if(AppServices.onlineProperty().get()) {
                         whirlpoolWallet.start();
+                        whirlpool.startingProperty.set(false);
                     }
 
                     return whirlpoolWallet;
@@ -518,6 +562,35 @@ public class Whirlpool {
                     updateMessage("Disconnecting from Whirlpool...");
 
                     whirlpool.shutdown();
+                    return true;
+                }
+            };
+        }
+    }
+
+    public static class RestartService extends Service<Boolean> {
+        private final Whirlpool whirlpool;
+
+        public RestartService(Whirlpool whirlpool) {
+            this.whirlpool = whirlpool;
+        }
+
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                protected Boolean call() throws Exception {
+                    updateProgress(-1, 1);
+                    updateMessage("Disconnecting from Whirlpool...");
+                    whirlpool.shutdown();
+
+                    updateMessage("Starting Whirlpool...");
+                    whirlpool.startingProperty.set(true);
+                    WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
+                    if(AppServices.onlineProperty().get()) {
+                        whirlpoolWallet.start();
+                        whirlpool.startingProperty.set(false);
+                    }
+
                     return true;
                 }
             };

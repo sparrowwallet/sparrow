@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import com.sparrowwallet.sparrow.control.HelpLabel?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane stylesheets="@../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.MixToController">
+    <center>
+        <GridPane hgap="10.0" vgap="10.0">
+            <padding>
+                <Insets left="25.0" right="25.0" top="25.0" />
+            </padding>
+            <columnConstraints>
+                <ColumnConstraints percentWidth="100" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints />
+            </rowConstraints>
+
+            <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <Fieldset inputGrow="SOMETIMES" text="Mix To Settings">
+                    <Field text="Mix to wallet:">
+                        <ComboBox fx:id="mixToWallets" prefWidth="140" promptText="None available" />
+                        <HelpLabel helpText="Select a single signature wallet that is already open to mix to."/>
+                    </Field>
+                    <Field text="Minimum mixes:">
+                        <Spinner fx:id="minMixes" editable="true" prefWidth="90" />
+                        <HelpLabel helpText="The minimum number of mixes required before mixing to the selected wallet.\nTo ensure privacy, each mix beyond this number will have a 25% probability to mix to the selected wallet."/>
+                    </Field>
+                </Fieldset>
+            </Form>
+        </GridPane>
+    </center>
+</BorderPane>
+

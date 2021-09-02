@@ -899,7 +899,7 @@ public class AppController implements Initializable {
             if(wallet.isWhirlpoolMasterWallet()) {
                 String walletId = storage.getWalletId(wallet);
                 Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
-                whirlpool.setScode(wallet.getOrCreateMixConfig().getScode());
+                whirlpool.setScode(wallet.getMasterMixConfig().getScode());
                 whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
             }
 
@@ -1186,6 +1186,14 @@ public class AppController implements Initializable {
             tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
+            tab.setOnCloseRequest(event -> {
+                if(AppServices.get().getWhirlpoolForMixToWallet(((WalletTabData)tab.getUserData()).getWalletForm().getWalletId()) != null) {
+                    Optional<ButtonType> optType = AppServices.showWarningDialog("Close mix to wallet?", "This wallet has been configured as the final destination for mixes, and needs to be open for this to occur.\n\nAre you sure you want to close?", ButtonType.NO, ButtonType.YES);
+                    if(optType.isPresent() && optType.get() == ButtonType.NO) {
+                        event.consume();
+                    }
+                }
+            });
 
             TabPane subTabs = new TabPane();
             subTabs.setSide(Side.RIGHT);

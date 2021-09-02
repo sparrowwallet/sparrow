@@ -11,6 +11,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TrayManager;
@@ -479,13 +480,25 @@ public class AppServices {
     private void startAllWhirlpool() {
         for(Map.Entry<String, Whirlpool> entry : whirlpoolMap.entrySet().stream().filter(entry -> entry.getValue().hasWallet() && !entry.getValue().isStarted()).collect(Collectors.toList())) {
             Wallet wallet = getWallet(entry.getKey());
-            if(wallet.getMixConfig() != null && wallet.getMixConfig().getMixOnStartup() != Boolean.FALSE) {
-                Whirlpool.StartupService startupService = new Whirlpool.StartupService(entry.getValue());
-                startupService.setOnFailed(workerStateEvent -> {
-                    log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
-                });
-                startupService.start();
+            Whirlpool whirlpool = entry.getValue();
+            startWhirlpool(wallet, whirlpool);
+        }
+    }
+
+    private void startWhirlpool(Wallet wallet, Whirlpool whirlpool) {
+        if(wallet.getMasterMixConfig().getMixOnStartup() != Boolean.FALSE) {
+            try {
+                String mixToWalletId = getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
+                whirlpool.setMixToWallet(mixToWalletId, wallet.getMasterMixConfig().getMinMixes());
+            } catch(NoSuchElementException e) {
+                showWarningDialog("Mix to wallet not open", wallet.getName() + " is configured to mix to " + wallet.getMasterMixConfig().getMixToWalletName() + ", but this wallet is not open. Mix to wallets are required to be open to avoid address reuse.");
             }
+
+            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
+            startupService.setOnFailed(workerStateEvent -> {
+                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
+            });
+            startupService.start();
         }
     }
 
@@ -497,6 +510,21 @@ public class AppServices {
             });
             shutdownService.start();
         }
+    }
+
+    public String getWhirlpoolMixToWalletId(MixConfig mixConfig) {
+        if(mixConfig == null || mixConfig.getMixToWalletFile() == null || mixConfig.getMixToWalletName() == null) {
+            return null;
+        }
+
+        return getOpenWallets().entrySet().stream()
+                .filter(entry -> entry.getValue().getWalletFile().equals(mixConfig.getMixToWalletFile()) && entry.getKey().getName().equals(mixConfig.getMixToWalletName()))
+                .map(entry -> entry.getValue().getWalletId(entry.getKey()))
+                .findFirst().orElseThrow();
+    }
+
+    public Whirlpool getWhirlpoolForMixToWallet(String walletId) {
+        return whirlpoolMap.values().stream().filter(whirlpool -> walletId.equals(whirlpool.getMixToWalletId())).findFirst().orElse(null);
     }
 
     public void minimizeStage(Stage stage) {
@@ -977,12 +1005,20 @@ public class AppServices {
     public void walletOpened(WalletOpenedEvent event) {
         String walletId = event.getStorage().getWalletId(event.getWallet());
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
-        if(whirlpool != null && !whirlpool.isStarted() && isConnected() && event.getWallet().getMixConfig() != null && event.getWallet().getMixConfig().getMixOnStartup() != Boolean.FALSE) {
-            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
-            startupService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
-            });
-            startupService.start();
+        if(whirlpool != null && !whirlpool.isStarted() && isConnected()) {
+            startWhirlpool(event.getWallet(), whirlpool);
+        }
+
+        Whirlpool mixFromWhirlpool = whirlpoolMap.entrySet().stream().filter(entry -> event.getStorage().getWalletFile().equals(getWallet(entry.getKey()).getMasterMixConfig().getMixToWalletFile())).map(Map.Entry::getValue).findFirst().orElse(null);
+        if(mixFromWhirlpool != null) {
+            mixFromWhirlpool.setMixToWallet(walletId, getWallet(mixFromWhirlpool.getWalletId()).getMasterMixConfig().getMinMixes());
+            if(mixFromWhirlpool.isStarted()) {
+                Whirlpool.RestartService restartService = new Whirlpool.RestartService(mixFromWhirlpool);
+                restartService.setOnFailed(workerStateEvent -> {
+                    log.error("Failed to restart whirlpool", workerStateEvent.getSource().getException());
+                });
+                restartService.start();
+            }
         }
     }
 
@@ -1005,6 +1041,18 @@ public class AppServices {
                     //Ensure http clients are shutdown
                     whirlpool.shutdown();
                     WhirlpoolEventService.getInstance().unregister(whirlpool);
+                }
+            }
+
+            Whirlpool mixToWhirlpool = getWhirlpoolForMixToWallet(walletId);
+            if(mixToWhirlpool != null && event.getClosedWalletTabData().stream().noneMatch(walletTabData1 -> walletTabData1.getWalletForm().getWalletId().equals(mixToWhirlpool.getWalletId()))) {
+                mixToWhirlpool.setMixToWallet(null, null);
+                if(mixToWhirlpool.isStarted()) {
+                    Whirlpool.RestartService restartService = new Whirlpool.RestartService(mixToWhirlpool);
+                    restartService.setOnFailed(workerStateEvent -> {
+                        log.error("Failed to restart whirlpool", workerStateEvent.getSource().getException());
+                    });
+                    restartService.start();
                 }
             }
         }
