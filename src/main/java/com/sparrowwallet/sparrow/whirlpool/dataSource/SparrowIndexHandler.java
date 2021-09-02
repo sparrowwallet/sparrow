@@ -63,8 +63,8 @@ public class SparrowIndexHandler extends AbstractIndexHandler {
             } else if(walletNode.getKeyPurpose() == KeyPurpose.CHANGE) {
                 wallet.getMixConfig().setChangeIndex(index);
             }
-        }
 
-        EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+        }
     }
 }

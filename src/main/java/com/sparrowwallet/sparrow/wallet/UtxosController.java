@@ -123,7 +123,7 @@ public class UtxosController extends WalletFormController implements Initializab
         AppServices.onlineProperty().addListener(new WeakChangeListener<>(mixingOnlineListener));
 
         utxosTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
-            List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
+            List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().filter(tp -> tp.getTreeItem() != null).map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
             utxosChart.select(selectedEntries);
             updateButtons(Config.get().getBitcoinUnit());
         });
