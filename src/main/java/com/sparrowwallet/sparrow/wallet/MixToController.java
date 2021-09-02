@@ -52,7 +52,7 @@ public class MixToController implements Initializable {
 
         String mixToWalletId = null;
         try {
-            mixToWalletId = AppServices.get().getWhirlpoolMixToWalletId(mixConfig);
+            mixToWalletId = AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(mixConfig);
         } catch(NoSuchElementException e) {
             //ignore, mix to wallet is not open
         }

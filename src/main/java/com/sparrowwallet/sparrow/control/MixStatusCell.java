@@ -123,7 +123,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
 
     private static class MixStatusContextMenu extends ContextMenu {
         public MixStatusContextMenu(UtxoEntry utxoEntry, boolean isMixing) {
-            Whirlpool pool = AppServices.get().getWhirlpool(utxoEntry.getWallet());
+            Whirlpool pool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
             if(isMixing) {
                 MenuItem mixStop = new MenuItem("Stop Mixing");
                 if(pool != null) {
@@ -132,7 +132,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                 mixStop.setGraphic(getStopGlyph());
                 mixStop.setOnAction(event -> {
                     hide();
-                    Whirlpool whirlpool = AppServices.get().getWhirlpool(utxoEntry.getWallet());
+                    Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
                     if(whirlpool != null) {
                         try {
                             whirlpool.mixStop(utxoEntry.getHashIndex());
@@ -151,7 +151,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                 mixNow.setGraphic(getMixGlyph());
                 mixNow.setOnAction(event -> {
                     hide();
-                    Whirlpool whirlpool = AppServices.get().getWhirlpool(utxoEntry.getWallet());
+                    Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
                     if(whirlpool != null) {
                         try {
                             whirlpool.mix(utxoEntry.getHashIndex());

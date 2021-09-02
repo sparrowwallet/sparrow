@@ -107,7 +107,7 @@ public class UtxosController extends WalletFormController implements Initializab
         mixTo.setVisible(getWalletForm().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX);
 
         if(mixButtonsBox.isVisible()) {
-            Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWallet());
+            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
             if(whirlpool != null) {
                 stopMix.visibleProperty().bind(whirlpool.mixingProperty());
                 whirlpool.startingProperty().addListener(new WeakChangeListener<>(mixingStartingListener));
@@ -166,7 +166,7 @@ public class UtxosController extends WalletFormController implements Initializab
         if(mixConfig != null && mixConfig.getMixToWalletName() != null) {
             mixTo.setText("Mix to " + mixConfig.getMixToWalletName());
             try {
-                AppServices.get().getWhirlpoolMixToWalletId(mixConfig);
+                AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(mixConfig);
                 mixTo.setGraphic(getExternalGlyph());
                 mixTo.setTooltip(new Tooltip("Mixing to " + mixConfig.getMixToWalletName() + " after at least " + (mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes()) + " mixes"));
             } catch(NoSuchElementException e) {
@@ -248,7 +248,7 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private void prepareWhirlpoolWallet(Wallet decryptedWallet) {
-        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWalletId());
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWalletId());
         whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());
         whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
 
@@ -311,7 +311,7 @@ public class UtxosController extends WalletFormController implements Initializab
         startMix.setDisable(true);
         stopMix.setDisable(false);
 
-        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWallet());
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
         if(whirlpool != null && !whirlpool.isStarted() && AppServices.isConnected()) {
             Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
             startupService.setOnFailed(workerStateEvent -> {
@@ -329,7 +329,7 @@ public class UtxosController extends WalletFormController implements Initializab
         stopMix.setDisable(true);
         startMix.setDisable(false);
 
-        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWallet());
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
         if(whirlpool.isStarted()) {
             Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
             shutdownService.setOnFailed(workerStateEvent -> {
@@ -350,11 +350,11 @@ public class UtxosController extends WalletFormController implements Initializab
         MixToDialog mixToDialog = new MixToDialog(getWalletForm().getWallet());
         Optional<Boolean> optApply = mixToDialog.showAndWait();
         if(optApply.isPresent() && optApply.get()) {
-            Whirlpool whirlpool = AppServices.get().getWhirlpool(getWalletForm().getWallet());
+            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
             MixConfig mixConfig = getWalletForm().getWallet().getMasterMixConfig();
 
             try {
-                String mixToWalletId = AppServices.get().getWhirlpoolMixToWalletId(mixConfig);
+                String mixToWalletId = AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(mixConfig);
                 whirlpool.setMixToWallet(mixToWalletId, mixConfig.getMinMixes());
             } catch(NoSuchElementException e) {
                 mixConfig.setMixToWalletName(null);

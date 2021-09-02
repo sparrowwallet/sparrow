@@ -28,7 +28,7 @@ public class MixToDialog extends Dialog<Boolean> {
             MixToController mixToController = mixToLoader.getController();
             mixToController.initializeView(wallet);
 
-            Whirlpool whirlpool = AppServices.get().getWhirlpool(wallet);
+            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(wallet);
             final ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
             final ButtonType applyButtonType = new javafx.scene.control.ButtonType(whirlpool.isStarted() ? "Restart Whirlpool" : "Apply", ButtonBar.ButtonData.APPLY);
             dialogPane.getButtonTypes().addAll(closeButtonType, applyButtonType);
@@ -38,7 +38,7 @@ public class MixToDialog extends Dialog<Boolean> {
             applyButton.setDefaultButton(true);
 
             try {
-                AppServices.get().getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
+                AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
             } catch(NoSuchElementException e) {
                 applyButton.setDisable(false);
             }

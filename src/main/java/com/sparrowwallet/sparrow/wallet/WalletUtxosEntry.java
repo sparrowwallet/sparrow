@@ -39,7 +39,7 @@ public class WalletUtxosEntry extends Entry {
     }
 
     protected void retrieveMixProgress() {
-        Whirlpool whirlpool = AppServices.get().getWhirlpool(getWallet());
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWallet());
         if(whirlpool != null) {
             for(Entry entry : getChildren()) {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;

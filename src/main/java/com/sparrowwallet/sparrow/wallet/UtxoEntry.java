@@ -149,7 +149,7 @@ public class UtxoEntry extends HashIndexEntry {
                 return wallet.getUtxoMixData(getHashIndex());
             }
 
-            Whirlpool whirlpool = AppServices.get().getWhirlpool(wallet);
+            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(wallet);
             if(whirlpool != null) {
                 UtxoMixData utxoMixData = whirlpool.getMixData(getHashIndex());
                 if(utxoMixData != null) {

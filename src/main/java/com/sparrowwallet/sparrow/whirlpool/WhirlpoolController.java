@@ -194,7 +194,7 @@ public class WhirlpoolController {
 
     private void fetchPools() {
         long totalUtxoValue = utxoEntries.stream().mapToLong(Entry::getValue).sum();
-        Whirlpool.PoolsService poolsService = new Whirlpool.PoolsService(AppServices.get().getWhirlpool(walletId));
+        Whirlpool.PoolsService poolsService = new Whirlpool.PoolsService(AppServices.getWhirlpoolServices().getWhirlpool(walletId));
         poolsService.setOnSucceeded(workerStateEvent -> {
             List<Pool> availablePools = poolsService.getValue().stream().filter(pool1 -> totalUtxoValue >= (pool1.getPremixValueMin() + pool1.getFeeValue())).toList();
             if(availablePools.isEmpty()) {
@@ -235,7 +235,7 @@ public class WhirlpoolController {
             EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
         }
 
-        Whirlpool whirlpool = AppServices.get().getWhirlpool(walletId);
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
         whirlpool.setScode(mixConfig.getScode());
 
         Whirlpool.Tx0PreviewService tx0PreviewService = new Whirlpool.Tx0PreviewService(whirlpool, wallet, pool, utxoEntries);
