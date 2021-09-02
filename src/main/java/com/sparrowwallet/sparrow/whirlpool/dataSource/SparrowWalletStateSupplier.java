@@ -8,6 +8,7 @@ import com.samourai.whirlpool.client.wallet.beans.WhirlpoolAccount;
 import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
@@ -32,10 +33,21 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
         String key = mapKey(whirlpoolAccount, addressType, chain);
         IIndexHandler indexHandler = indexHandlerWallets.get(key);
         if (indexHandler == null) {
-            WalletNode walletNode = findWalletNode(whirlpoolAccount, addressType, chain);
-            indexHandler = new SparrowIndexHandler(walletNode, 0);
+            Wallet wallet = findWallet(whirlpoolAccount);
+            KeyPurpose keyPurpose = (chain == Chain.RECEIVE ? KeyPurpose.RECEIVE : KeyPurpose.CHANGE);
+            WalletNode walletNode = wallet.getNode(keyPurpose);
+
+            //Ensure mix config is present
+            MixConfig mixConfig = wallet.getMixConfig();
+            if(mixConfig == null) {
+                mixConfig = new MixConfig();
+                wallet.setMixConfig(mixConfig);
+            }
+
+            indexHandler = new SparrowIndexHandler(wallet, walletNode, 0);
             indexHandlerWallets.put(key, indexHandler);
         }
+        
         return indexHandler;
     }
 
@@ -53,7 +65,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
 
             KeyPurpose keyPurpose = KeyPurpose.fromChildNumber(new ChildNumber(externalDestination.getChain()));
             WalletNode externalNode = externalWallet.getNode(keyPurpose);
-            externalIndexHandler = new SparrowIndexHandler(externalNode, externalDestination.getStartIndex());
+            externalIndexHandler = new SparrowIndexHandler(externalWallet, externalNode, externalDestination.getStartIndex());
         }
 
         return externalIndexHandler;
@@ -89,18 +101,13 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
         return whirlpoolAccount.name()+"_"+addressType.getPurpose()+"_"+chain.getIndex();
     }
 
-    private WalletNode findWalletNode(WhirlpoolAccount whirlpoolAccount, AddressType addressType, Chain chain) {
+    private Wallet findWallet(WhirlpoolAccount whirlpoolAccount) {
         Wallet wallet = getWallet();
         if(wallet == null) {
             throw new IllegalStateException("Can't find wallet with walletId " + walletId);
         }
 
-        // account
-        Wallet childWallet = Whirlpool.getStandardAccountWallet(whirlpoolAccount, wallet);
-
-        // purpose
-        KeyPurpose keyPurpose = chain == Chain.RECEIVE ? KeyPurpose.RECEIVE : KeyPurpose.CHANGE;
-        return childWallet.getNode(keyPurpose);
+        return Whirlpool.getStandardAccountWallet(whirlpoolAccount, wallet);
     }
 
     private Wallet getWallet() {

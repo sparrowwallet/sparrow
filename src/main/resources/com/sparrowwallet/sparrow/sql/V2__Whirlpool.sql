@@ -1,2 +1,2 @@
-create table mixConfig (id identity not null, scode varchar(255), mixOnStartup boolean, mixToWalletFile varchar(1024), mixToWalletName varchar(255), minMixes integer, wallet bigint not null);
+create table mixConfig (id identity not null, scode varchar(255), mixOnStartup boolean, mixToWalletFile varchar(1024), mixToWalletName varchar(255), minMixes integer, receiveIndex integer not null, changeIndex integer not null, wallet bigint not null);
 create table utxoMixData (id identity not null, hash binary(32) not null, mixesDone integer not null default 0, expired bigint, wallet bigint not null);

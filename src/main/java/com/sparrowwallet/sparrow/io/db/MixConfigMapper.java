@@ -26,7 +26,7 @@ public class MixConfigMapper implements RowMapper<MixConfig> {
             minMixes = null;
         }
 
-        MixConfig mixConfig = new MixConfig(scode, mixOnStartup, mixToWalletFile == null ? null : new File(mixToWalletFile), mixToWalletName, minMixes);
+        MixConfig mixConfig = new MixConfig(scode, mixOnStartup, mixToWalletFile == null ? null : new File(mixToWalletFile), mixToWalletName, minMixes, rs.getInt("receiveIndex"), rs.getInt("changeIndex"));
         mixConfig.setId(rs.getLong("id"));
         return mixConfig;
     }

@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.WalletMixConfigChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletMasterMixConfigChangedEvent;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -72,14 +72,14 @@ public class MixToController implements Initializable {
                 mixConfig.setMixToWalletFile(AppServices.get().getOpenWallets().get(newValue).getWalletFile());
             }
 
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+            EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
         });
 
         int initialMinMixes = mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes();
         minMixes.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10000, initialMinMixes));
         minMixes.valueProperty().addListener((observable, oldValue, newValue) -> {
             mixConfig.setMinMixes(newValue);
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+            EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
         });
     }
 }

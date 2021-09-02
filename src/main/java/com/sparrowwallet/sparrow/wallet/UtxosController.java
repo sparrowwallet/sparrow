@@ -322,7 +322,7 @@ public class UtxosController extends WalletFormController implements Initializab
         }
 
         getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.TRUE);
-        EventManager.get().post(new WalletMixConfigChangedEvent(getWalletForm().getWallet()));
+        EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
     }
 
     public void stopMixing(ActionEvent event) {
@@ -343,7 +343,7 @@ public class UtxosController extends WalletFormController implements Initializab
         }
 
         getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.FALSE);
-        EventManager.get().post(new WalletMixConfigChangedEvent(getWalletForm().getWallet()));
+        EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
     }
 
     public void showMixToDialog(ActionEvent event) {
@@ -359,7 +359,7 @@ public class UtxosController extends WalletFormController implements Initializab
             } catch(NoSuchElementException e) {
                 mixConfig.setMixToWalletName(null);
                 mixConfig.setMixToWalletFile(null);
-                EventManager.get().post(new WalletMixConfigChangedEvent(getWalletForm().getWallet()));
+                EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
                 whirlpool.setMixToWallet(null, null);
             }
 

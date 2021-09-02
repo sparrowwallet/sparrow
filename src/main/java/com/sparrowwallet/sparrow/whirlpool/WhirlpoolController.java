@@ -9,7 +9,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
-import com.sparrowwallet.sparrow.event.WalletMixConfigChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletMasterMixConfigChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
@@ -95,9 +95,13 @@ public class WhirlpoolController {
         step4.setVisible(false);
 
         scode.setText(mixConfig.getScode() == null ? "" : mixConfig.getScode());
+        scode.setTextFormatter(new TextFormatter<>((change) -> {
+            change.setText(change.getText().toUpperCase());
+            return change;
+        }));
         scode.textProperty().addListener((observable, oldValue, newValue) -> {
             mixConfig.setScode(newValue);
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+            EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
         });
 
         if(mixConfig.getScode() != null) {
@@ -232,7 +236,7 @@ public class WhirlpoolController {
     private void fetchTx0Preview(Pool pool) {
         if(mixConfig.getScode() == null) {
             mixConfig.setScode("");
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+            EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
         }
 
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);

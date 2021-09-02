@@ -4,6 +4,6 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 
 public class WalletMixConfigChangedEvent extends WalletChangedEvent {
     public WalletMixConfigChangedEvent(Wallet wallet) {
-        super(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet());
+        super(wallet);
     }
 }
