@@ -44,7 +44,6 @@ public class MixToController implements Initializable {
 
         List<Wallet> destinationWallets = AppServices.get().getOpenWallets().keySet().stream().filter(openWallet -> openWallet.isValid()
                 && openWallet != wallet && openWallet != wallet.getMasterWallet()
-                && openWallet.getPolicyType().equals(PolicyType.SINGLE)
                 && !StandardAccount.WHIRLPOOL_ACCOUNTS.contains(openWallet.getStandardAccountType())).collect(Collectors.toList());
         allWallets.addAll(destinationWallets);
 

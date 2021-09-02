@@ -47,7 +47,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
             indexHandler = new SparrowIndexHandler(wallet, walletNode, 0);
             indexHandlerWallets.put(key, indexHandler);
         }
-        
+
         return indexHandler;
     }
 
@@ -58,9 +58,15 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
         }
 
         if(externalIndexHandler == null) {
-            Wallet externalWallet = SparrowDataSource.getWallet(externalDestination.getXpub());
+            Wallet externalWallet = null;
+            if(externalDestination.getPostmixHandler() instanceof SparrowPostmixHandler sparrowPostmixHandler) {
+                externalWallet = sparrowPostmixHandler.getWallet();
+            } else if(externalDestination.getXpub() != null) {
+                externalWallet = SparrowDataSource.getWallet(externalDestination.getXpub());
+            }
+
             if(externalWallet == null) {
-                throw new IllegalStateException("Cannot find wallet for external destination xpub " + externalDestination.getXpub());
+                throw new IllegalStateException("Cannot find wallet for external destination " + externalDestination);
             }
 
             KeyPurpose keyPurpose = KeyPurpose.fromChildNumber(new ChildNumber(externalDestination.getChain()));

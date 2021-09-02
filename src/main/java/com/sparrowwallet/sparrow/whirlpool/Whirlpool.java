@@ -7,6 +7,7 @@ import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.hd.HD_WalletFactoryGeneric;
 import com.samourai.whirlpool.client.event.*;
+import com.samourai.whirlpool.client.mix.handler.IPostmixHandler;
 import com.samourai.whirlpool.client.tx0.*;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
@@ -41,6 +42,7 @@ import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.whirlpool.dataPersister.SparrowDataPersister;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowDataSource;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowMinerFeeSupplier;
+import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowPostmixHandler;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -365,18 +367,12 @@ public class Whirlpool {
                 throw new IllegalStateException("Cannot find mix to wallet with id " + mixToWalletId);
             }
 
-            if(mixToWallet.getPolicyType() != PolicyType.SINGLE) {
-                throw new IllegalStateException("Only single signature mix to wallets are currently supported");
-            }
-
-            List<ExtendedKey.Header> headers = ExtendedKey.Header.getHeaders(Network.get());
-            ExtendedKey.Header header = headers.stream().filter(head -> head.getDefaultScriptType().equals(mixToWallet.getScriptType()) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
-            ExtendedKey extPubKey = mixToWallet.getKeystores().get(0).getExtendedPublicKey();
-            String xpub = extPubKey.toString(header);
             Integer highestUsedIndex = mixToWallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex();
+            int startIndex = highestUsedIndex == null ? 0 : highestUsedIndex + 1;
             int mixes = minMixes == null ? DEFAULT_MIXTO_MIN_MIXES : minMixes;
 
-            ExternalDestination externalDestination = new ExternalDestination(xpub, 0, highestUsedIndex == null ? 0 : highestUsedIndex + 1, mixes, DEFAULT_MIXTO_RANDOM_FACTOR);
+            IPostmixHandler postmixHandler = new SparrowPostmixHandler(whirlpoolWalletService, mixToWallet, KeyPurpose.RECEIVE, startIndex);
+            ExternalDestination externalDestination = new ExternalDestination(postmixHandler, 0, startIndex, mixes, DEFAULT_MIXTO_RANDOM_FACTOR);
             config.setExternalDestination(externalDestination);
         }
 
