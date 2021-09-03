@@ -12,7 +12,7 @@ To clone this project, use
 
 `git clone --recursive git@github.com:sparrowwallet/sparrow.git`
 
-In order to build, Sparrow requires Java 14 to be installed. The release packages can be built using
+In order to build, Sparrow requires Java 16 to be installed. The release binaries can be built using
 
 `./gradlew jpackage`
 
