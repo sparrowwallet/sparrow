@@ -1738,8 +1738,16 @@ public class AppController implements Initializable {
                 });
 
                 Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
+                String walletName = event.getWallet().getMasterName();
+                if(walletName.length() > 25) {
+                    walletName = walletName.substring(0, 25) + "...";
+                }
+                if(!event.getWallet().isMasterWallet()) {
+                    walletName += " " + event.getWallet().getName();
+                }
+
                 Notifications notificationBuilder = Notifications.create()
-                        .title("Sparrow - " + event.getWallet().getFullName())
+                        .title("Sparrow - " + walletName)
                         .text(text)
                         .graphic(new ImageView(image))
                         .hideAfter(Duration.seconds(15))

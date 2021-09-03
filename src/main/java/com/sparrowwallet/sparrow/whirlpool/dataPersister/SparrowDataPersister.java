@@ -15,7 +15,7 @@ public class SparrowDataPersister implements DataPersister {
     public SparrowDataPersister(WhirlpoolWallet whirlpoolWallet) throws Exception {
         WhirlpoolWalletConfig config = whirlpoolWallet.getConfig();
         String walletIdentifier = whirlpoolWallet.getWalletIdentifier();
-        this.walletStateSupplier = new SparrowWalletStateSupplier(walletIdentifier, config.getExternalDestination());
+        this.walletStateSupplier = new SparrowWalletStateSupplier(walletIdentifier, config);
         this.utxoConfigSupplier = new UtxoConfigPersistedSupplier(new SparrowUtxoConfigPersister(walletIdentifier));
     }
 

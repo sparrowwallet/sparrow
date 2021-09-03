@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class WhirlpoolServices {
@@ -39,7 +40,7 @@ public class WhirlpoolServices {
     public Whirlpool getWhirlpool(String walletId) {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
-            HostAndPort torProxy = AppServices.isTorRunning() ? HostAndPort.fromParts("localhost", TorService.PROXY_PORT) : (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
+            HostAndPort torProxy = getTorProxy();
             whirlpool = new Whirlpool(Network.get(), torProxy);
             whirlpoolMap.put(walletId, whirlpool);
         }
@@ -47,21 +48,34 @@ public class WhirlpoolServices {
         return whirlpool;
     }
 
+    private HostAndPort getTorProxy() {
+        return AppServices.isTorRunning() ?
+                HostAndPort.fromParts("localhost", TorService.PROXY_PORT) :
+                (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
+    }
+
     private void startAllWhirlpool() {
         for(Map.Entry<String, Whirlpool> entry : whirlpoolMap.entrySet().stream().filter(entry -> entry.getValue().hasWallet() && !entry.getValue().isStarted()).collect(Collectors.toList())) {
             Wallet wallet = AppServices.get().getWallet(entry.getKey());
             Whirlpool whirlpool = entry.getValue();
-            startWhirlpool(wallet, whirlpool);
+            startWhirlpool(wallet, whirlpool, false);
         }
     }
 
-    private void startWhirlpool(Wallet wallet, Whirlpool whirlpool) {
+    public void startWhirlpool(Wallet wallet, Whirlpool whirlpool, boolean notifyIfMixToMissing) {
         if(wallet.getMasterMixConfig().getMixOnStartup() != Boolean.FALSE) {
+            HostAndPort torProxy = getTorProxy();
+            if(!Objects.equals(whirlpool.getTorProxy(), torProxy)) {
+                whirlpool.setTorProxy(getTorProxy());
+            }
+
             try {
                 String mixToWalletId = getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
                 whirlpool.setMixToWallet(mixToWalletId, wallet.getMasterMixConfig().getMinMixes());
             } catch(NoSuchElementException e) {
-                AppServices.showWarningDialog("Mix to wallet not open", wallet.getName() + " is configured to mix to " + wallet.getMasterMixConfig().getMixToWalletName() + ", but this wallet is not open. Mix to wallets are required to be open to avoid address reuse.");
+                if(notifyIfMixToMissing) {
+                    AppServices.showWarningDialog("Mix to wallet not open", wallet.getMasterName() + " is configured to mix to " + wallet.getMasterMixConfig().getMixToWalletName() + ", but this wallet is not open. Mix to wallets are required to be open to avoid address reuse.");
+                }
             }
 
             Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
@@ -72,14 +86,21 @@ public class WhirlpoolServices {
         }
     }
 
-    private void shutdownAllWhirlpool() {
+    private void stopAllWhirlpool() {
         for(Whirlpool whirlpool : whirlpoolMap.values().stream().filter(Whirlpool::isStarted).collect(Collectors.toList())) {
-            Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
-            shutdownService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to shutdown whirlpool", workerStateEvent.getSource().getException());
-            });
-            shutdownService.start();
+            stopWhirlpool(whirlpool, false);
         }
+    }
+
+    public void stopWhirlpool(Whirlpool whirlpool, boolean notifyOnFailure) {
+        Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
+        shutdownService.setOnFailed(workerStateEvent -> {
+            log.error("Failed to stop whirlpool", workerStateEvent.getSource().getException());
+            if(notifyOnFailure) {
+                AppServices.showErrorDialog("Failed to stop whirlpool", workerStateEvent.getSource().getException().getMessage());
+            }
+        });
+        shutdownService.start();
     }
 
     public String getWhirlpoolMixToWalletId(MixConfig mixConfig) {
@@ -104,7 +125,7 @@ public class WhirlpoolServices {
 
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
-        shutdownAllWhirlpool();
+        stopAllWhirlpool();
     }
 
     @Subscribe
@@ -112,11 +133,14 @@ public class WhirlpoolServices {
         String walletId = event.getStorage().getWalletId(event.getWallet());
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool != null && !whirlpool.isStarted() && AppServices.isConnected()) {
-            startWhirlpool(event.getWallet(), whirlpool);
+            startWhirlpool(event.getWallet(), whirlpool, true);
         }
 
         Whirlpool mixFromWhirlpool = whirlpoolMap.entrySet().stream()
-                .filter(entry -> event.getStorage().getWalletFile().equals(AppServices.get().getWallet(entry.getKey()).getMasterMixConfig().getMixToWalletFile()))
+                .filter(entry -> {
+                    MixConfig mixConfig = AppServices.get().getWallet(entry.getKey()).getMasterMixConfig();
+                    return event.getStorage().getWalletFile().equals(mixConfig.getMixToWalletFile()) && event.getWallet().getName().equals(mixConfig.getMixToWalletName());
+                })
                 .map(Map.Entry::getValue).findFirst().orElse(null);
 
         if(mixFromWhirlpool != null) {

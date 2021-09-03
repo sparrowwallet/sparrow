@@ -6,6 +6,7 @@ import com.samourai.wallet.hd.Chain;
 import com.samourai.whirlpool.client.wallet.beans.ExternalDestination;
 import com.samourai.whirlpool.client.wallet.beans.WhirlpoolAccount;
 import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier;
+import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.wallet.MixConfig;
@@ -19,13 +20,13 @@ import java.util.Map;
 public class SparrowWalletStateSupplier implements WalletStateSupplier {
     private final String walletId;
     private final Map<String, IIndexHandler> indexHandlerWallets;
-    private final ExternalDestination externalDestination;
+    private final WhirlpoolClientConfig config;
     private IIndexHandler externalIndexHandler;
 
-    public SparrowWalletStateSupplier(String walletId, ExternalDestination externalDestination) throws Exception {
+    public SparrowWalletStateSupplier(String walletId, WhirlpoolClientConfig config) throws Exception {
         this.walletId = walletId;
         this.indexHandlerWallets = new LinkedHashMap<>();
-        this.externalDestination = externalDestination;
+        this.config = config;
     }
 
     @Override
@@ -53,6 +54,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
 
     @Override
     public IIndexHandler getIndexHandlerExternal() {
+        ExternalDestination externalDestination = config.getExternalDestination();
         if(externalDestination == null) {
             throw new IllegalStateException("External destination has not been set");
         }

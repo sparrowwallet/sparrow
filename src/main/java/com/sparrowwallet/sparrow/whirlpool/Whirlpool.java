@@ -63,7 +63,6 @@ public class Whirlpool {
     public static final int DEFAULT_MIXTO_MIN_MIXES = 5;
     public static final int DEFAULT_MIXTO_RANDOM_FACTOR = 4;
 
-    private final HostAndPort torProxy;
     private final WhirlpoolServer whirlpoolServer;
     private final JavaHttpClientService httpClientService;
     private final JavaStompClientService stompClientService;
@@ -78,19 +77,18 @@ public class Whirlpool {
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
     public Whirlpool(Network network, HostAndPort torProxy) {
-        this.torProxy = torProxy;
         this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase());
         this.httpClientService = new JavaHttpClientService(torProxy);
         this.stompClientService = new JavaStompClientService(httpClientService);
         this.torClientService = new WhirlpoolTorClientService();
 
         this.whirlpoolWalletService = new WhirlpoolWalletService();
-        this.config = computeWhirlpoolWalletConfig();
+        this.config = computeWhirlpoolWalletConfig(torProxy);
 
         WhirlpoolEventService.getInstance().register(this);
     }
 
-    private WhirlpoolWalletConfig computeWhirlpoolWalletConfig() {
+    private WhirlpoolWalletConfig computeWhirlpoolWalletConfig(HostAndPort torProxy) {
         DataPersisterFactory dataPersisterFactory = (whirlpoolWallet, bip44w) -> new SparrowDataPersister(whirlpoolWallet);
         DataSourceFactory dataSourceFactory = (whirlpoolWallet, bip44w, dataPersister) -> new SparrowDataSource(whirlpoolWallet, bip44w, dataPersister);
 
@@ -245,10 +243,6 @@ public class Whirlpool {
         }
     }
 
-    public HostAndPort getTorProxy() {
-        return torProxy;
-    }
-
     public boolean hasWallet() {
         return hdWallet != null;
     }
@@ -271,9 +265,11 @@ public class Whirlpool {
         if(wallet != null) {
             wallet = getStandardAccountWallet(whirlpoolUtxo.getAccount(), wallet);
 
-            for(BlockTransactionHashIndex utxo : wallet.getWalletUtxos().keySet()) {
-                if(utxo.getHashAsString().equals(whirlpoolUtxo.getUtxo().tx_hash) && utxo.getIndex() == whirlpoolUtxo.getUtxo().tx_output_n) {
-                    return new WalletUtxo(wallet, utxo);
+            if(wallet != null) {
+                for(BlockTransactionHashIndex utxo : wallet.getWalletUtxos().keySet()) {
+                    if(utxo.getHashAsString().equals(whirlpoolUtxo.getUtxo().tx_hash) && utxo.getIndex() == whirlpoolUtxo.getUtxo().tx_output_n) {
+                        return new WalletUtxo(wallet, utxo);
+                    }
                 }
             }
         }
@@ -340,6 +336,24 @@ public class Whirlpool {
         out.xpub = xpub;
 
         return out;
+    }
+
+    public HostAndPort getTorProxy() {
+        return httpClientService.getTorProxy();
+    }
+
+    public void setTorProxy(HostAndPort torProxy) {
+        if(isStarted()) {
+            throw new IllegalStateException("Cannot set tor proxy on a started Whirlpool");
+        }
+
+        //Ensure all http clients are shutdown first
+        httpClientService.shutdown();
+
+        httpClientService.setTorProxy(torProxy);
+        String serverUrl = whirlpoolServer.getServerUrl(torProxy != null);
+        ServerApi serverApi = new ServerApi(serverUrl, httpClientService);
+        config.setServerApi(serverApi);
     }
 
     public String getScode() {

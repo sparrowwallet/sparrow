@@ -311,39 +311,29 @@ public class UtxosController extends WalletFormController implements Initializab
         startMix.setDisable(true);
         stopMix.setDisable(false);
 
-        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
-        if(whirlpool != null && !whirlpool.isStarted() && AppServices.isConnected()) {
-            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
-            startupService.setOnFailed(workerStateEvent -> {
-                AppServices.showErrorDialog("Failed to start whirlpool", workerStateEvent.getSource().getException().getMessage());
-                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
-            });
-            startupService.start();
-        }
-
         getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.TRUE);
         EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
+
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
+        if(whirlpool != null && !whirlpool.isStarted() && AppServices.isConnected()) {
+            AppServices.getWhirlpoolServices().startWhirlpool(getWalletForm().getWallet(), whirlpool, true);
+        }
     }
 
     public void stopMixing(ActionEvent event) {
         stopMix.setDisable(true);
         startMix.setDisable(false);
 
+        getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.FALSE);
+        EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
+
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
         if(whirlpool.isStarted()) {
-            Whirlpool.ShutdownService shutdownService = new Whirlpool.ShutdownService(whirlpool);
-            shutdownService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to stop whirlpool", workerStateEvent.getSource().getException());
-                AppServices.showErrorDialog("Failed to stop whirlpool", workerStateEvent.getSource().getException().getMessage());
-            });
-            shutdownService.start();
+            AppServices.getWhirlpoolServices().stopWhirlpool(whirlpool, true);
         } else {
             //Ensure http clients are shutdown
             whirlpool.shutdown();
         }
-
-        getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.FALSE);
-        EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
     }
 
     public void showMixToDialog(ActionEvent event) {

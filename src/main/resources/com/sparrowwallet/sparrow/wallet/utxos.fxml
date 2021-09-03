@@ -50,7 +50,7 @@
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" icon="STOP_CIRCLE" fontSize="12" />
                                 </graphic>
                             </Button>
-                            <Button fx:id="mixTo" text="Mix to..." onAction="#showMixToDialog" />
+                            <Button fx:id="mixTo" text="Mix to..." maxWidth="200" onAction="#showMixToDialog" />
                         </HBox>
                         <Region HBox.hgrow="ALWAYS" />
                         <HBox styleClass="utxos-buttons-box" spacing="20" alignment="BOTTOM_RIGHT">
