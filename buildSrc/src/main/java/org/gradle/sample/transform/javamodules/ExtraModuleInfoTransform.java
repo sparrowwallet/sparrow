@@ -58,7 +58,8 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
         File originalJar = getInputArtifact().get().getAsFile();
         String originalJarName = originalJar.getName();
 
-        if (isModule(originalJar)) {
+        //Recreate jackson jars as open, non-synthetic modules
+        if (isModule(originalJar) && !originalJarName.contains("jackson")) {
             outputs.file(originalJar);
         } else if (moduleInfo.containsKey(originalJarName)) {
             addModuleDescriptor(originalJar, getModuleJar(outputs, originalJar), moduleInfo.get(originalJarName));
@@ -140,9 +141,11 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
     private static void copyEntries(JarInputStream inputStream, JarOutputStream outputStream) throws IOException {
         JarEntry jarEntry = inputStream.getNextJarEntry();
         while (jarEntry != null) {
-            outputStream.putNextEntry(jarEntry);
-            outputStream.write(inputStream.readAllBytes());
-            outputStream.closeEntry();
+            if(!jarEntry.getName().equals("module-info.class")) {
+                outputStream.putNextEntry(jarEntry);
+                outputStream.write(inputStream.readAllBytes());
+                outputStream.closeEntry();
+            }
             jarEntry = inputStream.getNextJarEntry();
         }
     }
@@ -160,6 +163,9 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
         }
         for (String requireName : moduleInfo.getRequiresTransitive()) {
             moduleVisitor.visitRequire(requireName, Opcodes.ACC_TRANSITIVE, null);
+        }
+        for (String usesName : moduleInfo.getUses()) {
+            moduleVisitor.visitUse(usesName.replace('.', '/'));
         }
         moduleVisitor.visitEnd();
         classWriter.visitEnd();

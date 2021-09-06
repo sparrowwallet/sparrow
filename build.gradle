@@ -239,6 +239,55 @@ task packageTarDistribution(type: Tar) {
 }
 
 extraJavaModuleInfo {
+    module('jackson-core-2.10.1.jar', 'com.fasterxml.jackson.core', '2.10.1') {
+        exports('com.fasterxml.jackson.core')
+        exports('com.fasterxml.jackson.core.async')
+        exports('com.fasterxml.jackson.core.base')
+        exports('com.fasterxml.jackson.core.exc')
+        exports('com.fasterxml.jackson.core.filter')
+        exports('com.fasterxml.jackson.core.format')
+        exports('com.fasterxml.jackson.core.io')
+        exports('com.fasterxml.jackson.core.json')
+        exports('com.fasterxml.jackson.core.json.async')
+        exports('com.fasterxml.jackson.core.sym')
+        exports('com.fasterxml.jackson.core.type')
+        exports('com.fasterxml.jackson.core.util')
+        uses('com.fasterxml.jackson.core.ObjectCodec')
+    }
+    module('jackson-annotations-2.10.1.jar', 'com.fasterxml.jackson.annotation', '2.10.1') {
+        requires('com.fasterxml.jackson.core')
+        exports('com.fasterxml.jackson.annotation')
+    }
+    module('jackson-databind-2.10.1.jar', 'com.fasterxml.jackson.databind', '2.10.1') {
+        requires('java.desktop')
+        requires('java.logging')
+        requires('com.fasterxml.jackson.annotation')
+        requires('com.fasterxml.jackson.core')
+        requires('java.sql')
+        requires('java.xml')
+        exports('com.fasterxml.jackson.databind')
+        exports('com.fasterxml.jackson.databind.annotation')
+        exports('com.fasterxml.jackson.databind.cfg')
+        exports('com.fasterxml.jackson.databind.deser')
+        exports('com.fasterxml.jackson.databind.deser.impl')
+        exports('com.fasterxml.jackson.databind.deser.std')
+        exports('com.fasterxml.jackson.databind.exc')
+        exports('com.fasterxml.jackson.databind.ext')
+        exports('com.fasterxml.jackson.databind.introspect')
+        exports('com.fasterxml.jackson.databind.json')
+        exports('com.fasterxml.jackson.databind.jsonFormatVisitors')
+        exports('com.fasterxml.jackson.databind.jsonschema')
+        exports('com.fasterxml.jackson.databind.jsontype')
+        exports('com.fasterxml.jackson.databind.jsontype.impl')
+        exports('com.fasterxml.jackson.databind.module')
+        exports('com.fasterxml.jackson.databind.node')
+        exports('com.fasterxml.jackson.databind.ser')
+        exports('com.fasterxml.jackson.databind.ser.impl')
+        exports('com.fasterxml.jackson.databind.ser.std')
+        exports('com.fasterxml.jackson.databind.type')
+        exports('com.fasterxml.jackson.databind.util')
+        uses('com.fasterxml.jackson.databind.Module')
+    }
     module('tornadofx-controls-1.0.4.jar', 'tornadofx.controls', '1.0.4') {
         exports('tornadofx.control')
         requires('javafx.controls')
@@ -255,6 +304,7 @@ extraJavaModuleInfo {
         exports('com.github.arteam.simplejsonrpc.client')
         exports('com.github.arteam.simplejsonrpc.client.builder')
         exports('com.github.arteam.simplejsonrpc.client.exception')
+        requires('com.fasterxml.jackson.core')
         requires('com.fasterxml.jackson.databind')
         requires('simple.json.rpc.core')
     }
@@ -399,6 +449,8 @@ extraJavaModuleInfo {
         requires('org.slf4j')
         requires('org.bouncycastle.provider')
         requires('com.fasterxml.jackson.databind')
+        requires('com.fasterxml.jackson.annotation')
+        requires('com.fasterxml.jackson.core')
         requires('logback.classic')
         requires('org.json')
         exports('com.samourai.http.client')

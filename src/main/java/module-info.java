@@ -18,6 +18,7 @@ open module com.sparrowwallet.sparrow {
     requires simple.json.rpc.core;
     requires org.jetbrains.annotations;
     requires com.fasterxml.jackson.databind;
+    requires com.fasterxml.jackson.annotation;
     requires netlayer.jpms;
     requires org.slf4j;
     requires com.google.gson;

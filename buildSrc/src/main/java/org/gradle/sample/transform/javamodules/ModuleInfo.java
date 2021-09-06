@@ -13,6 +13,7 @@ public class ModuleInfo implements Serializable {
     private List<String> exports = new ArrayList<>();
     private List<String> requires = new ArrayList<>();
     private List<String> requiresTransitive = new ArrayList<>();
+    private List<String> uses = new ArrayList<>();
 
     ModuleInfo(String moduleName, String moduleVersion) {
         this.moduleName = moduleName;
@@ -29,6 +30,10 @@ public class ModuleInfo implements Serializable {
 
     public void requiresTransitive(String requiresTransitive) {
         this.requiresTransitive.add(requiresTransitive);
+    }
+
+    public void uses(String uses) {
+        this.uses.add(uses);
     }
 
     public String getModuleName() {
@@ -49,5 +54,9 @@ public class ModuleInfo implements Serializable {
 
     protected List<String> getRequiresTransitive() {
         return requiresTransitive;
+    }
+
+    protected List<String> getUses() {
+        return uses;
     }
 }
