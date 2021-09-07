@@ -12,7 +12,10 @@ To clone this project, use
 
 `git clone --recursive git@github.com:sparrowwallet/sparrow.git`
 
-In order to build, Sparrow requires Java 16 to be installed. The release binaries can be built using
+In order to build, Sparrow requires Java 16 to be installed. 
+The release binaries are built with [AdoptOpenJdk 16.0.1+9 Hotspot](https://adoptopenjdk.net/archive.html?variant=openjdk16&jvmVariant=hotspot).
+
+These binaries can be built from source using
 
 `./gradlew jpackage`
 
@@ -20,7 +23,7 @@ When updating to the latest HEAD
 
 `git pull --recurse-submodules`
 
-All jar files created are reproducible builds.
+The release binaries are reproducible (pre codesigning and installer packaging at this time).
 
 ## Running
 
@@ -28,7 +31,7 @@ If you prefer to run Sparrow directly from source, it can be launched with
 
 `./sparrow`
 
-Java 14 or higher must be installed.
+Java 16 or higher must be installed. 
 
 ## Configuration
 
