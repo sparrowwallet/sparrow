@@ -248,6 +248,7 @@ public class WhirlpoolController {
             nbOutputsLoading.setText("Calculating...");
             nbOutputs.setVisible(false);
             discountFeeBox.setVisible(false);
+            tx0PreviewProperty.set(null);
         });
         tx0PreviewService.setOnSucceeded(workerStateEvent -> {
             Tx0Preview tx0Preview = tx0PreviewService.getValue();
