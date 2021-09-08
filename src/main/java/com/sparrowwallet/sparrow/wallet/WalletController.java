@@ -78,7 +78,7 @@ public class WalletController extends WalletFormController implements Initializa
 
     public void configure(Wallet wallet) {
         boolean validWallet = wallet.isValid();
-        boolean whirlpoolMixWallet = wallet.isWhirlpoolMixWallet();
+        boolean whirlpoolChildWallet = wallet.isWhirlpoolChildWallet();
 
         for(Toggle toggle : walletMenu.getToggles()) {
             if(toggle.getUserData().equals(Function.SETTINGS)) {
@@ -90,7 +90,7 @@ public class WalletController extends WalletFormController implements Initializa
                     toggle.setSelected(true);
                 }
 
-                ((ToggleButton)toggle).setDisable(!validWallet || (whirlpoolMixWallet && toggle.getUserData().equals(Function.RECEIVE)));
+                ((ToggleButton)toggle).setDisable(!validWallet || (whirlpoolChildWallet && toggle.getUserData().equals(Function.RECEIVE)));
             }
         }
     }

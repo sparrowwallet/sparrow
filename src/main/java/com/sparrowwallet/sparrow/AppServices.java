@@ -793,6 +793,7 @@ public class AppServices {
     @Subscribe
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
+        System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
         targetBlockFeeRates = event.getTargetBlockFeeRates();
         addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
@@ -807,6 +808,7 @@ public class AppServices {
     @Subscribe
     public void newBlock(NewBlockEvent event) {
         currentBlockHeight = event.getHeight();
+        System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
         latestBlockHeader = event.getBlockHeader();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));

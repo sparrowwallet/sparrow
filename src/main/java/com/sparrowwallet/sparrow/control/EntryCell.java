@@ -131,7 +131,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
 
                 setGraphic(actionBox);
 
-                if(nodeEntry.getWallet().isWhirlpoolMixWallet()) {
+                if(nodeEntry.getWallet().isWhirlpoolChildWallet()) {
                     setText(address.toString().substring(0, 20) + "...");
                     setContextMenu(null);
                     setGraphic(new HBox());

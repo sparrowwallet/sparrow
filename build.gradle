@@ -117,6 +117,10 @@ processResources {
     }
 }
 
+test {
+    jvmArgs '--add-opens=java.base/java.io=ALL-UNNAMED'
+}
+
 run {
     applicationDefaultJvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                                  "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
@@ -198,7 +202,7 @@ jlink {
         imageName = "Sparrow"
         installerName = "Sparrow"
         appVersion = "${sparrowVersion}"
-        skipInstaller = os.macOsX
+        skipInstaller = os.macOsX || properties.skipInstallers
         imageOptions = []
         installerOptions = ['--file-associations', 'src/main/deploy/psbt.properties', '--file-associations', 'src/main/deploy/txn.properties', '--file-associations', 'src/main/deploy/bitcoin.properties', '--file-associations', 'src/main/deploy/aopp.properties', '--license-file', 'LICENSE']
         if(os.windows) {

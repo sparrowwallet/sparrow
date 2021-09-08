@@ -115,7 +115,7 @@ public class AddressesController extends WalletFormController implements Initial
         fileChooser.setTitle("Export Addresses to CSV");
         fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + "-" + keyPurpose.name().toLowerCase() + "-addresses.csv");
 
-        boolean whirlpoolMixWallet = getWalletForm().getWallet().isWhirlpoolMixWallet();
+        boolean whirlpoolChildWallet = getWalletForm().getWallet().isWhirlpoolChildWallet();
         Wallet copy = getWalletForm().getWallet().copy();
         WalletNode purposeNode = copy.getNode(keyPurpose);
         purposeNode.fillToIndex(Math.max(purposeNode.getChildren().size(), DEFAULT_EXPORT_ADDRESSES_LENGTH));
@@ -128,7 +128,7 @@ public class AddressesController extends WalletFormController implements Initial
                 writer.writeRecord(new String[] {"Index", "Payment Address", "Derivation", "Label"});
                 for(WalletNode indexNode : purposeNode.getChildren()) {
                     writer.write(Integer.toString(indexNode.getIndex()));
-                    writer.write(whirlpoolMixWallet ? copy.getAddress(indexNode).toString().substring(0, 20) + "..." : copy.getAddress(indexNode).toString());
+                    writer.write(whirlpoolChildWallet ? copy.getAddress(indexNode).toString().substring(0, 20) + "..." : copy.getAddress(indexNode).toString());
                     writer.write(getDerivationPath(indexNode));
                     Optional<Entry> optLabelEntry = getWalletForm().getNodeEntry(keyPurpose).getChildren().stream()
                             .filter(entry -> ((NodeEntry)entry).getNode().getIndex() == indexNode.getIndex()).findFirst();

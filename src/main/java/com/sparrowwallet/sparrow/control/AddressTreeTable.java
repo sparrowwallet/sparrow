@@ -34,7 +34,7 @@ public class AddressTreeTable extends CoinTreeTable {
         addressCol.setSortable(false);
         getColumns().add(addressCol);
 
-        if(address != null && !rootEntry.getWallet().isWhirlpoolMixWallet()) {
+        if(address != null && !rootEntry.getWallet().isWhirlpoolChildWallet()) {
             addressCol.setMinWidth(TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0));
         }
 
