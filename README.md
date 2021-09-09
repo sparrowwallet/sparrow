@@ -23,7 +23,7 @@ When updating to the latest HEAD
 
 `git pull --recurse-submodules`
 
-The release binaries are reproducible (pre codesigning and installer packaging at this time).
+The release binaries are reproducible from v1.5.0 onwards (pre codesigning and installer packaging). More detailed [instructions on reproducing the binaries](docs/reproducible.md) are provided.
 
 ## Running
 
