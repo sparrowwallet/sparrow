@@ -32,7 +32,7 @@ sudo apt update -y
 sudo apt-get install -y adoptopenjdk-16-hotspot=16.0.1+9-3
 ```
 
-A alternative option for all platforms is to use the [sdkman.io](sdkman.io) package manager ([Git Bash for Windows](https://git-scm.com/download/win) is a good choice on that platform).
+A alternative option for all platforms is to use the [sdkman.io](https://sdkman.io/) package manager ([Git Bash for Windows](https://git-scm.com/download/win) is a good choice on that platform).
 See the installation [instructions here](https://sdkman.io/install).
 Once installed, run
 ```shell
