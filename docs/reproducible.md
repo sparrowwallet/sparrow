@@ -28,6 +28,7 @@ gpg --no-default-keyring --keyring ./adoptopenjdk-keyring.gpg --import public
 gpg --no-default-keyring --keyring ./adoptopenjdk-keyring.gpg --export --output adoptopenjdk-archive-keyring.gpg
 rm adoptopenjdk-keyring.gpg
 sudo mv adoptopenjdk-archive-keyring.gpg /usr/share/keyrings
+echo "deb [signed-by=/usr/share/keyrings/adoptopenjdk-archive-keyring.gpg] https://adoptopenjdk.jfrog.io/adoptopenjdk/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/adoptopenjdk.list
 sudo apt update -y
 sudo apt-get install -y adoptopenjdk-16-hotspot=16.0.1+9-3
 ```
@@ -43,7 +44,7 @@ sdk install java 16.0.1.hs-adpt
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
 ```shell
-sudo apt install -y rpm
+sudo apt install -y rpm fakeroot binutils
 ```
 
 #### Building the binaries
