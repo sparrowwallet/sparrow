@@ -73,6 +73,11 @@ public class WalletController extends WalletFormController implements Initializa
             }
         });
 
+        for(Toggle toggle : walletMenu.getToggles()) {
+            ToggleButton toggleButton = (ToggleButton) toggle;
+            toggleButton.managedProperty().bind(toggleButton.visibleProperty());
+        }
+
         configure(walletForm.getWallet());
     }
 
@@ -90,7 +95,8 @@ public class WalletController extends WalletFormController implements Initializa
                     toggle.setSelected(true);
                 }
 
-                ((ToggleButton)toggle).setDisable(!validWallet || (whirlpoolChildWallet && toggle.getUserData().equals(Function.RECEIVE)));
+                ((ToggleButton)toggle).setDisable(!validWallet);
+                ((ToggleButton)toggle).setVisible(!(whirlpoolChildWallet && toggle.getUserData().equals(Function.RECEIVE)));
             }
         }
     }
