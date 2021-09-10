@@ -51,8 +51,7 @@ sudo apt install -y rpm
 The project can cloned for a specific release tag as follows:
 ```shell
 GIT_TAG="1.5.0-beta1"
-git clone --recursive git@github.com:sparrowwallet/sparrow.git
-git checkout --quiet "${GIT_TAG}"
+git clone --recursive --branch "${GIT_TAG}" git@github.com:sparrowwallet/sparrow.git
 ```
 
 Thereafter, building should be straightforward:
