@@ -16,7 +16,7 @@ import com.samourai.whirlpool.client.wallet.WhirlpoolWalletService;
 import com.samourai.whirlpool.client.wallet.beans.*;
 import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersisterFactory;
 import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceFactory;
-import com.samourai.whirlpool.client.wallet.data.pool.PoolData;
+import com.samourai.whirlpool.client.wallet.data.pool.ExpirablePoolSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxo.UtxoSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfig;
 import com.samourai.whirlpool.client.whirlpool.ServerApi;
@@ -25,7 +25,6 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -69,6 +68,9 @@ public class Whirlpool {
     private final TorClientService torClientService;
     private final WhirlpoolWalletService whirlpoolWalletService;
     private final WhirlpoolWalletConfig config;
+    private Tx0ParamService tx0ParamService;
+    private ExpirablePoolSupplier poolSupplier;
+    private Tx0Service tx0Service;
     private HD_Wallet hdWallet;
     private String walletId;
     private String mixToWalletId;
@@ -84,6 +86,9 @@ public class Whirlpool {
 
         this.whirlpoolWalletService = new WhirlpoolWalletService();
         this.config = computeWhirlpoolWalletConfig(torProxy);
+        this.tx0ParamService = new Tx0ParamService(SparrowMinerFeeSupplier.getInstance(), config);
+        this.poolSupplier = new ExpirablePoolSupplier(config.getRefreshPoolsDelay(), config.getServerApi(), tx0ParamService);
+        this.tx0Service = new Tx0Service(config);
 
         WhirlpoolEventService.getInstance().register(this);
     }
@@ -98,26 +103,23 @@ public class Whirlpool {
 
         WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(dataSourceFactory, httpClientService, stompClientService, torClientService, serverApi, whirlpoolServer.getParams(), false);
         whirlpoolWalletConfig.setDataPersisterFactory(dataPersisterFactory);
-
+        whirlpoolWalletConfig.setPartner("SPARROW");
         return whirlpoolWalletConfig;
     }
 
     public Collection<Pool> getPools() throws Exception {
-        Tx0ParamService tx0ParamService = getTx0ParamService();
-        PoolData poolData = new PoolData(config.getServerApi().fetchPools(), tx0ParamService);
-        return poolData.getPools();
+        this.poolSupplier.load();
+        return poolSupplier.getPools();
     }
 
     public Tx0Preview getTx0Preview(Pool pool, Collection<UnspentOutput> utxos) throws Exception {
-        Tx0Config tx0Config = new Tx0Config();
-        tx0Config.setChangeWallet(WhirlpoolAccount.BADBANK);
-        Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
-        Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
+        // preview all pools
+        Tx0Config tx0Config = computeTx0Config();
+        Tx0Previews tx0Previews = tx0Service.tx0Previews(utxos, tx0Config);
 
-        Tx0ParamService tx0ParamService = getTx0ParamService();
-
-        Tx0Service tx0Service = new Tx0Service(config);
-        return tx0Service.tx0Preview(utxos, tx0Config, tx0ParamService.getTx0Param(pool, tx0FeeTarget, mixFeeTarget));
+        // pool preview
+        String poolId = pool.getPoolId();
+        return tx0Previews.getTx0Preview(poolId);
     }
 
     public Tx0 broadcastTx0(Pool pool, Collection<BlockTransactionHashIndex> utxos) throws Exception {
@@ -130,17 +132,14 @@ public class Whirlpool {
             throw new IllegalStateException("Failed to find UTXOs in Whirlpool wallet");
         }
 
-        Tx0Config tx0Config = new Tx0Config();
-        tx0Config.setChangeWallet(WhirlpoolAccount.BADBANK);
-        Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
-        Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
-
-        return whirlpoolWallet.tx0(whirlpoolUtxos, pool, tx0Config, tx0FeeTarget, mixFeeTarget);
+        Tx0Config tx0Config = computeTx0Config();
+        return whirlpoolWallet.tx0(whirlpoolUtxos, pool, tx0Config);
     }
 
-    private Tx0ParamService getTx0ParamService() {
-        SparrowMinerFeeSupplier minerFeeSupplier = SparrowMinerFeeSupplier.getInstance();
-        return new Tx0ParamService(minerFeeSupplier, config);
+    private Tx0Config computeTx0Config() {
+        Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
+        Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
+        return new Tx0Config(tx0ParamService, poolSupplier, tx0FeeTarget, mixFeeTarget, WhirlpoolAccount.BADBANK);
     }
 
     public void setHDWallet(String walletId, Wallet wallet) {
