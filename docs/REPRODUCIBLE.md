@@ -35,24 +35,37 @@ For reference, the downloads are as follows on the [adoptopenjdk github release 
 
 #### Download from terminal for *nix systems
 
-Set your operating system (mac|linux):
+Set your operating system [mac|linux|alpine-linux|aix]:
 ```shell
 OPERATING_SYSTEM=linux
 ```
 
-Download from terminal
+Set the building machine architecture:
+linux=[x64|arm|aarch64|ppc64le|ppc64|s390x]
+aix=[ppc64]
+mac=[x64]
 ```shell
-wget https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_x64_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_VERSION}.tar.gz
-wget https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_x64_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_VERSION}.tar.gz.sha256.txt
+ARCHITECTURE=x64
+```
+
+Download AdoptOpenJDK to the `/tmp` folder:
+```shell
+wget -q --show-progress -P /tmp/ https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_${ARCHITECTURE}_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_UNDERLINE_VERSION}.tar.gz
+wget -q --show-progress -P /tmp/  https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_${ARCHITECTURE}_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_UNDERLINE_VERSION}.tar.gz.sha256.txt
+```
+
+Check if the hash of the `tar.gz` is correct (*OK* is what you need):
+```shell
+sha256sum -c /tmp/OpenJDK16U-jdk_${ARCHITECTURE}_linux_hotspot_${ADOPTOPENJDK_UNDERLINE_VERSION}.tar.gz.sha256.txt
 ```
 
 ### Package manager
 
-AdoptOpenJDK RPM and DEB packages are available with the [latest install guide](https://adoptopenjdk.net/installation.html?variant=openjdk16&jvmVariant=hotspot#linux-pkg).
+AdoptOpenJDK RPM and DEB packages are available on [adoptopenjdk.net latest install guide](https://adoptopenjdk.net/installation.html?variant=openjdk16&jvmVariant=hotspot#linux-pkg).
 
 #### APT
 
-Debian:
+Debian and Ubuntu:
 ```shell
 sudo apt update -y
 sudo apt-get install -y wget gnupg apt-transport-https
@@ -81,7 +94,7 @@ EOF
 sudo yum install -y adoptopenjdk-${ADOPTOPENJDK_MAJOR_VERSION}-hotspot=${ADOPTOPENJDK_FULL_VERSION}
 ```
 
-openSUSES and SLES:
+openSUSE and SLES:
 ```shell
 sudo zypper ar -f http://adoptopenjdk.jfrog.io/adoptopenjdk/rpm/opensuse/15.0/$(uname -m) adoptopenjdk
 sudo zypper install -y adoptopenjdk-${ADOPTOPENJDK_MAJOR_VERSION}-hotspot=${ADOPTOPENJDK_FULL_VERSION}
@@ -133,23 +146,26 @@ The binaries (and installers) will be placed in the `build/jpackage` folder.
 
 ### Verifying if the binaries are identical
 
-Note that you will be verifying the files in the `build/jpackage/Sparrow` folder against either the `.tar.gz` or `.zip` releases.
-Download either of these depending on your platform and extract the contents to a folder (in the following example, `/tmp`).
-Then compare all of the folders and files recursively:
+Note: If you encounter any errors on the following steps, you should not procede until it is resolved.
 
 Import the maintainer PGP public key (Fingerperint: *E946 1833 4C67 4B40*:
 ```shell
 curl -sS https://keybase.io/craigraw/pgp_keys.asc | gpg --import
 ```
 
-Download the binaries, manifest and signed manifest that are available on the [releases page](https://github.com/sparrowwallet/sparrow/releases):
+Download the binaries, manifest and signed manifest that are available on the [releases page](https://github.com/sparrowwallet/sparrow/releases) (will download in the `/tmp` folder):
 ```shell
 wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}"-manifest.txt
 wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}"-manifest.txt.asc
 wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}".tar.gz
 ```
 
-Verify if the manifest authenticity (*Good signaure* is what you need):
+Download the compressed binaries [tar.gz|zip]:
+```shell
+COMPRESSION_METHOD="tar.gz"
+wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}".${COMPRESSION_METHOD}
+
+Verify the manifest authenticity (*Good signaure* is what you need):
 ```shell
 gpg --verify /tmp/sparrow-${GIT_TAG}-manifest.txt.asc /tmp/sparrow-${GIT_TAG}-manifest.txt
 ```
@@ -159,12 +175,17 @@ Check if the hash of the `.tar.gz` is correct (*OK* is what you need):
 sha256sum -c /tmp/sparrow-"${GIT_TAG}"-manifest.txt --ignore-missing
 ```
 
-Extract the archive:
+Extract the archive with:
+* tar:
 ```shell
-tar -xf /tmp/sparrow-"${GIT_TAG}".tar.gz
+sudo tar -xf /tmp/sparrow-"${GIT_TAG}".tar.gz
+```
+* unzip:
+```shell
+sudo unzip -q /tmp/sparrow-"${GIT_TAG}".zip
 ```
 
-Compare the built binaries (this command should have no output indicating that the two folders and all their contents are identical):
+Compare recursively the files in the `build/jpackage/Sparrow` folder against either the uncompressed releases. This command should have no output indicating that the two folders and all their contents are identical: 
 ```shell
 diff -r build/jpackage/Sparrow /tmp/Sparrow
 ```
