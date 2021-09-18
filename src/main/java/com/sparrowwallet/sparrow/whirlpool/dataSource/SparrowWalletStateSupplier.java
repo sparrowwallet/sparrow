@@ -90,11 +90,6 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
     }
 
     @Override
-    public void setWalletIndex(WhirlpoolAccount whirlpoolAccount, AddressType addressType, Chain chain, int i) throws Exception {
-        // nothing required
-    }
-
-    @Override
     public void load() throws Exception {
         // nothing required
     }

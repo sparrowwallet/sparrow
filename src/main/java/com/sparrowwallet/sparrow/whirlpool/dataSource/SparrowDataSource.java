@@ -158,9 +158,8 @@ public class SparrowDataSource extends WalletResponseDataSource {
         walletResponse.info.latest_block.time = AppServices.getLatestBlockHeader() == null ? 1 : AppServices.getLatestBlockHeader().getTime();
 
         walletResponse.info.fees = new LinkedHashMap<>();
-        MinerFee minerFee = getMinerFeeSupplier().getValue();
         for(MinerFeeTarget target : MinerFeeTarget.values()) {
-            walletResponse.info.fees.put(target.getValue(), minerFee.get(target));
+            walletResponse.info.fees.put(target.getValue(), getMinerFeeSupplier().getFee(target));
         }
 
         return walletResponse;
