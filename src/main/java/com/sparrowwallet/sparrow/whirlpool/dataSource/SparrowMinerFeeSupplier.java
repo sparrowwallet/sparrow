@@ -1,11 +1,13 @@
 package com.sparrowwallet.sparrow.whirlpool.dataSource;
 
-import com.samourai.wallet.api.backend.MinerFee;
 import com.samourai.wallet.api.backend.MinerFeeTarget;
 import com.samourai.whirlpool.client.wallet.data.minerFee.MinerFeeSupplier;
 import com.sparrowwallet.sparrow.AppServices;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class SparrowMinerFeeSupplier implements MinerFeeSupplier {
     private static final int FALLBACK_FEE_RATE = 75;
@@ -28,15 +30,6 @@ public class SparrowMinerFeeSupplier implements MinerFeeSupplier {
             return FALLBACK_FEE_RATE;
         }
         return getMinimumFeeForTarget(Integer.parseInt(feeTarget.getValue()));
-    }
-
-    @Override
-    public MinerFee getValue() {
-        Map<String, Integer> fees = new LinkedHashMap<>();
-        for (MinerFeeTarget minerFeeTarget : MinerFeeTarget.values()) {
-            fees.put(minerFeeTarget.getValue(), getFee(minerFeeTarget));
-        }
-        return new MinerFee(fees);
     }
 
     private Integer getMinimumFeeForTarget(int targetBlocks) {

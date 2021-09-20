@@ -23,7 +23,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
     private final WhirlpoolClientConfig config;
     private IIndexHandler externalIndexHandler;
 
-    public SparrowWalletStateSupplier(String walletId, WhirlpoolClientConfig config) throws Exception {
+    public SparrowWalletStateSupplier(String walletId, WhirlpoolClientConfig config) {
         this.walletId = walletId;
         this.indexHandlerWallets = new LinkedHashMap<>();
         this.config = config;
@@ -86,11 +86,6 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
 
     @Override
     public void setInitialized(boolean b) {
-        // nothing required
-    }
-
-    @Override
-    public void setWalletIndex(WhirlpoolAccount whirlpoolAccount, AddressType addressType, Chain chain, int i) throws Exception {
         // nothing required
     }
 
