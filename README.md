@@ -8,9 +8,13 @@ More information (and release binaries) can be found at https://sparrowwallet.co
 
 ## Building
 
-To clone this project, use 
+To clone this project, use
 
 `git clone --recursive git@github.com:sparrowwallet/sparrow.git`
+
+or for those without SSH credentials:
+
+`git clone --recursive https://github.com/sparrowwallet/sparrow.git`
 
 In order to build, Sparrow requires Java 16 to be installed. 
 The release binaries are built with [AdoptOpenJdk 16.0.1+9 Hotspot](https://adoptopenjdk.net/archive.html?variant=openjdk16&jvmVariant=hotspot).
