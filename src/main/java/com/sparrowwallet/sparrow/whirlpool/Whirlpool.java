@@ -112,14 +112,10 @@ public class Whirlpool {
         return poolSupplier.getPools();
     }
 
-    public Tx0Preview getTx0Preview(Pool pool, Collection<UnspentOutput> utxos) throws Exception {
+    public Tx0Previews getTx0Previews(Collection<UnspentOutput> utxos) throws Exception {
         // preview all pools
         Tx0Config tx0Config = computeTx0Config();
-        Tx0Previews tx0Previews = tx0Service.tx0Previews(utxos, tx0Config);
-
-        // pool preview
-        String poolId = pool.getPoolId();
-        return tx0Previews.getTx0Preview(poolId);
+        return tx0Service.tx0Previews(utxos, tx0Config);
     }
 
     public Tx0 broadcastTx0(Pool pool, Collection<BlockTransactionHashIndex> utxos) throws Exception {
@@ -477,28 +473,26 @@ public class Whirlpool {
         }
     }
 
-    public static class Tx0PreviewService extends Service<Tx0Preview> {
+    public static class Tx0PreviewsService extends Service<Tx0Previews> {
         private final Whirlpool whirlpool;
         private final Wallet wallet;
-        private final Pool pool;
         private final List<UtxoEntry> utxoEntries;
 
-        public Tx0PreviewService(Whirlpool whirlpool, Wallet wallet, Pool pool, List<UtxoEntry> utxoEntries) {
+        public Tx0PreviewsService(Whirlpool whirlpool, Wallet wallet, List<UtxoEntry> utxoEntries) {
             this.whirlpool = whirlpool;
             this.wallet = wallet;
-            this.pool = pool;
             this.utxoEntries = utxoEntries;
         }
 
         @Override
-        protected Task<Tx0Preview> createTask() {
+        protected Task<Tx0Previews> createTask() {
             return new Task<>() {
-                protected Tx0Preview call() throws Exception {
+                protected Tx0Previews call() throws Exception {
                     updateProgress(-1, 1);
-                    updateMessage("Fetching premix transaction...");
+                    updateMessage("Fetching premix preview...");
 
                     Collection<UnspentOutput> utxos = utxoEntries.stream().map(utxoEntry -> Whirlpool.getUnspentOutput(wallet, utxoEntry.getNode(), utxoEntry.getBlockTransaction(), (int)utxoEntry.getHashIndex().getIndex())).collect(Collectors.toList());
-                    return whirlpool.getTx0Preview(pool, utxos);
+                    return whirlpool.getTx0Previews(utxos);
                 }
             };
         }

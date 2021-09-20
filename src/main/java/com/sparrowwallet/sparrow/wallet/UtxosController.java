@@ -101,7 +101,7 @@ public class UtxosController extends WalletFormController implements Initializab
         startMix.visibleProperty().bind(stopMix.visibleProperty().not());
         stopMix.visibleProperty().addListener((observable, oldValue, newValue) -> {
             stopMix.setDisable(!newValue);
-            startMix.setDisable(newValue);
+            startMix.setDisable(newValue || !AppServices.onlineProperty().get());
         });
         mixTo.managedProperty().bind(mixTo.visibleProperty());
         mixTo.setVisible(getWalletForm().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX);
@@ -338,11 +338,17 @@ public class UtxosController extends WalletFormController implements Initializab
 
     public void showMixToDialog(ActionEvent event) {
         MixToDialog mixToDialog = new MixToDialog(getWalletForm().getWallet());
-        Optional<Boolean> optApply = mixToDialog.showAndWait();
-        if(optApply.isPresent() && optApply.get()) {
-            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
+        Optional<MixConfig> optMixConfig = mixToDialog.showAndWait();
+        if(optMixConfig.isPresent()) {
+            MixConfig changedMixConfig = optMixConfig.get();
             MixConfig mixConfig = getWalletForm().getWallet().getMasterMixConfig();
 
+            mixConfig.setMixToWalletName(changedMixConfig.getMixToWalletName());
+            mixConfig.setMixToWalletFile(changedMixConfig.getMixToWalletFile());
+            mixConfig.setMinMixes(changedMixConfig.getMinMixes());
+            EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
+
+            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
             try {
                 String mixToWalletId = AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(mixConfig);
                 whirlpool.setMixToWallet(mixToWalletId, mixConfig.getMinMixes());

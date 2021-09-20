@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.whirlpool;
 
 import com.samourai.whirlpool.client.tx0.Tx0Preview;
+import com.samourai.whirlpool.client.tx0.Tx0Previews;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -77,6 +78,7 @@ public class WhirlpoolController {
     private Wallet wallet;
     private MixConfig mixConfig;
     private List<UtxoEntry> utxoEntries;
+    private Tx0Previews tx0Previews;
     private final ObjectProperty<Tx0Preview> tx0PreviewProperty = new SimpleObjectProperty<>(null);
 
     public void initializeView(String walletId, Wallet wallet, List<UtxoEntry> utxoEntries) {
@@ -100,6 +102,8 @@ public class WhirlpoolController {
             return change;
         }));
         scode.textProperty().addListener((observable, oldValue, newValue) -> {
+            pool.setItems(FXCollections.emptyObservableList());
+            tx0PreviewProperty.set(null);
             mixConfig.setScode(newValue);
             EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
         });
@@ -151,6 +155,21 @@ public class WhirlpoolController {
         nbOutputs.managedProperty().bind(nbOutputs.visibleProperty());
         nbOutputsLoading.visibleProperty().bind(nbOutputs.visibleProperty().not());
         nbOutputs.setVisible(false);
+
+        tx0PreviewProperty.addListener((observable, oldValue, tx0Preview) -> {
+            if(tx0Preview == null) {
+                nbOutputsBox.setVisible(true);
+                nbOutputsLoading.setText("Calculating...");
+                nbOutputs.setVisible(false);
+                discountFeeBox.setVisible(false);
+            } else {
+                discountFeeBox.setVisible(tx0Preview.getPool().getFeeValue() != tx0Preview.getTx0Data().getFeeValue());
+                discountFee.setValue(tx0Preview.getTx0Data().getFeeValue());
+                nbOutputsBox.setVisible(true);
+                nbOutputs.setText(tx0Preview.getNbPremix() + " UTXOs");
+                nbOutputs.setVisible(true);
+            }
+        });
     }
 
     public boolean next() {
@@ -240,34 +259,36 @@ public class WhirlpoolController {
         }
 
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
-        whirlpool.setScode(mixConfig.getScode());
-
-        Whirlpool.Tx0PreviewService tx0PreviewService = new Whirlpool.Tx0PreviewService(whirlpool, wallet, pool, utxoEntries);
-        tx0PreviewService.setOnRunning(workerStateEvent -> {
-            nbOutputsBox.setVisible(true);
-            nbOutputsLoading.setText("Calculating...");
-            nbOutputs.setVisible(false);
-            discountFeeBox.setVisible(false);
-            tx0PreviewProperty.set(null);
-        });
-        tx0PreviewService.setOnSucceeded(workerStateEvent -> {
-            Tx0Preview tx0Preview = tx0PreviewService.getValue();
-            discountFeeBox.setVisible(tx0Preview.getPool().getFeeValue() != tx0Preview.getTx0Data().getFeeValue());
-            discountFee.setValue(tx0Preview.getTx0Data().getFeeValue());
-            nbOutputsBox.setVisible(true);
-            nbOutputs.setText(tx0Preview.getNbPremix() + " UTXOs");
-            nbOutputs.setVisible(true);
+        if(tx0Previews != null && mixConfig.getScode().equals(whirlpool.getScode())) {
+            Tx0Preview tx0Preview = tx0Previews.getTx0Preview(pool.getPoolId());
             tx0PreviewProperty.set(tx0Preview);
-        });
-        tx0PreviewService.setOnFailed(workerStateEvent -> {
-            Throwable exception = workerStateEvent.getSource().getException();
-            while(exception.getCause() != null) {
-                exception = exception.getCause();
-            }
+        } else {
+            tx0Previews = null;
+            whirlpool.setScode(mixConfig.getScode());
 
-            nbOutputsLoading.setText("Error fetching fee: " + exception.getMessage());
-        });
-        tx0PreviewService.start();
+            Whirlpool.Tx0PreviewsService tx0PreviewsService = new Whirlpool.Tx0PreviewsService(whirlpool, wallet, utxoEntries);
+            tx0PreviewsService.setOnRunning(workerStateEvent -> {
+                nbOutputsBox.setVisible(true);
+                nbOutputsLoading.setText("Calculating...");
+                nbOutputs.setVisible(false);
+                discountFeeBox.setVisible(false);
+                tx0PreviewProperty.set(null);
+            });
+            tx0PreviewsService.setOnSucceeded(workerStateEvent -> {
+                tx0Previews = tx0PreviewsService.getValue();
+                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(pool.getPoolId());
+                tx0PreviewProperty.set(tx0Preview);
+            });
+            tx0PreviewsService.setOnFailed(workerStateEvent -> {
+                Throwable exception = workerStateEvent.getSource().getException();
+                while(exception.getCause() != null) {
+                    exception = exception.getCause();
+                }
+
+                nbOutputsLoading.setText("Error fetching fee: " + exception.getMessage());
+            });
+            tx0PreviewsService.start();
+        }
     }
 
     public ObjectProperty<Tx0Preview> getTx0PreviewProperty() {

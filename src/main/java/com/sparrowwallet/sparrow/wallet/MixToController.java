@@ -1,12 +1,11 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.WalletMasterMixConfigChangedEvent;
+import com.sparrowwallet.sparrow.event.MixToConfigChangedEvent;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -31,13 +30,15 @@ public class MixToController implements Initializable {
     @FXML
     private Spinner<Integer> minMixes;
 
+    private MixConfig mixConfig;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
 
     }
 
     public void initializeView(Wallet wallet) {
-        MixConfig mixConfig = wallet.getMasterMixConfig();
+        mixConfig = wallet.getMasterMixConfig().copy();
 
         List<Wallet> allWallets = new ArrayList<>();
         allWallets.add(NONE_WALLET);
@@ -71,14 +72,18 @@ public class MixToController implements Initializable {
                 mixConfig.setMixToWalletFile(AppServices.get().getOpenWallets().get(newValue).getWalletFile());
             }
 
-            EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
+            EventManager.get().post(new MixToConfigChangedEvent(wallet));
         });
 
         int initialMinMixes = mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes();
         minMixes.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10000, initialMinMixes));
         minMixes.valueProperty().addListener((observable, oldValue, newValue) -> {
             mixConfig.setMinMixes(newValue);
-            EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
+            EventManager.get().post(new MixToConfigChangedEvent(wallet));
         });
+    }
+
+    public MixConfig getMixConfig() {
+        return mixConfig;
     }
 }

@@ -1,10 +1,11 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.WalletMixConfigChangedEvent;
+import com.sparrowwallet.sparrow.event.MixToConfigChangedEvent;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
@@ -13,7 +14,7 @@ import org.controlsfx.tools.Borders;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 
-public class MixToDialog extends Dialog<Boolean> {
+public class MixToDialog extends Dialog<MixConfig> {
     private final Wallet wallet;
     private final Button applyButton;
 
@@ -47,7 +48,7 @@ public class MixToDialog extends Dialog<Boolean> {
             dialogPane.setPrefHeight(300);
             AppServices.moveToActiveWindowScreen(this);
 
-            setResultConverter(dialogButton -> dialogButton == applyButtonType);
+            setResultConverter(dialogButton -> dialogButton == applyButtonType ? mixToController.getMixConfig() : null);
 
             setOnCloseRequest(event -> {
                 EventManager.get().unregister(this);
@@ -60,8 +61,8 @@ public class MixToDialog extends Dialog<Boolean> {
     }
 
     @Subscribe
-    public void walletMixConfigChanged(WalletMixConfigChangedEvent event) {
-        if(event.getWallet() == (wallet.isMasterWallet() ? wallet : wallet.getMasterWallet())) {
+    public void mixToConfigChanged(MixToConfigChangedEvent event) {
+        if(event.getWallet() == wallet) {
             applyButton.setDisable(false);
         }
     }
