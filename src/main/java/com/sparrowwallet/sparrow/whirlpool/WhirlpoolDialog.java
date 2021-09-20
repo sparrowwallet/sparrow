@@ -26,7 +26,7 @@ public class WhirlpoolDialog extends Dialog<Tx0Preview> {
             whirlpoolController.initializeView(walletId, wallet, utxoEntries);
 
             dialogPane.setPrefWidth(600);
-            dialogPane.setPrefHeight(550);
+            dialogPane.setPrefHeight(570);
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());

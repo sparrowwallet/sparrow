@@ -22,7 +22,7 @@
                 <Image url="/image/whirlpool.png" requestedWidth="50" requestedHeight="50" smooth="false" />
             </ImageView>
         </HBox>
-        <VBox fx:id="whirlpoolBox" styleClass="content-area" spacing="20" prefHeight="370">
+        <VBox fx:id="whirlpoolBox" styleClass="content-area" spacing="20" prefHeight="390">
             <VBox fx:id="step1" spacing="15">
                 <Label text="Introduction" styleClass="title-text">
                     <graphic>
