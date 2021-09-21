@@ -1,0 +1,88 @@
+package com.sparrowwallet.sparrow.control;
+
+import com.google.common.net.HostAndPort;
+import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
+import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.scene.Group;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
+import javafx.scene.control.Tooltip;
+import javafx.util.Duration;
+import org.controlsfx.glyphfont.Glyph;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.Socket;
+
+public class TorStatusLabel extends Label {
+    private static final Logger log = LoggerFactory.getLogger(TorStatusLabel.class);
+
+    private final TorConnectionTest torConnectionTest = new TorConnectionTest();
+
+    public TorStatusLabel() {
+        getStyleClass().add("tor-status");
+        setPadding(new Insets(1, 0, 0, 3));
+        setGraphic(getIcon());
+        update();
+    }
+
+    public void update() {
+        boolean proxyInUse = AppServices.isUsingProxy();
+        boolean internal = AppServices.isTorRunning();
+
+        if(!proxyInUse || internal) {
+            torConnectionTest.cancel();
+            if(internal) {
+                setTooltip(new Tooltip("Internal Tor proxy enabled"));
+            }
+        } else if(!torConnectionTest.isRunning()) {
+            torConnectionTest.setPeriod(Duration.seconds(20.0));
+            torConnectionTest.setOnSucceeded(workerStateEvent -> {
+                getStyleClass().remove("failure");
+                setTooltip(new Tooltip("External Tor proxy enabled"));
+            });
+            torConnectionTest.setOnFailed(workerStateEvent -> {
+                if(!getStyleClass().contains("failure")) {
+                    getStyleClass().add("failure");
+                }
+                setTooltip(new Tooltip("External Tor proxy error: " + workerStateEvent.getSource().getException().getMessage()));
+                log.warn("Failed to connect to external Tor proxy: " + workerStateEvent.getSource().getException().getMessage());
+            });
+            torConnectionTest.start();
+        }
+    }
+
+    private Node getIcon() {
+        Glyph adjust = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ADJUST);
+        adjust.setFontSize(15);
+        adjust.setRotate(180);
+
+        Glyph bullseye = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.BULLSEYE);
+        bullseye.setFontSize(14);
+
+        Group group = new Group();
+        group.getChildren().addAll(adjust, bullseye);
+
+        return group;
+    }
+
+    private static class TorConnectionTest extends ScheduledService<Void> {
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                protected Void call() throws IOException {
+                    HostAndPort proxyHostAndPort = HostAndPort.fromString(Config.get().getProxyServer());
+                    Socket socket = new Socket(proxyHostAndPort.getHost(), proxyHostAndPort.getPort());
+                    socket.close();
+
+                    return null;
+                }
+            };
+        }
+    }
+}

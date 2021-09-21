@@ -87,6 +87,10 @@
     -fx-fill: #e06c75;
 }
 
+.status-bar .tor-status.failure .glyph-font {
+    -fx-text-fill: #e06c75;
+}
+
 .root .titled-description-pane .status-error .text, .root .titled-description-pane .description-error .text {
     -fx-fill: #e06c75;
 }

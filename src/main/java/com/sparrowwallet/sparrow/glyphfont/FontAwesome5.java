@@ -15,6 +15,7 @@ public class FontAwesome5 extends GlyphFont {
      * The individual glyphs offered by the FontAwesome5 font.
      */
     public static enum Glyph implements INamedCharacter {
+        ADJUST('\uf042'),
         ARROW_CIRCLE_DOWN('\uf0ab'),
         ANGLE_DOUBLE_RIGHT('\uf101'),
         ARROW_DOWN('\uf063'),
@@ -22,6 +23,7 @@ public class FontAwesome5 extends GlyphFont {
         BAN('\uf05e'),
         BIOHAZARD('\uf780'),
         BTC('\uf15a'),
+        BULLSEYE('\uf140'),
         CAMERA('\uf030'),
         CHECK_CIRCLE('\uf058'),
         CIRCLE('\uf111'),

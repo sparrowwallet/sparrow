@@ -1602,6 +1602,29 @@ public class AppController implements Initializable {
         tabLabel.getGraphic().getStyleClass().remove("failure");
     }
 
+    private void setTorIcon() {
+        TorStatusLabel torStatusLabel = null;
+        for(Node node : statusBar.getRightItems()) {
+            if(node instanceof TorStatusLabel) {
+                torStatusLabel = (TorStatusLabel)node;
+            }
+        }
+
+        if(!AppServices.isUsingProxy()) {
+            if(torStatusLabel != null) {
+                torStatusLabel.update();
+                statusBar.getRightItems().removeAll(torStatusLabel);
+            }
+        } else {
+            if(torStatusLabel == null) {
+                torStatusLabel = new TorStatusLabel();
+                statusBar.getRightItems().add(Math.max(statusBar.getRightItems().size() - 2, 0), torStatusLabel);
+            } else {
+                torStatusLabel.update();
+            }
+        }
+    }
+
     @Subscribe
     public void themeChanged(ThemeChangedEvent event) {
         String darkCss = getClass().getResource("darktheme.css").toExternalForm();
@@ -1859,6 +1882,7 @@ public class AppController implements Initializable {
         String status = CONNECTION_FAILED_PREFIX + event.getMessage();
         statusUpdated(new StatusEvent(status));
         serverToggleStopAnimation();
+        setTorIcon();
     }
 
     @Subscribe
@@ -1867,6 +1891,7 @@ public class AppController implements Initializable {
         statusUpdated(new StatusEvent(status));
         setServerToggleTooltip(event.getBlockHeight());
         serverToggleStopAnimation();
+        setTorIcon();
     }
 
     @Subscribe
@@ -1993,18 +2018,21 @@ public class AppController implements Initializable {
     public void torBootStatus(TorBootStatusEvent event) {
         serverToggle.setDisable(true);
         statusUpdated(new StatusEvent(event.getStatus(), 120));
+        setTorIcon();
     }
 
     @Subscribe
     public void torFailedStatus(TorFailedStatusEvent event) {
         serverToggle.setDisable(false);
         statusUpdated(new StatusEvent(event.getStatus()));
+        setTorIcon();
     }
 
     @Subscribe
     public void torReadyStatus(TorReadyStatusEvent event) {
         serverToggle.setDisable(false);
         statusUpdated(new StatusEvent(event.getStatus()));
+        setTorIcon();
     }
 
     @Subscribe

@@ -119,6 +119,11 @@ public class AppServices {
         public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean online) {
             if(online) {
                 if(Config.get().requiresInternalTor() && !isTorRunning()) {
+                    if(torService.getState() == Worker.State.SCHEDULED) {
+                        torService.cancel();
+                        torService.reset();
+                    }
+
                     torService.start();
                 } else {
                     restartServices();

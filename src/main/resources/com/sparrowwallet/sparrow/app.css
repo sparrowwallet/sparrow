@@ -24,6 +24,10 @@
     -fx-text-fill: rgb(202, 18, 67);
 }
 
+.tor-status.failure .glyph-font {
+    -fx-text-fill: rgb(202, 18, 67);
+}
+
 .master-only {
     -fx-tab-max-height: 0;
 }
