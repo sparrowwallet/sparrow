@@ -76,6 +76,7 @@ public class Whirlpool {
     private String mixToWalletId;
 
     private final BooleanProperty startingProperty = new SimpleBooleanProperty(false);
+    private final BooleanProperty stoppingProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
     public Whirlpool(Network network, HostAndPort torProxy) {
@@ -408,6 +409,14 @@ public class Whirlpool {
         return startingProperty;
     }
 
+    public boolean isStopping() {
+        return stoppingProperty.get();
+    }
+
+    public BooleanProperty stoppingProperty() {
+        return stoppingProperty;
+    }
+
     @Subscribe
     public void onMixSuccess(MixSuccessEvent e) {
         WalletUtxo walletUtxo = getUtxo(e.getWhirlpoolUtxo());
@@ -547,8 +556,8 @@ public class Whirlpool {
                     WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
                     if(AppServices.onlineProperty().get()) {
                         whirlpoolWallet.start();
-                        whirlpool.startingProperty.set(false);
                     }
+                    whirlpool.startingProperty.set(false);
 
                     return whirlpoolWallet;
                 }
@@ -569,8 +578,9 @@ public class Whirlpool {
                 protected Boolean call() throws Exception {
                     updateProgress(-1, 1);
                     updateMessage("Disconnecting from Whirlpool...");
-
+                    whirlpool.stoppingProperty.set(true);
                     whirlpool.shutdown();
+                    whirlpool.stoppingProperty.set(false);
                     return true;
                 }
             };
@@ -590,15 +600,17 @@ public class Whirlpool {
                 protected Boolean call() throws Exception {
                     updateProgress(-1, 1);
                     updateMessage("Disconnecting from Whirlpool...");
+                    whirlpool.stoppingProperty.set(true);
                     whirlpool.shutdown();
+                    whirlpool.stoppingProperty.set(false);
 
                     updateMessage("Starting Whirlpool...");
                     whirlpool.startingProperty.set(true);
                     WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
                     if(AppServices.onlineProperty().get()) {
                         whirlpoolWallet.start();
-                        whirlpool.startingProperty.set(false);
                     }
+                    whirlpool.startingProperty.set(false);
 
                     return true;
                 }

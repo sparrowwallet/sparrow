@@ -79,7 +79,14 @@ public class UtxosController extends WalletFormController implements Initializab
     };
 
     private final ChangeListener<Boolean> mixingStartingListener = (observable, oldValue, newValue) -> {
-        startMix.setDisable(newValue);
+        startMix.setDisable(newValue || !AppServices.onlineProperty().get());
+        Platform.runLater(() -> startMix.setText(newValue && AppServices.onlineProperty().get() ? "Starting Mixing..." : "Start Mixing"));
+        mixTo.setDisable(newValue);
+    };
+
+    private final ChangeListener<Boolean> mixingStoppingListener = (observable, oldValue, newValue) -> {
+        startMix.setDisable(newValue || !AppServices.onlineProperty().get());
+        Platform.runLater(() -> startMix.setText(newValue ? "Stopping Mixing..." : "Start Mixing"));
         mixTo.setDisable(newValue);
     };
 
@@ -101,7 +108,6 @@ public class UtxosController extends WalletFormController implements Initializab
         startMix.visibleProperty().bind(stopMix.visibleProperty().not());
         stopMix.visibleProperty().addListener((observable, oldValue, newValue) -> {
             stopMix.setDisable(!newValue);
-            startMix.setDisable(newValue || !AppServices.onlineProperty().get());
         });
         mixTo.managedProperty().bind(mixTo.visibleProperty());
         mixTo.setVisible(getWalletForm().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX);
@@ -111,6 +117,7 @@ public class UtxosController extends WalletFormController implements Initializab
             if(whirlpool != null) {
                 stopMix.visibleProperty().bind(whirlpool.mixingProperty());
                 whirlpool.startingProperty().addListener(new WeakChangeListener<>(mixingStartingListener));
+                whirlpool.stoppingProperty().addListener(new WeakChangeListener<>(mixingStoppingListener));
                 updateMixToButton();
             }
         }
@@ -322,7 +329,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     public void stopMixing(ActionEvent event) {
         stopMix.setDisable(true);
-        startMix.setDisable(false);
+        startMix.setDisable(!AppServices.onlineProperty().get());
 
         getWalletForm().getWallet().getMasterMixConfig().setMixOnStartup(Boolean.FALSE);
         EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
