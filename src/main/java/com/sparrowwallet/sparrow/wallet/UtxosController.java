@@ -133,7 +133,7 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private boolean canWalletMix() {
-        return Network.get() == Network.TESTNET && getWalletForm().getWallet().getKeystores().size() == 1 && getWalletForm().getWallet().getKeystores().get(0).hasSeed() && !getWalletForm().getWallet().isWhirlpoolMixWallet();
+        return getWalletForm().getWallet().getKeystores().size() == 1 && getWalletForm().getWallet().getKeystores().get(0).hasSeed() && !getWalletForm().getWallet().isWhirlpoolMixWallet();
     }
 
     private void updateButtons(BitcoinUnit unit) {

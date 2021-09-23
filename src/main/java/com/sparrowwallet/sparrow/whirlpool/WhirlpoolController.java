@@ -217,17 +217,22 @@ public class WhirlpoolController {
 
     private void fetchPools() {
         long totalUtxoValue = utxoEntries.stream().mapToLong(Entry::getValue).sum();
-        Whirlpool.PoolsService poolsService = new Whirlpool.PoolsService(AppServices.getWhirlpoolServices().getWhirlpool(walletId));
+        Whirlpool.PoolsService poolsService = new Whirlpool.PoolsService(AppServices.getWhirlpoolServices().getWhirlpool(walletId), totalUtxoValue);
         poolsService.setOnSucceeded(workerStateEvent -> {
-            List<Pool> availablePools = poolsService.getValue().stream().filter(pool1 -> totalUtxoValue >= (pool1.getPremixValueMin() + pool1.getFeeValue())).toList();
+            List<Pool> availablePools = poolsService.getValue().stream().toList();
             if(availablePools.isEmpty()) {
                 pool.setVisible(false);
-                OptionalLong optMinValue = poolsService.getValue().stream().mapToLong(pool1 -> pool1.getPremixValueMin() + pool1.getFeeValue()).min();
-                if(optMinValue.isPresent()) {
-                    String satsValue = String.format(Locale.ENGLISH, "%,d", optMinValue.getAsLong()) + " sats";
-                    String btcValue = CoinLabel.BTC_FORMAT.format((double)optMinValue.getAsLong() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
-                    poolInsufficient.setText("No available pools. Select a value over " + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + ".");
-                }
+
+                Whirlpool.PoolsService allPoolsService = new Whirlpool.PoolsService(AppServices.getWhirlpoolServices().getWhirlpool(walletId), null);
+                allPoolsService.setOnSucceeded(poolsStateEvent -> {
+                    OptionalLong optMinValue = allPoolsService.getValue().stream().mapToLong(pool1 -> pool1.getPremixValueMin() + pool1.getFeeValue()).min();
+                    if(optMinValue.isPresent() && totalUtxoValue < optMinValue.getAsLong()) {
+                        String satsValue = String.format(Locale.ENGLISH, "%,d", optMinValue.getAsLong()) + " sats";
+                        String btcValue = CoinLabel.BTC_FORMAT.format((double)optMinValue.getAsLong() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+                        poolInsufficient.setText("No available pools. Select a value over " + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + ".");
+                    }
+                });
+                allPoolsService.start();
             } else {
                 pool.setDisable(false);
                 pool.setItems(FXCollections.observableList(availablePools));
@@ -285,7 +290,7 @@ public class WhirlpoolController {
                     exception = exception.getCause();
                 }
 
-                nbOutputsLoading.setText("Error fetching fee: " + exception.getMessage());
+                nbOutputsLoading.setText("Error fetching Tx0: " + exception.getMessage());
             });
             tx0PreviewsService.start();
         }

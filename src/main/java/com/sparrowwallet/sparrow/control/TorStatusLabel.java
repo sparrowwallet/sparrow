@@ -43,6 +43,7 @@ public class TorStatusLabel extends Label {
             }
         } else if(!torConnectionTest.isRunning()) {
             torConnectionTest.setPeriod(Duration.seconds(20.0));
+            torConnectionTest.setBackoffStrategy(null);
             torConnectionTest.setOnSucceeded(workerStateEvent -> {
                 getStyleClass().remove("failure");
                 setTooltip(new Tooltip("External Tor proxy enabled"));

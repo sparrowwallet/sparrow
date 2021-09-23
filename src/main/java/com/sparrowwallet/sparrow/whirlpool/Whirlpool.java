@@ -107,9 +107,13 @@ public class Whirlpool {
         return whirlpoolWalletConfig;
     }
 
-    public Collection<Pool> getPools() throws Exception {
+    public Collection<Pool> getPools(Long totalUtxoValue) throws Exception {
         this.poolSupplier.load();
-        return poolSupplier.getPools();
+        if(totalUtxoValue == null) {
+            return poolSupplier.getPools();
+        }
+
+        return tx0ParamService.findPools(poolSupplier.getPools(), totalUtxoValue);
     }
 
     public Tx0Previews getTx0Previews(Collection<UnspentOutput> utxos) throws Exception {
@@ -458,16 +462,18 @@ public class Whirlpool {
 
     public static class PoolsService extends Service<Collection<Pool>> {
         private final Whirlpool whirlpool;
+        private final Long totalUtxoValue;
 
-        public PoolsService(Whirlpool whirlpool) {
+        public PoolsService(Whirlpool whirlpool, Long totalUtxoValue) {
             this.whirlpool = whirlpool;
+            this.totalUtxoValue = totalUtxoValue;
         }
 
         @Override
         protected Task<Collection<Pool>> createTask() {
             return new Task<>() {
                 protected Collection<Pool> call() throws Exception {
-                    return whirlpool.getPools();
+                    return whirlpool.getPools(totalUtxoValue);
                 }
             };
         }
