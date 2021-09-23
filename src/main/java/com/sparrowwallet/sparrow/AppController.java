@@ -872,15 +872,20 @@ public class AppController implements Initializable {
         if(wallet.containsPrivateKeys()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
             Wallet copy = wallet.copy();
-            for(Keystore copyKeystore : copy.getKeystores()) {
+            for(int i = 0; i < copy.getKeystores().size(); i++) {
+                Keystore copyKeystore = copy.getKeystores().get(i);
                 if(copyKeystore.hasSeed()) {
                     if(copyKeystore.getSeed().needsPassphrase()) {
-                        KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getFullName(), copyKeystore);
-                        Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
-                        if(optionalPassphrase.isPresent()) {
-                            copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
+                        if(!wallet.isMasterWallet() && wallet.getMasterWallet().getKeystores().size() == copy.getKeystores().size() && wallet.getMasterWallet().getKeystores().get(i).hasSeed()) {
+                            copyKeystore.getSeed().setPassphrase(wallet.getMasterWallet().getKeystores().get(i).getSeed().getPassphrase());
                         } else {
-                            return;
+                            KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getFullName(), copyKeystore);
+                            Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
+                            if(optionalPassphrase.isPresent()) {
+                                copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
+                            } else {
+                                return;
+                            }
                         }
                     } else {
                         copyKeystore.getSeed().setPassphrase("");
