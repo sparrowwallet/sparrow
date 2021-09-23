@@ -37,6 +37,7 @@
     <logger name="org.springframework.core.KotlinDetector" level="OFF" />
     <logger name="org.springframework.http.converter.json.Jackson2ObjectMapperBuilder" level="OFF" />
     <logger name="org.springframework.web.HttpLogging" level="OFF" />
+    <logger name="com.sparrowwallet.nightjar.stomp.JavaStompClient" level="OFF" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 
@@ -65,7 +66,7 @@
         <appender-ref ref="APPLICATION_TOR" />
     </logger>
 
-    <root level="info">
+    <root level="warn">
         <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />
     </root>

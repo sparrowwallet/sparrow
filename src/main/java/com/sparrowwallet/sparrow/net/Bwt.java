@@ -283,7 +283,7 @@ public class Bwt {
 
                         @Override
                         public void onHttpReady(String addr) {
-                            log.info("http ready at " + addr);
+                            log.debug("http ready at " + addr);
                         }
 
                         @Override

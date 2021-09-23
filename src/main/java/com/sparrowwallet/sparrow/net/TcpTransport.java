@@ -93,7 +93,7 @@ public class TcpTransport implements Transport, Closeable {
         try {
             if(!readLock.tryLock((BASE_READ_TIMEOUT_SECS[readTimeoutIndex] * 1000) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
                 readTimeoutIndex = Math.min(readTimeoutIndex + 1, BASE_READ_TIMEOUT_SECS.length - 1);
-                log.info("No response from server, setting read timeout to " + BASE_READ_TIMEOUT_SECS[readTimeoutIndex] + " secs");
+                log.warn("No response from server, setting read timeout to " + BASE_READ_TIMEOUT_SECS[readTimeoutIndex] + " secs");
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {
