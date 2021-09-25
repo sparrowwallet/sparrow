@@ -110,10 +110,10 @@ First, install `zip` and `unzip`. Example on Debian/Ubuntu systems:
 sudo apt-get install -y zip unzip
 ```
 
-Installation on macOS, Linux, WSL, Cygwin, Solaris and FreeBSD (compatible with BASH and ZSH shells):
+Installation on macOS, Linux, WSL, Cygwin, Solaris and FreeBSD (compatible with Bash and Zsh shells):
 ```shell
 curl -sS "https://get.sdkman.io" | ${SHELL##*/}
-source "$HOME/.sdkman/bin/sdkman-init.sh"
+. "$HOME/.sdkman/bin/sdkman-init.sh"
 ```
 
 Installation on Windows with [git-scm](https://git-scm.com/download/win).
@@ -130,9 +130,20 @@ To complete the build the package below are required. Installation on Debian/Ubu
 sudo apt install -y rpm fakeroot binutils git wget curl gnupg tar diffutils
 ```
 
-The project can cloned for a specific release tag as follows:
+Set a specific release tag as follows:
 ```shell
 GIT_TAG="1.5.0-beta1"
+```
+
+Clone the repository:
+
+* without SSH credentials:
+```shell
+git clone --recursive --branch "${GIT_TAG}" https://github.com/sparrowwallet/sparrow.git
+```
+
+* with SSH credentials:
+```shell
 git clone --recursive --branch "${GIT_TAG}" git@github.com:sparrowwallet/sparrow.git
 ```
 
