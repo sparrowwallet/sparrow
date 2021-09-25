@@ -174,6 +174,7 @@ Download the compressed binaries [tar.gz|zip]:
 ```shell
 COMPRESSION_METHOD="tar.gz"
 wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}".${COMPRESSION_METHOD}
+```
 
 Verify the manifest authenticity (*Good signaure* is what you need):
 ```shell
