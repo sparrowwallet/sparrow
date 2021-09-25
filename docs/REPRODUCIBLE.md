@@ -51,7 +51,7 @@ ARCHITECTURE=x64
 Download AdoptOpenJDK to the `/tmp` folder:
 ```shell
 wget -q --show-progress -P /tmp/ https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_${ARCHITECTURE}_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_UNDERLINE_VERSION}.tar.gz
-wget -q --show-progress -P /tmp/  https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_${ARCHITECTURE}_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_UNDERLINE_VERSION}.tar.gz.sha256.txt
+wget -q --show-progress -P /tmp/ https://github.com/AdoptOpenJDK/openjdk16-binaries/releases/download/jdk-${ADOPTOPENJDK_PLUS_VERSION}/OpenJDK16U-jdk_${ARCHITECTURE}_${OPERATING_SYSTEM}_hotspot_${ADOPTOPENJDK_UNDERLINE_VERSION}.tar.gz.sha256.txt
 ```
 
 Check if the hash of the `tar.gz` is correct (*OK* is what you need):
@@ -164,11 +164,10 @@ Import the maintainer PGP public key (Fingerperint: *E946 1833 4C67 4B40*:
 curl -sS https://keybase.io/craigraw/pgp_keys.asc | gpg --import
 ```
 
-Download the binaries, manifest and signed manifest that are available on the [releases page](https://github.com/sparrowwallet/sparrow/releases) (will download in the `/tmp` folder):
+Download the  manifest and signed manifest that are available on the [releases page](https://github.com/sparrowwallet/sparrow/releases) (will download to the `/tmp` folder):
 ```shell
 wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}"-manifest.txt
 wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}"-manifest.txt.asc
-wget -q --show-progress -P /tmp/ https://github.com/sparrowwallet/sparrow/releases/download/"${GIT_TAG}"/sparrow-"${GIT_TAG}".tar.gz
 ```
 
 Download the compressed binaries [tar.gz|zip]:
