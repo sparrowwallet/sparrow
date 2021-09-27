@@ -588,14 +588,15 @@ public class SettingsController extends WalletFormController implements Initiali
 
                         key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
 
+                        Wallet masterWallet = walletForm.getWallet().isMasterWallet() ? walletForm.getWallet() : walletForm.getWallet().getMasterWallet();
                         if(dlg.isChangePassword()) {
                             if(dlg.isDeleteBackups()) {
                                 walletForm.deleteBackups();
                             }
 
                             walletForm.getStorage().setEncryptionPubKey(null);
-                            walletForm.getWallet().decrypt(key);
-                            for(Wallet childWallet : walletForm.getWallet().getChildWallets()) {
+                            masterWallet.decrypt(key);
+                            for(Wallet childWallet : masterWallet.getChildWallets()) {
                                 childWallet.decrypt(key);
                             }
                             saveWallet(true, false);
@@ -606,8 +607,8 @@ public class SettingsController extends WalletFormController implements Initiali
                             walletForm.deleteBackups();
                         }
 
-                        walletForm.getWallet().encrypt(key);
-                        for(Wallet childWallet : walletForm.getWallet().getChildWallets()) {
+                        masterWallet.encrypt(key);
+                        for(Wallet childWallet : masterWallet.getChildWallets()) {
                             childWallet.encrypt(key);
                         }
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
