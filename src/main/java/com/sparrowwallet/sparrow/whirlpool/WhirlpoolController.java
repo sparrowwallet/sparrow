@@ -115,8 +115,18 @@ public class WhirlpoolController {
 
         pool.setConverter(new StringConverter<Pool>() {
             @Override
-            public String toString(Pool pool) {
-                return pool == null ? "Fetching pools..." : pool.getPoolId().replace("btc", " BTC");
+            public String toString(Pool selectedPool) {
+                if(selectedPool == null) {
+                    pool.setTooltip(null);
+                    return "Fetching pools...";
+                }
+
+                BitcoinUnit bitcoinUnit = wallet.getAutoUnit();
+                String satsValue = String.format(Locale.ENGLISH, "%,d", selectedPool.getDenomination()) + " sats";
+                String btcValue = CoinLabel.BTC_FORMAT.format((double)selectedPool.getDenomination() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+
+                pool.setTooltip(bitcoinUnit == BitcoinUnit.BTC ? new Tooltip(satsValue) : new Tooltip(btcValue));
+                return bitcoinUnit == BitcoinUnit.BTC ? btcValue : satsValue;
             }
 
             @Override
