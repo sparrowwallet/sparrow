@@ -442,7 +442,7 @@ public class Whirlpool {
         WalletUtxo walletUtxo = getUtxo(e.getWhirlpoolUtxo());
         if(walletUtxo != null) {
             log.debug("Mix failed for utxo " + e.getWhirlpoolUtxo().getUtxo().tx_hash + ":" + e.getWhirlpoolUtxo().getUtxo().tx_output_n + " " + e.getMixFailReason());
-            Platform.runLater(() -> EventManager.get().post(new WhirlpoolMixEvent(walletUtxo.wallet, walletUtxo.utxo, e.getMixFailReason())));
+            Platform.runLater(() -> EventManager.get().post(new WhirlpoolMixEvent(walletUtxo.wallet, walletUtxo.utxo, e.getMixFailReason(), e.getError())));
         }
     }
 

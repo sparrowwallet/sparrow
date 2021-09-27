@@ -143,6 +143,7 @@ public class UtxosController extends WalletFormController implements Initializab
         return Whirlpool.WHIRLPOOL_NETWORKS.contains(Network.get())
                 && getWalletForm().getWallet().getKeystores().size() == 1
                 && getWalletForm().getWallet().getKeystores().get(0).hasSeed()
+                && getWalletForm().getWallet().getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
                 && !getWalletForm().getWallet().isWhirlpoolMixWallet();
     }
 
@@ -528,7 +529,7 @@ public class UtxosController extends WalletFormController implements Initializab
                     if(event.getNextUtxo() != null) {
                         utxoEntry.setNextMixUtxo(event.getNextUtxo());
                     } else if(event.getMixFailReason() != null) {
-                        utxoEntry.setMixFailReason(event.getMixFailReason());
+                        utxoEntry.setMixFailReason(event.getMixFailReason(), event.getMixError());
                     } else {
                         utxoEntry.setMixProgress(event.getMixProgress());
                     }

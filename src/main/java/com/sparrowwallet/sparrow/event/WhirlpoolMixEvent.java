@@ -12,6 +12,7 @@ public class WhirlpoolMixEvent {
     private final MixProgress mixProgress;
     private final Utxo nextUtxo;
     private final MixFailReason mixFailReason;
+    private final String mixError;
 
     public WhirlpoolMixEvent(Wallet wallet, BlockTransactionHashIndex utxo, MixProgress mixProgress) {
         this.wallet = wallet;
@@ -19,6 +20,7 @@ public class WhirlpoolMixEvent {
         this.mixProgress = mixProgress;
         this.nextUtxo = null;
         this.mixFailReason = null;
+        this.mixError = null;
     }
 
     public WhirlpoolMixEvent(Wallet wallet, BlockTransactionHashIndex utxo, Utxo nextUtxo) {
@@ -27,14 +29,16 @@ public class WhirlpoolMixEvent {
         this.mixProgress = null;
         this.nextUtxo = nextUtxo;
         this.mixFailReason = null;
+        this.mixError = null;
     }
 
-    public WhirlpoolMixEvent(Wallet wallet, BlockTransactionHashIndex utxo, MixFailReason mixFailReason) {
+    public WhirlpoolMixEvent(Wallet wallet, BlockTransactionHashIndex utxo, MixFailReason mixFailReason, String mixError) {
         this.wallet = wallet;
         this.utxo = utxo;
         this.mixProgress = null;
         this.nextUtxo = null;
         this.mixFailReason = mixFailReason;
+        this.mixError = mixError;
     }
 
     public Wallet getWallet() {
@@ -55,5 +59,9 @@ public class WhirlpoolMixEvent {
 
     public MixFailReason getMixFailReason() {
         return mixFailReason;
+    }
+
+    public String getMixError() {
+        return mixError;
     }
 }

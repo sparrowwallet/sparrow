@@ -49,7 +49,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             if(mixStatus.getNextMixUtxo() != null) {
                 setMixSuccess(mixStatus.getNextMixUtxo());
             } else if(mixStatus.getMixFailReason() != null) {
-                setMixFail(mixStatus.getMixFailReason());
+                setMixFail(mixStatus.getMixFailReason(), mixStatus.getMixError());
             } else if(mixStatus.getMixProgress() != null) {
                 setMixProgress(mixStatus.getMixProgress());
             } else {
@@ -67,11 +67,11 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
         setTooltip(tt);
     }
 
-    private void setMixFail(MixFailReason mixFailReason) {
+    private void setMixFail(MixFailReason mixFailReason, String mixError) {
         if(mixFailReason != MixFailReason.CANCEL) {
             setGraphic(getFailGlyph());
             Tooltip tt = new Tooltip();
-            tt.setText(mixFailReason.getMessage());
+            tt.setText(mixFailReason.getMessage() + (mixError == null ? "" : ": " + mixError));
             setTooltip(tt);
         } else {
             setGraphic(null);

@@ -102,8 +102,8 @@ public class UtxoEntry extends HashIndexEntry {
         mixStatusProperty().set(new MixStatus(mixProgress));
     }
 
-    public void setMixFailReason(MixFailReason mixFailReason) {
-        mixStatusProperty().set(new MixStatus(mixFailReason));
+    public void setMixFailReason(MixFailReason mixFailReason, String mixError) {
+        mixStatusProperty().set(new MixStatus(mixFailReason, mixError));
     }
 
     public void setNextMixUtxo(Utxo nextMixUtxo) {
@@ -126,6 +126,7 @@ public class UtxoEntry extends HashIndexEntry {
         private MixProgress mixProgress;
         private Utxo nextMixUtxo;
         private MixFailReason mixFailReason;
+        private String mixError;
 
         public MixStatus(MixProgress mixProgress) {
             this.mixProgress = mixProgress;
@@ -135,8 +136,9 @@ public class UtxoEntry extends HashIndexEntry {
             this.nextMixUtxo = nextMixUtxo;
         }
 
-        public MixStatus(MixFailReason mixFailReason) {
+        public MixStatus(MixFailReason mixFailReason, String mixError) {
             this.mixFailReason = mixFailReason;
+            this.mixError = mixError;
         }
 
         public UtxoEntry getUtxoEntry() {
@@ -174,6 +176,10 @@ public class UtxoEntry extends HashIndexEntry {
 
         public MixFailReason getMixFailReason() {
             return mixFailReason;
+        }
+
+        public String getMixError() {
+            return mixError;
         }
     }
 }
