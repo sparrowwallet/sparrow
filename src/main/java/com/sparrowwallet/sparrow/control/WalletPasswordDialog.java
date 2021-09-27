@@ -131,10 +131,10 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     }
 
     public enum PasswordRequirement {
-        LOAD("Please enter the wallet password:", "Unlock"),
+        LOAD("Enter the wallet password:", "Unlock"),
         UPDATE_NEW("Add a password to the wallet?\nLeave empty for no password:", "No Password"),
         UPDATE_EMPTY("This wallet has no password.\nAdd a password to the wallet?\nLeave empty for no password:", "No Password"),
-        UPDATE_SET("Please re-enter the wallet password:", "Verify Password"),
+        UPDATE_SET("Re-enter the wallet password:", "Verify Password"),
         UPDATE_CHANGE("Enter the new wallet password.\nLeave empty for no password:", "No Password");
 
         private final String description;
