@@ -120,7 +120,7 @@ public class Bwt {
         if(config.getCoreMultiWallet() != Boolean.FALSE) {
             bwtConfig.bitcoindWallet = config.getCoreWallet();
         }
-        bwtConfig.createWalletIfMissing = !outputDescriptors.isEmpty();
+        bwtConfig.createWalletIfMissing = true;
 
         Gson gson = new Gson();
         String jsonConfig = gson.toJson(bwtConfig);
