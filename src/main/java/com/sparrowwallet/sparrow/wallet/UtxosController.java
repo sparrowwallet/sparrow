@@ -30,6 +30,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.TreeItem;
 import javafx.scene.layout.HBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -192,7 +193,9 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private List<Entry> getSelectedEntries() {
-        return utxosTable.getSelectionModel().getSelectedCells().stream().map(tp -> (UtxoEntry)tp.getTreeItem().getValue())
+        return utxosTable.getSelectionModel().getSelectedCells().stream()
+                .filter(tp -> tp.getTreeItem() != null)
+                .map(tp -> (UtxoEntry)tp.getTreeItem().getValue())
                 .filter(utxoEntry -> utxoEntry.isSpendable() && !utxoEntry.isMixing())
                 .collect(Collectors.toList());
     }
@@ -445,8 +448,14 @@ public class UtxosController extends WalletFormController implements Initializab
         if(event.getWallet().equals(walletForm.getWallet())) {
             WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
 
+            List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedItems().stream().map(TreeItem::getValue).filter(Objects::nonNull).toList();
+
             //Will automatically update utxosTable
             walletUtxosEntry.updateUtxos();
+
+            if(!walletUtxosEntry.getChildren().containsAll(selectedEntries)) {
+                utxosTable.getSelectionModel().clearSelection();
+            }
 
             utxosTable.updateHistory(event.getHistoryChangedNodes());
             utxosChart.update(walletUtxosEntry);
