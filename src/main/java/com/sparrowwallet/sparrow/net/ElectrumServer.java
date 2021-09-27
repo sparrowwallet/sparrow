@@ -891,6 +891,10 @@ public class ElectrumServer {
 
             if(server.startsWith("electrs/")) {
                 String electrsVersion = server.substring("electrs/".length());
+                int dashIndex = electrsVersion.indexOf('-');
+                if(dashIndex > -1) {
+                    electrsVersion = electrsVersion.substring(0, dashIndex);
+                }
                 try {
                     Version version = new Version(electrsVersion);
                     if(version.compareTo(ELECTRS_MIN_BATCHING_VERSION) >= 0) {
