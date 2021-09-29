@@ -255,7 +255,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
         scanDescriptorQR.setVisible(!walletForm.getWallet().isValid());
         export.setDisable(!walletForm.getWallet().isValid());
-        addAccount.setDisable(!walletForm.getWallet().isValid());
+        addAccount.setDisable(!walletForm.getWallet().isValid() || walletForm.getWallet().getScriptType() == ScriptType.P2SH);
         revert.setDisable(true);
         apply.setDisable(true);
     }
@@ -563,7 +563,7 @@ public class SettingsController extends WalletFormController implements Initiali
     public void walletSettingsChanged(WalletSettingsChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
             export.setDisable(!event.getWallet().isValid());
-            addAccount.setDisable(!event.getWallet().isValid());
+            addAccount.setDisable(!event.getWallet().isValid() || event.getWallet().getScriptType() == ScriptType.P2SH);
             scanDescriptorQR.setVisible(!event.getWallet().isValid());
         }
     }
