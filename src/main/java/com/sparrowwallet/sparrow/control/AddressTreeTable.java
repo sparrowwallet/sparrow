@@ -68,21 +68,23 @@ public class AddressTreeTable extends CoinTreeTable {
             }
         }
 
-        setOnMouseClicked(mouseEvent -> {
-            if(mouseEvent.getButton().equals(MouseButton.PRIMARY)){
-                if(mouseEvent.getClickCount() == 2) {
-                    TreeItem<Entry> treeItem = getSelectionModel().getSelectedItem();
-                    if(treeItem != null && treeItem.getChildren().isEmpty()) {
-                        Entry entry = getSelectionModel().getSelectedItem().getValue();
-                        if(entry instanceof NodeEntry) {
-                            NodeEntry nodeEntry = (NodeEntry)entry;
-                            EventManager.get().post(new ReceiveActionEvent(nodeEntry));
-                            Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
+        if(!rootEntry.getWallet().isWhirlpoolChildWallet()) {
+            setOnMouseClicked(mouseEvent -> {
+                if(mouseEvent.getButton().equals(MouseButton.PRIMARY)){
+                    if(mouseEvent.getClickCount() == 2) {
+                        TreeItem<Entry> treeItem = getSelectionModel().getSelectedItem();
+                        if(treeItem != null && treeItem.getChildren().isEmpty()) {
+                            Entry entry = getSelectionModel().getSelectedItem().getValue();
+                            if(entry instanceof NodeEntry) {
+                                NodeEntry nodeEntry = (NodeEntry)entry;
+                                EventManager.get().post(new ReceiveActionEvent(nodeEntry));
+                                Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
 
         rootEntry.getChildren().addListener((ListChangeListener<Entry>) c -> {
             this.refresh();
