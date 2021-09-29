@@ -26,6 +26,10 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     }
 
     public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource) {
+        this(wallet, initialSource, null, null, false);
+    }
+
+    public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource, KeyDerivation requiredDerivation, WalletModel requiredModel, boolean restrictSource) {
         EventManager.get().register(this);
         setOnCloseRequest(event -> {
             EventManager.get().unregister(this);
@@ -39,11 +43,16 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
             dialogPane.setContent(Borders.wrap(ksiLoader.load()).emptyBorder().buildAll());
             keystoreImportController = ksiLoader.getController();
             keystoreImportController.initializeView(wallet);
-            keystoreImportController.selectSource(initialSource);
+            keystoreImportController.selectSource(initialSource, restrictSource);
+            keystoreImportController.setRequiredDerivation(requiredDerivation);
+            keystoreImportController.setRequiredModel(requiredModel);
 
             final ButtonType watchOnlyButtonType = new javafx.scene.control.ButtonType(Network.get().getXpubHeader().getDisplayName() + " / Watch Only Wallet", ButtonBar.ButtonData.LEFT);
+            if(!restrictSource) {
+                dialogPane.getButtonTypes().add(watchOnlyButtonType);
+            }
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-            dialogPane.getButtonTypes().addAll(watchOnlyButtonType, cancelButtonType);
+            dialogPane.getButtonTypes().add(cancelButtonType);
             dialogPane.setPrefWidth(650);
             dialogPane.setPrefHeight(690);
             AppServices.moveToActiveWindowScreen(this);

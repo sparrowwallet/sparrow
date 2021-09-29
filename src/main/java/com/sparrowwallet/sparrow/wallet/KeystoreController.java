@@ -5,17 +5,15 @@ import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.ChildWalletAddedEvent;
-import com.sparrowwallet.sparrow.event.StorageEvent;
-import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
-import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -104,6 +102,14 @@ public class KeystoreController extends WalletFormController implements Initiali
         selectSourcePane.managedProperty().bind(selectSourcePane.visibleProperty());
         if(keystore.isValid() || keystore.getExtendedPublicKey() != null) {
             selectSourcePane.setVisible(false);
+        } else if(!getWalletForm().getWallet().isMasterWallet() && keystore.getKeyDerivation() != null) {
+           Wallet masterWallet = getWalletForm().getWallet().getMasterWallet();
+           int keystoreIndex = getWalletForm().getWallet().getKeystores().indexOf(keystore);
+           KeystoreSource keystoreSource = masterWallet.getKeystores().get(keystoreIndex).getSource();
+           for(Toggle toggle : keystoreSourceToggleGroup.getToggles()) {
+               ToggleButton toggleButton = (ToggleButton)toggle;
+               toggleButton.setDisable(toggleButton.getUserData() != keystoreSource);
+           }
         }
 
         viewSeedButton.managedProperty().bind(viewSeedButton.visibleProperty());
@@ -163,7 +169,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             scanXpubQR.setVisible(!valid);
         });
 
-        setInputFieldsDisabled(!walletForm.getWallet().isMasterWallet() || !walletForm.getWallet().getChildWallets().isEmpty());
+        setInputFieldsDisabled(keystore.getSource() != KeystoreSource.SW_WATCH && (!walletForm.getWallet().isMasterWallet() || !walletForm.getWallet().getChildWallets().isEmpty()));
     }
 
     private void setXpubContext(ExtendedKey extendedKey) {
@@ -310,7 +316,10 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     private void launchImportDialog(KeystoreSource initialSource) {
-        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource);
+        boolean restrictSource = keystoreSourceToggleGroup.getToggles().stream().anyMatch(toggle -> ((ToggleButton)toggle).isDisabled());
+        KeyDerivation requiredDerivation = restrictSource ? keystore.getKeyDerivation() : null;
+        WalletModel requiredModel = restrictSource ? keystore.getWalletModel() : null;
+        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, requiredDerivation, requiredModel, restrictSource);
         Optional<Keystore> result = dlg.showAndWait();
         if(result.isPresent()) {
             selectSourcePane.setVisible(false);
@@ -421,7 +430,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     @Subscribe
     public void childWalletAdded(ChildWalletAddedEvent event) {
         if(event.getMasterWalletId().equals(walletForm.getWalletId())) {
-            setInputFieldsDisabled(true);
+            setInputFieldsDisabled(keystore.getSource() != KeystoreSource.SW_WATCH);
         }
     }
 

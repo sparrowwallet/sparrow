@@ -62,6 +62,7 @@ public class FontAwesome5 extends GlyphFont {
         SIGN_OUT_ALT('\uf2f5'),
         SQUARE('\uf0c8'),
         SNOWFLAKE('\uf2dc'),
+        SORT_NUMERIC_DOWN('\uf162'),
         SUN('\uf185'),
         THEATER_MASKS('\uf630'),
         TIMES_CIRCLE('\uf057'),

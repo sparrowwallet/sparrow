@@ -21,6 +21,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolDialog;
+import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.WeakChangeListener;
@@ -141,11 +142,7 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private boolean canWalletMix() {
-        return Whirlpool.WHIRLPOOL_NETWORKS.contains(Network.get())
-                && getWalletForm().getWallet().getKeystores().size() == 1
-                && getWalletForm().getWallet().getKeystores().get(0).hasSeed()
-                && getWalletForm().getWallet().getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
-                && !getWalletForm().getWallet().isWhirlpoolMixWallet();
+        return WhirlpoolServices.canWalletMix(getWalletForm().getWallet());
     }
 
     private void updateButtons(BitcoinUnit unit) {
@@ -262,16 +259,7 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private void prepareWhirlpoolWallet(Wallet decryptedWallet) {
-        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWalletId());
-        whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());
-        whirlpool.setHDWallet(getWalletForm().getWalletId(), decryptedWallet);
-
-        for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
-            if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {
-                Wallet childWallet = decryptedWallet.addChildWallet(whirlpoolAccount);
-                EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), decryptedWallet, childWallet));
-            }
-        }
+        WhirlpoolServices.prepareWhirlpoolWallet(decryptedWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
     }
 
     private void previewPremix(Wallet wallet, Tx0Preview tx0Preview, List<UtxoEntry> utxoEntries) {

@@ -1,7 +1,9 @@
 package com.sparrowwallet.sparrow.keystoreimport;
 
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Device;
 import javafx.application.Platform;
@@ -10,6 +12,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.Toggle;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.StackPane;
 
@@ -26,6 +29,9 @@ public class KeystoreImportController implements Initializable {
 
     @FXML
     private StackPane importPane;
+
+    private KeyDerivation requiredDerivation;
+    private WalletModel requiredModel;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -53,11 +59,12 @@ public class KeystoreImportController implements Initializable {
         });
     }
 
-    public void selectSource(KeystoreSource keystoreSource) {
+    public void selectSource(KeystoreSource keystoreSource, boolean required) {
         for(Toggle toggle : importMenu.getToggles()) {
             if(toggle.getUserData().equals(keystoreSource)) {
                 Platform.runLater(() -> importMenu.selectToggle(toggle));
-                return;
+            } else if(required) {
+                ((ToggleButton)toggle).setDisable(true);
             }
         }
     }
@@ -95,5 +102,21 @@ public class KeystoreImportController implements Initializable {
         } catch (IOException e) {
             throw new IllegalStateException("Can't find pane", e);
         }
+    }
+
+    public KeyDerivation getRequiredDerivation() {
+        return requiredDerivation;
+    }
+
+    public void setRequiredDerivation(KeyDerivation requiredDerivation) {
+        this.requiredDerivation = requiredDerivation;
+    }
+
+    public WalletModel getRequiredModel() {
+        return requiredModel;
+    }
+
+    public void setRequiredModel(WalletModel requiredModel) {
+        this.requiredModel = requiredModel;
     }
 }

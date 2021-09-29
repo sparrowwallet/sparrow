@@ -23,9 +23,11 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             importers = List.of(new ColdcardMultisig(), new CoboVaultMultisig(), new KeystoneMultisig(), new PassportMultisig(), new SeedSigner(), new SpecterDIY());
         }
 
-        for(KeystoreImport importer : importers) {
-            FileKeystoreImportPane importPane = new FileKeystoreImportPane(getMasterController().getWallet(), (KeystoreFileImport)importer);;
-            importAccordion.getPanes().add(importPane);
+        for(KeystoreFileImport importer : importers) {
+            FileKeystoreImportPane importPane = new FileKeystoreImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());
+            if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == importer.getWalletModel()) {
+                importAccordion.getPanes().add(importPane);
+            }
         }
 
         importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));

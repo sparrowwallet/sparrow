@@ -52,7 +52,7 @@ public class DevicePane extends TitledDescriptionPane {
     private Button unlockButton;
     private Button enterPinButton;
     private Button setPassphraseButton;
-    private SplitMenuButton importButton;
+    private ButtonBase importButton;
     private Button signButton;
     private Button displayAddressButton;
     private Button signMessageButton;
@@ -61,13 +61,13 @@ public class DevicePane extends TitledDescriptionPane {
 
     private boolean defaultDevice;
 
-    public DevicePane(Wallet wallet, Device device, boolean defaultDevice) {
+    public DevicePane(Wallet wallet, Device device, boolean defaultDevice, KeyDerivation requiredDerivation) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.IMPORT;
         this.wallet = wallet;
         this.psbt = null;
         this.outputDescriptor = null;
-        this.keyDerivation = null;
+        this.keyDerivation = requiredDerivation;
         this.message = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
@@ -199,35 +199,39 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void createImportButton() {
-        importButton = new SplitMenuButton();
+        importButton = keyDerivation == null ? new SplitMenuButton() : new Button();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
-            importKeystore(wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation());
+            List<ChildNumber> defaultDerivation = wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
+            importKeystore(keyDerivation == null ? defaultDerivation : keyDerivation.getDerivation());
         });
-        if(wallet.getScriptType() == null) {
-            ScriptType[] scriptTypes = new ScriptType[] {ScriptType.P2WPKH, ScriptType.P2SH_P2WPKH, ScriptType.P2PKH};
-            for(ScriptType scriptType : scriptTypes) {
-                MenuItem item = new MenuItem(scriptType.getDescription());
-                final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
-                item.setOnAction(event -> {
-                    importButton.setDisable(true);
-                    importKeystore(derivation);
-                });
-                importButton.getItems().add(item);
-            }
-        } else {
-            String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
-            int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
-            for(int i = 0; i < scriptAccountsLength; i++) {
-                MenuItem item = new MenuItem(accounts[i]);
-                final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
-                item.setOnAction(event -> {
-                    importButton.setDisable(true);
-                    importKeystore(derivation);
-                });
-                importButton.getItems().add(item);
+
+        if(importButton instanceof SplitMenuButton importMenuButton) {
+            if(wallet.getScriptType() == null) {
+                ScriptType[] scriptTypes = new ScriptType[] {ScriptType.P2WPKH, ScriptType.P2SH_P2WPKH, ScriptType.P2PKH};
+                for(ScriptType scriptType : scriptTypes) {
+                    MenuItem item = new MenuItem(scriptType.getDescription());
+                    final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
+                    item.setOnAction(event -> {
+                        importMenuButton.setDisable(true);
+                        importKeystore(derivation);
+                    });
+                    importMenuButton.getItems().add(item);
+                }
+            } else {
+                String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
+                int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
+                for(int i = 0; i < scriptAccountsLength; i++) {
+                    MenuItem item = new MenuItem(accounts[i]);
+                    final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
+                    item.setOnAction(event -> {
+                        importMenuButton.setDisable(true);
+                        importKeystore(derivation);
+                    });
+                    importMenuButton.getItems().add(item);
+                }
             }
         }
         importButton.managedProperty().bind(importButton.visibleProperty());
@@ -430,7 +434,9 @@ public class DevicePane extends TitledDescriptionPane {
                     setExpanded(true);
                 } else {
                     showOperationButton();
-                    setContent(getTogglePassphraseOn());
+                    if(!deviceOperation.equals(DeviceOperation.IMPORT)) {
+                        setContent(getTogglePassphraseOn());
+                    }
                 }
             } else {
                 setError("Incorrect PIN", null);
@@ -622,7 +628,8 @@ public class DevicePane extends TitledDescriptionPane {
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
             showHideLink.setVisible(true);
-            setContent(getDerivationEntry(wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation()));
+            List<ChildNumber> defaultDerivation = wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
+            setContent(getDerivationEntry(keyDerivation == null ? defaultDerivation : keyDerivation.getDerivation()));
         } else if(deviceOperation.equals(DeviceOperation.SIGN)) {
             signButton.setDefaultButton(defaultDevice);
             signButton.setVisible(true);
@@ -642,6 +649,7 @@ public class DevicePane extends TitledDescriptionPane {
         TextField derivationField = new TextField();
         derivationField.setPromptText("Derivation path");
         derivationField.setText(KeyDerivation.writePath(derivation));
+        derivationField.setDisable(keyDerivation != null);
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
         ValidationSupport validationSupport = new ValidationSupport();
@@ -651,7 +659,8 @@ public class DevicePane extends TitledDescriptionPane {
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid derivation", !KeyDerivation.isValid(newValue))
         ));
 
-        Button importDerivationButton = new Button("Import");
+        Button importDerivationButton = new Button("Import Custom Derivation");
+        importDerivationButton.setDisable(true);
         importDerivationButton.setOnAction(event -> {
             showHideLink.setVisible(true);
             setExpanded(false);
@@ -660,7 +669,8 @@ public class DevicePane extends TitledDescriptionPane {
         });
 
         derivationField.textProperty().addListener((observable, oldValue, newValue) -> {
-            importDerivationButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue));
+            importButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue) || !KeyDerivation.parsePath(newValue).equals(derivation));
+            importDerivationButton.setDisable(newValue.isEmpty() || !KeyDerivation.isValid(newValue) || KeyDerivation.parsePath(newValue).equals(derivation));
         });
 
         HBox contentBox = new HBox();

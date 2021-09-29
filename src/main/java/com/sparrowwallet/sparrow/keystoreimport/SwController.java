@@ -21,7 +21,7 @@ public class SwController extends KeystoreImportDetailController {
             TitledDescriptionPane importPane = null;
 
             if(importer instanceof KeystoreFileImport) {
-                importPane = new FileKeystoreImportPane(getMasterController().getWallet(), (KeystoreFileImport)importer);
+                importPane = new FileKeystoreImportPane(getMasterController().getWallet(), (KeystoreFileImport)importer, getMasterController().getRequiredDerivation());
             } else if(importer instanceof KeystoreMnemonicImport) {
                 importPane = new MnemonicKeystoreImportPane(getMasterController().getWallet(), (KeystoreMnemonicImport)importer);
             } else if(importer instanceof KeystoreXprvImport) {

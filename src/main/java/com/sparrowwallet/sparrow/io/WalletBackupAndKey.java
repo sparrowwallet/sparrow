@@ -51,10 +51,6 @@ public class WalletBackupAndKey implements Comparable<WalletBackupAndKey> {
 
     @Override
     public int compareTo(WalletBackupAndKey other) {
-        if(wallet.getStandardAccountType() != null && other.wallet.getStandardAccountType() != null) {
-            return wallet.getStandardAccountType().ordinal() - other.wallet.getStandardAccountType().ordinal();
-        }
-
-        return wallet.getAccountIndex() - other.wallet.getAccountIndex();
+        return wallet.compareTo(other.wallet);
     }
 }

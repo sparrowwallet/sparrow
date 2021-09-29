@@ -13,8 +13,10 @@ public class HwUsbDevicesController extends KeystoreImportDetailController {
 
     public void initializeView(List<Device> devices) {
         for(Device device : devices) {
-            DevicePane devicePane = new DevicePane(getMasterController().getWallet(), device, devices.size() == 1);
-            deviceAccordion.getPanes().add(devicePane);
+            DevicePane devicePane = new DevicePane(getMasterController().getWallet(), device, devices.size() == 1, getMasterController().getRequiredDerivation());
+            if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == device.getModel()) {
+                deviceAccordion.getPanes().add(devicePane);
+            }
         }
     }
 }

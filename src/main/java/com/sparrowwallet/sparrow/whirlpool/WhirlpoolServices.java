@@ -4,9 +4,12 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.MixConfig;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -121,6 +124,27 @@ public class WhirlpoolServices {
 
     public Whirlpool getWhirlpoolForMixToWallet(String walletId) {
         return whirlpoolMap.values().stream().filter(whirlpool -> walletId.equals(whirlpool.getMixToWalletId())).findFirst().orElse(null);
+    }
+
+    public static boolean canWalletMix(Wallet wallet) {
+        return Whirlpool.WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getKeystores().size() == 1
+                && wallet.getKeystores().get(0).hasSeed()
+                && wallet.getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
+                && !wallet.isWhirlpoolMixWallet();
+    }
+
+    public static void prepareWhirlpoolWallet(Wallet decryptedWallet, String walletId, Storage storage) {
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
+        whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());
+        whirlpool.setHDWallet(walletId, decryptedWallet);
+
+        for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
+            if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {
+                Wallet childWallet = decryptedWallet.addChildWallet(whirlpoolAccount);
+                EventManager.get().post(new ChildWalletAddedEvent(storage, decryptedWallet, childWallet));
+            }
+        }
     }
 
     @Subscribe
