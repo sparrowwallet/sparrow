@@ -18,10 +18,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
@@ -99,7 +96,7 @@ public class SparrowDataSource extends WalletResponseDataSource {
 
             for(Map.Entry<BlockTransactionHashIndex, WalletNode> utxo : wallet.getWalletUtxos().entrySet()) {
                 BlockTransaction blockTransaction = wallet.getTransactions().get(utxo.getKey().getHash());
-                if(blockTransaction != null) {
+                if(blockTransaction != null && utxo.getKey().getStatus() != Status.FROZEN) {
                     unspentOutputs.add(Whirlpool.getUnspentOutput(wallet, utxo.getValue(), blockTransaction, (int)utxo.getKey().getIndex()));
                 }
             }
@@ -179,13 +176,13 @@ public class SparrowDataSource extends WalletResponseDataSource {
 
     static Wallet getWallet(String zpub) {
         return AppServices.get().getOpenWallets().keySet().stream()
-                .filter(Wallet::isValid)
                 .filter(wallet -> {
                     List<ExtendedKey.Header> headers = ExtendedKey.Header.getHeaders(Network.get());
                     ExtendedKey.Header header = headers.stream().filter(head -> head.getDefaultScriptType().equals(wallet.getScriptType()) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
                     ExtendedKey extPubKey = wallet.getKeystores().get(0).getExtendedPublicKey();
                     return extPubKey.toString(header).equals(zpub);
                 })
+                .filter(Wallet::isValid)
                 .findFirst()
                 .orElse(null);
     }

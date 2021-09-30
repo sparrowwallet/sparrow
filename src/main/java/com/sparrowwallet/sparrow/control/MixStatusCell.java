@@ -40,12 +40,6 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                 setContextMenu(null);
             }
 
-            if(mixStatus.getMixProgress() != null) {
-                Tooltip tooltip = new Tooltip();
-                tooltip.setText("Pool: " + mixStatus.getMixProgress().getPoolId().replace("btc", " BTC"));
-                setTooltip(tooltip);
-            }
-
             if(mixStatus.getNextMixUtxo() != null) {
                 setMixSuccess(mixStatus.getNextMixUtxo());
             } else if(mixStatus.getMixFailReason() != null) {
@@ -54,6 +48,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                 setMixProgress(mixStatus.getMixProgress());
             } else {
                 setGraphic(null);
+                setTooltip(null);
             }
         }
     }
@@ -75,6 +70,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             setTooltip(tt);
         } else {
             setGraphic(null);
+            setTooltip(null);
         }
     }
 
@@ -88,6 +84,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             setTooltip(tt);
         } else {
             setGraphic(null);
+            setTooltip(null);
         }
     }
 

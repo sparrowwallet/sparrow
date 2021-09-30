@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.TorService;
+import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,7 @@ public class WhirlpoolServices {
     private static final Logger log = LoggerFactory.getLogger(WhirlpoolServices.class);
 
     private final Map<String, Whirlpool> whirlpoolMap = new HashMap<>();
+    private Whirlpool.StartupService startupService;
 
     public Whirlpool getWhirlpool(Wallet wallet) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
@@ -86,7 +88,15 @@ public class WhirlpoolServices {
                 }
             }
 
-            Whirlpool.StartupService startupService = new Whirlpool.StartupService(whirlpool);
+            if(startupService != null) {
+                startupService.cancel();
+            }
+
+            startupService = new Whirlpool.StartupService(whirlpool);
+            startupService.setPeriod(Duration.minutes(2));
+            startupService.setOnSucceeded(workerStateEvent -> {
+                startupService.cancel();
+            });
             startupService.setOnFailed(workerStateEvent -> {
                 log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
             });
@@ -175,11 +185,8 @@ public class WhirlpoolServices {
         if(mixFromWhirlpool != null) {
             mixFromWhirlpool.setMixToWallet(walletId, AppServices.get().getWallet(mixFromWhirlpool.getWalletId()).getMasterMixConfig().getMinMixes());
             if(mixFromWhirlpool.isStarted()) {
-                Whirlpool.RestartService restartService = new Whirlpool.RestartService(mixFromWhirlpool);
-                restartService.setOnFailed(workerStateEvent -> {
-                    log.error("Failed to restart whirlpool", workerStateEvent.getSource().getException());
-                });
-                restartService.start();
+                //Will automatically restart
+                stopWhirlpool(mixFromWhirlpool, false);
             }
         }
     }
@@ -210,11 +217,8 @@ public class WhirlpoolServices {
             if(mixToWhirlpool != null && event.getClosedWalletTabData().stream().noneMatch(walletTabData1 -> walletTabData1.getWalletForm().getWalletId().equals(mixToWhirlpool.getWalletId()))) {
                 mixToWhirlpool.setMixToWallet(null, null);
                 if(mixToWhirlpool.isStarted()) {
-                    Whirlpool.RestartService restartService = new Whirlpool.RestartService(mixToWhirlpool);
-                    restartService.setOnFailed(workerStateEvent -> {
-                        log.error("Failed to restart whirlpool", workerStateEvent.getSource().getException());
-                    });
-                    restartService.start();
+                    //Will automatically restart
+                    stopWhirlpool(mixToWhirlpool, false);
                 }
             }
         }

@@ -705,7 +705,7 @@ public class ElectrumServer {
     }
 
     public void copyPostmixLabels(Wallet wallet, Set<BlockTransactionHashIndex> newTransactionOutputs) {
-        if(wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX) {
+        if(wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && wallet.getMasterWallet() != null) {
             for(BlockTransactionHashIndex newRef : newTransactionOutputs) {
                 BlockTransactionHashIndex prevRef = wallet.getWalletTxos().keySet().stream()
                         .filter(txo -> wallet.getMasterWallet().getUtxoMixData(txo) != null && txo.isSpent() && txo.getSpentBy().getHash().equals(newRef.getHash())).findFirst().orElse(null);

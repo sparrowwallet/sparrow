@@ -45,6 +45,7 @@ import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowPostmixHandler;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.slf4j.Logger;
@@ -467,6 +468,15 @@ public class Whirlpool {
     public void onWalletStop(WalletStopEvent e) {
         if(e.getWhirlpoolWallet() == whirlpoolWalletService.whirlpoolWallet()) {
             mixingProperty.set(false);
+
+            Wallet wallet = AppServices.get().getWallet(walletId);
+            if(wallet != null) {
+                Platform.runLater(() -> {
+                    if(AppServices.isConnected()) {
+                        AppServices.getWhirlpoolServices().startWhirlpool(wallet, this, false);
+                    }
+                });
+            }
         }
     }
 
@@ -539,7 +549,7 @@ public class Whirlpool {
         }
     }
 
-    public static class StartupService extends Service<WhirlpoolWallet> {
+    public static class StartupService extends ScheduledService<WhirlpoolWallet> {
         private final Whirlpool whirlpool;
 
         public StartupService(Whirlpool whirlpool) {
@@ -582,37 +592,6 @@ public class Whirlpool {
                     whirlpool.stoppingProperty.set(true);
                     whirlpool.shutdown();
                     whirlpool.stoppingProperty.set(false);
-                    return true;
-                }
-            };
-        }
-    }
-
-    public static class RestartService extends Service<Boolean> {
-        private final Whirlpool whirlpool;
-
-        public RestartService(Whirlpool whirlpool) {
-            this.whirlpool = whirlpool;
-        }
-
-        @Override
-        protected Task<Boolean> createTask() {
-            return new Task<>() {
-                protected Boolean call() throws Exception {
-                    updateProgress(-1, 1);
-                    updateMessage("Disconnecting from Whirlpool...");
-                    whirlpool.stoppingProperty.set(true);
-                    whirlpool.shutdown();
-                    whirlpool.stoppingProperty.set(false);
-
-                    updateMessage("Starting Whirlpool...");
-                    whirlpool.startingProperty.set(true);
-                    WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
-                    if(AppServices.onlineProperty().get()) {
-                        whirlpoolWallet.start();
-                    }
-                    whirlpool.startingProperty.set(false);
-
                     return true;
                 }
             };

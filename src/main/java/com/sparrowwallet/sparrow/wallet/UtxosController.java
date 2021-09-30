@@ -92,6 +92,20 @@ public class UtxosController extends WalletFormController implements Initializab
         mixTo.setDisable(newValue);
     };
 
+    private final ChangeListener<Boolean> mixingListener = (observable, oldValue, newValue) -> {
+        if(!newValue) {
+            WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
+            for(Entry entry : walletUtxosEntry.getChildren()) {
+                UtxoEntry utxoEntry = (UtxoEntry)entry;
+                if(utxoEntry.getMixStatus() != null && utxoEntry.getMixStatus().getMixProgress() != null
+                        && utxoEntry.getMixStatus().getMixProgress().getMixStep() != null
+                        && utxoEntry.getMixStatus().getMixProgress().getMixStep().isInterruptable()) {
+                    utxoEntry.setMixProgress(null);
+                }
+            }
+        }
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -120,6 +134,7 @@ public class UtxosController extends WalletFormController implements Initializab
                 stopMix.visibleProperty().bind(whirlpool.mixingProperty());
                 whirlpool.startingProperty().addListener(new WeakChangeListener<>(mixingStartingListener));
                 whirlpool.stoppingProperty().addListener(new WeakChangeListener<>(mixingStoppingListener));
+                whirlpool.mixingProperty().addListener(new WeakChangeListener<>(mixingListener));
                 updateMixToButton();
             }
         }
@@ -363,11 +378,8 @@ public class UtxosController extends WalletFormController implements Initializab
 
             updateMixToButton();
             if(whirlpool.isStarted()) {
-                Whirlpool.RestartService restartService = new Whirlpool.RestartService(whirlpool);
-                restartService.setOnFailed(workerStateEvent -> {
-                    log.error("Failed to restart whirlpool", workerStateEvent.getSource().getException());
-                });
-                restartService.start();
+                //Will automatically restart
+                AppServices.getWhirlpoolServices().stopWhirlpool(whirlpool, false);
             }
         }
     }
