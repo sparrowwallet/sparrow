@@ -21,11 +21,15 @@ public class KeystorePassphraseDialog extends Dialog<String> {
     }
 
     public KeystorePassphraseDialog(String walletName, Keystore keystore) {
+        this(walletName, keystore, false);
+    }
+
+    public KeystorePassphraseDialog(String walletName, Keystore keystore, boolean confirm) {
         this.passphrase = (CustomPasswordField) TextFields.createClearablePasswordField();
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Keystore Passphrase" + (walletName != null ? " - " + walletName : ""));
-        dialogPane.setHeaderText("Enter the BIP39 passphrase\nfor keystore: " + keystore.getLabel());
+        dialogPane.setHeaderText((confirm ? "Re-enter" : "Enter") + " the BIP39 passphrase\n" + (confirm ? "to confirm:" : "for keystore: " + keystore.getLabel()));
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);

@@ -38,6 +38,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
     protected final Wallet wallet;
@@ -384,6 +385,14 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
         try {
             Keystore keystore = importer.getKeystore(derivation, wordEntriesProperty.get(), passphraseProperty.get());
             if(!dryrun) {
+                if(passphraseProperty.get() != null && !passphraseProperty.get().isEmpty()) {
+                    KeystorePassphraseDialog keystorePassphraseDialog = new KeystorePassphraseDialog(null, keystore, true);
+                    Optional<String> optPassphrase = keystorePassphraseDialog.showAndWait();
+                    if(optPassphrase.isEmpty() || !optPassphrase.get().equals(passphraseProperty.get())) {
+                        throw new ImportException("Re-entered passphrase did not match");
+                    }
+                }
+
                 EventManager.get().post(new KeystoreImportEvent(keystore));
             }
             return true;
@@ -394,7 +403,7 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
             } else if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
                 errorMessage = e.getCause().getMessage();
             }
-            setError("Import Error", errorMessage);
+            setError("Import Error", errorMessage + ".");
             importButton.setDisable(false);
             return false;
         }
