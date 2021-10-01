@@ -62,6 +62,10 @@ public class Storage {
     }
 
     public boolean isEncrypted() throws IOException {
+        if(!walletFile.exists()) {
+            return false;
+        }
+
         return persistence.isEncrypted(walletFile);
     }
 
@@ -531,10 +535,18 @@ public class Storage {
     public static class KeyDerivationService extends Service<ECKey> {
         private final Storage storage;
         private final SecureString password;
+        private final boolean verifyPassword;
 
         public KeyDerivationService(Storage storage, SecureString password) {
             this.storage = storage;
             this.password = password;
+            this.verifyPassword = false;
+        }
+
+        public KeyDerivationService(Storage storage, SecureString password, boolean verifyPassword) {
+            this.storage = storage;
+            this.password = password;
+            this.verifyPassword = verifyPassword;
         }
 
         @Override
@@ -542,7 +554,12 @@ public class Storage {
             return new Task<>() {
                 protected ECKey call() throws IOException, StorageException {
                     try {
-                        return storage.getEncryptionKey(password);
+                        ECKey encryptionFullKey = storage.getEncryptionKey(password);
+                        if(verifyPassword && !ECKey.fromPublicOnly(encryptionFullKey).equals(storage.getEncryptionPubKey())) {
+                            throw new InvalidPasswordException("Derived pubkey does not match stored pubkey");
+                        }
+
+                        return encryptionFullKey;
                     } finally {
                         password.clear();
                     }

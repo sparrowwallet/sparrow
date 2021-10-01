@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class SettingsController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
@@ -459,7 +462,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
-                        Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
+                        Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
                         keyDerivationService.setOnSucceeded(workerStateEvent -> {
                             EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                             ECKey encryptionFullKey = keyDerivationService.getValue();
@@ -482,7 +485,14 @@ public class SettingsController extends WalletFormController implements Initiali
                         });
                         keyDerivationService.setOnFailed(workerStateEvent -> {
                             EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
-                            AppServices.showErrorDialog("Incorrect Password", keyDerivationService.getException().getMessage());
+                            if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                                Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                                    Platform.runLater(() -> addAccount(null));
+                                }
+                            } else {
+                                log.error("Error deriving wallet key", keyDerivationService.getException());
+                            }
                         });
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
                         keyDerivationService.start();

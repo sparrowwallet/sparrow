@@ -14,6 +14,8 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,8 @@ public class WalletForm {
 
     private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
+    private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
+
     public WalletForm(Storage storage, Wallet currentWallet, Wallet backupWallet) {
         this(storage, currentWallet, backupWallet, true);
     }
@@ -56,6 +60,10 @@ public class WalletForm {
 
     public Wallet getWallet() {
         return wallet;
+    }
+
+    public Wallet getMasterWallet() {
+        return wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
     }
 
     public Storage getStorage() {
@@ -296,6 +304,14 @@ public class WalletForm {
         }
 
         return walletUtxosEntry;
+    }
+
+    public BooleanProperty lockedProperty() {
+        return lockedProperty;
+    }
+
+    public void setLocked(boolean locked) {
+        this.lockedProperty.set(locked);
     }
 
     @Subscribe

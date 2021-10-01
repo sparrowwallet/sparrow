@@ -88,7 +88,7 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="future-warning" />
                     </graphic>
                     <tooltip>
-                        <Tooltip text="Future block specified - transaction will not be mined until this block"/>
+                        <Tooltip text="Future block specified - transaction cannot be broadcast until this block height"/>
                     </tooltip>
                 </Label>
             </Field>
@@ -99,7 +99,7 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="future-warning" />
                     </graphic>
                     <tooltip>
-                        <Tooltip text="Future date specified - transaction will not be mined until this date"/>
+                        <Tooltip text="Future date specified - transaction cannot be broadcast until this date"/>
                     </tooltip>
                 </Label>
             </Field>

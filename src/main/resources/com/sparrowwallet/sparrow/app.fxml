@@ -100,6 +100,7 @@
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                         <SeparatorMenuItem />
                         <MenuItem fx:id="minimizeToTray" mnemonicParsing="false" text="Minimize to System Tray" accelerator="Shortcut+Y" onAction="#minimizeToTray"/>
+                        <MenuItem fx:id="lockWallet" mnemonicParsing="false" text="Lock Wallet" accelerator="Shortcut+L" onAction="#lockWallet"/>
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>

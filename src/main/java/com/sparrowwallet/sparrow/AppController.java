@@ -138,6 +138,9 @@ public class AppController implements Initializable {
     private MenuItem minimizeToTray;
 
     @FXML
+    private MenuItem lockWallet;
+
+    @FXML
     private MenuItem refreshWallet;
 
     @FXML
@@ -283,6 +286,7 @@ public class AppController implements Initializable {
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
         exportWallet.setDisable(true);
+        lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
 
@@ -1140,6 +1144,13 @@ public class AppController implements Initializable {
         AppServices.get().minimizeStage((Stage)tabs.getScene().getWindow());
     }
 
+    public void lockWallet(ActionEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            EventManager.get().post(new WalletLockEvent(selectedWalletForm.getMasterWallet()));
+        }
+    }
+
     public void refreshWallet(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
@@ -1189,7 +1200,6 @@ public class AppController implements Initializable {
             tabLabel.setGraphic(glyph);
             tabLabel.setGraphicTextGap(5.0);
             tab.setGraphic(tabLabel);
-            tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
             tab.setOnCloseRequest(event -> {
                 if(AppServices.getWhirlpoolServices().getWhirlpoolForMixToWallet(((WalletTabData)tab.getUserData()).getWalletForm().getWalletId()) != null) {
@@ -1202,13 +1212,17 @@ public class AppController implements Initializable {
 
             TabPane subTabs = new TabPane();
             subTabs.setSide(Side.RIGHT);
-            subTabs.getStyleClass().add("master-only");
+            setSubTabsVisible(subTabs, false);
             subTabs.rotateGraphicProperty().set(true);
             tab.setContent(subTabs);
 
             WalletForm walletForm = addWalletSubTab(subTabs, storage, wallet, backupWallet);
             TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
             tab.setUserData(tabData);
+            tab.setContextMenu(getTabContextMenu(tab));
+            walletForm.lockedProperty().addListener((observable, oldValue, newValue) -> {
+                setSubTabsVisible(subTabs, !newValue && subTabs.getTabs().size() > 1);
+            });
 
             subTabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
                 if(selectedTab != null) {
@@ -1236,8 +1250,7 @@ public class AppController implements Initializable {
                         Label masterLabel = (Label)masterTab.getGraphic();
                         masterLabel.setText(getAutomaticName(wallet.getMasterWallet()));
                         Platform.runLater(() -> {
-                            subTabs.getStyleClass().remove("master-only");
-                            subTabs.getStyleClass().add("wallet-subtabs");
+                            setSubTabsVisible(subTabs, true);
                         });
                     }
                 }
@@ -1245,6 +1258,20 @@ public class AppController implements Initializable {
         }
 
         EventManager.get().post(new WalletOpenedEvent(storage, wallet));
+    }
+
+    private void setSubTabsVisible(TabPane subTabs, boolean visible) {
+        if(visible) {
+            subTabs.getStyleClass().remove("master-only");
+            if(!subTabs.getStyleClass().contains("wallet-subtabs")) {
+                subTabs.getStyleClass().add("wallet-subtabs");
+            }
+        } else {
+            if(!subTabs.getStyleClass().contains("master-only")) {
+                subTabs.getStyleClass().add("master-only");
+            }
+            subTabs.getStyleClass().remove("wallet-subtabs");
+        }
     }
 
     public WalletForm addWalletSubTab(TabPane subTabs, Storage storage, Wallet wallet, Wallet backupWallet) {
@@ -1485,6 +1512,18 @@ public class AppController implements Initializable {
     private ContextMenu getTabContextMenu(Tab tab) {
         ContextMenu contextMenu = new ContextMenu();
 
+        if(tab.getUserData() instanceof WalletTabData walletTabData) {
+            MenuItem lock = new MenuItem("Lock");
+            Glyph lockGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.LOCK);
+            lockGlyph.setFontSize(12);
+            lock.setGraphic(lockGlyph);
+            lock.disableProperty().bind(walletTabData.getWalletForm().lockedProperty());
+            lock.setOnAction(event -> {
+                EventManager.get().post(new WalletLockEvent(walletTabData.getWallet()));
+            });
+            contextMenu.getItems().addAll(lock);
+        }
+
         MenuItem close = new MenuItem("Close");
         close.setOnAction(event -> {
             tabs.getTabs().remove(tab);
@@ -1670,6 +1709,7 @@ public class AppController implements Initializable {
                 } else {
                     saveTransaction.setVisible(false);
                 }
+                lockWallet.setDisable(true);
                 exportWallet.setDisable(true);
                 showLoadingLog.setDisable(true);
                 showUtxosChart.setDisable(true);
@@ -1679,6 +1719,7 @@ public class AppController implements Initializable {
                 WalletTabData walletTabData = walletTabEvent.getWalletTabData();
                 saveTransaction.setVisible(true);
                 saveTransaction.setDisable(true);
+                lockWallet.setDisable(walletTabData.getWalletForm().lockedProperty().get());
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
                 showLoadingLog.setDisable(false);
                 showUtxosChart.setDisable(false);
@@ -1714,6 +1755,20 @@ public class AppController implements Initializable {
     @Subscribe
     public void newWalletTransactions(NewWalletTransactionsEvent event) {
         if(Config.get().isNotifyNewTransactions() && getOpenWallets().containsKey(event.getWallet())) {
+            for(Tab tab : tabs.getTabs()) {
+                if(tab.getUserData() instanceof WalletTabData) {
+                    TabPane subTabs = (TabPane)tab.getContent();
+                    for(Tab subTab : subTabs.getTabs()) {
+                        TabData tabData = (TabData)subTab.getUserData();
+                        if(tabData instanceof WalletTabData walletTabData) {
+                            if(walletTabData.getWallet().equals(event.getWallet()) && walletTabData.getWalletForm().lockedProperty().get()) {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
             List<BlockTransaction> blockTransactions = new ArrayList<>(event.getBlockTransactions());
             List<BlockTransaction> whirlpoolTransactions = event.getWhirlpoolMixTransactions();
             blockTransactions.removeAll(whirlpoolTransactions);
@@ -2171,5 +2226,21 @@ public class AppController implements Initializable {
         }
 
         addWalletTab(storage, event.getChildWallet(), null);
+    }
+
+    @Subscribe
+    public void walletLock(WalletLockEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
+            lockWallet.setDisable(true);
+        }
+    }
+
+    @Subscribe
+    public void walletUnlock(WalletUnlockEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
+            lockWallet.setDisable(false);
+        }
     }
 }
