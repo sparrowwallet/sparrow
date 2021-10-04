@@ -1,13 +1,17 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.sparrow.BaseController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.event.TransactionTabsClosedEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.PieChart;
@@ -18,6 +22,7 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 
 import java.util.List;
+import java.util.Locale;
 
 public abstract class TransactionFormController extends BaseController {
     private static final int MAX_PIE_SEGMENTS = 200;
@@ -64,7 +69,9 @@ public abstract class TransactionFormController extends BaseController {
         pie.getData().forEach(data -> {
             Tooltip tooltip = new Tooltip();
             double percent = 100.0 * (data.getPieValue() / totalSum);
-            tooltip.setText(data.getName() + " " + String.format("%.1f", percent) + "%");
+            String satsValue = String.format(Locale.ENGLISH, "%,d", (long)data.getPieValue()) + " sats";
+            String btcValue = CoinLabel.BTC_FORMAT.format(data.getPieValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+            tooltip.setText(data.getName() + "\n" + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + " (" + String.format("%.1f", percent) + "%)");
             Tooltip.install(data.getNode(), tooltip);
             data.pieValueProperty().addListener((observable, oldValue, newValue) -> tooltip.setText(newValue + "%"));
         });
