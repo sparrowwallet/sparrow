@@ -62,11 +62,11 @@ public class SpecterDesktop implements WalletImport, WalletExport {
                 wallet.setName(specterWallet.label);
 
                 if(specterWallet.devices != null && specterWallet.devices.size() == wallet.getKeystores().size()) {
-                    boolean uniqueLabels = specterWallet.devices.stream().map(d -> d.label).distinct().count() == specterWallet.devices.size();
+                    boolean uniqueLabels = specterWallet.devices.stream().map(SpecterWalletDevice::getLabel).distinct().count() == specterWallet.devices.size();
                     for(int i = 0; i < specterWallet.devices.size(); i++) {
                         SpecterWalletDevice device = specterWallet.devices.get(i);
                         Keystore keystore = wallet.getKeystores().get(i);
-                        keystore.setLabel(device.label + (uniqueLabels ? "" : " " + i));
+                        keystore.setLabel(device.getLabel() + (uniqueLabels ? "" : " " + i));
 
                         WalletModel walletModel = device.getWalletModel();
                         if(walletModel != null) {
@@ -160,6 +160,14 @@ public class SpecterDesktop implements WalletImport, WalletExport {
             }
 
             return null;
+        }
+
+        public String getLabel() {
+            if(label == null) {
+                label = "Keystore";
+            }
+
+            return label.length() > Keystore.MAX_LABEL_LENGTH - 3 ? label.substring(0, Keystore.MAX_LABEL_LENGTH - 3) : label;
         }
     }
 }
