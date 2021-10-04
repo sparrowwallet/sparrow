@@ -912,6 +912,11 @@ public class AppController implements Initializable {
                 whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
             }
 
+            StandardAccount standardAccount = wallet.getStandardAccountType();
+            if(standardAccount != null && standardAccount.getMinimumGapLimit() != null && wallet.gapLimit() == null) {
+                wallet.setGapLimit(standardAccount.getMinimumGapLimit());
+            }
+
             for(int i = 0; i < wallet.getKeystores().size(); i++) {
                 Keystore keystore = wallet.getKeystores().get(i);
                 if(keystore.hasSeed()) {

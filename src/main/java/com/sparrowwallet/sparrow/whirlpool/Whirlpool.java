@@ -77,6 +77,8 @@ public class Whirlpool {
     private String walletId;
     private String mixToWalletId;
 
+    private StartupService startupService;
+
     private final BooleanProperty startingProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty stoppingProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
@@ -260,6 +262,15 @@ public class Whirlpool {
     public void shutdown() {
         whirlpoolWalletService.closeWallet();
         httpClientService.shutdown();
+    }
+
+    public StartupService createStartupService() {
+        if(startupService != null) {
+            startupService.cancel();
+        }
+
+        startupService = new StartupService(this);
+        return startupService;
     }
 
     private WalletUtxo getUtxo(WhirlpoolUtxo whirlpoolUtxo) {

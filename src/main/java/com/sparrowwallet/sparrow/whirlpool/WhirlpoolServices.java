@@ -29,7 +29,6 @@ public class WhirlpoolServices {
     private static final Logger log = LoggerFactory.getLogger(WhirlpoolServices.class);
 
     private final Map<String, Whirlpool> whirlpoolMap = new HashMap<>();
-    private Whirlpool.StartupService startupService;
 
     public Whirlpool getWhirlpool(Wallet wallet) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
@@ -88,11 +87,7 @@ public class WhirlpoolServices {
                 }
             }
 
-            if(startupService != null) {
-                startupService.cancel();
-            }
-
-            startupService = new Whirlpool.StartupService(whirlpool);
+            Whirlpool.StartupService startupService = whirlpool.createStartupService();
             startupService.setPeriod(Duration.minutes(2));
             startupService.setOnSucceeded(workerStateEvent -> {
                 startupService.cancel();
