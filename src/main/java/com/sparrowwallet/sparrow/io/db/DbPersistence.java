@@ -88,6 +88,7 @@ public class DbPersistence implements Persistence {
             Persistence backupPersistence = PersistenceType.DB.getInstance();
             backupPersistence.setKeyDeriver(keyDeriver);
             backupWallet = backupPersistence.loadWallet(new Storage(backupPersistence, backupFile), password, encryptionKey).getWallet();
+            backupPersistence.close();
         }
 
         Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, backupWallet, encryptionKey);

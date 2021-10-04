@@ -173,6 +173,20 @@ public class Storage {
     }
 
     public void deleteTempBackups() {
+        File[] backups = getBackups(Storage.TEMP_BACKUP_PREFIX);
+        if(backups.length > 0) {
+            try {
+                Date date = BACKUP_DATE_FORMAT.parse(getBackupDate(backups[0].getName()));
+                ProcessHandle.Info processInfo = ProcessHandle.current().info();
+                if(processInfo.startInstant().isPresent() && processInfo.startInstant().get().isAfter(date.toInstant())) {
+                    File permanent = new File(backups[0].getParent(), backups[0].getName().substring(Storage.TEMP_BACKUP_PREFIX.length() + 1));
+                    backups[0].renameTo(permanent);
+                }
+            } catch(Exception e) {
+                log.error("Error copying temporary to permanent backup", e);
+            }
+        }
+
         deleteBackups(Storage.TEMP_BACKUP_PREFIX);
     }
 
