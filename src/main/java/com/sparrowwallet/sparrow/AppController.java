@@ -147,6 +147,9 @@ public class AppController implements Initializable {
     private MenuItem sendToMany;
 
     @FXML
+    private CheckMenuItem preventSleep;
+
+    @FXML
     private StackPane rootStack;
 
     @FXML
@@ -289,6 +292,7 @@ public class AppController implements Initializable {
         lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        preventSleep.setSelected(Config.get().isPreventSleep());
 
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
@@ -740,6 +744,12 @@ public class AppController implements Initializable {
         BitcoinUnit unit = (BitcoinUnit)item.getUserData();
         Config.get().setBitcoinUnit(unit);
         EventManager.get().post(new BitcoinUnitChangedEvent(unit));
+    }
+
+    public void preventSleep(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setPreventSleep(item.isSelected());
+        AppServices.get().setPreventSleep(item.isSelected());
     }
 
     public void openFile(File file) {

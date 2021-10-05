@@ -108,6 +108,8 @@
                     <MenuItem mnemonicParsing="false" text="Sign/Verify Message" accelerator="Shortcut+M" onAction="#signVerifyMessage"/>
                     <MenuItem fx:id="sendToMany" mnemonicParsing="false" text="Send To Many" onAction="#sendToMany"/>
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
+                    <SeparatorMenuItem />
+                    <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>

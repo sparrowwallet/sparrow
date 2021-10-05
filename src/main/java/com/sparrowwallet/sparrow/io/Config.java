@@ -42,6 +42,7 @@ public class Config {
     private boolean showTransactionHex = true;
     private boolean showLoadingLog = false;
     private boolean showUtxosChart = true;
+    private boolean preventSleep = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -277,6 +278,14 @@ public class Config {
     public void setShowUtxosChart(boolean showUtxosChart) {
         this.showUtxosChart = showUtxosChart;
         flush();
+    }
+
+    public boolean isPreventSleep() {
+        return preventSleep;
+    }
+
+    public void setPreventSleep(boolean preventSleep) {
+        this.preventSleep = preventSleep;
     }
 
     public List<File> getRecentWalletFiles() {

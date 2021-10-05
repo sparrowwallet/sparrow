@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
-import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
@@ -24,6 +23,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.awt.*;
 import java.awt.desktop.OpenFilesHandler;
 import java.awt.desktop.OpenURIHandler;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
@@ -93,6 +94,8 @@ public class AppServices {
     private VersionCheckService versionCheckService;
 
     private TorService torService;
+
+    private ScheduledService<Void> preventSleepService;
 
     private static Integer currentBlockHeight;
 
@@ -156,6 +159,7 @@ public class AppServices {
         ratesService = createRatesService(config.getExchangeSource(), config.getFiatCurrency());
         versionCheckService = createVersionCheckService();
         torService = createTorService();
+        preventSleepService = createPreventSleepService();
 
         onlineProperty.addListener(onlineServicesListener);
 
@@ -182,6 +186,10 @@ public class AppServices {
 
         if(config.isCheckNewVersions() && Network.get() == Network.MAINNET) {
             restartService(versionCheckService);
+        }
+
+        if(config.isPreventSleep()) {
+            restartService(preventSleepService);
         }
     }
 
@@ -380,6 +388,39 @@ public class AppServices {
         });
 
         return torService;
+    }
+
+    private ScheduledService<Void> createPreventSleepService() {
+        ScheduledService<Void> preventSleepService = new ScheduledService<Void>() {
+            @Override
+            protected Task<Void> createTask() {
+                return new Task<>() {
+                    protected Void call() {
+                        try {
+                            Robot robot = new Robot();
+                            robot.keyRelease(KeyEvent.VK_F16);
+                        } catch(Exception e) {
+                            log.debug("Error preventing sleep", e);
+                        }
+
+                        return null;
+                    }
+                };
+            }
+        };
+
+        preventSleepService.setPeriod(Duration.minutes(1));
+        return preventSleepService;
+    }
+
+    public void setPreventSleep(boolean preventSleep) {
+        if(preventSleepService != null) {
+            if(preventSleep) {
+                restartService(preventSleepService);
+            } else {
+                preventSleepService.cancel();
+            }
+        }
     }
 
     public static boolean isTorRunning() {
