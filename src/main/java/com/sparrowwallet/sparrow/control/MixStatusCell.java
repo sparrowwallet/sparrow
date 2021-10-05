@@ -66,7 +66,9 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
         if(mixFailReason != MixFailReason.CANCEL) {
             setGraphic(getFailGlyph());
             Tooltip tt = new Tooltip();
-            tt.setText(mixFailReason.getMessage() + (mixError == null ? "" : ": " + mixError) + "\nMake sure your internet connection is stable and the computer is configured to prevent sleeping.");
+            tt.setText(mixFailReason.getMessage() + (mixError == null ? "" : ": " + mixError) +
+                    "\nMix failures are generally caused by peers disconnecting during a mix." +
+                    "\nMake sure your internet connection is stable and the computer is configured to prevent sleeping.");
             setTooltip(tt);
         } else {
             setGraphic(null);

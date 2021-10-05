@@ -132,13 +132,14 @@ public class TransactionsController extends WalletFormController implements Init
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
                 CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                writer.writeRecord(new String[] {"Date", "Label", "Value", "Balance"});
+                writer.writeRecord(new String[] {"Date", "Label", "Value", "Balance", "Txid"});
                 for(Entry entry : walletTransactionsEntry.getChildren()) {
                     TransactionEntry txEntry = (TransactionEntry)entry;
                     writer.write(txEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
                     writer.write(txEntry.getLabel());
                     writer.write(getCoinValue(txEntry.getValue()));
                     writer.write(getCoinValue(txEntry.getBalance()));
+                    writer.write(txEntry.getBlockTransaction().getHash().toString());
                     writer.endRecord();
                 }
                 writer.close();
