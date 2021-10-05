@@ -112,7 +112,7 @@ public class Bwt {
 
         Config config = Config.get();
         bwtConfig.bitcoindUrl = config.getCoreServer();
-        if(config.getCoreAuthType() == CoreAuthType.COOKIE && config.getCoreDataDir() != null) {
+        if((config.getCoreAuthType() == CoreAuthType.COOKIE || config.getCoreAuth() == null || config.getCoreAuth().length() < 2) && config.getCoreDataDir() != null) {
             bwtConfig.bitcoindDir = config.getCoreDataDir().getAbsolutePath() + "/";
         } else {
             bwtConfig.bitcoindAuth = config.getCoreAuth();
