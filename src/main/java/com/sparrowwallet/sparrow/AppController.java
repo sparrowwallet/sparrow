@@ -35,6 +35,8 @@ import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.WeakChangeListener;
 import javafx.collections.ListChangeListener;
@@ -118,21 +120,27 @@ public class AppController implements Initializable {
 
     @FXML
     private CheckMenuItem openWalletsInNewWindows;
+    private static final BooleanProperty openWalletsInNewWindowsProperty = new SimpleBooleanProperty();
 
     @FXML
     private CheckMenuItem hideEmptyUsedAddresses;
+    private static final BooleanProperty hideEmptyUsedAddressesProperty = new SimpleBooleanProperty();
 
     @FXML
     private CheckMenuItem useHdCameraResolution;
+    private static final BooleanProperty useHdCameraResolutionProperty = new SimpleBooleanProperty();
 
     @FXML
     private CheckMenuItem showLoadingLog;
+    private static final BooleanProperty showLoadingLogProperty = new SimpleBooleanProperty();
 
     @FXML
     private CheckMenuItem showUtxosChart;
+    private static final BooleanProperty showUtxosChartProperty = new SimpleBooleanProperty();
 
     @FXML
     private CheckMenuItem showTxHex;
+    private static final BooleanProperty showTxHexProperty = new SimpleBooleanProperty();
 
     @FXML
     private MenuItem minimizeToTray;
@@ -148,6 +156,7 @@ public class AppController implements Initializable {
 
     @FXML
     private CheckMenuItem preventSleep;
+    private static final BooleanProperty preventSleepProperty = new SimpleBooleanProperty();
 
     @FXML
     private StackPane rootStack;
@@ -279,12 +288,21 @@ public class AppController implements Initializable {
         selectedThemeToggle.ifPresent(toggle -> theme.selectToggle(toggle));
         setTheme(null);
 
-        openWalletsInNewWindows.setSelected(Config.get().isOpenWalletsInNewWindows());
-        hideEmptyUsedAddresses.setSelected(Config.get().isHideEmptyUsedAddresses());
-        useHdCameraResolution.setSelected(Config.get().isHdCapture());
-        showTxHex.setSelected(Config.get().isShowTransactionHex());
-        showLoadingLog.setSelected(Config.get().isShowLoadingLog());
-        showUtxosChart.setSelected(Config.get().isShowUtxosChart());
+        openWalletsInNewWindowsProperty.set(Config.get().isOpenWalletsInNewWindows());
+        openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
+        hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
+        hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
+        useHdCameraResolutionProperty.set(Config.get().isHdCapture());
+        useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
+        showTxHexProperty.set(Config.get().isShowTransactionHex());
+        showTxHex.selectedProperty().bindBidirectional(showTxHexProperty);
+        showLoadingLogProperty.set(Config.get().isShowLoadingLog());
+        showLoadingLog.selectedProperty().bindBidirectional(showLoadingLogProperty);
+        showUtxosChartProperty.set(Config.get().isShowUtxosChart());
+        showUtxosChart.selectedProperty().bindBidirectional(showUtxosChartProperty);
+        preventSleepProperty.set(Config.get().isPreventSleep());
+        preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
+
         saveTransaction.setDisable(true);
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
@@ -292,7 +310,6 @@ public class AppController implements Initializable {
         lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
-        preventSleep.setSelected(Config.get().isPreventSleep());
 
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());

@@ -38,13 +38,13 @@
 
 .wallet-subtabs > .tab-header-area .tab {
     -fx-pref-height: 50;
-    -fx-pref-width: 80;
+    -fx-pref-width: 90;
     -fx-alignment: CENTER;
 }
 
 .wallet-subtabs > .tab-header-area .tab-label {
     -fx-pref-height: 50;
-    -fx-pref-width: 80;
+    -fx-pref-width: 90;
     -fx-alignment: CENTER;
     -fx-translate-x: -6;
 }
