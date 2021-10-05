@@ -35,10 +35,14 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
                 if(utxoEntry.getHashIndex().getHeight() <= 0) {
                     setText("Unconfirmed " + (utxoEntry.getHashIndex().getHeight() < 0 ? "Parent " : "") + (utxoEntry.getWallet().isWhirlpoolMixWallet() ? "(Not yet mixable)" : (utxoEntry.isSpendable() ? "(Spendable)" : "(Not yet spendable)")));
-                } else {
+                    setContextMenu(null);
+                } else if(utxoEntry.getHashIndex().getDate() != null) {
                     String date = DATE_FORMAT.format(utxoEntry.getHashIndex().getDate());
                     setText(date);
                     setContextMenu(new DateContextMenu(date, utxoEntry.getHashIndex()));
+                } else {
+                    setText("Unknown");
+                    setContextMenu(null);
                 }
 
                 Tooltip tooltip = new Tooltip();
