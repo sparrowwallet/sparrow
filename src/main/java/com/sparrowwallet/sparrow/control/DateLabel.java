@@ -17,6 +17,10 @@ public class DateLabel extends CopyableLabel {
     }
 
     public static String getShortDateFormat(Date date) {
+        if(date == null) {
+            return "Unknown";
+        }
+
         Date now = new Date();
         long elapsed = (now.getTime() - date.getTime()) / 1000;
 

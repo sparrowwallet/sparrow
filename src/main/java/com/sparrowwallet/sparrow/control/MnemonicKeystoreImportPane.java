@@ -262,7 +262,13 @@ public class MnemonicKeystoreImportPane extends TitledDescriptionPane {
                         importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
                         validChecksum = true;
                     } catch(ImportException e) {
-                        //ignore
+                        if(e.getCause() instanceof MnemonicException.MnemonicTypeException) {
+                            invalidLabel.setText("Unsupported Electrum seed");
+                            invalidLabel.setTooltip(new Tooltip("Seeds created in Electrum do not follow the BIP39 standard. Import the Electrum wallet file directly."));
+                        } else {
+                            invalidLabel.setText("Invalid checksum");
+                            invalidLabel.setTooltip(null);
+                        }
                     }
                 }
 
