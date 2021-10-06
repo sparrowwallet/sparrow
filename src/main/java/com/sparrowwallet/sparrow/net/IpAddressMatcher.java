@@ -102,6 +102,6 @@ public final class IpAddressMatcher {
     }
 
     public static boolean isLocalNetworkAddress(String address) {
-        return LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address);
+        return "localhost".equals(address) || "127.0.0.1".equals(address) || LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address);
     }
 }

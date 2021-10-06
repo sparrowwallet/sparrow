@@ -26,11 +26,13 @@ public class TcpTransport implements Transport, Closeable {
 
     public static final int DEFAULT_PORT = 50001;
     private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, 34};
+    private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
+    protected final int[] readTimeouts;
 
     private Socket socket;
 
@@ -59,6 +61,7 @@ public class TcpTransport implements Transport, Closeable {
     public TcpTransport(HostAndPort server, HostAndPort proxy) {
         this.server = server;
         this.socketFactory = (proxy == null ? SocketFactory.getDefault() : new ProxySocketFactory(proxy));
+        this.readTimeouts = (Config.get().getServerType() == ServerType.BITCOIN_CORE && Protocol.isOnionAddress(Config.get().getCoreServer()) ? SLOW_READ_TIMEOUT_SECS : BASE_READ_TIMEOUT_SECS);
     }
 
     @Override
@@ -91,16 +94,16 @@ public class TcpTransport implements Transport, Closeable {
 
     private String readResponse() throws IOException {
         try {
-            if(!readLock.tryLock((BASE_READ_TIMEOUT_SECS[readTimeoutIndex] * 1000) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
-                readTimeoutIndex = Math.min(readTimeoutIndex + 1, BASE_READ_TIMEOUT_SECS.length - 1);
-                log.warn("No response from server, setting read timeout to " + BASE_READ_TIMEOUT_SECS[readTimeoutIndex] + " secs");
+            if(!readLock.tryLock((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
+                readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
+                log.warn("No response from server, setting read timeout to " + readTimeouts[readTimeoutIndex] + " secs");
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {
             throw new IOException("Read thread interrupted");
         }
 
-        if(readTimeoutIndex == BASE_READ_TIMEOUT_SECS.length - 1) {
+        if(readTimeoutIndex == readTimeouts.length - 1) {
             readTimeoutIndex--;
         }
 

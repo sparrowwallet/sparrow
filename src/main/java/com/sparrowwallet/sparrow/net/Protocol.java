@@ -116,8 +116,19 @@ public enum Protocol {
         return toUrlString() + hostAndPort.toString();
     }
 
-    public boolean isOnionAddress(HostAndPort server) {
+    public static boolean isOnionAddress(HostAndPort server) {
         return server.getHost().toLowerCase().endsWith(TorService.TOR_ADDRESS_SUFFIX);
+    }
+
+    public static boolean isOnionAddress(String address) {
+        if(address != null) {
+            Protocol protocol = Protocol.getProtocol(address);
+            if(protocol != null) {
+                return isOnionAddress(protocol.getServerHostAndPort(address));
+            }
+        }
+
+        return false;
     }
 
     public static Protocol getProtocol(String url) {

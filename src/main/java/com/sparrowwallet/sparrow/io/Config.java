@@ -425,24 +425,6 @@ public class Config {
         flush();
     }
 
-    public Boolean getCoreMultiWallet() {
-        return coreMultiWallet;
-    }
-
-    public void setCoreMultiWallet(Boolean coreMultiWallet) {
-        this.coreMultiWallet = coreMultiWallet;
-        flush();
-    }
-
-    public String getCoreWallet() {
-        return coreWallet;
-    }
-
-    public void setCoreWallet(String coreWallet) {
-        this.coreWallet = coreWallet;
-        flush();
-    }
-
     public String getElectrumServer() {
         return electrumServer;
     }

@@ -49,3 +49,6 @@
     -fx-text-fill: linear-gradient(to bottom, derive(#0b99c9, 30%), #0b99c9);
 }
 
+#electrumUseSsl {
+    -fx-padding: 4 0 2 0;
+}

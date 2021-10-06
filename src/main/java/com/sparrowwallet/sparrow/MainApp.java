@@ -70,7 +70,6 @@ public class MainApp extends Application {
             if(optionalMode.isPresent()) {
                 mode = optionalMode.get();
                 Config.get().setMode(mode);
-                Config.get().setCoreWallet(Bwt.DEFAULT_CORE_WALLET);
 
                 if(mode.equals(Mode.ONLINE)) {
                     PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER, true);
@@ -85,9 +84,6 @@ public class MainApp extends Application {
 
         if(Config.get().getServerType() == null && Config.get().getCoreServer() == null && Config.get().getElectrumServer() != null) {
             Config.get().setServerType(ServerType.ELECTRUM_SERVER);
-        } else if(Config.get().getServerType() == ServerType.BITCOIN_CORE && Config.get().getCoreWallet() == null) {
-            Config.get().setCoreMultiWallet(Boolean.TRUE);
-            Config.get().setCoreWallet("");
         }
 
         if(Config.get().getHdCapture() == null && Platform.getCurrent() == Platform.OSX) {

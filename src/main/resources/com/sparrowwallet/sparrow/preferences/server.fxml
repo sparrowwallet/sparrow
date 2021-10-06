@@ -144,11 +144,12 @@
                 <TextField fx:id="coreUser"/>
                 <PasswordField fx:id="corePass"/>
             </Field>
-            <Field text="Multi-Wallet:">
-                <UnlabeledToggleSwitch fx:id="coreMultiWallet"/> <HelpLabel helpText="Creates a new Bitcoin Core wallet with the following name (recommended to avoid conflicts)" />
+            <Field text="Use Proxy:">
+                <UnlabeledToggleSwitch fx:id="coreUseProxy"/>
             </Field>
-            <Field text="Wallet Name:" styleClass="label-button">
-                <TextField fx:id="coreWallet"/>
+            <Field text="Proxy URL:">
+                <TextField fx:id="coreProxyHost" />
+                <TextField fx:id="coreProxyPort" maxWidth="100" />
             </Field>
         </Fieldset>
     </Form>

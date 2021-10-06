@@ -102,10 +102,13 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private PasswordField corePass;
 
     @FXML
-    private UnlabeledToggleSwitch coreMultiWallet;
+    private UnlabeledToggleSwitch coreUseProxy;
 
     @FXML
-    private TextField coreWallet;
+    private TextField coreProxyHost;
+
+    @FXML
+    private TextField coreProxyPort;
 
     @FXML
     private Form electrumForm;
@@ -209,7 +212,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
         coreUser.textProperty().addListener(getBitcoinAuthListener(config));
         corePass.textProperty().addListener(getBitcoinAuthListener(config));
 
-        coreWallet.textProperty().addListener(getBitcoinWalletListener(config));
+        coreUseProxy.selectedProperty().bindBidirectional(useProxy.selectedProperty());
+        coreProxyHost.textProperty().bindBidirectional(proxyHost.textProperty());
+        coreProxyPort.textProperty().bindBidirectional(proxyPort.textProperty());
 
         electrumHost.textProperty().addListener(getElectrumServerListener(config));
         electrumPort.textProperty().addListener(getElectrumServerListener(config));
@@ -248,11 +253,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
             if(dataDir != null) {
                 coreDataDir.setText(dataDir.getAbsolutePath());
             }
-        });
-
-        coreMultiWallet.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            config.setCoreMultiWallet(newValue);
-            coreWallet.setDisable(!newValue);
         });
 
         electrumUseSsl.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -357,15 +357,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 corePass.setText(userPass[1]);
             }
         }
-
-        coreWallet.setPromptText("Default");
-        if(config.getCoreWallet() == null) {
-            coreWallet.setText(Bwt.DEFAULT_CORE_WALLET);
-        } else {
-            coreWallet.setText(config.getCoreWallet());
-        }
-
-        coreMultiWallet.setSelected(config.getCoreMultiWallet() != Boolean.FALSE);
 
         String electrumServer = config.getElectrumServer();
         if(electrumServer != null) {
@@ -519,8 +510,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
         coreDataDirSelect.setDisable(!editable);
         coreUser.setDisable(!editable);
         corePass.setDisable(!editable);
-        coreMultiWallet.setDisable(!editable);
-        coreWallet.setDisable(!editable);
+        coreUseProxy.setDisable(!editable);
+        coreProxyHost.setDisable(!editable);
+        coreProxyPort.setDisable(!editable);
 
         electrumHost.setDisable(!editable);
         electrumPort.setDisable(!editable);
@@ -662,13 +654,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private ChangeListener<String> getBitcoinAuthListener(Config config) {
         return (observable, oldValue, newValue) -> {
             config.setCoreAuth(coreUser.getText() + ":" + corePass.getText());
-        };
-    }
-
-    @NotNull
-    private ChangeListener<String> getBitcoinWalletListener(Config config) {
-        return (observable, oldValue, newValue) -> {
-            config.setCoreWallet(coreWallet.getText());
         };
     }
 

@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.google.common.net.HostAndPort;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -7,6 +8,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -100,6 +102,7 @@ public class Bwt {
             bwtConfig.gapLimit = gapLimit;
         } else {
             bwtConfig.requireAddresses = false;
+            bwtConfig.bitcoindTimeout = 30;
         }
 
         bwtConfig.verbose = log.isDebugEnabled() ? 2 : 0;
@@ -112,14 +115,19 @@ public class Bwt {
 
         Config config = Config.get();
         bwtConfig.bitcoindUrl = config.getCoreServer();
+
+        HostAndPort torProxy = getTorProxy();
+        if(Protocol.isOnionAddress(bwtConfig.bitcoindUrl) && torProxy != null) {
+            bwtConfig.bitcoindProxy = torProxy.toString();
+        }
+
         if((config.getCoreAuthType() == CoreAuthType.COOKIE || config.getCoreAuth() == null || config.getCoreAuth().length() < 2) && config.getCoreDataDir() != null) {
             bwtConfig.bitcoindDir = config.getCoreDataDir().getAbsolutePath() + "/";
         } else {
             bwtConfig.bitcoindAuth = config.getCoreAuth();
         }
-        if(config.getCoreMultiWallet() != Boolean.FALSE) {
-            bwtConfig.bitcoindWallet = config.getCoreWallet();
-        }
+
+        bwtConfig.bitcoindWallet = DEFAULT_CORE_WALLET;
         bwtConfig.createWalletIfMissing = true;
 
         Gson gson = new Gson();
@@ -127,6 +135,12 @@ public class Bwt {
         log.debug("Configuring bwt: " + jsonConfig);
 
         NativeBwtDaemon.start(jsonConfig, callback);
+    }
+
+    private HostAndPort getTorProxy() {
+        return AppServices.isTorRunning() ?
+                HostAndPort.fromParts("127.0.0.1", TorService.PROXY_PORT) :
+                (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer().replace("localhost", "127.0.0.1")));
     }
 
     /**
@@ -183,6 +197,12 @@ public class Bwt {
 
         @SerializedName("bitcoind_wallet")
         public String bitcoindWallet;
+
+        @SerializedName("bitcoind_proxy")
+        public String bitcoindProxy;
+
+        @SerializedName("bitcoind_timeout")
+        public Integer bitcoindTimeout;
 
         @SerializedName("create_wallet_if_missing")
         public Boolean createWalletIfMissing;
