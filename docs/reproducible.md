@@ -51,7 +51,7 @@ sudo apt install -y rpm fakeroot binutils
 
 The project can cloned for a specific release tag as follows:
 ```shell
-GIT_TAG="1.5.0"
+GIT_TAG="1.5.1"
 git clone --recursive --branch "${GIT_TAG}" git@github.com:sparrowwallet/sparrow.git
 ```
 
