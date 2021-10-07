@@ -13,6 +13,7 @@ import com.sparrowwallet.sparrow.whirlpool.WhirlpoolException;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.tools.Platform;
 
 public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
     public MixStatusCell() {
@@ -68,12 +69,24 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             Tooltip tt = new Tooltip();
             tt.setText(mixFailReason.getMessage() + (mixError == null ? "" : ": " + mixError) +
                     "\nMix failures are generally caused by peers disconnecting during a mix." +
-                    "\nMake sure your internet connection is stable and the computer is configured to prevent sleeping.");
+                    "\nMake sure your internet connection is stable and the computer is configured to prevent sleeping." +
+                    "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
             setTooltip(tt);
         } else {
             setGraphic(null);
             setTooltip(null);
         }
+    }
+
+    private String getPlatformSleepConfig() {
+        Platform platform = Platform.getCurrent();
+        if(platform == Platform.OSX) {
+            return "OSX System Preferences";
+        } else if(platform == Platform.WINDOWS) {
+            return "Windows Control Panel";
+        }
+
+        return "system power settings";
     }
 
     private void setMixProgress(MixProgress mixProgress) {

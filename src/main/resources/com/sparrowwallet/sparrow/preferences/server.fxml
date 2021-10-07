@@ -145,7 +145,7 @@
                 <PasswordField fx:id="corePass"/>
             </Field>
             <Field text="Use Proxy:">
-                <UnlabeledToggleSwitch fx:id="coreUseProxy"/>
+                <UnlabeledToggleSwitch fx:id="coreUseProxy"/><HelpLabel helpText="Bitcoin Core RPC onion URLs, and all other non-RPC external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="coreProxyHost" />
@@ -172,7 +172,7 @@
                 </Button>
             </Field>
             <Field text="Use Proxy:">
-                <UnlabeledToggleSwitch fx:id="useProxy"/>
+                <UnlabeledToggleSwitch fx:id="useProxy"/><HelpLabel helpText="All external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="proxyHost" />

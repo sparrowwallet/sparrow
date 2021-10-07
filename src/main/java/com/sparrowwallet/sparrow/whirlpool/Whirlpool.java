@@ -42,6 +42,7 @@ import com.sparrowwallet.sparrow.whirlpool.dataPersister.SparrowDataPersister;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowDataSource;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowMinerFeeSupplier;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowPostmixHandler;
+import com.sparrowwallet.sparrow.whirlpool.tor.SparrowTorClientService;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -87,7 +88,7 @@ public class Whirlpool {
         this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase());
         this.httpClientService = new JavaHttpClientService(torProxy);
         this.stompClientService = new JavaStompClientService(httpClientService);
-        this.torClientService = new WhirlpoolTorClientService();
+        this.torClientService = new SparrowTorClientService(this);
 
         this.whirlpoolWalletService = new WhirlpoolWalletService();
         this.config = computeWhirlpoolWalletConfig(torProxy);

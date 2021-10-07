@@ -3,15 +3,14 @@ package com.sparrowwallet.sparrow.net;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import net.freehaven.tor.control.TorControlError;
-import org.berndpruenster.netlayer.tor.NativeTor;
-import org.berndpruenster.netlayer.tor.Tor;
-import org.berndpruenster.netlayer.tor.TorCtlException;
-import org.berndpruenster.netlayer.tor.Torrc;
+import org.berndpruenster.netlayer.tor.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -40,6 +39,7 @@ public class TorService extends ScheduledService<NativeTor> {
                     try {
                         LinkedHashMap<String, String> torrcOptionsMap = new LinkedHashMap<>();
                         torrcOptionsMap.put("SocksPort", Integer.toString(PROXY_PORT));
+                        torrcOptionsMap.put("HashedControlPassword", "16:D780432418F09B06609940000924317D3B9DF522A3191F8F4E597E9329");
                         torrcOptionsMap.put("DisableNetwork", "0");
                         Torrc override = new Torrc(torrcOptionsMap);
 
@@ -61,5 +61,26 @@ public class TorService extends ScheduledService<NativeTor> {
                 return null;
             }
         };
+    }
+
+    public static Socket getControlSocket() {
+        Tor tor = Tor.getDefault();
+        if(tor != null) {
+            try {
+                Class<?> torClass = Class.forName("org.berndpruenster.netlayer.tor.Tor");
+                Field torControllerField = torClass.getDeclaredField("torController");
+                torControllerField.setAccessible(true);
+                TorController torController = (TorController)torControllerField.get(tor);
+
+                Class<?> torControllerClass = Class.forName("org.berndpruenster.netlayer.tor.TorController");
+                Field socketField = torControllerClass.getDeclaredField("socket");
+                socketField.setAccessible(true);
+                return (Socket)socketField.get(torController);
+            } catch(Exception e) {
+                log.error("Error retrieving Tor control socket", e);
+            }
+        }
+
+        return null;
     }
 }
