@@ -69,6 +69,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -454,10 +455,7 @@ public class AppController implements Initializable {
 
         if(file.exists()) {
             try {
-                byte[] bytes = new byte[(int)file.length()];
-                FileInputStream stream = new FileInputStream(file);
-                stream.read(bytes);
-                stream.close();
+                byte[] bytes = Files.readAllBytes(file.toPath());
                 String name = file.getName();
 
                 try {
