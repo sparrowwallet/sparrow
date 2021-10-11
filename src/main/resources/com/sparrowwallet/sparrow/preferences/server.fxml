@@ -101,8 +101,8 @@
                 <UnlabeledToggleSwitch fx:id="publicUseProxy"/>
             </Field>
             <Field text="Proxy URL:">
-                <TextField fx:id="publicProxyHost" />
-                <TextField fx:id="publicProxyPort" maxWidth="100" />
+                <TextField fx:id="publicProxyHost" promptText="e.g. 127.0.0.1" />
+                <TextField fx:id="publicProxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
             </Field>
         </Fieldset>
     </Form>
@@ -111,7 +111,7 @@
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin Core RPC">
             <Field text="URL:">
                 <TextField fx:id="coreHost" promptText="e.g. 127.0.0.1"/>
-                <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="100" />
+                <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" />
             </Field>
             <Field text="Authentication:">
                 <SegmentedButton>
@@ -148,8 +148,8 @@
                 <UnlabeledToggleSwitch fx:id="coreUseProxy"/><HelpLabel helpText="Bitcoin Core RPC onion URLs, and all other non-RPC external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
-                <TextField fx:id="coreProxyHost" />
-                <TextField fx:id="coreProxyPort" maxWidth="100" />
+                <TextField fx:id="coreProxyHost" promptText="e.g. 127.0.0.1" />
+                <TextField fx:id="coreProxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
             </Field>
         </Fieldset>
     </Form>
@@ -158,7 +158,7 @@
         <Fieldset inputGrow="SOMETIMES" text="Private Electrum Server">
             <Field text="URL:">
                 <TextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)"/>
-                <TextField fx:id="electrumPort" promptText="e.g. 50002" maxWidth="100" />
+                <TextField fx:id="electrumPort" promptText="e.g. 50002" maxWidth="120" />
             </Field>
             <Field text="Use SSL:">
                 <UnlabeledToggleSwitch fx:id="electrumUseSsl"/>
@@ -175,8 +175,8 @@
                 <UnlabeledToggleSwitch fx:id="useProxy"/><HelpLabel helpText="All external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
-                <TextField fx:id="proxyHost" />
-                <TextField fx:id="proxyPort" maxWidth="100" />
+                <TextField fx:id="proxyHost" promptText="e.g. 127.0.0.1" />
+                <TextField fx:id="proxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
             </Field>
         </Fieldset>
     </Form>
