@@ -224,7 +224,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     public void mixSelected(ActionEvent event) {
         List<UtxoEntry> selectedEntries = getSelectedUtxos();
-        WhirlpoolDialog whirlpoolDialog = new WhirlpoolDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), selectedEntries);
+        WhirlpoolDialog whirlpoolDialog = new WhirlpoolDialog(getWalletForm().getMasterWalletId(), getWalletForm().getWallet(), selectedEntries);
         Optional<Tx0Preview> optTx0Preview = whirlpoolDialog.showAndWait();
         optTx0Preview.ifPresent(tx0Preview -> previewPremix(tx0Preview, selectedEntries));
     }

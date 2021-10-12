@@ -66,6 +66,10 @@ public class WalletForm {
         return wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
     }
 
+    public String getMasterWalletId() {
+        return storage.getWalletId(getMasterWallet());
+    }
+
     public Storage getStorage() {
         return storage;
     }

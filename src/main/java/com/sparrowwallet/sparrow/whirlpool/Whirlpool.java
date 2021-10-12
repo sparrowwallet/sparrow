@@ -52,10 +52,7 @@ import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Whirlpool {
@@ -71,9 +68,9 @@ public class Whirlpool {
     private final TorClientService torClientService;
     private final WhirlpoolWalletService whirlpoolWalletService;
     private final WhirlpoolWalletConfig config;
-    private Tx0ParamService tx0ParamService;
-    private ExpirablePoolSupplier poolSupplier;
-    private Tx0Service tx0Service;
+    private final Tx0ParamService tx0ParamService;
+    private final ExpirablePoolSupplier poolSupplier;
+    private final Tx0Service tx0Service;
     private HD_Wallet hdWallet;
     private String walletId;
     private String mixToWalletId;
@@ -162,7 +159,7 @@ public class Whirlpool {
             HD_WalletFactoryGeneric hdWalletFactory = HD_WalletFactoryGeneric.getInstance();
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
             this.walletId = walletId;
-            hdWallet = new HD_Wallet(purpose, words, config.getNetworkParameters(), seed, passphrase, 1);
+            hdWallet = new HD_Wallet(purpose, words, config.getNetworkParameters(), seed, passphrase, 10);
         } catch(Exception e) {
             throw new IllegalStateException("Could not create Whirlpool HD wallet ", e);
         }
