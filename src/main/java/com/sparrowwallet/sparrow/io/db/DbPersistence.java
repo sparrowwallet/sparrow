@@ -240,6 +240,10 @@ public class DbPersistence implements Persistence {
                     walletDao.updateStoredBlockHeight(wallet.getId(), dirtyPersistables.blockHeight);
                 }
 
+                if(dirtyPersistables.gapLimit != null) {
+                    walletDao.updateGapLimit(wallet.getId(), dirtyPersistables.gapLimit);
+                }
+
                 if(!dirtyPersistables.labelEntries.isEmpty()) {
                     BlockTransactionDao blockTransactionDao = handle.attach(BlockTransactionDao.class);
                     WalletNodeDao walletNodeDao = handle.attach(WalletNodeDao.class);
@@ -645,6 +649,13 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
+    public void walletGapLimitChanged(WalletGapLimitChangedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).gapLimit = event.getGapLimit();
+        }
+    }
+
+    @Subscribe
     public void walletEntryLabelsChanged(WalletEntryLabelsChangedEvent event) {
         if(persistsFor(event.getWallet())) {
             dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).labelEntries.addAll(event.getEntries());
@@ -691,6 +702,7 @@ public class DbPersistence implements Persistence {
         public boolean clearHistory;
         public final List<WalletNode> historyNodes = new ArrayList<>();
         public Integer blockHeight = null;
+        public Integer gapLimit = null;
         public final List<Entry> labelEntries = new ArrayList<>();
         public final List<BlockTransactionHashIndex> utxoStatuses = new ArrayList<>();
         public boolean mixConfig;
@@ -704,6 +716,7 @@ public class DbPersistence implements Persistence {
                     "\nClear history:" + clearHistory +
                     "\nNodes:" + historyNodes +
                     "\nBlockHeight:" + blockHeight +
+                    "\nGap limit:" + gapLimit +
                     "\nTx labels:" + labelEntries.stream().filter(entry -> entry instanceof TransactionEntry).map(entry -> ((TransactionEntry)entry).getBlockTransaction().getHash().toString()).collect(Collectors.toList()) +
                     "\nAddress labels:" + labelEntries.stream().filter(entry -> entry instanceof NodeEntry).map(entry -> ((NodeEntry)entry).getNode().toString() + " " + entry.getLabel()).collect(Collectors.toList()) +
                     "\nUTXO labels:" + labelEntries.stream().filter(entry -> entry instanceof HashIndexEntry).map(entry -> ((HashIndexEntry)entry).getHashIndex().toString()).collect(Collectors.toList()) +

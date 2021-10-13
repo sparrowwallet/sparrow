@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.drongo.wallet.WalletNode.nodeRangesToString;
+
 public class WalletForm {
     private static final Logger log = LoggerFactory.getLogger(WalletForm.class);
 
@@ -123,11 +125,14 @@ public class WalletForm {
         refreshHistory(blockHeight, pastWallet, null);
     }
 
-    public void refreshHistory(Integer blockHeight, Wallet pastWallet, WalletNode node) {
+    public void refreshHistory(Integer blockHeight, Wallet pastWallet, Set<WalletNode> nodes) {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppServices.isConnected()) {
-            log.debug(node == null ? wallet.getFullName() + " refreshing full wallet history" : wallet.getFullName() + " requesting node wallet history for " + node.getDerivationPath());
-            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(node));
+            if(log.isDebugEnabled()) {
+                log.debug(nodes == null ? wallet.getFullName() + " refreshing full wallet history" : wallet.getFullName() + " requesting node wallet history for " + nodeRangesToString(nodes));
+            }
+
+            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(nodes));
             historyService.setOnSucceeded(workerStateEvent -> {
                 if(historyService.getValue()) {
                     EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
@@ -144,7 +149,7 @@ public class WalletForm {
                 EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
             });
 
-            EventManager.get().post(new WalletHistoryStartedEvent(wallet, node));
+            EventManager.get().post(new WalletHistoryStartedEvent(wallet, nodes));
             historyService.start();
         }
     }
@@ -249,19 +254,21 @@ public class WalletForm {
         walletTransactionNodes.add(transactionNodes);
     }
 
-    private Set<WalletNode> getWalletTransactionNodes(WalletNode walletNode) {
-        if(walletNode == null) {
+    private Set<WalletNode> getWalletTransactionNodes(Set<WalletNode> walletNodes) {
+        if(walletNodes == null) {
             return null;
         }
 
         Set<WalletNode> allNodes = new LinkedHashSet<>();
-        for(Set<WalletNode> nodes : walletTransactionNodes) {
-            if(nodes.contains(walletNode)) {
-                allNodes.addAll(nodes);
+        for(WalletNode walletNode : walletNodes) {
+            for(Set<WalletNode> nodes : walletTransactionNodes) {
+                if(nodes.contains(walletNode)) {
+                    allNodes.addAll(nodes);
+                }
             }
         }
 
-        return allNodes.isEmpty() ? Set.of(walletNode) : allNodes;
+        return allNodes.isEmpty() ? walletNodes : allNodes;
     }
 
     public NodeEntry getNodeEntry(KeyPurpose keyPurpose) {
@@ -392,7 +399,7 @@ public class WalletForm {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
                 log.debug(wallet.getFullName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
-                refreshHistory(AppServices.getCurrentBlockHeight(), null, walletNode);
+                refreshHistory(AppServices.getCurrentBlockHeight(), null, Set.of(walletNode));
             }
         }
     }
@@ -500,6 +507,26 @@ public class WalletForm {
     public void walletUtxoMixesChanged(WalletUtxoMixesChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
+    public void walletGapLimitChanged(WalletGapLimitChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+
+            Set<WalletNode> newNodes = new LinkedHashSet<>();
+            for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+                Optional<WalletNode> optPurposeNode = wallet.getPurposeNodes().stream().filter(node -> node.getKeyPurpose() == keyPurpose).findFirst();
+                if(optPurposeNode.isPresent()) {
+                    WalletNode purposeNode = optPurposeNode.get();
+                    newNodes.addAll(purposeNode.fillToIndex(wallet.getLookAheadIndex(purposeNode)));
+                }
+            }
+
+            if(!newNodes.isEmpty()) {
+                Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight(), null, newNodes));
+            }
         }
     }
 

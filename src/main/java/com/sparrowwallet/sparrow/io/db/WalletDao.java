@@ -55,6 +55,9 @@ public interface WalletDao {
     @SqlUpdate("update wallet set storedBlockHeight = :blockHeight where id = :id")
     void updateStoredBlockHeight(@Bind("id") long id, @Bind("blockHeight") Integer blockHeight);
 
+    @SqlUpdate("update wallet set gapLimit = :gapLimit where id = :id")
+    void updateGapLimit(@Bind("id") long id, @Bind("gapLimit") Integer gapLimit);
+
     @SqlUpdate("set schema ?")
     int setSchema(String schema);
 

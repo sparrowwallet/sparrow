@@ -2029,7 +2029,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void walletHistoryStarted(WalletHistoryStartedEvent event) {
         if(AppServices.isConnected() && getOpenWallets().containsKey(event.getWallet())) {
-            if(event.getWalletNode() == null && event.getWallet().getTransactions().isEmpty()) {
+            if(event.getWalletNodes() == null && event.getWallet().getTransactions().isEmpty()) {
                 statusUpdated(new StatusEvent(LOADING_TRANSACTIONS_MESSAGE, 120));
                 if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                     statusBar.setProgress(-1);

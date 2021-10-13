@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletGapLimitChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletMixConfigChangedEvent;
 
 public class SparrowIndexHandler extends AbstractIndexHandler {
@@ -37,6 +38,7 @@ public class SparrowIndexHandler extends AbstractIndexHandler {
     @Override
     public synchronized void set(int value) {
         setStoredIndex(value);
+        ensureSufficientGapLimit(value);
     }
 
     private int getCurrentIndex() {
@@ -65,6 +67,15 @@ public class SparrowIndexHandler extends AbstractIndexHandler {
             }
 
             EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+        }
+    }
+
+    private void ensureSufficientGapLimit(int index) {
+        int highestUsedIndex = getCurrentIndex() - 1;
+        int existingGapLimit = wallet.getGapLimit();
+        if(index > highestUsedIndex + existingGapLimit) {
+            wallet.setGapLimit(Math.max(wallet.getGapLimit(), index - highestUsedIndex));
+            EventManager.get().post(new WalletGapLimitChangedEvent(wallet));
         }
     }
 }

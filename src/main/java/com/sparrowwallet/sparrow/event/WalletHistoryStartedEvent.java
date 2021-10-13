@@ -3,15 +3,17 @@ package com.sparrowwallet.sparrow.event;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 
-public class WalletHistoryStartedEvent extends WalletHistoryStatusEvent {
-    private final WalletNode walletNode;
+import java.util.Set;
 
-    public WalletHistoryStartedEvent(Wallet wallet, WalletNode walletNode) {
+public class WalletHistoryStartedEvent extends WalletHistoryStatusEvent {
+    private final Set<WalletNode> walletNodes;
+
+    public WalletHistoryStartedEvent(Wallet wallet, Set<WalletNode> walletNodes) {
         super(wallet, true);
-        this.walletNode = walletNode;
+        this.walletNodes = walletNodes;
     }
 
-    public WalletNode getWalletNode() {
-        return walletNode;
+    public Set<WalletNode> getWalletNodes() {
+        return walletNodes;
     }
 }

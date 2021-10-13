@@ -294,9 +294,15 @@ public class Whirlpool {
 
     public static Wallet getStandardAccountWallet(WhirlpoolAccount whirlpoolAccount, Wallet wallet) {
         StandardAccount standardAccount = getStandardAccount(whirlpoolAccount);
-        if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
-            wallet = wallet.getChildWallet(standardAccount);
+        if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount) || wallet.getStandardAccountType() != standardAccount) {
+            Wallet standardWallet = wallet.getChildWallet(standardAccount);
+            if(standardWallet == null) {
+                throw new IllegalStateException("Cannot find " + standardAccount + " wallet");
+            }
+
+            return standardWallet;
         }
+
         return wallet;
     }
 
