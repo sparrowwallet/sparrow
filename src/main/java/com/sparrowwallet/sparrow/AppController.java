@@ -978,6 +978,7 @@ public class AppController implements Initializable {
         List<WalletImport> walletImporters = List.of(new ColdcardSinglesig(), new ColdcardMultisig(),
                 new Electrum(),
                 new SpecterDesktop(),
+                new Descriptor(),
                 new CoboVaultSinglesig(), new CoboVaultMultisig(),
                 new PassportSinglesig(),
                 new KeystoneSinglesig(), new KeystoneMultisig(),
