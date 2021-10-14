@@ -373,6 +373,10 @@ public class Whirlpool {
         config.setServerApi(serverApi);
     }
 
+    public void refreshTorCircuits() {
+        torClientService.changeIdentity();
+    }
+
     public String getScode() {
         return config.getScode();
     }
@@ -578,14 +582,17 @@ public class Whirlpool {
                     updateProgress(-1, 1);
                     updateMessage("Starting Whirlpool...");
 
-                    whirlpool.startingProperty.set(true);
-                    WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
-                    if(AppServices.onlineProperty().get()) {
-                        whirlpoolWallet.start();
-                    }
-                    whirlpool.startingProperty.set(false);
+                    try {
+                        whirlpool.startingProperty.set(true);
+                        WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
+                        if(AppServices.onlineProperty().get()) {
+                            whirlpoolWallet.start();
+                        }
 
-                    return whirlpoolWallet;
+                        return whirlpoolWallet;
+                    } finally {
+                        whirlpool.startingProperty.set(false);
+                    }
                 }
             };
         }
@@ -604,10 +611,14 @@ public class Whirlpool {
                 protected Boolean call() throws Exception {
                     updateProgress(-1, 1);
                     updateMessage("Disconnecting from Whirlpool...");
-                    whirlpool.stoppingProperty.set(true);
-                    whirlpool.shutdown();
-                    whirlpool.stoppingProperty.set(false);
-                    return true;
+
+                    try {
+                        whirlpool.stoppingProperty.set(true);
+                        whirlpool.shutdown();
+                        return true;
+                    } finally {
+                        whirlpool.stoppingProperty.set(false);
+                    }
                 }
             };
         }

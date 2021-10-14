@@ -19,10 +19,12 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public class WhirlpoolServices {
@@ -94,6 +96,16 @@ public class WhirlpoolServices {
             });
             startupService.setOnFailed(workerStateEvent -> {
                 log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
+                Throwable exception = workerStateEvent.getSource().getException();
+                while(exception.getCause() != null) {
+                    exception = exception.getCause();
+                }
+                if(exception instanceof TimeoutException || exception instanceof SocketTimeoutException) {
+                    EventManager.get().post(new StatusEvent("Error connecting to Whirlpool server, will retry soon..."));
+                    if(torProxy != null) {
+                        whirlpool.refreshTorCircuits();
+                    }
+                }
             });
             startupService.start();
         }

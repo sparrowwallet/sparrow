@@ -135,7 +135,13 @@ public class UtxosController extends WalletFormController implements Initializab
             Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
             if(whirlpool != null) {
                 stopMix.visibleProperty().bind(whirlpool.mixingProperty());
+                if(whirlpool.startingProperty().getValue()) {
+                    mixingStartingListener.changed(whirlpool.startingProperty(), null, whirlpool.startingProperty().getValue());
+                }
                 whirlpool.startingProperty().addListener(new WeakChangeListener<>(mixingStartingListener));
+                if(whirlpool.stoppingProperty().getValue()) {
+                    mixingStoppingListener.changed(whirlpool.stoppingProperty(), null, whirlpool.stoppingProperty().getValue());
+                }
                 whirlpool.stoppingProperty().addListener(new WeakChangeListener<>(mixingStoppingListener));
                 whirlpool.mixingProperty().addListener(new WeakChangeListener<>(mixingListener));
                 updateMixToButton();
