@@ -396,6 +396,9 @@ public class AppController implements Initializable {
             controller.setStage(stage);
             controller.initializeView();
             setStageIcon(stage);
+            stage.setOnShowing(event -> {
+                AppServices.moveToActiveWindowScreen(stage, 600, 460);
+            });
 
             return stage;
         } catch(IOException e) {
