@@ -137,7 +137,7 @@ public class WhirlpoolServices {
                 && wallet.getKeystores().get(0).hasSeed()
                 && wallet.getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
                 && wallet.getStandardAccountType() != null
-                && !wallet.isWhirlpoolMixWallet();
+                && StandardAccount.MIXABLE_ACCOUNTS.contains(wallet.getStandardAccountType());
     }
 
     public static void prepareWhirlpoolWallet(Wallet decryptedWallet, String walletId, Storage storage) {
