@@ -31,7 +31,7 @@ The release binaries are reproducible from v1.5.0 onwards (pre codesigning and i
 
 ## Running
 
-If you prefer to run Sparrow directly from source, it can be launched with
+If you prefer to run Sparrow directly from source, it can be launched from within the project directory with
 
 `./sparrow`
 
