@@ -662,10 +662,10 @@ public class SendController extends WalletFormController implements Initializabl
     private List<UtxoFilter> getUtxoFilters() {
         UtxoFilter utxoFilter = utxoFilterProperty.get();
         if(utxoFilter != null) {
-            return List.of(utxoFilter, new FrozenUtxoFilter());
+            return List.of(utxoFilter, new FrozenUtxoFilter(), new CoinbaseUtxoFilter(getWalletForm().getWallet()));
         }
 
-        return List.of(new FrozenUtxoFilter());
+        return List.of(new FrozenUtxoFilter(), new CoinbaseUtxoFilter(getWalletForm().getWallet()));
     }
 
     private void updateFeeRateSelection(FeeRatesSelection feeRatesSelection) {
