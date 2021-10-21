@@ -60,13 +60,13 @@ public class SparrowIndexHandler extends AbstractIndexHandler {
 
     private void setStoredIndex(int index) {
         if(wallet.getMixConfig() != null) {
-            if(walletNode.getKeyPurpose() == KeyPurpose.RECEIVE) {
+            if(walletNode.getKeyPurpose() == KeyPurpose.RECEIVE && wallet.getMixConfig().getReceiveIndex() != index) {
                 wallet.getMixConfig().setReceiveIndex(index);
-            } else if(walletNode.getKeyPurpose() == KeyPurpose.CHANGE) {
+                EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
+            } else if(walletNode.getKeyPurpose() == KeyPurpose.CHANGE && wallet.getMixConfig().getChangeIndex() != index) {
                 wallet.getMixConfig().setChangeIndex(index);
+                EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
             }
-
-            EventManager.get().post(new WalletMixConfigChangedEvent(wallet));
         }
     }
 

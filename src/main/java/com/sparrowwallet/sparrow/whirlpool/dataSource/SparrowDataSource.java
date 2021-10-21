@@ -89,8 +89,10 @@ public class SparrowDataSource extends WalletResponseDataSource {
             List<ExtendedKey.Header> headers = ExtendedKey.Header.getHeaders(Network.get());
             ExtendedKey.Header header = headers.stream().filter(head -> head.getDefaultScriptType().equals(wallet.getScriptType()) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
             address.address = wallet.getKeystores().get(0).getExtendedPublicKey().toString(header);
-            address.account_index = wallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex() == null ? 0 : wallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex() + 1;
-            address.change_index = wallet.getNode(KeyPurpose.CHANGE).getHighestUsedIndex() == null ? 0 : wallet.getNode(KeyPurpose.CHANGE).getHighestUsedIndex() + 1;
+            int receiveIndex = wallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex() == null ? 0 : wallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex() + 1;
+            address.account_index = wallet.getMixConfig() != null ? Math.max(receiveIndex, wallet.getMixConfig().getReceiveIndex()) : receiveIndex;
+            int changeIndex = wallet.getNode(KeyPurpose.CHANGE).getHighestUsedIndex() == null ? 0 : wallet.getNode(KeyPurpose.CHANGE).getHighestUsedIndex() + 1;
+            address.change_index = wallet.getMixConfig() != null ? Math.max(changeIndex, wallet.getMixConfig().getChangeIndex()) : changeIndex;
             address.n_tx = wallet.getTransactions().size();
             addresses.add(address);
 

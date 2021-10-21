@@ -1145,6 +1145,7 @@ public class SendController extends WalletFormController implements Initializabl
             AppServices.showErrorDialog("Error broadcasting premix transaction", exception.getMessage());
         });
         ServiceProgressDialog progressDialog = new ServiceProgressDialog("Whirlpool", "Broadcast Premix Transaction", "/image/whirlpool.png", tx0BroadcastService);
+        AppServices.moveToActiveWindowScreen(progressDialog);
         tx0BroadcastService.start();
     }
 
