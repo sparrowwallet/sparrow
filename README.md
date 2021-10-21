@@ -19,7 +19,12 @@ or for those without SSH credentials:
 In order to build, Sparrow requires Java 16 to be installed. 
 The release binaries are built with [AdoptOpenJdk 16.0.1+9 Hotspot](https://adoptopenjdk.net/archive.html?variant=openjdk16&jvmVariant=hotspot).
 
-These binaries can be built from source using
+Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
+
+`sudo apt install -y rpm fakeroot binutils`
+
+
+The Sparrow binaries can be built from source using
 
 `./gradlew jpackage`
 
