@@ -162,6 +162,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final BooleanProperty includeSpentMempoolOutputsProperty = new SimpleBooleanProperty(false);
 
+    private final List<byte[]> opReturnsList = new ArrayList<>();
+
     private final Set<WalletNode> excludedChangeNodes = new HashSet<>();
 
     private final ChangeListener<String> feeListener = new ChangeListener<>() {
@@ -556,7 +558,7 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
 
-                walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(payments), getUtxoFilters(), payments, excludedChangeNodes, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(payments), getUtxoFilters(), payments, opReturnsList, excludedChangeNodes, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 walletTransactionService.setOnSucceeded(event -> {
                     if(!walletTransactionService.isIgnoreResult()) {
                         walletTransactionProperty.setValue(walletTransactionService.getValue());
@@ -616,6 +618,7 @@ public class SendController extends WalletFormController implements Initializabl
         private final List<UtxoSelector> utxoSelectors;
         private final List<UtxoFilter> utxoFilters;
         private final List<Payment> payments;
+        private final List<byte[]> opReturns;
         private final Set<WalletNode> excludedChangeNodes;
         private final double feeRate;
         private final double longTermFeeRate;
@@ -626,11 +629,12 @@ public class SendController extends WalletFormController implements Initializabl
         private final boolean includeSpentMempoolOutputs;
         private boolean ignoreResult;
 
-        public WalletTransactionService(Wallet wallet, List<UtxoSelector> utxoSelectors, List<UtxoFilter> utxoFilters, List<Payment> payments, Set<WalletNode> excludedChangeNodes, double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, boolean includeSpentMempoolOutputs) {
+        public WalletTransactionService(Wallet wallet, List<UtxoSelector> utxoSelectors, List<UtxoFilter> utxoFilters, List<Payment> payments, List<byte[]> opReturns, Set<WalletNode> excludedChangeNodes, double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, boolean includeSpentMempoolOutputs) {
             this.wallet = wallet;
             this.utxoSelectors = utxoSelectors;
             this.utxoFilters = utxoFilters;
             this.payments = payments;
+            this.opReturns = opReturns;
             this.excludedChangeNodes = excludedChangeNodes;
             this.feeRate = feeRate;
             this.longTermFeeRate = longTermFeeRate;
@@ -645,7 +649,7 @@ public class SendController extends WalletFormController implements Initializabl
         protected Task<WalletTransaction> createTask() {
             return new Task<>() {
                 protected WalletTransaction call() throws InsufficientFundsException {
-                    return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, excludedChangeNodes, feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                    return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, excludedChangeNodes, feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 }
             };
         }
@@ -1014,6 +1018,7 @@ public class SendController extends WalletFormController implements Initializabl
         utxoSelectorProperty.setValue(null);
         utxoFilterProperty.setValue(null);
         includeSpentMempoolOutputsProperty.set(false);
+        opReturnsList.clear();
         excludedChangeNodes.clear();
         walletTransactionProperty.setValue(null);
         createdWalletTransactionProperty.set(null);
@@ -1237,6 +1242,10 @@ public class SendController extends WalletFormController implements Initializabl
             } else if(paymentTabs.getTabs().size() == 1) {
                 Payment payment = new Payment(null, null, event.getUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum(), true);
                 setPayments(List.of(payment));
+            }
+
+            if(event.getOpReturns() != null) {
+                opReturnsList.addAll(event.getOpReturns());
             }
 
             if(event.getFee() != null) {

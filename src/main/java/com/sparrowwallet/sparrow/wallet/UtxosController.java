@@ -320,10 +320,12 @@ public class UtxosController extends WalletFormController implements Initializab
             payments.add(new Payment(premixAddress, "Premix #" + i, tx0Preview.getPremixValue(), false));
         }
 
+        List<byte[]> opReturns = List.of(new byte[64]);
+
         final List<BlockTransactionHashIndex> utxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
         Platform.runLater(() -> {
             EventManager.get().post(new SendActionEvent(getWalletForm().getWallet(), utxos));
-            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(getWalletForm().getWallet(), utxos, payments, tx0Preview.getTx0MinerFee(), tx0Preview.getPool())));
+            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(getWalletForm().getWallet(), utxos, payments, opReturns, tx0Preview.getTx0MinerFee(), tx0Preview.getPool())));
         });
     }
 

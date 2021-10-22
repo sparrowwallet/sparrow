@@ -32,7 +32,7 @@ public class SparrowMinerFeeSupplier implements MinerFeeSupplier {
         return getMinimumFeeForTarget(Integer.parseInt(feeTarget.getValue()));
     }
 
-    private Integer getMinimumFeeForTarget(int targetBlocks) {
+    public static Integer getMinimumFeeForTarget(int targetBlocks) {
         List<Map.Entry<Integer, Double>> feeRates = new ArrayList<>(AppServices.getTargetBlockFeeRates().entrySet());
         Collections.reverse(feeRates);
         for(Map.Entry<Integer, Double> feeRate : feeRates) {
@@ -40,6 +40,7 @@ public class SparrowMinerFeeSupplier implements MinerFeeSupplier {
                 return feeRate.getValue().intValue();
             }
         }
+
         return feeRates.get(0).getValue().intValue();
     }
 

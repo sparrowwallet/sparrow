@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.whirlpool;
 
 import com.samourai.whirlpool.client.tx0.Tx0Preview;
 import com.samourai.whirlpool.client.tx0.Tx0Previews;
+import com.samourai.whirlpool.client.wallet.beans.Tx0FeeTarget;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -10,10 +11,12 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
+import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.WalletMasterMixConfigChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
+import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowMinerFeeSupplier;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -26,6 +29,8 @@ import javafx.util.StringConverter;
 import java.util.*;
 
 public class WhirlpoolController {
+    private static final List<Tx0FeeTarget> FEE_TARGETS = List.of(Tx0FeeTarget.MIN, Tx0FeeTarget.BLOCKS_4, Tx0FeeTarget.BLOCKS_2);
+
     @FXML
     private VBox whirlpoolBox;
 
@@ -43,6 +48,12 @@ public class WhirlpoolController {
 
     @FXML
     private TextField scode;
+
+    @FXML
+    private Slider premixPriority;
+
+    @FXML
+    private CopyableLabel premixFeeRate;
 
     @FXML
     private ComboBox<Pool> pool;
@@ -107,6 +118,30 @@ public class WhirlpoolController {
             mixConfig.setScode(newValue);
             EventManager.get().post(new WalletMasterMixConfigChangedEvent(wallet));
         });
+
+        premixPriority.setMin(0);
+        premixPriority.setMax(FEE_TARGETS.size() - 1);
+        premixPriority.setMajorTickUnit(1);
+        premixPriority.setMinorTickCount(0);
+        premixPriority.setLabelFormatter(new StringConverter<>() {
+            @Override
+            public String toString(Double object) {
+                return object.intValue() == 0 ? "Low" : (object.intValue() == 1 ? "Normal" : "High");
+            }
+
+            @Override
+            public Double fromString(String string) {
+                return null;
+            }
+        });
+        premixPriority.valueProperty().addListener((observable, oldValue, newValue) -> {
+            pool.setItems(FXCollections.emptyObservableList());
+            tx0Previews = null;
+            tx0PreviewProperty.set(null);
+            Tx0FeeTarget tx0FeeTarget = FEE_TARGETS.get(newValue.intValue());
+            premixFeeRate.setText(SparrowMinerFeeSupplier.getMinimumFeeForTarget(Integer.parseInt(tx0FeeTarget.getFeeTarget().getValue())) + " sats/vB");
+        });
+        premixPriority.setValue(1);
 
         if(mixConfig.getScode() != null) {
             step1.setVisible(false);
@@ -280,6 +315,7 @@ public class WhirlpoolController {
         } else {
             tx0Previews = null;
             whirlpool.setScode(mixConfig.getScode());
+            whirlpool.setTx0FeeTarget(FEE_TARGETS.get(premixPriority.valueProperty().intValue()));
 
             Whirlpool.Tx0PreviewsService tx0PreviewsService = new Whirlpool.Tx0PreviewsService(whirlpool, wallet, utxoEntries);
             tx0PreviewsService.setOnRunning(workerStateEvent -> {

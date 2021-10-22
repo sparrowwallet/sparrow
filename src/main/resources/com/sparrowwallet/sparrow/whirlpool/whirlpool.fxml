@@ -11,6 +11,7 @@
 <?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@whirlpool.css, @../general.css" styleClass="whirlpool-pane" fx:controller="com.sparrowwallet.sparrow.whirlpool.WhirlpoolController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="20">
         <HBox styleClass="title-area">
@@ -92,6 +93,20 @@
                     </padding>
                     <Label text="SCODE:" styleClass="field-label" />
                     <TextField fx:id="scode" />
+                </HBox>
+                <HBox styleClass="field-box">
+                    <padding>
+                        <Insets top="10" />
+                    </padding>
+                    <Label text="Premix Priority:" styleClass="field-label" />
+                    <Slider fx:id="premixPriority" snapToTicks="true" showTickLabels="true" showTickMarks="true" styleClass="field-control" />
+                </HBox>
+                <HBox styleClass="field-box">
+                    <padding>
+                        <Insets top="10" />
+                    </padding>
+                    <Label text="Premix Fee Rate:" styleClass="field-label" />
+                    <CopyableLabel fx:id="premixFeeRate" />
                 </HBox>
             </VBox>
             <VBox fx:id="step4" spacing="15">

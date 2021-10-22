@@ -71,6 +71,7 @@ public class Whirlpool {
     private final Tx0ParamService tx0ParamService;
     private final ExpirablePoolSupplier poolSupplier;
     private final Tx0Service tx0Service;
+    private Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
     private HD_Wallet hdWallet;
     private String walletId;
     private String mixToWalletId;
@@ -140,7 +141,6 @@ public class Whirlpool {
     }
 
     private Tx0Config computeTx0Config() {
-        Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
         Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
         return new Tx0Config(tx0ParamService, poolSupplier, tx0FeeTarget, mixFeeTarget, WhirlpoolAccount.BADBANK);
     }
@@ -383,6 +383,14 @@ public class Whirlpool {
 
     public void setScode(String scode) {
         config.setScode(scode);
+    }
+
+    public Tx0FeeTarget getTx0FeeTarget() {
+        return tx0FeeTarget;
+    }
+
+    public void setTx0FeeTarget(Tx0FeeTarget tx0FeeTarget) {
+        this.tx0FeeTarget = tx0FeeTarget;
     }
 
     public String getWalletId() {

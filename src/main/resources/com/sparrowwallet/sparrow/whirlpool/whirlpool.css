@@ -40,3 +40,7 @@
 .field-label {
     -fx-pref-width: 120px;
 }
+
+.field-control {
+    -fx-pref-width: 160px;
+}
