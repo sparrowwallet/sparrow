@@ -34,6 +34,8 @@ When updating to the latest HEAD
 
 The release binaries are reproducible from v1.5.0 onwards (pre codesigning and installer packaging). More detailed [instructions on reproducing the binaries](docs/reproducible.md) are provided.
 
+> A video documention of your built process uploaded to [bitcoinbinary.org](https://bitcoinbinary.org/) is appreciated. Alternatively check the site if you wish to see if someone else already verified the provided binaries. 
+
 ## Running
 
 If you prefer to run Sparrow directly from source, it can be launched from within the project directory with
