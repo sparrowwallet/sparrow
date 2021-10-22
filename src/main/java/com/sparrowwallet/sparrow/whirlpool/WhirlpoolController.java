@@ -139,7 +139,7 @@ public class WhirlpoolController {
             tx0Previews = null;
             tx0PreviewProperty.set(null);
             Tx0FeeTarget tx0FeeTarget = FEE_TARGETS.get(newValue.intValue());
-            premixFeeRate.setText(SparrowMinerFeeSupplier.getMinimumFeeForTarget(Integer.parseInt(tx0FeeTarget.getFeeTarget().getValue())) + " sats/vB");
+            premixFeeRate.setText(SparrowMinerFeeSupplier.getFee(Integer.parseInt(tx0FeeTarget.getFeeTarget().getValue())) + " sats/vB");
         });
         premixPriority.setValue(1);
 

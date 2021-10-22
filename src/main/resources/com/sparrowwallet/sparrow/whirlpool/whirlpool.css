@@ -38,9 +38,9 @@
 }
 
 .field-label {
-    -fx-pref-width: 120px;
+    -fx-pref-width: 130px;
 }
 
 .field-control {
-    -fx-pref-width: 160px;
+    -fx-pref-width: 180px;
 }

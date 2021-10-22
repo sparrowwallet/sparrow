@@ -92,7 +92,7 @@
                         <Insets top="20" />
                     </padding>
                     <Label text="SCODE:" styleClass="field-label" />
-                    <TextField fx:id="scode" />
+                    <TextField fx:id="scode" styleClass="field-control"/>
                 </HBox>
                 <HBox styleClass="field-box">
                     <padding>

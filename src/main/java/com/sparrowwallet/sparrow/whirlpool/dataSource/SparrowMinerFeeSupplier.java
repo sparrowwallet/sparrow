@@ -26,13 +26,18 @@ public class SparrowMinerFeeSupplier implements MinerFeeSupplier {
 
     @Override
     public int getFee(MinerFeeTarget feeTarget) {
-        if (AppServices.getTargetBlockFeeRates() == null) {
-            return FALLBACK_FEE_RATE;
-        }
-        return getMinimumFeeForTarget(Integer.parseInt(feeTarget.getValue()));
+        return getFee(Integer.parseInt(feeTarget.getValue()));
     }
 
-    public static Integer getMinimumFeeForTarget(int targetBlocks) {
+    public static int getFee(int targetBlocks) {
+        if(AppServices.getTargetBlockFeeRates() == null) {
+            return FALLBACK_FEE_RATE;
+        }
+
+        return getMinimumFeeForTarget(targetBlocks);
+    }
+
+    private static Integer getMinimumFeeForTarget(int targetBlocks) {
         List<Map.Entry<Integer, Double>> feeRates = new ArrayList<>(AppServices.getTargetBlockFeeRates().entrySet());
         Collections.reverse(feeRates);
         for(Map.Entry<Integer, Double> feeRate : feeRates) {
