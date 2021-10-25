@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
+import com.samourai.whirlpool.client.wallet.beans.IndexRange;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
@@ -40,9 +41,10 @@ public class Config {
     private boolean openWalletsInNewWindows = false;
     private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
-    private boolean showLoadingLog = false;
+    private boolean showLoadingLog = true;
     private boolean showUtxosChart = true;
     private boolean preventSleep = false;
+    private IndexRange postmixIndexRange = IndexRange.FULL;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -286,6 +288,15 @@ public class Config {
 
     public void setPreventSleep(boolean preventSleep) {
         this.preventSleep = preventSleep;
+    }
+
+    public IndexRange getPostmixIndexRange() {
+        return postmixIndexRange;
+    }
+
+    public void setPostmixIndexRange(IndexRange postmixIndexRange) {
+        this.postmixIndexRange = postmixIndexRange;
+        flush();
     }
 
     public List<File> getRecentWalletFiles() {

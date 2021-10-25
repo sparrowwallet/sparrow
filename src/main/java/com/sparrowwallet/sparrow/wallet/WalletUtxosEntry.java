@@ -12,7 +12,7 @@ public class WalletUtxosEntry extends Entry {
     public WalletUtxosEntry(Wallet wallet) {
         super(wallet, wallet.getName(), wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(wallet, entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
         calculateDuplicates();
-        retrieveMixProgress();
+        updateMixProgress();
     }
 
     @Override
@@ -38,13 +38,15 @@ public class WalletUtxosEntry extends Entry {
         }
     }
 
-    protected void retrieveMixProgress() {
+    public void updateMixProgress() {
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWallet());
         if(whirlpool != null) {
             for(Entry entry : getChildren()) {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
                 MixProgress mixProgress = whirlpool.getMixProgress(utxoEntry.getHashIndex());
-                utxoEntry.setMixProgress(mixProgress);
+                if(mixProgress != null || utxoEntry.getMixStatus() == null || (utxoEntry.getMixStatus().getMixFailReason() == null && utxoEntry.getMixStatus().getNextMixUtxo() == null)) {
+                    utxoEntry.setMixProgress(mixProgress);
+                }
             }
         }
     }
@@ -62,6 +64,6 @@ public class WalletUtxosEntry extends Entry {
         getChildren().removeAll(entriesRemoved);
 
         calculateDuplicates();
-        retrieveMixProgress();
+        updateMixProgress();
     }
 }

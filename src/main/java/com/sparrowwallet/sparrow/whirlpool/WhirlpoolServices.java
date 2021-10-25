@@ -156,6 +156,7 @@ public class WhirlpoolServices {
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
         whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());
         whirlpool.setHDWallet(walletId, decryptedWallet);
+        whirlpool.setResyncMixesDone(true);
 
         for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
             if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {

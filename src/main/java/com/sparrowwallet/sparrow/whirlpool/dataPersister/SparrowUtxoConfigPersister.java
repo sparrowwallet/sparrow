@@ -62,7 +62,9 @@ public class SparrowUtxoConfigPersister extends UtxoConfigPersister {
         wallet.getUtxoMixes().putAll(changedUtxoMixes);
         wallet.getUtxoMixes().keySet().removeAll(removedUtxoMixes.keySet());
 
-        EventManager.get().post(new WalletUtxoMixesChangedEvent(wallet, changedUtxoMixes, removedUtxoMixes));
+        if(!changedUtxoMixes.isEmpty() || !removedUtxoMixes.isEmpty()) {
+            EventManager.get().post(new WalletUtxoMixesChangedEvent(wallet, changedUtxoMixes, removedUtxoMixes));
+        }
     }
 
     private Wallet getWallet() {

@@ -4,6 +4,7 @@ import com.samourai.whirlpool.client.mix.listener.MixFailReason;
 import com.samourai.whirlpool.client.mix.listener.MixStep;
 import com.samourai.whirlpool.client.wallet.beans.MixProgress;
 import com.samourai.whirlpool.protocol.beans.Utxo;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -151,12 +152,12 @@ public class UtxoEntry extends HashIndexEntry {
                 return wallet.getUtxoMixData(getHashIndex());
             }
 
+            //Mix data not available - recount (and store if WhirlpoolWallet is running)
             Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(wallet);
-            if(whirlpool != null) {
-                UtxoMixData utxoMixData = whirlpool.getMixData(getHashIndex());
-                if(utxoMixData != null) {
-                    return utxoMixData;
-                }
+            if(whirlpool != null && getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && node.getKeyPurpose() == KeyPurpose.RECEIVE) {
+                int mixesDone = whirlpool.recountMixesDone(getUtxoEntry().getWallet(), getHashIndex());
+                whirlpool.setMixesDone(getHashIndex(), mixesDone);
+                return new UtxoMixData(mixesDone, null);
             }
 
             return new UtxoMixData(getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX ? 1 : 0, null);

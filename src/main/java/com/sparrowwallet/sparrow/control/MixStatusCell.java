@@ -10,8 +10,10 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolException;
+import javafx.animation.FadeTransition;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Platform;
 
@@ -46,7 +48,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             } else if(mixStatus.getMixFailReason() != null) {
                 setMixFail(mixStatus.getMixFailReason(), mixStatus.getMixError());
             } else if(mixStatus.getMixProgress() != null) {
-                setMixProgress(mixStatus.getMixProgress());
+                setMixProgress(mixStatus.getUtxoEntry(), mixStatus.getMixProgress());
             } else {
                 setGraphic(null);
                 setTooltip(null);
@@ -65,13 +67,28 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
 
     private void setMixFail(MixFailReason mixFailReason, String mixError) {
         if(mixFailReason != MixFailReason.CANCEL) {
-            setGraphic(getFailGlyph());
+            if(getGraphic() != null && getGraphic().getUserData() == mixFailReason) {
+                //Fade transition already set
+                return;
+            }
+
+            Glyph failGlyph = getFailGlyph();
+            setGraphic(failGlyph);
             Tooltip tt = new Tooltip();
             tt.setText(mixFailReason.getMessage() + (mixError == null ? "" : ": " + mixError) +
                     "\nMix failures are generally caused by peers disconnecting during a mix." +
                     "\nMake sure your internet connection is stable and the computer is configured to prevent sleeping." +
                     "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
             setTooltip(tt);
+
+            FadeTransition ft = new FadeTransition(Duration.hours(1), failGlyph);
+            ft.setFromValue(1);
+            ft.setToValue(0);
+            ft.setOnFinished(event -> {
+                setTooltip(null);
+            });
+            ft.play();
+            failGlyph.setUserData(mixFailReason);
         } else {
             setGraphic(null);
             setTooltip(null);
@@ -89,14 +106,28 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
         return "system power settings";
     }
 
-    private void setMixProgress(MixProgress mixProgress) {
+    private void setMixProgress(UtxoEntry utxoEntry, MixProgress mixProgress) {
         if(mixProgress.getMixStep() != MixStep.FAIL) {
             ProgressIndicator progressIndicator = getProgressIndicator();
             progressIndicator.setProgress(mixProgress.getMixStep().getProgressPercent() == 100 ? -1 : mixProgress.getMixStep().getProgressPercent() / 100.0);
             setGraphic(progressIndicator);
             Tooltip tt = new Tooltip();
-            tt.setText(mixProgress.getMixStep().getMessage().substring(0, 1).toUpperCase() + mixProgress.getMixStep().getMessage().substring(1));
+            String status = mixProgress.getMixStep().getMessage().substring(0, 1).toUpperCase() + mixProgress.getMixStep().getMessage().substring(1);
+            tt.setText(status);
             setTooltip(tt);
+
+            if(mixProgress.getMixStep() == MixStep.REGISTERED_INPUT) {
+                tt.setOnShowing(event -> {
+                    Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
+                    Whirlpool.RegisteredInputsService registeredInputsService = new Whirlpool.RegisteredInputsService(whirlpool, mixProgress.getPoolId());
+                    registeredInputsService.setOnSucceeded(eventStateHandler -> {
+                        if(registeredInputsService.getValue() != null) {
+                            tt.setText(status + " (1 of " + registeredInputsService.getValue() + ")");
+                        }
+                    });
+                    registeredInputsService.start();
+                });
+            }
         } else {
             setGraphic(null);
             setTooltip(null);

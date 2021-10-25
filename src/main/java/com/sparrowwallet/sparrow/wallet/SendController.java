@@ -4,7 +4,6 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
