@@ -25,6 +25,9 @@
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.Tooltip?>
 <?import com.sparrowwallet.sparrow.control.DynamicForm?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Tab?>
+<?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -52,83 +55,104 @@
 
     <Separator GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <Form GridPane.columnIndex="0" GridPane.rowIndex="2">
-        <Fieldset text="Headers" inputGrow="SOMETIMES">
-            <Field text="Version:">
-                <Spinner fx:id="version" prefWidth="60" editable="true" />
-            </Field>
-            <Field text="Type:">
-                <CopyableLabel fx:id="segwit" />
-            </Field>
-        </Fieldset>
-    </Form>
+    <TabPane side="RIGHT" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" styleClass="headers-tabs">
+        <Tab text="Overview" closable="false">
+            <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
+        </Tab>
+        <Tab text="Detail" closable="false">
+            <GridPane hgap="10.0" vgap="10.0">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" />
+                    <ColumnConstraints percentWidth="50" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                </rowConstraints>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Fieldset text="Headers" inputGrow="SOMETIMES">
+                        <Field text="Version:">
+                            <Spinner fx:id="version" prefWidth="60" editable="true" />
+                        </Field>
+                        <Field text="Type:">
+                            <CopyableLabel fx:id="segwit" />
+                        </Field>
+                    </Fieldset>
+                </Form>
 
-    <Form GridPane.columnIndex="1" GridPane.rowIndex="2">
-        <Fieldset fx:id="locktimeFieldset" text="Absolute Locktime" inputGrow="SOMETIMES">
-            <Field text="Type:">
-                <SegmentedButton>
-                    <toggleGroup>
-                        <ToggleGroup fx:id="locktimeToggleGroup" />
-                    </toggleGroup>
-                    <buttons>
-                        <ToggleButton fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
-                        <ToggleButton fx:id="locktimeBlockType" text="Block" userData="block" toggleGroup="$locktimeToggleGroup" />
-                        <ToggleButton fx:id="locktimeDateType" text="Date" userData="date" toggleGroup="$locktimeToggleGroup" />
-                    </buttons>
-                </SegmentedButton>
-            </Field>
-            <Field fx:id="locktimeNoneField" text="Block:">
-                <Spinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
-            </Field>
-            <Field fx:id="locktimeBlockField" text="Block:">
-                <Spinner fx:id="locktimeBlock" editable="true" prefWidth="120"/>
-                <Hyperlink fx:id="locktimeCurrentHeight" text="Set current height" onAction="#setLocktimeToCurrentHeight" />
-                <Label fx:id="futureBlockWarning">
-                    <graphic>
-                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="future-warning" />
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="Future block specified - transaction cannot be broadcast until this block height"/>
-                    </tooltip>
-                </Label>
-            </Field>
-            <Field fx:id="locktimeDateField" text="Date:">
-                <DateTimePicker fx:id="locktimeDate" prefWidth="180"/>
-                <Label fx:id="futureDateWarning">
-                    <graphic>
-                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="future-warning" />
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="Future date specified - transaction cannot be broadcast until this date"/>
-                    </tooltip>
-                </Label>
-            </Field>
-        </Fieldset>
-    </Form>
+                <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
+                    <Fieldset fx:id="locktimeFieldset" text="Absolute Locktime" inputGrow="SOMETIMES">
+                        <Field text="Type:">
+                            <SegmentedButton>
+                                <toggleGroup>
+                                    <ToggleGroup fx:id="locktimeToggleGroup" />
+                                </toggleGroup>
+                                <buttons>
+                                    <ToggleButton fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton fx:id="locktimeBlockType" text="Block" userData="block" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton fx:id="locktimeDateType" text="Date" userData="date" toggleGroup="$locktimeToggleGroup" />
+                                </buttons>
+                            </SegmentedButton>
+                        </Field>
+                        <Field fx:id="locktimeNoneField" text="Block:">
+                            <Spinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
+                        </Field>
+                        <Field fx:id="locktimeBlockField" text="Block:">
+                            <Spinner fx:id="locktimeBlock" editable="true" prefWidth="120"/>
+                            <Hyperlink fx:id="locktimeCurrentHeight" text="Set current height" onAction="#setLocktimeToCurrentHeight" />
+                            <Label fx:id="futureBlockWarning">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="future-warning" />
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Future block specified - transaction cannot be broadcast until this block height"/>
+                                </tooltip>
+                            </Label>
+                        </Field>
+                        <Field fx:id="locktimeDateField" text="Date:">
+                            <DateTimePicker fx:id="locktimeDate" prefWidth="180"/>
+                            <Label fx:id="futureDateWarning">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="future-warning" />
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Future date specified - transaction cannot be broadcast until this date"/>
+                                </tooltip>
+                            </Label>
+                        </Field>
+                    </Fieldset>
+                </Form>
 
-    <Separator GridPane.columnIndex="0" GridPane.rowIndex="3" GridPane.columnSpan="2" styleClass="form-separator"/>
+                <HBox  GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="2">
+                    <padding>
+                        <Insets right="40"/>
+                    </padding>
+                    <Separator styleClass="form-separator" HBox.hgrow="ALWAYS"/>
+                </HBox>
 
-    <Form GridPane.columnIndex="0" GridPane.rowIndex="4">
-        <Fieldset text="Size" inputGrow="SOMETIMES">
-            <Field text="Bytes:">
-                <CopyableLabel fx:id="size" />
-            </Field>
-            <Field text="vBytes:">
-                <CopyableLabel fx:id="virtualSize" />
-            </Field>
-        </Fieldset>
-    </Form>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="2" styleClass="details-lower">
+                    <Fieldset text="Size" inputGrow="SOMETIMES">
+                        <Field text="Bytes:">
+                            <CopyableLabel fx:id="size" />
+                        </Field>
+                        <Field text="vBytes:">
+                            <CopyableLabel fx:id="virtualSize" />
+                        </Field>
+                    </Fieldset>
+                </Form>
 
-    <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
-        <Fieldset text="Fee" inputGrow="SOMETIMES">
-            <Field text="Amount:">
-                <CoinLabel fx:id="fee" />
-            </Field>
-            <Field text="Rate:">
-                <CopyableLabel fx:id="feeRate" />
-            </Field>
-        </Fieldset>
-    </Form>
+                <Form GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="details-lower">
+                    <Fieldset text="Fee" inputGrow="SOMETIMES">
+                        <Field text="Amount:">
+                            <CoinLabel fx:id="fee" />
+                        </Field>
+                        <Field text="Rate:">
+                            <CopyableLabel fx:id="feeRate" />
+                        </Field>
+                    </Fieldset>
+                </Form>
+            </GridPane>
+        </Tab>
+    </TabPane>
 
     <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" styleClass="form-separator"/>
 

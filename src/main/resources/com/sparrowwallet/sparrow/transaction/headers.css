@@ -24,6 +24,67 @@
     -fx-padding: 0 0 0 12;
 }
 
+.headers-tabs > .tab-header-area .tab {
+    -fx-pref-height: 50;
+    -fx-pref-width: 90;
+    -fx-alignment: CENTER;
+}
+
+.headers-tabs > .tab-header-area .tab-label {
+    -fx-pref-height: 50;
+    -fx-pref-width: 90;
+    -fx-alignment: CENTER;
+    -fx-translate-x: -6;
+}
+
+#transactionDiagram .boundary {
+    -fx-stroke: transparent;
+}
+
+#transactionDiagram .input-label, #transactionDiagram .recipient-label, #transactionDiagram .change-label, #transactionDiagram .fee-tooltip, #transactionDiagram .transaction-tooltip {
+    -fx-font-size: 13px;
+    -fx-font-family: 'Roboto Mono';
+}
+
+#transactionDiagram .fee-warning-icon {
+    -fx-text-fill: rgb(202, 18, 67);
+}
+
+#transactionDiagram .inputs-type, #transactionDiagram .input-line, #transactionDiagram .output-line {
+    -fx-fill: transparent;
+    -fx-text-fill: #696c77;
+    -fx-stroke: #696c77;
+    -fx-stroke-width: 1px;
+}
+
+#transactionDiagram .input-dashed-line {
+    -fx-stroke-dash-array: 5px 5px;
+}
+
+#transactionDiagram .utxo-label .button, #transactionDiagram .replace-change-label .button {
+    -fx-padding: 0;
+    -fx-pref-height: 18;
+    -fx-pref-width: 18;
+    -fx-border-width: 0;
+    -fx-background-color: -fx-background;
+}
+
+#transactionDiagram .utxo-label .button .label .text {
+    -fx-fill: -fx-background;
+}
+
+#transactionDiagram .utxo-label:hover .button .label .text {
+    -fx-fill: -fx-text-base-color;
+}
+
+#transactionDiagram .change-warning-icon {
+    -fx-text-fill: rgb(238, 210, 2);
+}
+
+.details-lower .fieldset {
+    -fx-padding: 0 0 0 0;
+}
+
 .future-warning {
     -fx-text-fill: rgb(238, 210, 2);
     -fx-padding: 0 0 0 12;

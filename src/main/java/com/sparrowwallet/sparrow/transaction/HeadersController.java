@@ -67,6 +67,9 @@ public class HeadersController extends TransactionFormController implements Init
     private IdLabel id;
 
     @FXML
+    private TransactionDiagram transactionDiagram;
+
+    @FXML
     private Spinner<Integer> version;
 
     @FXML
@@ -347,6 +350,8 @@ public class HeadersController extends TransactionFormController implements Init
             updateFee(feeAmt);
         }
 
+        transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
+
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
 
         signingWalletForm.managedProperty().bind(signingWalletForm.visibleProperty());
@@ -487,6 +492,94 @@ public class HeadersController extends TransactionFormController implements Init
         fee.setValue(feeAmt);
         double feeRateAmt = feeAmt.doubleValue() / headersForm.getTransaction().getVirtualSize();
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vB" + (headersForm.isTransactionFinalized() ? "" : " (non-final)"));
+    }
+
+    private WalletTransaction getWalletTransaction(Map<Sha256Hash, BlockTransaction> inputTransactions) {
+        Wallet wallet = getWalletFromTransactionInputs();
+
+        if(wallet != null) {
+            Map<BlockTransactionHashIndex, WalletNode> selectedTxos = new LinkedHashMap<>();
+            Map<BlockTransactionHashIndex, WalletNode> walletTxos = wallet.getWalletTxos();
+            for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
+                BlockTransactionHashIndex selectedTxo = walletTxos.keySet().stream().filter(txo -> txInput.getOutpoint().getHash().equals(txo.getHash()) && txInput.getOutpoint().getIndex() == txo.getIndex())
+                        .findFirst().orElse(new BlockTransactionHashIndex(txInput.getOutpoint().getHash(), 0, null, null, txInput.getOutpoint().getIndex(), 0));
+                selectedTxos.put(selectedTxo, walletTxos.get(selectedTxo));
+            }
+
+            List<Payment> payments = new ArrayList<>();
+            Map<WalletNode, Long> changeMap = new LinkedHashMap<>();
+            Map<Script, WalletNode> changeOutputScripts = wallet.getWalletOutputScripts(KeyPurpose.CHANGE);
+            for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
+                WalletNode changeNode = changeOutputScripts.get(txOutput.getScript());
+                if(changeNode != null) {
+                    if(headersForm.getTransaction().getOutputs().size() == 4 && headersForm.getTransaction().getOutputs().stream().anyMatch(txo -> txo != txOutput && txo.getValue() == txOutput.getValue())) {
+                        try {
+                            payments.add(new Payment(txOutput.getScript().getToAddresses()[0], ".." + changeNode + " (Fake Mix)", txOutput.getValue(), false, Payment.Type.FAKE_MIX));
+                        } catch(Exception e) {
+                            //ignore
+                        }
+                    } else {
+                        changeMap.put(changeNode, txOutput.getValue());
+                    }
+                } else {
+                    Payment.Type paymentType = Payment.Type.DEFAULT;
+                    Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+                    Wallet premixWallet = masterWallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
+                    if(premixWallet != null && headersForm.getTransaction().getOutputs().stream().anyMatch(premixWallet::isWalletTxo) && txOutput.getIndex() == 1) {
+                        paymentType = Payment.Type.WHIRLPOOL_FEE;
+                    }
+
+                    BlockTransactionHashIndex receivedTxo = walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txOutput.getHash()) && txo.getIndex() == txOutput.getIndex()).findFirst().orElse(null);
+                    String label = headersForm.getName() == null || (headersForm.getName().startsWith("[") && headersForm.getName().endsWith("]") && headersForm.getName().length() == 8) ? null : headersForm.getName();
+                    try {
+                        payments.add(new Payment(txOutput.getScript().getToAddresses()[0], receivedTxo != null ? receivedTxo.getLabel() : label, txOutput.getValue(), false, paymentType));
+                    } catch(Exception e) {
+                        //ignore
+                    }
+                }
+            }
+
+            return new WalletTransaction(wallet, headersForm.getTransaction(), Collections.emptyList(), selectedTxos, payments, changeMap, fee.getValue(), inputTransactions);
+        } else {
+            Map<BlockTransactionHashIndex, WalletNode> selectedTxos = headersForm.getTransaction().getInputs().stream()
+                    .collect(Collectors.toMap(txInput -> {
+                                if(inputTransactions != null) {
+                                    BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
+                                    if(blockTransaction != null) {
+                                        TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+                                        return new BlockTransactionHashIndex(blockTransaction.getHash(), blockTransaction.getHeight(), blockTransaction.getDate(), blockTransaction.getFee(), txInput.getOutpoint().getIndex(), txOutput.getValue());
+                                    }
+                                }
+                                return new BlockTransactionHashIndex(txInput.getOutpoint().getHash(), 0, null, null, txInput.getOutpoint().getIndex(), 0);
+                            },
+                            txInput -> new WalletNode("m/0"),
+                            (u, v) -> { throw new IllegalStateException("Duplicate TXOs"); },
+                            LinkedHashMap::new));
+            selectedTxos.entrySet().forEach(entry -> entry.setValue(null));
+
+            List<Payment> payments = new ArrayList<>();
+            for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
+                try {
+                    payments.add(new Payment(txOutput.getScript().getToAddresses()[0], null, txOutput.getValue(), false));
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+
+            return new WalletTransaction(null, headersForm.getTransaction(), Collections.emptyList(), selectedTxos, payments, Collections.emptyMap(), fee.getValue(), inputTransactions);
+        }
+    }
+
+    private Wallet getWalletFromTransactionInputs() {
+        for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
+            for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
+                if(openWallet.isWalletTxo(txInput)) {
+                    return openWallet;
+                }
+            }
+        }
+
+        return null;
     }
 
     private void updateBlockchainForm(BlockTransaction blockTransaction, Integer currentHeight) {
@@ -986,6 +1079,7 @@ public class HeadersController extends TransactionFormController implements Init
             if(feeAmt != null) {
                 updateFee(feeAmt);
             }
+            transactionDiagram.update(getWalletTransaction(event.getInputTransactions()));
         }
     }
 
@@ -1120,6 +1214,7 @@ public class HeadersController extends TransactionFormController implements Init
             updateType();
             updateSize();
             updateFee(headersForm.getPsbt().getFee());
+            transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
         }
     }
 

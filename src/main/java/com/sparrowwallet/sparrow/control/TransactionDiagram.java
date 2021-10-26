@@ -3,16 +3,16 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
-import com.sparrowwallet.drongo.wallet.Payment;
-import com.sparrowwallet.drongo.wallet.WalletNode;
-import com.sparrowwallet.drongo.wallet.WalletTransaction;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -38,6 +38,7 @@ public class TransactionDiagram extends GridPane {
     private static final int TOOLTIP_SHOW_DELAY = 50;
 
     private WalletTransaction walletTx;
+    private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
 
     public void update(WalletTransaction walletTx) {
         setMinHeight(getDiagramHeight());
@@ -105,7 +106,7 @@ public class TransactionDiagram extends GridPane {
     private Map<BlockTransactionHashIndex, WalletNode> getDisplayedUtxos() {
         Map<BlockTransactionHashIndex, WalletNode> selectedUtxos = walletTx.getSelectedUtxos();
 
-        if(getPayjoinURI() != null) {
+        if(getPayjoinURI() != null && !selectedUtxos.containsValue(null)) {
             selectedUtxos = new LinkedHashMap<>(selectedUtxos);
             selectedUtxos.put(new PayjoinBlockTransactionHashIndex(), null);
         }
@@ -228,18 +229,29 @@ public class TransactionDiagram extends GridPane {
                     label.getStyleClass().add("input-label");
                 }
 
-                label.setGraphic(excludeUtxoButton);
-                label.setContentDisplay(ContentDisplay.LEFT);
+                if(!isFinal()) {
+                    label.setGraphic(excludeUtxoButton);
+                    label.setContentDisplay(ContentDisplay.LEFT);
+                }
             } else {
                 if(input instanceof PayjoinBlockTransactionHashIndex) {
                     tooltip.setText("Added once transaction is signed and sent to the payjoin server");
-                } else {
-                    AdditionalBlockTransactionHashIndex additionalReference = (AdditionalBlockTransactionHashIndex) input;
+                } else if(input instanceof AdditionalBlockTransactionHashIndex additionalReference) {
                     StringJoiner joiner = new StringJoiner("\n");
                     for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
                         joiner.add(getInputDescription(additionalInput));
                     }
                     tooltip.setText(joiner.toString());
+                } else {
+                    if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
+                        BlockTransaction blockTransaction = walletTx.getInputTransactions().get(input.getHash());
+                        TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int)input.getIndex());
+                        Address fromAddress = txOutput.getScript().getToAddress();
+                        tooltip.setText("Input of " + getSatsValue(txOutput.getValue()) + " sats\n" + input.getHashAsString() + ":" + input.getIndex() + (fromAddress != null ? "\n" + fromAddress : ""));
+                    } else {
+                        tooltip.setText(input.getHashAsString() + ":" + input.getIndex());
+                    }
+                    label.getStyleClass().add("input-label");
                 }
                 tooltip.getStyleClass().add("input-label");
             }
@@ -376,19 +388,22 @@ public class TransactionDiagram extends GridPane {
         outputsBox.setAlignment(Pos.CENTER_LEFT);
         outputsBox.getChildren().add(createSpacer());
 
+        List<OutputNode> outputNodes = new ArrayList<>();
         for(Payment payment : displayedPayments) {
             Glyph outputGlyph = getOutputGlyph(payment);
             boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon").contains(style)) || payment instanceof AdditionalPayment;
-            String recipientDesc = labelledPayment ? payment.getLabel() : payment.getAddress().toString().substring(0, 8) + "...";
-            Label recipientLabel = new Label(recipientDesc, outputGlyph);
+            payment.setLabel(getOutputLabel(payment));
+            Label recipientLabel = new Label(payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX ? payment.getAddress().toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
-            Tooltip recipientTooltip = new Tooltip((walletTx.isConsolidationSend(payment) ? "Consolidate " : "Pay ") + getSatsValue(payment.getAmount()) + " sats to " + (payment instanceof AdditionalPayment ? "\n" + payment : payment.getLabel() + "\n" + payment.getAddress().toString()));
+            Wallet toWallet = getToWallet(payment);
+            Tooltip recipientTooltip = new Tooltip((toWallet == null ? (walletTx.isConsolidationSend(payment) ? "Consolidate " : "Pay ") : "Receive ")
+                    + getSatsValue(payment.getAmount()) + " sats to "
+                    + (payment instanceof AdditionalPayment ? "\n" + payment : (toWallet == null ? (payment.getLabel() == null ? "external address" : payment.getLabel()) : toWallet.getName()) + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientLabel.setTooltip(recipientTooltip);
-            outputsBox.getChildren().add(recipientLabel);
-            outputsBox.getChildren().add(createSpacer());
+            outputNodes.add(new OutputNode(recipientLabel, payment.getAddress()));
         }
 
         for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
@@ -397,29 +412,41 @@ public class TransactionDiagram extends GridPane {
             boolean overGapLimit = (changeNode.getIndex() - defaultChangeNode.getIndex()) > walletTx.getWallet().getGapLimit();
 
             HBox actionBox = new HBox();
-            String changeDesc = walletTx.getChangeAddress(changeNode).toString().substring(0, 8) + "...";
+            Address changeAddress = walletTx.getChangeAddress(changeNode);
+            String changeDesc = changeAddress.toString().substring(0, 8) + "...";
             Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
             Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(changeEntry.getValue()) + " sats to " + changeNode.getDerivationPath().replace("m", "..") + "\n" + walletTx.getChangeAddress(changeNode).toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeLabel.setTooltip(changeTooltip);
+            actionBox.getChildren().add(changeLabel);
 
-            Button nextChangeAddressButton = new Button("");
-            nextChangeAddressButton.setGraphic(getChangeReplaceGlyph());
-            nextChangeAddressButton.setOnAction(event -> {
-                EventManager.get().post(new ReplaceChangeAddressEvent(walletTx));
-            });
-            Tooltip replaceChangeTooltip = new Tooltip("Use next change address");
-            nextChangeAddressButton.setTooltip(replaceChangeTooltip);
-            Label replaceChangeLabel = new Label("", nextChangeAddressButton);
-            replaceChangeLabel.getStyleClass().add("replace-change-label");
-            replaceChangeLabel.setVisible(false);
-            actionBox.setOnMouseEntered(event -> replaceChangeLabel.setVisible(true));
-            actionBox.setOnMouseExited(event -> replaceChangeLabel.setVisible(false));
+            if(!isFinal()) {
+                Button nextChangeAddressButton = new Button("");
+                nextChangeAddressButton.setGraphic(getChangeReplaceGlyph());
+                nextChangeAddressButton.setOnAction(event -> {
+                    EventManager.get().post(new ReplaceChangeAddressEvent(walletTx));
+                });
+                Tooltip replaceChangeTooltip = new Tooltip("Use next change address");
+                nextChangeAddressButton.setTooltip(replaceChangeTooltip);
+                Label replaceChangeLabel = new Label("", nextChangeAddressButton);
+                replaceChangeLabel.getStyleClass().add("replace-change-label");
+                replaceChangeLabel.setVisible(false);
+                actionBox.setOnMouseEntered(event -> replaceChangeLabel.setVisible(true));
+                actionBox.setOnMouseExited(event -> replaceChangeLabel.setVisible(false));
+                actionBox.getChildren().add(replaceChangeLabel);
+            }
 
-            actionBox.getChildren().addAll(changeLabel, replaceChangeLabel);
-            outputsBox.getChildren().add(actionBox);
+            outputNodes.add(new OutputNode(actionBox, changeAddress));
+        }
+
+        if(isFinal()) {
+            Collections.sort(outputNodes);
+        }
+
+        for(OutputNode outputNode : outputNodes) {
+            outputsBox.getChildren().add(outputNode.outputLabel);
             outputsBox.getChildren().add(createSpacer());
         }
 
@@ -427,7 +454,7 @@ public class TransactionDiagram extends GridPane {
         Label feeLabel = highFee ? new Label("High Fee", getWarningGlyph()) : new Label("Fee", getFeeGlyph());
         feeLabel.getStyleClass().addAll("output-label", "fee-label");
         String percentage = String.format("%.2f", walletTx.getFeePercentage() * 100.0);
-        Tooltip feeTooltip = new Tooltip("Fee of " + getSatsValue(walletTx.getFee()) + " sats (" + percentage + "%)");
+        Tooltip feeTooltip = new Tooltip(walletTx.getFee() < 0 ? "Unknown fee" : "Fee of " + getSatsValue(walletTx.getFee()) + " sats (" + percentage + "%)");
         feeTooltip.getStyleClass().add("fee-tooltip");
         feeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         feeLabel.setTooltip(feeTooltip);
@@ -445,7 +472,10 @@ public class TransactionDiagram extends GridPane {
 
         String txDesc = "Transaction";
         Label txLabel = new Label(txDesc);
-        Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n" + String.format("%.2f", walletTx.getTransaction().getVirtualSize()) + " vBytes");
+        boolean isFinalized = walletTx.getTransaction().hasScriptSigs() || walletTx.getTransaction().hasWitnesses();
+        Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n"
+                + String.format("%.2f", walletTx.getTransaction().getVirtualSize()) + " vBytes"
+                + (walletTx.getFee() < 0 ? "" : "\n" + String.format("%.2f", walletTx.getFee() / walletTx.getTransaction().getVirtualSize()) + " sats/vB" + (isFinalized ? "" : " (non-final)")));
         tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         tooltip.getStyleClass().add("transaction-tooltip");
         txLabel.setTooltip(tooltip);
@@ -469,6 +499,37 @@ public class TransactionDiagram extends GridPane {
         return spacer;
     }
 
+    private String getOutputLabel(Payment payment) {
+        if(payment.getLabel() != null) {
+            return payment.getLabel();
+        }
+
+        if(payment.getType() == Payment.Type.WHIRLPOOL_FEE) {
+            return "Whirlpool Fee";
+        } else if(walletTx.isPremixSend(payment)) {
+            int premixIndex = getOutputIndex(payment.getAddress()) - 2;
+            return "Premix #" + premixIndex;
+        } else if(walletTx.isBadbankSend(payment)) {
+            return "Badbank Change";
+        }
+
+        return null;
+    }
+
+    private int getOutputIndex(Address address) {
+        return walletTx.getTransaction().getOutputs().stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress())).mapToInt(TransactionOutput::getIndex).findFirst().orElseThrow();
+    }
+
+    private Wallet getToWallet(Payment payment) {
+        for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
+            if(openWallet != walletTx.getWallet() && openWallet.isWalletAddress(payment.getAddress())) {
+                return openWallet;
+            }
+        }
+
+        return null;
+    }
+
     public Glyph getOutputGlyph(Payment payment) {
         if(payment.getType().equals(Payment.Type.FAKE_MIX)) {
             return getFakeMixGlyph();
@@ -482,6 +543,8 @@ public class TransactionDiagram extends GridPane {
             return getWhirlpoolFeeGlyph();
         } else if(payment instanceof AdditionalPayment) {
             return ((AdditionalPayment)payment).getOutputGlyph(this);
+        } else if(getToWallet(payment) != null) {
+            return getDepositGlyph();
         }
 
         return getPaymentGlyph();
@@ -506,6 +569,13 @@ public class TransactionDiagram extends GridPane {
         consolidationGlyph.getStyleClass().add("consolidation-icon");
         consolidationGlyph.setFontSize(12);
         return consolidationGlyph;
+    }
+
+    public static Glyph getDepositGlyph() {
+        Glyph depositGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ARROW_DOWN);
+        depositGlyph.getStyleClass().add("deposit-icon");
+        depositGlyph.setFontSize(12);
+        return depositGlyph;
     }
 
     public static Glyph getPremixGlyph() {
@@ -589,6 +659,18 @@ public class TransactionDiagram extends GridPane {
         return lockGlyph;
     }
 
+    public boolean isFinal() {
+        return finalProperty.get();
+    }
+
+    public BooleanProperty finalProperty() {
+        return finalProperty;
+    }
+
+    public void setFinal(boolean isFinal) {
+        this.finalProperty.set(isFinal);
+    }
+
     private static class PayjoinBlockTransactionHashIndex extends BlockTransactionHashIndex {
         public PayjoinBlockTransactionHashIndex() {
             super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, 0, 0);
@@ -642,6 +724,25 @@ public class TransactionDiagram extends GridPane {
 
         public String toString() {
             return additionalPayments.stream().map(payment -> payment.getAddress().toString()).collect(Collectors.joining("\n"));
+        }
+    }
+
+    private class OutputNode implements Comparable<OutputNode> {
+        public Node outputLabel;
+        public Address address;
+
+        public OutputNode(Node outputLabel, Address address) {
+            this.outputLabel = outputLabel;
+            this.address = address;
+        }
+
+        @Override
+        public int compareTo(TransactionDiagram.OutputNode o) {
+            try {
+                return getOutputIndex(address) - getOutputIndex(o.address);
+            } catch(Exception e) {
+                return 0;
+            }
         }
     }
 }
