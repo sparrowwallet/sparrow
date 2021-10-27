@@ -18,6 +18,8 @@ import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Platform;
 
 public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
+    private static final int ERROR_DISPLAY_MINUTES = 5;
+
     public MixStatusCell() {
         super();
         setAlignment(Pos.CENTER_RIGHT);
@@ -46,7 +48,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             if(mixStatus.getNextMixUtxo() != null) {
                 setMixSuccess(mixStatus.getNextMixUtxo());
             } else if(mixStatus.getMixFailReason() != null) {
-                setMixFail(mixStatus.getMixFailReason(), mixStatus.getMixError());
+                setMixFail(mixStatus.getMixFailReason(), mixStatus.getMixError(), mixStatus.getMixErrorTimestamp());
             } else if(mixStatus.getMixProgress() != null) {
                 setMixProgress(mixStatus.getUtxoEntry(), mixStatus.getMixProgress());
             } else {
@@ -65,10 +67,10 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
         setTooltip(tt);
     }
 
-    private void setMixFail(MixFailReason mixFailReason, String mixError) {
+    private void setMixFail(MixFailReason mixFailReason, String mixError, Long mixErrorTimestamp) {
         if(mixFailReason != MixFailReason.CANCEL) {
-            if(getGraphic() != null && getGraphic().getUserData() == mixFailReason) {
-                //Fade transition already set
+            if(mixErrorTimestamp != null && System.currentTimeMillis() - mixErrorTimestamp > ERROR_DISPLAY_MINUTES * 60 * 1000) {
+                //Old error, don't set again.
                 return;
             }
 
@@ -81,7 +83,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                     "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
             setTooltip(tt);
 
-            FadeTransition ft = new FadeTransition(Duration.hours(1), failGlyph);
+            FadeTransition ft = new FadeTransition(Duration.minutes(ERROR_DISPLAY_MINUTES), failGlyph);
             ft.setFromValue(1);
             ft.setToValue(0);
             ft.setOnFinished(event -> {

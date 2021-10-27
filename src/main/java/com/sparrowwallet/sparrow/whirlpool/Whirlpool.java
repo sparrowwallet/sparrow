@@ -173,7 +173,7 @@ public class Whirlpool {
             HD_WalletFactoryGeneric hdWalletFactory = HD_WalletFactoryGeneric.getInstance();
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
             this.walletId = walletId;
-            hdWallet = new HD_Wallet(purpose, words, config.getNetworkParameters(), seed, passphrase, 10);
+            hdWallet = new HD_Wallet(purpose, words, config.getNetworkParameters(), seed, passphrase);
         } catch(Exception e) {
             throw new IllegalStateException("Could not create Whirlpool HD wallet ", e);
         }

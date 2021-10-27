@@ -106,7 +106,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 setText(address.toString());
                 setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
                 Tooltip tooltip = new Tooltip();
-                tooltip.setText(nodeEntry.getNode().getDerivationPath().replace("m", ".."));
+                tooltip.setText(nodeEntry.getNode().toString());
                 setTooltip(tooltip);
                 getStyleClass().add("address-cell");
 

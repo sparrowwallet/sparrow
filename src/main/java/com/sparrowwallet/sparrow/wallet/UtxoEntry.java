@@ -128,6 +128,7 @@ public class UtxoEntry extends HashIndexEntry {
         private Utxo nextMixUtxo;
         private MixFailReason mixFailReason;
         private String mixError;
+        private Long mixErrorTimestamp;
 
         public MixStatus(MixProgress mixProgress) {
             this.mixProgress = mixProgress;
@@ -140,6 +141,7 @@ public class UtxoEntry extends HashIndexEntry {
         public MixStatus(MixFailReason mixFailReason, String mixError) {
             this.mixFailReason = mixFailReason;
             this.mixError = mixError;
+            this.mixErrorTimestamp = System.currentTimeMillis();
         }
 
         public UtxoEntry getUtxoEntry() {
@@ -181,6 +183,10 @@ public class UtxoEntry extends HashIndexEntry {
 
         public String getMixError() {
             return mixError;
+        }
+
+        public Long getMixErrorTimestamp() {
+            return mixErrorTimestamp;
         }
     }
 }
