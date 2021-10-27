@@ -18,6 +18,7 @@ public class MixConfigMapper implements RowMapper<MixConfig> {
             mixOnStartup = null;
         }
 
+        String indexRange = rs.getString("indexRange");
         String mixToWalletFile = rs.getString("mixToWalletFile");
         String mixToWalletName = rs.getString("mixToWalletName");
 
@@ -26,7 +27,7 @@ public class MixConfigMapper implements RowMapper<MixConfig> {
             minMixes = null;
         }
 
-        MixConfig mixConfig = new MixConfig(scode, mixOnStartup, mixToWalletFile == null ? null : new File(mixToWalletFile), mixToWalletName, minMixes, rs.getInt("receiveIndex"), rs.getInt("changeIndex"));
+        MixConfig mixConfig = new MixConfig(scode, mixOnStartup, indexRange, mixToWalletFile == null ? null : new File(mixToWalletFile), mixToWalletName, minMixes, rs.getInt("receiveIndex"), rs.getInt("changeIndex"));
         mixConfig.setId(rs.getLong("id"));
         return mixConfig;
     }

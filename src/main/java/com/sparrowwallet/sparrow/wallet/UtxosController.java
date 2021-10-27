@@ -5,7 +5,6 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.whirlpool.client.tx0.Tx0Preview;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
@@ -381,9 +380,11 @@ public class UtxosController extends WalletFormController implements Initializab
             mixConfig.setMixToWalletName(changedMixConfig.getMixToWalletName());
             mixConfig.setMixToWalletFile(changedMixConfig.getMixToWalletFile());
             mixConfig.setMinMixes(changedMixConfig.getMinMixes());
+            mixConfig.setIndexRange(changedMixConfig.getIndexRange());
             EventManager.get().post(new WalletMasterMixConfigChangedEvent(getWalletForm().getWallet()));
 
             Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
+            whirlpool.setPostmixIndexRange(mixConfig.getIndexRange());
             try {
                 String mixToWalletId = AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(mixConfig);
                 whirlpool.setMixToWallet(mixToWalletId, mixConfig.getMinMixes());

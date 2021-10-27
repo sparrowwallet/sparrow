@@ -236,6 +236,10 @@ public class DbPersistence implements Persistence {
                     }
                 }
 
+                if(dirtyPersistables.label != null) {
+                    walletDao.updateLabel(wallet.getId(), dirtyPersistables.label.length() > 255 ? dirtyPersistables.label.substring(0, 255) : dirtyPersistables.label);
+                }
+
                 if(dirtyPersistables.blockHeight != null) {
                     walletDao.updateStoredBlockHeight(wallet.getId(), dirtyPersistables.blockHeight);
                 }
@@ -642,6 +646,13 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
+    public void walletLabelChanged(WalletLabelChangedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).label = event.getLabel();
+        }
+    }
+
+    @Subscribe
     public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
         if(persistsFor(event.getWallet())) {
             dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).blockHeight = event.getBlockHeight();
@@ -701,6 +712,7 @@ public class DbPersistence implements Persistence {
     private static class DirtyPersistables {
         public boolean clearHistory;
         public final List<WalletNode> historyNodes = new ArrayList<>();
+        public String label;
         public Integer blockHeight = null;
         public Integer gapLimit = null;
         public final List<Entry> labelEntries = new ArrayList<>();
@@ -715,6 +727,7 @@ public class DbPersistence implements Persistence {
             return "Dirty Persistables" +
                     "\nClear history:" + clearHistory +
                     "\nNodes:" + historyNodes +
+                    "\nLabel:" + label +
                     "\nBlockHeight:" + blockHeight +
                     "\nGap limit:" + gapLimit +
                     "\nTx labels:" + labelEntries.stream().filter(entry -> entry instanceof TransactionEntry).map(entry -> ((TransactionEntry)entry).getBlockTransaction().getHash().toString()).collect(Collectors.toList()) +

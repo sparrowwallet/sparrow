@@ -83,8 +83,13 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                     "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
             setTooltip(tt);
 
+            double fromValue = 1.0;
+            if(mixErrorTimestamp != null) {
+                fromValue -= (double)(System.currentTimeMillis() - mixErrorTimestamp) / (ERROR_DISPLAY_MINUTES * 60 * 1000);
+            }
+
             FadeTransition ft = new FadeTransition(Duration.minutes(ERROR_DISPLAY_MINUTES), failGlyph);
-            ft.setFromValue(1);
+            ft.setFromValue(Math.max(0, fromValue));
             ft.setToValue(0);
             ft.setOnFinished(event -> {
                 setTooltip(null);

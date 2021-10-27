@@ -89,6 +89,10 @@ public class WhirlpoolServices {
                 }
             }
 
+            if(wallet.getMasterMixConfig() != null) {
+                whirlpool.setPostmixIndexRange(wallet.getMasterMixConfig().getIndexRange());
+            }
+
             Whirlpool.StartupService startupService = whirlpool.createStartupService();
             startupService.setPeriod(Duration.minutes(2));
             startupService.setOnSucceeded(workerStateEvent -> {

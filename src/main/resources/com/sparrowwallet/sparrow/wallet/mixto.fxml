@@ -3,13 +3,16 @@
 <?import java.lang.*?>
 <?import java.util.*?>
 <?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import tornadofx.control.Form?>
 <?import tornadofx.control.Fieldset?>
 <?import tornadofx.control.Field?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <?import javafx.geometry.Insets?>
+<?import javafx.collections.FXCollections?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Spinner?>
+<?import com.samourai.whirlpool.client.wallet.beans.IndexRange?>
 
 <BorderPane stylesheets="@../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.MixToController">
     <center>
@@ -33,6 +36,23 @@
                     <Field text="Minimum mixes:">
                         <Spinner fx:id="minMixes" editable="true" prefWidth="90" />
                         <HelpLabel helpText="The minimum number of mixes required before mixing to the selected wallet.\nTo ensure privacy, each mix beyond this number will have a 25% probability to mix to the selected wallet."/>
+                    </Field>
+                </Fieldset>
+            </Form>
+
+            <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
+                <Fieldset inputGrow="SOMETIMES" text="Postmix Wallet Settings">
+                    <Field text="Index range:">
+                        <ComboBox fx:id="indexRange" prefWidth="140">
+                            <items>
+                                <FXCollections fx:factory="observableArrayList">
+                                    <IndexRange fx:constant="FULL" />
+                                    <IndexRange fx:constant="EVEN" />
+                                    <IndexRange fx:constant="ODD" />
+                                </FXCollections>
+                            </items>
+                        </ComboBox>
+                        <HelpLabel helpText="Using different index ranges allows the same wallet to be mixed simultaneously on multiple clients.\nSelect Full if simultaneous mixing is not required to keep wallet indexing compact for quicker load times.\nSelect Even to mix on the Samourai mobile app simultaneously.\nSelect Odd to mix on Samourai CLI/GUI simultaneously."/>
                     </Field>
                 </Fieldset>
             </Form>

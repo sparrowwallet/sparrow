@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.samourai.whirlpool.client.wallet.beans.IndexRange;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
@@ -14,6 +15,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.util.StringConverter;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -30,6 +32,9 @@ public class MixToController implements Initializable {
 
     @FXML
     private Spinner<Integer> minMixes;
+
+    @FXML
+    private ComboBox<IndexRange> indexRange;
 
     private MixConfig mixConfig;
 
@@ -81,6 +86,35 @@ public class MixToController implements Initializable {
         minMixes.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10000, initialMinMixes));
         minMixes.valueProperty().addListener((observable, oldValue, newValue) -> {
             mixConfig.setMinMixes(newValue);
+            EventManager.get().post(new MixToConfigChangedEvent(wallet));
+        });
+
+        indexRange.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(IndexRange indexRange) {
+                if(indexRange == null) {
+                    return "";
+                }
+
+                return indexRange.toString().charAt(0) + indexRange.toString().substring(1).toLowerCase();
+            }
+
+            @Override
+            public IndexRange fromString(String string) {
+                return null;
+            }
+        });
+
+        indexRange.setValue(IndexRange.FULL);
+        if(mixConfig.getIndexRange() != null) {
+            try {
+                indexRange.setValue(IndexRange.valueOf(mixConfig.getIndexRange()));
+            } catch(Exception e) {
+                //ignore
+            }
+        }
+        indexRange.valueProperty().addListener((observable, oldValue, newValue) -> {
+            mixConfig.setIndexRange(newValue.toString());
             EventManager.get().post(new MixToConfigChangedEvent(wallet));
         });
     }

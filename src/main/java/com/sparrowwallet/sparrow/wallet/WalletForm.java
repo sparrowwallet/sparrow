@@ -511,6 +511,13 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void walletLabelChanged(WalletLabelChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
     public void walletGapLimitChanged(WalletGapLimitChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));

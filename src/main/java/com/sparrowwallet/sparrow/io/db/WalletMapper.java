@@ -17,6 +17,7 @@ public class WalletMapper implements RowMapper<Wallet> {
     public Wallet map(ResultSet rs, StatementContext ctx) throws SQLException {
         Wallet wallet = new Wallet(rs.getString("wallet.name"));
         wallet.setId(rs.getLong("wallet.id"));
+        wallet.setLabel(rs.getString("wallet.label"));
         wallet.setNetwork(Network.values()[rs.getInt("wallet.network")]);
         wallet.setPolicyType(PolicyType.values()[rs.getInt("wallet.policyType")]);
         wallet.setScriptType(ScriptType.values()[rs.getInt("wallet.scriptType")]);

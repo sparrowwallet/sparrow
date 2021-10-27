@@ -44,7 +44,6 @@ public class Config {
     private boolean showLoadingLog = true;
     private boolean showUtxosChart = true;
     private boolean preventSleep = false;
-    private IndexRange postmixIndexRange = IndexRange.FULL;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
@@ -56,8 +55,6 @@ public class Config {
     private CoreAuthType coreAuthType;
     private File coreDataDir;
     private String coreAuth;
-    private Boolean coreMultiWallet;
-    private String coreWallet;
     private String electrumServer;
     private File electrumServerCert;
     private boolean useProxy;
@@ -288,15 +285,6 @@ public class Config {
 
     public void setPreventSleep(boolean preventSleep) {
         this.preventSleep = preventSleep;
-    }
-
-    public IndexRange getPostmixIndexRange() {
-        return postmixIndexRange;
-    }
-
-    public void setPostmixIndexRange(IndexRange postmixIndexRange) {
-        this.postmixIndexRange = postmixIndexRange;
-        flush();
     }
 
     public List<File> getRecentWalletFiles() {

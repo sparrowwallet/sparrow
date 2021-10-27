@@ -111,7 +111,7 @@ public class Whirlpool {
         WhirlpoolWalletConfig whirlpoolWalletConfig = new WhirlpoolWalletConfig(dataSourceFactory, httpClientService, stompClientService, torClientService, serverApi, whirlpoolServer.getParams(), false);
         whirlpoolWalletConfig.setDataPersisterFactory(dataPersisterFactory);
         whirlpoolWalletConfig.setPartner("SPARROW");
-        whirlpoolWalletConfig.setIndexRangePostmix(Config.get().getPostmixIndexRange());
+        whirlpoolWalletConfig.setIndexRangePostmix(IndexRange.FULL);
         return whirlpoolWalletConfig;
     }
 
@@ -468,6 +468,16 @@ public class Whirlpool {
 
     public void setResyncMixesDone(boolean resyncMixesDone) {
         this.resyncMixesDone = resyncMixesDone;
+    }
+
+    public void setPostmixIndexRange(String indexRange) {
+        if(indexRange != null) {
+            try {
+                config.setIndexRangePostmix(IndexRange.valueOf(indexRange));
+            } catch(Exception e) {
+                log.error("Invalid index range " + indexRange);
+            }
+        }
     }
 
     public void setMixToWallet(String mixToWalletId, Integer minMixes) {
