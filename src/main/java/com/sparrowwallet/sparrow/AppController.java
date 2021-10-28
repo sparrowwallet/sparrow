@@ -1617,7 +1617,7 @@ public class AppController implements Initializable {
     private void serverToggleStartAnimation() {
         Node thumbArea = serverToggle.lookup(".thumb-area");
         if(thumbArea != null) {
-            FadeTransition fadeTransition = new FadeTransition(Duration.millis(1000), thumbArea);
+            FadeTransition fadeTransition = new FadeTransition(Duration.millis(600), thumbArea);
             fadeTransition.setFromValue(1.0);
             fadeTransition.setToValue(0.4);
             fadeTransition.setAutoReverse(true);
