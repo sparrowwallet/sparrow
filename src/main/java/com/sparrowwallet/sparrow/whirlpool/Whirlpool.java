@@ -94,10 +94,6 @@ public class Whirlpool {
         this.tx0Service = new Tx0Service(config);
 
         WhirlpoolEventService.getInstance().register(this);
-
-        StatusReporterService statusReporterService = new StatusReporterService(this);
-        statusReporterService.setPeriod(Duration.minutes(1));
-        statusReporterService.start();
     }
 
     private WhirlpoolWalletConfig computeWhirlpoolWalletConfig(HostAndPort torProxy) {
@@ -739,30 +735,6 @@ public class Whirlpool {
                     }
 
                     return null;
-                }
-            };
-        }
-    }
-
-    private static class StatusReporterService extends ScheduledService<Boolean> {
-        private final Whirlpool whirlpool;
-
-        public StatusReporterService(Whirlpool whirlpool) {
-            this.whirlpool = whirlpool;
-        }
-
-        @Override
-        protected Task<Boolean> createTask() {
-            return new Task<>() {
-                protected Boolean call() throws Exception {
-                    if(whirlpool.mixingProperty().get()) {
-                        WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
-                        log.debug(whirlpool.walletId + ": " + whirlpoolWallet.getMixingState());
-                    } else {
-                        log.debug(whirlpool.walletId + ": Not mixing");
-                    }
-
-                    return true;
                 }
             };
         }

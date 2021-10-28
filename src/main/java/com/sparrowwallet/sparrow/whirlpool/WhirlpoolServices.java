@@ -99,7 +99,6 @@ public class WhirlpoolServices {
                 startupService.cancel();
             });
             startupService.setOnFailed(workerStateEvent -> {
-                log.error("Failed to start whirlpool", workerStateEvent.getSource().getException());
                 Throwable exception = workerStateEvent.getSource().getException();
                 while(exception.getCause() != null) {
                     exception = exception.getCause();
@@ -109,6 +108,9 @@ public class WhirlpoolServices {
                     if(torProxy != null) {
                         whirlpool.refreshTorCircuits();
                     }
+                    log.error("Error connecting to Whirlpool server: " + exception.getMessage());
+                } else {
+                    log.error("Failed to start Whirlpool", workerStateEvent.getSource().getException());
                 }
             });
             startupService.start();

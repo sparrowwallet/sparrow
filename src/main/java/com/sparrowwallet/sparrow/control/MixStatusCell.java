@@ -18,7 +18,7 @@ import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Platform;
 
 public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
-    private static final int ERROR_DISPLAY_MINUTES = 5;
+    private static final int ERROR_DISPLAY_MILLIS = 5 * 60 * 1000;
 
     public MixStatusCell() {
         super();
@@ -69,7 +69,8 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
 
     private void setMixFail(MixFailReason mixFailReason, String mixError, Long mixErrorTimestamp) {
         if(mixFailReason != MixFailReason.CANCEL) {
-            if(mixErrorTimestamp != null && System.currentTimeMillis() - mixErrorTimestamp > ERROR_DISPLAY_MINUTES * 60 * 1000) {
+            long elapsed = mixErrorTimestamp == null ? 0L : System.currentTimeMillis() - mixErrorTimestamp;
+            if(elapsed >= ERROR_DISPLAY_MILLIS) {
                 //Old error, don't set again.
                 return;
             }
@@ -83,19 +84,13 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                     "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
             setTooltip(tt);
 
-            double fromValue = 1.0;
-            if(mixErrorTimestamp != null) {
-                fromValue -= (double)(System.currentTimeMillis() - mixErrorTimestamp) / (ERROR_DISPLAY_MINUTES * 60 * 1000);
-            }
-
-            FadeTransition ft = new FadeTransition(Duration.minutes(ERROR_DISPLAY_MINUTES), failGlyph);
-            ft.setFromValue(Math.max(0, fromValue));
-            ft.setToValue(0);
+            FadeTransition ft = new FadeTransition(Duration.millis(ERROR_DISPLAY_MILLIS - elapsed), failGlyph);
+            ft.setFromValue(1.0 - ((double)elapsed / ERROR_DISPLAY_MILLIS));
+            ft.setToValue(0.0);
             ft.setOnFinished(event -> {
                 setTooltip(null);
             });
             ft.play();
-            failGlyph.setUserData(mixFailReason);
         } else {
             setGraphic(null);
             setTooltip(null);
