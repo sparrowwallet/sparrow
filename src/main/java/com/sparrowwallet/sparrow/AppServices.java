@@ -622,7 +622,7 @@ public class AppServices {
     }
 
     public static Optional<ButtonType> showErrorDialog(String title, String content, ButtonType... buttons) {
-        return showAlertDialog(title, content, Alert.AlertType.ERROR, buttons);
+        return showAlertDialog(title, content == null ? "See log file (Help menu)" : content, Alert.AlertType.ERROR, buttons);
     }
 
     public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, ButtonType... buttons) {

@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -452,58 +453,101 @@ public class SettingsController extends WalletFormController implements Initiali
         Wallet masterWallet = openWallet.isMasterWallet() ? openWallet : openWallet.getMasterWallet();
 
         AddAccountDialog addAccountDialog = new AddAccountDialog(masterWallet);
-        Optional<StandardAccount> optAccount = addAccountDialog.showAndWait();
-        if(optAccount.isPresent()) {
-            StandardAccount standardAccount = optAccount.get();
+        Optional<List<StandardAccount>> optAccounts = addAccountDialog.showAndWait();
+        if(optAccounts.isPresent()) {
+            List<StandardAccount> standardAccounts = optAccounts.get();
+            if(addAccountDialog.isDiscoverAccounts() && !AppServices.isConnected()) {
+                return;
+            }
 
-            if(masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
-                if(masterWallet.isEncrypted()) {
-                    String walletId = walletForm.getWalletId();
-                    WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
-                    Optional<SecureString> password = dlg.showAndWait();
-                    if(password.isPresent()) {
-                        Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
-                        keyDerivationService.setOnSucceeded(workerStateEvent -> {
-                            EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                            ECKey encryptionFullKey = keyDerivationService.getValue();
-                            Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                            masterWallet.decrypt(key);
+            addAccounts(masterWallet, standardAccounts, addAccountDialog.isDiscoverAccounts());
+        }
+    }
 
-                            try {
-                                addAndSaveAccount(masterWallet, standardAccount);
-                            } finally {
-                                masterWallet.encrypt(key);
-                                for(Wallet childWallet : masterWallet.getChildWallets()) {
-                                    if(!childWallet.isEncrypted()) {
-                                        childWallet.encrypt(key);
-                                    }
-                                }
-                                key.clear();
-                                encryptionFullKey.clear();
-                                password.get().clear();
+    private void addAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts, boolean discoverAccounts) {
+        if(masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
+            if(masterWallet.isEncrypted()) {
+                String walletId = walletForm.getWalletId();
+                WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                Optional<SecureString> password = dlg.showAndWait();
+                if(password.isPresent()) {
+                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
+                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+                        ECKey encryptionFullKey = keyDerivationService.getValue();
+                        Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                        encryptionFullKey.clear();
+                        masterWallet.decrypt(key);
+
+                        if(discoverAccounts) {
+                            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(masterWallet, standardAccounts);
+                            walletDiscoveryService.setOnSucceeded(event -> {
+                                addAndEncryptAccounts(masterWallet, walletDiscoveryService.getValue(), key);
+                            });
+                            walletDiscoveryService.setOnFailed(event -> {
+                                log.error("Failed to discover accounts", event.getSource().getException());
+                                addAndEncryptAccounts(masterWallet, Collections.emptyList(), key);
+                                AppServices.showErrorDialog("Failed to discover accounts", event.getSource().getException().getMessage());
+                            });
+                            walletDiscoveryService.start();
+                        } else {
+                            addAndEncryptAccounts(masterWallet, standardAccounts, key);
+                        }
+                    });
+                    keyDerivationService.setOnFailed(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                            Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                                Platform.runLater(() -> addAccount(null));
                             }
-                        });
-                        keyDerivationService.setOnFailed(workerStateEvent -> {
-                            EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
-                            if(keyDerivationService.getException() instanceof InvalidPasswordException) {
-                                Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
-                                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                                    Platform.runLater(() -> addAccount(null));
-                                }
-                            } else {
-                                log.error("Error deriving wallet key", keyDerivationService.getException());
-                            }
-                        });
-                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
-                        keyDerivationService.start();
-                    }
-                } else {
-                    addAndSaveAccount(masterWallet, standardAccount);
+                        } else {
+                            log.error("Error deriving wallet key", keyDerivationService.getException());
+                        }
+                    });
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
+                    keyDerivationService.start();
                 }
             } else {
+                if(discoverAccounts) {
+                    ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(masterWallet, standardAccounts);
+                    walletDiscoveryService.setOnSucceeded(event -> {
+                        addAndSaveAccounts(masterWallet, walletDiscoveryService.getValue());
+                    });
+                    walletDiscoveryService.setOnFailed(event -> {
+                        log.error("Failed to discover accounts", event.getSource().getException());
+                        AppServices.showErrorDialog("Failed to discover accounts", event.getSource().getException().getMessage());
+                    });
+                    walletDiscoveryService.start();
+                } else {
+                    addAndSaveAccounts(masterWallet, standardAccounts);
+                }
+            }
+        } else {
+            for(StandardAccount standardAccount : standardAccounts) {
                 Wallet childWallet = masterWallet.addChildWallet(standardAccount);
                 EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
             }
+        }
+    }
+
+    private void addAndEncryptAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts, Key key) {
+        try {
+            addAndSaveAccounts(masterWallet, standardAccounts);
+        } finally {
+            masterWallet.encrypt(key);
+            for(Wallet childWallet : masterWallet.getChildWallets()) {
+                if(!childWallet.isEncrypted()) {
+                    childWallet.encrypt(key);
+                }
+            }
+            key.clear();
+        }
+    }
+
+    private void addAndSaveAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts) {
+        for(StandardAccount standardAccount : standardAccounts) {
+            addAndSaveAccount(masterWallet, standardAccount);
         }
     }
 
@@ -521,6 +565,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 try {
                     storage.saveWallet(childWallet);
                 } catch(Exception e) {
+                    log.error("Error saving wallet", e);
                     AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
                 }
             }

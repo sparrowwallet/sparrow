@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -14,8 +15,9 @@ import org.controlsfx.glyphfont.Glyph;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AddAccountDialog extends Dialog<StandardAccount> {
+public class AddAccountDialog extends Dialog<List<StandardAccount>> {
     private final ComboBox<StandardAccount> standardAccountCombo;
+    private boolean discoverAccounts = false;
 
     public AddAccountDialog(Wallet wallet) {
         final DialogPane dialogPane = getDialogPane();
@@ -56,6 +58,16 @@ public class AddAccountDialog extends Dialog<StandardAccount> {
             availableAccounts.add(StandardAccount.WHIRLPOOL_PREMIX);
         }
 
+        final ButtonType discoverButtonType = new javafx.scene.control.ButtonType("Discover", ButtonBar.ButtonData.LEFT);
+        if(!availableAccounts.isEmpty() && masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
+            dialogPane.getButtonTypes().add(discoverButtonType);
+            Button discoverButton = (Button)dialogPane.lookupButton(discoverButtonType);
+            discoverButton.disableProperty().bind(AppServices.onlineProperty().not());
+            discoverButton.setOnAction(event -> {
+                discoverAccounts = true;
+            });
+        }
+
         standardAccountCombo.setItems(FXCollections.observableList(availableAccounts));
         standardAccountCombo.setConverter(new StringConverter<>() {
             @Override
@@ -86,6 +98,10 @@ public class AddAccountDialog extends Dialog<StandardAccount> {
         content.getChildren().add(standardAccountCombo);
 
         dialogPane.setContent(content);
-        setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? standardAccountCombo.getValue() : null);
+        setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? List.of(standardAccountCombo.getValue()) : (dialogButton == discoverButtonType ? availableAccounts : null));
+    }
+
+    public boolean isDiscoverAccounts() {
+        return discoverAccounts;
     }
 }

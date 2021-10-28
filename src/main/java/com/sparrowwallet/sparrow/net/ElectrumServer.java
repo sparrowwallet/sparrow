@@ -1415,4 +1415,35 @@ public class ElectrumServer {
             };
         }
     }
+
+    public static class WalletDiscoveryService extends Service<List<StandardAccount>> {
+        private final Wallet masterWalletCopy;
+        private final List<StandardAccount> standardAccounts;
+
+        public WalletDiscoveryService(Wallet masterWallet, List<StandardAccount> standardAccounts) {
+            this.masterWalletCopy = masterWallet.copy();
+            this.standardAccounts = standardAccounts;
+        }
+
+        @Override
+        protected Task<List<StandardAccount>> createTask() {
+            return new Task<>() {
+                protected List<StandardAccount> call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    List<StandardAccount> discoveredAccounts = new ArrayList<>();
+
+                    for(StandardAccount standardAccount : standardAccounts) {
+                        Wallet wallet = masterWalletCopy.addChildWallet(standardAccount);
+                        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
+                        electrumServer.getReferences(wallet, wallet.getNode(KeyPurpose.RECEIVE).getChildren(), nodeTransactionMap, 0);
+                        if(nodeTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {
+                            discoveredAccounts.add(standardAccount);
+                        }
+                    }
+
+                    return discoveredAccounts;
+                }
+            };
+        }
+    }
 }

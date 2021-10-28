@@ -10,6 +10,7 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 public interface BlockTransactionDao {
@@ -35,7 +36,8 @@ public interface BlockTransactionDao {
     void clear(long wallet);
 
     default void addBlockTransactions(Wallet wallet) {
-        for(Map.Entry<Sha256Hash, BlockTransaction> blkTxEntry : wallet.getTransactions().entrySet()) {
+        Map<Sha256Hash, BlockTransaction> walletTransactions = new HashMap<>(wallet.getTransactions());
+        for(Map.Entry<Sha256Hash, BlockTransaction> blkTxEntry : walletTransactions.entrySet()) {
             blkTxEntry.getValue().setId(null);
             addOrUpdate(wallet, blkTxEntry.getKey(), blkTxEntry.getValue());
         }
