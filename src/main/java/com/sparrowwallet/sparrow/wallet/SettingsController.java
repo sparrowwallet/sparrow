@@ -430,7 +430,8 @@ public class SettingsController extends WalletFormController implements Initiali
             throw new IllegalStateException("Cannot export unsaved wallet");
         }
 
-        Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream().filter(entry -> walletForm.getWalletFile().equals(entry.getValue().getWalletFile())).map(Map.Entry::getKey).findFirst();
+        Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream()
+                .filter(entry -> walletForm.getWalletFile().equals(entry.getValue().getWalletFile()) && entry.getKey().isMasterWallet()).map(Map.Entry::getKey).findFirst();
         if(optWallet.isPresent()) {
             Wallet wallet = optWallet.get();
             if(!walletForm.getWallet().getName().equals(wallet.getName())) {
@@ -524,9 +525,25 @@ public class SettingsController extends WalletFormController implements Initiali
                 }
             }
         } else {
-            for(StandardAccount standardAccount : standardAccounts) {
-                Wallet childWallet = masterWallet.addChildWallet(standardAccount);
-                EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+            if(discoverAccounts && masterWallet.getKeystores().size() == 1 && masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.HW_USB)) {
+                String fingerprint = masterWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint();
+                DeviceKeystoreDiscoverDialog deviceKeystoreDiscoverDialog = new DeviceKeystoreDiscoverDialog(List.of(fingerprint), masterWallet, standardAccounts);
+                Optional<Map<StandardAccount, Keystore>> optDiscoveredKeystores = deviceKeystoreDiscoverDialog.showAndWait();
+                if(optDiscoveredKeystores.isPresent()) {
+                    Map<StandardAccount, Keystore> discoveredKeystores = optDiscoveredKeystores.get();
+                    for(Map.Entry<StandardAccount, Keystore> entry : discoveredKeystores.entrySet()) {
+                        Wallet childWallet = masterWallet.addChildWallet(entry.getKey());
+                        childWallet.getKeystores().clear();
+                        childWallet.getKeystores().add(entry.getValue());
+                        EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                    }
+                    saveChildWallets(masterWallet);
+                }
+            } else {
+                for(StandardAccount standardAccount : standardAccounts) {
+                    Wallet childWallet = masterWallet.addChildWallet(standardAccount);
+                    EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                }
             }
         }
     }
@@ -559,6 +576,10 @@ public class SettingsController extends WalletFormController implements Initiali
             EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
         }
 
+        saveChildWallets(masterWallet);
+    }
+
+    private void saveChildWallets(Wallet masterWallet) {
         for(Wallet childWallet : masterWallet.getChildWallets()) {
             Storage storage = AppServices.get().getOpenWallets().get(childWallet);
             if(!storage.isPersisted(childWallet)) {

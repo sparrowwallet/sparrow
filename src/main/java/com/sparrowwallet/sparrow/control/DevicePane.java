@@ -10,12 +10,14 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
@@ -33,8 +35,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DevicePane extends TitledDescriptionPane {
@@ -46,6 +47,7 @@ public class DevicePane extends TitledDescriptionPane {
     private final OutputDescriptor outputDescriptor;
     private final KeyDerivation keyDerivation;
     private final String message;
+    private final List<StandardAccount> availableAccounts;
     private final Device device;
 
     private CustomPasswordField pinField;
@@ -56,6 +58,7 @@ public class DevicePane extends TitledDescriptionPane {
     private Button signButton;
     private Button displayAddressButton;
     private Button signMessageButton;
+    private Button discoverKeystoresButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
 
@@ -69,6 +72,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.outputDescriptor = null;
         this.keyDerivation = requiredDerivation;
         this.message = null;
+        this.availableAccounts = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
 
@@ -91,6 +95,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.outputDescriptor = null;
         this.keyDerivation = null;
         this.message = null;
+        this.availableAccounts = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
 
@@ -113,6 +118,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.outputDescriptor = outputDescriptor;
         this.keyDerivation = null;
         this.message = null;
+        this.availableAccounts = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
 
@@ -135,6 +141,7 @@ public class DevicePane extends TitledDescriptionPane {
         this.outputDescriptor = null;
         this.keyDerivation = keyDerivation;
         this.message = message;
+        this.availableAccounts = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
 
@@ -147,6 +154,29 @@ public class DevicePane extends TitledDescriptionPane {
         initialise(device);
 
         buttonBox.getChildren().addAll(setPassphraseButton, signMessageButton);
+    }
+
+    public DevicePane(Wallet wallet, List<StandardAccount> availableAccounts, Device device, boolean defaultDevice) {
+        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        this.deviceOperation = DeviceOperation.DISCOVER_KEYSTORES;
+        this.wallet = wallet;
+        this.psbt = null;
+        this.outputDescriptor = null;
+        this.keyDerivation = null;
+        this.message = null;
+        this.device = device;
+        this.defaultDevice = defaultDevice;
+        this.availableAccounts = availableAccounts;
+
+        setDefaultStatus();
+        showHideLink.setVisible(false);
+
+        createSetPassphraseButton();
+        createDiscoverKeystoresButton();
+
+        initialise(device);
+
+        buttonBox.getChildren().addAll(setPassphraseButton, discoverKeystoresButton);
     }
 
     private void initialise(Device device) {
@@ -279,6 +309,17 @@ public class DevicePane extends TitledDescriptionPane {
         if(device.getFingerprint() != null && !device.getFingerprint().equals(keyDerivation.getMasterFingerprint())) {
             signMessageButton.setDisable(true);
         }
+    }
+
+    private void createDiscoverKeystoresButton() {
+        discoverKeystoresButton = new Button("Discover");
+        discoverKeystoresButton.setAlignment(Pos.CENTER_RIGHT);
+        discoverKeystoresButton.setOnAction(event -> {
+            discoverKeystoresButton.setDisable(true);
+            discoverKeystores();
+        });
+        discoverKeystoresButton.managedProperty().bind(discoverKeystoresButton.visibleProperty());
+        discoverKeystoresButton.setVisible(false);
     }
 
     private void unlock(Device device) {
@@ -620,6 +661,63 @@ public class DevicePane extends TitledDescriptionPane {
         signMessageService.start();
     }
 
+    private void discoverKeystores() {
+        if(wallet.getKeystores().size() != 1) {
+            setError("Could not discover keystores", "Only single signature wallets are supported for keystore discovery");
+            return;
+        }
+
+        String masterFingerprint = wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint();
+
+        Wallet copyWallet = wallet.copy();
+        Map<StandardAccount, String> accountDerivationPaths = new LinkedHashMap<>();
+        for(StandardAccount availableAccount : availableAccounts) {
+            Wallet availableWallet = copyWallet.addChildWallet(availableAccount);
+            Keystore availableKeystore = availableWallet.getKeystores().get(0);
+            String derivationPath = availableKeystore.getKeyDerivation().getDerivationPath();
+            accountDerivationPaths.put(availableAccount, derivationPath);
+        }
+
+        Map<StandardAccount, Keystore> importedKeystores = new LinkedHashMap<>();
+        Hwi.GetXpubsService getXpubsService = new Hwi.GetXpubsService(device, passphrase.get(), accountDerivationPaths);
+        getXpubsService.setOnSucceeded(workerStateEvent -> {
+            Map<StandardAccount, String> accountXpubs = getXpubsService.getValue();
+
+            for(Map.Entry<StandardAccount, String> entry : accountXpubs.entrySet()) {
+                try {
+                    Keystore keystore = new Keystore();
+                    keystore.setLabel(device.getModel().toDisplayString());
+                    keystore.setSource(KeystoreSource.HW_USB);
+                    keystore.setWalletModel(device.getModel());
+                    keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, accountDerivationPaths.get(entry.getKey())));
+                    keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(entry.getValue()));
+                    importedKeystores.put(entry.getKey(), keystore);
+                } catch(Exception e) {
+                    setError("Could not retrieve xpub", e.getMessage());
+                }
+            }
+
+            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallet, importedKeystores);
+            walletDiscoveryService.setOnSucceeded(event -> {
+                importedKeystores.keySet().retainAll(walletDiscoveryService.getValue());
+                EventManager.get().post(new KeystoresDiscoveredEvent(importedKeystores));
+            });
+            walletDiscoveryService.setOnFailed(event -> {
+                log.error("Failed to discover accounts", event.getSource().getException());
+                setError("Failed to discover accounts", event.getSource().getException().getMessage());
+                discoverKeystoresButton.setDisable(false);
+            });
+            walletDiscoveryService.start();
+        });
+        getXpubsService.setOnFailed(workerStateEvent -> {
+            setError("Could not retrieve xpub", getXpubsService.getException().getMessage());
+            discoverKeystoresButton.setDisable(false);
+        });
+        setDescription("Discovering...");
+        showHideLink.setVisible(false);
+        getXpubsService.start();
+    }
+
     private void showOperationButton() {
         if(deviceOperation.equals(DeviceOperation.IMPORT)) {
             if(defaultDevice) {
@@ -641,6 +739,10 @@ public class DevicePane extends TitledDescriptionPane {
         } else if(deviceOperation.equals(DeviceOperation.SIGN_MESSAGE)) {
             signMessageButton.setDefaultButton(defaultDevice);
             signMessageButton.setVisible(true);
+            showHideLink.setVisible(false);
+        } else if(deviceOperation.equals(DeviceOperation.DISCOVER_KEYSTORES)) {
+            discoverKeystoresButton.setDefaultButton(defaultDevice);
+            discoverKeystoresButton.setVisible(true);
             showHideLink.setVisible(false);
         }
     }
@@ -689,6 +791,6 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public enum DeviceOperation {
-        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE;
+        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE, DISCOVER_KEYSTORES;
     }
 }

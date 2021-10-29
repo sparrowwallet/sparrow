@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
@@ -89,6 +90,15 @@ public class Hwi {
         } catch(IOException e) {
             throw new ImportException(e);
         }
+    }
+
+    public Map<StandardAccount, String> getXpubs(Device device, String passphrase, Map<StandardAccount, String> accountDerivationPaths) throws ImportException {
+        Map<StandardAccount, String> accountXpubs = new LinkedHashMap<>();
+        for(Map.Entry<StandardAccount, String> entry : accountDerivationPaths.entrySet()) {
+            accountXpubs.put(entry.getKey(), getXpub(device, passphrase, entry.getValue()));
+        }
+
+        return accountXpubs;
     }
 
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
@@ -575,6 +585,28 @@ public class Hwi {
                 protected String call() throws ImportException {
                     Hwi hwi = new Hwi();
                     return hwi.getXpub(device, passphrase, derivationPath);
+                }
+            };
+        }
+    }
+
+    public static class GetXpubsService extends Service<Map<StandardAccount, String>> {
+        private final Device device;
+        private final String passphrase;
+        private final Map<StandardAccount, String> accountDerivationPaths;
+
+        public GetXpubsService(Device device, String passphrase, Map<StandardAccount, String> accountDerivationPaths) {
+            this.device = device;
+            this.passphrase = passphrase;
+            this.accountDerivationPaths = accountDerivationPaths;
+        }
+
+        @Override
+        protected Task<Map<StandardAccount, String>> createTask() {
+            return new Task<>() {
+                protected Map<StandardAccount, String> call() throws ImportException {
+                    Hwi hwi = new Hwi();
+                    return hwi.getXpubs(device, passphrase, accountDerivationPaths);
                 }
             };
         }

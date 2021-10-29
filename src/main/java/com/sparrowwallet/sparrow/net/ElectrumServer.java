@@ -1419,10 +1419,18 @@ public class ElectrumServer {
     public static class WalletDiscoveryService extends Service<List<StandardAccount>> {
         private final Wallet masterWalletCopy;
         private final List<StandardAccount> standardAccounts;
+        private final Map<StandardAccount, Keystore> importedKeystores;
 
         public WalletDiscoveryService(Wallet masterWallet, List<StandardAccount> standardAccounts) {
             this.masterWalletCopy = masterWallet.copy();
             this.standardAccounts = standardAccounts;
+            this.importedKeystores = new HashMap<>();
+        }
+
+        public WalletDiscoveryService(Wallet masterWallet, Map<StandardAccount, Keystore> importedKeystores) {
+            this.masterWalletCopy = masterWallet.copy();
+            this.standardAccounts = new ArrayList<>(importedKeystores.keySet());
+            this.importedKeystores = importedKeystores;
         }
 
         @Override
@@ -1434,6 +1442,11 @@ public class ElectrumServer {
 
                     for(StandardAccount standardAccount : standardAccounts) {
                         Wallet wallet = masterWalletCopy.addChildWallet(standardAccount);
+                        if(importedKeystores.containsKey(standardAccount)) {
+                            wallet.getKeystores().clear();
+                            wallet.getKeystores().add(importedKeystores.get(standardAccount));
+                        }
+
                         Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
                         electrumServer.getReferences(wallet, wallet.getNode(KeyPurpose.RECEIVE).getChildren(), nodeTransactionMap, 0);
                         if(nodeTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {

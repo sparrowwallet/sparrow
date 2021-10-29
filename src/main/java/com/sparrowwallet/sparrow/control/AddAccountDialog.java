@@ -5,6 +5,8 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
@@ -59,7 +61,9 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
         }
 
         final ButtonType discoverButtonType = new javafx.scene.control.ButtonType("Discover", ButtonBar.ButtonData.LEFT);
-        if(!availableAccounts.isEmpty() && masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
+        if(!availableAccounts.isEmpty() && Config.get().getServerType() != ServerType.BITCOIN_CORE &&
+                (masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)
+                        || (masterWallet.getKeystores().size() == 1 && masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.HW_USB)))) {
             dialogPane.getButtonTypes().add(discoverButtonType);
             Button discoverButton = (Button)dialogPane.lookupButton(discoverButtonType);
             discoverButton.disableProperty().bind(AppServices.onlineProperty().not());
