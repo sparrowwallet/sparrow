@@ -102,7 +102,7 @@ public class TransactionsController extends WalletFormController implements Init
         });
 
         transactionsMasterDetail.setShowDetailNode(Config.get().isShowLoadingLog());
-        loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getFullName());
+        loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getFullDisplayName());
         loadingLog.setEditable(false);
     }
 

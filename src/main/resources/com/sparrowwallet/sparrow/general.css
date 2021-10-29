@@ -132,6 +132,25 @@
     -fx-background-color: #116a8d;
 }
 
+.combo-text-field .combo-button {
+    -fx-padding: 0 3 0 0;
+}
+
+.combo-text-field .combo-button > .graphic {
+    -fx-background-color: #949494;
+    -fx-scale-shape: false;
+    -fx-padding: 4.5 6 4.5 4.5;
+    -fx-shape: "M11.8513+192L19.004+192C19.4989+192+19.7463+192.554+19.396+192.878L15.821+196.191C15.6042+196.392+15.2511+196.392+15.0343+196.191L11.4594+192.878C11.1091+192.554+11.3565+192+11.8513+192Z ";
+}
+
+.combo-text-field .combo-button:hover > .graphic {
+    -fx-background-color: #0184bc;
+}
+
+.combo-text-field .combo-button:pressed > .graphic {
+    -fx-background-color: #116a8d;
+}
+
 .readonly.text-input {
     -fx-text-fill: derive(-fx-text-inner-color, 40%);
 }

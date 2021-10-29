@@ -439,7 +439,7 @@ public class SettingsController extends WalletFormController implements Initiali
             }
 
             if(wallet == null) {
-                throw new IllegalStateException("Cannot find child wallet " + walletForm.getWallet().getFullName() + " to export");
+                throw new IllegalStateException("Cannot find child wallet " + walletForm.getWallet().getFullDisplayName() + " to export");
             }
 
             WalletExportDialog dlg = new WalletExportDialog(wallet);

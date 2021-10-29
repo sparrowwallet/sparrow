@@ -222,7 +222,7 @@ public class TransactionDiagram extends GridPane {
 
             Tooltip tooltip = new Tooltip();
             if(walletNode != null) {
-                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + (isFinal() ? walletTx.getWallet().getFullName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + (isFinal() ? walletTx.getWallet().getFullDisplayName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
                 tooltip.getStyleClass().add("input-label");
 
                 if(input.getLabel() == null || input.getLabel().isEmpty()) {
@@ -400,7 +400,7 @@ public class TransactionDiagram extends GridPane {
             WalletNode toNode = walletTx.getWallet() != null ? walletTx.getWallet().getWalletAddresses().get(payment.getAddress()) : null;
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "
-                    + (payment instanceof AdditionalPayment ? "\n" + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullName()) + "\n" + payment.getAddress().toString()));
+                    + (payment instanceof AdditionalPayment ? "\n" + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientLabel.setTooltip(recipientTooltip);

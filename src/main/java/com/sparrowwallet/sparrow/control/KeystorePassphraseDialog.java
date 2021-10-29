@@ -28,7 +28,7 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         this.passphrase = (CustomPasswordField) TextFields.createClearablePasswordField();
 
         final DialogPane dialogPane = getDialogPane();
-        setTitle("Keystore Passphrase" + (walletName != null ? " - " + walletName : ""));
+        setTitle("Keystore Passphrase" + (walletName != null ? " for " + walletName : ""));
         dialogPane.setHeaderText((confirm ? "Re-enter" : "Enter") + " the BIP39 passphrase\n" + (confirm ? "to confirm:" : "for keystore: " + keystore.getLabel()));
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());

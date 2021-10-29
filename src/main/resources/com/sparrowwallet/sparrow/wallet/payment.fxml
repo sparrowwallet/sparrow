@@ -9,13 +9,13 @@
 <?import tornadofx.control.Form?>
 <?import tornadofx.control.Fieldset?>
 <?import tornadofx.control.Field?>
-<?import com.sparrowwallet.sparrow.control.CopyableTextField?>
 <?import javafx.collections.FXCollections?>
 <?import com.sparrowwallet.sparrow.control.FiatLabel?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import org.controlsfx.glyphfont.Glyph?>
-
 <?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.ComboBoxTextField?>
+
 <GridPane styleClass="send-form" hgap="10.0" vgap="10.0" stylesheets="@payment.css, @send.css, @wallet.css, @../script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.PaymentController">
     <padding>
         <Insets top="10.0" bottom="10.0" />
@@ -31,11 +31,14 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset inputGrow="ALWAYS">
             <Field text="Pay to:">
-                <CopyableTextField fx:id="address" styleClass="address-text-field">
-                    <tooltip>
-                        <Tooltip text="Address or bitcoin: URI"/>
-                    </tooltip>
-                </CopyableTextField>
+                <StackPane>
+                    <ComboBox fx:id="openWallets" />
+                    <ComboBoxTextField fx:id="address" styleClass="address-text-field" comboProperty="$openWallets">
+                        <tooltip>
+                            <Tooltip text="Address or bitcoin: URI"/>
+                        </tooltip>
+                    </ComboBoxTextField>
+                </StackPane>
             </Field>
             <Field text="Label:">
                 <TextField fx:id="label">

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
@@ -16,6 +17,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
+import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import javafx.application.Platform;
@@ -23,11 +25,13 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
+import javafx.util.StringConverter;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -38,6 +42,7 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
@@ -49,7 +54,10 @@ public class PaymentController extends WalletFormController implements Initializ
     private ValidationSupport validationSupport;
 
     @FXML
-    private CopyableTextField address;
+    private ComboBox<Wallet> openWallets;
+
+    @FXML
+    private ComboBoxTextField address;
 
     @FXML
     private TextField label;
@@ -121,6 +129,27 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @Override
     public void initializeView() {
+        openWallets.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Wallet wallet) {
+                return wallet == null ? "" : wallet.getFullDisplayName() + (wallet == sendController.getWalletForm().getWallet() ? " (Consolidation)" : "");
+            }
+
+            @Override
+            public Wallet fromString(String string) {
+                return null;
+            }
+        });
+        openWallets.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream().filter(Wallet::isValid).collect(Collectors.toList())));
+        openWallets.prefWidthProperty().bind(address.widthProperty());
+        openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
+                Address freshAddress = newValue.getAddress(freshNode);
+                address.setText(freshAddress.toString());
+            }
+        });
+
         address.textProperty().addListener((observable, oldValue, newValue) -> {
             try {
                 BitcoinURI bitcoinURI = new BitcoinURI(newValue);
@@ -442,5 +471,10 @@ public class PaymentController extends WalletFormController implements Initializ
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         setFiatAmount(event.getCurrencyRate(), getRecipientValueSats());
+    }
+
+    @Subscribe
+    public void openWallets(OpenWalletsEvent event) {
+        openWallets.setItems(FXCollections.observableList(event.getWallets().stream().filter(Wallet::isValid).collect(Collectors.toList())));
     }
 }

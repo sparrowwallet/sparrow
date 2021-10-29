@@ -912,7 +912,7 @@ public class AppController implements Initializable {
                         if(!wallet.isMasterWallet() && wallet.getMasterWallet().getKeystores().size() == copy.getKeystores().size() && wallet.getMasterWallet().getKeystores().get(i).hasSeed()) {
                             copyKeystore.getSeed().setPassphrase(wallet.getMasterWallet().getKeystores().get(i).getSeed().getPassphrase());
                         } else {
-                            KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getFullName(), copyKeystore);
+                            KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(wallet.getFullDisplayName(), copyKeystore);
                             Optional<String> optionalPassphrase = passphraseDialog.showAndWait();
                             if(optionalPassphrase.isPresent()) {
                                 copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
