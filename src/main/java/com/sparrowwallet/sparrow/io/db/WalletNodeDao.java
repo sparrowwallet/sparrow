@@ -11,6 +11,7 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.jdbi.v3.sqlobject.statement.UseRowReducer;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -60,7 +61,8 @@ public interface WalletNodeDao {
         for(WalletNode purposeNode : wallet.getPurposeNodes()) {
             long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null);
             purposeNode.setId(purposeNodeId);
-            for(WalletNode addressNode : purposeNode.getChildren()) {
+            List<WalletNode> childNodes = new ArrayList<>(purposeNode.getChildren());
+            for(WalletNode addressNode : childNodes) {
                 long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId);
                 addressNode.setId(addressNodeId);
                 addTransactionOutputs(addressNode);
