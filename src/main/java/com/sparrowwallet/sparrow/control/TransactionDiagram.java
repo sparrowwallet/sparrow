@@ -523,7 +523,7 @@ public class TransactionDiagram extends GridPane {
 
     private Wallet getToWallet(Payment payment) {
         for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
-            if(openWallet != walletTx.getWallet() && openWallet.isWalletAddress(payment.getAddress())) {
+            if(openWallet != walletTx.getWallet() && openWallet.isValid() && openWallet.isWalletAddress(payment.getAddress())) {
                 return openWallet;
             }
         }
