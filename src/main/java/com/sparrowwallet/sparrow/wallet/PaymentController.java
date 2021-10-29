@@ -140,7 +140,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 return null;
             }
         });
-        openWallets.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream().filter(Wallet::isValid).collect(Collectors.toList())));
+        openWallets.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet()).collect(Collectors.toList())));
         openWallets.prefWidthProperty().bind(address.widthProperty());
         openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
@@ -475,6 +475,6 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        openWallets.setItems(FXCollections.observableList(event.getWallets().stream().filter(Wallet::isValid).collect(Collectors.toList())));
+        openWallets.setItems(FXCollections.observableList(event.getWallets().stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet()).collect(Collectors.toList())));
     }
 }

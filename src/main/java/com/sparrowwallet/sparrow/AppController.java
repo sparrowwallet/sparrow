@@ -1283,7 +1283,7 @@ public class AppController implements Initializable {
                         addWalletSubTab(subTabs, storage, wallet, backupWallet);
                         Tab masterTab = subTabs.getTabs().stream().filter(tab -> ((WalletTabData)tab.getUserData()).getWallet().isMasterWallet()).findFirst().orElse(subTabs.getTabs().get(0));
                         Label masterLabel = (Label)masterTab.getGraphic();
-                        masterLabel.setText(wallet.getMasterWallet().getLabel() != null ? wallet.getMasterWallet().getLabel() : getAutomaticName(wallet.getMasterWallet()));
+                        masterLabel.setText(wallet.getMasterWallet().getLabel() != null ? wallet.getMasterWallet().getLabel() : wallet.getMasterWallet().getAutomaticName());
                         Platform.runLater(() -> {
                             setSubTabsVisible(subTabs, true);
                         });
@@ -1313,7 +1313,7 @@ public class AppController implements Initializable {
         try {
             Tab subTab = new Tab();
             subTab.setClosable(false);
-            String label = wallet.getLabel() != null ? wallet.getLabel() : (wallet.isMasterWallet() ? getAutomaticName(wallet) : wallet.getName());
+            String label = wallet.getLabel() != null ? wallet.getLabel() : (wallet.isMasterWallet() ? wallet.getAutomaticName() : wallet.getName());
             Label subTabLabel = new Label(label);
             subTabLabel.setPadding(new Insets(0, 3, 0, 3));
             subTabLabel.setGraphic(getSubTabGlyph(wallet));
@@ -1366,11 +1366,6 @@ public class AppController implements Initializable {
 
         tabGlyph.setFontSize(12);
         return tabGlyph;
-    }
-
-    private String getAutomaticName(Wallet wallet) {
-        int account = wallet.getAccountIndex();
-        return (account < 0 || account > 9) ? wallet.getName() : (!wallet.isWhirlpoolMasterWallet() || account > 1 ? "Account #" + account : "Deposit");
     }
 
     public WalletForm getSelectedWalletForm() {

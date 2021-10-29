@@ -7,7 +7,7 @@
 <?import javafx.scene.layout.*?>
 
 <AnchorPane stylesheets="@keystoreimport.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.keystoreimport.HwUsbDevicesController">
-        <ScrollPane AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" fitToWidth="true">
-            <Accordion fx:id="deviceAccordion" />
-        </ScrollPane>
+    <ScrollPane AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" fitToWidth="true" hbarPolicy="NEVER" prefHeight="620">
+        <Accordion fx:id="deviceAccordion" />
+    </ScrollPane>
 </AnchorPane>
