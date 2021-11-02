@@ -86,10 +86,10 @@ public class ConfirmationProgressIndicator extends StackPane {
                     upTickLineTimeline.getKeyFrames().add(upTickLineFrame);
                     sequence.getChildren().add(upTickLineTimeline);
 
-                    FadeTransition groupFadeOut = new FadeTransition(Duration.minutes(10), confirmationGroup);
-                    groupFadeOut.setFromValue(1);
-                    groupFadeOut.setToValue(0);
+                    Timeline groupFadeOut = AnimationUtil.getSlowFadeOut(confirmationGroup, Duration.minutes(10), 1.0, 10);
                     sequence.getChildren().add(groupFadeOut);
+
+                    confirmationsProperty().unbind();
                 }
 
                 sequence.play();

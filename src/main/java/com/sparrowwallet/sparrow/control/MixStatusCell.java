@@ -10,7 +10,7 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolException;
-import javafx.animation.FadeTransition;
+import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.util.Duration;
@@ -84,13 +84,13 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                     "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
             setTooltip(tt);
 
-            FadeTransition ft = new FadeTransition(Duration.millis(ERROR_DISPLAY_MILLIS - elapsed), failGlyph);
-            ft.setFromValue(1.0 - ((double)elapsed / ERROR_DISPLAY_MILLIS));
-            ft.setToValue(0.0);
-            ft.setOnFinished(event -> {
+            Duration fadeDuration = Duration.millis(ERROR_DISPLAY_MILLIS - elapsed);
+            double fadeFromValue = 1.0 - ((double)elapsed / ERROR_DISPLAY_MILLIS);
+            Timeline timeline = AnimationUtil.getSlowFadeOut(failGlyph, fadeDuration, fadeFromValue, 10);
+            timeline.setOnFinished(event -> {
                 setTooltip(null);
             });
-            ft.play();
+            timeline.play();
         } else {
             setGraphic(null);
             setTooltip(null);
