@@ -28,6 +28,7 @@
                             </items>
                         </Menu>
                         <MenuItem fx:id="saveTransaction" mnemonicParsing="false" text="Save Transaction..." accelerator="Shortcut+S" onAction="#saveTransaction"/>
+                        <MenuItem fx:id="showTransaction" mnemonicParsing="false" text="Show Transaction as QR..." onAction="#showTransaction"/>
                         <Menu fx:id="savePSBT" mnemonicParsing="false" text="Save PSBT">
                             <MenuItem fx:id="savePSBTBinary" text="As Binary..." onAction="#savePSBTBinary" accelerator="Shortcut+S"/>
                             <MenuItem text="As Base64..." onAction="#savePSBTText"/>
@@ -40,6 +41,7 @@
                                 <MenuItem text="As Base64..." onAction="#savePSBTTextNoXpubs"/>
                             </Menu>
                         </Menu>
+                        <MenuItem fx:id="showPSBT" mnemonicParsing="false" text="Show PSBT as QR..." onAction="#showPSBT"/>
                         <SeparatorMenuItem />
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>

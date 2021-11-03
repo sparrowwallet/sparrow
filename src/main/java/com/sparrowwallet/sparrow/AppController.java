@@ -17,6 +17,9 @@ import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.psbt.PSBTSignatureException;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.hummingbird.UR;
+import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
+import com.sparrowwallet.hummingbird.registry.RegistryType;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -91,10 +94,16 @@ public class AppController implements Initializable {
     private MenuItem saveTransaction;
 
     @FXML
+    private MenuItem showTransaction;
+
+    @FXML
     private Menu savePSBT;
 
     @FXML
     private MenuItem savePSBTBinary;
+
+    @FXML
+    private MenuItem showPSBT;
 
     @FXML
     private MenuItem exportWallet;
@@ -306,8 +315,11 @@ public class AppController implements Initializable {
         preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
 
         saveTransaction.setDisable(true);
+        showTransaction.visibleProperty().bind(Bindings.and(saveTransaction.visibleProperty(), saveTransaction.disableProperty().not()));
+        showTransaction.disableProperty().bind(saveTransaction.disableProperty());
         savePSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
+        showPSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
         lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
@@ -588,6 +600,23 @@ public class AppController implements Initializable {
         }
     }
 
+    public void showTransaction(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.TRANSACTION) {
+            TransactionTabData transactionTabData = (TransactionTabData) tabData;
+            Transaction transaction = transactionTabData.getTransaction();
+
+            try {
+                UR ur = UR.fromBytes(transaction.bitcoinSerialize());
+                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur);
+                qrDisplayDialog.showAndWait();
+            } catch(Exception e) {
+                log.error("Error creating UR", e);
+            }
+        }
+    }
+
     public void savePSBTBinary(ActionEvent event) {
         savePSBT(false, true);
     }
@@ -668,6 +697,18 @@ public class AppController implements Initializable {
             ClipboardContent content = new ClipboardContent();
             content.putString(data);
             Clipboard.getSystemClipboard().setContent(content);
+        }
+    }
+
+    public void showPSBT(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        TabData tabData = (TabData)selectedTab.getUserData();
+        if(tabData.getType() == TabData.TabType.TRANSACTION) {
+            TransactionTabData transactionTabData = (TransactionTabData)tabData;
+
+            CryptoPSBT cryptoPSBT = new CryptoPSBT(transactionTabData.getPsbt().serialize());
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR());
+            qrDisplayDialog.show();
         }
     }
 
