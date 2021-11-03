@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Font;
@@ -186,15 +187,16 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         });
         ServerType serverType = config.getServerType() != null ?
-                (config.getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && Network.get() != Network.MAINNET ? ServerType.BITCOIN_CORE : config.getServerType()) :
+                (config.getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && !PublicElectrumServer.supportedNetwork() ? ServerType.BITCOIN_CORE : config.getServerType()) :
                     (config.getCoreServer() == null && config.getElectrumServer() != null ? ServerType.ELECTRUM_SERVER :
-                        (config.getCoreServer() != null || Network.get() != Network.MAINNET ? ServerType.BITCOIN_CORE : ServerType.PUBLIC_ELECTRUM_SERVER));
-        if(Network.get() != Network.MAINNET) {
+                        (config.getCoreServer() != null || !PublicElectrumServer.supportedNetwork() ? ServerType.BITCOIN_CORE : ServerType.PUBLIC_ELECTRUM_SERVER));
+        if(!PublicElectrumServer.supportedNetwork()) {
             serverTypeSegmentedButton.getButtons().remove(publicElectrumToggle);
             serverTypeToggleGroup.getToggles().remove(publicElectrumToggle);
         }
         serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == serverType).findFirst().orElse(null));
 
+        publicElectrumServer.setItems(FXCollections.observableList(PublicElectrumServer.getServers()));
         publicElectrumServer.getSelectionModel().selectedItemProperty().addListener(getPublicElectrumServerListener(config));
 
         publicUseProxy.selectedProperty().bindBidirectional(useProxy.selectedProperty());
@@ -326,7 +328,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         PublicElectrumServer configPublicElectrumServer = PublicElectrumServer.fromUrl(config.getPublicElectrumServer());
         if(configPublicElectrumServer == null) {
-            publicElectrumServer.setValue(PublicElectrumServer.values()[new Random().nextInt(PublicElectrumServer.values().length)]);
+            List<PublicElectrumServer> servers = PublicElectrumServer.getServers();
+            publicElectrumServer.setValue(servers.get(new Random().nextInt(servers.size())));
         } else {
             publicElectrumServer.setValue(configPublicElectrumServer);
         }

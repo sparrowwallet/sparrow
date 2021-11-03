@@ -384,7 +384,7 @@ public class Config {
     }
 
     public void changePublicServer() {
-        List<String> otherServers = Arrays.stream(PublicElectrumServer.values()).map(PublicElectrumServer::getUrl).filter(url -> !url.equals(getPublicElectrumServer())).collect(Collectors.toList());
+        List<String> otherServers = PublicElectrumServer.getServers().stream().map(PublicElectrumServer::getUrl).filter(url -> !url.equals(getPublicElectrumServer())).collect(Collectors.toList());
         setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
     }
 

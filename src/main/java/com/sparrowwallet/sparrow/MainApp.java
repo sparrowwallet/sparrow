@@ -77,7 +77,8 @@ public class MainApp extends Application {
                     createNewWallet = optNewWallet.isPresent() && optNewWallet.get();
                 } else if(Network.get() == Network.MAINNET) {
                     Config.get().setServerType(ServerType.PUBLIC_ELECTRUM_SERVER);
-                    Config.get().setPublicElectrumServer(PublicElectrumServer.values()[new Random().nextInt(PublicElectrumServer.values().length)].getUrl());
+                    List<PublicElectrumServer> servers = PublicElectrumServer.getServers();
+                    Config.get().setPublicElectrumServer(servers.get(new Random().nextInt(servers.size())).getUrl());
                 }
             }
         }

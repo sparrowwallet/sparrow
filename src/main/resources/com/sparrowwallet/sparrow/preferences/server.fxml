@@ -85,17 +85,7 @@
                 <CopyableLabel text="Using a public server means it can see your transactions."/>
             </Field>
             <Field text="URL:">
-                <ComboBox fx:id="publicElectrumServer">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <PublicElectrumServer fx:constant="BLOCKSTREAM_INFO" />
-                            <PublicElectrumServer fx:constant="ELECTRUM_BLOCKSTREAM_INFO" />
-                            <PublicElectrumServer fx:constant="LUKECHILDS_CO" />
-                            <PublicElectrumServer fx:constant="EMZY_DE" />
-                            <PublicElectrumServer fx:constant="BITAROO_NET" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
+                <ComboBox fx:id="publicElectrumServer" />
             </Field>
             <Field text="Use Proxy:">
                 <UnlabeledToggleSwitch fx:id="publicUseProxy"/>
