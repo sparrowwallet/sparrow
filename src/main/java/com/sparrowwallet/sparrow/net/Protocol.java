@@ -144,4 +144,13 @@ public enum Protocol {
 
         return null;
     }
+
+    public static String getHost(String url) {
+        Protocol protocol = getProtocol(url);
+        if(protocol != null) {
+            return protocol.getServerHostAndPort(url).getHost();
+        }
+
+        return null;
+    }
 }

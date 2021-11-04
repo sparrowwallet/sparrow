@@ -13,10 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.Currency;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Config {
@@ -52,10 +49,12 @@ public class Config {
     private ServerType serverType;
     private String publicElectrumServer;
     private String coreServer;
+    private List<String> recentCoreServers;
     private CoreAuthType coreAuthType;
     private File coreDataDir;
     private String coreAuth;
     private String electrumServer;
+    private List<String> recentElectrumServers;
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
@@ -397,6 +396,23 @@ public class Config {
         flush();
     }
 
+    public List<String> getRecentCoreServers() {
+        return recentCoreServers;
+    }
+
+    public void addRecentCoreServer(String coreServer) {
+        if(recentCoreServers == null) {
+            recentCoreServers = new ArrayList<>();
+        }
+
+        if(!recentCoreServers.contains(coreServer)) {
+            recentCoreServers.stream().filter(url -> Objects.equals(Protocol.getHost(url), Protocol.getHost(coreServer)))
+                    .findFirst().ifPresent(existingUrl -> recentCoreServers.remove(existingUrl));
+            recentCoreServers.add(coreServer);
+            flush();
+        }
+    }
+
     public CoreAuthType getCoreAuthType() {
         return coreAuthType;
     }
@@ -431,6 +447,31 @@ public class Config {
     public void setElectrumServer(String electrumServer) {
         this.electrumServer = electrumServer;
         flush();
+    }
+
+    public List<String> getRecentElectrumServers() {
+        return recentElectrumServers;
+    }
+
+    public void addRecentServer() {
+        if(serverType == ServerType.BITCOIN_CORE && coreServer != null) {
+            addRecentCoreServer(coreServer);
+        } else if(serverType == ServerType.ELECTRUM_SERVER && electrumServer != null) {
+            addRecentElectrumServer(electrumServer);
+        }
+    }
+
+    public void addRecentElectrumServer(String electrumServer) {
+        if(recentElectrumServers == null) {
+            recentElectrumServers = new ArrayList<>();
+        }
+
+        if(!recentElectrumServers.contains(electrumServer)) {
+            recentElectrumServers.stream().filter(url -> Objects.equals(Protocol.getHost(url), Protocol.getHost(electrumServer)))
+                    .findFirst().ifPresent(existingUrl -> recentElectrumServers.remove(existingUrl));
+            recentElectrumServers.add(electrumServer);
+            flush();
+        }
     }
 
     public File getElectrumServerCert() {

@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.Mode;
+import com.sparrowwallet.sparrow.control.ComboBoxTextField;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
@@ -23,6 +24,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import org.berndpruenster.netlayer.tor.Tor;
 import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;
@@ -41,6 +43,7 @@ import java.io.FileInputStream;
 import java.security.cert.CertificateFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -76,7 +79,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private Form coreForm;
 
     @FXML
-    private TextField coreHost;
+    private ComboBox<String> recentCoreServers;
+
+    @FXML
+    private ComboBoxTextField coreHost;
 
     @FXML
     private TextField corePort;
@@ -115,7 +121,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private Form electrumForm;
 
     @FXML
-    private TextField electrumHost;
+    private ComboBox<String> recentElectrumServers;
+
+    @FXML
+    private ComboBoxTextField electrumHost;
 
     @FXML
     private TextField electrumPort;
@@ -255,6 +264,29 @@ public class ServerPreferencesController extends PreferencesDetailController {
             File dataDir = directorChooser.showDialog(window);
             if(dataDir != null) {
                 coreDataDir.setText(dataDir.getAbsolutePath());
+            }
+        });
+
+        recentCoreServers.setConverter(new UrlHostConverter());
+        recentCoreServers.setItems(FXCollections.observableList(Config.get().getRecentCoreServers() == null ? new ArrayList<>() : Config.get().getRecentCoreServers()));
+        recentCoreServers.prefWidthProperty().bind(coreHost.widthProperty());
+        recentCoreServers.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null && Protocol.getProtocol(newValue) != null) {
+                HostAndPort hostAndPort = Protocol.getProtocol(newValue).getServerHostAndPort(newValue);
+                coreHost.setText(hostAndPort.getHost());
+                corePort.setText(Integer.toString(hostAndPort.getPort()));
+            }
+        });
+
+        recentElectrumServers.setConverter(new UrlHostConverter());
+        recentElectrumServers.setItems(FXCollections.observableList(Config.get().getRecentElectrumServers() == null ? new ArrayList<>() : Config.get().getRecentElectrumServers()));
+        recentElectrumServers.prefWidthProperty().bind(electrumHost.widthProperty());
+        recentElectrumServers.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null && Protocol.getProtocol(newValue) != null) {
+                HostAndPort hostAndPort = Protocol.getProtocol(newValue).getServerHostAndPort(newValue);
+                electrumHost.setText(hostAndPort.getHost());
+                electrumPort.setText(Integer.toString(hostAndPort.getPort()));
+                electrumUseSsl.setSelected(Protocol.getProtocol(newValue) == Protocol.SSL);
             }
         });
 
@@ -507,6 +539,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         publicProxyHost.setDisable(!editable);
         publicProxyPort.setDisable(!editable);
 
+        recentCoreServers.setVisible(editable);
         coreHost.setDisable(!editable);
         corePort.setDisable(!editable);
         coreAuthToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
@@ -518,6 +551,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         coreProxyHost.setDisable(!editable);
         coreProxyPort.setDisable(!editable);
 
+        recentElectrumServers.setVisible(editable);
         electrumHost.setDisable(!editable);
         electrumPort.setDisable(!editable);
         electrumUseSsl.setDisable(!editable);
@@ -807,5 +841,17 @@ public class ServerPreferencesController extends PreferencesDetailController {
                 testResults.appendText("\n" + event.getStatus());
             }
         });
+    }
+
+    private static class UrlHostConverter extends StringConverter<String> {
+        @Override
+        public String toString(String serverUrl) {
+            return serverUrl == null || Protocol.getProtocol(serverUrl) == null ? "" : Protocol.getProtocol(serverUrl).getServerHostAndPort(serverUrl).getHost();
+        }
+
+        @Override
+        public String fromString(String string) {
+            return null;
+        }
     }
 }

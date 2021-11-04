@@ -846,6 +846,7 @@ public class AppServices {
         addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = event.getMinimumRelayFeeRate();
         latestBlockHeader = event.getBlockHeader();
+        Config.get().addRecentServer();
     }
 
     @Subscribe

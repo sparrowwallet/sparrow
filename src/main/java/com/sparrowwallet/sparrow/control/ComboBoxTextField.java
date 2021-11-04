@@ -12,6 +12,8 @@ import org.controlsfx.control.textfield.CustomTextField;
 public class ComboBoxTextField extends CustomTextField {
     private final ObjectProperty<ComboBox<?>> comboProperty = new SimpleObjectProperty<>();
 
+    private boolean comboShowing;
+
     public ComboBoxTextField() {
         super();
         getStyleClass().add("combo-text-field");
@@ -26,7 +28,13 @@ public class ComboBoxTextField extends CustomTextField {
         showComboButtonPane.setCursor(Cursor.DEFAULT);
         showComboButtonPane.setOnMouseReleased(e -> {
             if(comboProperty.isNotNull().get()) {
-                comboProperty.get().show();
+                if(comboShowing) {
+                    comboProperty.get().hide();
+                } else {
+                    comboProperty.get().show();
+                }
+
+                comboShowing = !comboShowing;
             }
         });
 

@@ -16,9 +16,9 @@
 <?import com.sparrowwallet.sparrow.net.ServerType?>
 <?import com.sparrowwallet.sparrow.net.CoreAuthType?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
-<?import javafx.collections.FXCollections?>
-<?import com.sparrowwallet.sparrow.net.PublicElectrumServer?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
+<?import com.sparrowwallet.sparrow.control.ComboBoxTextField?>
+
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.ServerPreferencesController">
     <padding>
         <Insets left="25.0" right="25.0" top="25.0" />
@@ -100,7 +100,10 @@
     <Form fx:id="coreForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin Core RPC">
             <Field text="URL:">
-                <TextField fx:id="coreHost" promptText="e.g. 127.0.0.1"/>
+                <StackPane>
+                    <ComboBox fx:id="recentCoreServers" />
+                    <ComboBoxTextField fx:id="coreHost" promptText="e.g. 127.0.0.1" comboProperty="$recentCoreServers" />
+                </StackPane>
                 <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" />
             </Field>
             <Field text="Authentication:">
@@ -147,7 +150,10 @@
     <Form fx:id="electrumForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
         <Fieldset inputGrow="SOMETIMES" text="Private Electrum Server">
             <Field text="URL:">
-                <TextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)"/>
+                <StackPane>
+                    <ComboBox fx:id="recentElectrumServers" />
+                    <ComboBoxTextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)" comboProperty="$recentElectrumServers" />
+                </StackPane>
                 <TextField fx:id="electrumPort" promptText="e.g. 50002" maxWidth="120" />
             </Field>
             <Field text="Use SSL:">
