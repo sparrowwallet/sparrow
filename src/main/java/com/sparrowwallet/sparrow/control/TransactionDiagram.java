@@ -256,6 +256,7 @@ public class TransactionDiagram extends GridPane {
                 tooltip.getStyleClass().add("input-label");
             }
             tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+            tooltip.setShowDuration(Duration.INDEFINITE);
             label.setTooltip(tooltip);
 
             inputsBox.getChildren().add(label);
@@ -403,6 +404,7 @@ public class TransactionDiagram extends GridPane {
                     + (payment instanceof AdditionalPayment ? "\n" + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+            recipientTooltip.setShowDuration(Duration.INDEFINITE);
             recipientLabel.setTooltip(recipientTooltip);
             outputNodes.add(new OutputNode(recipientLabel, payment.getAddress()));
         }
@@ -420,6 +422,7 @@ public class TransactionDiagram extends GridPane {
             Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(changeEntry.getValue()) + " sats to " + changeNode + "\n" + walletTx.getChangeAddress(changeNode).toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+            changeTooltip.setShowDuration(Duration.INDEFINITE);
             changeLabel.setTooltip(changeTooltip);
             actionBox.getChildren().add(changeLabel);
 
@@ -458,6 +461,7 @@ public class TransactionDiagram extends GridPane {
         Tooltip feeTooltip = new Tooltip(walletTx.getFee() < 0 ? "Unknown fee" : "Fee of " + getSatsValue(walletTx.getFee()) + " sats (" + percentage + "%)");
         feeTooltip.getStyleClass().add("fee-tooltip");
         feeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        feeTooltip.setShowDuration(Duration.INDEFINITE);
         feeLabel.setTooltip(feeTooltip);
         outputsBox.getChildren().add(feeLabel);
         outputsBox.getChildren().add(createSpacer());
@@ -478,6 +482,7 @@ public class TransactionDiagram extends GridPane {
                 + String.format("%.2f", walletTx.getTransaction().getVirtualSize()) + " vBytes"
                 + (walletTx.getFee() < 0 ? "" : "\n" + String.format("%.2f", walletTx.getFee() / walletTx.getTransaction().getVirtualSize()) + " sats/vB" + (isFinalized ? "" : " (non-final)")));
         tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        tooltip.setShowDuration(Duration.INDEFINITE);
         tooltip.getStyleClass().add("transaction-tooltip");
         txLabel.setTooltip(tooltip);
         txPane.getChildren().add(txLabel);
