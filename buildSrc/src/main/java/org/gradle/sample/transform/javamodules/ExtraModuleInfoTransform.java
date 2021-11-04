@@ -59,7 +59,7 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
         String originalJarName = originalJar.getName();
 
         //Recreate jackson jars as open, non-synthetic modules
-        if (isModule(originalJar) && !originalJarName.contains("jackson")) {
+        if ((isModule(originalJar) && !originalJarName.contains("jackson")) || originalJarName.startsWith("javafx-")) {
             outputs.file(originalJar);
         } else if (moduleInfo.containsKey(originalJarName)) {
             addModuleDescriptor(originalJar, getModuleJar(outputs, originalJar), moduleInfo.get(originalJarName));
