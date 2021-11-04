@@ -484,6 +484,9 @@ public class SettingsController extends WalletFormController implements Initiali
                             ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(masterWallet, standardAccounts);
                             walletDiscoveryService.setOnSucceeded(event -> {
                                 addAndEncryptAccounts(masterWallet, walletDiscoveryService.getValue(), key);
+                                if(walletDiscoveryService.getValue().isEmpty()) {
+                                    AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                                }
                             });
                             walletDiscoveryService.setOnFailed(event -> {
                                 log.error("Failed to discover accounts", event.getSource().getException());
@@ -514,6 +517,9 @@ public class SettingsController extends WalletFormController implements Initiali
                     ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(masterWallet, standardAccounts);
                     walletDiscoveryService.setOnSucceeded(event -> {
                         addAndSaveAccounts(masterWallet, walletDiscoveryService.getValue());
+                        if(walletDiscoveryService.getValue().isEmpty()) {
+                            AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                        }
                     });
                     walletDiscoveryService.setOnFailed(event -> {
                         log.error("Failed to discover accounts", event.getSource().getException());
@@ -531,13 +537,17 @@ public class SettingsController extends WalletFormController implements Initiali
                 Optional<Map<StandardAccount, Keystore>> optDiscoveredKeystores = deviceKeystoreDiscoverDialog.showAndWait();
                 if(optDiscoveredKeystores.isPresent()) {
                     Map<StandardAccount, Keystore> discoveredKeystores = optDiscoveredKeystores.get();
-                    for(Map.Entry<StandardAccount, Keystore> entry : discoveredKeystores.entrySet()) {
-                        Wallet childWallet = masterWallet.addChildWallet(entry.getKey());
-                        childWallet.getKeystores().clear();
-                        childWallet.getKeystores().add(entry.getValue());
-                        EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                    if(discoveredKeystores.isEmpty()) {
+                        AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                    } else {
+                        for(Map.Entry<StandardAccount, Keystore> entry : discoveredKeystores.entrySet()) {
+                            Wallet childWallet = masterWallet.addChildWallet(entry.getKey());
+                            childWallet.getKeystores().clear();
+                            childWallet.getKeystores().add(entry.getValue());
+                            EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                        }
+                        saveChildWallets(masterWallet);
                     }
-                    saveChildWallets(masterWallet);
                 }
             } else {
                 for(StandardAccount standardAccount : standardAccounts) {
