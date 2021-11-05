@@ -22,6 +22,7 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,13 +98,29 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
 
     private Node getScriptTypeEntry(List<ScriptType> scriptTypes) {
         Label label = new Label("Script Type:");
+
+        HBox fieldBox = new HBox(5);
+        fieldBox.setAlignment(Pos.CENTER_RIGHT);
         ComboBox<ScriptType> scriptTypeComboBox = new ComboBox<>(FXCollections.observableArrayList(scriptTypes));
         if(scriptTypes.contains(ScriptType.P2WPKH)) {
             scriptTypeComboBox.setValue(ScriptType.P2WPKH);
         }
+        scriptTypeComboBox.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ScriptType scriptType) {
+                return scriptType == null ? "" : scriptType.getDescription();
+            }
+
+            @Override
+            public ScriptType fromString(String string) {
+                return null;
+            }
+        });
+        scriptTypeComboBox.setMaxWidth(180);
 
         HelpLabel helpLabel = new HelpLabel();
         helpLabel.setHelpText("P2WPKH is a Native Segwit type and is usually the best choice for new wallets.\nP2SH-P2WPKH is a Wrapped Segwit type and is a reasonable choice for the widest compatibility.\nP2PKH is a Legacy type and should be avoided for new wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
+        fieldBox.getChildren().addAll(scriptTypeComboBox, helpLabel);
 
         Region region = new Region();
         HBox.setHgrow(region, Priority.SOMETIMES);
@@ -130,7 +147,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         HBox contentBox = new HBox();
         contentBox.setAlignment(Pos.CENTER_RIGHT);
         contentBox.setSpacing(20);
-        contentBox.getChildren().addAll(label, scriptTypeComboBox, helpLabel, region, importFileButton);
+        contentBox.getChildren().addAll(label, fieldBox, region, importFileButton);
         contentBox.setPadding(new Insets(10, 30, 10, 30));
         contentBox.setPrefHeight(60);
 
