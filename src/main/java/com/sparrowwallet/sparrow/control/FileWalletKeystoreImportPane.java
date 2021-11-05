@@ -116,7 +116,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
                 return null;
             }
         });
-        scriptTypeComboBox.setMaxWidth(180);
+        scriptTypeComboBox.setMaxWidth(170);
 
         HelpLabel helpLabel = new HelpLabel();
         helpLabel.setHelpText("P2WPKH is a Native Segwit type and is usually the best choice for new wallets.\nP2SH-P2WPKH is a Wrapped Segwit type and is a reasonable choice for the widest compatibility.\nP2PKH is a Legacy type and should be avoided for new wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
