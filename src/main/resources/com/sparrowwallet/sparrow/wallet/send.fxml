@@ -123,7 +123,7 @@
                     </Fieldset>
                 </Form>
                 <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="2">
-                    <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
+                    <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false" minHeight="135">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
                         </xAxis>
@@ -131,7 +131,7 @@
                             <NumberAxis side="LEFT" />
                         </yAxis>
                     </BlockTargetFeeRatesChart>
-                    <MempoolSizeFeeRatesChart fx:id="mempoolSizeFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false">
+                    <MempoolSizeFeeRatesChart fx:id="mempoolSizeFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false" minHeight="135">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
                         </xAxis>
