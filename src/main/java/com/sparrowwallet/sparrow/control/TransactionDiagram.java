@@ -33,8 +33,11 @@ import java.util.stream.Collectors;
 
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 7;
+    private static final int REDUCED_MAX_UTXOS = MAX_UTXOS - 1;
     private static final int MAX_PAYMENTS = 5;
-    private static final double DIAGRAM_HEIGHT = 215.0;
+    private static final int REDUCED_MAX_PAYMENTS = MAX_PAYMENTS - 1;
+    private static final double DIAGRAM_HEIGHT = 210.0;
+    private static final double REDUCED_DIAGRAM_HEIGHT = DIAGRAM_HEIGHT - 60;
     private static final int TOOLTIP_SHOW_DELAY = 50;
 
     private WalletTransaction walletTx;
@@ -111,11 +114,12 @@ public class TransactionDiagram extends GridPane {
             selectedUtxos.put(new PayjoinBlockTransactionHashIndex(), null);
         }
 
-        if(selectedUtxos.size() > MAX_UTXOS) {
+        int maxUtxos = getMaxUtxos();
+        if(selectedUtxos.size() > maxUtxos) {
             Map<BlockTransactionHashIndex, WalletNode> utxos = new LinkedHashMap<>();
             List<BlockTransactionHashIndex> additional = new ArrayList<>();
             for(BlockTransactionHashIndex reference : selectedUtxos.keySet()) {
-                if(utxos.size() < MAX_UTXOS - 1) {
+                if(utxos.size() < maxUtxos - 1) {
                     utxos.put(reference, selectedUtxos.get(reference));
                 } else {
                     additional.add(reference);
@@ -325,11 +329,12 @@ public class TransactionDiagram extends GridPane {
     private List<Payment> getDisplayedPayments() {
         List<Payment> payments = walletTx.getPayments();
 
-        if(payments.size() > MAX_PAYMENTS) {
+        int maxPayments = getMaxPayments();
+        if(payments.size() > maxPayments) {
             List<Payment> displayedPayments = new ArrayList<>();
             List<Payment> additional = new ArrayList<>();
             for(Payment payment : payments) {
-                if(displayedPayments.size() < MAX_PAYMENTS - 1) {
+                if(displayedPayments.size() < maxPayments - 1) {
                     displayedPayments.add(payment);
                 } else {
                     additional.add(payment);
@@ -492,11 +497,31 @@ public class TransactionDiagram extends GridPane {
     }
 
     public double getDiagramHeight() {
-        if(AppServices.isReducedWindowHeight(this)) {
-            return DIAGRAM_HEIGHT - 40;
+        if(isReducedHeight()) {
+            return REDUCED_DIAGRAM_HEIGHT;
         }
 
         return DIAGRAM_HEIGHT;
+    }
+
+    private int getMaxUtxos() {
+        if(isReducedHeight()) {
+            return REDUCED_MAX_UTXOS;
+        }
+
+        return MAX_UTXOS;
+    }
+
+    private int getMaxPayments() {
+        if(isReducedHeight()) {
+            return REDUCED_MAX_PAYMENTS;
+        }
+
+        return MAX_PAYMENTS;
+    }
+
+    private boolean isReducedHeight() {
+        return !isFinal() && AppServices.isReducedWindowHeight(this);
     }
 
     private Node createSpacer() {

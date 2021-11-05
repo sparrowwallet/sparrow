@@ -18,6 +18,12 @@ public class ComboBoxTextField extends CustomTextField {
         super();
         getStyleClass().add("combo-text-field");
         setupCopyButtonField(super.rightProperty());
+
+        disabledProperty().addListener((observable, oldValue, newValue) -> {
+            if(comboProperty.isNotNull().get()) {
+                comboProperty.get().setVisible(!newValue);
+            }
+        });
     }
 
     private void setupCopyButtonField(ObjectProperty<Node> rightProperty) {

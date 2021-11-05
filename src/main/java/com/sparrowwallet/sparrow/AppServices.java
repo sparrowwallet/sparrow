@@ -482,7 +482,7 @@ public class AppServices {
 
             stage.setTitle("Sparrow");
             stage.setMinWidth(650);
-            stage.setMinHeight(730);
+            stage.setMinHeight(708);
             stage.setScene(scene);
             stage.getIcons().add(new Image(MainApp.class.getResourceAsStream("/image/sparrow-large.png")));
 

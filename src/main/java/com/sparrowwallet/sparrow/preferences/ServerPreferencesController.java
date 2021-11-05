@@ -539,7 +539,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
         publicProxyHost.setDisable(!editable);
         publicProxyPort.setDisable(!editable);
 
-        recentCoreServers.setVisible(editable);
         coreHost.setDisable(!editable);
         corePort.setDisable(!editable);
         coreAuthToggleGroup.getToggles().forEach(toggle -> ((ToggleButton)toggle).setDisable(!editable));
@@ -551,7 +550,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
         coreProxyHost.setDisable(!editable);
         coreProxyPort.setDisable(!editable);
 
-        recentElectrumServers.setVisible(editable);
         electrumHost.setDisable(!editable);
         electrumPort.setDisable(!editable);
         electrumUseSsl.setDisable(!editable);
