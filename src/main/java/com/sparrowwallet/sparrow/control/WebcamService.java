@@ -15,9 +15,12 @@ import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 
+import java.awt.*;
+import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class WebcamService extends ScheduledService<Image> {
@@ -93,12 +96,13 @@ public class WebcamService extends ScheduledService<Image> {
                     if(bimg == null) {
                         return null;
                     }
+                    BufferedImage croppedImage = getCroppedImage(bimg);
 
                     Image image = SwingFXUtils.toFXImage(bimg, null);
                     updateValue(image);
 
                     if(System.currentTimeMillis() > (lastQrSampleTime + QR_SAMPLE_PERIOD_MILLIS)) {
-                        readQR(bimg);
+                        readQR(croppedImage);
                         lastQrSampleTime = System.currentTimeMillis();
                     }
 
@@ -130,11 +134,27 @@ public class WebcamService extends ScheduledService<Image> {
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 
         try {
-            Result result = qrReader.decode(bitmap);
+            Result result = qrReader.decode(bitmap, Map.of(DecodeHintType.TRY_HARDER, Boolean.TRUE));
             resultProperty.set(result);
         } catch(ReaderException e) {
             // fall thru, it means there is no QR code in image
         }
+    }
+
+    private BufferedImage getCroppedImage(BufferedImage bufferedImage) {
+        int dimension = Math.min(bufferedImage.getWidth(), bufferedImage.getHeight());
+        int squareSize = dimension / 2;
+        int x = (bufferedImage.getWidth() - squareSize) / 2;
+        int y = (bufferedImage.getHeight() - squareSize) / 2;
+
+        Graphics2D g2d = (Graphics2D)bufferedImage.getGraphics();
+        float[] dash1 = {10.0f};
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(3.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
+        g2d.draw(new RoundRectangle2D.Double(x, y, squareSize, squareSize, 10, 10));
+        g2d.dispose();
+
+        return bufferedImage.getSubimage(x, y, squareSize, squareSize);
     }
 
     public Result getResult() {
