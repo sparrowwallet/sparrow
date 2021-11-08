@@ -92,17 +92,20 @@ public class WebcamService extends ScheduledService<Image> {
                         opening.set(false);
                     }
 
-                    BufferedImage bimg = cam.getImage();
-                    if(bimg == null) {
+                    BufferedImage originalImage = cam.getImage();
+                    if(originalImage == null) {
                         return null;
                     }
-                    BufferedImage croppedImage = getCroppedImage(bimg);
 
-                    Image image = SwingFXUtils.toFXImage(bimg, null);
+                    CroppedDimension cropped = getCroppedDimension(originalImage);
+                    BufferedImage croppedImage = originalImage.getSubimage(cropped.x, cropped.y, cropped.length, cropped.length);
+                    BufferedImage framedImage = getFramedImage(originalImage, cropped);
+
+                    Image image = SwingFXUtils.toFXImage(framedImage, null);
                     updateValue(image);
 
                     if(System.currentTimeMillis() > (lastQrSampleTime + QR_SAMPLE_PERIOD_MILLIS)) {
-                        readQR(bimg, croppedImage);
+                        readQR(originalImage, croppedImage);
                         lastQrSampleTime = System.currentTimeMillis();
                     }
 
@@ -152,20 +155,24 @@ public class WebcamService extends ScheduledService<Image> {
         }
     }
 
-    private BufferedImage getCroppedImage(BufferedImage bufferedImage) {
+    private BufferedImage getFramedImage(BufferedImage image, CroppedDimension cropped) {
+        BufferedImage clone = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = (Graphics2D)clone.getGraphics();
+        g2d.drawImage(image, 0, 0, null);
+        float[] dash1 = {10.0f};
+        g2d.setColor(Color.BLACK);
+        g2d.setStroke(new BasicStroke(resolution == WebcamResolution.HD ? 3.0f : 1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
+        g2d.draw(new RoundRectangle2D.Double(cropped.x, cropped.y, cropped.length, cropped.length, 10, 10));
+        g2d.dispose();
+        return clone;
+    }
+
+    private CroppedDimension getCroppedDimension(BufferedImage bufferedImage) {
         int dimension = Math.min(bufferedImage.getWidth(), bufferedImage.getHeight());
         int squareSize = dimension / 2;
         int x = (bufferedImage.getWidth() - squareSize) / 2;
         int y = (bufferedImage.getHeight() - squareSize) / 2;
-
-        Graphics2D g2d = (Graphics2D)bufferedImage.getGraphics();
-        float[] dash1 = {10.0f};
-        g2d.setColor(Color.BLACK);
-        g2d.setStroke(new BasicStroke(resolution == WebcamResolution.HD ? 3.0f : 1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
-        g2d.draw(new RoundRectangle2D.Double(x, y, squareSize, squareSize, 10, 10));
-        g2d.dispose();
-
-        return bufferedImage.getSubimage(x, y, squareSize, squareSize);
+        return new CroppedDimension(x, y, squareSize);
     }
 
     public Result getResult() {
@@ -202,5 +209,17 @@ public class WebcamService extends ScheduledService<Image> {
 
     public BooleanProperty openingProperty() {
         return opening;
+    }
+
+    private static class CroppedDimension {
+        public int x;
+        public int y;
+        public int length;
+
+        public CroppedDimension(int x, int y, int length) {
+            this.x = x;
+            this.y = y;
+            this.length = length;
+        }
     }
 }
