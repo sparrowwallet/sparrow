@@ -161,7 +161,7 @@ public class WebcamService extends ScheduledService<Image> {
         Graphics2D g2d = (Graphics2D)bufferedImage.getGraphics();
         float[] dash1 = {10.0f};
         g2d.setColor(Color.BLACK);
-        g2d.setStroke(new BasicStroke(3.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
+        g2d.setStroke(new BasicStroke(resolution == WebcamResolution.HD ? 3.0f : 1.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
         g2d.draw(new RoundRectangle2D.Double(x, y, squareSize, squareSize, 10, 10));
         g2d.dispose();
 

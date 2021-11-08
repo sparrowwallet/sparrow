@@ -56,6 +56,17 @@ public class MixToController implements Initializable {
         allWallets.addAll(destinationWallets);
 
         mixToWallets.setItems(FXCollections.observableList(allWallets));
+        mixToWallets.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Wallet wallet) {
+                return wallet == null ? "" : wallet.getFullDisplayName();
+            }
+
+            @Override
+            public Wallet fromString(String string) {
+                return null;
+            }
+        });
 
         String mixToWalletId = null;
         try {

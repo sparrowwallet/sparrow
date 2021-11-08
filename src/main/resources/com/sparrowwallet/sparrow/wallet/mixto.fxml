@@ -30,7 +30,7 @@
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <Fieldset inputGrow="SOMETIMES" text="Mix To Settings">
                     <Field text="Mix to wallet:">
-                        <ComboBox fx:id="mixToWallets" prefWidth="140" promptText="None available" />
+                        <ComboBox fx:id="mixToWallets" prefWidth="160" promptText="None available" />
                         <HelpLabel helpText="Select a single signature wallet that is already open to mix to."/>
                     </Field>
                     <Field text="Minimum mixes:">
@@ -43,7 +43,7 @@
             <Form GridPane.columnIndex="0" GridPane.rowIndex="1">
                 <Fieldset inputGrow="SOMETIMES" text="Postmix Wallet Settings">
                     <Field text="Index range:">
-                        <ComboBox fx:id="indexRange" prefWidth="140">
+                        <ComboBox fx:id="indexRange" prefWidth="160">
                             <items>
                                 <FXCollections fx:factory="observableArrayList">
                                     <IndexRange fx:constant="FULL" />
