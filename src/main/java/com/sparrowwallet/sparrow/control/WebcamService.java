@@ -102,7 +102,7 @@ public class WebcamService extends ScheduledService<Image> {
                     updateValue(image);
 
                     if(System.currentTimeMillis() > (lastQrSampleTime + QR_SAMPLE_PERIOD_MILLIS)) {
-                        readQR(croppedImage);
+                        readQR(bimg, croppedImage);
                         lastQrSampleTime = System.currentTimeMillis();
                     }
 
@@ -129,15 +129,26 @@ public class WebcamService extends ScheduledService<Image> {
         return super.cancel();
     }
 
-    private void readQR(BufferedImage bufferedImage) {
+    private void readQR(BufferedImage wideImage, BufferedImage croppedImage) {
+        Result result = readQR(wideImage);
+        if(result == null) {
+            result = readQR(croppedImage);
+        }
+
+        if(result != null) {
+            resultProperty.set(result);
+        }
+    }
+
+    private Result readQR(BufferedImage bufferedImage) {
         LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 
         try {
-            Result result = qrReader.decode(bitmap, Map.of(DecodeHintType.TRY_HARDER, Boolean.TRUE));
-            resultProperty.set(result);
+            return qrReader.decode(bitmap, Map.of(DecodeHintType.TRY_HARDER, Boolean.TRUE));
         } catch(ReaderException e) {
             // fall thru, it means there is no QR code in image
+            return null;
         }
     }
 
