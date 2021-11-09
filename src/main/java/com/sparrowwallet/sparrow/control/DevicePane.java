@@ -625,7 +625,7 @@ public class DevicePane extends TitledDescriptionPane {
         });
         signPSBTService.setOnFailed(workerStateEvent -> {
             setError("Signing Error", signPSBTService.getException().getMessage());
-            log.error("Signing Error: " + signPSBTService.getException().getMessage());
+            log.error("Signing Error: " + signPSBTService.getException().getMessage(), signPSBTService.getException());
             signButton.setDisable(false);
         });
         setDescription("Signing...");
