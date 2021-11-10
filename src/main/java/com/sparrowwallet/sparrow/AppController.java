@@ -1957,8 +1957,15 @@ public class AppController implements Initializable {
             AppServices.get().getApplication().getHostServices().showDocument("https://www.sparrowwallet.com/download");
         });
 
-        if(statusBar.getRightItems().size() > 0 && statusBar.getRightItems().get(0) instanceof Hyperlink) {
-            statusBar.getRightItems().remove(0);
+        Hyperlink existingUpdateLabel = null;
+        for(Node node : statusBar.getRightItems()) {
+            if(node instanceof Hyperlink) {
+                existingUpdateLabel = (Hyperlink)node;
+            }
+        }
+
+        if(existingUpdateLabel != null) {
+            statusBar.getRightItems().remove(existingUpdateLabel);
         }
 
         statusBar.getRightItems().add(0, versionUpdateLabel);

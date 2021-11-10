@@ -31,7 +31,7 @@
                 <Fieldset inputGrow="SOMETIMES" text="Mix To Settings">
                     <Field text="Mix to wallet:">
                         <ComboBox fx:id="mixToWallets" prefWidth="160" promptText="None available" />
-                        <HelpLabel helpText="Select a single signature wallet that is already open to mix to."/>
+                        <HelpLabel helpText="Select an open wallet to mix to."/>
                     </Field>
                     <Field text="Minimum mixes:">
                         <Spinner fx:id="minMixes" editable="true" prefWidth="90" />
