@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Cursor;
@@ -12,12 +13,13 @@ import org.controlsfx.control.textfield.CustomTextField;
 public class ComboBoxTextField extends CustomTextField {
     private final ObjectProperty<ComboBox<?>> comboProperty = new SimpleObjectProperty<>();
 
+    private boolean initialized;
     private boolean comboShowing;
 
     public ComboBoxTextField() {
         super();
         getStyleClass().add("combo-text-field");
-        setupCopyButtonField(super.rightProperty());
+        setupComboButtonField(super.rightProperty());
 
         disabledProperty().addListener((observable, oldValue, newValue) -> {
             if(comboProperty.isNotNull().get()) {
@@ -26,7 +28,7 @@ public class ComboBoxTextField extends CustomTextField {
         });
     }
 
-    private void setupCopyButtonField(ObjectProperty<Node> rightProperty) {
+    private void setupComboButtonField(ObjectProperty<Node> rightProperty) {
         Region showComboButton = new Region();
         showComboButton.getStyleClass().addAll("graphic"); //$NON-NLS-1$
         StackPane showComboButtonPane = new StackPane(showComboButton);
@@ -41,6 +43,14 @@ public class ComboBoxTextField extends CustomTextField {
                 }
 
                 comboShowing = !comboShowing;
+
+                if(!initialized) {
+                    comboProperty.get().valueProperty().addListener((observable, oldValue, newValue) -> {
+                        comboShowing = false;
+                        Platform.runLater(() -> comboProperty.get().getSelectionModel().clearSelection());
+                    });
+                    initialized = true;
+                }
             }
         });
 
