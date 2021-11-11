@@ -10,6 +10,11 @@
     -fx-pref-height: 25px;
 }
 
+.form .relaxedLabelFieldSet.fieldset:horizontal .label-container {
+    -fx-pref-width: 120px;
+    -fx-pref-height: 25px;
+}
+
 .form .fieldset:horizontal .label-container {
     -fx-pref-width: 110px;
     -fx-pref-height: 25px;
