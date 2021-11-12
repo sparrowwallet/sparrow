@@ -485,7 +485,7 @@ public class SettingsController extends WalletFormController implements Initiali
                             walletDiscoveryService.setOnSucceeded(event -> {
                                 addAndEncryptAccounts(masterWallet, walletDiscoveryService.getValue(), key);
                                 if(walletDiscoveryService.getValue().isEmpty()) {
-                                    AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                                    AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
                                 }
                             });
                             walletDiscoveryService.setOnFailed(event -> {
@@ -518,7 +518,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     walletDiscoveryService.setOnSucceeded(event -> {
                         addAndSaveAccounts(masterWallet, walletDiscoveryService.getValue());
                         if(walletDiscoveryService.getValue().isEmpty()) {
-                            AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                            AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
                         }
                     });
                     walletDiscoveryService.setOnFailed(event -> {
@@ -538,7 +538,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 if(optDiscoveredKeystores.isPresent()) {
                     Map<StandardAccount, Keystore> discoveredKeystores = optDiscoveredKeystores.get();
                     if(discoveredKeystores.isEmpty()) {
-                        AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                        AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
                     } else {
                         for(Map.Entry<StandardAccount, Keystore> entry : discoveredKeystores.entrySet()) {
                             Wallet childWallet = masterWallet.addChildWallet(entry.getKey());
