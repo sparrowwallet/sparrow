@@ -72,6 +72,7 @@ public class FontAwesome5 extends GlyphFont {
         UNDO('\uf0e2'),
         USER('\uf007'),
         USER_FRIENDS('\uf500'),
+        USER_PLUS('\uf234'),
         WALLET('\uf555'),
         WEIGHT('\uf496');
 

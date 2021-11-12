@@ -189,7 +189,7 @@ public class TransactionDiagram extends GridPane {
         if(numSets > 1) {
             double setHeight = (height / numSets) - 5;
             for(int set = 0; set < numSets; set++) {
-                StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), "Contributor " + (set+1));
+                StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), walletTx.getWallet().getFullDisplayName() + "\nClick to replace with an external contributor");
                 allBrackets.getChildren().add(stackPane);
             }
         } else if(walletTx.isCoinControlUsed()) {
@@ -248,6 +248,8 @@ public class TransactionDiagram extends GridPane {
 
         glyph.getStyleClass().add("inputs-type");
         Tooltip tooltip = new Tooltip(tooltipText);
+        tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        tooltip.setShowDuration(Duration.INDEFINITE);
         glyph.setTooltip(tooltip);
         stackPane.getChildren().addAll(pane, glyph);
 
@@ -752,9 +754,11 @@ public class TransactionDiagram extends GridPane {
     }
 
     private Glyph getUserGlyph() {
-        Glyph userGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.USER);
+        Glyph userGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.COINS);
         userGlyph.getStyleClass().add("user-icon");
         userGlyph.setFontSize(12);
+        userGlyph.setOnMouseEntered(event -> userGlyph.setIcon(FontAwesome5.Glyph.USER_PLUS));
+        userGlyph.setOnMouseExited(event -> userGlyph.setIcon(FontAwesome5.Glyph.COINS));
         return userGlyph;
     }
 

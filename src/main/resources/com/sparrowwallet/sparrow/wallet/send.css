@@ -115,3 +115,7 @@
         linear-gradient(to bottom, derive(-fx-control-inner-background, -9%), derive(-fx-control-inner-background, 0%), derive(-fx-control-inner-background, -5%), derive(-fx-control-inner-background, -12%)),
         linear-gradient(to right, #c8416466 0%, #a0a1a766 50%, #a0a1a700 100%);
 }
+
+#transactionDiagram .user-icon {
+    -fx-text-fill: -fx-text-base-color;
+}
