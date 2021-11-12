@@ -515,6 +515,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 return ScriptType.P2SH_P2WSH;
             } else if(List.of(ScriptExpression.WITNESS_SCRIPT_HASH).equals(expressions)) {
                 return ScriptType.P2WSH;
+            } else if(List.of(ScriptExpression.TAPROOT).equals(expressions)) {
+                return ScriptType.P2TR;
             }
 
             throw new IllegalArgumentException("Unknown script of " + expressions);

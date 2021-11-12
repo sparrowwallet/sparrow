@@ -360,6 +360,8 @@ public class SettingsController extends WalletFormController implements Initiali
             return List.of(ScriptExpression.SCRIPT_HASH, ScriptExpression.WITNESS_SCRIPT_HASH);
         } else if(scriptType == ScriptType.P2WSH) {
             return List.of(ScriptExpression.WITNESS_SCRIPT_HASH);
+        } else if(scriptType == ScriptType.P2TR) {
+            return List.of(ScriptExpression.TAPROOT);
         }
 
         throw new IllegalArgumentException("Unknown script type of " + scriptType);
