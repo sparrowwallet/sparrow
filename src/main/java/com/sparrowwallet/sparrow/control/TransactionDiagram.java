@@ -32,10 +32,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class TransactionDiagram extends GridPane {
-    private static final int MAX_UTXOS = 7;
-    private static final int REDUCED_MAX_UTXOS = MAX_UTXOS - 1;
-    private static final int MAX_PAYMENTS = 5;
-    private static final int REDUCED_MAX_PAYMENTS = MAX_PAYMENTS - 1;
+    private static final int MAX_UTXOS = 8;
+    private static final int REDUCED_MAX_UTXOS = MAX_UTXOS - 2;
+    private static final int MAX_PAYMENTS = 6;
+    private static final int REDUCED_MAX_PAYMENTS = MAX_PAYMENTS - 2;
     private static final double DIAGRAM_HEIGHT = 210.0;
     private static final double REDUCED_DIAGRAM_HEIGHT = DIAGRAM_HEIGHT - 60;
     private static final int TOOLTIP_SHOW_DELAY = 50;
@@ -80,15 +80,15 @@ public class TransactionDiagram extends GridPane {
     }
 
     public void update() {
-        Map<BlockTransactionHashIndex, WalletNode> displayedUtxos = getDisplayedUtxos();
+        List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets = getDisplayedUtxoSets();
 
-        Pane inputsTypePane = getInputsType(displayedUtxos);
+        Pane inputsTypePane = getInputsType(displayedUtxoSets);
         GridPane.setConstraints(inputsTypePane, 0, 0);
 
-        Pane inputsPane = getInputsLabels(displayedUtxos);
+        Pane inputsPane = getInputsLabels(displayedUtxoSets);
         GridPane.setConstraints(inputsPane, 1, 0);
 
-        Node inputsLinesPane = getInputsLines(displayedUtxos);
+        Node inputsLinesPane = getInputsLines(displayedUtxoSets);
         GridPane.setConstraints(inputsLinesPane, 2, 0);
 
         Pane txPane = getTransactionPane();
@@ -106,20 +106,47 @@ public class TransactionDiagram extends GridPane {
         getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
     }
 
-    private Map<BlockTransactionHashIndex, WalletNode> getDisplayedUtxos() {
-        Map<BlockTransactionHashIndex, WalletNode> selectedUtxos = walletTx.getSelectedUtxos();
+    private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {
+        List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets = new ArrayList<>();
+        for(Map<BlockTransactionHashIndex, WalletNode> selectedUtxoSet : walletTx.getSelectedUtxoSets()) {
+            displayedUtxoSets.add(getDisplayedUtxos(selectedUtxoSet, walletTx.getSelectedUtxoSets().size()));
+        }
 
+        List<Map<BlockTransactionHashIndex, WalletNode>> paddedUtxoSets = new ArrayList<>();
+        int maxDisplayedSetSize = displayedUtxoSets.stream().mapToInt(Map::size).max().orElse(0);
+        for(Map<BlockTransactionHashIndex, WalletNode> selectedUtxoSet : displayedUtxoSets) {
+            int toAdd = maxDisplayedSetSize - selectedUtxoSet.size();
+            if(toAdd > 0) {
+                Map<BlockTransactionHashIndex, WalletNode> paddedUtxoSet = new LinkedHashMap<>();
+                int firstAdd = toAdd / 2;
+                for(int i = 0; i < firstAdd; i++) {
+                    paddedUtxoSet.put(new InvisibleBlockTransactionHashIndex(i), null);
+                }
+                paddedUtxoSet.putAll(selectedUtxoSet);
+                for(int i = firstAdd; i < toAdd; i++) {
+                    paddedUtxoSet.put(new InvisibleBlockTransactionHashIndex(i), null);
+                }
+                paddedUtxoSets.add(paddedUtxoSet);
+            } else {
+                paddedUtxoSets.add(selectedUtxoSet);
+            }
+        }
+
+        return paddedUtxoSets;
+    }
+
+    private Map<BlockTransactionHashIndex, WalletNode> getDisplayedUtxos(Map<BlockTransactionHashIndex, WalletNode> selectedUtxos, int numSets) {
         if(getPayjoinURI() != null && !selectedUtxos.containsValue(null)) {
             selectedUtxos = new LinkedHashMap<>(selectedUtxos);
             selectedUtxos.put(new PayjoinBlockTransactionHashIndex(), null);
         }
 
-        int maxUtxos = getMaxUtxos();
-        if(selectedUtxos.size() > maxUtxos) {
+        int maxUtxosPerSet = getMaxUtxos() / numSets;
+        if(selectedUtxos.size() > maxUtxosPerSet) {
             Map<BlockTransactionHashIndex, WalletNode> utxos = new LinkedHashMap<>();
             List<BlockTransactionHashIndex> additional = new ArrayList<>();
             for(BlockTransactionHashIndex reference : selectedUtxos.keySet()) {
-                if(utxos.size() < maxUtxos - 1) {
+                if(utxos.size() < maxUtxosPerSet - 1) {
                     utxos.put(reference, selectedUtxos.get(reference));
                 } else {
                     additional.add(reference);
@@ -149,62 +176,85 @@ public class TransactionDiagram extends GridPane {
         return null;
     }
 
-    private Pane getInputsType(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
-        StackPane stackPane = new StackPane();
+    private Pane getInputsType(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {
+        double width = 22.0;
+        double height = getDiagramHeight() - 10;
 
-        if(walletTx.isCoinControlUsed()) {
-            VBox pane = new VBox();
-            double width = 22.0;
-            Group group = new Group();
-            VBox.setVgrow(group, Priority.ALWAYS);
+        VBox allBrackets = new VBox(10);
+        allBrackets.setPrefWidth(width);
+        allBrackets.setPadding(new Insets(5, 0, 5, 0));
+        allBrackets.setAlignment(Pos.CENTER);
 
-            Line widthLine = new Line();
-            widthLine.setStartX(0);
-            widthLine.setEndX(width);
-            widthLine.getStyleClass().add("boundary");
-
-            Line topYaxis = new Line();
-            topYaxis.setStartX(width * 0.5);
-            topYaxis.setStartY(getDiagramHeight() * 0.5 - 20.0);
-            topYaxis.setEndX(width * 0.5);
-            topYaxis.setEndY(10);
-            topYaxis.getStyleClass().add("inputs-type");
-
-            Line topBracket = new Line();
-            topBracket.setStartX(width * 0.5);
-            topBracket.setStartY(10);
-            topBracket.setEndX(width);
-            topBracket.setEndY(10);
-            topBracket.getStyleClass().add("inputs-type");
-
-            Line bottomYaxis = new Line();
-            bottomYaxis.setStartX(width * 0.5);
-            bottomYaxis.setStartY(getDiagramHeight() - 10);
-            bottomYaxis.setEndX(width * 0.5);
-            bottomYaxis.setEndY(getDiagramHeight() * 0.5 + 20.0);
-            bottomYaxis.getStyleClass().add("inputs-type");
-
-            Line bottomBracket = new Line();
-            bottomBracket.setStartX(width * 0.5);
-            bottomBracket.setStartY(getDiagramHeight() - 10);
-            bottomBracket.setEndX(width);
-            bottomBracket.setEndY(getDiagramHeight() - 10);
-            bottomBracket.getStyleClass().add("inputs-type");
-
-            group.getChildren().addAll(widthLine, topYaxis, topBracket, bottomYaxis, bottomBracket);
-            pane.getChildren().add(group);
-
-            Glyph lockGlyph = getLockGlyph();
-            lockGlyph.getStyleClass().add("inputs-type");
-            Tooltip tooltip = new Tooltip("Coin control active");
-            lockGlyph.setTooltip(tooltip);
-            stackPane.getChildren().addAll(pane, lockGlyph);
+        int numSets = displayedUtxoSets.size();
+        if(numSets > 1) {
+            double setHeight = (height / numSets) - 5;
+            for(int set = 0; set < numSets; set++) {
+                StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), "Contributor " + (set+1));
+                allBrackets.getChildren().add(stackPane);
+            }
+        } else if(walletTx.isCoinControlUsed()) {
+            StackPane stackPane = getBracket(width, height, getLockGlyph(), "Coin control active");
+            allBrackets.getChildren().add(stackPane);
         }
+
+        return allBrackets;
+    }
+
+    private StackPane getBracket(double width, double height, Glyph glyph, String tooltipText) {
+        StackPane stackPane = new StackPane();
+        VBox pane = new VBox();
+
+        Group group = new Group();
+        VBox.setVgrow(group, Priority.ALWAYS);
+
+        int padding = 0;
+        double iconPadding = 20.0;
+
+        Line widthLine = new Line();
+        widthLine.setStartX(0);
+        widthLine.setEndX(width);
+        widthLine.getStyleClass().add("boundary");
+
+        Line topYaxis = new Line();
+        topYaxis.setStartX(width * 0.5);
+        topYaxis.setStartY(height * 0.5 - iconPadding);
+        topYaxis.setEndX(width * 0.5);
+        topYaxis.setEndY(padding);
+        topYaxis.getStyleClass().add("inputs-type");
+
+        Line topBracket = new Line();
+        topBracket.setStartX(width * 0.5);
+        topBracket.setStartY(padding);
+        topBracket.setEndX(width);
+        topBracket.setEndY(padding);
+        topBracket.getStyleClass().add("inputs-type");
+
+        Line bottomYaxis = new Line();
+        bottomYaxis.setStartX(width * 0.5);
+        bottomYaxis.setStartY(height - padding);
+        bottomYaxis.setEndX(width * 0.5);
+        bottomYaxis.setEndY(height * 0.5 + iconPadding);
+        bottomYaxis.getStyleClass().add("inputs-type");
+
+        Line bottomBracket = new Line();
+        bottomBracket.setStartX(width * 0.5);
+        bottomBracket.setStartY(height - padding);
+        bottomBracket.setEndX(width);
+        bottomBracket.setEndY(height - padding);
+        bottomBracket.getStyleClass().add("inputs-type");
+
+        group.getChildren().addAll(widthLine, topYaxis, topBracket, bottomYaxis, bottomBracket);
+        pane.getChildren().add(group);
+
+        glyph.getStyleClass().add("inputs-type");
+        Tooltip tooltip = new Tooltip(tooltipText);
+        glyph.setTooltip(tooltip);
+        stackPane.getChildren().addAll(pane, glyph);
 
         return stackPane;
     }
 
-    private Pane getInputsLabels(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
+    private Pane getInputsLabels(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {
         VBox inputsBox = new VBox();
         inputsBox.setMaxWidth(150);
         inputsBox.setPrefWidth(150);
@@ -212,59 +262,65 @@ public class TransactionDiagram extends GridPane {
         inputsBox.minHeightProperty().bind(minHeightProperty());
         inputsBox.setAlignment(Pos.CENTER_RIGHT);
         inputsBox.getChildren().add(createSpacer());
-        for(BlockTransactionHashIndex input : displayedUtxos.keySet()) {
-            WalletNode walletNode = displayedUtxos.get(input);
-            String desc = getInputDescription(input);
-            Label label = new Label(desc);
-            label.getStyleClass().add("utxo-label");
+        for(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos : displayedUtxoSets) {
+            for(BlockTransactionHashIndex input : displayedUtxos.keySet()) {
+                WalletNode walletNode = displayedUtxos.get(input);
+                String desc = getInputDescription(input);
+                Label label = new Label(desc);
+                label.getStyleClass().add("utxo-label");
 
-            Button excludeUtxoButton = new Button("");
-            excludeUtxoButton.setGraphic(getExcludeGlyph());
-            excludeUtxoButton.setOnAction(event -> {
-                EventManager.get().post(new ExcludeUtxoEvent(walletTx, input));
-            });
+                Button excludeUtxoButton = new Button("");
+                excludeUtxoButton.setGraphic(getExcludeGlyph());
+                excludeUtxoButton.setOnAction(event -> {
+                    EventManager.get().post(new ExcludeUtxoEvent(walletTx, input));
+                });
 
-            Tooltip tooltip = new Tooltip();
-            if(walletNode != null) {
-                tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + (isFinal() ? walletTx.getWallet().getFullDisplayName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
-                tooltip.getStyleClass().add("input-label");
+                Tooltip tooltip = new Tooltip();
+                if(walletNode != null) {
+                    tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + (isFinal() ? walletTx.getWallet().getFullDisplayName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                    tooltip.getStyleClass().add("input-label");
 
-                if(input.getLabel() == null || input.getLabel().isEmpty()) {
-                    label.getStyleClass().add("input-label");
-                }
-
-                if(!isFinal()) {
-                    label.setGraphic(excludeUtxoButton);
-                    label.setContentDisplay(ContentDisplay.LEFT);
-                }
-            } else {
-                if(input instanceof PayjoinBlockTransactionHashIndex) {
-                    tooltip.setText("Added once transaction is signed and sent to the payjoin server");
-                } else if(input instanceof AdditionalBlockTransactionHashIndex additionalReference) {
-                    StringJoiner joiner = new StringJoiner("\n");
-                    for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
-                        joiner.add(getInputDescription(additionalInput));
+                    if(input.getLabel() == null || input.getLabel().isEmpty()) {
+                        label.getStyleClass().add("input-label");
                     }
-                    tooltip.setText(joiner.toString());
+
+                    if(!isFinal()) {
+                        label.setGraphic(excludeUtxoButton);
+                        label.setContentDisplay(ContentDisplay.LEFT);
+                    }
                 } else {
-                    if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
-                        BlockTransaction blockTransaction = walletTx.getInputTransactions().get(input.getHash());
-                        TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int)input.getIndex());
-                        Address fromAddress = txOutput.getScript().getToAddress();
-                        tooltip.setText("Input of " + getSatsValue(txOutput.getValue()) + " sats\n" + input.getHashAsString() + ":" + input.getIndex() + (fromAddress != null ? "\n" + fromAddress : ""));
+                    if(input instanceof PayjoinBlockTransactionHashIndex) {
+                        tooltip.setText("Added once transaction is signed and sent to the payjoin server");
+                    } else if(input instanceof AdditionalBlockTransactionHashIndex additionalReference) {
+                        StringJoiner joiner = new StringJoiner("\n");
+                        for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
+                            joiner.add(getInputDescription(additionalInput));
+                        }
+                        tooltip.setText(joiner.toString());
+                    } else if(input instanceof InvisibleBlockTransactionHashIndex) {
+                        tooltip.setText("");
                     } else {
-                        tooltip.setText(input.getHashAsString() + ":" + input.getIndex());
+                        if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
+                            BlockTransaction blockTransaction = walletTx.getInputTransactions().get(input.getHash());
+                            TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int) input.getIndex());
+                            Address fromAddress = txOutput.getScript().getToAddress();
+                            tooltip.setText("Input of " + getSatsValue(txOutput.getValue()) + " sats\n" + input.getHashAsString() + ":" + input.getIndex() + (fromAddress != null ? "\n" + fromAddress : ""));
+                        } else {
+                            tooltip.setText(input.getHashAsString() + ":" + input.getIndex());
+                        }
+                        label.getStyleClass().add("input-label");
                     }
-                    label.getStyleClass().add("input-label");
+                    tooltip.getStyleClass().add("input-label");
                 }
-                tooltip.getStyleClass().add("input-label");
-            }
-            tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
-            tooltip.setShowDuration(Duration.INDEFINITE);
-            label.setTooltip(tooltip);
+                tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+                tooltip.setShowDuration(Duration.INDEFINITE);
+                if(!tooltip.getText().isEmpty()) {
+                    label.setTooltip(tooltip);
+                }
 
-            inputsBox.getChildren().add(label);
-            inputsBox.getChildren().add(createSpacer());
+                inputsBox.getChildren().add(label);
+                inputsBox.getChildren().add(createSpacer());
+            }
         }
 
         return inputsBox;
@@ -278,7 +334,10 @@ public class TransactionDiagram extends GridPane {
         return String.format(Locale.ENGLISH, "%,d", amount);
     }
 
-    private Pane getInputsLines(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos) {
+    private Pane getInputsLines(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {
+        Map<BlockTransactionHashIndex, WalletNode> displayedUtxos = new LinkedHashMap<>();
+        displayedUtxoSets.forEach(displayedUtxos::putAll);
+
         VBox pane = new VBox();
         Group group = new Group();
         VBox.setVgrow(group, Priority.ALWAYS);
@@ -300,6 +359,8 @@ public class TransactionDiagram extends GridPane {
 
             if(inputs.get(numUtxos-i) instanceof PayjoinBlockTransactionHashIndex) {
                 curve.getStyleClass().add("input-dashed-line");
+            } else if(inputs.get(numUtxos-i) instanceof InvisibleBlockTransactionHashIndex) {
+                continue;
             }
 
             curve.setStartX(0);
@@ -690,6 +751,13 @@ public class TransactionDiagram extends GridPane {
         return lockGlyph;
     }
 
+    private Glyph getUserGlyph() {
+        Glyph userGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.USER);
+        userGlyph.getStyleClass().add("user-icon");
+        userGlyph.setFontSize(12);
+        return userGlyph;
+    }
+
     public boolean isFinal() {
         return finalProperty.get();
     }
@@ -728,6 +796,17 @@ public class TransactionDiagram extends GridPane {
 
         public List<BlockTransactionHashIndex> getAdditionalInputs() {
             return additionalInputs;
+        }
+    }
+
+    private static class InvisibleBlockTransactionHashIndex extends BlockTransactionHashIndex {
+        public InvisibleBlockTransactionHashIndex(int index) {
+            super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, index, 0);
+        }
+
+        @Override
+        public String getLabel() {
+            return " ";
         }
     }
 

@@ -70,6 +70,7 @@ public class FontAwesome5 extends GlyphFont {
         TOGGLE_ON('\uf205'),
         TOOLS('\uf7d9'),
         UNDO('\uf0e2'),
+        USER('\uf007'),
         USER_FRIENDS('\uf500'),
         WALLET('\uf555'),
         WEIGHT('\uf496');

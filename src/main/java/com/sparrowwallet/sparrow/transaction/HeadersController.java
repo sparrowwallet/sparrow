@@ -539,7 +539,7 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             }
 
-            return new WalletTransaction(wallet, headersForm.getTransaction(), Collections.emptyList(), selectedTxos, payments, changeMap, fee.getValue(), inputTransactions);
+            return new WalletTransaction(wallet, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, changeMap, fee.getValue(), inputTransactions);
         } else {
             Map<BlockTransactionHashIndex, WalletNode> selectedTxos = headersForm.getTransaction().getInputs().stream()
                     .collect(Collectors.toMap(txInput -> {
@@ -566,7 +566,7 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             }
 
-            return new WalletTransaction(null, headersForm.getTransaction(), Collections.emptyList(), selectedTxos, payments, Collections.emptyMap(), fee.getValue(), inputTransactions);
+            return new WalletTransaction(null, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, Collections.emptyMap(), fee.getValue(), inputTransactions);
         }
     }
 
