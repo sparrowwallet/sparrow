@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -373,7 +374,7 @@ public class Storage {
     }
 
     public static PersistenceType detectPersistenceType(File walletFile) {
-        try(Reader reader = new FileReader(walletFile)) {
+        try(Reader reader = new FileReader(walletFile, StandardCharsets.UTF_8)) {
             int firstChar = reader.read();
 
             if(firstChar == 'U' || firstChar == '{') {

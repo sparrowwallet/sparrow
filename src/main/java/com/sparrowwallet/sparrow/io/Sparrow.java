@@ -101,9 +101,12 @@ public class Sparrow implements WalletImport, WalletExport {
             java.nio.file.Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             PersistenceType persistenceType = Storage.detectPersistenceType(tempFile);
             persistenceType = (persistenceType == null ? PersistenceType.JSON : persistenceType);
-            File tempTypedFile = new File(tempFile.getParentFile(), tempFile.getName() + "." + persistenceType.getExtension());
-            tempFile.renameTo(tempTypedFile);
-            tempFile = tempTypedFile;
+            if(persistenceType != PersistenceType.JSON || !isEncrypted(tempFile)) {
+                File tempTypedFile = new File(tempFile.getParentFile(), tempFile.getName() + "." + persistenceType.getExtension());
+                tempFile.renameTo(tempTypedFile);
+                tempFile = tempTypedFile;
+            }
+
             storage = new Storage(persistenceType, tempFile);
             if(!isEncrypted(tempFile)) {
                 wallet = storage.loadUnencryptedWallet().getWallet();
