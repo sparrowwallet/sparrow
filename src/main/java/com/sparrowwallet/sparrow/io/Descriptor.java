@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -23,7 +24,7 @@ public class Descriptor implements WalletImport, WalletExport {
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
-            OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
+            OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null);
             String outputDescriptorString = outputDescriptor.toString(true);
             outputStream.write(outputDescriptorString.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();

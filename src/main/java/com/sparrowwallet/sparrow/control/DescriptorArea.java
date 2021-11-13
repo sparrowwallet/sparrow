@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -79,7 +80,7 @@ public class DescriptorArea extends CodeArea {
             copyOutputDescriptor.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(OutputDescriptor.getOutputDescriptor(wallet).toString(true));
+                content.putString(OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null).toString(true));
                 Clipboard.getSystemClipboard().setContent(content);
             });
             getItems().add(copyOutputDescriptor);

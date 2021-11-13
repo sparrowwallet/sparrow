@@ -376,7 +376,7 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     public void editDescriptor(ActionEvent event) {
-        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet());
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet(), KeyPurpose.DEFAULT_PURPOSES, null);
         String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString);
@@ -408,7 +408,7 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     public void showDescriptor(ActionEvent event) {
-        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet());
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet(), KeyPurpose.DEFAULT_PURPOSES, null);
         String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString, false);
