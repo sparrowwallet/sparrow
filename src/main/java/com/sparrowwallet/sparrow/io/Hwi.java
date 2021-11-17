@@ -39,6 +39,7 @@ public class Hwi {
     private static boolean isPromptActive = false;
 
     public List<Device> enumerate(String passphrase) throws ImportException {
+        String output = null;
         try {
             List<String> command;
             if(passphrase != null && !passphrase.isEmpty()) {
@@ -48,7 +49,7 @@ public class Hwi {
             }
 
             isPromptActive = true;
-            String output = execute(command);
+            output = execute(command);
             Device[] devices = getGson().fromJson(output, Device[].class);
             if(devices == null) {
                 throw new ImportException("Error scanning, check devices are ready");
@@ -56,7 +57,19 @@ public class Hwi {
             return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
             log.error("Error executing " + HWI_VERSION_DIR, e);
-            throw new ImportException(e);
+            throw new ImportException("Error executing HWI", e);
+        } catch(Exception e) {
+            if(output != null) {
+                try {
+                    JsonObject result = JsonParser.parseString(output).getAsJsonObject();
+                    JsonElement error = result.get("error");
+                    throw new ImportException(error.getAsString());
+                } catch(Exception ex) {
+                    log.error("Error parsing JSON: " + output, e);
+                    throw new ImportException("Error parsing JSON: " + output, e);
+                }
+            }
+            throw e;
         } finally {
             isPromptActive = false;
         }
