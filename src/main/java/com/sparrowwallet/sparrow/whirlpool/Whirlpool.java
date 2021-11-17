@@ -310,6 +310,17 @@ public class Whirlpool {
         }
     }
 
+    public void checkIfMixing() {
+        if(whirlpoolWalletService.whirlpoolWallet() == null) {
+            return;
+        }
+
+        if(isMixing() && !whirlpoolWalletService.whirlpoolWallet().isStarted()) {
+            log.warn("Wallet is not started, but mixingProperty is true");
+            WhirlpoolEventService.getInstance().post(new WalletStopEvent(whirlpoolWalletService.whirlpoolWallet()));
+        }
+    }
+
     public boolean hasWallet() {
         return hdWallet != null;
     }

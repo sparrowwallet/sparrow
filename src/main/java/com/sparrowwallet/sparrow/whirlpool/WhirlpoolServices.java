@@ -183,6 +183,13 @@ public class WhirlpoolServices {
     }
 
     @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        for(Whirlpool whirlpool : whirlpoolMap.values()) {
+            whirlpool.checkIfMixing();
+        }
+    }
+
+    @Subscribe
     public void walletOpened(WalletOpenedEvent event) {
         String walletId = event.getStorage().getWalletId(event.getWallet());
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
