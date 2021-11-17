@@ -195,7 +195,9 @@ public class WalletForm {
             }
         }
 
-        storage.deleteTempBackups();
+        //Force saving the backup if the current wallet has fewer transactions than the past wallet (i.e. incomplete load)
+        storage.deleteTempBackups(wallet.getTransactions().size() < pastWallet.getTransactions().size());
+
         return changedEntries;
     }
 
