@@ -35,6 +35,13 @@ public enum FeeRatesSource {
             String url = "https://bitcoinfees.earn.com/api/v1/fees/recommended";
             return getThreeTierFeeRates(defaultblockTargetFeeRates, url);
         }
+    },
+    STATIC_1_SAT_PER_VBYTE("Static: Always 1 sat/vB") {
+        @Override
+        public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
+            String url = "https://raw.githubusercontent.com/sparrowwallet/sparrow/master/src/main/resources/com/sparrowwallet/sparrow/preferences/feeRatesSource-static-1-sat-per-vbyte.json";
+            return getThreeTierFeeRates(defaultblockTargetFeeRates, url);
+        }
     };
 
     private static final Logger log = LoggerFactory.getLogger(FeeRatesSource.class);
