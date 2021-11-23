@@ -15,15 +15,16 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.TorService;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketTimeoutException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,20 @@ public class WhirlpoolServices {
         return AppServices.isTorRunning() ?
                 HostAndPort.fromParts("localhost", TorService.PROXY_PORT) :
                 (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
+    }
+
+    private void bindDebugAccelerator() {
+        List<Window> windows = whirlpoolMap.keySet().stream().map(walletId -> AppServices.get().getWindowForWallet(walletId)).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        for(Window window : windows) {
+            KeyCombination keyCombination = new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN, KeyCombination.ALT_DOWN);
+            if(!window.getScene().getAccelerators().containsKey(keyCombination)) {
+                window.getScene().getAccelerators().put(keyCombination, () -> {
+                    for(Whirlpool whirlpool : whirlpoolMap.values()) {
+                        whirlpool.logDebug();
+                    }
+                });
+            }
+        }
     }
 
     private void startAllWhirlpool() {
@@ -175,6 +190,7 @@ public class WhirlpoolServices {
     @Subscribe
     public void newConnection(ConnectionEvent event) {
         startAllWhirlpool();
+        bindDebugAccelerator();
     }
 
     @Subscribe

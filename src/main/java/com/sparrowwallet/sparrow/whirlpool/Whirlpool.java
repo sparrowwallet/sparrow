@@ -315,10 +315,25 @@ public class Whirlpool {
             return;
         }
 
-        if(isMixing() && !whirlpoolWalletService.whirlpoolWallet().isStarted()) {
-            log.warn("Wallet is not started, but mixingProperty is true");
-            WhirlpoolEventService.getInstance().post(new WalletStopEvent(whirlpoolWalletService.whirlpoolWallet()));
+        if(isMixing()) {
+            if(!whirlpoolWalletService.whirlpoolWallet().isStarted()) {
+                log.warn("Wallet is not started, but mixingProperty is true");
+                WhirlpoolEventService.getInstance().post(new WalletStopEvent(whirlpoolWalletService.whirlpoolWallet()));
+            } else if(whirlpoolWalletService.whirlpoolWallet().getMixingState().getUtxosMixing().isEmpty()) {
+                log.warn("No UTXOs mixing, but mixingProperty is true");
+                //Will automatically restart
+                AppServices.getWhirlpoolServices().stopWhirlpool(this, false);
+            }
         }
+    }
+
+    public void logDebug() {
+        if(whirlpoolWalletService.whirlpoolWallet() == null) {
+            log.warn("Whirlpool wallet for " + walletId + " not started");
+            return;
+        }
+
+        log.warn("Whirlpool debug for " + walletId + "\n" + whirlpoolWalletService.whirlpoolWallet().getDebug());
     }
 
     public boolean hasWallet() {
