@@ -93,7 +93,8 @@ public class WalletTransactionsEntry extends Entry {
 
     private static void getWalletTransactions(Wallet wallet, Map<BlockTransaction, WalletTransaction> walletTransactionMap, WalletNode purposeNode) {
         KeyPurpose keyPurpose = purposeNode.getKeyPurpose();
-        for(WalletNode addressNode : purposeNode.getChildren()) {
+        List<WalletNode> childNodes = new ArrayList<>(purposeNode.getChildren());
+        for(WalletNode addressNode : childNodes) {
             for(BlockTransactionHashIndex hashIndex : addressNode.getTransactionOutputs()) {
                 BlockTransaction inputTx = wallet.getTransactions().get(hashIndex.getHash());
                 //A null inputTx here means the wallet is still updating - ignore as the WalletHistoryChangedEvent will run this again
