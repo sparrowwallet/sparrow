@@ -10,9 +10,14 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
+import com.sparrowwallet.sparrow.event.SorobanInitiatedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.soroban.SorobanServices;
+import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -42,6 +47,7 @@ public class TransactionDiagram extends GridPane {
 
     private WalletTransaction walletTx;
     private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
+    private final ObjectProperty<OptimizationStrategy> optimizationStrategyProperty = new SimpleObjectProperty<>(OptimizationStrategy.EFFICIENCY);
 
     public void update(WalletTransaction walletTx) {
         setMinHeight(getDiagramHeight());
@@ -110,6 +116,14 @@ public class TransactionDiagram extends GridPane {
         List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets = new ArrayList<>();
         for(Map<BlockTransactionHashIndex, WalletNode> selectedUtxoSet : walletTx.getSelectedUtxoSets()) {
             displayedUtxoSets.add(getDisplayedUtxos(selectedUtxoSet, walletTx.getSelectedUtxoSets().size()));
+        }
+
+        if(getOptimizationStrategy() == OptimizationStrategy.PRIVACY && displayedUtxoSets.size() == 1 && SorobanServices.canWalletMix(walletTx.getWallet())
+            && walletTx.getPayments().size() == 1
+            && (walletTx.getPayments().get(0).getAddress().getScriptType() == walletTx.getWallet().getAddress(walletTx.getWallet().getFreshNode(KeyPurpose.RECEIVE)).getScriptType())) {
+            Map<BlockTransactionHashIndex, WalletNode> addUserUtxoSet = new HashMap<>();
+            addUserUtxoSet.put(new AddUserBlockTransactionHashIndex(), null);
+            displayedUtxoSets.add(addUserUtxoSet);
         }
 
         List<Map<BlockTransactionHashIndex, WalletNode>> paddedUtxoSets = new ArrayList<>();
@@ -189,8 +203,18 @@ public class TransactionDiagram extends GridPane {
         if(numSets > 1) {
             double setHeight = (height / numSets) - 5;
             for(int set = 0; set < numSets; set++) {
-                StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), walletTx.getWallet().getFullDisplayName() + "\nClick to replace with an external contributor");
-                allBrackets.getChildren().add(stackPane);
+                boolean externalUserSet = displayedUtxoSets.get(set).values().stream().anyMatch(Objects::nonNull);
+                boolean addUserSet = displayedUtxoSets.get(set).keySet().stream().anyMatch(ref -> ref instanceof AddUserBlockTransactionHashIndex);
+                if(externalUserSet || addUserSet) {
+                    boolean replace = !isFinal() && set > 0 && SorobanServices.canWalletMix(walletTx.getWallet());
+                    Glyph bracketGlyph = !replace && walletTx.isCoinControlUsed() ? getLockGlyph() : (addUserSet ? getUserAddGlyph() : getCoinsGlyph(replace));
+                    String tooltipText = addUserSet ? "Click to add a mixing partner" : (walletTx.getWallet().getFullDisplayName() + (replace ? "\nClick to replace with a mixing partner" : ""));
+                    StackPane stackPane = getBracket(width, setHeight, bracketGlyph, tooltipText);
+                    allBrackets.getChildren().add(stackPane);
+                } else {
+                    StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), "Mixing partner");
+                    allBrackets.getChildren().add(stackPane);
+                }
             }
         } else if(walletTx.isCoinControlUsed()) {
             StackPane stackPane = getBracket(width, height, getLockGlyph(), "Coin control active");
@@ -248,6 +272,7 @@ public class TransactionDiagram extends GridPane {
 
         glyph.getStyleClass().add("inputs-type");
         Tooltip tooltip = new Tooltip(tooltipText);
+        tooltip.getStyleClass().add("transaction-tooltip");
         tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         tooltip.setShowDuration(Duration.INDEFINITE);
         glyph.setTooltip(tooltip);
@@ -299,7 +324,7 @@ public class TransactionDiagram extends GridPane {
                             joiner.add(getInputDescription(additionalInput));
                         }
                         tooltip.setText(joiner.toString());
-                    } else if(input instanceof InvisibleBlockTransactionHashIndex) {
+                    } else if(input instanceof InvisibleBlockTransactionHashIndex || input instanceof AddUserBlockTransactionHashIndex) {
                         tooltip.setText("");
                     } else {
                         if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
@@ -359,7 +384,7 @@ public class TransactionDiagram extends GridPane {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("input-line");
 
-            if(inputs.get(numUtxos-i) instanceof PayjoinBlockTransactionHashIndex) {
+            if(inputs.get(numUtxos-i) instanceof PayjoinBlockTransactionHashIndex || inputs.get(numUtxos-i) instanceof AddUserBlockTransactionHashIndex) {
                 curve.getStyleClass().add("input-dashed-line");
             } else if(inputs.get(numUtxos-i) instanceof InvisibleBlockTransactionHashIndex) {
                 continue;
@@ -462,7 +487,7 @@ public class TransactionDiagram extends GridPane {
             Glyph outputGlyph = getOutputGlyph(payment);
             boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon").contains(style)) || payment instanceof AdditionalPayment;
             payment.setLabel(getOutputLabel(payment));
-            Label recipientLabel = new Label(payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX ? payment.getAddress().toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
+            Label recipientLabel = new Label(payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX || payment.getType() == Payment.Type.MIX ? payment.getAddress().toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
             Wallet toWallet = getToWallet(payment);
@@ -625,7 +650,9 @@ public class TransactionDiagram extends GridPane {
     }
 
     public Glyph getOutputGlyph(Payment payment) {
-        if(payment.getType().equals(Payment.Type.FAKE_MIX)) {
+        if(payment.getType().equals(Payment.Type.MIX)) {
+            return getMixGlyph();
+        } else if(payment.getType().equals(Payment.Type.FAKE_MIX)) {
             return getFakeMixGlyph();
         } else if(walletTx.isConsolidationSend(payment)) {
             return getConsolidationGlyph();
@@ -704,9 +731,9 @@ public class TransactionDiagram extends GridPane {
         return getChangeGlyph();
     }
 
-    public static Glyph getPayjoinGlyph() {
+    public static Glyph getMixGlyph() {
         Glyph payjoinGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
-        payjoinGlyph.getStyleClass().add("payjoin-icon");
+        payjoinGlyph.getStyleClass().add("mix-icon");
         payjoinGlyph.setFontSize(12);
         return payjoinGlyph;
     }
@@ -754,12 +781,49 @@ public class TransactionDiagram extends GridPane {
     }
 
     private Glyph getUserGlyph() {
-        Glyph userGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.COINS);
+        Glyph userGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.USER);
         userGlyph.getStyleClass().add("user-icon");
         userGlyph.setFontSize(12);
-        userGlyph.setOnMouseEntered(event -> userGlyph.setIcon(FontAwesome5.Glyph.USER_PLUS));
-        userGlyph.setOnMouseExited(event -> userGlyph.setIcon(FontAwesome5.Glyph.COINS));
         return userGlyph;
+    }
+
+    private Glyph getUserAddGlyph() {
+        Glyph userAddGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.USER_PLUS);
+        userAddGlyph.getStyleClass().add("useradd-icon");
+        userAddGlyph.setFontSize(12);
+        userAddGlyph.setOnMouseEntered(event -> {
+            userAddGlyph.setFontSize(18);
+        });
+        userAddGlyph.setOnMouseExited(event -> {
+            userAddGlyph.setFontSize(12);
+        });
+        userAddGlyph.setOnMouseClicked(event -> {
+            EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
+        });
+        return userAddGlyph;
+    }
+
+    private Glyph getCoinsGlyph(boolean allowReplacement) {
+        Glyph coinsGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.COINS);
+        coinsGlyph.setFontSize(12);
+        if(allowReplacement) {
+            coinsGlyph.getStyleClass().add("coins-replace-icon");
+            coinsGlyph.setOnMouseEntered(event -> {
+                coinsGlyph.setIcon(FontAwesome5.Glyph.USER_PLUS);
+                coinsGlyph.setFontSize(18);
+            });
+            coinsGlyph.setOnMouseExited(event -> {
+                coinsGlyph.setIcon(FontAwesome5.Glyph.COINS);
+                coinsGlyph.setFontSize(12);
+            });
+            coinsGlyph.setOnMouseClicked(event -> {
+                EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
+            });
+        } else {
+            coinsGlyph.getStyleClass().add("coins-icon");
+        }
+
+        return coinsGlyph;
     }
 
     public boolean isFinal() {
@@ -772,6 +836,18 @@ public class TransactionDiagram extends GridPane {
 
     public void setFinal(boolean isFinal) {
         this.finalProperty.set(isFinal);
+    }
+
+    public OptimizationStrategy getOptimizationStrategy() {
+        return optimizationStrategyProperty.get();
+    }
+
+    public ObjectProperty<OptimizationStrategy> optimizationStrategyProperty() {
+        return optimizationStrategyProperty;
+    }
+
+    public void setOptimizationStrategy(OptimizationStrategy optimizationStrategy) {
+        this.optimizationStrategyProperty.set(optimizationStrategy);
     }
 
     private static class PayjoinBlockTransactionHashIndex extends BlockTransactionHashIndex {
@@ -811,6 +887,17 @@ public class TransactionDiagram extends GridPane {
         @Override
         public String getLabel() {
             return " ";
+        }
+    }
+
+    private static class AddUserBlockTransactionHashIndex extends BlockTransactionHashIndex {
+        public AddUserBlockTransactionHashIndex() {
+            super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, 0, 0);
+        }
+
+        @Override
+        public String getLabel() {
+            return "Add Mixing Partner?";
         }
     }
 

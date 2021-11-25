@@ -152,7 +152,7 @@ public class TransactionController implements Initializable {
                             if(inputForm.isWalletTxo()) {
                                 setGraphic(TransactionDiagram.getTxoGlyph());
                             } else {
-                                setGraphic(TransactionDiagram.getPayjoinGlyph());
+                                setGraphic(TransactionDiagram.getMixGlyph());
                             }
                         }
                         if(form instanceof OutputForm) {

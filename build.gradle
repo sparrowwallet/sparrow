@@ -91,7 +91,10 @@ dependencies {
     implementation('org.slf4j:jul-to-slf4j:1.7.30') {
         exclude group: 'org.slf4j'
     }
-    implementation('com.sparrowwallet.nightjar:nightjar:0.2.19')
+    implementation('com.sparrowwallet.nightjar:nightjar:0.2.21')
+    implementation('io.reactivex.rxjava2:rxjava:2.2.15')
+    implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
+    implementation('org.apache.commons:commons-lang3:3.7')
     testImplementation('junit:junit:4.12')
 }
 
@@ -431,6 +434,11 @@ extraJavaModuleInfo {
         requires('javafx.graphics')
         requires('javafx.controls')
     }
+    module('rxjavafx-2.2.2.jar', 'io.reactivex.rxjava2fx', '2.2.2') {
+        exports('io.reactivex.rxjavafx.schedulers')
+        requires('io.reactivex.rxjava2')
+        requires('javafx.graphics')
+    }
     module('wellbehavedfx-0.3.3.jar', 'org.fxmisc.wellbehaved', '0.3.3') {
         requires('javafx.base')
         requires('javafx.graphics')
@@ -449,7 +457,7 @@ extraJavaModuleInfo {
     module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
         exports('co.nstant.in.cbor')
     }
-    module('nightjar-0.2.19.jar', 'com.sparrowwallet.nightjar', '0.2.19') {
+    module('nightjar-0.2.21.jar', 'com.sparrowwallet.nightjar', '0.2.21') {
         requires('com.google.common')
         requires('net.sourceforge.streamsupport')
         requires('org.slf4j')
@@ -459,6 +467,7 @@ extraJavaModuleInfo {
         requires('com.fasterxml.jackson.core')
         requires('logback.classic')
         requires('org.json')
+        requires('io.reactivex.rxjava2')
         exports('com.samourai.http.client')
         exports('com.samourai.tor.client')
         exports('com.samourai.wallet.api.backend')
@@ -466,6 +475,17 @@ extraJavaModuleInfo {
         exports('com.samourai.wallet.client.indexHandler')
         exports('com.samourai.wallet.hd')
         exports('com.samourai.wallet.util')
+        exports('com.samourai.wallet.bip47.rpc')
+        exports('com.samourai.wallet.bip47.rpc.java')
+        exports('com.samourai.wallet.cahoots')
+        exports('com.samourai.wallet.cahoots.psbt')
+        exports('com.samourai.wallet.cahoots.stonewallx2')
+        exports('com.samourai.soroban.cahoots')
+        exports('com.samourai.soroban.client')
+        exports('com.samourai.soroban.client.cahoots')
+        exports('com.samourai.soroban.client.meeting')
+        exports('com.samourai.soroban.client.rpc')
+        exports('com.samourai.wallet.send')
         exports('com.samourai.whirlpool.client.event')
         exports('com.samourai.whirlpool.client.wallet')
         exports('com.samourai.whirlpool.client.wallet.beans')

@@ -513,10 +513,10 @@ public class HeadersController extends TransactionFormController implements Init
                 WalletNode changeNode = changeOutputScripts.get(txOutput.getScript());
                 if(changeNode != null) {
                     if(headersForm.getTransaction().getOutputs().size() == 4 && headersForm.getTransaction().getOutputs().stream().anyMatch(txo -> txo != txOutput && txo.getValue() == txOutput.getValue())) {
-                        try {
-                            payments.add(new Payment(txOutput.getScript().getToAddresses()[0], ".." + changeNode + " (Fake Mix)", txOutput.getValue(), false, Payment.Type.FAKE_MIX));
-                        } catch(Exception e) {
-                            //ignore
+                        if(selectedTxos.values().stream().allMatch(Objects::nonNull)) {
+                            payments.add(new Payment(txOutput.getScript().getToAddress(), ".." + changeNode + " (Fake Mix)", txOutput.getValue(), false, Payment.Type.FAKE_MIX));
+                        } else {
+                            payments.add(new Payment(txOutput.getScript().getToAddress(), ".." + changeNode + " (Mix)", txOutput.getValue(), false, Payment.Type.MIX));
                         }
                     } else {
                         changeMap.put(changeNode, txOutput.getValue());

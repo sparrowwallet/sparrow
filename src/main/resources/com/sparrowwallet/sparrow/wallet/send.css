@@ -116,6 +116,14 @@
         linear-gradient(to right, #c8416466 0%, #a0a1a766 50%, #a0a1a700 100%);
 }
 
-#transactionDiagram .user-icon {
-    -fx-text-fill: -fx-text-base-color;
+#transactionDiagram .coins-icon, #transactionDiagram .user-icon {
+    -fx-text-fill: -fx-text-background-color;
+}
+
+#transactionDiagram .coins-replace-icon {
+    -fx-text-fill: -fx-accent;
+}
+
+#transactionDiagram .useradd-icon {
+    -fx-text-fill: -fx-accent;
 }

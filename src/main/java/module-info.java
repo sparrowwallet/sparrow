@@ -39,4 +39,7 @@ open module com.sparrowwallet.sparrow {
     requires org.reactfx.reactfx;
     requires dev.bwt.jni;
     requires com.sparrowwallet.nightjar;
+    requires io.reactivex.rxjava2;
+    requires io.reactivex.rxjava2fx;
+    requires org.apache.commons.lang3;
 }

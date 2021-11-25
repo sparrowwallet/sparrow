@@ -149,8 +149,8 @@ public class InputController extends TransactionFormController implements Initia
                 inputFieldset.setText(baseText + " from " + signingWallet.getFullDisplayName());
                 inputFieldset.setIcon(TransactionDiagram.getTxoGlyph());
             } else {
-                inputFieldset.setText(baseText + " - Payjoin");
-                inputFieldset.setIcon(TransactionDiagram.getPayjoinGlyph());
+                inputFieldset.setText(baseText + " - External");
+                inputFieldset.setIcon(TransactionDiagram.getMixGlyph());
             }
         } else {
             inputFieldset.setText(baseText);

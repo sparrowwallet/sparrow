@@ -8,7 +8,7 @@
     -fx-box-border: ladder(-fx-color, black 20%, derive(-fx-color,40%) 30%);
 }
 
-.label{
+.label {
     -fx-text-fill: lightgray;
 }
 
@@ -204,4 +204,12 @@
 
 .root #loadingLog {
     -fx-background-color: transparent;
+}
+
+.root #transactionDiagram .coins-icon, #transactionDiagram .user-icon {
+    -fx-text-fill: lightgray;
+}
+
+.root .progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {
+    -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, #e06c75 70%, derive(-fx-control-inner-background, -9%) 100%);
 }

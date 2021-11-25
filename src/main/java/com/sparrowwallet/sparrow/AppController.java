@@ -28,6 +28,9 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
+import com.sparrowwallet.sparrow.soroban.CounterpartyDialog;
+import com.sparrowwallet.sparrow.soroban.Soroban;
+import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
@@ -58,10 +61,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.StackPane;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.stage.Window;
+import javafx.stage.*;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
@@ -164,6 +164,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem sendToMany;
+
+    @FXML
+    private MenuItem findMixingPartner;
 
     @FXML
     private CheckMenuItem preventSleep;
@@ -324,6 +327,10 @@ public class AppController implements Initializable {
         lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        findMixingPartner.setDisable(true);
+        AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
+            findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
+        });
 
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
@@ -980,6 +987,8 @@ public class AppController implements Initializable {
                 Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
                 whirlpool.setScode(wallet.getMasterMixConfig().getScode());
                 whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
+                Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+                soroban.setHDWallet(copy);
             }
 
             StandardAccount standardAccount = wallet.getStandardAccountType();
@@ -1213,6 +1222,70 @@ public class AppController implements Initializable {
                     Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(wallet, payments)));
                 }
             });
+        }
+    }
+
+    public void findMixingPartner(ActionEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            Wallet wallet = selectedWalletForm.getWallet();
+            Soroban soroban = AppServices.getSorobanServices().getSoroban(selectedWalletForm.getWalletId());
+            if(soroban.getHdWallet() == null) {
+                if(wallet.isEncrypted()) {
+                    Wallet copy = wallet.copy();
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    Optional<SecureString> password = dlg.showAndWait();
+                    if(password.isPresent()) {
+                        Storage storage = AppServices.get().getOpenWallets().get(wallet);
+                        Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+                        keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                            EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
+                            ECKey encryptionFullKey = keyDerivationService.getValue();
+                            Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                            copy.decrypt(key);
+
+                            try {
+                                soroban.setHDWallet(copy);
+                                CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
+                                if(Network.get() == Network.TESTNET) {
+                                    counterpartyDialog.initModality(Modality.NONE);
+                                }
+                                counterpartyDialog.showAndWait();
+                            } finally {
+                                key.clear();
+                                encryptionFullKey.clear();
+                                password.get().clear();
+                            }
+                        });
+                        keyDerivationService.setOnFailed(workerStateEvent -> {
+                            EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Failed"));
+                            if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                                Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                                    Platform.runLater(() -> findMixingPartner(null));
+                                }
+                            } else {
+                                log.error("Error deriving wallet key", keyDerivationService.getException());
+                            }
+                        });
+                        EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
+                        keyDerivationService.start();
+                    }
+                } else {
+                    soroban.setHDWallet(wallet);
+                    CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
+                    if(Network.get() == Network.TESTNET) {
+                        counterpartyDialog.initModality(Modality.NONE);
+                    }
+                    counterpartyDialog.showAndWait();
+                }
+            } else {
+                CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
+                if(Network.get() == Network.TESTNET) {
+                    counterpartyDialog.initModality(Modality.NONE);
+                }
+                counterpartyDialog.showAndWait();
+            }
         }
     }
 
@@ -1794,6 +1867,7 @@ public class AppController implements Initializable {
                 showLoadingLog.setDisable(true);
                 showUtxosChart.setDisable(true);
                 showTxHex.setDisable(false);
+                findMixingPartner.setDisable(true);
             } else if(event instanceof WalletTabSelectedEvent) {
                 WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
                 WalletTabData walletTabData = walletTabEvent.getWalletTabData();
@@ -1804,6 +1878,7 @@ public class AppController implements Initializable {
                 showLoadingLog.setDisable(false);
                 showUtxosChart.setDisable(false);
                 showTxHex.setDisable(true);
+                findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(walletTabData.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
     }
@@ -1828,6 +1903,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null) {
             if(selectedWalletForm.getWalletId().equals(event.getWalletId())) {
                 exportWallet.setDisable(!event.getWallet().isValid());
+                findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(event.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
     }

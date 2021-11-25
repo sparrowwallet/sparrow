@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import org.controlsfx.glyphfont.Glyph?>
+<?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
+<?import com.sparrowwallet.sparrow.control.ProgressTimer?>
+
+<StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@initiator.css, @../wallet/send.css, @../general.css" styleClass="initiator-pane" fx:controller="com.sparrowwallet.sparrow.soroban.InitiatorController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+    <VBox spacing="20">
+        <HBox styleClass="title-area">
+            <HBox alignment="CENTER_LEFT">
+                <Label fx:id="title" text="Add Mixing Partner" styleClass="title-label" />
+            </HBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ImageView AnchorPane.rightAnchor="0">
+                <Image url="/image/useradd.png" requestedWidth="50" requestedHeight="50" smooth="false" />
+            </ImageView>
+        </HBox>
+        <VBox fx:id="initiatorBox" styleClass="content-area" spacing="20" prefHeight="390">
+            <VBox fx:id="step1" spacing="15">
+                <Label text="Enter PayNym or Payment Code" styleClass="title-text">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
+                    </graphic>
+                </Label>
+                <Label text="Add a mixing partner to your two person coinjoin transaction using the Samourai Soroban service. Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mixing Partner." wrapText="true" styleClass="content-text" />
+                <HBox styleClass="field-box">
+                    <padding>
+                        <Insets top="20" />
+                    </padding>
+                    <Label text="Payment code or PayNym:" styleClass="field-label" />
+                    <TextField fx:id="counterparty" styleClass="field-control"/>
+                </HBox>
+            </VBox>
+            <VBox fx:id="step2" spacing="15">
+                <HBox>
+                    <Label text="Request Mix" styleClass="title-text">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
+                        </graphic>
+                    </Label>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <ProgressTimer fx:id="step2Timer" seconds="60" />
+                </HBox>
+                <Label fx:id="step2Desc" text="Ask your mixing partner to select Find Mixing Partner in the Sparrow Tools menu or Receive Online Cahoots in the Samourai Receive menu." wrapText="true" styleClass="content-text" />
+                <HBox>
+                    <padding>
+                        <Insets top="20" />
+                    </padding>
+                    <ProgressBar fx:id="sorobanProgressBar" prefWidth="680" />
+                </HBox>
+                <VBox alignment="CENTER">
+                    <Label fx:id="sorobanProgressLabel" text="Waiting for mixing partner..."  styleClass="content-text" alignment="CENTER"/>
+                    <Glyph fx:id="mixDeclined" fontFamily="Font Awesome 5 Free Solid" fontSize="80" icon="USER_SLASH" />
+                </VBox>
+            </VBox>
+            <VBox fx:id="step3" spacing="15">
+                <HBox>
+                    <Label text="Review Transaction" styleClass="title-text">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
+                        </graphic>
+                    </Label>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <ProgressTimer fx:id="step3Timer" seconds="60" />
+                </HBox>
+                <Label fx:id="step3Desc" text="Review the transaction and broadcast when ready." wrapText="true" styleClass="content-text" />
+                <HBox>
+                    <padding>
+                        <Insets top="20" />
+                    </padding>
+                    <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
+                </HBox>
+            </VBox>
+        </VBox>
+    </VBox>
+</StackPane>

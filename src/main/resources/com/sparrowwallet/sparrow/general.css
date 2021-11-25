@@ -261,3 +261,28 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column.selected >
 CellView > .text-input.text-field {
     -fx-text-fill: -fx-text-inner-color;
 }
+
+.progress-indicator.progress-timer .percentage {
+    -fx-fill: null;
+}
+
+.progress-indicator.progress-timer {
+    -fx-padding: 0 0 -16 0;
+}
+
+.progress-indicator.progress-timer > .determinate-indicator > .tick {
+    visibility: hidden;
+}
+
+.progress-indicator.progress-timer > .determinate-indicator > .indicator {
+    -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, -fx-accent 70%, derive(-fx-control-inner-background, -9%) 100%);
+}
+
+.progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {
+    -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, rgb(202, 18, 67) 70%, derive(-fx-control-inner-background, -9%) 100%);
+}
+
+.progress-indicator.progress-timer > .determinate-indicator > .progress {
+    -fx-background-color: -fx-control-inner-background;
+}
+

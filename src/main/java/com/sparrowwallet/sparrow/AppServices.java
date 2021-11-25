@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
+import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -76,6 +77,8 @@ public class AppServices {
     private static AppServices INSTANCE;
 
     private final WhirlpoolServices whirlpoolServices = new WhirlpoolServices();
+
+    private final SorobanServices sorobanServices = new SorobanServices();
 
     private final MainApp application;
 
@@ -151,6 +154,7 @@ public class AppServices {
         this.application = application;
         EventManager.get().register(this);
         EventManager.get().register(whirlpoolServices);
+        EventManager.get().register(sorobanServices);
     }
 
     public void start() {
@@ -469,6 +473,10 @@ public class AppServices {
 
     public static WhirlpoolServices getWhirlpoolServices() {
         return get().whirlpoolServices;
+    }
+
+    public static SorobanServices getSorobanServices() {
+        return get().sorobanServices;
     }
 
     public static AppController newAppWindow(Stage stage) {

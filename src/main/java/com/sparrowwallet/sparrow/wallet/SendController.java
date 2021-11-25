@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -18,6 +19,8 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
+import com.sparrowwallet.sparrow.soroban.InitiatorDialog;
+import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -37,6 +40,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
@@ -949,14 +953,14 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
-    private boolean isFakeMixPossible(List<Payment> payments) {
-        return (utxoSelectorProperty.get() == null
+    private boolean isMixPossible(List<Payment> payments) {
+        return (utxoSelectorProperty.get() == null || SorobanServices.canWalletMix(walletForm.getWallet()))
                 && payments.size() == 1
-                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType()));
+                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType());
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
-        if(isFakeMixPossible(payments)) {
+        if(isMixPossible(payments)) {
             setPreferredOptimizationStrategy();
             privacyToggle.setDisable(false);
         } else {
@@ -975,7 +979,9 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void setPreferredOptimizationStrategy() {
-        optimizationToggleGroup.selectToggle(getPreferredOptimizationStrategy() == OptimizationStrategy.PRIVACY ? privacyToggle : efficiencyToggle);
+        OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
+        optimizationToggleGroup.selectToggle(optimizationStrategy == OptimizationStrategy.PRIVACY ? privacyToggle : efficiencyToggle);
+        transactionDiagram.setOptimizationStrategy(optimizationStrategy);
     }
 
     private void updatePrivacyAnalysis(WalletTransaction walletTransaction) {
@@ -1369,6 +1375,38 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    @Subscribe
+    public void sorobanInitiated(SorobanInitiatedEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
+            if(Network.get() == Network.TESTNET) {
+                initiatorDialog.initModality(Modality.NONE);
+            }
+            Optional<Transaction> optTransaction = initiatorDialog.showAndWait();
+            if(optTransaction.isPresent()) {
+                ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(optTransaction.get());
+                broadcastTransactionService.setOnRunning(workerStateEvent -> {
+                    createButton.setDisable(true);
+                    addWalletTransactionNodes();
+                });
+                broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
+                    createButton.setDisable(false);
+                    clear(null);
+                });
+                broadcastTransactionService.setOnFailed(workerStateEvent -> {
+                    createButton.setDisable(false);
+                    Throwable exception = workerStateEvent.getSource().getException();
+                    while(exception.getCause() != null) {
+                        exception = exception.getCause();
+                    }
+
+                    AppServices.showErrorDialog("Error broadcasting mix transaction", exception.getMessage());
+                });
+                broadcastTransactionService.start();
+            }
+        }
+    }
+
     private class PrivacyAnalysisTooltip extends VBox {
         private List<Label> analysisLabels = new ArrayList<>();
 
@@ -1386,13 +1424,21 @@ public class SendController extends WalletFormController implements Initializabl
                     addLabel("Appears as a two person coinjoin", getPlusGlyph());
                 } else {
                     if(mixedAddressTypes) {
-                        addLabel("Cannot fake coinjoin due to mixed address types", getWarningGlyph());
-                    } else if(utxoSelectorProperty().get() != null) {
-                        addLabel("Cannot fake coinjoin due to coin control", getWarningGlyph());
+                        addLabel("Cannot coinjoin due to mixed address types", getInfoGlyph());
                     } else if(userPayments.size() > 1) {
-                        addLabel("Cannot fake coinjoin due to multiple payments", getWarningGlyph());
+                        addLabel("Cannot coinjoin due to multiple payments", getInfoGlyph());
                     } else {
-                        addLabel("Cannot fake coinjoin due to insufficient funds", getWarningGlyph());
+                        if(utxoSelectorProperty().get() != null) {
+                            addLabel("Cannot fake coinjoin due to coin control", getInfoGlyph());
+                        } else {
+                            addLabel("Cannot fake coinjoin due to insufficient funds", getInfoGlyph());
+                        }
+
+                        if(!SorobanServices.canWalletMix(getWalletForm().getWallet())) {
+                            addLabel("Can only add mixing partner to Native Segwit software wallets", getInfoGlyph());
+                        } else {
+                            addLabel("Add a mixing partner to create a two person coinjoin", getInfoGlyph());
+                        }
                     }
                 }
             }
@@ -1409,7 +1455,7 @@ public class SendController extends WalletFormController implements Initializabl
                 addLabel("Address reuse detected", getMinusGlyph());
             }
 
-            if(analysisLabels.isEmpty() || (analysisLabels.size() == 1 && analysisLabels.get(0).getText().startsWith("Cannot fake coinjoin"))) {
+            if(!fakeMixPresent && !mixedAddressTypes && !roundPaymentAmounts) {
                 addLabel("Appears as a possible self transfer", getPlusGlyph());
             }
 
@@ -1447,6 +1493,14 @@ public class SendController extends WalletFormController implements Initializabl
             minusGlyph.setStyle("-fx-text-fill: #e06c75");
             minusGlyph.setFontSize(12);
             return minusGlyph;
+        }
+
+        private static Glyph getInfoGlyph() {
+            Glyph infoGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.INFO_CIRCLE);
+            infoGlyph.setUserData(3);
+            infoGlyph.setStyle("-fx-text-fill: -fx-accent");
+            infoGlyph.setFontSize(12);
+            return infoGlyph;
         }
     }
 }

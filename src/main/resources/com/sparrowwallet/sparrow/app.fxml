@@ -109,6 +109,7 @@
                 <Menu fx:id="toolsMenu" mnemonicParsing="false" text="Tools">
                     <MenuItem mnemonicParsing="false" text="Sign/Verify Message" accelerator="Shortcut+M" onAction="#signVerifyMessage"/>
                     <MenuItem fx:id="sendToMany" mnemonicParsing="false" text="Send To Many" onAction="#sendToMany"/>
+                    <MenuItem fx:id="findMixingPartner" mnemonicParsing="false" text="Find Mixing Partner" onAction="#findMixingPartner"/>
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                     <SeparatorMenuItem />
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
