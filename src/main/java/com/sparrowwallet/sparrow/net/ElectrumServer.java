@@ -167,8 +167,14 @@ public class ElectrumServer {
     }
 
     public static void addCalculatedScriptHashes(Wallet wallet) {
-        calculateScriptHashes(wallet, KeyPurpose.RECEIVE).forEach(retrievedScriptHashes::putIfAbsent);
-        calculateScriptHashes(wallet, KeyPurpose.CHANGE).forEach(retrievedScriptHashes::putIfAbsent);
+        getCalculatedScriptHashes(wallet).forEach(retrievedScriptHashes::putIfAbsent);
+    }
+
+    private static Map<String, String> getCalculatedScriptHashes(Wallet wallet) {
+        Map<String, String> storedScriptHashStatuses = new HashMap<>();
+        storedScriptHashStatuses.putAll(calculateScriptHashes(wallet, KeyPurpose.RECEIVE));
+        storedScriptHashStatuses.putAll(calculateScriptHashes(wallet, KeyPurpose.CHANGE));
+        return storedScriptHashStatuses;
     }
 
     private static Map<String, String> calculateScriptHashes(Wallet wallet, KeyPurpose keyPurpose) {
@@ -1188,14 +1194,30 @@ public class ElectrumServer {
                     synchronized(walletSynchronizeLocks.get(wallet)) {
                         if(isConnected()) {
                             ElectrumServer electrumServer = new ElectrumServer();
+                            Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);
                             Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));
                             electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
                             electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
 
                             //Add all of the script hashes we have now fetched the history for so we don't need to fetch again until the script hash status changes
-                            for(WalletNode node : (nodes == null ? nodeTransactionMap.keySet() : nodes)) {
+                            Set<WalletNode> updatedNodes = new HashSet<>();
+                            Map<WalletNode, Set<BlockTransactionHashIndex>> walletNodes = wallet.getWalletNodes();
+                            for(WalletNode node : (nodes == null ? walletNodes.keySet() : nodes)) {
                                 String scriptHash = getScriptHash(wallet, node);
-                                retrievedScriptHashes.put(scriptHash, getSubscribedScriptHashStatus(scriptHash));
+                                String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
+                                if(!Objects.equals(subscribedStatus, retrievedScriptHashes.get(scriptHash))) {
+                                    updatedNodes.add(node);
+                                }
+                                retrievedScriptHashes.put(scriptHash, subscribedStatus);
+                            }
+
+                            //If wallet was not empty, check if all used updated nodes have changed history
+                            if(nodes == null && previousScriptHashes.values().stream().anyMatch(Objects::nonNull)) {
+                                if(!updatedNodes.isEmpty() && updatedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))) {
+                                    //All used nodes on a non-empty wallet have changed history. Abort and trigger a full refresh.
+                                    log.info("All used nodes on a non-empty wallet have changed history. Triggering a full wallet refresh.");
+                                    throw new AllHistoryChangedException();
+                                }
                             }
 
                             //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool

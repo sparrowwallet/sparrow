@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.StorageException;
+import com.sparrowwallet.sparrow.net.AllHistoryChangedException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
@@ -140,13 +141,25 @@ public class WalletForm {
                 }
             });
             historyService.setOnFailed(workerStateEvent -> {
-                if(AppServices.isConnected()) {
-                    log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
-                } else {
-                    log.debug("Disconnected while retrieving wallet history", workerStateEvent.getSource().getException());
-                }
+                if(workerStateEvent.getSource().getException() instanceof AllHistoryChangedException) {
+                    try {
+                        storage.backupWallet();
+                    } catch(IOException e) {
+                        log.error("Error backing up wallet", e);
+                    }
 
-                EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
+                    wallet.clearHistory();
+                    AppServices.clearTransactionHistoryCache(wallet);
+                    EventManager.get().post(new WalletHistoryClearedEvent(wallet, pastWallet, getWalletId()));
+                } else {
+                    if(AppServices.isConnected()) {
+                        log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
+                    } else {
+                        log.debug("Disconnected while retrieving wallet history", workerStateEvent.getSource().getException());
+                    }
+
+                    EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
+                }
             });
 
             EventManager.get().post(new WalletHistoryStartedEvent(wallet, nodes));
