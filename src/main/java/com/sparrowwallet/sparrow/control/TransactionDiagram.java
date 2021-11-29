@@ -208,11 +208,11 @@ public class TransactionDiagram extends GridPane {
                 if(externalUserSet || addUserSet) {
                     boolean replace = !isFinal() && set > 0 && SorobanServices.canWalletMix(walletTx.getWallet());
                     Glyph bracketGlyph = !replace && walletTx.isCoinControlUsed() ? getLockGlyph() : (addUserSet ? getUserAddGlyph() : getCoinsGlyph(replace));
-                    String tooltipText = addUserSet ? "Click to add a mixing partner" : (walletTx.getWallet().getFullDisplayName() + (replace ? "\nClick to replace with a mixing partner" : ""));
+                    String tooltipText = addUserSet ? "Click to add a mix partner" : (walletTx.getWallet().getFullDisplayName() + (replace ? "\nClick to replace with a mix partner" : ""));
                     StackPane stackPane = getBracket(width, setHeight, bracketGlyph, tooltipText);
                     allBrackets.getChildren().add(stackPane);
                 } else {
-                    StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), "Mixing partner");
+                    StackPane stackPane = getBracket(width, setHeight, getUserGlyph(), "Mix partner");
                     allBrackets.getChildren().add(stackPane);
                 }
             }
@@ -564,7 +564,7 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getTransactionPane() {
         VBox txPane = new VBox();
-        txPane.setPadding(new Insets(0, 10, 0, 10));
+        txPane.setPadding(new Insets(0, 8, 0, 8));
         txPane.setAlignment(Pos.CENTER);
         txPane.getChildren().add(createSpacer());
 
@@ -897,7 +897,7 @@ public class TransactionDiagram extends GridPane {
 
         @Override
         public String getLabel() {
-            return "Add Mixing Partner?";
+            return "Add Mix Partner?";
         }
     }
 

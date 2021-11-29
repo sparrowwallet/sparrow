@@ -19,7 +19,7 @@
     <VBox spacing="20">
         <HBox styleClass="title-area">
             <HBox alignment="CENTER_LEFT">
-                <Label fx:id="title" text="Find Mixing Partner" styleClass="title-label" />
+                <Label fx:id="title" text="Find Mix Partner" styleClass="title-label" />
             </HBox>
             <Region HBox.hgrow="ALWAYS"/>
             <ImageView AnchorPane.rightAnchor="0">
@@ -33,35 +33,39 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
                     </graphic>
                 </Label>
-                <Label text="Perform a two person coinjoin transaction using the Samourai Soroban service. Your mixing partner will start the mix, and will need either your PayNym or the Payment code shown below. Click Next once they have indicated they are ready." wrapText="true" styleClass="content-text" />
-                <HBox styleClass="field-box">
+                <Label text="Perform a two person coinjoin transaction using the Samourai Soroban service. Your mix partner will start the mix, and will need either your PayNym or the Payment code shown below. Click Next once they have indicated they are ready." wrapText="true" styleClass="content-text" />
+                <HBox>
                     <padding>
                         <Insets top="20" />
                     </padding>
-                    <Label text="PayNym:" styleClass="field-label" />
-                    <HBox spacing="11">
-                        <CopyableTextField fx:id="payNym" promptText="Retrieving..." styleClass="field-control" editable="false"/>
-                        <PayNymAvatar fx:id="payNymAvatar" />
-                    </HBox>
-                    <Button fx:id="payNymButton" text="Retrieve PayNym" onAction="#retrievePayNym" />
-                </HBox>
-                <HBox styleClass="field-box">
-                    <Label text="Payment code:" styleClass="field-label" />
-                    <HBox spacing="10">
-                        <PaymentCodeTextField fx:id="paymentCode" styleClass="field-control" editable="false"/>
-                        <Button fx:id="paymentCodeQR" onAction="#showPayNymQR">
-                            <graphic>
-                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="QRCODE" />
-                            </graphic>
-                            <tooltip>
-                                <Tooltip text="Show as QR code" />
-                            </tooltip>
-                        </Button>
-                    </HBox>
-                </HBox>
-                <HBox styleClass="field-box">
-                    <Label text="Mix using:" styleClass="field-label" />
-                    <ComboBox fx:id="mixWallet" />
+                    <VBox spacing="15">
+                        <HBox styleClass="field-box">
+                            <Label text="PayNym:" styleClass="field-label" />
+                            <CopyableTextField fx:id="payNym" promptText="Retrieving..." styleClass="field-control" editable="false"/>
+                            <Button fx:id="payNymButton" text="Retrieve PayNym" onAction="#retrievePayNym" />
+                        </HBox>
+                        <HBox styleClass="field-box">
+                            <Label text="Payment code:" styleClass="field-label" />
+                            <HBox spacing="10">
+                                <PaymentCodeTextField fx:id="paymentCode" styleClass="field-control" editable="false"/>
+                                <Button fx:id="paymentCodeQR" onAction="#showPayNymQR">
+                                    <graphic>
+                                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="QRCODE" />
+                                    </graphic>
+                                    <tooltip>
+                                        <Tooltip text="Show as QR code" />
+                                    </tooltip>
+                                </Button>
+                            </HBox>
+                        </HBox>
+                        <HBox styleClass="field-box">
+                            <Label text="Mix using:" styleClass="field-label" />
+                            <ComboBox fx:id="mixWallet" />
+                        </HBox>
+                    </VBox>
+                    <AnchorPane>
+                        <PayNymAvatar AnchorPane.leftAnchor="100" fx:id="payNymAvatar" prefWidth="150" prefHeight="150" />
+                    </AnchorPane>
                 </HBox>
             </VBox>
             <VBox fx:id="step2" spacing="15">
@@ -74,29 +78,36 @@
                     <Region HBox.hgrow="ALWAYS" />
                     <ProgressTimer fx:id="step2Timer" seconds="60" />
                 </HBox>
-                <Label fx:id="step2Desc" text="Your mixing partner will now initiate the Soroban communication. Once communication is established, check the details of the mix and click Next if you'd like to proceed." wrapText="true" styleClass="content-text" />
-                <HBox styleClass="field-box">
+                <Label fx:id="step2Desc" text="Your mix partner will now initiate the Soroban communication. Once communication is established, check the details of the mix and click Next if you'd like to proceed." wrapText="true" styleClass="content-text" />
+                <HBox>
                     <padding>
                         <Insets top="20" />
                     </padding>
-                    <Label text="Mixing partner:" styleClass="field-label" />
-                    <Label fx:id="mixingPartner" text="Waiting for mixing partner..." graphicTextGap="10" contentDisplay="RIGHT" />
-                    <Label fx:id="meetingFail" text="Failed to find mixing partner." styleClass="failure" graphicTextGap="5">
-                        <graphic>
-                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" styleClass="failure" />
-                        </graphic>
-                    </Label>
+                    <VBox spacing="10">
+                        <HBox styleClass="field-box">
+                            <Label text="Mix partner:" styleClass="field-label" />
+                            <Label fx:id="mixingPartner" text="Waiting for mix partner..." graphicTextGap="10" contentDisplay="RIGHT" />
+                            <Label fx:id="meetingFail" text="Failed to find mix partner." styleClass="failure" graphicTextGap="5">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" styleClass="failure" />
+                                </graphic>
+                            </Label>
+                        </HBox>
+                        <VBox fx:id="mixDetails" spacing="10">
+                            <HBox styleClass="field-box">
+                                <Label text="Type:" styleClass="field-label" />
+                                <Label fx:id="mixType" />
+                            </HBox>
+                            <HBox styleClass="field-box">
+                                <Label text="Fee:" styleClass="field-label" />
+                                <Label text="You pay half the miner fee" />
+                            </HBox>
+                        </VBox>
+                    </VBox>
+                    <AnchorPane>
+                        <PayNymAvatar AnchorPane.leftAnchor="100" fx:id="mixPartnerAvatar" prefWidth="150" prefHeight="150" />
+                    </AnchorPane>
                 </HBox>
-                <VBox fx:id="mixDetails" spacing="7">
-                    <HBox styleClass="field-box">
-                        <Label text="Type:" styleClass="field-label" />
-                        <Label fx:id="mixType" />
-                    </HBox>
-                    <HBox styleClass="field-box">
-                        <Label text="Fee:" styleClass="field-label" />
-                        <Label text="You pay half the miner fee" />
-                    </HBox>
-                </VBox>
             </VBox>
             <VBox fx:id="step3" spacing="15">
                 <HBox>
@@ -116,7 +127,7 @@
                     <ProgressBar fx:id="sorobanProgressBar" prefWidth="680" />
                 </HBox>
                 <VBox alignment="CENTER">
-                    <Label fx:id="sorobanProgressLabel" text="Waiting for mixing partner..."  styleClass="content-text" alignment="CENTER"/>
+                    <Label fx:id="sorobanProgressLabel" text="Waiting for mix partner..."  styleClass="content-text" alignment="CENTER"/>
                     <Glyph fx:id="mixDeclined" fontFamily="Font Awesome 5 Free Solid" fontSize="80" icon="USER_SLASH" />
                 </VBox>
             </VBox>

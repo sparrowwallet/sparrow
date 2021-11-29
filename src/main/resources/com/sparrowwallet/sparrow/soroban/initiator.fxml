@@ -19,7 +19,7 @@
     <VBox spacing="20">
         <HBox styleClass="title-area">
             <HBox alignment="CENTER_LEFT">
-                <Label fx:id="title" text="Add Mixing Partner" styleClass="title-label" />
+                <Label fx:id="title" text="Add Mix Partner" styleClass="title-label" />
             </HBox>
             <Region HBox.hgrow="ALWAYS"/>
             <ImageView AnchorPane.rightAnchor="0">
@@ -33,19 +33,25 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
                     </graphic>
                 </Label>
-                <Label text="Add a mixing partner to your two person coinjoin transaction using the Samourai Soroban service. Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mixing Partner." wrapText="true" styleClass="content-text" />
-                <HBox styleClass="field-box">
+                <Label text="Add a mix partner to your two person coinjoin transaction using the Samourai Soroban service. Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mix Partner." wrapText="true" styleClass="content-text" />
+                <HBox>
                     <padding>
                         <Insets top="20" />
                     </padding>
-                    <Label text="Payment code or PayNym:" styleClass="field-label" />
-                    <HBox spacing="10">
-                        <StackPane>
-                            <ComboBox fx:id="payNymFollowers" />
-                            <ComboBoxTextField fx:id="counterparty" styleClass="field-control" comboProperty="$payNymFollowers" />
-                        </StackPane>
-                        <PayNymAvatar fx:id="payNymAvatar" />
-                    </HBox>
+                    <VBox spacing="15">
+                        <HBox styleClass="field-box">
+                            <Label text="Payment code or PayNym:" styleClass="field-label" />
+                            <HBox spacing="10">
+                                <StackPane>
+                                    <ComboBox fx:id="payNymFollowers" />
+                                    <ComboBoxTextField fx:id="counterparty" styleClass="field-control" comboProperty="$payNymFollowers" />
+                                </StackPane>
+                            </HBox>
+                        </HBox>
+                    </VBox>
+                    <AnchorPane>
+                        <PayNymAvatar fx:id="payNymAvatar" AnchorPane.leftAnchor="80" prefWidth="150" prefHeight="150"/>
+                    </AnchorPane>
                 </HBox>
             </VBox>
             <VBox fx:id="step2" spacing="15">
@@ -58,7 +64,7 @@
                     <Region HBox.hgrow="ALWAYS" />
                     <ProgressTimer fx:id="step2Timer" seconds="60" />
                 </HBox>
-                <Label fx:id="step2Desc" text="Ask your mixing partner to select Find Mixing Partner in the Sparrow Tools menu or Receive Online Cahoots in the Samourai Receive menu." wrapText="true" styleClass="content-text" />
+                <Label fx:id="step2Desc" text="Ask your mix partner to select Find Mix Partner in the Sparrow Tools menu or Receive Online Cahoots in the Samourai Receive menu." wrapText="true" styleClass="content-text" />
                 <HBox>
                     <padding>
                         <Insets top="20" />
@@ -66,7 +72,7 @@
                     <ProgressBar fx:id="sorobanProgressBar" prefWidth="680" />
                 </HBox>
                 <VBox alignment="CENTER">
-                    <Label fx:id="sorobanProgressLabel" text="Waiting for mixing partner..."  styleClass="content-text" alignment="CENTER"/>
+                    <Label fx:id="sorobanProgressLabel" text="Waiting for mix partner..."  styleClass="content-text" alignment="CENTER"/>
                     <Glyph fx:id="mixDeclined" fontFamily="Font Awesome 5 Free Solid" fontSize="80" icon="USER_SLASH" />
                 </VBox>
             </VBox>

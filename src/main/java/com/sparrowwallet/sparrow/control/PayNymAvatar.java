@@ -54,10 +54,6 @@ public class PayNymAvatar extends StackPane {
         this.paymentCodeProperty.set(paymentCode);
     }
 
-    public void setPayNymAvatarUri(String uri) {
-        setPaymentCode(new PaymentCode(uri.replace("/", "").replace("avatar", "")));
-    }
-
     private class PayNymAvatarService extends Service<Image> {
         private final PaymentCode paymentCode;
 
@@ -77,7 +73,7 @@ public class PayNymAvatar extends StackPane {
                     try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
                         return new Image(is, getWidth(), getHeight(), true, false);
                     } catch(Exception e) {
-                        log.warn("Error loading PayNym avatar", e);
+                        log.debug("Error loading PayNym avatar", e);
                         throw e;
                     }
                 }

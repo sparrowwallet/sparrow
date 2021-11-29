@@ -1435,9 +1435,9 @@ public class SendController extends WalletFormController implements Initializabl
                         }
 
                         if(!SorobanServices.canWalletMix(getWalletForm().getWallet())) {
-                            addLabel("Can only add mixing partner to Native Segwit software wallets", getInfoGlyph());
+                            addLabel("Can only add mix partner to Native Segwit software wallets", getInfoGlyph());
                         } else {
-                            addLabel("Add a mixing partner to create a two person coinjoin", getInfoGlyph());
+                            addLabel("Add a mix partner to create a two person coinjoin", getInfoGlyph());
                         }
                     }
                 }

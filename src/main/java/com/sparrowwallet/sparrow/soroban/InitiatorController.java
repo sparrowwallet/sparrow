@@ -148,8 +148,6 @@ public class InitiatorController extends SorobanController {
         });
 
         payNymAvatar.managedProperty().bind(payNymAvatar.visibleProperty());
-        payNymAvatar.prefWidthProperty().bind(counterparty.heightProperty());
-        payNymAvatar.prefHeightProperty().bind(counterparty.heightProperty());
         payNymFollowers.prefWidthProperty().bind(counterparty.widthProperty());
         payNymFollowers.valueProperty().addListener((observable, oldValue, payNym) -> {
             if(payNym == FIND_FOLLOWERS) {
@@ -236,7 +234,12 @@ public class InitiatorController extends SorobanController {
             soroban.getFollowers().subscribe(followerPayNyms -> {
                 payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
             }, error -> {
-                log.warn("Could not retrieve followers: ", error);
+                if(error.getMessage().endsWith("404")) {
+                    Config.get().setUsePayNym(false);
+                    AppServices.showErrorDialog("Could not retrieve PayNym", "This wallet does not have an associated PayNym or any followers. You can retrieve the PayNym using the Tools menu → Find Mix Partner.");
+                } else {
+                    log.warn("Could not retrieve followers: ", error);
+                }
             });
         }
     }
@@ -302,17 +305,17 @@ public class InitiatorController extends SorobanController {
                         .subscribeOn(Schedulers.io())
                         .observeOn(JavaFxScheduler.platform())
                         .subscribe(meetingRequest -> {
-                            sorobanProgressLabel.setText("Waiting for mixing partner...");
+                            sorobanProgressLabel.setText("Waiting for mix partner...");
                             sorobanMeetingService.receiveMeetingResponse(paymentCodeCounterparty, meetingRequest, TIMEOUT_MS)
                                     .subscribeOn(Schedulers.io())
                                     .observeOn(JavaFxScheduler.platform())
                                     .subscribe(sorobanResponse -> {
                                         if(sorobanResponse.isAccept()) {
                                             sorobanProgressBar.setProgress(0.1);
-                                            sorobanProgressLabel.setText("Mixing partner accepted!");
+                                            sorobanProgressLabel.setText("Mix partner accepted!");
                                             startInitiatorCollaborative(initiatorCahootsWallet, paymentCodeCounterparty);
                                         } else {
-                                            step2Desc.setText("Mixing partner declined.");
+                                            step2Desc.setText("Mix partner declined.");
                                             sorobanProgressLabel.setVisible(false);
                                         }
                                     }, error -> {
@@ -364,7 +367,7 @@ public class InitiatorController extends SorobanController {
             if(accepted) {
                 interaction.sorobanAccept();
             } else {
-                interaction.sorobanReject("Mixing partner declined to broadcast the transaction.");
+                interaction.sorobanReject("Mix partner declined to broadcast the transaction.");
             }
         });
 

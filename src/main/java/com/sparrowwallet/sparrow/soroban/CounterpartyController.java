@@ -80,6 +80,9 @@ public class CounterpartyController extends SorobanController {
     private Label mixingPartner;
 
     @FXML
+    private PayNymAvatar mixPartnerAvatar;
+
+    @FXML
     private Label meetingFail;
 
     @FXML
@@ -156,8 +159,6 @@ public class CounterpartyController extends SorobanController {
         payNym.managedProperty().bind(payNym.visibleProperty());
         payNymAvatar.managedProperty().bind(payNymAvatar.visibleProperty());
         payNymAvatar.visibleProperty().bind(payNym.visibleProperty());
-        payNymAvatar.prefWidthProperty().bind(payNym.heightProperty());
-        payNymAvatar.prefHeightProperty().bind(payNym.heightProperty());
         payNymButton.managedProperty().bind(payNymButton.visibleProperty());
         payNymButton.visibleProperty().bind(payNym.visibleProperty().not());
         if(Config.get().isUsePayNym()) {
@@ -242,12 +243,8 @@ public class CounterpartyController extends SorobanController {
     private void updateMixPartner(Soroban soroban, PaymentCode paymentCodeInitiator, CahootsType cahootsType) {
         String code = paymentCodeInitiator.toString();
         mixingPartner.setText(code.substring(0, 12) + "..." + code.substring(code.length() - 5));
-        PayNymAvatar payNymAvatar = new PayNymAvatar();
-        payNymAvatar.setPrefHeight(mixingPartner.getHeight());
-        payNymAvatar.setPrefWidth(mixingPartner.getHeight());
-        payNymAvatar.setPaymentCode(paymentCodeInitiator);
-        mixingPartner.setGraphic(payNymAvatar);
         if(Config.get().isUsePayNym()) {
+            mixPartnerAvatar.setPaymentCode(paymentCodeInitiator);
             soroban.getPayNym(paymentCodeInitiator.toString()).subscribe(payNym -> {
                 mixingPartner.setText(payNym.nymName());
             }, error -> {

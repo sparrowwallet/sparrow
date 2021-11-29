@@ -123,7 +123,7 @@ public class PayNymService {
     public Observable<PayNym> getPayNym(String nymIdentifier) {
         return fetchPayNym(nymIdentifier).map(nymMap -> {
             List<Map<String, Object>> codes = (List<Map<String, Object>>)nymMap.get("codes");
-            PaymentCode code = new PaymentCode((String)codes.get(0).get("code"));
+            PaymentCode code = new PaymentCode((String)codes.stream().filter(codeMap -> codeMap.get("segwit") == Boolean.FALSE).map(codeMap -> codeMap.get("code")).findFirst().orElse(codes.get(0).get("code")));
             return new PayNym(code, (String)nymMap.get("nymID"), (String)nymMap.get("nymName"), (Boolean)nymMap.get("segwit"));
         });
     }
