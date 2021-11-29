@@ -989,6 +989,10 @@ public class AppController implements Initializable {
                 whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
                 Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
                 soroban.setHDWallet(copy);
+            } else if(Config.get().isUsePayNym() && SorobanServices.canWalletMix(wallet)) {
+                String walletId = storage.getWalletId(wallet);
+                Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+                soroban.setPaymentCode(copy);
             }
 
             StandardAccount standardAccount = wallet.getStandardAccountType();
@@ -1236,7 +1240,7 @@ public class AppController implements Initializable {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
-                        Storage storage = AppServices.get().getOpenWallets().get(wallet);
+                        Storage storage = selectedWalletForm.getStorage();
                         Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                         keyDerivationService.setOnSucceeded(workerStateEvent -> {
                             EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));

@@ -6,7 +6,6 @@ import com.samourai.soroban.client.cahoots.SorobanCahootsService;
 import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.samourai.wallet.cahoots.Cahoots;
 import com.samourai.wallet.cahoots.CahootsType;
-import com.samourai.wallet.cahoots.stonewallx2.STONEWALLx2;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
@@ -17,34 +16,44 @@ import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.PayNymAvatar;
 import com.sparrowwallet.sparrow.control.ProgressTimer;
 import com.sparrowwallet.sparrow.control.TransactionDiagram;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
+import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.validation.ValidationResult;
+import org.controlsfx.validation.ValidationSupport;
+import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
 
 public class InitiatorController extends SorobanController {
     private static final Logger log = LoggerFactory.getLogger(InitiatorController.class);
+
+    private static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
+    private static final PayNym FIND_FOLLOWERS = new PayNym(null, null, "Retrieve PayNyms...", false);
 
     private String walletId;
     private Wallet wallet;
@@ -60,7 +69,13 @@ public class InitiatorController extends SorobanController {
     private VBox step3;
 
     @FXML
+    private ComboBox<PayNym> payNymFollowers;
+
+    @FXML
     private TextField counterparty;
+
+    @FXML
+    private PayNymAvatar payNymAvatar;
 
     @FXML
     private ProgressTimer step2Timer;
@@ -85,6 +100,8 @@ public class InitiatorController extends SorobanController {
 
     @FXML
     private TransactionDiagram transactionDiagram;
+
+    private final ObjectProperty<PaymentCode> counterpartyPaymentCode = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<Step> stepProperty = new SimpleObjectProperty<>(Step.SETUP);
 
@@ -129,6 +146,99 @@ public class InitiatorController extends SorobanController {
                 step2Timer.start();
             }
         });
+
+        payNymAvatar.managedProperty().bind(payNymAvatar.visibleProperty());
+        payNymAvatar.prefWidthProperty().bind(counterparty.heightProperty());
+        payNymAvatar.prefHeightProperty().bind(counterparty.heightProperty());
+        payNymFollowers.prefWidthProperty().bind(counterparty.widthProperty());
+        payNymFollowers.valueProperty().addListener((observable, oldValue, payNym) -> {
+            if(payNym == FIND_FOLLOWERS) {
+                Config.get().setUsePayNym(true);
+                setPayNymFollowers();
+            } else if(payNym != null) {
+                counterparty.setText(payNym.nymName());
+                payNymAvatar.setPaymentCode(payNym.paymentCode());
+            }
+        });
+        payNymFollowers.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(PayNym payNym) {
+                return payNym == null ? "" : payNym.nymName();
+            }
+
+            @Override
+            public PayNym fromString(String string) {
+                return null;
+            }
+        });
+
+        UnaryOperator<TextFormatter.Change> paymentCodeFilter = change -> {
+            String input = change.getControlNewText();
+            if(input.startsWith("P") && !input.contains("...")) {
+                try {
+                    PaymentCode paymentCode = new PaymentCode(input);
+                    if(paymentCode.isValid()) {
+                        counterpartyPaymentCode.set(paymentCode);
+                        payNymAvatar.setPaymentCode(paymentCode);
+
+                        TextInputControl control = (TextInputControl)change.getControl();
+                        change.setText(input.substring(0, 12) + "..." + input.substring(input.length() - 5));
+                        change.setRange(0, control.getLength());
+                        change.setAnchor(change.getText().length());
+                        change.setCaretPosition(change.getText().length());
+                    }
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+
+            return change;
+        };
+        counterparty.setTextFormatter(new TextFormatter<>(paymentCodeFilter));
+
+        counterparty.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                if(newValue.startsWith("P") && newValue.contains("...") && newValue.length() == 20 && counterpartyPaymentCode.get() != null) {
+                    //Assumed valid payment code
+                } else if(Config.get().isUsePayNym() && PAYNYM_REGEX.matcher(newValue).matches()) {
+                    Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+                    soroban.getPayNym(newValue).subscribe(payNym -> {
+                        counterpartyPaymentCode.set(payNym.paymentCode());
+                        payNymAvatar.setPaymentCode(payNym.paymentCode());
+                    }, error -> {
+                        //ignore, probably doesn't exist but will try again on meeting request
+                    });
+                } else {
+                    counterpartyPaymentCode.set(null);
+                    payNymAvatar.getChildren().clear();
+                }
+            }
+        });
+
+        if(Config.get().isUsePayNym()) {
+            setPayNymFollowers();
+        } else {
+            List<PayNym> defaultList = new ArrayList<>();
+            defaultList.add(FIND_FOLLOWERS);
+            payNymFollowers.setItems(FXCollections.observableList(defaultList));
+        }
+
+        ValidationSupport validationSupport = new ValidationSupport();
+        Platform.runLater(() -> {
+            validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+            validationSupport.registerValidator(counterparty, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Invalid counterparty", !isValidCounterparty()));
+        });
+    }
+
+    private void setPayNymFollowers() {
+        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+        if(soroban.getPaymentCode() != null) {
+            soroban.getFollowers().subscribe(followerPayNyms -> {
+                payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
+            }, error -> {
+                log.warn("Could not retrieve followers: ", error);
+            });
+        }
     }
 
     private void startInitiatorMeetingRequest() {
@@ -184,45 +294,58 @@ public class InitiatorController extends SorobanController {
 
     private void startInitiatorMeetingRequest(Soroban soroban, Wallet wallet) {
         SparrowCahootsWallet initiatorCahootsWallet = soroban.getCahootsWallet(wallet, (long)walletTransaction.getFeeRate());
-        PaymentCode paymentCodeCounterparty = new PaymentCode(counterparty.getText());
 
-        try {
-            SorobanCahootsService sorobanMeetingService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
-            sorobanMeetingService.sendMeetingRequest(paymentCodeCounterparty, CahootsType.STONEWALLX2)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(JavaFxScheduler.platform())
-                    .subscribe(meetingRequest -> {
-                        sorobanProgressLabel.setText("Waiting for mixing partner...");
-                        sorobanMeetingService.receiveMeetingResponse(paymentCodeCounterparty, meetingRequest, TIMEOUT_MS)
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(JavaFxScheduler.platform())
-                                .subscribe(sorobanResponse -> {
-                                    if(sorobanResponse.isAccept()) {
-                                        sorobanProgressBar.setProgress(0.1);
-                                        sorobanProgressLabel.setText("Mixing partner accepted!");
-                                        startInitiatorStonewall(initiatorCahootsWallet, paymentCodeCounterparty);
-                                    } else {
-                                        step2Desc.setText("Mixing partner declined.");
+        getPaymentCodeCounterparty(soroban).subscribe(paymentCodeCounterparty -> {
+            try {
+                SorobanCahootsService sorobanMeetingService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
+                sorobanMeetingService.sendMeetingRequest(paymentCodeCounterparty, CahootsType.STONEWALLX2)
+                        .subscribeOn(Schedulers.io())
+                        .observeOn(JavaFxScheduler.platform())
+                        .subscribe(meetingRequest -> {
+                            sorobanProgressLabel.setText("Waiting for mixing partner...");
+                            sorobanMeetingService.receiveMeetingResponse(paymentCodeCounterparty, meetingRequest, TIMEOUT_MS)
+                                    .subscribeOn(Schedulers.io())
+                                    .observeOn(JavaFxScheduler.platform())
+                                    .subscribe(sorobanResponse -> {
+                                        if(sorobanResponse.isAccept()) {
+                                            sorobanProgressBar.setProgress(0.1);
+                                            sorobanProgressLabel.setText("Mixing partner accepted!");
+                                            startInitiatorCollaborative(initiatorCahootsWallet, paymentCodeCounterparty);
+                                        } else {
+                                            step2Desc.setText("Mixing partner declined.");
+                                            sorobanProgressLabel.setVisible(false);
+                                        }
+                                    }, error -> {
+                                        log.error("Error receiving meeting response", error);
+                                        String cutFrom = "Exception: ";
+                                        int index = error.getMessage().lastIndexOf(cutFrom);
+                                        String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
+                                        msg = msg.replace("#Cahoots", "mix transaction");
+                                        step2Desc.setText(msg);
                                         sorobanProgressLabel.setVisible(false);
-                                    }
-                                }, error -> {
-                                    log.error("Error receiving meeting response", error);
-                                    String cutFrom = "Exception: ";
-                                    int index = error.getMessage().lastIndexOf(cutFrom);
-                                    step2Desc.setText(index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length()));
-                                    sorobanProgressLabel.setVisible(false);
-                                });
-                    }, error -> {
-                        log.error("Error sending meeting request", error);
-                        step2Desc.setText(error.getMessage());
-                        sorobanProgressLabel.setVisible(false);
-                    });
-        } catch(Exception e) {
-            log.error("Error sending meeting request", e);
-        }
+                                    });
+                        }, error -> {
+                            log.error("Error sending meeting request", error);
+                            step2Desc.setText(error.getMessage());
+                            sorobanProgressLabel.setVisible(false);
+                        });
+            } catch(Exception e) {
+                log.error("Error sending meeting request", e);
+            }
+        }, error -> {
+            log.error("Could not retrieve payment code", error);
+            if(error.getMessage().endsWith("404")) {
+                step2Desc.setText("PayNym not found");
+            } else if(error.getMessage().endsWith("400")) {
+                step2Desc.setText("Could not retrieve PayNym");
+            } else {
+                step2Desc.setText(error.getMessage());
+            }
+            sorobanProgressLabel.setVisible(false);
+        });
     }
 
-    private void startInitiatorStonewall(SparrowCahootsWallet initiatorCahootsWallet, PaymentCode paymentCodeCounterparty) {
+    private void startInitiatorCollaborative(SparrowCahootsWallet initiatorCahootsWallet, PaymentCode paymentCodeCounterparty) {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
 
         Payment payment = walletTransaction.getPayments().get(0);
@@ -255,9 +378,9 @@ public class InitiatorController extends SorobanController {
                                     Cahoots cahoots = cahootsMessage.getCahoots();
                                     sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
 
-                                    if(cahoots.getStep() >= 3 && cahoots instanceof STONEWALLx2 stonewallx2) {
+                                    if(cahoots.getStep() >= 3) {
                                         try {
-                                            Transaction transaction = getTransaction(stonewallx2);
+                                            Transaction transaction = getTransaction(cahoots);
                                             if(transaction != null) {
                                                 transactionProperty.set(transaction);
                                                 if(cahoots.getStep() == 3) {
@@ -273,7 +396,7 @@ public class InitiatorController extends SorobanController {
                                                 }
                                             }
                                         } catch(PSBTParseException e) {
-                                            log.error("Invalid Stonewallx2 PSBT created", e);
+                                            log.error("Invalid collaborative PSBT created", e);
                                             step2Desc.setText("Invalid transaction created.");
                                             sorobanProgressLabel.setVisible(false);
                                         }
@@ -307,12 +430,36 @@ public class InitiatorController extends SorobanController {
         }
     }
 
+    private Observable<PaymentCode> getPaymentCodeCounterparty(Soroban soroban) {
+        if(counterpartyPaymentCode.get() != null) {
+            return Observable.just(counterpartyPaymentCode.get());
+        } else {
+            return soroban.getPayNym(counterparty.getText()).map(PayNym::paymentCode);
+        }
+    }
+
+    private boolean isValidCounterparty() {
+        if(counterpartyPaymentCode.get() != null) {
+            return true;
+        }
+
+        if(counterparty.getText().startsWith("P") && counterparty.getText().contains("...") && counterparty.getText().length() == 20) {
+            return true;
+        }
+
+        return PAYNYM_REGEX.matcher(counterparty.getText()).matches();
+    }
+
     public void accept() {
         transactionAccepted.set(Boolean.TRUE);
     }
 
     public void cancel() {
         transactionAccepted.set(Boolean.FALSE);
+    }
+
+    public ObjectProperty<PaymentCode> counterpartyPaymentCodeProperty() {
+        return counterpartyPaymentCode;
     }
 
     public ObjectProperty<Step> stepProperty() {

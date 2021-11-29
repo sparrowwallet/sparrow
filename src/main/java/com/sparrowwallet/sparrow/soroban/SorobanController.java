@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.soroban;
 
-import com.samourai.wallet.cahoots.stonewallx2.STONEWALLx2;
+import com.samourai.wallet.cahoots.Cahoots;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
@@ -21,9 +21,9 @@ import java.util.stream.Collectors;
 public class SorobanController {
     private static final Logger log = LoggerFactory.getLogger(SorobanController.class);
 
-    protected Transaction getTransaction(STONEWALLx2 stonewallx2) throws PSBTParseException {
-        if(stonewallx2.getPSBT() != null) {
-            PSBT psbt = new PSBT(stonewallx2.getPSBT().toBytes());
+    protected Transaction getTransaction(Cahoots cahoots) throws PSBTParseException {
+        if(cahoots.getPSBT() != null) {
+            PSBT psbt = new PSBT(cahoots.getPSBT().toBytes());
             return psbt.getTransaction();
         }
 

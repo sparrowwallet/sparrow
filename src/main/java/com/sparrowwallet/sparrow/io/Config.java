@@ -58,6 +58,7 @@ public class Config {
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
+    private boolean usePayNym;
     private Double appWidth;
     private Double appHeight;
 
@@ -498,6 +499,15 @@ public class Config {
 
     public void setProxyServer(String proxyServer) {
         this.proxyServer = proxyServer;
+        flush();
+    }
+
+    public boolean isUsePayNym() {
+        return usePayNym;
+    }
+
+    public void setUsePayNym(boolean usePayNym) {
+        this.usePayNym = usePayNym;
         flush();
     }
 

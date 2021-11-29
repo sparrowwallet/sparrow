@@ -48,12 +48,17 @@ public class InitiatorDialog extends Dialog<Transaction> {
             Button nextButton = (Button)dialogPane.lookupButton(nextButtonType);
             Button cancelButton = (Button)dialogPane.lookupButton(cancelButtonType);
             Button broadcastButton = (Button)dialogPane.lookupButton(broadcastButtonType);
+            nextButton.setDisable(true);
             broadcastButton.setDisable(true);
 
             nextButton.managedProperty().bind(nextButton.visibleProperty());
             broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
 
             broadcastButton.visibleProperty().bind(nextButton.visibleProperty().not());
+
+            initiatorController.counterpartyPaymentCodeProperty().addListener((observable, oldValue, paymentCode) -> {
+                nextButton.setDisable(paymentCode == null);
+            });
 
             initiatorController.stepProperty().addListener((observable, oldValue, step) -> {
                 if(step == InitiatorController.Step.SETUP) {
