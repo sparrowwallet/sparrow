@@ -16,10 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SorobanController {
     private static final Logger log = LoggerFactory.getLogger(SorobanController.class);
+    protected static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
 
     protected Transaction getTransaction(Cahoots cahoots) throws PSBTParseException {
         if(cahoots.getPSBT() != null) {

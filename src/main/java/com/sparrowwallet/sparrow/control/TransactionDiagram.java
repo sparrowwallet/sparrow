@@ -564,7 +564,7 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getTransactionPane() {
         VBox txPane = new VBox();
-        txPane.setPadding(new Insets(0, 8, 0, 8));
+        txPane.setPadding(new Insets(0, 5, 0, 5));
         txPane.setAlignment(Pos.CENTER);
         txPane.getChildren().add(createSpacer());
 

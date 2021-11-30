@@ -9,6 +9,7 @@ import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
 import java8.util.Optional;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,16 +125,18 @@ public class PayNymService {
         return fetchPayNym(nymIdentifier).map(nymMap -> {
             List<Map<String, Object>> codes = (List<Map<String, Object>>)nymMap.get("codes");
             PaymentCode code = new PaymentCode((String)codes.stream().filter(codeMap -> codeMap.get("segwit") == Boolean.FALSE).map(codeMap -> codeMap.get("code")).findFirst().orElse(codes.get(0).get("code")));
-            return new PayNym(code, (String)nymMap.get("nymID"), (String)nymMap.get("nymName"), (Boolean)nymMap.get("segwit"));
-        });
-    }
 
-    public Observable<List<PayNym>> getFollowers(String nymIdentifier) {
-        return fetchPayNym(nymIdentifier).flatMap(nymMap -> {
-            List<Map<String, Object>> followers = (List<Map<String, Object>>)nymMap.get("following");
-            return Observable.fromArray(followers.stream().map(followerMap -> {
-                return new PayNym(new PaymentCode((String)followerMap.get("code")), (String)followerMap.get("nymId"), (String)followerMap.get("nymName"), (Boolean)followerMap.get("segwit"));
-            }).collect(Collectors.toList()));
+            List<Map<String, Object>> followingMaps = (List<Map<String, Object>>)nymMap.get("following");
+            List<PayNym> following = followingMaps.stream().map(followingMap -> {
+                return new PayNym(new PaymentCode((String)followingMap.get("code")), (String)followingMap.get("nymId"), (String)followingMap.get("nymName"), (Boolean)followingMap.get("segwit"), Collections.emptyList(), Collections.emptyList());
+            }).collect(Collectors.toList());
+
+            List<Map<String, Object>> followersMaps = (List<Map<String, Object>>)nymMap.get("followers");
+            List<PayNym> followers = followersMaps.stream().map(followerMap -> {
+                return new PayNym(new PaymentCode((String)followerMap.get("code")), (String)followerMap.get("nymId"), (String)followerMap.get("nymName"), (Boolean)followerMap.get("segwit"), Collections.emptyList(), Collections.emptyList());
+            }).collect(Collectors.toList());
+
+            return new PayNym(code, (String)nymMap.get("nymID"), (String)nymMap.get("nymName"), (Boolean)nymMap.get("segwit"), following, followers);
         });
     }
 }

@@ -171,8 +171,8 @@ public class Soroban {
         return payNymService.getPayNym(nymIdentifier);
     }
 
-    public Observable<List<PayNym>> getFollowers() {
-        return payNymService.getFollowers(paymentCode.toString());
+    public Observable<List<PayNym>> getFollowing() {
+        return payNymService.getPayNym(paymentCode.toString()).map(PayNym::following);
     }
 
     public Observable<String> getAuthToken(Map<String, Object> map) {

@@ -17,29 +17,50 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.net.Proxy;
 import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PayNymAvatar extends StackPane {
     private static final Logger log = LoggerFactory.getLogger(PayNymAvatar.class);
 
     private final ObjectProperty<PaymentCode> paymentCodeProperty = new SimpleObjectProperty<>(null);
 
+    private static final Map<String, Image> paymentCodeCache = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, Object> paymentCodeLoading = Collections.synchronizedMap(new HashMap<>());
+
     public PayNymAvatar() {
         super();
 
-        paymentCodeProperty.addListener((observable, oldValue, newValue) -> {
-            if(Config.get().isUsePayNym()) {
-                PayNymAvatarService payNymAvatarService = new PayNymAvatarService(newValue);
-                payNymAvatarService.setOnRunning(runningEvent -> {
-                    getChildren().clear();
-                });
-                payNymAvatarService.setOnSucceeded(successEvent -> {
-                    Circle circle = new Circle(getWidth() / 2,getHeight() / 2,getWidth() / 2);
-                    circle.setFill(new ImagePattern(payNymAvatarService.getValue()));
-                    getChildren().add(circle);
-                });
-                payNymAvatarService.start();
+        paymentCodeProperty.addListener((observable, oldValue, paymentCode) -> {
+            if(paymentCode == null) {
+                getChildren().clear();
+            } else if(Config.get().isUsePayNym() && (oldValue == null || !oldValue.toString().equals(paymentCode.toString()))) {
+                String cacheId = getCacheId(paymentCode, getPrefWidth());
+                if(paymentCodeCache.containsKey(cacheId)) {
+                    setImage(paymentCodeCache.get(cacheId));
+                } else {
+                    PayNymAvatarService payNymAvatarService = new PayNymAvatarService(paymentCode, getPrefWidth());
+                    payNymAvatarService.setOnRunning(runningEvent -> {
+                        getChildren().clear();
+                    });
+                    payNymAvatarService.setOnSucceeded(successEvent -> {
+                        setImage(payNymAvatarService.getValue());
+                    });
+                    payNymAvatarService.setOnFailed(failedEvent -> {
+                        log.error("Error", failedEvent.getSource().getException());
+                    });
+                    payNymAvatarService.start();
+                }
             }
         });
+    }
+
+    private void setImage(Image image) {
+        getChildren().clear();
+        Circle circle = new Circle(getPrefWidth() / 2,getPrefHeight() / 2,getPrefWidth() / 2);
+        circle.setFill(new ImagePattern(image));
+        getChildren().add(circle);
     }
 
     public PaymentCode getPaymentCode() {
@@ -54,11 +75,17 @@ public class PayNymAvatar extends StackPane {
         this.paymentCodeProperty.set(paymentCode);
     }
 
-    private class PayNymAvatarService extends Service<Image> {
-        private final PaymentCode paymentCode;
+    private static String getCacheId(PaymentCode paymentCode, double width) {
+        return paymentCode.toString();
+    }
 
-        public PayNymAvatarService(PaymentCode paymentCode) {
+    private static class PayNymAvatarService extends Service<Image> {
+        private final PaymentCode paymentCode;
+        private final double width;
+
+        public PayNymAvatarService(PaymentCode paymentCode, double width) {
             this.paymentCode = paymentCode;
+            this.width = width;
         }
 
         @Override
@@ -67,14 +94,34 @@ public class PayNymAvatar extends StackPane {
                 @Override
                 protected Image call() throws Exception {
                     String paymentCodeStr = paymentCode.toString();
-                    String url = "https://paynym.is/" + paymentCodeStr + "/avatar";
-                    Proxy proxy = AppServices.getProxy();
+                    String cacheId = getCacheId(paymentCode, width);
 
-                    try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
-                        return new Image(is, getWidth(), getHeight(), true, false);
-                    } catch(Exception e) {
-                        log.debug("Error loading PayNym avatar", e);
-                        throw e;
+                    Object lock = paymentCodeLoading.get(cacheId);
+                    if(lock != null) {
+                        synchronized(lock) {
+                            if(paymentCodeCache.containsKey(cacheId)) {
+                                return paymentCodeCache.get(cacheId);
+                            }
+                        }
+                    } else {
+                        lock = new Object();
+                        paymentCodeLoading.put(cacheId, lock);
+                    }
+
+                    synchronized(lock) {
+                        String url = "https://paynym.is/" + paymentCodeStr + "/avatar";
+                        Proxy proxy = AppServices.getProxy();
+
+                        try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
+                            Image image = new Image(is, 150, 150, true, false);
+                            paymentCodeCache.put(cacheId, image);
+                            return image;
+                        } catch(Exception e) {
+                            log.debug("Error loading PayNym avatar", e);
+                            throw e;
+                        } finally {
+                            lock.notifyAll();
+                        }
                     }
                 }
             };

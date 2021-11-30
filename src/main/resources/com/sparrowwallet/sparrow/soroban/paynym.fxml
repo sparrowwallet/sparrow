@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.PayNymAvatar?>
+<?import com.sparrowwallet.sparrow.control.CopyableTextField?>
+<?import com.sparrowwallet.sparrow.control.PaymentCodeTextField?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
+<StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@paynym.css, @../general.css" styleClass="paynym-pane" fx:controller="com.sparrowwallet.sparrow.soroban.PayNymController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+    <VBox spacing="10">
+        <HBox styleClass="title-area">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="PayNym" styleClass="title-label" />
+            </HBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ImageView AnchorPane.rightAnchor="0">
+                <Image url="/image/paynym.png" requestedWidth="50" requestedHeight="50" smooth="false" />
+            </ImageView>
+        </HBox>
+        <BorderPane>
+            <padding>
+                <Insets top="20" left="25" right="100" />
+            </padding>
+            <center>
+                <VBox spacing="15">
+                    <HBox styleClass="field-box">
+                        <Label text="PayNym:" styleClass="field-label" />
+                        <CopyableTextField fx:id="payNymName" promptText="Retrieving..." styleClass="field-control" editable="false"/>
+                    </HBox>
+                    <HBox styleClass="field-box">
+                        <Label text="Payment code:" styleClass="field-label" />
+                        <HBox spacing="10">
+                            <PaymentCodeTextField fx:id="paymentCode" styleClass="field-control" editable="false"/>
+                            <Button onAction="#showQR">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="QRCODE" />
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Show as QR code" />
+                                </tooltip>
+                            </Button>
+                        </HBox>
+                    </HBox>
+                    <HBox styleClass="field-box">
+                        <padding>
+                            <Insets top="35" />
+                        </padding>
+                        <Label text="Find:" styleClass="field-label" />
+                        <HBox spacing="10">
+                            <CopyableTextField fx:id="searchPayNyms" promptText="PayNym or Payment code" styleClass="field-control"/>
+                            <Button onAction="#scanQR">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Scan payment code" />
+                                </tooltip>
+                            </Button>
+                            <ProgressIndicator fx:id="findPayNym" />
+                        </HBox>
+                    </HBox>
+                </VBox>
+            </center>
+            <right>
+                <PayNymAvatar fx:id="payNymAvatar" prefHeight="150" prefWidth="150" />
+            </right>
+        </BorderPane>
+        <GridPane hgap="15">
+            <padding>
+                <Insets right="25" left="25" />
+            </padding>
+            <columnConstraints>
+                <ColumnConstraints percentWidth="50.0" />
+                <ColumnConstraints percentWidth="50.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints percentHeight="100" />
+            </rowConstraints>
+            <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <top>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label styleClass="listview-label" text="Following"/>
+                    </HBox>
+                </top>
+                <center>
+                    <ListView fx:id="followingList" prefHeight="220" />
+                </center>
+            </BorderPane>
+            <BorderPane GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <top>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label styleClass="listview-label" text="Followers"/>
+                    </HBox>
+                </top>
+                <center>
+                    <ListView fx:id="followersList" prefHeight="220" />
+                </center>
+            </BorderPane>
+        </GridPane>
+    </VBox>
+</StackPane>

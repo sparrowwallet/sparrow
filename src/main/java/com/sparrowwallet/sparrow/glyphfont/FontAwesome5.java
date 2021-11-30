@@ -56,6 +56,7 @@ public class FontAwesome5 extends GlyphFont {
         QUESTION_CIRCLE('\uf059'),
         RANDOM('\uf074'),
         REPLY_ALL('\uf122'),
+        ROBOT('\uf544'),
         SATELLITE_DISH('\uf7c0'),
         SD_CARD('\uf7c2'),
         SEARCH('\uf002'),

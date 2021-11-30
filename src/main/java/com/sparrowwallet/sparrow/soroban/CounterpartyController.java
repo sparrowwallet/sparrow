@@ -56,6 +56,9 @@ public class CounterpartyController extends SorobanController {
     private CopyableTextField payNym;
 
     @FXML
+    private Button showPayNym;
+
+    @FXML
     private PayNymAvatar payNymAvatar;
 
     @FXML
@@ -157,6 +160,8 @@ public class CounterpartyController extends SorobanController {
         }
 
         payNym.managedProperty().bind(payNym.visibleProperty());
+        showPayNym.managedProperty().bind(showPayNym.visibleProperty());
+        showPayNym.visibleProperty().bind(payNym.visibleProperty());
         payNymAvatar.managedProperty().bind(payNymAvatar.visibleProperty());
         payNymAvatar.visibleProperty().bind(payNym.visibleProperty());
         payNymButton.managedProperty().bind(payNymButton.visibleProperty());
@@ -169,6 +174,7 @@ public class CounterpartyController extends SorobanController {
 
         paymentCode.setPaymentCode(soroban.getPaymentCode());
         paymentCodeQR.prefHeightProperty().bind(paymentCode.heightProperty());
+        paymentCodeQR.prefWidthProperty().bind(showPayNym.widthProperty());
 
         mixingPartner.managedProperty().bind(mixingPartner.visibleProperty());
         meetingFail.managedProperty().bind(meetingFail.visibleProperty());
@@ -386,6 +392,11 @@ public class CounterpartyController extends SorobanController {
             log.error("Error retrieving PayNym", error);
             AppServices.showErrorDialog("Error retrieving PayNym", error.getMessage());
         });
+    }
+
+    public void showPayNym(ActionEvent event) {
+        PayNymDialog payNymDialog = new PayNymDialog(walletId, false);
+        payNymDialog.showAndWait();
     }
 
     public void showPayNymQR(ActionEvent event) {

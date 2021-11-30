@@ -34,25 +34,36 @@
                     </graphic>
                 </Label>
                 <Label text="Add a mix partner to your two person coinjoin transaction using the Samourai Soroban service. Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mix Partner." wrapText="true" styleClass="content-text" />
-                <HBox>
+                <BorderPane>
                     <padding>
-                        <Insets top="20" />
+                        <Insets top="20" right="70" />
                     </padding>
-                    <VBox spacing="15">
-                        <HBox styleClass="field-box">
-                            <Label text="Payment code or PayNym:" styleClass="field-label" />
-                            <HBox spacing="10">
-                                <StackPane>
-                                    <ComboBox fx:id="payNymFollowers" />
-                                    <ComboBoxTextField fx:id="counterparty" styleClass="field-control" comboProperty="$payNymFollowers" />
-                                </StackPane>
+                    <center>
+                        <VBox spacing="15">
+                            <HBox styleClass="field-box">
+                                <Label text="Payment code or PayNym:" styleClass="field-label" />
+                                <HBox>
+                                    <StackPane>
+                                        <ComboBox fx:id="payNymFollowers" />
+                                        <ComboBoxTextField fx:id="counterparty" styleClass="field-control" comboProperty="$payNymFollowers" />
+                                    </StackPane>
+                                    <ProgressIndicator fx:id="payNymLoading" />
+                                </HBox>
                             </HBox>
-                        </HBox>
-                    </VBox>
-                    <AnchorPane>
-                        <PayNymAvatar fx:id="payNymAvatar" AnchorPane.leftAnchor="80" prefWidth="150" prefHeight="150"/>
-                    </AnchorPane>
-                </HBox>
+                            <HBox styleClass="field-box">
+                                <Label styleClass="field-label" />
+                                <Button fx:id="findPayNym" text="Find PayNym" graphicTextGap="10" onAction="#findPayNym">
+                                    <graphic>
+                                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="ROBOT" />
+                                    </graphic>
+                                </Button>
+                            </HBox>
+                        </VBox>
+                    </center>
+                    <right>
+                        <PayNymAvatar fx:id="payNymAvatar" prefWidth="150" prefHeight="150"/>
+                    </right>
+                </BorderPane>
             </VBox>
             <VBox fx:id="step2" spacing="15">
                 <HBox>
@@ -89,7 +100,7 @@
                 <Label fx:id="step3Desc" text="Review the transaction and broadcast when ready." wrapText="true" styleClass="content-text" />
                 <HBox>
                     <padding>
-                        <Insets top="20" />
+                        <Insets top="20" left="10" />
                     </padding>
                     <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
                 </HBox>

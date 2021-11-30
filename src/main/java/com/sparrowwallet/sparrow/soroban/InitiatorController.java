@@ -30,7 +30,10 @@ import io.reactivex.schedulers.Schedulers;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -44,7 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
@@ -52,8 +54,7 @@ import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
 public class InitiatorController extends SorobanController {
     private static final Logger log = LoggerFactory.getLogger(InitiatorController.class);
 
-    private static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
-    private static final PayNym FIND_FOLLOWERS = new PayNym(null, null, "Retrieve PayNyms...", false);
+    private static final PayNym FIND_FOLLOWERS = new PayNym(null, null, "Retrieve PayNyms...", false, Collections.emptyList(), Collections.emptyList());
 
     private String walletId;
     private Wallet wallet;
@@ -73,6 +74,12 @@ public class InitiatorController extends SorobanController {
 
     @FXML
     private TextField counterparty;
+
+    @FXML
+    private ProgressIndicator payNymLoading;
+
+    @FXML
+    private Button findPayNym;
 
     @FXML
     private PayNymAvatar payNymAvatar;
@@ -100,6 +107,8 @@ public class InitiatorController extends SorobanController {
 
     @FXML
     private TransactionDiagram transactionDiagram;
+
+    private final StringProperty counterpartyPayNymName = new SimpleStringProperty();
 
     private final ObjectProperty<PaymentCode> counterpartyPaymentCode = new SimpleObjectProperty<>(null);
 
@@ -147,6 +156,13 @@ public class InitiatorController extends SorobanController {
             }
         });
 
+        payNymLoading.managedProperty().bind(payNymLoading.visibleProperty());
+        payNymLoading.maxHeightProperty().bind(counterparty.heightProperty());
+        payNymLoading.setVisible(false);
+
+        findPayNym.managedProperty().bind(findPayNym.visibleProperty());
+        findPayNym.setVisible(Config.get().isUsePayNym());
+
         payNymAvatar.managedProperty().bind(payNymAvatar.visibleProperty());
         payNymFollowers.prefWidthProperty().bind(counterparty.widthProperty());
         payNymFollowers.valueProperty().addListener((observable, oldValue, payNym) -> {
@@ -154,8 +170,11 @@ public class InitiatorController extends SorobanController {
                 Config.get().setUsePayNym(true);
                 setPayNymFollowers();
             } else if(payNym != null) {
-                counterparty.setText(payNym.nymName());
+                counterpartyPayNymName.set(payNym.nymName());
+                counterpartyPaymentCode.set(payNym.paymentCode());
                 payNymAvatar.setPaymentCode(payNym.paymentCode());
+                counterparty.setText(payNym.nymName());
+                step1.requestFocus();
             }
         });
         payNymFollowers.setConverter(new StringConverter<>() {
@@ -177,7 +196,9 @@ public class InitiatorController extends SorobanController {
                     PaymentCode paymentCode = new PaymentCode(input);
                     if(paymentCode.isValid()) {
                         counterpartyPaymentCode.set(paymentCode);
-                        payNymAvatar.setPaymentCode(paymentCode);
+                        if(payNymAvatar.getPaymentCode() == null || !input.equals(payNymAvatar.getPaymentCode().toString())) {
+                            payNymAvatar.setPaymentCode(paymentCode);
+                        }
 
                         TextInputControl control = (TextInputControl)change.getControl();
                         change.setText(input.substring(0, 12) + "..." + input.substring(input.length() - 5));
@@ -199,16 +220,23 @@ public class InitiatorController extends SorobanController {
                 if(newValue.startsWith("P") && newValue.contains("...") && newValue.length() == 20 && counterpartyPaymentCode.get() != null) {
                     //Assumed valid payment code
                 } else if(Config.get().isUsePayNym() && PAYNYM_REGEX.matcher(newValue).matches()) {
-                    Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-                    soroban.getPayNym(newValue).subscribe(payNym -> {
-                        counterpartyPaymentCode.set(payNym.paymentCode());
-                        payNymAvatar.setPaymentCode(payNym.paymentCode());
-                    }, error -> {
-                        //ignore, probably doesn't exist but will try again on meeting request
-                    });
+                    if(!newValue.equals(counterpartyPayNymName.get())) {
+                        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+                        payNymLoading.setVisible(true);
+                        soroban.getPayNym(newValue).subscribe(payNym -> {
+                            payNymLoading.setVisible(false);
+                            counterpartyPayNymName.set(payNym.nymName());
+                            counterpartyPaymentCode.set(payNym.paymentCode());
+                            payNymAvatar.setPaymentCode(payNym.paymentCode());
+                        }, error -> {
+                            payNymLoading.setVisible(false);
+                            //ignore, probably doesn't exist but will try again on meeting request
+                        });
+                    }
                 } else {
+                    counterpartyPayNymName.set(null);
                     counterpartyPaymentCode.set(null);
-                    payNymAvatar.getChildren().clear();
+                    payNymAvatar.setPaymentCode(null);
                 }
             }
         });
@@ -231,7 +259,8 @@ public class InitiatorController extends SorobanController {
     private void setPayNymFollowers() {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         if(soroban.getPaymentCode() != null) {
-            soroban.getFollowers().subscribe(followerPayNyms -> {
+            soroban.getFollowing().subscribe(followerPayNyms -> {
+                findPayNym.setVisible(true);
                 payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
             }, error -> {
                 if(error.getMessage().endsWith("404")) {
@@ -352,7 +381,7 @@ public class InitiatorController extends SorobanController {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
 
         Payment payment = walletTransaction.getPayments().get(0);
-        Map<BlockTransactionHashIndex, WalletNode> firstSetUtxos = walletTransaction.getSelectedUtxoSets().get(0);
+        Map<BlockTransactionHashIndex, WalletNode> firstSetUtxos = walletTransaction.isCoinControlUsed() ? walletTransaction.getSelectedUtxoSets().get(0) : wallet.getWalletUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : firstSetUtxos.entrySet()) {
             initiatorCahootsWallet.addUtxo(wallet, entry.getValue(), wallet.getTransactions().get(entry.getKey().getHash()), (int)entry.getKey().getIndex());
         }
@@ -459,6 +488,18 @@ public class InitiatorController extends SorobanController {
 
     public void cancel() {
         transactionAccepted.set(Boolean.FALSE);
+    }
+
+    public void findPayNym(ActionEvent event) {
+        PayNymDialog payNymDialog = new PayNymDialog(walletId, true);
+        Optional<PayNym> optPayNym = payNymDialog.showAndWait();
+        optPayNym.ifPresent(payNym -> {
+            counterpartyPayNymName.set(payNym.nymName());
+            counterpartyPaymentCode.set(payNym.paymentCode());
+            payNymAvatar.setPaymentCode(payNym.paymentCode());
+            counterparty.setText(payNym.nymName());
+            step1.requestFocus();
+        });
     }
 
     public ObjectProperty<PaymentCode> counterpartyPaymentCodeProperty() {
