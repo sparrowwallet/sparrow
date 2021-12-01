@@ -120,7 +120,7 @@
     -fx-text-fill: -fx-text-background-color;
 }
 
-#transactionDiagram .coins-replace-icon {
+#transactionDiagram .coins-replace-icon, #transactionDiagram .question-icon {
     -fx-text-fill: -fx-accent;
 }
 

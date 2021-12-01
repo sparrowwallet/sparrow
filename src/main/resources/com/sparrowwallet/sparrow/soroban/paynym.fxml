@@ -33,6 +33,14 @@
                     <HBox styleClass="field-box">
                         <Label text="PayNym:" styleClass="field-label" />
                         <CopyableTextField fx:id="payNymName" promptText="Retrieving..." styleClass="field-control" editable="false"/>
+                        <Button fx:id="payNymRetrieve" text="Retrieve PayNym" graphicTextGap="8" onAction="#retrievePayNym">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="ROBOT" />
+                            </graphic>
+                            <tooltip>
+                                <Tooltip text="Retrieves and claims the PayNym for this wallet" />
+                            </tooltip>
+                        </Button>
                     </HBox>
                     <HBox styleClass="field-box">
                         <Label text="Payment code:" styleClass="field-label" />
@@ -52,7 +60,7 @@
                         <padding>
                             <Insets top="35" />
                         </padding>
-                        <Label text="Find:" styleClass="field-label" />
+                        <Label text="Find Contact:" styleClass="field-label" />
                         <HBox spacing="10">
                             <CopyableTextField fx:id="searchPayNyms" promptText="PayNym or Payment code" styleClass="field-control"/>
                             <Button onAction="#scanQR">
@@ -86,7 +94,7 @@
             <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <top>
                     <HBox alignment="CENTER_LEFT">
-                        <Label styleClass="listview-label" text="Following"/>
+                        <Label styleClass="listview-label" text="Contacts"/>
                     </HBox>
                 </top>
                 <center>

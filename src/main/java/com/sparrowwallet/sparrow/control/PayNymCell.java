@@ -1,27 +1,23 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.FollowPayNymEvent;
 import com.sparrowwallet.sparrow.soroban.PayNym;
+import com.sparrowwallet.sparrow.soroban.PayNymController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
 public class PayNymCell extends ListCell<PayNym> {
-    private final String walletId;
+    private final PayNymController payNymController;
 
-    public PayNymCell(String walletId) {
+    public PayNymCell(PayNymController payNymController) {
         super();
         setAlignment(Pos.CENTER_LEFT);
         setContentDisplay(ContentDisplay.LEFT);
         getStyleClass().add("paynym-cell");
         setPrefHeight(50);
-        this.walletId = walletId;
+        this.payNymController = payNymController;
     }
 
     @Override
@@ -50,11 +46,12 @@ public class PayNymCell extends ListCell<PayNym> {
             if(getListView().getUserData() == Boolean.TRUE) {
                 HBox hBox = new HBox();
                 hBox.setAlignment(Pos.CENTER);
-                Button button = new Button("Follow");
+                Button button = new Button("Add Contact");
                 hBox.getChildren().add(button);
                 pane.setRight(hBox);
                 button.setOnAction(event -> {
-                    EventManager.get().post(new FollowPayNymEvent(walletId, payNym.paymentCode()));
+                    button.setDisable(true);
+                    payNymController.followPayNym(payNym.paymentCode());
                 });
             }
 

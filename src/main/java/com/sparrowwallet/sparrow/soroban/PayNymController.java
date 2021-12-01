@@ -1,10 +1,20 @@
 package com.sparrowwallet.sparrow.soroban;
 
-import com.google.common.eventbus.Subscribe;
 import com.samourai.wallet.bip47.rpc.PaymentCode;
+import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptionType;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.Key;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.FollowPayNymEvent;
+import com.sparrowwallet.sparrow.event.StorageEvent;
+import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Storage;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -23,6 +33,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+
 public class PayNymController extends SorobanController {
     private static final Logger log = LoggerFactory.getLogger(PayNymController.class);
 
@@ -31,6 +43,9 @@ public class PayNymController extends SorobanController {
 
     @FXML
     private CopyableTextField payNymName;
+
+    @FXML
+    private Button payNymRetrieve;
 
     @FXML
     private PaymentCodeTextField paymentCode;
@@ -56,6 +71,15 @@ public class PayNymController extends SorobanController {
 
     public void initializeView(String walletId) {
         this.walletId = walletId;
+
+        payNymName.managedProperty().bind(payNymName.visibleProperty());
+        payNymRetrieve.managedProperty().bind(payNymRetrieve.visibleProperty());
+        payNymRetrieve.visibleProperty().bind(payNymName.visibleProperty().not());
+
+        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+        if(soroban.getPaymentCode() != null) {
+            paymentCode.setPaymentCode(soroban.getPaymentCode());
+        }
 
         findNymProperty.addListener((observable, oldValue, nymIdentifier) -> {
             if(nymIdentifier != null) {
@@ -95,7 +119,7 @@ public class PayNymController extends SorobanController {
         findPayNym.setVisible(false);
 
         followingList.setCellFactory(param -> {
-            return new PayNymCell(walletId);
+            return new PayNymCell(this);
         });
 
         followingList.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, payNym) -> {
@@ -103,13 +127,17 @@ public class PayNymController extends SorobanController {
         });
 
         followersList.setCellFactory(param -> {
-            return new PayNymCell(walletId);
+            return new PayNymCell(null);
         });
 
         followersList.setSelectionModel(new NoSelectionModel<>());
         followersList.setFocusTraversable(false);
 
-        refresh();
+        if(Config.get().isUsePayNym() && soroban.getPaymentCode() != null) {
+            refresh();
+        } else {
+            payNymName.setVisible(false);
+        }
     }
 
     private void refresh() {
@@ -124,8 +152,14 @@ public class PayNymController extends SorobanController {
             paymentCode.setPaymentCode(payNym.paymentCode());
             payNymAvatar.setPaymentCode(payNym.paymentCode());
             followingList.setUserData(null);
+            followingList.setPlaceholder(new Label("No contacts"));
             followingList.setItems(FXCollections.observableList(payNym.following()));
+            followersList.setPlaceholder(new Label("No followers"));
             followersList.setItems(FXCollections.observableList(payNym.followers()));
+        }, error -> {
+            if(error.getMessage().endsWith("404")) {
+                payNymName.setVisible(false);
+            }
         });
     }
 
@@ -180,28 +214,104 @@ public class PayNymController extends SorobanController {
         }
     }
 
+    public void retrievePayNym(ActionEvent event) {
+        Config.get().setUsePayNym(true);
+        makeAuthenticatedCall(null);
+    }
+
+    public void followPayNym(PaymentCode paymentCode) {
+        makeAuthenticatedCall(paymentCode);
+    }
+
+    private void makeAuthenticatedCall(PaymentCode contact) {
+        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+        if(soroban.getHdWallet() == null) {
+            Wallet wallet = AppServices.get().getWallet(walletId);
+            if(wallet.isEncrypted()) {
+                Wallet copy = wallet.copy();
+                WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                Optional<SecureString> password = dlg.showAndWait();
+                if(password.isPresent()) {
+                    Storage storage = AppServices.get().getOpenWallets().get(wallet);
+                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+                        ECKey encryptionFullKey = keyDerivationService.getValue();
+                        Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                        copy.decrypt(key);
+
+                        try {
+                            soroban.setHDWallet(copy);
+                            makeAuthenticatedCall(soroban, contact);
+                        } finally {
+                            key.clear();
+                            encryptionFullKey.clear();
+                            password.get().clear();
+                        }
+                    });
+                    keyDerivationService.setOnFailed(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                            Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                                Platform.runLater(() -> makeAuthenticatedCall(contact));
+                            }
+                        } else {
+                            log.error("Error deriving wallet key", keyDerivationService.getException());
+                        }
+                    });
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
+                    keyDerivationService.start();
+                }
+            } else {
+                soroban.setHDWallet(wallet);
+                makeAuthenticatedCall(soroban, contact);
+            }
+        } else {
+            makeAuthenticatedCall(soroban, contact);
+        }
+    }
+
+    private void makeAuthenticatedCall(Soroban soroban, PaymentCode contact) {
+        if(contact != null) {
+            followPayNym(soroban, contact);
+        } else {
+            retrievePayNym(soroban);
+        }
+    }
+
+    private void retrievePayNym(Soroban soroban) {
+        soroban.createPayNym().subscribe(createMap -> {
+            payNymName.setText((String)createMap.get("nymName"));
+            payNymAvatar.setPaymentCode(soroban.getPaymentCode());
+            payNymName.setVisible(true);
+
+            claimPayNym(soroban, createMap);
+            refresh();
+        }, error -> {
+            log.error("Error retrieving PayNym", error);
+            AppServices.showErrorDialog("Error retrieving PayNym", error.getMessage());
+        });
+    }
+
+    private void followPayNym(Soroban soroban, PaymentCode contact) {
+        soroban.getAuthToken(new HashMap<>()).subscribe(authToken -> {
+            String signature = soroban.getSignature(authToken);
+            soroban.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
+                refresh();
+            }, error -> {
+                log.error("Could not follow payment code", error);
+                AppServices.showErrorDialog("Could not follow payment code", error.getMessage());
+            });
+        });
+    }
+
     public PayNym getPayNym() {
         return payNymProperty.get();
     }
 
     public ObjectProperty<PayNym> payNymProperty() {
         return payNymProperty;
-    }
-
-    @Subscribe
-    public void followPayNym(FollowPayNymEvent event) {
-        if(event.getWalletId().equals(walletId)) {
-            Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-            soroban.getAuthToken(new HashMap<>()).subscribe(authToken -> {
-                String signature = soroban.getSignature(authToken);
-                soroban.followPaymentCode(event.getPaymentCode(), authToken, signature).subscribe(followMap -> {
-                    refresh();
-                }, error -> {
-                    log.error("Could not follow payment code", error);
-                    AppServices.showErrorDialog("Could not follow payment code", error.getMessage());
-                });
-            });
-        }
     }
 
     public static class NoSelectionModel<T> extends MultipleSelectionModel<T> {

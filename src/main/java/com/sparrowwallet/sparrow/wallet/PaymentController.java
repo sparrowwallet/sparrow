@@ -20,9 +20,15 @@ import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
+import com.sparrowwallet.sparrow.soroban.PayNym;
+import com.sparrowwallet.sparrow.soroban.PayNymAddress;
+import com.sparrowwallet.sparrow.soroban.PayNymDialog;
+import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -117,6 +123,15 @@ public class PaymentController extends WalletFormController implements Initializ
         }
     };
 
+    private final ObjectProperty<PayNym> payNymProperty = new SimpleObjectProperty<>();
+
+    private static final Wallet payNymWallet = new Wallet() {
+        @Override
+        public String getFullDisplayName() {
+            return "PayNym...";
+        }
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -140,17 +155,38 @@ public class PaymentController extends WalletFormController implements Initializ
                 return null;
             }
         });
-        openWallets.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet()).collect(Collectors.toList())));
+        updateOpenWallets();
         openWallets.prefWidthProperty().bind(address.widthProperty());
         openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null) {
+            if(newValue == payNymWallet) {
+                PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), true);
+                Optional<PayNym> optPayNym = payNymDialog.showAndWait();
+                if(optPayNym.isPresent()) {
+                    PayNym payNym = optPayNym.get();
+                    payNymProperty.set(payNym);
+                    address.setText(payNym.nymName());
+                    label.requestFocus();
+                }
+            } else if(newValue != null) {
                 WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
                 Address freshAddress = newValue.getAddress(freshNode);
                 address.setText(freshAddress.toString());
+                label.requestFocus();
+            }
+        });
+
+        payNymProperty.addListener((observable, oldValue, newValue) -> {
+            addPaymentButton.setDisable(newValue != null);
+            if(newValue != null) {
+                sendController.setPayNymPayment();
             }
         });
 
         address.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
+                payNymProperty.set(null);
+            }
+
             try {
                 BitcoinURI bitcoinURI = new BitcoinURI(newValue);
                 Platform.runLater(() -> updateFromURI(bitcoinURI));
@@ -212,6 +248,20 @@ public class PaymentController extends WalletFormController implements Initializ
         addValidation(validationSupport);
     }
 
+    private void updateOpenWallets() {
+        updateOpenWallets(AppServices.get().getOpenWallets().keySet());
+    }
+
+    private void updateOpenWallets(Collection<Wallet> wallets) {
+        List<Wallet> openWalletList = wallets.stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet()).collect(Collectors.toList());
+
+        if(sendController.getPaymentTabs().getTabs().size() <= 1 && SorobanServices.canWalletMix(sendController.getWalletForm().getWallet())) {
+            openWalletList.add(payNymWallet);
+        }
+
+        openWallets.setItems(FXCollections.observableList(openWalletList));
+    }
+
     private void addValidation(ValidationSupport validationSupport) {
         this.validationSupport = validationSupport;
 
@@ -245,7 +295,7 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
-        return Address.fromString(address.getText());
+        return payNymProperty.get() == null ? Address.fromString(address.getText()) : new PayNymAddress(payNymProperty.get());
     }
 
     private Long getRecipientValueSats() {
@@ -365,6 +415,7 @@ public class PaymentController extends WalletFormController implements Initializ
         setSendMax(false);
 
         dustAmountProperty.set(false);
+        payNymProperty.set(null);
     }
 
     public void setMaxInput(ActionEvent event) {
@@ -475,6 +526,6 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        openWallets.setItems(FXCollections.observableList(event.getWallets().stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet()).collect(Collectors.toList())));
+        updateOpenWallets(event.getWallets());
     }
 }

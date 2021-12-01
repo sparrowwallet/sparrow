@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.soroban;
 
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 
@@ -18,7 +17,6 @@ public class PayNymDialog extends Dialog<PayNym> {
             dialogPane.setContent(payNymLoader.load());
             PayNymController payNymController = payNymLoader.getController();
             payNymController.initializeView(walletId);
-            EventManager.get().register(payNymController);
 
             dialogPane.setPrefWidth(730);
             dialogPane.setPrefHeight(600);
@@ -27,7 +25,7 @@ public class PayNymDialog extends Dialog<PayNym> {
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
             dialogPane.getStylesheets().add(AppServices.class.getResource("soroban/paynym.css").toExternalForm());
 
-            final ButtonType selectButtonType = new javafx.scene.control.ButtonType("Select PayNym", ButtonBar.ButtonData.APPLY);
+            final ButtonType selectButtonType = new javafx.scene.control.ButtonType("Select Contact", ButtonBar.ButtonData.APPLY);
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             final ButtonType doneButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.OK_DONE);
 
@@ -42,10 +40,6 @@ public class PayNymDialog extends Dialog<PayNym> {
             } else {
                 dialogPane.getButtonTypes().add(doneButtonType);
             }
-
-            setOnCloseRequest(event -> {
-                EventManager.get().unregister(payNymController);
-            });
 
             setResultConverter(dialogButton -> dialogButton == selectButtonType ? payNymController.getPayNym() : null);
         } catch(IOException e) {

@@ -95,6 +95,9 @@ public class CounterpartyController extends SorobanController {
     private Label mixType;
 
     @FXML
+    private Label mixFee;
+
+    @FXML
     private ProgressTimer step3Timer;
 
     @FXML
@@ -258,7 +261,17 @@ public class CounterpartyController extends SorobanController {
             });
         }
 
-        mixType.setText(cahootsType.getLabel());
+        if(cahootsType == CahootsType.STONEWALLX2) {
+            mixType.setText("Two person coinjoin (" + cahootsType.getLabel() + ")");
+            mixFee.setText("You pay half the miner fee");
+        } else if(cahootsType == CahootsType.STOWAWAY) {
+            mixType.setText("Payjoin (" + cahootsType.getLabel() + ")");
+            mixFee.setText("None");
+        } else {
+            mixType.setText(cahootsType.getLabel());
+            mixFee.setText("None");
+        }
+
         mixDetails.setVisible(true);
         meetingReceived.set(Boolean.TRUE);
     }
@@ -365,29 +378,7 @@ public class CounterpartyController extends SorobanController {
             payNymAvatar.setPaymentCode(soroban.getPaymentCode());
             payNym.setVisible(true);
 
-            if(createMap.get("claimed") == Boolean.FALSE) {
-                soroban.getAuthToken(createMap).subscribe(authToken -> {
-                    String signature = soroban.getSignature(authToken);
-                    soroban.claimPayNym(authToken, signature).subscribe(claimMap -> {
-                        log.debug("Claimed payment code " + claimMap.get("claimed"));
-                        soroban.addSamouraiPaymentCode(authToken, signature).subscribe(addMap -> {
-                            log.debug("Added payment code " + addMap);
-                        });
-                    }, error -> {
-                        soroban.getAuthToken(new HashMap<>()).subscribe(newAuthToken -> {
-                            String newSignature = soroban.getSignature(newAuthToken);
-                            soroban.claimPayNym(newAuthToken, newSignature).subscribe(claimMap -> {
-                                log.debug("Claimed payment code " + claimMap.get("claimed"));
-                                soroban.addSamouraiPaymentCode(newAuthToken, newSignature).subscribe(addMap -> {
-                                    log.debug("Added payment code " + addMap);
-                                });
-                            });
-                        }, newError -> {
-                            log.error("Error claiming PayNym", newError);
-                        });
-                    });
-                });
-            }
+            claimPayNym(soroban, createMap);
         }, error -> {
             log.error("Error retrieving PayNym", error);
             AppServices.showErrorDialog("Error retrieving PayNym", error.getMessage());

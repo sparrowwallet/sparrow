@@ -1251,7 +1251,7 @@ public class AppController implements Initializable {
                             try {
                                 soroban.setHDWallet(copy);
                                 CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
-                                if(Network.get() == Network.TESTNET) {
+                                if(Config.get().isSameAppMixing()) {
                                     counterpartyDialog.initModality(Modality.NONE);
                                 }
                                 counterpartyDialog.showAndWait();
@@ -1278,14 +1278,14 @@ public class AppController implements Initializable {
                 } else {
                     soroban.setHDWallet(wallet);
                     CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
-                    if(Network.get() == Network.TESTNET) {
+                    if(Config.get().isSameAppMixing()) {
                         counterpartyDialog.initModality(Modality.NONE);
                     }
                     counterpartyDialog.showAndWait();
                 }
             } else {
                 CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
-                if(Network.get() == Network.TESTNET) {
+                if(Config.get().isSameAppMixing()) {
                     counterpartyDialog.initModality(Modality.NONE);
                 }
                 counterpartyDialog.showAndWait();

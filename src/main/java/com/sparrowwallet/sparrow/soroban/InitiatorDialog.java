@@ -48,7 +48,7 @@ public class InitiatorDialog extends Dialog<Transaction> {
             Button nextButton = (Button)dialogPane.lookupButton(nextButtonType);
             Button cancelButton = (Button)dialogPane.lookupButton(cancelButtonType);
             Button broadcastButton = (Button)dialogPane.lookupButton(broadcastButtonType);
-            nextButton.setDisable(true);
+            nextButton.setDisable(initiatorController.counterpartyPaymentCodeProperty().get() == null);
             broadcastButton.setDisable(true);
 
             nextButton.managedProperty().bind(nextButton.visibleProperty());

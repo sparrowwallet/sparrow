@@ -59,6 +59,7 @@ public class Config {
     private boolean useProxy;
     private String proxyServer;
     private boolean usePayNym;
+    private boolean sameAppMixing;
     private Double appWidth;
     private Double appHeight;
 
@@ -508,6 +509,15 @@ public class Config {
 
     public void setUsePayNym(boolean usePayNym) {
         this.usePayNym = usePayNym;
+        flush();
+    }
+
+    public boolean isSameAppMixing() {
+        return sameAppMixing;
+    }
+
+    public void setSameAppMixing(boolean sameAppMixing) {
+        this.sameAppMixing = sameAppMixing;
         flush();
     }
 

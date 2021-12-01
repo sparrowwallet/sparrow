@@ -28,12 +28,12 @@
         </HBox>
         <VBox fx:id="counterpartyBox" styleClass="content-area" spacing="20" prefHeight="390">
             <VBox fx:id="step1" spacing="15">
-                <Label text="Mix Preparation" styleClass="title-text">
+                <Label text="Share your PayNym or Payment code" styleClass="title-text">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
                     </graphic>
                 </Label>
-                <Label text="Perform a two person coinjoin transaction using the Samourai Soroban service. Your mix partner will start the mix, and will need either your PayNym or the Payment code shown below. Click Next once they have indicated they are ready." wrapText="true" styleClass="content-text" />
+                <Label text="Perform a collaborative transaction using the Samourai Soroban service. Your mix partner will start the mix, and will need either your PayNym or the Payment code shown below. Click Next once they have indicated they are ready." wrapText="true" styleClass="content-text" />
                 <BorderPane>
                     <padding>
                         <Insets top="20" right="70" />
@@ -97,7 +97,7 @@
                     <Region HBox.hgrow="ALWAYS" />
                     <ProgressTimer fx:id="step2Timer" seconds="60" />
                 </HBox>
-                <Label fx:id="step2Desc" text="Your mix partner will now initiate the Soroban communication. Once communication is established, check the details of the mix and click Next if you'd like to proceed." wrapText="true" styleClass="content-text" />
+                <Label fx:id="step2Desc" text="Your mix partner will now initiate the Soroban communication. Once communication is established, check the details of the mix transaction and click Next if you'd like to proceed." wrapText="true" styleClass="content-text" />
                 <BorderPane>
                     <padding>
                         <Insets top="20" right="70" />
@@ -120,7 +120,7 @@
                                 </HBox>
                                 <HBox styleClass="field-box">
                                     <Label text="Fee:" styleClass="field-label" />
-                                    <Label text="You pay half the miner fee" />
+                                    <Label fx:id="mixFee" text="You pay half the miner fee" />
                                 </HBox>
                             </VBox>
                         </VBox>

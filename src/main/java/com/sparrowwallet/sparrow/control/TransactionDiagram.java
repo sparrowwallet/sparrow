@@ -113,16 +113,18 @@ public class TransactionDiagram extends GridPane {
     }
 
     private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {
+        boolean addUserSet = getOptimizationStrategy() == OptimizationStrategy.PRIVACY && SorobanServices.canWalletMix(walletTx.getWallet())
+                && walletTx.getPayments().size() == 1
+                && (walletTx.getPayments().get(0).getAddress().getScriptType() == walletTx.getWallet().getAddress(walletTx.getWallet().getFreshNode(KeyPurpose.RECEIVE)).getScriptType());
+
         List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets = new ArrayList<>();
         for(Map<BlockTransactionHashIndex, WalletNode> selectedUtxoSet : walletTx.getSelectedUtxoSets()) {
-            displayedUtxoSets.add(getDisplayedUtxos(selectedUtxoSet, walletTx.getSelectedUtxoSets().size()));
+            displayedUtxoSets.add(getDisplayedUtxos(selectedUtxoSet, addUserSet ? 2 : walletTx.getSelectedUtxoSets().size()));
         }
 
-        if(getOptimizationStrategy() == OptimizationStrategy.PRIVACY && displayedUtxoSets.size() == 1 && SorobanServices.canWalletMix(walletTx.getWallet())
-            && walletTx.getPayments().size() == 1
-            && (walletTx.getPayments().get(0).getAddress().getScriptType() == walletTx.getWallet().getAddress(walletTx.getWallet().getFreshNode(KeyPurpose.RECEIVE)).getScriptType())) {
+        if(addUserSet && displayedUtxoSets.size() == 1) {
             Map<BlockTransactionHashIndex, WalletNode> addUserUtxoSet = new HashMap<>();
-            addUserUtxoSet.put(new AddUserBlockTransactionHashIndex(), null);
+            addUserUtxoSet.put(new AddUserBlockTransactionHashIndex(!walletTx.isTwoPersonCoinjoin()), null);
             displayedUtxoSets.add(addUserUtxoSet);
         }
 
@@ -324,8 +326,14 @@ public class TransactionDiagram extends GridPane {
                             joiner.add(getInputDescription(additionalInput));
                         }
                         tooltip.setText(joiner.toString());
-                    } else if(input instanceof InvisibleBlockTransactionHashIndex || input instanceof AddUserBlockTransactionHashIndex) {
+                    } else if(input instanceof InvisibleBlockTransactionHashIndex) {
                         tooltip.setText("");
+                    } else if(input instanceof AddUserBlockTransactionHashIndex) {
+                        tooltip.setText("");
+                        label.setGraphic(walletTx.isTwoPersonCoinjoin() ? getQuestionGlyph() : getWarningGlyph());
+                        label.setOnMouseClicked(event -> {
+                            EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
+                        });
                     } else {
                         if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
                             BlockTransaction blockTransaction = walletTx.getInputTransactions().get(input.getHash());
@@ -773,6 +781,13 @@ public class TransactionDiagram extends GridPane {
         return feeWarningGlyph;
     }
 
+    private Glyph getQuestionGlyph() {
+        Glyph feeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QUESTION_CIRCLE);
+        feeWarningGlyph.getStyleClass().add("question-icon");
+        feeWarningGlyph.setFontSize(12);
+        return feeWarningGlyph;
+    }
+
     private Glyph getLockGlyph() {
         Glyph lockGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LOCK);
         lockGlyph.getStyleClass().add("lock-icon");
@@ -891,13 +906,16 @@ public class TransactionDiagram extends GridPane {
     }
 
     private static class AddUserBlockTransactionHashIndex extends BlockTransactionHashIndex {
-        public AddUserBlockTransactionHashIndex() {
+        private final boolean required;
+
+        public AddUserBlockTransactionHashIndex(boolean required) {
             super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, 0, 0);
+            this.required = required;
         }
 
         @Override
         public String getLabel() {
-            return "Add Mix Partner?";
+            return "Add Mix Partner" + (required ? "" : "?");
         }
     }
 

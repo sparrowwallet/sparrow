@@ -20,6 +20,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.soroban.InitiatorDialog;
+import com.sparrowwallet.sparrow.soroban.PayNymAddress;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.animation.KeyFrame;
@@ -397,7 +398,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
-            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate());
+            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymPayment(walletTransaction.getPayments()));
         });
 
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -608,7 +609,8 @@ public class SendController extends WalletFormController implements Initializabl
         OptimizationStrategy optimizationStrategy = (OptimizationStrategy)optimizationToggleGroup.getSelectedToggle().getUserData();
         if(optimizationStrategy == OptimizationStrategy.PRIVACY
                 && payments.size() == 1
-                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType())) {
+                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType())
+                && !(payments.get(0).getAddress() instanceof PayNymAddress)) {
             selectors.add(new StonewallUtxoSelector(noInputsFee));
         }
 
@@ -953,6 +955,17 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    private boolean isPayNymPayment(List<Payment> payments) {
+        return payments.size() == 1 && payments.get(0).getAddress() instanceof PayNymAddress;
+    }
+
+    public void setPayNymPayment() {
+        optimizationToggleGroup.selectToggle(privacyToggle);
+        transactionDiagram.setOptimizationStrategy(OptimizationStrategy.PRIVACY);
+        efficiencyToggle.setDisable(true);
+        privacyToggle.setDisable(false);
+    }
+
     private boolean isMixPossible(List<Payment> payments) {
         return (utxoSelectorProperty.get() == null || SorobanServices.canWalletMix(walletForm.getWallet()))
                 && payments.size() == 1
@@ -960,11 +973,16 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
-        if(isMixPossible(payments)) {
+        if(isPayNymPayment(payments)) {
+            setPayNymPayment();
+        } else if(isMixPossible(payments)) {
             setPreferredOptimizationStrategy();
+            efficiencyToggle.setDisable(false);
             privacyToggle.setDisable(false);
         } else {
             optimizationToggleGroup.selectToggle(efficiencyToggle);
+            transactionDiagram.setOptimizationStrategy(OptimizationStrategy.EFFICIENCY);
+            efficiencyToggle.setDisable(false);
             privacyToggle.setDisable(true);
         }
     }
@@ -1033,6 +1051,9 @@ public class SendController extends WalletFormController implements Initializabl
 
         setInputFieldsDisabled(false);
 
+        efficiencyToggle.setDisable(false);
+        privacyToggle.setDisable(false);
+
         premixButton.setVisible(false);
         createButton.setDefaultButton(true);
     }
@@ -1088,23 +1109,24 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public void createTransaction(ActionEvent event) {
+        WalletTransaction walletTransaction = walletTransactionProperty.get();
         if(log.isDebugEnabled()) {
             Map<WalletNode, List<String>> inputHashes = new LinkedHashMap<>();
-            for(WalletNode node : walletTransactionProperty.get().getSelectedUtxos().values()) {
+            for(WalletNode node : walletTransaction.getSelectedUtxos().values()) {
                 List<String> nodeHashes = inputHashes.computeIfAbsent(node, k -> new ArrayList<>());
                 nodeHashes.add(ElectrumServer.getScriptHash(walletForm.getWallet(), node));
             }
             Map<WalletNode, List<String>> changeHash = new LinkedHashMap<>();
-            for(WalletNode changeNode : walletTransactionProperty.get().getChangeMap().keySet()) {
+            for(WalletNode changeNode : walletTransaction.getChangeMap().keySet()) {
                 changeHash.put(changeNode, List.of(ElectrumServer.getScriptHash(walletForm.getWallet(), changeNode)));
             }
-            log.debug("Creating tx " + walletTransactionProperty.get().getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + inputHashes + " and \nchange \n" + changeHash);
+            log.debug("Creating tx " + walletTransaction.getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + inputHashes + " and \nchange \n" + changeHash);
         }
 
         addWalletTransactionNodes();
-        createdWalletTransactionProperty.set(walletTransactionProperty.get());
-        PSBT psbt = walletTransactionProperty.get().createPSBT();
-        EventManager.get().post(new ViewPSBTEvent(createButton.getScene().getWindow(), walletTransactionProperty.get().getPayments().get(0).getLabel(), null, psbt));
+        createdWalletTransactionProperty.set(walletTransaction);
+        PSBT psbt = walletTransaction.createPSBT();
+        EventManager.get().post(new ViewPSBTEvent(createButton.getScene().getWindow(), walletTransaction.getPayments().get(0).getLabel(), null, psbt));
     }
 
     private void addWalletTransactionNodes() {
@@ -1379,7 +1401,7 @@ public class SendController extends WalletFormController implements Initializabl
     public void sorobanInitiated(SorobanInitiatedEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet())) {
             InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
-            if(Network.get() == Network.TESTNET) {
+            if(Config.get().isSameAppMixing()) {
                 initiatorDialog.initModality(Modality.NONE);
             }
             Optional<Transaction> optTransaction = initiatorDialog.showAndWait();
@@ -1414,13 +1436,16 @@ public class SendController extends WalletFormController implements Initializabl
             List<Payment> payments = walletTransaction.getPayments();
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
+            boolean payNymPresent = isPayNymPayment(payments);
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
             boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType());
             boolean addressReuse = userPayments.stream().anyMatch(payment -> getWalletForm().getWallet().getWalletAddresses().get(payment.getAddress()) != null && !getWalletForm().getWallet().getWalletAddresses().get(payment.getAddress()).getTransactionOutputs().isEmpty());
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {
-                if(fakeMixPresent) {
+                if(payNymPresent) {
+                    addLabel("Appears as a normal transaction, but actual value transferred is hidden", getPlusGlyph());
+                } else if(fakeMixPresent) {
                     addLabel("Appears as a two person coinjoin", getPlusGlyph());
                 } else {
                     if(mixedAddressTypes) {
@@ -1447,7 +1472,7 @@ public class SendController extends WalletFormController implements Initializabl
                 addLabel("Address types different to the wallet indicate external payments", getMinusGlyph());
             }
 
-            if(roundPaymentAmounts && !fakeMixPresent) {
+            if(roundPaymentAmounts && !fakeMixPresent && !payNymPresent) {
                 addLabel("Rounded payment amounts indicate external payments", getMinusGlyph());
             }
 

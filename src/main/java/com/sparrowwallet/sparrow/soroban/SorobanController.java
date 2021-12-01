@@ -23,6 +23,32 @@ public class SorobanController {
     private static final Logger log = LoggerFactory.getLogger(SorobanController.class);
     protected static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
 
+    protected void claimPayNym(Soroban soroban, Map<String, Object> createMap) {
+        if(createMap.get("claimed") == Boolean.FALSE) {
+            soroban.getAuthToken(createMap).subscribe(authToken -> {
+                String signature = soroban.getSignature(authToken);
+                soroban.claimPayNym(authToken, signature).subscribe(claimMap -> {
+                    log.debug("Claimed payment code " + claimMap.get("claimed"));
+                    soroban.addSamouraiPaymentCode(authToken, signature).subscribe(addMap -> {
+                        log.debug("Added payment code " + addMap);
+                    });
+                }, error -> {
+                    soroban.getAuthToken(new HashMap<>()).subscribe(newAuthToken -> {
+                        String newSignature = soroban.getSignature(newAuthToken);
+                        soroban.claimPayNym(newAuthToken, newSignature).subscribe(claimMap -> {
+                            log.debug("Claimed payment code " + claimMap.get("claimed"));
+                            soroban.addSamouraiPaymentCode(newAuthToken, newSignature).subscribe(addMap -> {
+                                log.debug("Added payment code " + addMap);
+                            });
+                        });
+                    }, newError -> {
+                        log.error("Error claiming PayNym", newError);
+                    });
+                });
+            });
+        }
+    }
+
     protected Transaction getTransaction(Cahoots cahoots) throws PSBTParseException {
         if(cahoots.getPSBT() != null) {
             PSBT psbt = new PSBT(cahoots.getPSBT().toBytes());

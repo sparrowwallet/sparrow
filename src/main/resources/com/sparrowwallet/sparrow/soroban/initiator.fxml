@@ -33,7 +33,8 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
                     </graphic>
                 </Label>
-                <Label text="Add a mix partner to your two person coinjoin transaction using the Samourai Soroban service. Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mix Partner." wrapText="true" styleClass="content-text" />
+                <Label text="Add a mix partner to your transaction using the Samourai Soroban service, breaking the common input ownership heuristic and obfuscating payment amounts." wrapText="true" styleClass="content-text"/>
+                <Label text="Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mix Partner. They will need a Native Segwit software wallet like this one." wrapText="true" styleClass="content-text" />
                 <BorderPane>
                     <padding>
                         <Insets top="20" right="70" />

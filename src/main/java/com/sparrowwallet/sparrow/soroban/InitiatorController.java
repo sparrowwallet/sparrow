@@ -54,7 +54,7 @@ import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
 public class InitiatorController extends SorobanController {
     private static final Logger log = LoggerFactory.getLogger(InitiatorController.class);
 
-    private static final PayNym FIND_FOLLOWERS = new PayNym(null, null, "Retrieve PayNyms...", false, Collections.emptyList(), Collections.emptyList());
+    private static final PayNym FIND_FOLLOWERS = new PayNym(null, null, "Retrieve Contacts...", false, Collections.emptyList(), Collections.emptyList());
 
     private String walletId;
     private Wallet wallet;
@@ -118,6 +118,8 @@ public class InitiatorController extends SorobanController {
 
     private final ObjectProperty<Transaction> transactionProperty = new SimpleObjectProperty<>(null);
 
+    private CahootsType cahootsType = CahootsType.STONEWALLX2;
+
     public void initializeView(String walletId, Wallet wallet, WalletTransaction walletTransaction) {
         this.walletId = walletId;
         this.wallet = wallet;
@@ -159,9 +161,6 @@ public class InitiatorController extends SorobanController {
         payNymLoading.managedProperty().bind(payNymLoading.visibleProperty());
         payNymLoading.maxHeightProperty().bind(counterparty.heightProperty());
         payNymLoading.setVisible(false);
-
-        findPayNym.managedProperty().bind(findPayNym.visibleProperty());
-        findPayNym.setVisible(Config.get().isUsePayNym());
 
         payNymAvatar.managedProperty().bind(payNymAvatar.visibleProperty());
         payNymFollowers.prefWidthProperty().bind(counterparty.widthProperty());
@@ -241,7 +240,17 @@ public class InitiatorController extends SorobanController {
             }
         });
 
-        if(Config.get().isUsePayNym()) {
+        Payment payment = walletTransaction.getPayments().get(0);
+        if(payment.getAddress() instanceof PayNymAddress payNymAddress) {
+            PayNym payNym = payNymAddress.getPayNym();
+            counterpartyPayNymName.set(payNym.nymName());
+            counterpartyPaymentCode.set(payNym.paymentCode());
+            payNymAvatar.setPaymentCode(payNym.paymentCode());
+            counterparty.setText(payNym.nymName());
+            counterparty.setEditable(false);
+            findPayNym.setVisible(false);
+            cahootsType = CahootsType.STOWAWAY;
+        } else if(Config.get().isUsePayNym()) {
             setPayNymFollowers();
         } else {
             List<PayNym> defaultList = new ArrayList<>();
@@ -265,7 +274,7 @@ public class InitiatorController extends SorobanController {
             }, error -> {
                 if(error.getMessage().endsWith("404")) {
                     Config.get().setUsePayNym(false);
-                    AppServices.showErrorDialog("Could not retrieve PayNym", "This wallet does not have an associated PayNym or any followers. You can retrieve the PayNym using the Tools menu → Find Mix Partner.");
+                    AppServices.showErrorDialog("Could not retrieve PayNym", "This wallet does not have an associated PayNym or any followers yet. You can retrieve the PayNym using the Find PayNym button.");
                 } else {
                     log.warn("Could not retrieve followers: ", error);
                 }
@@ -330,7 +339,7 @@ public class InitiatorController extends SorobanController {
         getPaymentCodeCounterparty(soroban).subscribe(paymentCodeCounterparty -> {
             try {
                 SorobanCahootsService sorobanMeetingService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
-                sorobanMeetingService.sendMeetingRequest(paymentCodeCounterparty, CahootsType.STONEWALLX2)
+                sorobanMeetingService.sendMeetingRequest(paymentCodeCounterparty, cahootsType)
                         .subscribeOn(Schedulers.io())
                         .observeOn(JavaFxScheduler.platform())
                         .subscribe(meetingRequest -> {
@@ -387,7 +396,9 @@ public class InitiatorController extends SorobanController {
         }
 
         SorobanCahootsService sorobanCahootsService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
-        CahootsContext cahootsContext = CahootsContext.newInitiatorStonewallx2(payment.getAmount(), payment.getAddress().toString());
+        CahootsContext cahootsContext = cahootsType == CahootsType.STONEWALLX2 ?
+                CahootsContext.newInitiatorStonewallx2(payment.getAmount(), payment.getAddress().toString()) :
+                CahootsContext.newInitiatorStowaway(payment.getAmount());
 
         sorobanCahootsService.getSorobanService().getOnInteraction()
                 .observeOn(JavaFxScheduler.platform())
