@@ -39,6 +39,8 @@ import java.util.stream.Collectors;
 public class KeystoreController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(KeystoreController.class);
 
+    private static final String DEFAULT_WATCH_ONLY_FINGERPRINT = "00000000";
+
     private Keystore keystore;
 
     @FXML
@@ -215,6 +217,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(keystoreSource != KeystoreSource.SW_WATCH) {
             launchImportDialog(keystoreSource);
         } else {
+            fingerprint.setText(DEFAULT_WATCH_ONLY_FINGERPRINT);
             selectSourcePane.setVisible(false);
         }
     }

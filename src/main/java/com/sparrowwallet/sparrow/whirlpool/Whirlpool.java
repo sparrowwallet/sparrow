@@ -57,7 +57,7 @@ public class Whirlpool {
     private static final Logger log = LoggerFactory.getLogger(Whirlpool.class);
 
     public static final List<Network> WHIRLPOOL_NETWORKS = List.of(Network.MAINNET, Network.TESTNET);
-    public static final int DEFAULT_MIXTO_MIN_MIXES = 5;
+    public static final int DEFAULT_MIXTO_MIN_MIXES = 3;
     public static final int DEFAULT_MIXTO_RANDOM_FACTOR = 4;
 
     private final WhirlpoolServer whirlpoolServer;
