@@ -37,7 +37,7 @@
                 <Label text="Ask your partner for their PayNym, or use their payment code found in their Sparrow Tools menu → Find Mix Partner. They will need a Native Segwit software wallet like this one." wrapText="true" styleClass="content-text" />
                 <BorderPane>
                     <padding>
-                        <Insets top="20" right="70" />
+                        <Insets top="15" right="70" />
                     </padding>
                     <center>
                         <VBox spacing="15">

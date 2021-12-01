@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.soroban;
 
 import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
@@ -10,14 +11,21 @@ import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.io.Storage;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Optional;
 
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+
 public class InitiatorDialog extends Dialog<Transaction> {
+    private static final Logger log = LoggerFactory.getLogger(InitiatorDialog.class);
+
     private final boolean confirmationRequired;
 
     public InitiatorDialog(String walletId, Wallet wallet, WalletTransaction walletTransaction) {
@@ -34,7 +42,7 @@ public class InitiatorDialog extends Dialog<Transaction> {
             initiatorController.initializeView(walletId, wallet, walletTransaction);
 
             dialogPane.setPrefWidth(730);
-            dialogPane.setPrefHeight(520);
+            dialogPane.setPrefHeight(530);
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
@@ -114,6 +122,14 @@ public class InitiatorDialog extends Dialog<Transaction> {
                 });
                 keyDerivationService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                    if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                        Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                        if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                            Platform.runLater(() -> acceptAndBroadcast(initiatorController, walletId, wallet));
+                        }
+                    } else {
+                        log.error("Error deriving wallet key", keyDerivationService.getException());
+                    }
                 });
                 EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
                 keyDerivationService.start();
