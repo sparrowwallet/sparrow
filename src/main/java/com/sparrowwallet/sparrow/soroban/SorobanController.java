@@ -40,11 +40,15 @@ public class SorobanController {
                             soroban.addSamouraiPaymentCode(newAuthToken, newSignature).subscribe(addMap -> {
                                 log.debug("Added payment code " + addMap);
                             });
+                        }, newError -> {
+                            log.error("Error claiming PayNym with new authToken", newError);
                         });
                     }, newError -> {
-                        log.error("Error claiming PayNym", newError);
+                        log.error("Error retrieving new authToken", newError);
                     });
                 });
+            }, error -> {
+                log.error("Error retrieving authToken", error);
             });
         }
     }

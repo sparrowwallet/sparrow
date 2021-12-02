@@ -159,6 +159,14 @@ public class PayNymController extends SorobanController {
         }, error -> {
             if(error.getMessage().endsWith("404")) {
                 payNymName.setVisible(false);
+            } else {
+                log.error("Error retrieving PayNym", error);
+                Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                    refresh();
+                } else {
+                    payNymName.setVisible(false);
+                }
             }
         });
     }
@@ -290,7 +298,10 @@ public class PayNymController extends SorobanController {
             refresh();
         }, error -> {
             log.error("Error retrieving PayNym", error);
-            AppServices.showErrorDialog("Error retrieving PayNym", error.getMessage());
+            Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
+            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                retrievePayNym(soroban);
+            }
         });
     }
 
@@ -301,8 +312,21 @@ public class PayNymController extends SorobanController {
                 refresh();
             }, error -> {
                 log.error("Could not follow payment code", error);
-                AppServices.showErrorDialog("Could not follow payment code", error.getMessage());
+                Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not follow payment code. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                    followPayNym(soroban, contact);
+                } else {
+                    followingList.refresh();
+                }
             });
+        }, error -> {
+            log.error("Could not follow payment code", error);
+            Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not follow payment code. Try again?", ButtonType.CANCEL, ButtonType.OK);
+            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                followPayNym(soroban, contact);
+            } else {
+                followingList.refresh();
+            }
         });
     }
 

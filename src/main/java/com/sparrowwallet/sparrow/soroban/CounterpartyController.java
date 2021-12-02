@@ -31,7 +31,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
 
 public class CounterpartyController extends SorobanController {
@@ -381,7 +383,12 @@ public class CounterpartyController extends SorobanController {
             claimPayNym(soroban, createMap);
         }, error -> {
             log.error("Error retrieving PayNym", error);
-            AppServices.showErrorDialog("Error retrieving PayNym", error.getMessage());
+            Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
+            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                retrievePayNym(null);
+            } else {
+                payNym.setVisible(false);
+            }
         });
     }
 
