@@ -19,7 +19,6 @@ import com.sparrowwallet.drongo.psbt.PSBTSignatureException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
-import com.sparrowwallet.hummingbird.registry.RegistryType;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -1930,7 +1929,7 @@ public class AppController implements Initializable {
             }
 
             List<BlockTransaction> blockTransactions = new ArrayList<>(event.getBlockTransactions());
-            List<BlockTransaction> whirlpoolTransactions = event.getWhirlpoolMixTransactions();
+            List<BlockTransaction> whirlpoolTransactions = event.getUnspentWhirlpoolMixTransactions();
             blockTransactions.removeAll(whirlpoolTransactions);
 
             if(!whirlpoolTransactions.isEmpty()) {

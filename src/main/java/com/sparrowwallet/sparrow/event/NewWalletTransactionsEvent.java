@@ -7,7 +7,9 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
+import com.sparrowwallet.sparrow.wallet.TransactionHashIndexEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,12 +62,21 @@ public class NewWalletTransactionsEvent {
         return String.format(Locale.ENGLISH, "%,d", value) + " sats";
     }
 
-    public List<BlockTransaction> getWhirlpoolMixTransactions() {
+    public List<BlockTransaction> getUnspentWhirlpoolMixTransactions() {
         List<BlockTransaction> mixTransactions = new ArrayList<>();
         if(wallet.isWhirlpoolMixWallet()) {
-            return transactionEntries.stream().filter(txEntry -> txEntry.getValue() == 0).map(TransactionEntry::getBlockTransaction).collect(Collectors.toList());
+            return transactionEntries.stream()
+                    .filter(txEntry -> txEntry.getValue() == 0 && !allOutputsSpent(txEntry))
+                    .map(TransactionEntry::getBlockTransaction).collect(Collectors.toList());
         }
 
         return mixTransactions;
+    }
+
+    private boolean allOutputsSpent(TransactionEntry txEntry) {
+        return txEntry.getChildren().stream()
+                .map(refEntry -> ((TransactionHashIndexEntry)refEntry))
+                .filter(txRefEntry -> txRefEntry.getType() == HashIndexEntry.Type.OUTPUT)
+                .allMatch(txRefEntry -> txRefEntry.getHashIndex().isSpent());
     }
 }
