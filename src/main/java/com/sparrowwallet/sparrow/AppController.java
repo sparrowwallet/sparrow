@@ -1729,7 +1729,7 @@ public class AppController implements Initializable {
     private void serverToggleStartAnimation() {
         Node thumbArea = serverToggle.lookup(".thumb-area");
         if(thumbArea != null) {
-            Timeline timeline = AnimationUtil.getPulse(thumbArea, Duration.millis(600), 1.0, 0.4, 20);
+            Timeline timeline = AnimationUtil.getPulse(thumbArea, Duration.millis(600), 1.0, 0.4, 8);
             timeline.play();
             serverToggle.setUserData(new AnimationUtil.AnimatedNode(thumbArea, timeline));
         }
@@ -1755,7 +1755,7 @@ public class AppController implements Initializable {
     private void tabLabelStartAnimation(Tab tab) {
         Label tabLabel = (Label) tab.getGraphic();
         if(tabLabel.getUserData() == null) {
-            Timeline timeline = AnimationUtil.getPulse(tabLabel.getGraphic(), Duration.millis(1000), tabLabel.getGraphic().getOpacity(), 0.1, 20);
+            Timeline timeline = AnimationUtil.getPulse(tabLabel.getGraphic(), Duration.millis(1000), tabLabel.getGraphic().getOpacity(), 0.1, 8);
             timeline.play();
             tabLabel.setUserData(timeline);
         }
