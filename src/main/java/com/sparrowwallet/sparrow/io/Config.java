@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
-import com.samourai.whirlpool.client.wallet.beans.IndexRange;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
@@ -15,6 +14,8 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.sparrowwallet.sparrow.net.TcpTransport.DEFAULT_MAX_TIMEOUT;
 
 public class Config {
     private static final Logger log = LoggerFactory.getLogger(Config.class);
@@ -58,6 +59,7 @@ public class Config {
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
+    private int maxServerTimeout = DEFAULT_MAX_TIMEOUT;
     private boolean usePayNym;
     private boolean sameAppMixing;
     private Double appWidth;
@@ -500,6 +502,15 @@ public class Config {
 
     public void setProxyServer(String proxyServer) {
         this.proxyServer = proxyServer;
+        flush();
+    }
+
+    public int getMaxServerTimeout() {
+        return maxServerTimeout;
+    }
+
+    public void setMaxServerTimeout(int maxServerTimeout) {
+        this.maxServerTimeout = maxServerTimeout;
         flush();
     }
 

@@ -16,6 +16,7 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -25,7 +26,8 @@ public class TcpTransport implements Transport, Closeable {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
-    private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, 34};
+    public static final int DEFAULT_MAX_TIMEOUT = 34;
+    private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, DEFAULT_MAX_TIMEOUT};
     private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
@@ -61,7 +63,13 @@ public class TcpTransport implements Transport, Closeable {
     public TcpTransport(HostAndPort server, HostAndPort proxy) {
         this.server = server;
         this.socketFactory = (proxy == null ? SocketFactory.getDefault() : new ProxySocketFactory(proxy));
-        this.readTimeouts = (Config.get().getServerType() == ServerType.BITCOIN_CORE && Protocol.isOnionAddress(Config.get().getCoreServer()) ? SLOW_READ_TIMEOUT_SECS : BASE_READ_TIMEOUT_SECS);
+
+        int[] timeouts = (Config.get().getServerType() == ServerType.BITCOIN_CORE && Protocol.isOnionAddress(Config.get().getCoreServer()) ?
+                Arrays.copyOf(SLOW_READ_TIMEOUT_SECS, SLOW_READ_TIMEOUT_SECS.length) : Arrays.copyOf(BASE_READ_TIMEOUT_SECS, BASE_READ_TIMEOUT_SECS.length));
+        if(Config.get().getMaxServerTimeout() > timeouts[timeouts.length - 1]) {
+            timeouts[timeouts.length - 1] = Config.get().getMaxServerTimeout();
+        }
+        this.readTimeouts = timeouts;
     }
 
     @Override
