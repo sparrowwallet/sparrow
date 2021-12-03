@@ -1729,21 +1729,17 @@ public class AppController implements Initializable {
     private void serverToggleStartAnimation() {
         Node thumbArea = serverToggle.lookup(".thumb-area");
         if(thumbArea != null) {
-            FadeTransition fadeTransition = new FadeTransition(Duration.millis(600), thumbArea);
-            fadeTransition.setFromValue(1.0);
-            fadeTransition.setToValue(0.4);
-            fadeTransition.setAutoReverse(true);
-            fadeTransition.setCycleCount(Animation.INDEFINITE);
-            fadeTransition.play();
-            serverToggle.setUserData(fadeTransition);
+            Timeline timeline = AnimationUtil.getPulse(thumbArea, Duration.millis(600), 1.0, 0.4, 20);
+            timeline.play();
+            serverToggle.setUserData(new AnimationUtil.AnimatedNode(thumbArea, timeline));
         }
     }
 
     private void serverToggleStopAnimation() {
         if(serverToggle.getUserData() != null) {
-            FadeTransition fadeTransition = (FadeTransition)serverToggle.getUserData();
-            fadeTransition.stop();
-            fadeTransition.getNode().setOpacity(1.0);
+            AnimationUtil.AnimatedNode animatedNode = (AnimationUtil.AnimatedNode)serverToggle.getUserData();
+            animatedNode.timeline().stop();
+            animatedNode.node().setOpacity(1.0);
             serverToggle.setUserData(null);
         }
     }
@@ -1759,13 +1755,9 @@ public class AppController implements Initializable {
     private void tabLabelStartAnimation(Tab tab) {
         Label tabLabel = (Label) tab.getGraphic();
         if(tabLabel.getUserData() == null) {
-            FadeTransition fadeTransition = new FadeTransition(Duration.millis(1000), tabLabel.getGraphic());
-            fadeTransition.setFromValue(tabLabel.getGraphic().getOpacity());
-            fadeTransition.setToValue(0.1);
-            fadeTransition.setAutoReverse(true);
-            fadeTransition.setCycleCount(Animation.INDEFINITE);
-            fadeTransition.play();
-            tabLabel.setUserData(fadeTransition);
+            Timeline timeline = AnimationUtil.getPulse(tabLabel.getGraphic(), Duration.millis(1000), tabLabel.getGraphic().getOpacity(), 0.1, 20);
+            timeline.play();
+            tabLabel.setUserData(timeline);
         }
     }
 
@@ -1795,8 +1787,8 @@ public class AppController implements Initializable {
     private void tabLabelStopAnimation(Tab tab) {
         Label tabLabel = (Label) tab.getGraphic();
         if(tabLabel.getUserData() != null) {
-            FadeTransition fadeTransition = (FadeTransition)tabLabel.getUserData();
-            fadeTransition.stop();
+            Animation animation = (Animation)tabLabel.getUserData();
+            animation.stop();
             tabLabel.setUserData(null);
             tabLabel.getGraphic().setOpacity(tab.isSelected() ? TAB_LABEL_GRAPHIC_OPACITY_ACTIVE : TAB_LABEL_GRAPHIC_OPACITY_INACTIVE);
         }
@@ -1929,7 +1921,7 @@ public class AppController implements Initializable {
             }
 
             List<BlockTransaction> blockTransactions = new ArrayList<>(event.getBlockTransactions());
-            List<BlockTransaction> whirlpoolTransactions = event.getUnspentWhirlpoolMixTransactions();
+            List<BlockTransaction> whirlpoolTransactions = event.getUnspentConfirmingWhirlpoolMixTransactions();
             blockTransactions.removeAll(whirlpoolTransactions);
 
             if(!whirlpoolTransactions.isEmpty()) {

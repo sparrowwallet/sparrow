@@ -62,11 +62,11 @@ public class NewWalletTransactionsEvent {
         return String.format(Locale.ENGLISH, "%,d", value) + " sats";
     }
 
-    public List<BlockTransaction> getUnspentWhirlpoolMixTransactions() {
+    public List<BlockTransaction> getUnspentConfirmingWhirlpoolMixTransactions() {
         List<BlockTransaction> mixTransactions = new ArrayList<>();
         if(wallet.isWhirlpoolMixWallet()) {
             return transactionEntries.stream()
-                    .filter(txEntry -> txEntry.getValue() == 0 && !allOutputsSpent(txEntry))
+                    .filter(txEntry -> txEntry.getValue() == 0 && txEntry.isConfirming() && !allOutputsSpent(txEntry))
                     .map(TransactionEntry::getBlockTransaction).collect(Collectors.toList());
         }
 
