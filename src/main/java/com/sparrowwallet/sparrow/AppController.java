@@ -187,6 +187,8 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
+    private Tab previouslySelectedTab;
+
     private final Set<Wallet> loadingWallets = new LinkedHashSet<>();
 
     private final Set<Wallet> emptyLoadingWallets = new LinkedHashSet<>();
@@ -231,7 +233,10 @@ public class AppController implements Initializable {
             rootStack.getStyleClass().removeAll(DRAG_OVER_CLASS);
         });
 
-        tabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
+        tabs.getSelectionModel().selectedItemProperty().addListener((observable, previouslySelectedTab, selectedTab) -> {
+            if(tabs.getTabs().contains(previouslySelectedTab)) {
+                this.previouslySelectedTab = previouslySelectedTab;
+            }
             tabs.getTabs().forEach(tab -> ((Label)tab.getGraphic()).getGraphic().setOpacity(TAB_LABEL_GRAPHIC_OPACITY_INACTIVE));
             if(selectedTab != null) {
                 Label tabLabel = (Label)selectedTab.getGraphic();
@@ -250,6 +255,10 @@ public class AppController implements Initializable {
         //tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
         tabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
             if(c.next() && (c.wasAdded() || c.wasRemoved())) {
+                if(c.wasRemoved() && previouslySelectedTab != null) {
+                    tabs.getSelectionModel().select(previouslySelectedTab);
+                }
+
                 boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
                 if(walletAdded || walletRemoved) {
