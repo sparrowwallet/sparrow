@@ -25,7 +25,7 @@ public class KeystorePassphraseDialog extends Dialog<String> {
     }
 
     public KeystorePassphraseDialog(String walletName, Keystore keystore, boolean confirm) {
-        this.passphrase = (CustomPasswordField) TextFields.createClearablePasswordField();
+        this.passphrase = new ViewPasswordField();
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Keystore Passphrase" + (walletName != null ? " for " + walletName : ""));

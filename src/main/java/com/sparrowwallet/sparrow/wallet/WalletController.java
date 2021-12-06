@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.ViewPasswordField;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
@@ -147,7 +148,7 @@ public class WalletController extends WalletFormController implements Initializa
         Label label = new Label("Enter password to unlock:");
         label.managedProperty().bind(label.visibleProperty());
         label.visibleProperty().bind(walletEncryptedProperty);
-        CustomPasswordField passwordField = (CustomPasswordField)TextFields.createClearablePasswordField();
+        CustomPasswordField passwordField = new ViewPasswordField();
         passwordField.setMaxWidth(300);
         passwordField.managedProperty().bind(passwordField.visibleProperty());
         passwordField.visibleProperty().bind(walletEncryptedProperty);

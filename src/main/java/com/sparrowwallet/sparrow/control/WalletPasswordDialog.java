@@ -8,7 +8,6 @@ import javafx.beans.binding.BooleanBinding;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.textfield.CustomPasswordField;
-import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -31,8 +30,8 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
 
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword) {
         this.requirement = requirement;
-        this.password = (CustomPasswordField)TextFields.createClearablePasswordField();
-        this.passwordConfirm = (CustomPasswordField)TextFields.createClearablePasswordField();
+        this.password = new ViewPasswordField();
+        this.passwordConfirm = new ViewPasswordField();
         this.backupExisting = new CheckBox("Backup existing wallet first");
         this.changePassword = new CheckBox("Change password");
         this.deleteBackups = new CheckBox("Delete any backups");

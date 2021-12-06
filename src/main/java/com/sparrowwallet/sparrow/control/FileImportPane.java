@@ -190,7 +190,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
     protected abstract void importFile(String fileName, InputStream inputStream, String password) throws ImportException;
 
     private Node getPasswordEntry(File file) {
-        CustomPasswordField passwordField = (CustomPasswordField) TextFields.createClearablePasswordField();
+        CustomPasswordField passwordField = new ViewPasswordField();
         passwordField.setPromptText("Wallet password");
         password.bind(passwordField.textProperty());
         HBox.setHgrow(passwordField, Priority.ALWAYS);

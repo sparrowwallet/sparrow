@@ -332,7 +332,7 @@ public class DevicePane extends TitledDescriptionPane {
         VBox vBox = new VBox();
         vBox.setMaxHeight(120);
         vBox.setSpacing(42);
-        pinField = (CustomPasswordField)TextFields.createClearablePasswordField();
+        pinField = new ViewPasswordField();
         Platform.runLater(() -> pinField.requestFocus());
         enterPinButton = new Button("Enter PIN");
         enterPinButton.setDefaultButton(true);
@@ -372,7 +372,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private Node getPassphraseEntry() {
-        CustomPasswordField passphraseField = (CustomPasswordField)TextFields.createClearablePasswordField();
+        CustomPasswordField passphraseField = new ViewPasswordField();
         passphrase.bind(passphraseField.textProperty());
         HBox.setHgrow(passphraseField, Priority.ALWAYS);
         passphraseField.setOnAction(event -> {
