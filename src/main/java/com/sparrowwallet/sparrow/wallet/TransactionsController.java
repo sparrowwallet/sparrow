@@ -106,15 +106,6 @@ public class TransactionsController extends WalletFormController implements Init
         loadingLog.setEditable(false);
     }
 
-    private void setFiatBalance(FiatLabel fiatLabel, CurrencyRate currencyRate, long balance) {
-        if(currencyRate != null && currencyRate.isAvailable() && balance > 0) {
-            fiatLabel.set(currencyRate, balance);
-        } else {
-            fiatLabel.setCurrency(null);
-            fiatLabel.setBtcRate(0.0);
-        }
-    }
-
     private void setTransactionCount(WalletTransactionsEntry walletTransactionsEntry) {
         transactionCount.setText(walletTransactionsEntry.getChildren() != null ? Integer.toString(walletTransactionsEntry.getChildren().size()) : "0");
     }

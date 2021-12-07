@@ -5,8 +5,10 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.BaseController;
+import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
+import com.sparrowwallet.sparrow.control.FiatLabel;
 import com.sparrowwallet.sparrow.event.WalletTabsClosedEvent;
 
 public abstract class WalletFormController extends BaseController {
@@ -52,5 +54,14 @@ public abstract class WalletFormController extends BaseController {
         }
 
         return node.getDerivationPath().replace("m", "multi");
+    }
+
+    protected void setFiatBalance(FiatLabel fiatLabel, CurrencyRate currencyRate, long balance) {
+        if(currencyRate != null && currencyRate.isAvailable() && balance > 0) {
+            fiatLabel.set(currencyRate, balance);
+        } else {
+            fiatLabel.setCurrency(null);
+            fiatLabel.setBtcRate(0.0);
+        }
     }
 }

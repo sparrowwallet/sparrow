@@ -9,14 +9,18 @@ import com.sparrowwallet.sparrow.wallet.WalletUtxosEntry;
 import javafx.beans.NamedArg;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
+import javafx.scene.control.Tooltip;
+import javafx.util.Duration;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UtxosChart extends BarChart<String, Number> {
     private static final int MAX_BARS = 8;
     private static final String OTHER_CATEGORY = "Other";
+    private static final int TOOLTIP_SHOW_DELAY = 50;
 
     private List<Entry> selectedEntries;
     private int totalUtxos;
@@ -57,9 +61,11 @@ public class UtxosChart extends BarChart<String, Number> {
                 XYChart.Data<String, Number> existingData = utxoSeries.getData().get(i);
                 if(!newData.getXValue().equals(existingData.getXValue()) || !newData.getYValue().equals(existingData.getYValue()) || (newData.getExtraValue() instanceof Entry && !newData.getExtraValue().equals(existingData.getExtraValue()))) {
                     utxoSeries.getData().set(i, newData);
+                    installTooltip(newData);
                 }
             } else {
                 utxoSeries.getData().add(newData);
+                installTooltip(newData);
             }
         }
 
@@ -74,10 +80,19 @@ public class UtxosChart extends BarChart<String, Number> {
 
     private String getCategoryName(Entry entry) {
         if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
-            return entry.getLabel().length() > 15 ? entry.getLabel().substring(0, 15) + "..." + "\n" + ((UtxoEntry)entry).getDescription() : entry.getLabel() + "\n" + ((UtxoEntry)entry).getDescription();
+            return entry.getLabel() + "\n" + ((UtxoEntry)entry).getDescription();
         }
 
         return ((UtxoEntry)entry).getDescription();
+    }
+
+    private void installTooltip(XYChart.Data<String, Number> item) {
+        Tooltip.uninstall(item.getNode(), null);
+
+        String satsValue = String.format(Locale.ENGLISH, "%,d", item.getYValue());
+        Tooltip tooltip = new Tooltip(item.getXValue() + "\n" + satsValue + " sats");
+        tooltip.setShowDelay(Duration.millis(TOOLTIP_SHOW_DELAY));
+        Tooltip.install(item.getNode(), tooltip);
     }
 
     public void select(List<Entry> entries) {

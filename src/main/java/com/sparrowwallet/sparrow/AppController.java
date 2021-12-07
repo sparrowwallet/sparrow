@@ -145,10 +145,6 @@ public class AppController implements Initializable {
     private static final BooleanProperty showLoadingLogProperty = new SimpleBooleanProperty();
 
     @FXML
-    private CheckMenuItem showUtxosChart;
-    private static final BooleanProperty showUtxosChartProperty = new SimpleBooleanProperty();
-
-    @FXML
     private CheckMenuItem showTxHex;
     private static final BooleanProperty showTxHexProperty = new SimpleBooleanProperty();
 
@@ -320,8 +316,6 @@ public class AppController implements Initializable {
         showTxHex.selectedProperty().bindBidirectional(showTxHexProperty);
         showLoadingLogProperty.set(Config.get().isShowLoadingLog());
         showLoadingLog.selectedProperty().bindBidirectional(showLoadingLogProperty);
-        showUtxosChartProperty.set(Config.get().isShowUtxosChart());
-        showUtxosChart.selectedProperty().bindBidirectional(showUtxosChartProperty);
         preventSleepProperty.set(Config.get().isPreventSleep());
         preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
 
@@ -800,12 +794,6 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setShowLoadingLog(item.isSelected());
         EventManager.get().post(new LoadingLogChangedEvent(item.isSelected()));
-    }
-
-    public void showUtxosChart(ActionEvent event) {
-        CheckMenuItem item = (CheckMenuItem)event.getSource();
-        Config.get().setShowUtxosChart(item.isSelected());
-        EventManager.get().post(new UtxosChartChangedEvent(item.isSelected()));
     }
 
     public void showTxHex(ActionEvent event) {
@@ -1869,7 +1857,6 @@ public class AppController implements Initializable {
                 lockWallet.setDisable(true);
                 exportWallet.setDisable(true);
                 showLoadingLog.setDisable(true);
-                showUtxosChart.setDisable(true);
                 showTxHex.setDisable(false);
                 findMixingPartner.setDisable(true);
             } else if(event instanceof WalletTabSelectedEvent) {
@@ -1880,7 +1867,6 @@ public class AppController implements Initializable {
                 lockWallet.setDisable(walletTabData.getWalletForm().lockedProperty().get());
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
                 showLoadingLog.setDisable(false);
-                showUtxosChart.setDisable(false);
                 showTxHex.setDisable(true);
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(walletTabData.getWallet()) || !AppServices.onlineProperty().get());
             }

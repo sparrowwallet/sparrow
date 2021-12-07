@@ -53,6 +53,21 @@ public class UtxosController extends WalletFormController implements Initializab
     private static final Logger log = LoggerFactory.getLogger(UtxosController.class);
 
     @FXML
+    private CoinLabel balance;
+
+    @FXML
+    private FiatLabel fiatBalance;
+
+    @FXML
+    private CoinLabel mempoolBalance;
+
+    @FXML
+    private FiatLabel fiatMempoolBalance;
+
+    @FXML
+    private CopyableLabel utxoCount;
+
+    @FXML
     private UtxosTreeTable utxosTable;
 
     @FXML
@@ -115,8 +130,17 @@ public class UtxosController extends WalletFormController implements Initializab
 
     @Override
     public void initializeView() {
-        utxosTable.initialize(getWalletForm().getWalletUtxosEntry());
-        utxosChart.initialize(getWalletForm().getWalletUtxosEntry());
+        balance.valueProperty().addListener((observable, oldValue, newValue) -> {
+            setFiatBalance(fiatBalance, AppServices.getFiatCurrencyExchangeRate(), newValue.longValue());
+        });
+        mempoolBalance.valueProperty().addListener((observable, oldValue, newValue) -> {
+            setFiatBalance(fiatMempoolBalance, AppServices.getFiatCurrencyExchangeRate(), newValue.longValue());
+        });
+
+        WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
+        updateFields(walletUtxosEntry);
+        utxosTable.initialize(walletUtxosEntry);
+        utxosChart.initialize(walletUtxosEntry);
 
         mixButtonsBox.managedProperty().bind(mixButtonsBox.visibleProperty());
         mixButtonsBox.setVisible(getWalletForm().getWallet().isWhirlpoolMixWallet());
@@ -159,9 +183,12 @@ public class UtxosController extends WalletFormController implements Initializab
             utxosChart.select(selectedEntries);
             updateButtons(Config.get().getBitcoinUnit());
         });
+    }
 
-        utxosChart.managedProperty().bind(utxosChart.visibleProperty());
-        utxosChart.setVisible(Config.get().isShowUtxosChart() && !getWalletForm().getWallet().isWhirlpoolMixWallet());
+    private void updateFields(WalletUtxosEntry walletUtxosEntry) {
+        balance.setValue(walletUtxosEntry.getChildren().stream().mapToLong(Entry::getValue).sum());
+        mempoolBalance.setValue(walletUtxosEntry.getChildren().stream().filter(entry -> ((UtxoEntry)entry).getHashIndex().getHeight() <= 0).mapToLong(Entry::getValue).sum());
+        utxoCount.setText(walletUtxosEntry.getChildren() != null ? Integer.toString(walletUtxosEntry.getChildren().size()) : "0");
     }
 
     private boolean canWalletMix() {
@@ -458,6 +485,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void walletNodesChanged(WalletNodesChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
+            updateFields(walletUtxosEntry);
             utxosTable.updateAll(walletUtxosEntry);
             utxosChart.update(walletUtxosEntry);
             mixSelected.setVisible(canWalletMix());
@@ -478,6 +506,7 @@ public class UtxosController extends WalletFormController implements Initializab
                 utxosTable.getSelectionModel().clearSelection();
             }
 
+            updateFields(walletUtxosEntry);
             utxosTable.updateHistory(event.getHistoryChangedNodes());
             utxosChart.update(walletUtxosEntry);
         }
@@ -497,6 +526,8 @@ public class UtxosController extends WalletFormController implements Initializab
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         utxosTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
         utxosChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
+        balance.refresh(event.getBitcoinUnit());
+        mempoolBalance.refresh(event.getBitcoinUnit());
         updateButtons(event.getBitcoinUnit());
     }
 

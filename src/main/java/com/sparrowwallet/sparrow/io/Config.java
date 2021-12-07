@@ -40,7 +40,6 @@ public class Config {
     private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
     private boolean showLoadingLog = true;
-    private boolean showUtxosChart = true;
     private boolean preventSleep = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -273,15 +272,6 @@ public class Config {
         flush();
     }
 
-    public boolean isShowUtxosChart() {
-        return showUtxosChart;
-    }
-
-    public void setShowUtxosChart(boolean showUtxosChart) {
-        this.showUtxosChart = showUtxosChart;
-        flush();
-    }
-
     public boolean isPreventSleep() {
         return preventSleep;
     }
@@ -388,7 +378,9 @@ public class Config {
 
     public void changePublicServer() {
         List<String> otherServers = PublicElectrumServer.getServers().stream().map(PublicElectrumServer::getUrl).filter(url -> !url.equals(getPublicElectrumServer())).collect(Collectors.toList());
-        setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
+        if(!otherServers.isEmpty()) {
+            setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
+        }
     }
 
     public String getCoreServer() {

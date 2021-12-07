@@ -5,35 +5,64 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.chart.BarChart?>
 <?import com.sparrowwallet.sparrow.control.UtxosTreeTable?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import com.sparrowwallet.sparrow.control.UtxosChart?>
 <?import org.controlsfx.glyphfont.Glyph?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.FiatLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 
 <BorderPane stylesheets="@utxos.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.UtxosController">
-    <padding>
-        <Insets left="25.0" right="25.0" top="15.0" bottom="25.0" />
-    </padding>
     <center>
         <VBox spacing="10.0">
+            <padding>
+                <Insets left="25.0" right="25.0" top="25.0" bottom="25.0" />
+            </padding>
+            <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="50" />
+                    <ColumnConstraints percentWidth="50" />
+                </columnConstraints>
+                <rowConstraints>
+                    <RowConstraints />
+                </rowConstraints>
+                <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                    <Fieldset inputGrow="SOMETIMES" text="Unspent Transaction Outputs" styleClass="header">
+                        <Field text="Balance:">
+                            <CoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
+                        </Field>
+                        <Field text="Mempool:">
+                            <CoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" minWidth="110" />
+                        </Field>
+                        <Field text="UTXOs:">
+                            <CopyableLabel fx:id="utxoCount" />
+                            <Button fx:id="exportCsv" maxHeight="25" onAction="#exportUtxos" translateY="-1" styleClass="icon-button">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Export UTXOs as CSV" />
+                                </tooltip>
+                            </Button>
+                        </Field>
+                    </Fieldset>
+                </Form>
+                <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false" GridPane.columnIndex="1" GridPane.rowIndex="0" maxHeight="140">
+                    <xAxis>
+                        <CategoryAxis side="BOTTOM" animated="false" tickLabelsVisible="false" tickMarkVisible="false" />
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis side="LEFT" />
+                    </yAxis>
+                </UtxosChart>
+            </GridPane>
             <BorderPane VBox.vgrow="ALWAYS">
-                <top>
-                    <HBox alignment="CENTER_LEFT">
-                        <Label styleClass="utxos-treetable-label" text="Unspent Transaction Outputs"/>
-                        <Button onAction="#exportUtxos" styleClass="icon-button">
-                            <graphic>
-                                <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
-                            </graphic>
-                            <tooltip>
-                                <Tooltip text="Export UTXOs as CSV" />
-                            </tooltip>
-                        </Button>
-                    </HBox>
-                </top>
                 <center>
                     <UtxosTreeTable fx:id="utxosTable" />
                 </center>
@@ -69,14 +98,6 @@
                     </HBox>
                 </bottom>
             </BorderPane>
-            <UtxosChart fx:id="utxosChart" legendVisible="false" verticalGridLinesVisible="false" animated="false" prefHeight="250">
-                <xAxis>
-                    <CategoryAxis side="BOTTOM" animated="false" />
-                </xAxis>
-                <yAxis>
-                    <NumberAxis side="LEFT" />
-                </yAxis>
-            </UtxosChart>
         </VBox>
     </center>
 </BorderPane>
