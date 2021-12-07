@@ -35,6 +35,17 @@ public enum FeeRatesSource {
             String url = "https://bitcoinfees.earn.com/api/v1/fees/recommended";
             return getThreeTierFeeRates(defaultblockTargetFeeRates, url);
         }
+    },
+    MINIMUM("Minimum (1 sat/vB)") {
+        @Override
+        public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
+            Map<Integer, Double> blockTargetFeeRates = new LinkedHashMap<>();
+            for(Integer blockTarget : defaultblockTargetFeeRates.keySet()) {
+                blockTargetFeeRates.put(blockTarget, 1.0);
+            }
+
+            return blockTargetFeeRates;
+        }
     };
 
     private static final Logger log = LoggerFactory.getLogger(FeeRatesSource.class);

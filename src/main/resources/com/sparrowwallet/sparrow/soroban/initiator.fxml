@@ -42,7 +42,7 @@
                     <center>
                         <VBox spacing="15">
                             <HBox styleClass="field-box">
-                                <Label text="Payment code or PayNym:" styleClass="field-label" />
+                                <Label text="PayNym or Payment code:" styleClass="field-label" />
                                 <HBox>
                                     <StackPane>
                                         <ComboBox fx:id="payNymFollowers" />

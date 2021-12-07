@@ -49,6 +49,7 @@
                             <FeeRatesSource fx:constant="ELECTRUM_SERVER" />
                             <FeeRatesSource fx:constant="MEMPOOL_SPACE" />
                             <FeeRatesSource fx:constant="BITCOINFEES_EARN_COM" />
+                            <FeeRatesSource fx:constant="MINIMUM" />
                         </FXCollections>
                     </items>
                 </ComboBox>
