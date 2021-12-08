@@ -32,6 +32,8 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
@@ -52,6 +54,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -320,10 +323,26 @@ public class HeadersController extends TransactionFormController implements Init
 
         locktimeDate.setFormat(LOCKTIME_DATE_FORMAT);
         locktimeDate.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
+            int caret = locktimeDate.getEditor().getCaretPosition();
+            locktimeDate.getEditor().setText(newValue.format(DateTimeFormatter.ofPattern(locktimeDate.getFormat())));
+            locktimeDate.getEditor().positionCaret(caret);
             tx.setLocktime(newValue.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
             futureDateWarning.setVisible(newValue.isAfter(LocalDateTime.now()));
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
+            }
+        });
+
+        locktimeDate.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            String controlValue = locktimeDate.getDateTimeValue().format(DateTimeFormatter.ofPattern(locktimeDate.getFormat()));
+            if(!controlValue.equals(newValue) && !locktimeDate.getStyleClass().contains("edited")) {
+                locktimeDate.getStyleClass().add("edited");
+            }
+        });
+
+        locktimeDate.addEventFilter(KeyEvent.ANY, event -> {
+            if(event.getCode() == KeyCode.ENTER) {
+                locktimeDate.getStyleClass().remove("edited");
             }
         });
 
