@@ -499,7 +499,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private ScriptType getScriptType(List<ScriptExpression> scriptExpressions) {
             List<ScriptExpression> expressions = new ArrayList<>(scriptExpressions);
-            if(expressions.get(expressions.size() - 1) == ScriptExpression.MULTISIG || expressions.get(expressions.size() - 1) == ScriptExpression.SORTED_MULTISIG) {
+            if(expressions.get(expressions.size() - 1) == ScriptExpression.MULTISIG
+                    || expressions.get(expressions.size() - 1) == ScriptExpression.SORTED_MULTISIG
+                    || expressions.get(expressions.size() - 1) == ScriptExpression.COSIGNER) {
                 expressions.remove(expressions.size() - 1);
             }
 

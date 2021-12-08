@@ -43,4 +43,5 @@ open module com.sparrowwallet.sparrow {
     requires io.reactivex.rxjava2fx;
     requires org.apache.commons.lang3;
     requires net.sourceforge.streamsupport;
+    requires co.nstant.in.cbor;
 }
