@@ -27,13 +27,16 @@ public class UsbStatusButton extends MenuButton {
     public void setDevices(List<Device> devices) {
         for(Device device : devices) {
             MenuItem deviceItem = new MenuItem(device.getModel().toDisplayString());
-            if(!device.isNeedsPinSent() && (device.getModel() == WalletModel.TREZOR_1 || device.getModel() == WalletModel.TREZOR_T || device.getModel() == WalletModel.KEEPKEY)) {
+            if(!device.isNeedsPinSent() && (device.getModel() == WalletModel.TREZOR_1 || device.getModel() == WalletModel.TREZOR_T || device.getModel() == WalletModel.KEEPKEY || device.getModel() == WalletModel.BITBOX_02)) {
                 deviceItem = new Menu(device.getModel().toDisplayString());
-                MenuItem toggleItem = new MenuItem("Toggle Passphrase " + (device.isNeedsPassphraseSent() ? "Off" : "On"));
+                MenuItem toggleItem = new MenuItem("Toggle Passphrase" + (!device.getModel().externalPassphraseEntry() ? "" : (device.isNeedsPassphraseSent() ? " Off" : " On")));
                 toggleItem.setOnAction(event -> {
                     Hwi.TogglePassphraseService togglePassphraseService = new Hwi.TogglePassphraseService(device);
                     togglePassphraseService.setOnSucceeded(event1 -> {
                         EventManager.get().post(new RequestOpenWalletsEvent());
+                        if(!device.getModel().externalPassphraseEntry()) {
+                            AppServices.showAlertDialog("Reconnect device", "Reconnect your " + device.getModel().toDisplayString() + " to reset the passphrase.", Alert.AlertType.INFORMATION);
+                        }
                     });
                     togglePassphraseService.setOnFailed(event1 -> {
                         AppServices.showErrorDialog("Error toggling passphrase", event1.getSource().getException().getMessage());
