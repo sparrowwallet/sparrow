@@ -97,7 +97,7 @@
                             <Spinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
                         </Field>
                         <Field fx:id="locktimeBlockField" text="Block:">
-                            <Spinner fx:id="locktimeBlock" editable="true" prefWidth="120"/>
+                            <Spinner fx:id="locktimeBlock" editable="true" max="499999999" prefWidth="120"/>
                             <Hyperlink fx:id="locktimeCurrentHeight" text="Set current height" onAction="#setLocktimeToCurrentHeight" />
                             <Label fx:id="futureBlockWarning">
                                 <graphic>

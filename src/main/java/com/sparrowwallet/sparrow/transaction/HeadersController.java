@@ -30,6 +30,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.DateCell;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.KeyCode;
@@ -40,6 +41,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +65,9 @@ public class HeadersController extends TransactionFormController implements Init
     public static final String LOCKTIME_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String BLOCK_TIMESTAMP_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss ZZZ";
     public static final String UNFINALIZED_TXID_CLASS = "unfinalized-txid";
+
+    public static final String MAX_LOCKTIME_DATE = "2106-02-07T06:28:15Z";
+    public static final String MIN_LOCKTIME_DATE = "1985-11-05T00:53:20Z";
 
     private HeadersForm headersForm;
 
@@ -321,6 +326,17 @@ public class HeadersController extends TransactionFormController implements Init
             }
         });
 
+        LocalDateTime maxLocktimeDate = Instant.parse(MAX_LOCKTIME_DATE).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        LocalDateTime minLocktimeDate = Instant.parse(MIN_LOCKTIME_DATE).atZone(ZoneId.systemDefault()).toLocalDateTime();
+        locktimeDate.setDayCellFactory(d ->
+                new DateCell() {
+                    @Override
+                    public void updateItem(LocalDate item, boolean empty) {
+                        super.updateItem(item, empty);
+                        setDisable(item.isAfter(maxLocktimeDate.toLocalDate()) || item.isBefore(minLocktimeDate.toLocalDate()));
+                    }
+                });
+
         locktimeDate.setFormat(LOCKTIME_DATE_FORMAT);
         locktimeDate.dateTimeValueProperty().addListener((obs, oldValue, newValue) -> {
             int caret = locktimeDate.getEditor().getCaretPosition();
@@ -330,6 +346,28 @@ public class HeadersController extends TransactionFormController implements Init
             futureDateWarning.setVisible(newValue.isAfter(LocalDateTime.now()));
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
+            }
+        });
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(LOCKTIME_DATE_FORMAT);
+        locktimeDate.setConverter(new StringConverter<LocalDate>() {
+            public String toString(LocalDate object) {
+                LocalDateTime value = locktimeDate.getDateTimeValue();
+                return (value != null) ? value.format(formatter) : "";
+            }
+
+            public LocalDate fromString(String value) {
+                if(value == null) {
+                    locktimeDate.setDateTimeValue(null);
+                    return null;
+                }
+
+                LocalDateTime localDateTime = LocalDateTime.parse(value, formatter);
+                if(localDateTime.isAfter(maxLocktimeDate) || localDateTime.isBefore(minLocktimeDate)) {
+                    throw new IllegalArgumentException("Invalid locktime date");
+                }
+                locktimeDate.setDateTimeValue(localDateTime);
+                return locktimeDate.getDateTimeValue().toLocalDate();
             }
         });
 
