@@ -21,8 +21,8 @@ import static com.sparrowwallet.drongo.wallet.WalletNode.nodeRangesToString;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
-    private static final int MAX_RETRIES = 5;
-    private static final int RETRY_DELAY = 1;
+    static final int MAX_RETRIES = 5;
+    static final int RETRY_DELAY = 1;
 
     private final AtomicLong idCounter = new AtomicLong();
 
@@ -73,8 +73,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
+        PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(ScriptHashTx[].class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions for " + nodeRangesToString(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
@@ -82,7 +81,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+            return batchRequest.execute();
         } catch (JsonRpcBatchException e) {
             if(failOnError) {
                 throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
@@ -102,15 +101,14 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, ScriptHashTx[]> getScriptHashMempool(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<String, ScriptHashTx[]> batchRequest = client.createBatchRequest().keysType(String.class).returnType(ScriptHashTx[].class);
+        PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(ScriptHashTx[].class);
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.get_mempool", pathScriptHashes.get(path));
         }
 
         try {
-            return new RetryLogic<Map<String, ScriptHashTx[]>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+            return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
             if(failOnError) {
                 throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
@@ -130,8 +128,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
+        PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + nodeRangesToString(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
@@ -139,7 +136,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+            return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
             //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
             throw new ElectrumServerRpcException("Failed to subscribe to paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
@@ -151,8 +148,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<Integer, String> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(String.class);
+        PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(Integer.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + blockHeights.size() + " block headers"));
 
         for(Integer height : blockHeights) {
@@ -160,7 +156,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<Integer, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
             return (Map<Integer, String>)e.getSuccesses();
         } catch(Exception e) {
@@ -171,8 +167,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<String, String> batchRequest = client.createBatchRequest().keysType(String.class).returnType(String.class);
+        PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + txids.size() + " transactions"));
 
         for(String txid : txids) {
@@ -180,7 +175,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return new RetryLogic<Map<String, String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
             Map<String, String> result = (Map<String, String>)e.getSuccesses();
 

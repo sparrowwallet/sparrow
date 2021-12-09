@@ -15,6 +15,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.net.PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE;
 import static com.sparrowwallet.sparrow.net.TcpTransport.DEFAULT_MAX_TIMEOUT;
 
 public class Config {
@@ -59,6 +60,7 @@ public class Config {
     private boolean useProxy;
     private String proxyServer;
     private int maxServerTimeout = DEFAULT_MAX_TIMEOUT;
+    private int batchPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
     private boolean sameAppMixing;
     private Double appWidth;
@@ -501,9 +503,8 @@ public class Config {
         return maxServerTimeout;
     }
 
-    public void setMaxServerTimeout(int maxServerTimeout) {
-        this.maxServerTimeout = maxServerTimeout;
-        flush();
+    public int getBatchPageSize() {
+        return batchPageSize;
     }
 
     public boolean isUsePayNym() {
