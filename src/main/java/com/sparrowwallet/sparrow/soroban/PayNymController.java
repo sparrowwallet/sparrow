@@ -48,6 +48,9 @@ public class PayNymController extends SorobanController {
     private Button payNymRetrieve;
 
     @FXML
+    private ProgressIndicator retrievePayNymProgress;
+
+    @FXML
     private PaymentCodeTextField paymentCode;
 
     @FXML
@@ -75,6 +78,10 @@ public class PayNymController extends SorobanController {
         payNymName.managedProperty().bind(payNymName.visibleProperty());
         payNymRetrieve.managedProperty().bind(payNymRetrieve.visibleProperty());
         payNymRetrieve.visibleProperty().bind(payNymName.visibleProperty().not());
+
+        retrievePayNymProgress.managedProperty().bind(retrievePayNymProgress.visibleProperty());
+        retrievePayNymProgress.maxHeightProperty().bind(payNymName.heightProperty());
+        retrievePayNymProgress.setVisible(false);
 
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         if(soroban.getPaymentCode() != null) {
@@ -145,8 +152,10 @@ public class PayNymController extends SorobanController {
         if(soroban.getPaymentCode() == null) {
             throw new IllegalStateException("Payment code has not been set");
         }
+        retrievePayNymProgress.setVisible(true);
 
         soroban.getPayNym(soroban.getPaymentCode().toString()).subscribe(payNym -> {
+            retrievePayNymProgress.setVisible(false);
             walletPayNym = payNym;
             payNymName.setText(payNym.nymName());
             paymentCode.setPaymentCode(payNym.paymentCode());
@@ -157,6 +166,7 @@ public class PayNymController extends SorobanController {
             followersList.setPlaceholder(new Label("No followers"));
             followersList.setItems(FXCollections.observableList(payNym.followers()));
         }, error -> {
+            retrievePayNymProgress.setVisible(false);
             if(error.getMessage().endsWith("404")) {
                 payNymName.setVisible(false);
             } else {

@@ -41,6 +41,7 @@
                                 <Tooltip text="Retrieves and claims the PayNym for this wallet" />
                             </tooltip>
                         </Button>
+                        <ProgressIndicator fx:id="retrievePayNymProgress" />
                     </HBox>
                     <HBox styleClass="field-box">
                         <Label text="Payment code:" styleClass="field-label" />
