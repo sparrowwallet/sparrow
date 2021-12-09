@@ -211,7 +211,7 @@ jlink {
         imageOptions = []
         installerOptions = ['--file-associations', 'src/main/deploy/psbt.properties', '--file-associations', 'src/main/deploy/txn.properties', '--file-associations', 'src/main/deploy/bitcoin.properties', '--file-associations', 'src/main/deploy/aopp.properties', '--license-file', 'LICENSE']
         if(os.windows) {
-            installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-shortcut', '--resource-dir', 'src/main/deploy/package/windows/']
+            installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-menu-group', 'Sparrow', '--win-shortcut', '--resource-dir', 'src/main/deploy/package/windows/']
             imageOptions += ['--icon', 'src/main/deploy/package/windows/sparrow.ico']
             installerType = "exe"
         }
