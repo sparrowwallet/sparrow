@@ -196,7 +196,8 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=logback.classic",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.databind",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.annotation",
-                   "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.core"]
+                   "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.core",
+                   "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor"]
 
         if(os.macOsX) {
             jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
