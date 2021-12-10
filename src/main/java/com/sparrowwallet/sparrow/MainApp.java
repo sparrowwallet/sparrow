@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 public class MainApp extends Application {
     public static final String APP_ID = "com.sparrowwallet.sparrow";
     public static final String APP_NAME = "Sparrow";
-    public static final String APP_VERSION = "1.5.3";
+    public static final String APP_VERSION = "1.5.4";
     public static final String APP_VERSION_SUFFIX = "";
     public static final String APP_HOME_PROPERTY = "sparrow.home";
     public static final String NETWORK_ENV_PROPERTY = "SPARROW_NETWORK";
