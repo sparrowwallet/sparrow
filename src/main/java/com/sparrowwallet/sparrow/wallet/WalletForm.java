@@ -332,6 +332,10 @@ public class WalletForm {
         return walletUtxosEntry;
     }
 
+    public boolean isLocked() {
+        return lockedProperty.get();
+    }
+
     public BooleanProperty lockedProperty() {
         return lockedProperty;
     }

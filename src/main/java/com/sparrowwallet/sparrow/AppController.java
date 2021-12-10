@@ -1300,6 +1300,17 @@ public class AppController implements Initializable {
         }
     }
 
+    public void lockWallets(ActionEvent event) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData instanceof WalletTabData walletTabData) {
+                if(!walletTabData.getWalletForm().isLocked()) {
+                    EventManager.get().post(new WalletLockEvent(walletTabData.getWalletForm().getMasterWallet()));
+                }
+            }
+        }
+    }
+
     public void refreshWallet(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
