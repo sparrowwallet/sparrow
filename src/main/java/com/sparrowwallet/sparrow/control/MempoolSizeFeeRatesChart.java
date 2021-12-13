@@ -81,7 +81,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         long previousFeeRate = 0;
         for(Long feeRate : SendController.FEE_RATES_RANGE) {
             XYChart.Series<String, Number> series = new XYChart.Series<>();
-            series.setName(feeRate + "+ vB");
+            series.setName(feeRate + "+ sats/vB");
             long seriesTotalVSize = 0;
 
             for(Date date : periodRateSizes.keySet()) {
