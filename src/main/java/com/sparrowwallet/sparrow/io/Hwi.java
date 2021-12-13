@@ -43,7 +43,7 @@ public class Hwi {
         try {
             List<String> command;
             if(passphrase != null && !passphrase.isEmpty()) {
-                command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), "--password", passphrase, Command.ENUMERATE.toString());
+                command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), "--password", escape(passphrase), Command.ENUMERATE.toString());
             } else {
                 command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), Command.ENUMERATE.toString());
             }
@@ -414,7 +414,7 @@ public class Hwi {
     }
 
     private List<String> getDeviceCommand(Device device, String passphrase, Command command, String... commandData) throws IOException {
-        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", passphrase, command.toString()));
+        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", escape(passphrase), command.toString()));
         addChainType(elements);
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
@@ -435,6 +435,15 @@ public class Hwi {
         }
 
         return network.toString();
+    }
+
+    private String escape(String passphrase) {
+        Platform platform = Platform.getCurrent();
+        if(platform == Platform.WINDOWS) {
+            return passphrase.replace("\"", "\\\"");
+        }
+
+        return passphrase;
     }
 
     public static class EnumerateService extends Service<List<Device>> {
