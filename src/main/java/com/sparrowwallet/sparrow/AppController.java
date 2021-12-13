@@ -331,7 +331,7 @@ public class AppController implements Initializable {
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
         findMixingPartner.setDisable(true);
         AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
-            findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
+            findMixingPartner.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
         });
 
         setServerType(Config.get().getServerType());
@@ -1495,12 +1495,14 @@ public class AppController implements Initializable {
 
     public WalletForm getSelectedWalletForm() {
         Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
-        TabData tabData = (TabData)selectedTab.getUserData();
-        if(tabData instanceof WalletTabData) {
-            TabPane subTabs = (TabPane)selectedTab.getContent();
-            Tab selectedSubTab = subTabs.getSelectionModel().getSelectedItem();
-            WalletTabData subWalletTabData = (WalletTabData)selectedSubTab.getUserData();
-            return subWalletTabData.getWalletForm();
+        if(selectedTab != null) {
+            TabData tabData = (TabData)selectedTab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                TabPane subTabs = (TabPane)selectedTab.getContent();
+                Tab selectedSubTab = subTabs.getSelectionModel().getSelectedItem();
+                WalletTabData subWalletTabData = (WalletTabData)selectedSubTab.getUserData();
+                return subWalletTabData.getWalletForm();
+            }
         }
 
         return null;

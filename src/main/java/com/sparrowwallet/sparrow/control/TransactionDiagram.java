@@ -507,7 +507,7 @@ public class TransactionDiagram extends GridPane {
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
             recipientLabel.setTooltip(recipientTooltip);
-            outputNodes.add(new OutputNode(recipientLabel, payment.getAddress()));
+            outputNodes.add(new OutputNode(recipientLabel, payment.getAddress(), payment.getAmount()));
         }
 
         for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
@@ -543,7 +543,7 @@ public class TransactionDiagram extends GridPane {
                 actionBox.getChildren().add(replaceChangeLabel);
             }
 
-            outputNodes.add(new OutputNode(actionBox, changeAddress));
+            outputNodes.add(new OutputNode(actionBox, changeAddress, changeEntry.getValue()));
         }
 
         if(isFinal()) {
@@ -634,7 +634,7 @@ public class TransactionDiagram extends GridPane {
         if(payment.getType() == Payment.Type.WHIRLPOOL_FEE) {
             return "Whirlpool Fee";
         } else if(walletTx.isPremixSend(payment)) {
-            int premixIndex = getOutputIndex(payment.getAddress()) - 2;
+            int premixIndex = getOutputIndex(payment.getAddress(), payment.getAmount()) - 2;
             return "Premix #" + premixIndex;
         } else if(walletTx.isBadbankSend(payment)) {
             return "Badbank Change";
@@ -643,8 +643,8 @@ public class TransactionDiagram extends GridPane {
         return null;
     }
 
-    private int getOutputIndex(Address address) {
-        return walletTx.getTransaction().getOutputs().stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress())).mapToInt(TransactionOutput::getIndex).findFirst().orElseThrow();
+    private int getOutputIndex(Address address, long amount) {
+        return walletTx.getTransaction().getOutputs().stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress()) && txOutput.getValue() == amount).mapToInt(TransactionOutput::getIndex).findFirst().orElseThrow();
     }
 
     private Wallet getToWallet(Payment payment) {
@@ -949,16 +949,18 @@ public class TransactionDiagram extends GridPane {
     private class OutputNode implements Comparable<OutputNode> {
         public Node outputLabel;
         public Address address;
+        public long amount;
 
-        public OutputNode(Node outputLabel, Address address) {
+        public OutputNode(Node outputLabel, Address address, long amount) {
             this.outputLabel = outputLabel;
             this.address = address;
+            this.amount = amount;
         }
 
         @Override
         public int compareTo(TransactionDiagram.OutputNode o) {
             try {
-                return getOutputIndex(address) - getOutputIndex(o.address);
+                return getOutputIndex(address, amount) - getOutputIndex(o.address, o.amount);
             } catch(Exception e) {
                 return 0;
             }

@@ -1288,7 +1288,7 @@ public class SendController extends WalletFormController implements Initializabl
             whirlpoolProperty.set(event.getPool());
             updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
 
-            boolean isWhirlpoolPremix = (event.getPayments() != null && event.getPayments().stream().anyMatch(payment -> payment.getType().equals(Payment.Type.WHIRLPOOL_FEE)));
+            boolean isWhirlpoolPremix = (event.getPool() != null);
             setInputFieldsDisabled(isWhirlpoolPremix);
             premixButton.setVisible(isWhirlpoolPremix);
             premixButton.setDefaultButton(isWhirlpoolPremix);

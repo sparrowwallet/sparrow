@@ -328,13 +328,15 @@ public class UtxosController extends WalletFormController implements Initializab
         Wallet badbankWallet = masterWallet.getChildWallet(StandardAccount.WHIRLPOOL_BADBANK);
 
         List<Payment> payments = new ArrayList<>();
-        try {
-            Address whirlpoolFeeAddress = Address.fromString(tx0Preview.getTx0Data().getFeeAddress());
-            Payment whirlpoolFeePayment = new Payment(whirlpoolFeeAddress, "Whirlpool Fee", tx0Preview.getFeeValue(), false);
-            whirlpoolFeePayment.setType(Payment.Type.WHIRLPOOL_FEE);
-            payments.add(whirlpoolFeePayment);
-        } catch(InvalidAddressException e) {
-            throw new IllegalStateException("Cannot parse whirlpool fee address " + tx0Preview.getTx0Data().getFeeAddress(), e);
+        if(tx0Preview.getTx0Data().getFeeAddress() != null) {
+            try {
+                Address whirlpoolFeeAddress = Address.fromString(tx0Preview.getTx0Data().getFeeAddress());
+                Payment whirlpoolFeePayment = new Payment(whirlpoolFeeAddress, "Whirlpool Fee", tx0Preview.getFeeValue(), false);
+                whirlpoolFeePayment.setType(Payment.Type.WHIRLPOOL_FEE);
+                payments.add(whirlpoolFeePayment);
+            } catch(InvalidAddressException e) {
+                throw new IllegalStateException("Cannot parse whirlpool fee address " + tx0Preview.getTx0Data().getFeeAddress(), e);
+            }
         }
 
         WalletNode badbankNode = badbankWallet.getFreshNode(KeyPurpose.RECEIVE);
