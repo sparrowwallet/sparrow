@@ -217,6 +217,8 @@ public class HeadersController extends TransactionFormController implements Init
 
     private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
+    private final Map<Integer, String> outputIndexLabels = new HashMap<>();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -592,8 +594,11 @@ public class HeadersController extends TransactionFormController implements Init
                         Payment payment = new Payment(txOutput.getScript().getToAddresses()[0], receivedTxo != null ? receivedTxo.getLabel() : label, txOutput.getValue(), false, paymentType);
                         WalletTransaction createdTx = AppServices.get().getCreatedTransaction(selectedTxos.keySet());
                         if(createdTx != null) {
-                            Optional<Payment> optPymt = createdTx.getPayments().stream().filter(pymt -> pymt.getAddress().equals(payment.getAddress()) && pymt.getAmount() == payment.getAmount()).findFirst();
-                            optPymt.ifPresent(pymt -> payment.setLabel(pymt.getLabel()));
+                            Optional<String> optLabel = createdTx.getPayments().stream().filter(pymt -> pymt.getAddress().equals(payment.getAddress()) && pymt.getAmount() == payment.getAmount()).map(Payment::getLabel).findFirst();
+                            if(optLabel.isPresent()) {
+                                payment.setLabel(optLabel.get());
+                                outputIndexLabels.put(txOutput.getIndex(), optLabel.get());
+                            }
                         }
                         payments.add(payment);
                     } catch(Exception e) {
@@ -1324,7 +1329,8 @@ public class HeadersController extends TransactionFormController implements Init
             for(WalletNode walletNode : event.getHistoryChangedNodes()) {
                 for(BlockTransactionHashIndex output : walletNode.getTransactionOutputs()) {
                     if(output.getHash().equals(txid) && output.getLabel() == null) { //If we send to ourselves, usually change
-                        output.setLabel(headersForm.getName() + (walletNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
+                        String label = outputIndexLabels.containsKey((int)output.getIndex()) ? outputIndexLabels.get((int)output.getIndex()) : headersForm.getName();
+                        output.setLabel(label + (walletNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
                         changedLabelEntries.add(new HashIndexEntry(event.getWallet(), output, HashIndexEntry.Type.OUTPUT, walletNode.getKeyPurpose()));
                     }
                     if(output.getSpentBy() != null && output.getSpentBy().getHash().equals(txid) && output.getSpentBy().getLabel() == null) { //The norm - sending out
