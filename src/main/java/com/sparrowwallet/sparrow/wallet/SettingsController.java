@@ -304,7 +304,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else if(result.wallets != null) {
                 for(Wallet wallet : result.wallets) {
                     if(scriptType.getValue().equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
-                        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet());
+                        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
                         setDescriptorText(outputDescriptor.toString());
                         break;
                     }

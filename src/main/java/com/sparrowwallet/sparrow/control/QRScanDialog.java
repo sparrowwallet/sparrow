@@ -10,6 +10,8 @@ import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.address.P2SHAddress;
 import com.sparrowwallet.drongo.address.P2WPKHAddress;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.Base43;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -491,6 +493,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, KeyDerivation.writePath(outputDescriptor.getKeyDerivation(extendedKey).getDerivation())));
                 keystore.setExtendedPublicKey(extendedKey);
                 wallet.getKeystores().add(keystore);
+                wallet.setDefaultPolicy(Policy.getPolicy(outputDescriptor.isCosigner() ? PolicyType.MULTI : PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), 1));
                 wallets.add(wallet);
             }
 
