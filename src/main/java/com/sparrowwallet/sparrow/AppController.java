@@ -28,6 +28,7 @@ import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.soroban.CounterpartyDialog;
+import com.sparrowwallet.sparrow.soroban.PayNymDialog;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
@@ -162,6 +163,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem findMixingPartner;
+
+    @FXML
+    private MenuItem showPayNym;
 
     @FXML
     private CheckMenuItem preventSleep;
@@ -329,6 +333,7 @@ public class AppController implements Initializable {
         lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        showPayNym.disableProperty().bind(findMixingPartner.disableProperty());
         findMixingPartner.setDisable(true);
         AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
             findMixingPartner.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
@@ -1286,6 +1291,14 @@ public class AppController implements Initializable {
                 }
                 counterpartyDialog.showAndWait();
             }
+        }
+    }
+
+    public void showPayNym(ActionEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            PayNymDialog payNymDialog = new PayNymDialog(selectedWalletForm.getWalletId(), false);
+            payNymDialog.showAndWait();
         }
     }
 
