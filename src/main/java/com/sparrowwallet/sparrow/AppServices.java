@@ -9,8 +9,10 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletTransaction;
 import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
@@ -541,6 +543,18 @@ public class AppServices {
 
     public Wallet getWallet(String walletId) {
         return getOpenWallets().entrySet().stream().filter(entry -> entry.getValue().getWalletId(entry.getKey()).equals(walletId)).map(Map.Entry::getKey).findFirst().orElse(null);
+    }
+
+    public WalletTransaction getCreatedTransaction(Set<BlockTransactionHashIndex> utxos) {
+        for(List<WalletTabData> walletTabDataList : walletWindows.values()) {
+            for(WalletTabData walletTabData : walletTabDataList) {
+                if(walletTabData.getWalletForm().getCreatedWalletTransaction() != null && utxos.equals(walletTabData.getWalletForm().getCreatedWalletTransaction().getSelectedUtxos().keySet())) {
+                    return walletTabData.getWalletForm().getCreatedWalletTransaction();
+                }
+            }
+        }
+
+        return null;
     }
 
     public Window getWindowForWallet(String walletId) {

@@ -16,7 +16,9 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ public class WalletForm {
     private WalletUtxosEntry walletUtxosEntry;
     private final List<NodeEntry> accountEntries = new ArrayList<>();
     private final List<Set<WalletNode>> walletTransactionNodes = new ArrayList<>();
+    private final ObjectProperty<WalletTransaction> createdWalletTransactionProperty = new SimpleObjectProperty<>(null);
 
     private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
@@ -284,6 +287,14 @@ public class WalletForm {
         }
 
         return allNodes.isEmpty() ? walletNodes : allNodes;
+    }
+
+    public WalletTransaction getCreatedWalletTransaction() {
+        return createdWalletTransactionProperty.get();
+    }
+
+    public void setCreatedWalletTransaction(WalletTransaction createdWalletTransaction) {
+        this.createdWalletTransactionProperty.set(createdWalletTransaction);
     }
 
     public NodeEntry getNodeEntry(KeyPurpose keyPurpose) {

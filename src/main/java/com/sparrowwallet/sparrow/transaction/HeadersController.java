@@ -589,7 +589,13 @@ public class HeadersController extends TransactionFormController implements Init
                     BlockTransactionHashIndex receivedTxo = walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txOutput.getHash()) && txo.getIndex() == txOutput.getIndex()).findFirst().orElse(null);
                     String label = headersForm.getName() == null || (headersForm.getName().startsWith("[") && headersForm.getName().endsWith("]") && headersForm.getName().length() == 8) ? null : headersForm.getName();
                     try {
-                        payments.add(new Payment(txOutput.getScript().getToAddresses()[0], receivedTxo != null ? receivedTxo.getLabel() : label, txOutput.getValue(), false, paymentType));
+                        Payment payment = new Payment(txOutput.getScript().getToAddresses()[0], receivedTxo != null ? receivedTxo.getLabel() : label, txOutput.getValue(), false, paymentType);
+                        WalletTransaction createdTx = AppServices.get().getCreatedTransaction(selectedTxos.keySet());
+                        if(createdTx != null) {
+                            Optional<Payment> optPymt = createdTx.getPayments().stream().filter(pymt -> pymt.getAddress().equals(payment.getAddress()) && pymt.getAmount() == payment.getAmount()).findFirst();
+                            optPymt.ifPresent(pymt -> payment.setLabel(pymt.getLabel()));
+                        }
+                        payments.add(payment);
                     } catch(Exception e) {
                         //ignore
                     }
