@@ -65,7 +65,7 @@ public class InitiatorDialog extends Dialog<Transaction> {
             broadcastButton.visibleProperty().bind(nextButton.visibleProperty().not());
 
             initiatorController.counterpartyPaymentCodeProperty().addListener((observable, oldValue, paymentCode) -> {
-                nextButton.setDisable(paymentCode == null);
+                nextButton.setDisable(paymentCode == null || !AppServices.isConnected());
             });
 
             initiatorController.stepProperty().addListener((observable, oldValue, step) -> {
