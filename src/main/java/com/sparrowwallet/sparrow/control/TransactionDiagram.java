@@ -27,6 +27,7 @@ import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.*;
+import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
 import javafx.util.Duration;
@@ -44,6 +45,7 @@ public class TransactionDiagram extends GridPane {
     private static final double DIAGRAM_HEIGHT = 210.0;
     private static final double REDUCED_DIAGRAM_HEIGHT = DIAGRAM_HEIGHT - 60;
     private static final int TOOLTIP_SHOW_DELAY = 50;
+    private static final int RELATIVE_SIZE_MAX_RADIUS = 7;
 
     private WalletTransaction walletTx;
     private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
@@ -387,6 +389,7 @@ public class TransactionDiagram extends GridPane {
 
         double width = 140.0;
         List<BlockTransactionHashIndex> inputs = new ArrayList<>(displayedUtxos.keySet());
+        long sum = walletTx.getTotal();
         int numUtxos = displayedUtxos.size();
         for(int i = 1; i <= numUtxos; i++) {
             CubicCurve curve = new CubicCurve();
@@ -398,7 +401,7 @@ public class TransactionDiagram extends GridPane {
                 continue;
             }
 
-            curve.setStartX(0);
+            curve.setStartX(RELATIVE_SIZE_MAX_RADIUS);
             double scaleFactor = (double)i / (numUtxos + 1);
             int nodeHeight = 17;
             double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
@@ -406,12 +409,18 @@ public class TransactionDiagram extends GridPane {
             curve.setEndX(width);
             curve.setEndY(scale(getDiagramHeight(), 0.5, 0));
 
-            curve.setControlX1(scale(width, 0.2, 0));
+            curve.setControlX1(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.2, 0));
             curve.setControlY1(curve.getStartY());
-            curve.setControlX2(scale(width, 0.8, 0));
+            curve.setControlX2(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.8, 0));
             curve.setControlY2(curve.getEndY());
 
             group.getChildren().add(curve);
+
+            if(sum > 0 && !curve.getStyleClass().contains("input-dashed-line")) {
+                long radius = Math.round((double)inputs.get(numUtxos-i).getValue() * (RELATIVE_SIZE_MAX_RADIUS - 1) / sum) + 1;
+                Circle circle = new Circle(curve.getStartX(), curve.getStartY(), radius);
+                group.getChildren().add(circle);
+            }
         }
 
         pane.getChildren().add(group);
@@ -458,6 +467,9 @@ public class TransactionDiagram extends GridPane {
         group.getChildren().add(yaxisLine);
 
         double width = 140.0;
+        long sum = walletTx.getTotal();
+        List<Long> values = walletTx.getTransaction().getOutputs().stream().map(TransactionOutput::getValue).collect(Collectors.toList());
+        values.add(walletTx.getFee());
         int numOutputs = displayedPayments.size() + walletTx.getChangeMap().size() + 1;
         for(int i = 1; i <= numOutputs; i++) {
             CubicCurve curve = new CubicCurve();
@@ -465,18 +477,24 @@ public class TransactionDiagram extends GridPane {
 
             curve.setStartX(0);
             curve.setStartY(scale(getDiagramHeight(), 0.5, 0));
-            curve.setEndX(width);
+            curve.setEndX(width - RELATIVE_SIZE_MAX_RADIUS);
             double scaleFactor = (double)i / (numOutputs + 1);
             int nodeHeight = 20;
             double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
             curve.setEndY(scale(getDiagramHeight(), scaleFactor, additional));
 
-            curve.setControlX1(scale(width, 0.2, 0));
+            curve.setControlX1(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.2, 0));
             curve.controlY1Property().bind(curve.startYProperty());
-            curve.setControlX2(scale(width, 0.8, 0));
+            curve.setControlX2(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.8, 0));
             curve.controlY2Property().bind(curve.endYProperty());
 
             group.getChildren().add(curve);
+
+            if(sum > 0) {
+                long radius = Math.min(RELATIVE_SIZE_MAX_RADIUS, Math.round((double)values.get(numOutputs-i) * (RELATIVE_SIZE_MAX_RADIUS - 1) / sum) + 1);
+                Circle circle = new Circle(curve.getEndX(), curve.getEndY(), radius);
+                group.getChildren().add(circle);
+            }
         }
 
         pane.getChildren().add(group);
@@ -880,7 +898,7 @@ public class TransactionDiagram extends GridPane {
         private final List<BlockTransactionHashIndex> additionalInputs;
 
         public AdditionalBlockTransactionHashIndex(List<BlockTransactionHashIndex> additionalInputs) {
-            super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, 0, 0);
+            super(Sha256Hash.ZERO_HASH, 0, new Date(), 0L, 0, additionalInputs.stream().mapToLong(BlockTransactionHashIndex::getValue).sum());
             this.additionalInputs = additionalInputs;
         }
 

@@ -403,6 +403,11 @@ public class HeadersController extends TransactionFormController implements Init
             feeAmt = 0L;
         } else if(headersForm.getInputTransactions() != null) {
             feeAmt = calculateFee(headersForm.getInputTransactions());
+        } else {
+            Wallet wallet = getWalletFromTransactionInputs();
+            if(wallet != null) {
+                feeAmt = calculateFee(wallet.getTransactions());
+            }
         }
 
         if(feeAmt != null) {
@@ -523,7 +528,7 @@ public class HeadersController extends TransactionFormController implements Init
             }
 
             BlockTransaction inputTx = inputTransactions.get(input.getOutpoint().getHash());
-            if(inputTx == null) {
+            if(inputTx == null && headersForm.getInputTransactions() != null) {
                 inputTx = headersForm.getInputTransactions().get(input.getOutpoint().getHash());
             }
 
@@ -557,11 +562,18 @@ public class HeadersController extends TransactionFormController implements Init
         Wallet wallet = getWalletFromTransactionInputs();
 
         if(wallet != null) {
+            Map<Sha256Hash, BlockTransaction> walletInputTransactions = inputTransactions;
+            if(walletInputTransactions == null) {
+                Set<Sha256Hash> refs = headersForm.getTransaction().getInputs().stream().map(txInput -> txInput.getOutpoint().getHash()).collect(Collectors.toSet());
+                walletInputTransactions = new HashMap<>(wallet.getTransactions());
+                walletInputTransactions.keySet().retainAll(refs);
+            }
+
             Map<BlockTransactionHashIndex, WalletNode> selectedTxos = new LinkedHashMap<>();
             Map<BlockTransactionHashIndex, WalletNode> walletTxos = wallet.getWalletTxos();
             for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
                 BlockTransactionHashIndex selectedTxo = walletTxos.keySet().stream().filter(txo -> txInput.getOutpoint().getHash().equals(txo.getHash()) && txInput.getOutpoint().getIndex() == txo.getIndex())
-                        .findFirst().orElse(new BlockTransactionHashIndex(txInput.getOutpoint().getHash(), 0, null, null, txInput.getOutpoint().getIndex(), 0));
+                        .findFirst().orElse(getBlockTransactionInput(walletInputTransactions, txInput));
                 selectedTxos.put(selectedTxo, walletTxos.get(selectedTxo));
             }
 
@@ -607,19 +619,10 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             }
 
-            return new WalletTransaction(wallet, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, changeMap, fee.getValue(), inputTransactions);
+            return new WalletTransaction(wallet, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, changeMap, fee.getValue(), walletInputTransactions);
         } else {
             Map<BlockTransactionHashIndex, WalletNode> selectedTxos = headersForm.getTransaction().getInputs().stream()
-                    .collect(Collectors.toMap(txInput -> {
-                                if(inputTransactions != null) {
-                                    BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
-                                    if(blockTransaction != null) {
-                                        TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
-                                        return new BlockTransactionHashIndex(blockTransaction.getHash(), blockTransaction.getHeight(), blockTransaction.getDate(), blockTransaction.getFee(), txInput.getOutpoint().getIndex(), txOutput.getValue());
-                                    }
-                                }
-                                return new BlockTransactionHashIndex(txInput.getOutpoint().getHash(), 0, null, null, txInput.getOutpoint().getIndex(), 0);
-                            },
+                    .collect(Collectors.toMap(txInput -> getBlockTransactionInput(inputTransactions, txInput),
                             txInput -> new WalletNode("m/0"),
                             (u, v) -> { throw new IllegalStateException("Duplicate TXOs"); },
                             LinkedHashMap::new));
@@ -636,6 +639,18 @@ public class HeadersController extends TransactionFormController implements Init
 
             return new WalletTransaction(null, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, Collections.emptyMap(), fee.getValue(), inputTransactions);
         }
+    }
+
+    private BlockTransactionHashIndex getBlockTransactionInput(Map<Sha256Hash, BlockTransaction> inputTransactions, TransactionInput txInput) {
+        if(inputTransactions != null) {
+            BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
+            if(blockTransaction != null) {
+                TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int) txInput.getOutpoint().getIndex());
+                return new BlockTransactionHashIndex(blockTransaction.getHash(), blockTransaction.getHeight(), blockTransaction.getDate(), blockTransaction.getFee(), txInput.getOutpoint().getIndex(), txOutput.getValue());
+            }
+        }
+
+        return new BlockTransactionHashIndex(txInput.getOutpoint().getHash(), 0, null, null, txInput.getOutpoint().getIndex(), 0);
     }
 
     private Wallet getWalletFromTransactionInputs() {
@@ -1147,7 +1162,12 @@ public class HeadersController extends TransactionFormController implements Init
             if(feeAmt != null) {
                 updateFee(feeAmt);
             }
-            transactionDiagram.update(getWalletTransaction(event.getInputTransactions()));
+
+            Map<Sha256Hash, BlockTransaction> allFetchedInputTransactions = new HashMap<>(event.getInputTransactions());
+            if(headersForm.getInputTransactions() != null) {
+                allFetchedInputTransactions.putAll(headersForm.getInputTransactions());
+            }
+            transactionDiagram.update(getWalletTransaction(allFetchedInputTransactions));
         }
     }
 
