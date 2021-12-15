@@ -180,6 +180,7 @@ public class PaymentController extends WalletFormController implements Initializ
             if(newValue != null) {
                 sendController.setPayNymPayment();
             }
+            revalidateAmount();
         });
 
         address.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -320,6 +321,10 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private long getRecipientDustThreshold() {
+        if(payNymProperty.get() != null) {
+            return 0;
+        }
+
         Address address;
         try {
             address = getRecipientAddress();
