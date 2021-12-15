@@ -196,6 +196,11 @@ public class DbPersistence implements Persistence {
         jdbi.useHandle(handle -> {
             WalletDao walletDao = handle.attach(WalletDao.class);
             try {
+                if(dirtyPersistables.deleteAccount && !wallet.isMasterWallet()) {
+                    handle.execute("drop schema `" + getSchema(wallet) + "` cascade");
+                    return;
+                }
+
                 walletDao.setSchema(getSchema(wallet));
 
                 if(dirtyPersistables.clearHistory) {
@@ -632,6 +637,13 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
+    public void walletDeleted(WalletDeletedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).deleteAccount = true;
+        }
+    }
+
+    @Subscribe
     public void walletHistoryCleared(WalletHistoryClearedEvent event) {
         if(persistsFor(event.getWallet())) {
             dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).clearHistory = true;
@@ -710,6 +722,7 @@ public class DbPersistence implements Persistence {
     }
 
     private static class DirtyPersistables {
+        public boolean deleteAccount;
         public boolean clearHistory;
         public final List<WalletNode> historyNodes = new ArrayList<>();
         public String label;
@@ -725,6 +738,7 @@ public class DbPersistence implements Persistence {
 
         public String toString() {
             return "Dirty Persistables" +
+                    "\nDelete account:" + deleteAccount +
                     "\nClear history:" + clearHistory +
                     "\nNodes:" + historyNodes +
                     "\nLabel:" + label +

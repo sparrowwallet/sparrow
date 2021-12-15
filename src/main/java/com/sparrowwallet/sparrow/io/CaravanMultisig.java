@@ -50,7 +50,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
             Wallet wallet = new Wallet();
             wallet.setName(cf.name);
             wallet.setPolicyType(PolicyType.MULTI);
-            ScriptType scriptType = ScriptType.valueOf(cf.addressType);
+            ScriptType scriptType = ScriptType.valueOf(cf.addressType.replace('-', '_'));
 
             for(ExtPublicKey extKey : cf.extendedPublicKeys) {
                 Keystore keystore = new Keystore(extKey.name);

@@ -520,6 +520,14 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void walletDeleted(WalletDeletedEvent event) {
+        if(event.getWallet() == wallet && !wallet.isMasterWallet()) {
+            wallet.getMasterWallet().getChildWallets().remove(wallet);
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));

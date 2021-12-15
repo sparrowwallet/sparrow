@@ -1472,7 +1472,7 @@ public class AppController implements Initializable {
             TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
             subTab.setUserData(tabData);
             if(!wallet.isWhirlpoolChildWallet()) {
-                subTab.setContextMenu(getSubTabContextMenu(subTab));
+                subTab.setContextMenu(getSubTabContextMenu(wallet, subTabs, subTab));
             }
 
             subTabs.getTabs().add(subTab);
@@ -1702,7 +1702,7 @@ public class AppController implements Initializable {
         return contextMenu;
     }
 
-    private ContextMenu getSubTabContextMenu(Tab subTab) {
+    private ContextMenu getSubTabContextMenu(Wallet wallet, TabPane subTabs, Tab subTab) {
         ContextMenu contextMenu = new ContextMenu();
         MenuItem rename = new MenuItem("Rename Account");
         rename.setOnAction(event -> {
@@ -1713,14 +1713,27 @@ public class AppController implements Initializable {
                 String label = optLabel.get();
                 subTabLabel.setText(label);
 
-                WalletTabData walletTabData = (WalletTabData)subTab.getUserData();
-                Wallet wallet = walletTabData.getWallet();
                 wallet.setLabel(label);
                 EventManager.get().post(new WalletLabelChangedEvent(wallet));
             }
         });
-
         contextMenu.getItems().add(rename);
+
+        if(!wallet.isMasterWallet() && !wallet.isWhirlpoolChildWallet()) {
+            MenuItem delete = new MenuItem("Delete Account");
+            delete.setOnAction(event -> {
+                Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete Wallet Account?", "Labels applied in this wallet account will be lost. Are you sure?", ButtonType.CANCEL, ButtonType.OK);
+                if(optButtonType.isPresent() && optButtonType.get() == ButtonType.OK) {
+                    subTabs.getTabs().remove(subTab);
+                    if(subTabs.getTabs().size() == 1) {
+                        setSubTabsVisible(subTabs, false);
+                    }
+                    EventManager.get().post(new WalletDeletedEvent(wallet));
+                }
+            });
+            contextMenu.getItems().add(delete);
+        }
+
         return contextMenu;
     }
 
