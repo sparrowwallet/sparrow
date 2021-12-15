@@ -419,6 +419,7 @@ public class TransactionDiagram extends GridPane {
             if(sum > 0 && !curve.getStyleClass().contains("input-dashed-line")) {
                 long radius = Math.round((double)inputs.get(numUtxos-i).getValue() * (RELATIVE_SIZE_MAX_RADIUS - 1) / sum) + 1;
                 Circle circle = new Circle(curve.getStartX(), curve.getStartY(), radius);
+                circle.getStyleClass().add("size-indicator");
                 group.getChildren().add(circle);
             }
         }
@@ -493,6 +494,7 @@ public class TransactionDiagram extends GridPane {
             if(sum > 0) {
                 long radius = Math.min(RELATIVE_SIZE_MAX_RADIUS, Math.round((double)values.get(numOutputs-i) * (RELATIVE_SIZE_MAX_RADIUS - 1) / sum) + 1);
                 Circle circle = new Circle(curve.getEndX(), curve.getEndY(), radius);
+                circle.getStyleClass().add("size-indicator");
                 group.getChildren().add(circle);
             }
         }

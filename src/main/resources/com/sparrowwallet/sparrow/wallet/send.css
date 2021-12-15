@@ -85,6 +85,10 @@
     -fx-stroke-width: 1px;
 }
 
+#transactionDiagram .size-indicator {
+    -fx-fill: -fx-text-base-color;
+}
+
 #transactionDiagram .input-dashed-line {
     -fx-stroke-dash-array: 5px 5px;
 }

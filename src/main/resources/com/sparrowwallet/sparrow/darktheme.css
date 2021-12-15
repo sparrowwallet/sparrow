@@ -210,6 +210,10 @@
     -fx-text-fill: lightgray;
 }
 
+.root #transactionDiagram .size-indicator {
+    -fx-fill: lightgray;
+}
+
 .root .progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {
     -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, #e06c75 70%, derive(-fx-control-inner-background, -9%) 100%);
 }
