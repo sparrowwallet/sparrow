@@ -1398,6 +1398,14 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void sorobanInitiated(SorobanInitiatedEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet())) {
+            if(!AppServices.onlineProperty().get()) {
+                Optional<ButtonType> optButtonType = AppServices.showErrorDialog("Cannot Mix Offline", "Sparrow needs to be connected to a server to perform collaborative mixes. Try to connect?", ButtonType.CANCEL, ButtonType.OK);
+                if(optButtonType.isPresent() && optButtonType.get() == ButtonType.OK) {
+                    AppServices.onlineProperty().set(true);
+                }
+                return;
+            }
+
             InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
             if(Config.get().isSameAppMixing()) {
                 initiatorDialog.initModality(Modality.NONE);
