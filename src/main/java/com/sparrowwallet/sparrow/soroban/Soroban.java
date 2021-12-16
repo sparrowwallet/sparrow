@@ -109,6 +109,7 @@ public class Soroban {
                 Soroban soroban = AppServices.getSorobanServices().getSoroban(associatedWallet);
                 if(soroban != null && soroban.getHdWallet() != null) {
                     hdWallet = soroban.hdWallet;
+                    bip47Wallet = soroban.bip47Wallet;
                     paymentCode = soroban.paymentCode;
                 }
             }
