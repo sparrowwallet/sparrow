@@ -10,7 +10,7 @@ public class SeedSigner extends SpecterDIY {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import QR created on your SeedSigner by selecting Generate XPUB in the Signing Tools menu. Note that SeedSigner currently only supports multisig wallets with a P2WSH script type.";
+        return "Import QR created on your SeedSigner by selecting xPub from Seed in the Seed Tools menu once you have entered your seed.";
     }
 
     @Override
