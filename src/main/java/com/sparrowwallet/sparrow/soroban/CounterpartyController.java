@@ -333,7 +333,7 @@ public class CounterpartyController extends SorobanController {
     }
 
     private void followPaymentCode(Soroban soroban, PaymentCode paymentCodeInitiator) {
-        if(Config.get().isUsePayNym()) {
+        if(Config.get().isUsePayNym() && soroban.getHdWallet() != null) {
             soroban.getAuthToken(new HashMap<>()).subscribe(authToken -> {
                 String signature = soroban.getSignature(authToken);
                 soroban.followPaymentCode(paymentCodeInitiator, authToken, signature).subscribe(followMap -> {
@@ -341,6 +341,8 @@ public class CounterpartyController extends SorobanController {
                 }, error -> {
                     log.warn("Could not follow payment code", error);
                 });
+            }, error -> {
+                log.warn("Could not follow payment code", error);
             });
         }
     }
