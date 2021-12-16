@@ -360,7 +360,7 @@ extraJavaModuleInfo {
     module('json-simple-1.1.1.jar', 'json.simple', '1.1.1') {
         exports('org.json.simple')
     }
-    module('logback-classic-1.2.3.jar', 'logback.classic', '1.2.3') {
+    module('logback-classic-1.2.8.jar', 'logback.classic', '1.2.8') {
         exports('ch.qos.logback.classic')
         requires('org.slf4j')
         requires('logback.core')
@@ -572,7 +572,7 @@ extraJavaModuleInfo {
         requires('org.slf4j')
     }
     module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
-    module('logback-core-1.2.3.jar', 'logback.core', '1.2.3') {
+    module('logback-core-1.2.8.jar', 'logback.core', '1.2.8') {
         requires('java.xml')
     }
     module('kotlin-stdlib-common-1.5.20.jar', 'org.jetbrains.kotlin.kotlin.stdlib.common', '1.5.20') {
