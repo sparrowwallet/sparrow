@@ -42,12 +42,14 @@ public abstract class FileImportPane extends TitledDescriptionPane {
     protected ButtonBase importButton;
     private final SimpleStringProperty password = new SimpleStringProperty("");
     private final boolean scannable;
+    private final boolean fileFormatAvailable;
     protected List<Wallet> wallets;
 
-    public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl, boolean scannable) {
+    public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl, boolean scannable, boolean fileFormatAvailable) {
         super(title, description, content, imageUrl);
         this.importer = importer;
         this.scannable = scannable;
+        this.fileFormatAvailable = fileFormatAvailable;
 
         buttonBox.getChildren().clear();
         buttonBox.getChildren().add(createButton());
@@ -55,7 +57,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
 
     @Override
     protected Control createButton() {
-        if(scannable) {
+        if(scannable && fileFormatAvailable) {
             ToggleButton scanButton = new ToggleButton("Scan...");
             Glyph cameraGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CAMERA);
             cameraGlyph.setFontSize(12);
@@ -76,6 +78,16 @@ public abstract class FileImportPane extends TitledDescriptionPane {
             SegmentedButton segmentedButton = new SegmentedButton();
             segmentedButton.getButtons().addAll(scanButton, fileButton);
             return segmentedButton;
+        } else if(scannable) {
+            importButton = new Button("Scan...");
+            Glyph cameraGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CAMERA);
+            cameraGlyph.setFontSize(12);
+            importButton.setGraphic(cameraGlyph);
+            importButton.setAlignment(Pos.CENTER_RIGHT);
+            importButton.setOnAction(event -> {
+                importQR();
+            });
+            return importButton;
         } else {
             importButton = new Button("Import File...");
             importButton.setAlignment(Pos.CENTER_RIGHT);
