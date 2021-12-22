@@ -73,7 +73,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
-        PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(ScriptHashTx[].class);
+        PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(ScriptHashTx[].class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions for " + nodeRangesToString(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
@@ -101,7 +101,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, ScriptHashTx[]> getScriptHashMempool(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
-        PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(ScriptHashTx[].class);
+        PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(ScriptHashTx[].class);
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.get_mempool", pathScriptHashes.get(path));
@@ -128,7 +128,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes) {
-        PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(String.class);
+        PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + nodeRangesToString(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
@@ -148,7 +148,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
-        PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(Integer.class).returnType(String.class);
+        PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + blockHeights.size() + " block headers"));
 
         for(Integer height : blockHeights) {
@@ -167,7 +167,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
-        PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport).keysType(String.class).returnType(String.class);
+        PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + txids.size() + " transactions"));
 
         for(String txid : txids) {
