@@ -481,19 +481,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             List<Wallet> wallets = new ArrayList<>();
             String masterFingerprint = Utils.bytesToHex(cryptoAccount.getMasterFingerprint());
             for(CryptoOutput cryptoOutput : cryptoAccount.getOutputDescriptors()) {
-                Wallet wallet = new Wallet();
                 OutputDescriptor outputDescriptor = getOutputDescriptor(cryptoOutput);
-                if(outputDescriptor.isMultisig()) {
-                    throw new IllegalStateException("Multisig output descriptors are unsupported in CryptoAccount");
-                }
-
-                ExtendedKey extendedKey = outputDescriptor.getSingletonExtendedPublicKey();
-                wallet.setScriptType(outputDescriptor.getScriptType());
-                Keystore keystore = new Keystore();
-                keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, KeyDerivation.writePath(outputDescriptor.getKeyDerivation(extendedKey).getDerivation())));
-                keystore.setExtendedPublicKey(extendedKey);
-                wallet.getKeystores().add(keystore);
-                wallet.setDefaultPolicy(Policy.getPolicy(outputDescriptor.isCosigner() ? PolicyType.MULTI : PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), 1));
+                Wallet wallet = outputDescriptor.toKeystoreWallet(masterFingerprint);
                 wallets.add(wallet);
             }
 

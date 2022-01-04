@@ -160,6 +160,13 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 } catch(ImportException e) {
                     setError("Import Error", e.getMessage());
                 }
+            } else if(result.outputDescriptor != null) {
+                wallets = List.of(result.outputDescriptor.toKeystoreWallet(null));
+                try {
+                    importFile(importer.getName(), null, null);
+                } catch(ImportException e) {
+                    setError("Import Error", e.getMessage());
+                }
             } else if(result.payload != null) {
                 try {
                     importFile(importer.getName(), new ByteArrayInputStream(result.payload.getBytes(StandardCharsets.UTF_8)), null);
@@ -177,6 +184,9 @@ public abstract class FileImportPane extends TitledDescriptionPane {
             } else if(result.exception != null) {
                 log.error("Error importing QR", result.exception);
                 setError("Import Error", result.exception.getMessage());
+            } else {
+                setError("Import Error", null);
+                setExpanded(true);
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -7,7 +8,7 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import java.io.File;
 import java.io.InputStream;
 
-public class SeedTool implements KeystoreFileImport {
+public class GordianSeedTool implements KeystoreFileImport {
     @Override
     public boolean isEncrypted(File file) {
         return false;
@@ -15,12 +16,12 @@ public class SeedTool implements KeystoreFileImport {
 
     @Override
     public String getName() {
-        return "Seed Tool";
+        return "Gordian Seed Tool";
     }
 
     @Override
     public WalletModel getWalletModel() {
-        return WalletModel.SEED_TOOL;
+        return WalletModel.GORDIAN_SEED_TOOL;
     }
 
     @Override
@@ -35,7 +36,7 @@ public class SeedTool implements KeystoreFileImport {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Select your seed and scan the QR code created by Authenticate > Derive Key > Other Key Derivations > Account Descriptor. Click the share icon at the bottom to show the QR.";
+        return "Select your seed and scan the QR code created by Authenticate > Derive Key > Other Key Derivations > " + Network.get().toDisplayString() + " > Master Key > Account Descriptor. Click the share icon at the bottom.";
     }
 
     @Override
