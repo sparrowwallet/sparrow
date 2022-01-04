@@ -505,7 +505,6 @@ public class PaymentController extends WalletFormController implements Initializ
         label.setDisable(disable);
         amount.setDisable(disable);
         amountUnit.setDisable(disable);
-        maxButton.setDisable(disable);
         scanQrButton.setDisable(disable);
         addPaymentButton.setDisable(disable);
     }
