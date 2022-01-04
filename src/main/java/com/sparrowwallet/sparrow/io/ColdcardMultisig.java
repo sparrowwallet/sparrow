@@ -197,7 +197,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
             for(Keystore keystore : wallet.getKeystores()) {
                 if(multipleDerivations) {
-                    writer.append("# derivation: ").append(keystore.getKeyDerivation().getDerivationPath()).append("\n");
+                    writer.append("Derivation: ").append(keystore.getKeyDerivation().getDerivationPath()).append("\n");
                 }
                 writer.append(keystore.getKeyDerivation().getMasterFingerprint().toUpperCase()).append(": ").append(keystore.getExtendedPublicKey().toString()).append("\n");
                 if(multipleDerivations) {
