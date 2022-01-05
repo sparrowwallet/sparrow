@@ -359,9 +359,11 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
 
         PublicElectrumServer configPublicElectrumServer = PublicElectrumServer.fromUrl(config.getPublicElectrumServer());
-        if(configPublicElectrumServer == null) {
+        if(configPublicElectrumServer == null && PublicElectrumServer.supportedNetwork()) {
             List<PublicElectrumServer> servers = PublicElectrumServer.getServers();
-            publicElectrumServer.setValue(servers.get(new Random().nextInt(servers.size())));
+            if(!servers.isEmpty()) {
+                publicElectrumServer.setValue(servers.get(new Random().nextInt(servers.size())));
+            }
         } else {
             publicElectrumServer.setValue(configPublicElectrumServer);
         }
