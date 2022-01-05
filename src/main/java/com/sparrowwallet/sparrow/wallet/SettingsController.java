@@ -381,7 +381,8 @@ public class SettingsController extends WalletFormController implements Initiali
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString);
         dialog.setTitle("Edit wallet output descriptor");
-        dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nChanges to the output descriptor will modify the wallet configuration.");
+        dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nChanges to the output descriptor will modify the wallet configuration." +
+                (walletForm.getWallet().getPolicyType() == PolicyType.MULTI ? "\nKey expressions are shown in canonical order." : ""));
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
             setDescriptorText(text.get());
@@ -413,7 +414,8 @@ public class SettingsController extends WalletFormController implements Initiali
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString, false);
         dialog.setTitle("Show wallet output descriptor");
-        dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nThis wallet is no longer editable - create a new wallet to change the descriptor.");
+        dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nThis wallet is no longer editable - create a new wallet to change the descriptor." +
+                (walletForm.getWallet().getPolicyType() == PolicyType.MULTI ? "\nKey expressions are shown in canonical order." : ""));
         dialog.showAndWait();
     }
 
