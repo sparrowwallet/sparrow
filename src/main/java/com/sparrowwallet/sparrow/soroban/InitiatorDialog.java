@@ -41,6 +41,8 @@ public class InitiatorDialog extends Dialog<Transaction> {
             InitiatorController initiatorController = initiatorLoader.getController();
             initiatorController.initializeView(walletId, wallet, walletTransaction);
 
+            EventManager.get().register(initiatorController);
+
             dialogPane.setPrefWidth(730);
             dialogPane.setPrefHeight(530);
             AppServices.moveToActiveWindowScreen(this);
@@ -51,18 +53,23 @@ public class InitiatorDialog extends Dialog<Transaction> {
             final ButtonType nextButtonType = new javafx.scene.control.ButtonType("Next", ButtonBar.ButtonData.OK_DONE);
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             final ButtonType broadcastButtonType = new javafx.scene.control.ButtonType("Sign & Broadcast", ButtonBar.ButtonData.APPLY);
-            dialogPane.getButtonTypes().addAll(nextButtonType, cancelButtonType, broadcastButtonType);
+            final ButtonType doneButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.APPLY);
+            dialogPane.getButtonTypes().addAll(nextButtonType, cancelButtonType, broadcastButtonType, doneButtonType);
 
             Button nextButton = (Button)dialogPane.lookupButton(nextButtonType);
             Button cancelButton = (Button)dialogPane.lookupButton(cancelButtonType);
             Button broadcastButton = (Button)dialogPane.lookupButton(broadcastButtonType);
+            Button doneButton = (Button)dialogPane.lookupButton(doneButtonType);
             nextButton.setDisable(initiatorController.counterpartyPaymentCodeProperty().get() == null);
             broadcastButton.setDisable(true);
 
             nextButton.managedProperty().bind(nextButton.visibleProperty());
+            cancelButton.managedProperty().bind(cancelButton.visibleProperty());
             broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
+            doneButton.managedProperty().bind(doneButton.visibleProperty());
 
-            broadcastButton.visibleProperty().bind(nextButton.visibleProperty().not());
+            broadcastButton.setVisible(false);
+            doneButton.setVisible(false);
 
             initiatorController.counterpartyPaymentCodeProperty().addListener((observable, oldValue, paymentCode) -> {
                 nextButton.setDisable(paymentCode == null || !AppServices.isConnected());
@@ -77,10 +84,19 @@ public class InitiatorDialog extends Dialog<Transaction> {
                     nextButton.setVisible(true);
                 } else if(step == InitiatorController.Step.REVIEW) {
                     nextButton.setVisible(false);
+                    broadcastButton.setVisible(true);
                     broadcastButton.setDefaultButton(true);
                     broadcastButton.setDisable(false);
                 } else if(step == InitiatorController.Step.BROADCAST) {
-                    setResult(initiatorController.getTransaction());
+                    cancelButton.setVisible(false);
+                    broadcastButton.setVisible(false);
+                    doneButton.setVisible(true);
+                    doneButton.setDefaultButton(true);
+                } else if(step == InitiatorController.Step.REBROADCAST) {
+                    cancelButton.setVisible(true);
+                    broadcastButton.setVisible(true);
+                    broadcastButton.setDisable(false);
+                    doneButton.setVisible(false);
                 }
             });
 
@@ -98,8 +114,17 @@ public class InitiatorDialog extends Dialog<Transaction> {
             });
 
             broadcastButton.addEventFilter(ActionEvent.ACTION, event -> {
-                acceptAndBroadcast(initiatorController, walletId, wallet);
+                if(initiatorController.isTransactionAccepted()) {
+                    initiatorController.broadcastTransaction();
+                } else {
+                    acceptAndBroadcast(initiatorController, walletId, wallet);
+                }
                 event.consume();
+            });
+
+            setOnCloseRequest(event -> {
+                initiatorController.close();
+                EventManager.get().unregister(initiatorController);
             });
 
             setResultConverter(dialogButton -> dialogButton.getButtonData().equals(ButtonBar.ButtonData.APPLY) ? initiatorController.getTransaction() : null);

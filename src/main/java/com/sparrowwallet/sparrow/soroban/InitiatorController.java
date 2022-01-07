@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.soroban;
 
+import com.google.common.eventbus.Subscribe;
 import com.samourai.soroban.cahoots.CahootsContext;
 import com.samourai.soroban.client.cahoots.OnlineCahootsMessage;
 import com.samourai.soroban.client.cahoots.SorobanCahootsService;
@@ -12,6 +13,7 @@ import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -22,8 +24,10 @@ import com.sparrowwallet.sparrow.control.TransactionDiagram;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -37,6 +41,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -68,6 +73,9 @@ public class InitiatorController extends SorobanController {
 
     @FXML
     private VBox step3;
+
+    @FXML
+    private VBox step4;
 
     @FXML
     private ComboBox<PayNym> payNymFollowers;
@@ -108,6 +116,18 @@ public class InitiatorController extends SorobanController {
     @FXML
     private TransactionDiagram transactionDiagram;
 
+    @FXML
+    private Label step4Desc;
+
+    @FXML
+    private ProgressBar broadcastProgressBar;
+
+    @FXML
+    private Label broadcastProgressLabel;
+
+    @FXML
+    private Glyph broadcastSuccessful;
+
     private final StringProperty counterpartyPayNymName = new SimpleStringProperty();
 
     private final ObjectProperty<PaymentCode> counterpartyPaymentCode = new SimpleObjectProperty<>(null);
@@ -120,6 +140,10 @@ public class InitiatorController extends SorobanController {
 
     private CahootsType cahootsType = CahootsType.STONEWALLX2;
 
+    private ElectrumServer.TransactionMempoolService transactionMempoolService;
+
+    private boolean closed;
+
     public void initializeView(String walletId, Wallet wallet, WalletTransaction walletTransaction) {
         this.walletId = walletId;
         this.wallet = wallet;
@@ -128,6 +152,7 @@ public class InitiatorController extends SorobanController {
         step1.managedProperty().bind(step1.visibleProperty());
         step2.managedProperty().bind(step2.visibleProperty());
         step3.managedProperty().bind(step3.visibleProperty());
+        step4.managedProperty().bind(step4.visibleProperty());
 
         sorobanProgressBar.managedProperty().bind(sorobanProgressBar.visibleProperty());
         sorobanProgressLabel.managedProperty().bind(sorobanProgressLabel.visibleProperty());
@@ -135,12 +160,17 @@ public class InitiatorController extends SorobanController {
         sorobanProgressBar.visibleProperty().bind(sorobanProgressLabel.visibleProperty());
         mixDeclined.visibleProperty().bind(sorobanProgressLabel.visibleProperty().not());
         step2Timer.visibleProperty().bind(sorobanProgressLabel.visibleProperty());
+        broadcastProgressBar.managedProperty().bind(broadcastProgressBar.visibleProperty());
+        broadcastProgressLabel.managedProperty().bind(broadcastProgressLabel.visibleProperty());
+        broadcastSuccessful.managedProperty().bind(broadcastSuccessful.visibleProperty());
+        broadcastSuccessful.setVisible(false);
 
         step2.setVisible(false);
         step3.setVisible(false);
+        step4.setVisible(false);
 
         transactionAccepted.addListener((observable, oldValue, accepted) -> {
-            if(transactionProperty.get() != null) {
+            if(transactionProperty.get() != null && stepProperty.get() != Step.REBROADCAST) {
                 Platform.exitNestedEventLoop(transactionAccepted, accepted);
             }
         });
@@ -237,6 +267,16 @@ public class InitiatorController extends SorobanController {
                     counterpartyPaymentCode.set(null);
                     payNymAvatar.setPaymentCode(null);
                 }
+            }
+        });
+
+        stepProperty.addListener((observable, oldValue, step) -> {
+            if(step == Step.BROADCAST) {
+                step4Desc.setText("Broadcasting the mix transaction...");
+                broadcastProgressLabel.setVisible(true);
+            } else if(step == Step.REBROADCAST) {
+                step4Desc.setText("Rebroadcast the mix transaction.");
+                broadcastProgressLabel.setVisible(false);
             }
         });
 
@@ -429,13 +469,14 @@ public class InitiatorController extends SorobanController {
                                                 if(cahoots.getStep() == 3) {
                                                     next();
                                                     step3Timer.start(e -> {
-                                                        if(stepProperty.get() != Step.BROADCAST) {
+                                                        if(stepProperty.get() != Step.BROADCAST && stepProperty.get() != Step.REBROADCAST) {
                                                             step3Desc.setText("Transaction declined due to timeout.");
                                                             transactionAccepted.set(Boolean.FALSE);
                                                         }
                                                     });
                                                 } else if(cahoots.getStep() == 4) {
-                                                    stepProperty.set(Step.BROADCAST);
+                                                    next();
+                                                    broadcastTransaction();
                                                 }
                                             }
                                         } catch(PSBTParseException e) {
@@ -458,6 +499,70 @@ public class InitiatorController extends SorobanController {
         }
     }
 
+    public void broadcastTransaction() {
+        stepProperty.set(Step.BROADCAST);
+
+        ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(getTransaction());
+        broadcastTransactionService.setOnRunning(workerStateEvent -> {
+            broadcastProgressBar.setProgress(-1);
+        });
+        broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
+            Map<BlockTransactionHashIndex, WalletNode> selectedUtxos = new HashMap<>();
+            Map<BlockTransactionHashIndex, WalletNode> walletTxos = wallet.getWalletTxos();
+            for(TransactionInput txInput : getTransaction().getInputs()) {
+                Optional<BlockTransactionHashIndex> optSelectedUtxo = walletTxos.keySet().stream().filter(txo -> txInput.getOutpoint().getHash().equals(txo.getHash()) && txInput.getOutpoint().getIndex() == txo.getIndex())
+                        .findFirst();
+                optSelectedUtxo.ifPresent(blockTransactionHashIndex -> selectedUtxos.put(blockTransactionHashIndex, walletTxos.get(blockTransactionHashIndex)));
+            }
+
+            if(transactionMempoolService != null) {
+                transactionMempoolService.cancel();
+            }
+
+            transactionMempoolService = new ElectrumServer.TransactionMempoolService(wallet, getTransaction().getTxId(), new HashSet<>(selectedUtxos.values()));
+            transactionMempoolService.setDelay(Duration.seconds(3));
+            transactionMempoolService.setPeriod(Duration.seconds(10));
+            transactionMempoolService.setRestartOnFailure(false);
+            transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
+                Set<String> scriptHashes = transactionMempoolService.getValue();
+                if(!scriptHashes.isEmpty()) {
+                    Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHashes.iterator().next())));
+                }
+
+                if(transactionMempoolService.getIterationCount() > 3 && transactionMempoolService.isRunning()) {
+                    transactionMempoolService.cancel();
+                    broadcastProgressBar.setProgress(0);
+                    log.error("Timeout searching for broadcasted transaction");
+                    AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not register it in the mempool. It is safe to try broadcasting again.");
+                    stepProperty.set(Step.REBROADCAST);
+                }
+            });
+            transactionMempoolService.setOnFailed(mempoolWorkerStateEvent -> {
+                transactionMempoolService.cancel();
+                broadcastProgressBar.setProgress(0);
+                log.error("Timeout searching for broadcasted transaction");
+                AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not indicate it had entered the mempool. It is safe to try broadcasting again.");
+                stepProperty.set(Step.REBROADCAST);
+            });
+
+            if(!closed) {
+                transactionMempoolService.start();
+            }
+        });
+        broadcastTransactionService.setOnFailed(workerStateEvent -> {
+            broadcastProgressBar.setProgress(0);
+            Throwable exception = workerStateEvent.getSource().getException();
+            while(exception.getCause() != null) {
+                exception = exception.getCause();
+            }
+
+            log.error("Error broadcasting transaction", exception);
+            AppServices.showErrorDialog("Error broadcasting transaction", exception.getMessage());
+            stepProperty.set(Step.REBROADCAST);
+        });
+        broadcastTransactionService.start();
+    }
+
     public void next() {
         if(step1.isVisible()) {
             step1.setVisible(false);
@@ -470,6 +575,13 @@ public class InitiatorController extends SorobanController {
             step2.setVisible(false);
             step3.setVisible(true);
             stepProperty.set(Step.REVIEW);
+            return;
+        }
+
+        if(step3.isVisible()) {
+            step3.setVisible(false);
+            step4.setVisible(true);
+            stepProperty.set(Step.BROADCAST);
         }
     }
 
@@ -525,11 +637,36 @@ public class InitiatorController extends SorobanController {
         return transactionProperty.get();
     }
 
+    public void close() {
+        closed = true;
+        if(transactionMempoolService != null) {
+            transactionMempoolService.cancel();
+        }
+    }
+
+    public boolean isTransactionAccepted() {
+        return transactionAccepted.get() == Boolean.TRUE;
+    }
+
     public ObjectProperty<Boolean> transactionAcceptedProperty() {
         return transactionAccepted;
     }
 
+    @Subscribe
+    public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
+        if(event.getWalletNode(wallet) != null) {
+            if(transactionMempoolService != null) {
+                transactionMempoolService.cancel();
+            }
+
+            broadcastProgressBar.setVisible(false);
+            broadcastProgressLabel.setVisible(false);
+            step4Desc.setText("Transaction broadcasted.");
+            broadcastSuccessful.setVisible(true);
+        }
+    }
+
     public enum Step {
-        SETUP, COMMUNICATE, REVIEW, BROADCAST
+        SETUP, COMMUNICATE, REVIEW, BROADCAST, REBROADCAST
     }
 }

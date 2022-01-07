@@ -106,6 +106,26 @@
                     <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
                 </HBox>
             </VBox>
+            <VBox fx:id="step4" spacing="15">
+                <HBox>
+                    <Label text="Broadcast Transaction" styleClass="title-text">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" styleClass="title-icon" />
+                        </graphic>
+                    </Label>
+                </HBox>
+                <Label fx:id="step4Desc" text="Broadcasting the mix transaction..." wrapText="true" styleClass="content-text" />
+                <HBox>
+                    <padding>
+                        <Insets top="20" />
+                    </padding>
+                    <ProgressBar fx:id="broadcastProgressBar" prefWidth="680" />
+                </HBox>
+                <VBox alignment="CENTER" spacing="20">
+                    <Label fx:id="broadcastProgressLabel" text="Broadcasting..."  styleClass="content-text" alignment="CENTER"/>
+                    <Glyph fx:id="broadcastSuccessful" fontFamily="Font Awesome 5 Free Solid" fontSize="80" icon="CHECK_CIRCLE" styleClass="success" />
+                </VBox>
+            </VBox>
         </VBox>
     </VBox>
 </StackPane>

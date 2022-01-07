@@ -1406,32 +1406,16 @@ public class SendController extends WalletFormController implements Initializabl
                 return;
             }
 
-            InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
-            if(Config.get().isSameAppMixing()) {
-                initiatorDialog.initModality(Modality.NONE);
-            }
-            Optional<Transaction> optTransaction = initiatorDialog.showAndWait();
-            if(optTransaction.isPresent()) {
-                ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(optTransaction.get());
-                broadcastTransactionService.setOnRunning(workerStateEvent -> {
-                    createButton.setDisable(true);
-                    addWalletTransactionNodes();
-                });
-                broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
-                    createButton.setDisable(false);
+            Platform.runLater(() -> {
+                InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
+                if(Config.get().isSameAppMixing()) {
+                    initiatorDialog.initModality(Modality.NONE);
+                }
+                Optional<Transaction> optTransaction = initiatorDialog.showAndWait();
+                if(optTransaction.isPresent()) {
                     clear(null);
-                });
-                broadcastTransactionService.setOnFailed(workerStateEvent -> {
-                    createButton.setDisable(false);
-                    Throwable exception = workerStateEvent.getSource().getException();
-                    while(exception.getCause() != null) {
-                        exception = exception.getCause();
-                    }
-
-                    AppServices.showErrorDialog("Error broadcasting mix transaction", exception.getMessage());
-                });
-                broadcastTransactionService.start();
-            }
+                }
+            });
         }
     }
 
