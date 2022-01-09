@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.wallet.*;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.pool.HikariPool;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.exception.FlywayValidateException;
@@ -33,6 +34,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -55,6 +59,7 @@ public class DbPersistence implements Persistence {
 
     private Wallet masterWallet;
     private final Map<Wallet, DirtyPersistables> dirtyPersistablesMap = new HashMap<>();
+    private ExecutorService updateExecutor;
 
     public DbPersistence() {
         EventManager.get().register(this);
@@ -93,6 +98,8 @@ public class DbPersistence implements Persistence {
 
         Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, backupWallet, encryptionKey);
         masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+
+        createUpdateExecutor(masterWallet);
 
         return new WalletBackupAndKey(masterWallet, backupWallet, encryptionKey, keyDeriver, childWallets);
     }
@@ -157,7 +164,21 @@ public class DbPersistence implements Persistence {
     @Override
     public void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws StorageException {
         updatePassword(storage, encryptionPubKey);
-        update(storage, wallet, getFilePassword(encryptionPubKey));
+
+        updateExecutor.execute(() -> {
+            try {
+                update(storage, wallet, getFilePassword(encryptionPubKey));
+            } catch(Exception e) {
+                log.error("Error updating wallet db", e);
+            }
+        });
+    }
+
+    private synchronized void createUpdateExecutor(Wallet masterWallet) {
+        if(updateExecutor == null) {
+            BasicThreadFactory factory = new BasicThreadFactory.Builder().namingPattern(masterWallet.getFullName() + "-dbupdater").daemon(false).priority(Thread.NORM_PRIORITY).build();
+            updateExecutor = Executors.newSingleThreadExecutor(factory);
+        }
     }
 
     private File renameToDbFile(File walletFile) throws IOException {
@@ -337,6 +358,7 @@ public class DbPersistence implements Persistence {
 
         if(wallet.isMasterWallet()) {
             masterWallet = wallet;
+            createUpdateExecutor(masterWallet);
         }
     }
 
@@ -549,6 +571,24 @@ public class DbPersistence implements Persistence {
     @Override
     public void close() {
         EventManager.get().unregister(this);
+        if(updateExecutor != null) {
+            updateExecutor.shutdown();
+            try {
+                if(!updateExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    updateExecutor.shutdownNow();
+                }
+
+                closeDataSource();
+            } catch (InterruptedException e) {
+                updateExecutor.shutdownNow();
+                closeDataSource();
+            }
+        } else {
+            closeDataSource();
+        }
+    }
+
+    private void closeDataSource() {
         if(dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
         }
@@ -639,85 +679,87 @@ public class DbPersistence implements Persistence {
     @Subscribe
     public void walletDeleted(WalletDeletedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).deleteAccount = true;
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).deleteAccount = true);
         }
     }
 
     @Subscribe
     public void walletHistoryCleared(WalletHistoryClearedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).clearHistory = true;
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).clearHistory = true);
         }
     }
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).historyNodes.addAll(event.getHistoryChangedNodes());
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).historyNodes.addAll(event.getHistoryChangedNodes()));
         }
     }
 
     @Subscribe
     public void walletLabelChanged(WalletLabelChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).label = event.getLabel();
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).label = event.getLabel());
         }
     }
 
     @Subscribe
     public void walletBlockHeightChanged(WalletBlockHeightChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).blockHeight = event.getBlockHeight();
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).blockHeight = event.getBlockHeight());
         }
     }
 
     @Subscribe
     public void walletGapLimitChanged(WalletGapLimitChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).gapLimit = event.getGapLimit();
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).gapLimit = event.getGapLimit());
         }
     }
 
     @Subscribe
     public void walletEntryLabelsChanged(WalletEntryLabelsChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).labelEntries.addAll(event.getEntries());
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).labelEntries.addAll(event.getEntries()));
         }
     }
 
     @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).utxoStatuses.addAll(event.getUtxos());
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).utxoStatuses.addAll(event.getUtxos()));
         }
     }
 
     @Subscribe
     public void walletMixConfigChanged(WalletMixConfigChangedEvent event) {
         if(persistsFor(event.getWallet()) && event.getWallet().getMixConfig() != null) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).mixConfig = true;
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).mixConfig = true);
         }
     }
 
     @Subscribe
     public void walletUtxoMixesChanged(WalletUtxoMixesChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).changedUtxoMixes.putAll(event.getChangedUtxoMixes());
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).removedUtxoMixes.putAll(event.getRemovedUtxoMixes());
+            updateExecutor.execute(() -> {
+                dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).changedUtxoMixes.putAll(event.getChangedUtxoMixes());
+                dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).removedUtxoMixes.putAll(event.getRemovedUtxoMixes());
+            });
         }
     }
 
     @Subscribe
     public void keystoreLabelsChanged(KeystoreLabelsChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).labelKeystores.addAll(event.getChangedKeystores());
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).labelKeystores.addAll(event.getChangedKeystores()));
         }
     }
 
     @Subscribe
     public void keystoreEncryptionChanged(KeystoreEncryptionChangedEvent event) {
         if(persistsFor(event.getWallet())) {
-            dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).encryptionKeystores.addAll(event.getChangedKeystores());
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).encryptionKeystores.addAll(event.getChangedKeystores()));
         }
     }
 
