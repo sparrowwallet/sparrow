@@ -179,9 +179,9 @@ public class Hwi {
             isPromptActive = true;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
-                output = execute(getDeviceCommand(device, passphrase, Command.SIGN_MESSAGE, message, derivationPath));
+                output = execute(getDeviceArguments(device, passphrase, Command.SIGN_MESSAGE), Command.SIGN_MESSAGE, message, derivationPath);
             } else {
-                output = execute(getDeviceCommand(device, Command.SIGN_MESSAGE, message, derivationPath));
+                output = execute(getDeviceArguments(device, Command.SIGN_MESSAGE), Command.SIGN_MESSAGE, message, derivationPath);
             }
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
@@ -209,9 +209,9 @@ public class Hwi {
             isPromptActive = true;
             String output;
             if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
-                output = execute(getDeviceCommand(device, passphrase, Command.SIGN_TX, psbtBase64));
+                output = execute(getDeviceArguments(device, passphrase, Command.SIGN_TX), Command.SIGN_TX, psbtBase64);
             } else {
-                output = execute(getDeviceCommand(device, Command.SIGN_TX, psbtBase64));
+                output = execute(getDeviceArguments(device, Command.SIGN_TX), Command.SIGN_TX, psbtBase64);
             }
 
             JsonObject result = JsonParser.parseString(output).getAsJsonObject();
@@ -242,7 +242,31 @@ public class Hwi {
     private String execute(List<String> command) throws IOException {
         ProcessBuilder processBuilder = new ProcessBuilder(command);
         Process process = processBuilder.start();
-        return CharStreams.toString(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+        try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
+            return CharStreams.toString(reader);
+        }
+    }
+
+    private String execute(List<String> arguments, Command command, String... commandArguments) throws IOException {
+        List<String> processArguments = new ArrayList<>(arguments);
+        processArguments.add("--stdin");
+
+        ProcessBuilder processBuilder = new ProcessBuilder(processArguments);
+        Process process = processBuilder.start();
+
+        try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
+            writer.write(command.toString());
+            for(String commandArgument : commandArguments) {
+                writer.write(" \"");
+                writer.write(commandArgument.replace("\\", "\\\\").replace("\"", "\\\""));
+                writer.write("\"");
+            }
+            writer.flush();
+        }
+
+        try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
+            return CharStreams.toString(reader);
+        }
     }
 
     private synchronized File getHwiExecutable(Command command) {
@@ -400,30 +424,42 @@ public class Hwi {
         return result.get("success").getAsBoolean();
     }
 
+    private List<String> getDeviceArguments(Device device, Command command) throws IOException {
+        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType()));
+        addChainType(elements, false);
+        return elements;
+    }
+
+    private List<String> getDeviceArguments(Device device, String passphrase, Command command) throws IOException {
+        List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", escape(passphrase)));
+        addChainType(elements, false);
+        return elements;
+    }
+
     private List<String> getDeviceCommand(Device device, Command command) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
-        addChainType(elements);
+        addChainType(elements, true);
         return elements;
     }
 
     private List<String> getDeviceCommand(Device device, Command command, String... commandData) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), command.toString()));
-        addChainType(elements);
+        addChainType(elements, true);
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
     }
 
     private List<String> getDeviceCommand(Device device, String passphrase, Command command, String... commandData) throws IOException {
         List<String> elements = new ArrayList<>(List.of(getHwiExecutable(command).getAbsolutePath(), "--device-path", device.getPath(), "--device-type", device.getType(), "--password", escape(passphrase), command.toString()));
-        addChainType(elements);
+        addChainType(elements, true);
         elements.addAll(Arrays.stream(commandData).filter(Objects::nonNull).collect(Collectors.toList()));
         return elements;
     }
 
-    private void addChainType(List<String> elements) {
+    private void addChainType(List<String> elements, boolean commandPresent) {
         if(Network.get() != Network.MAINNET) {
-            elements.add(elements.size() - 1, "--chain");
-            elements.add(elements.size() - 1, getChainName(Network.get()));
+            elements.add(elements.size() - (commandPresent ? 1 : 0), "--chain");
+            elements.add(elements.size() - (commandPresent ? 1 : 0), getChainName(Network.get()));
         }
     }
 
