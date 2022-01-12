@@ -1,8 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.MempoolRateSize;
-import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.collections.FXCollections;
@@ -79,7 +79,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         });
 
         long previousFeeRate = 0;
-        for(Long feeRate : SendController.FEE_RATES_RANGE) {
+        for(Long feeRate : AppServices.FEE_RATES_RANGE) {
             XYChart.Series<String, Number> series = new XYChart.Series<>();
             series.setName(feeRate + "+ sats/vB");
             long seriesTotalVSize = 0;

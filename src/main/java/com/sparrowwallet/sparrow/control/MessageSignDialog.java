@@ -103,6 +103,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+        dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText(title == null ? (wallet == null ? "Verify Message" : "Sign/Verify Message") : title);
 
@@ -120,6 +121,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         Form form = new Form();
         Fieldset fieldset = new Fieldset();
         fieldset.setText("");
+        fieldset.setSpacing(10);
 
         Field addressField = new Field();
         addressField.setText("Address:");

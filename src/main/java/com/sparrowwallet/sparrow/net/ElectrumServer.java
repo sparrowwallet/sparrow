@@ -6,13 +6,13 @@ import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.wallet.SendController;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -847,6 +847,47 @@ public class ElectrumServer {
         return mempoolScriptHashes;
     }
 
+    public List<TransactionOutput> getUtxos(Address address) throws ServerException {
+        Wallet wallet = new Wallet(address.toString());
+        Map<String, String> pathScriptHashes = new HashMap<>();
+        pathScriptHashes.put("m/0", getScriptHash(address));
+        Map<String, ScriptHashTx[]> historyResult = electrumServerRpc.getScriptHashHistory(getTransport(), wallet, pathScriptHashes, true);
+        Set<String> txids = Arrays.stream(historyResult.get("m/0")).map(scriptHashTx -> scriptHashTx.tx_hash).collect(Collectors.toSet());
+
+        Map<String, String> transactionsResult = electrumServerRpc.getTransactions(getTransport(), wallet, txids);
+        List<TransactionOutput> transactionOutputs = new ArrayList<>();
+        Script outputScript = address.getOutputScript();
+        String strErrorTx = Sha256Hash.ZERO_HASH.toString();
+        List<Transaction> transactions = new ArrayList<>();
+        for(String txid : transactionsResult.keySet()) {
+            String strRawTx = transactionsResult.get(txid);
+
+            if(strRawTx.equals(strErrorTx)) {
+                continue;
+            }
+
+            try {
+                Transaction transaction = new Transaction(Utils.hexToBytes(strRawTx));
+                for(TransactionOutput txOutput : transaction.getOutputs()) {
+                    if(txOutput.getScript().equals(outputScript)) {
+                        transactionOutputs.add(txOutput);
+                    }
+                }
+                transactions.add(transaction);
+            } catch(ProtocolException e) {
+                log.error("Could not parse tx: " + strRawTx);
+            }
+        }
+
+        for(Transaction transaction : transactions) {
+            for(TransactionInput txInput : transaction.getInputs()) {
+                transactionOutputs.removeIf(txOutput -> txOutput.getHash().equals(txInput.getOutpoint().getHash()) && txOutput.getIndex() == txInput.getOutpoint().getIndex());
+            }
+        }
+
+        return transactionOutputs;
+    }
+
     public static Map<String, WalletNode> getAllScriptHashes(Wallet wallet) {
         Map<String, WalletNode> scriptHashes = new HashMap<>();
         for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
@@ -866,6 +907,12 @@ public class ElectrumServer {
 
     public static String getScriptHash(TransactionOutput output) {
         byte[] hash = Sha256Hash.hash(output.getScript().getProgram());
+        byte[] reversed = Utils.reverseBytes(hash);
+        return Utils.bytesToHex(reversed);
+    }
+
+    public static String getScriptHash(Address address) {
+        byte[] hash = Sha256Hash.hash(address.getOutputScript().getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);
     }
@@ -1038,7 +1085,7 @@ public class ElectrumServer {
 
                         String banner = electrumServer.getServerBanner();
 
-                        Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                        Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE);
                         Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                         feeRatesRetrievedAt = System.currentTimeMillis();
 
@@ -1054,7 +1101,7 @@ public class ElectrumServer {
 
                             long elapsed = System.currentTimeMillis() - feeRatesRetrievedAt;
                             if(elapsed > FEE_RATES_PERIOD) {
-                                Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                                Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE);
                                 Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                                 feeRatesRetrievedAt = System.currentTimeMillis();
                                 return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
@@ -1430,7 +1477,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(SendController.TARGET_BLOCKS_RANGE);
+                    Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE);
                     Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                     return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
                 }
@@ -1477,6 +1524,24 @@ public class ElectrumServer {
                     }
 
                     return discoveredAccounts;
+                }
+            };
+        }
+    }
+
+    public static class AddressUtxosService extends Service<List<TransactionOutput>> {
+        private final Address address;
+
+        public AddressUtxosService(Address address) {
+            this.address = address;
+        }
+
+        @Override
+        protected Task<List<TransactionOutput>> createTask() {
+            return new Task<>() {
+                protected List<TransactionOutput> call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    return electrumServer.getUtxos(address);
                 }
             };
         }

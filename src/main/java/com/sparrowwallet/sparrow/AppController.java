@@ -162,6 +162,9 @@ public class AppController implements Initializable {
     private MenuItem sendToMany;
 
     @FXML
+    private MenuItem sweepPrivateKey;
+
+    @FXML
     private MenuItem findMixingPartner;
 
     @FXML
@@ -333,6 +336,7 @@ public class AppController implements Initializable {
         lockWallet.setDisable(true);
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
         showPayNym.disableProperty().bind(findMixingPartner.disableProperty());
         findMixingPartner.setDisable(true);
         AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
@@ -1228,6 +1232,18 @@ public class AppController implements Initializable {
                 }
             });
         }
+    }
+
+    public void sweepPrivateKey(ActionEvent event) {
+        Wallet wallet = null;
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            wallet = selectedWalletForm.getWallet();
+        }
+
+        PrivateKeySweepDialog dialog = new PrivateKeySweepDialog(wallet);
+        Optional<Transaction> optTransaction = dialog.showAndWait();
+        optTransaction.ifPresent(transaction -> addTransactionTab(null, null, transaction));
     }
 
     public void findMixingPartner(ActionEvent event) {
