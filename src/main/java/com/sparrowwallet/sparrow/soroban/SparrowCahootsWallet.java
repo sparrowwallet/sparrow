@@ -15,6 +15,10 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+
 public class SparrowCahootsWallet extends SimpleCahootsWallet {
     private final Wallet wallet;
     private final int account;
@@ -37,6 +41,16 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
 
     public int getAccount() {
         return account;
+    }
+
+    @Override
+    protected List<CahootsUtxo> fetchUtxos(int account) {
+        List<CahootsUtxo> utxos = super.fetchUtxos(account);
+        if(utxos == null) {
+            utxos = new LinkedList<>();
+        }
+
+        return utxos;
     }
 
     @Override
