@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UtxosChart extends BarChart<String, Number> {
-    private static final int MAX_BARS = 8;
+    private static final int MAX_BARS = 10;
     private static final String OTHER_CATEGORY = "Other";
     private static final int TOOLTIP_SHOW_DELAY = 50;
 
