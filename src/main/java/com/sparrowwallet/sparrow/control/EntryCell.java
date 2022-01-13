@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -69,8 +70,14 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 Tooltip tooltip = new Tooltip();
-                tooltip.setText(transactionEntry.getBlockTransaction().getHash().toString());
+                tooltip.setText(getTooltip(transactionEntry));
                 setTooltip(tooltip);
+
+                if(transactionEntry.getBlockTransaction().getHeight() <= 0) {
+                    tooltip.setOnShowing(event -> {
+                        tooltip.setText(getTooltip(transactionEntry));
+                    });
+                }
 
                 HBox actionBox = new HBox();
                 Button viewTransactionButton = new Button("");
@@ -324,6 +331,30 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
 
         utxos.forEach(ref -> ref.setStatus(null));
         EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), utxos));
+    }
+
+    private String getTooltip(TransactionEntry transactionEntry) {
+        String tooltip = transactionEntry.getBlockTransaction().getHash().toString();
+        if(transactionEntry.getBlockTransaction().getHeight() <= 0) {
+            if(!AppServices.getMempoolHistogram().isEmpty()) {
+                Set<MempoolRateSize> rateSizes = AppServices.getMempoolHistogram().get(AppServices.getMempoolHistogram().lastKey());
+                double vSize = transactionEntry.getBlockTransaction().getTransaction().getVirtualSize();
+                double feeRate = transactionEntry.getBlockTransaction().getFee() / vSize;
+                long vSizefromTip = rateSizes.stream().filter(rateSize -> rateSize.getFee() > feeRate).mapToLong(MempoolRateSize::getVSize).sum();
+                String amount = vSizefromTip + " vB";
+                if(vSizefromTip > 1000 * 1000) {
+                    amount = String.format("%.2f", (double)vSizefromTip / (1000 * 1000)) + " MvB";
+                } else if(vSizefromTip > 1000) {
+                    amount = String.format("%.2f", (double)vSizefromTip / 1000) + " kvB";
+                }
+
+                tooltip += "\nFee rate: " + String.format("%.2f", feeRate) + " sats/vB (" + amount + " from tip)";
+            }
+
+            tooltip += "\nRBF: " + (transactionEntry.getBlockTransaction().getTransaction().isReplaceByFee() ? "Enabled" : "Disabled");
+        }
+
+        return tooltip;
     }
 
     private static Glyph getViewTransactionGlyph() {

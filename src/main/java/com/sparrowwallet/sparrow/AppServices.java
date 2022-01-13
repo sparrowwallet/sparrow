@@ -112,7 +112,7 @@ public class AppServices {
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
-    private static final Map<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
+    private static final TreeMap<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
 
     private static Double minimumRelayFeeRate;
 
@@ -604,7 +604,7 @@ public class AppServices {
         return targetBlockFeeRates;
     }
 
-    public static Map<Date, Set<MempoolRateSize>> getMempoolHistogram() {
+    public static TreeMap<Date, Set<MempoolRateSize>> getMempoolHistogram() {
         return mempoolHistogram;
     }
 
