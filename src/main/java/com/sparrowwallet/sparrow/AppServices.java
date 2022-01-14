@@ -615,6 +615,9 @@ public class AppServices {
         }
 
         mempoolHistogram.put(Date.from(dateMinute.atZone(ZoneId.systemDefault()).toInstant()), rateSizes);
+
+        Date yesterday = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
+        mempoolHistogram.keySet().removeIf(date -> date.before(yesterday));
     }
 
     public static Double getMinimumRelayFeeRate() {
