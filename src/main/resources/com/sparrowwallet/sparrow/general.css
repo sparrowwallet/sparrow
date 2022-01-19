@@ -11,7 +11,7 @@
 }
 
 .form .relaxedLabelFieldSet.fieldset:horizontal .label-container {
-    -fx-pref-width: 120px;
+    -fx-pref-width: 130px;
     -fx-pref-height: 25px;
 }
 

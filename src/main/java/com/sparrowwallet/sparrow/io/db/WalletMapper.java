@@ -31,6 +31,8 @@ public class WalletMapper implements RowMapper<Wallet> {
 
         int gapLimit = rs.getInt("wallet.gapLimit");
         wallet.gapLimit(rs.wasNull() ? null : gapLimit);
+        int watchLast = rs.getInt("wallet.watchLast");
+        wallet.setWatchLast(rs.wasNull() ? null : watchLast);
         wallet.setBirthDate(rs.getTimestamp("wallet.birthDate"));
 
         return wallet;

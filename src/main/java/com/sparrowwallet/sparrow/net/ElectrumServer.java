@@ -298,7 +298,7 @@ public class ElectrumServer {
     public void getHistory(Wallet wallet, KeyPurpose keyPurpose, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
         WalletNode purposeNode = wallet.getNode(keyPurpose);
         //Subscribe to all existing address WalletNodes and add them to nodeTransactionMap as keys to empty sets if they have history that needs to be fetched
-        subscribeWalletNodes(wallet, purposeNode.getChildren(), nodeTransactionMap, 0);
+        subscribeWalletNodes(wallet, getAddressNodes(wallet, purposeNode), nodeTransactionMap, 0);
         //All WalletNode keys in nodeTransactionMap need to have their history fetched (nodes without history will not be keys in the map yet)
         getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, 0);
         //Fetch all referenced transaction to wallet transactions map. We do this now even though it is done again later to get it done before too many script hashes are subscribed
@@ -309,7 +309,7 @@ public class ElectrumServer {
         log.debug("Fetched history for: " + nodeTransactionMap.keySet());
 
         //Set the remaining WalletNode keys in nodeTransactionMap to empty sets to indicate no history (if no script hash history has already been retrieved in a previous call)
-        purposeNode.getChildren().stream().filter(node -> !nodeTransactionMap.containsKey(node) && retrievedScriptHashes.get(getScriptHash(wallet, node)) == null).forEach(node -> nodeTransactionMap.put(node, Collections.emptySet()));
+        getAddressNodes(wallet, purposeNode).stream().filter(node -> !nodeTransactionMap.containsKey(node) && retrievedScriptHashes.get(getScriptHash(wallet, node)) == null).forEach(node -> nodeTransactionMap.put(node, Collections.emptySet()));
     }
 
     private void getHistoryToGapLimit(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, WalletNode purposeNode) throws ServerException {
@@ -319,12 +319,23 @@ public class ElectrumServer {
         int gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
         while(historySize < gapLimitSize) {
             purposeNode.fillToIndex(gapLimitSize - 1);
-            subscribeWalletNodes(wallet, purposeNode.getChildren(), nodeTransactionMap, historySize);
+            subscribeWalletNodes(wallet, getAddressNodes(wallet, purposeNode), nodeTransactionMap, historySize);
             getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, historySize);
             getReferencedTransactions(wallet, nodeTransactionMap);
             historySize = purposeNode.getChildren().size();
             gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
         }
+    }
+
+    private Set<WalletNode> getAddressNodes(Wallet wallet, WalletNode purposeNode) {
+        Integer watchLast = wallet.getWatchLast();
+        if(watchLast == null || watchLast < wallet.getGapLimit() || wallet.getStoredBlockHeight() == 0 || wallet.getTransactions().isEmpty()) {
+            return purposeNode.getChildren();
+        }
+
+        int highestUsedIndex = purposeNode.getChildren().stream().filter(WalletNode::isUsed).mapToInt(WalletNode::getIndex).max().orElse(0);
+        int startFromIndex = highestUsedIndex - watchLast;
+        return purposeNode.getChildren().stream().filter(walletNode -> walletNode.getIndex() >= startFromIndex).collect(Collectors.toCollection(TreeSet::new));
     }
 
     private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {

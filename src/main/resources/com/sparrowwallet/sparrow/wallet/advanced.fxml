@@ -25,7 +25,7 @@
         </rowConstraints>
 
         <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-            <Fieldset inputGrow="SOMETIMES" text="Advanced Settings">
+            <Fieldset inputGrow="SOMETIMES" text="Advanced Settings" styleClass="relaxedLabelFieldSet">
                 <Field text="Birth date:">
                     <DatePicker editable="false" fx:id="birthDate" prefWidth="140" />
                     <HelpLabel helpText="The date of the earliest transaction (used to avoid scanning the entire blockchain)."/>
@@ -33,6 +33,10 @@
                 <Field text="Gap limit:">
                     <Spinner fx:id="gapLimit" editable="true" prefWidth="90" />
                     <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs."/>
+                </Field>
+                <Field text="Watch addresses:">
+                    <ComboBox fx:id="watchLast" />
+                    <HelpLabel helpText="Load deep wallets faster by limiting the number of subscriptions to previously used addresses.\nUsed addresses at lower derivation paths will not be checked for new transactions.\nThis setting will take effect in the next wallet load."/>
                 </Field>
             </Fieldset>
         </Form>

@@ -274,6 +274,10 @@ public class DbPersistence implements Persistence {
                     walletDao.updateGapLimit(wallet.getId(), dirtyPersistables.gapLimit);
                 }
 
+                if(dirtyPersistables.watchLast != null) {
+                    walletDao.updateWatchLast(wallet.getId(), dirtyPersistables.watchLast);
+                }
+
                 if(!dirtyPersistables.labelEntries.isEmpty()) {
                     BlockTransactionDao blockTransactionDao = handle.attach(BlockTransactionDao.class);
                     WalletNodeDao walletNodeDao = handle.attach(WalletNodeDao.class);
@@ -763,6 +767,13 @@ public class DbPersistence implements Persistence {
         }
     }
 
+    @Subscribe
+    public void walletWatchLastChanged(WalletWatchLastChangedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).watchLast = event.getWatchLast());
+        }
+    }
+
     private static class DirtyPersistables {
         public boolean deleteAccount;
         public boolean clearHistory;
@@ -770,6 +781,7 @@ public class DbPersistence implements Persistence {
         public String label;
         public Integer blockHeight = null;
         public Integer gapLimit = null;
+        public Integer watchLast = null;
         public final List<Entry> labelEntries = new ArrayList<>();
         public final List<BlockTransactionHashIndex> utxoStatuses = new ArrayList<>();
         public boolean mixConfig;
@@ -786,6 +798,7 @@ public class DbPersistence implements Persistence {
                     "\nLabel:" + label +
                     "\nBlockHeight:" + blockHeight +
                     "\nGap limit:" + gapLimit +
+                    "\nWatch last:" + watchLast +
                     "\nTx labels:" + labelEntries.stream().filter(entry -> entry instanceof TransactionEntry).map(entry -> ((TransactionEntry)entry).getBlockTransaction().getHash().toString()).collect(Collectors.toList()) +
                     "\nAddress labels:" + labelEntries.stream().filter(entry -> entry instanceof NodeEntry).map(entry -> ((NodeEntry)entry).getNode().toString() + " " + entry.getLabel()).collect(Collectors.toList()) +
                     "\nUTXO labels:" + labelEntries.stream().filter(entry -> entry instanceof HashIndexEntry).map(entry -> ((HashIndexEntry)entry).getHashIndex().toString()).collect(Collectors.toList()) +

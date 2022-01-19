@@ -1,0 +1,1 @@
+alter table wallet add column watchLast integer after gapLimit;

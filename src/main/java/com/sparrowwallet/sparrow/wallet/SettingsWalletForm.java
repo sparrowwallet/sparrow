@@ -7,10 +7,7 @@ import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.KeystoreEncryptionChangedEvent;
-import com.sparrowwallet.sparrow.event.KeystoreLabelsChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletPasswordChangedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 
@@ -88,6 +85,10 @@ public class SettingsWalletForm extends WalletForm {
             List<Keystore> labelChangedKeystores = getLabelChangedKeystores(wallet, walletCopy);
             if(!labelChangedKeystores.isEmpty()) {
                 EventManager.get().post(new KeystoreLabelsChangedEvent(wallet, pastWallet, getWalletId(), labelChangedKeystores));
+            }
+
+            if(!Objects.equals(wallet.getWatchLast(), walletCopy.getWatchLast())) {
+                EventManager.get().post(new WalletWatchLastChangedEvent(wallet, pastWallet, getWalletId(), walletCopy.getWatchLast()));
             }
 
             List<Keystore> encryptionChangedKeystores = getEncryptionChangedKeystores(wallet, walletCopy);
