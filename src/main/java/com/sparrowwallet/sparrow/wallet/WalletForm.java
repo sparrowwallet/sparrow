@@ -153,7 +153,7 @@ public class WalletForm {
 
                     wallet.clearHistory();
                     AppServices.clearTransactionHistoryCache(wallet);
-                    EventManager.get().post(new WalletHistoryClearedEvent(wallet, pastWallet, getWalletId()));
+                    EventManager.get().post(new WalletHistoryClearedEvent(wallet, pastWallet == null ? previousWallet : pastWallet, getWalletId()));
                 } else {
                     if(AppServices.isConnected()) {
                         log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
