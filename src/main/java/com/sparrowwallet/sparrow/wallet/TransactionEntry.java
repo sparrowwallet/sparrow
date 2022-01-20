@@ -38,7 +38,18 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             }
         });
 
-        setConfirmations(calculateConfirmations());
+        confirmations = new IntegerPropertyBase(calculateConfirmations()) {
+            @Override
+            public Object getBean() {
+                return TransactionEntry.this;
+            }
+
+            @Override
+            public String getName() {
+                return "confirmations";
+            }
+        };
+
         if(isFullyConfirming()) {
             EventManager.get().register(this);
         }
@@ -174,33 +185,17 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     /**
      * Defines the number of confirmations
      */
-    private IntegerProperty confirmations;
+    private final IntegerProperty confirmations;
 
     public final void setConfirmations(int value) {
-        if(confirmations != null || value != 0) {
-            confirmationsProperty().set(value);
-        }
+        confirmations.set(value);
     }
 
     public final int getConfirmations() {
-        return confirmations == null ? 0 : confirmations.get();
+        return confirmations.get();
     }
 
     public final IntegerProperty confirmationsProperty() {
-        if(confirmations == null) {
-            confirmations = new IntegerPropertyBase(0) {
-
-                @Override
-                public Object getBean() {
-                    return TransactionEntry.this;
-                }
-
-                @Override
-                public String getName() {
-                    return "confirmations";
-                }
-            };
-        }
         return confirmations;
     }
 

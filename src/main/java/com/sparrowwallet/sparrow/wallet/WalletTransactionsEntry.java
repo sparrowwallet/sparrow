@@ -22,7 +22,7 @@ public class WalletTransactionsEntry extends Entry {
 
     public WalletTransactionsEntry(Wallet wallet) {
         super(wallet, wallet.getName(), getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
-        calculateBalances();
+        calculateBalances(false); //No need to resort
     }
 
     @Override
@@ -30,12 +30,14 @@ public class WalletTransactionsEntry extends Entry {
         return getBalance();
     }
 
-    protected void calculateBalances() {
+    private void calculateBalances(boolean resort) {
         long balance = 0L;
         long mempoolBalance = 0L;
 
-        //Note transaction entries must be in ascending order. This sorting is ultimately done according to BlockTransactions' comparator
-        getChildren().sort(Comparator.comparing(TransactionEntry.class::cast));
+        if(resort) {
+            //Note transaction entries must be in ascending order. This sorting is ultimately done according to BlockTransactions' comparator
+            getChildren().sort(Comparator.comparing(TransactionEntry.class::cast));
+        }
 
         for(Entry entry : getChildren()) {
             TransactionEntry transactionEntry = (TransactionEntry)entry;
@@ -66,7 +68,7 @@ public class WalletTransactionsEntry extends Entry {
         entriesRemoved.removeAll(current);
         getChildren().removeAll(entriesRemoved);
 
-        calculateBalances();
+        calculateBalances(true);
 
         Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWallet().getWalletTxos().entrySet().stream()
                 .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey));
@@ -86,12 +88,14 @@ public class WalletTransactionsEntry extends Entry {
     }
 
     private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet) {
-        Map<BlockTransaction, WalletTransaction> walletTransactionMap = new TreeMap<>();
+        Map<BlockTransaction, WalletTransaction> walletTransactionMap = new HashMap<>(wallet.getTransactions().size());
 
         getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.RECEIVE));
         getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.CHANGE));
 
-        return new ArrayList<>(walletTransactionMap.values());
+        List<WalletTransaction> walletTransactions = new ArrayList<>(walletTransactionMap.values());
+        Collections.sort(walletTransactions);
+        return walletTransactions;
     }
 
     private static void getWalletTransactions(Wallet wallet, Map<BlockTransaction, WalletTransaction> walletTransactionMap, WalletNode purposeNode) {
@@ -191,7 +195,7 @@ public class WalletTransactionsEntry extends Entry {
         return mempoolBalance;
     }
 
-    private static class WalletTransaction {
+    private static class WalletTransaction implements Comparable<WalletTransaction> {
         private final Wallet wallet;
         private final BlockTransaction blockTransaction;
         private final Map<BlockTransactionHashIndex, KeyPurpose> incoming = new TreeMap<>();
@@ -204,6 +208,34 @@ public class WalletTransactionsEntry extends Entry {
 
         public TransactionEntry getTransactionEntry() {
             return new TransactionEntry(wallet, blockTransaction, incoming, outgoing);
+        }
+
+        public long getValue() {
+            long value = 0L;
+            for(BlockTransactionHashIndex in : incoming.keySet()) {
+                value += in.getValue();
+            }
+            for(BlockTransactionHashIndex out : outgoing.keySet()) {
+                value -= out.getValue();
+            }
+
+            return value;
+        }
+
+        @Override
+        public int compareTo(WalletTransactionsEntry.WalletTransaction other) {
+            //This comparison must be identical to that of TransactionEntry so we can avoid a resort calculating balances when creating WalletTransactionsEntry
+            int blockOrder = blockTransaction.compareBlockOrder(other.blockTransaction);
+            if(blockOrder != 0) {
+                return blockOrder;
+            }
+
+            int valueOrder = Long.compare(other.getValue(), getValue());
+            if(valueOrder != 0) {
+                return valueOrder;
+            }
+
+            return blockTransaction.compareTo(other.blockTransaction);
         }
     }
 }

@@ -86,7 +86,6 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                 }
             }
         } catch (Exception e) {
-            log.error("Error getting " + getName() + " keystore", e);
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
 

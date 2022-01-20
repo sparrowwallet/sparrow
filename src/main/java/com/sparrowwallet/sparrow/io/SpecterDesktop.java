@@ -93,7 +93,6 @@ public class SpecterDesktop implements WalletImport, WalletExport {
                 return wallet;
             }
         } catch(Exception e) {
-            log.error("Error importing " + getName() + " wallet", e);
             throw new ImportException("Error importing " + getName() + " wallet", e);
         }
 

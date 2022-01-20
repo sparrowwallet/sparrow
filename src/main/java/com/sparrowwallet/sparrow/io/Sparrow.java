@@ -121,7 +121,6 @@ public class Sparrow implements WalletImport, WalletExport {
 
             return wallet;
         } catch(IOException | StorageException e) {
-            log.error("Error importing Sparrow wallet", e);
             throw new ImportException("Error importing Sparrow wallet", e);
         } finally {
             if(storage != null) {

@@ -880,8 +880,21 @@ public class AppController implements Initializable {
         try {
             Storage storage = new Storage(file);
             if(!storage.isEncrypted()) {
-                WalletBackupAndKey walletBackupAndKey = storage.loadUnencryptedWallet();
-                openWallet(storage, walletBackupAndKey, this, forceSameWindow);
+                Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage);
+                loadWalletService.setOnSucceeded(workerStateEvent -> {
+                    WalletBackupAndKey walletBackupAndKey = loadWalletService.getValue();
+                    openWallet(storage, walletBackupAndKey, this, forceSameWindow);
+                });
+                loadWalletService.setOnFailed(workerStateEvent -> {
+                    Throwable exception = workerStateEvent.getSource().getException();
+                    if(exception instanceof StorageException) {
+                        showErrorDialog("Error Opening Wallet", exception.getMessage());
+                    } else if(!attemptImportWallet(file, null)) {
+                        log.error("Error opening wallet", exception);
+                        showErrorDialog("Error Opening Wallet", exception.getMessage() == null || exception.getMessage().contains("Expected BEGIN_OBJECT") ? "Unsupported wallet file format." : exception.getMessage());
+                    }
+                });
+                loadWalletService.start();
             } else {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(storage.getWalletName(null), WalletPasswordDialog.PasswordRequirement.LOAD);
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
@@ -905,9 +918,11 @@ public class AppController implements Initializable {
                             Platform.runLater(() -> openWalletFile(file, forceSameWindow));
                         }
                     } else {
-                        if(!attemptImportWallet(file, password)) {
+                        if(exception instanceof StorageException) {
+                            showErrorDialog("Error Opening Wallet", exception.getMessage());
+                        } else if(!attemptImportWallet(file, password)) {
                             log.error("Error Opening Wallet", exception);
-                            showErrorDialog("Error Opening Wallet", exception.getMessage() == null ? "Unsupported file format" : exception.getMessage());
+                            showErrorDialog("Error Opening Wallet", exception.getMessage() == null || exception.getMessage().contains("Expected BEGIN_OBJECT") ? "Unsupported wallet file format." : exception.getMessage());
                         }
                         password.clear();
                     }
@@ -915,8 +930,6 @@ public class AppController implements Initializable {
                 EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.START, "Decrypting wallet..."));
                 loadWalletService.start();
             }
-        } catch(StorageException e) {
-            showErrorDialog("Error Opening Wallet", e.getMessage());
         } catch(Exception e) {
             if(e instanceof IOException && e.getMessage().startsWith("The process cannot access the file because another process has locked")) {
                 log.error("Error opening wallet", e);

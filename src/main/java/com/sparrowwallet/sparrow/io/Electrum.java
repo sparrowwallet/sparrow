@@ -264,7 +264,6 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
             return wallet;
         } catch (Exception e) {
-            log.error("Error importing Electrum Wallet", e);
             throw new ImportException("Error importing Electrum Wallet", e);
         }
     }

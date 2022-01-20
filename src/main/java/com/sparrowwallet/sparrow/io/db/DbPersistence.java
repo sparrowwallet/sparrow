@@ -578,7 +578,7 @@ public class DbPersistence implements Persistence {
         if(updateExecutor != null) {
             updateExecutor.shutdown();
             try {
-                if(!updateExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                if(!updateExecutor.awaitTermination(1, TimeUnit.MINUTES)) {
                     updateExecutor.shutdownNow();
                 }
 

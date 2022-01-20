@@ -534,6 +534,11 @@ public class Storage {
         private final Storage storage;
         private final SecureString password;
 
+        public LoadWalletService(Storage storage) {
+            this.storage = storage;
+            this.password = null;
+        }
+
         public LoadWalletService(Storage storage, SecureString password) {
             this.storage = storage;
             this.password = password;
@@ -543,8 +548,15 @@ public class Storage {
         protected Task<WalletBackupAndKey> createTask() {
             return new Task<>() {
                 protected WalletBackupAndKey call() throws IOException, StorageException {
-                    WalletBackupAndKey walletBackupAndKey = storage.loadEncryptedWallet(password);
-                    password.clear();
+                    WalletBackupAndKey walletBackupAndKey;
+
+                    if(password != null) {
+                        walletBackupAndKey = storage.loadEncryptedWallet(password);
+                        password.clear();
+                    } else {
+                        walletBackupAndKey = storage.loadUnencryptedWallet();
+                    }
+
                     return walletBackupAndKey;
                 }
             };

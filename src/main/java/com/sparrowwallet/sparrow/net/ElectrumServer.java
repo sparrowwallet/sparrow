@@ -166,7 +166,7 @@ public class ElectrumServer {
         }
     }
 
-    public static void addCalculatedScriptHashes(Wallet wallet) {
+    private static void addCalculatedScriptHashes(Wallet wallet) {
         getCalculatedScriptHashes(wallet).forEach(retrievedScriptHashes::putIfAbsent);
     }
 
@@ -1248,8 +1248,12 @@ public class ElectrumServer {
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() throws ServerException {
-                    walletSynchronizeLocks.putIfAbsent(wallet, new Object());
+                    boolean initial = (walletSynchronizeLocks.putIfAbsent(wallet, new Object()) == null);
                     synchronized(walletSynchronizeLocks.get(wallet)) {
+                        if(initial) {
+                            addCalculatedScriptHashes(wallet);
+                        }
+
                         if(isConnected()) {
                             ElectrumServer electrumServer = new ElectrumServer();
                             Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);

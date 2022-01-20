@@ -158,6 +158,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 try {
                     importFile(importer.getName(), null, null);
                 } catch(ImportException e) {
+                    log.error("Error importing QR", e);
                     setError("Import Error", e.getMessage());
                 }
             } else if(result.outputDescriptor != null) {
@@ -165,6 +166,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 try {
                     importFile(importer.getName(), null, null);
                 } catch(ImportException e) {
+                    log.error("Error importing QR", e);
                     setError("Import Error", e.getMessage());
                 }
             } else if(result.payload != null) {

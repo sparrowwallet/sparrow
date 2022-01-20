@@ -62,10 +62,8 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
 
             return keystore;
         } catch (IllegalArgumentException e) {
-            log.error("Error getting " + getName() + " keystore - not an output descriptor");
-            throw new ImportException("Error getting " + getName() + " keystore", e);
+            throw new ImportException("Error getting " + getName() + " keystore - not an output descriptor", e);
         } catch (Exception e) {
-            log.error("Error getting " + getName() + " keystore", e);
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }

@@ -35,7 +35,6 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
 
             return keystore;
         } catch(IOException e) {
-            log.error("Error getting " + getName() + " keystore", e);
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }

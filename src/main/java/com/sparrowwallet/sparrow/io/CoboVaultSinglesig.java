@@ -57,7 +57,6 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
 
             return keystore;
         } catch (Exception e) {
-            log.error("Error getting " + getName() + " keystore", e);
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }

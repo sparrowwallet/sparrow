@@ -59,7 +59,6 @@ public class WalletForm {
         savedPastWallet = backupWallet;
 
         if(refreshHistory && wallet.isValid()) {
-            ElectrumServer.addCalculatedScriptHashes(wallet);
             refreshHistory(AppServices.getCurrentBlockHeight(), backupWallet);
         }
     }
@@ -252,11 +251,13 @@ public class WalletForm {
     }
 
     private List<WalletNode> getHistoryChangedNodes(Set<WalletNode> previousNodes, Set<WalletNode> currentNodes) {
+        Map<WalletNode, WalletNode> previousNodeMap = new HashMap<>(previousNodes.size());
+        previousNodes.forEach(walletNode -> previousNodeMap.put(walletNode, walletNode));
+
         List<WalletNode> changedNodes = new ArrayList<>();
         for(WalletNode currentNode : currentNodes) {
-            Optional<WalletNode> optPreviousNode = previousNodes.stream().filter(node -> node.equals(currentNode)).findFirst();
-            if(optPreviousNode.isPresent()) {
-                WalletNode previousNode = optPreviousNode.get();
+            WalletNode previousNode = previousNodeMap.get(currentNode);
+            if(previousNode != null) {
                 if(!currentNode.getTransactionOutputs().equals(previousNode.getTransactionOutputs())) {
                     changedNodes.add(currentNode);
                 }
