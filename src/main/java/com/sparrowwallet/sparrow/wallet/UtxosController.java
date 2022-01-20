@@ -223,11 +223,11 @@ public class UtxosController extends WalletFormController implements Initializab
     private void updateMixToButton() {
         MixConfig mixConfig = getWalletForm().getWallet().getMasterMixConfig();
         if(mixConfig != null && mixConfig.getMixToWalletName() != null) {
-            mixTo.setText("Mix to " + mixConfig.getMixToWalletName());
+            mixTo.setText("Mixing to " + mixConfig.getMixToWalletName());
             try {
                 String mixToWalletId = AppServices.getWhirlpoolServices().getWhirlpoolMixToWalletId(mixConfig);
                 String mixToName = AppServices.get().getWallet(mixToWalletId).getFullDisplayName();
-                mixTo.setText("Mix to " + mixToName);
+                mixTo.setText("Mixing to " + mixToName);
                 mixTo.setGraphic(getExternalGlyph());
                 mixTo.setTooltip(new Tooltip("Mixing to " + mixToName + " after at least " + (mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes()) + " mixes"));
             } catch(NoSuchElementException e) {
