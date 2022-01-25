@@ -38,6 +38,8 @@ public class ElectrumServer {
 
     private static final Version ELECTRS_MIN_BATCHING_VERSION = new Version("0.9.0");
 
+    private static final Version FULCRUM_MIN_BATCHING_VERSION = new Version("1.6.0");
+
     private static final int MINIMUM_BROADCASTS = 2;
 
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
@@ -968,6 +970,22 @@ public class ElectrumServer {
                     //ignore
                 }
             }
+
+            if(server.startsWith("fulcrum")) {
+                String fulcrumVersion = server.substring("fulcrum".length()).trim();
+                int dashIndex = fulcrumVersion.indexOf('-');
+                if(dashIndex > -1) {
+                    fulcrumVersion = fulcrumVersion.substring(0, dashIndex);
+                }
+                try {
+                    Version version = new Version(fulcrumVersion);
+                    if(version.compareTo(FULCRUM_MIN_BATCHING_VERSION) >= 0) {
+                        return true;
+                    }
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
         }
 
         return false;
@@ -1083,7 +1101,7 @@ public class ElectrumServer {
                         //If electrumx is detected, we can upgrade to batched RPC. Electrs/EPS do not support batching.
                         if(supportsBatching(serverVersion)) {
                             log.debug("Upgrading to batched JSON-RPC");
-                            electrumServerRpc = new BatchedElectrumServerRpc();
+                            electrumServerRpc = new BatchedElectrumServerRpc(electrumServerRpc.getIdCounterValue());
                         }
 
                         BlockHeaderTip tip;

@@ -35,4 +35,6 @@ public interface ElectrumServerRpc {
     Double getMinimumRelayFee(Transport transport);
 
     String broadcastTransaction(Transport transport, String txHex);
+
+    long getIdCounterValue();
 }

@@ -297,4 +297,9 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             throw new ElectrumServerRpcException(e.getMessage(), e);
         }
     }
+
+    @Override
+    public long getIdCounterValue() {
+        return idCounter.get();
+    }
 }

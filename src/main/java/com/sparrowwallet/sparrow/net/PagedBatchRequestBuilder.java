@@ -13,8 +13,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.MAX_RETRIES;
-import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.RETRY_DELAY;
+import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.DEFAULT_MAX_ATTEMPTS;
+import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.RETRY_DELAY_SECS;
 
 public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
     public static final int DEFAULT_PAGE_SIZE = 500;
@@ -64,12 +64,12 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
      *
      * @param id     request id as a text value
      * @param method request method
-     * @param param request param
+     * @param params request params
      * @return the current builder
      */
     @NotNull
-    public PagedBatchRequestBuilder<K, V> add(K id, @NotNull String method, @NotNull Object param) {
-        requests.add(new Request<K>(id, counter == null ? null : counter.incrementAndGet(), method, param));
+    public PagedBatchRequestBuilder<K, V> add(K id, @NotNull String method, @NotNull Object... params) {
+        requests.add(new Request<K>(id, counter == null ? null : counter.incrementAndGet(), method, params));
         return this;
     }
 
@@ -97,13 +97,18 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
         return new PagedBatchRequestBuilder<K, NV>(transport, mapper, requests, keysType, valuesClass, counter);
     }
 
+    public Map<K, V> execute() throws Exception {
+        return execute(DEFAULT_MAX_ATTEMPTS);
+    }
+
     /**
      * Validates, executes the request and process response
      *
+     * @param maxAttempts number of times to try the request
      * @return map of responses by request ids
      */
     @NotNull
-    public Map<K, V> execute() throws Exception {
+    public Map<K, V> execute(int maxAttempts) throws Exception {
         Map<K, V> allResults = new HashMap<>();
         JsonRpcClient client = new JsonRpcClient(transport);
 
@@ -114,10 +119,10 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
                 BatchRequestBuilder<Long, V> batchRequest = client.createBatchRequest().keysType(Long.class).returnType(returnType);
                 for(Request<K> request : page) {
                     counterIdMap.put(request.counterId, request.id);
-                    batchRequest.add(request.counterId, request.method, request.param);
+                    batchRequest.add(request.counterId, request.method, request.params);
                 }
 
-                Map<Long, V> pageResult = new RetryLogic<Map<Long, V>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+                Map<Long, V> pageResult = new RetryLogic<Map<Long, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
                 for(Map.Entry<Long, V> pageEntry : pageResult.entrySet()) {
                     allResults.put(counterIdMap.get(pageEntry.getKey()), pageEntry.getValue());
                 }
@@ -125,15 +130,15 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
                 BatchRequestBuilder<K, V> batchRequest = client.createBatchRequest().keysType(keysType).returnType(returnType);
                 for(Request<K> request : page) {
                     if(request.id instanceof String strReq) {
-                        batchRequest.add(strReq, request.method, request.param);
+                        batchRequest.add(strReq, request.method, request.params);
                     } else if(request.id instanceof Integer intReq) {
-                        batchRequest.add(intReq, request.method, request.param);
+                        batchRequest.add(intReq, request.method, request.params);
                     } else {
                         throw new IllegalArgumentException("Id of class " + request.id.getClass().getName() + " not supported");
                     }
                 }
 
-                Map<K, V> pageResult = new RetryLogic<Map<K, V>>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+                Map<K, V> pageResult = new RetryLogic<Map<K, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
                 allResults.putAll(pageResult);
             }
         }
@@ -170,5 +175,5 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
         return new PagedBatchRequestBuilder<Object, Object>(transport, new ObjectMapper(), counter);
     }
 
-    private static record Request<K>(K id, Long counterId, String method, Object param) {}
+    private static record Request<K>(K id, Long counterId, String method, Object[] params) {}
 }

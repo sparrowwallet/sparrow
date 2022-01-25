@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.Transport;
-import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
@@ -21,16 +20,24 @@ import static com.sparrowwallet.drongo.wallet.WalletNode.nodeRangesToString;
 
 public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
-    static final int MAX_RETRIES = 5;
-    static final int RETRY_DELAY = 1;
+    static final int DEFAULT_MAX_ATTEMPTS = 5;
+    static final int RETRY_DELAY_SECS = 1;
 
-    private final AtomicLong idCounter = new AtomicLong();
+    private final AtomicLong idCounter;
+
+    public BatchedElectrumServerRpc() {
+        this.idCounter = new AtomicLong();
+    }
+
+    public BatchedElectrumServerRpc(long idCounterValue) {
+        this.idCounter = new AtomicLong(idCounterValue);
+    }
 
     @Override
     public void ping(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            new RetryLogic<>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            new RetryLogic<>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().method("server.ping").id(idCounter.incrementAndGet()).executeNullable());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error pinging server", e);
@@ -41,7 +48,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return new RetryLogic<List<String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            return new RetryLogic<List<String>>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).param("client_name", clientName).param("protocol_version", supportedVersions).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server version", e);
@@ -52,7 +59,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public String getServerBanner(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            return new RetryLogic<String>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().returnAs(String.class).method("server.banner").id(idCounter.incrementAndGet()).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server banner", e);
@@ -63,7 +70,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public BlockHeaderTip subscribeBlockHeaders(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return new RetryLogic<BlockHeaderTip>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            return new RetryLogic<BlockHeaderTip>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().returnAs(BlockHeaderTip.class).method("blockchain.headers.subscribe").id(idCounter.incrementAndGet()).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error subscribing to block headers", e);
@@ -194,15 +201,14 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<String, VerboseTransaction> batchRequest = client.createBatchRequest().keysType(String.class).returnType(VerboseTransaction.class);
+        PagedBatchRequestBuilder<String, VerboseTransaction> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(VerboseTransaction.class);
         for(String txid : txids) {
             batchRequest.add(txid, "blockchain.transaction.get", txid, true);
         }
 
         try {
             //The server may return an error if the transaction has not yet been broadcasted - this is a valid state so only try once
-            return new RetryLogic<Map<String, VerboseTransaction>>(1, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return batchRequest.execute(1);
         } catch(JsonRpcBatchException e) {
             log.debug("Some errors retrieving transactions: " + e.getErrors());
             return (Map<String, VerboseTransaction>)e.getSuccesses();
@@ -213,14 +219,13 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
 
     @Override
     public Map<Integer, Double> getFeeEstimates(Transport transport, List<Integer> targetBlocks) {
-        JsonRpcClient client = new JsonRpcClient(transport);
-        BatchRequestBuilder<Integer, Double> batchRequest = client.createBatchRequest().keysType(Integer.class).returnType(Double.class);
+        PagedBatchRequestBuilder<Integer, Double> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(Double.class);
         for(Integer targetBlock : targetBlocks) {
             batchRequest.add(targetBlock, "blockchain.estimatefee", targetBlock);
         }
 
         try {
-            return new RetryLogic<Map<Integer, Double>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(batchRequest::execute);
+            return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
             throw new ElectrumServerRpcException("Error getting fee estimates", e);
         } catch(Exception e) {
@@ -232,7 +237,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<Long, Long> getFeeRateHistogram(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            BigInteger[][] feesArray = new RetryLogic<BigInteger[][]>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            BigInteger[][] feesArray = new RetryLogic<BigInteger[][]>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().returnAs(BigInteger[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
 
             Map<Long, Long> feeRateHistogram = new TreeMap<>();
@@ -252,7 +257,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Double getMinimumRelayFee(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return new RetryLogic<Double>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            return new RetryLogic<Double>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().returnAs(Double.class).method("blockchain.relayfee").id(idCounter.incrementAndGet()).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting minimum relay fee", e);
@@ -263,12 +268,17 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public String broadcastTransaction(Transport transport, String txHex) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            return new RetryLogic<String>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().returnAs(String.class).method("blockchain.transaction.broadcast").id(idCounter.incrementAndGet()).params(txHex).execute());
         } catch(JsonRpcException e) {
             throw new ElectrumServerRpcException(e.getErrorMessage().getMessage(), e);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error broadcasting transaction", e);
         }
+    }
+
+    @Override
+    public long getIdCounterValue() {
+        return idCounter.get();
     }
 }
