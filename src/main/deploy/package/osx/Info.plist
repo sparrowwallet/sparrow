@@ -45,14 +45,6 @@
             <string>bitcoin</string>
           </array>
       </dict>
-      <dict>
-          <key>CFBundleURLName</key>
-          <string>com.sparrowwallet.sparrow.aopp</string>
-          <key>CFBundleURLSchemes</key>
-          <array>
-            <string>aopp</string>
-          </array>
-      </dict>
   </array>
   <key>UTImportedTypeDeclarations</key>
   <array>

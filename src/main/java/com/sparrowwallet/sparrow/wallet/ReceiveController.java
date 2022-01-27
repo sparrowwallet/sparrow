@@ -20,7 +20,6 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
-import com.sparrowwallet.sparrow.net.Aopp;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -244,33 +243,6 @@ public class ReceiveController extends WalletFormController implements Initializ
         this.currentEntry = null;
     }
 
-    private void signAndSendProofOfAddress(Aopp aopp) {
-        if(currentEntry == null) {
-            Platform.runLater(() -> signAndSendProofOfAddress(aopp));
-        } else {
-            try {
-                ButtonType signSendButtonType = new ButtonType("Sign & Send", ButtonBar.ButtonData.APPLY);
-                ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-                MessageSignDialog messageSignDialog = new MessageSignDialog(getWalletForm().getWallet(), currentEntry.getNode(), "Send Proof of Address", aopp.getMessage(), signSendButtonType, cancelButtonType);
-                messageSignDialog.setElectrumSignatureFormat(true);
-                Stage stage = (Stage)messageSignDialog.getDialogPane().getScene().getWindow();
-                stage.setAlwaysOnTop(true);
-                messageSignDialog.setOnShown(event -> {
-                    stage.setAlwaysOnTop(false);
-                });
-                Optional<ButtonBar.ButtonData> buttonData = messageSignDialog.showAndWait();
-                if(buttonData.isPresent() && buttonData.get() == ButtonBar.ButtonData.OK_DONE) {
-                    Address address = getWalletForm().getWallet().getAddress(currentEntry.getNode());
-                    String signature = messageSignDialog.getSignature();
-                    aopp.sendProofOfAddress(address, signature);
-                    AppServices.showAlertDialog("Proof of Address Sent", "Proof of ownership of address\n" + address + "\nhas been successfully sent to\n" + aopp.getCallback().getHost() + ".", Alert.AlertType.INFORMATION);
-                }
-            } catch(Exception e) {
-                AppServices.showErrorDialog("Cannot send proof of ownership", e.getMessage());
-            }
-        }
-    }
-
     public static Glyph getUnusedGlyph() {
         Glyph checkGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
         checkGlyph.getStyleClass().add("unused-check");
@@ -300,13 +272,6 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void receiveTo(ReceiveToEvent event) {
         if(event.getReceiveEntry().getWallet().equals(getWalletForm().getWallet())) {
             setNodeEntry(event.getReceiveEntry());
-        }
-    }
-
-    @Subscribe
-    public void receiveProof(ReceiveProofEvent event) {
-        if(event.getWallet().equals(getWalletForm().getWallet())) {
-            Platform.runLater(() -> signAndSendProofOfAddress(event.getAopp()));
         }
     }
 

@@ -6,4 +6,4 @@ Icon=/opt/sparrow/lib/Sparrow.png
 Terminal=false
 Type=Application
 Categories=Unknown
-MimeType=application/psbt;application/bitcoin-transaction;x-scheme-handler/bitcoin;x-scheme-handler/aopp
+MimeType=application/psbt;application/bitcoin-transaction;x-scheme-handler/bitcoin

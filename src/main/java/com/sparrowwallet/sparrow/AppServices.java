@@ -794,8 +794,6 @@ public class AppServices {
         Platform.runLater(() -> {
             if("bitcoin".equals(uri.getScheme())) {
                 openBitcoinUri(uri);
-            } else if("aopp".equals(uri.getScheme())) {
-                openAddressOwnershipProof(uri);
             }
         });
     }
@@ -827,20 +825,6 @@ public class AppServices {
             }
         } catch(Exception e) {
             showErrorDialog("Not a valid bitcoin URI", e.getMessage());
-        }
-    }
-
-    public static void openAddressOwnershipProof(URI uri) {
-        try {
-            Aopp aopp = new Aopp(uri);
-            Wallet wallet = selectWallet(aopp.getScriptType(), "send proof of address");
-
-            if(wallet != null) {
-                EventManager.get().post(new ReceiveActionEvent(wallet));
-                Platform.runLater(() -> EventManager.get().post(new ReceiveProofEvent(wallet, aopp)));
-            }
-        } catch(Exception e) {
-            showErrorDialog("Not a valid AOPP URI", e.getMessage());
         }
     }
 
