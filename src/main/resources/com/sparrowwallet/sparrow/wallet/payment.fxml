@@ -41,7 +41,7 @@
                 </StackPane>
             </Field>
             <Field text="Label:">
-                <TextField fx:id="label">
+                <TextField fx:id="label" promptText="Required">
                     <tooltip>
                         <Tooltip text="Required to label the transaction (privately in this wallet)"/>
                     </tooltip>
