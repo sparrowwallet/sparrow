@@ -60,7 +60,7 @@ public class Config {
     private boolean useProxy;
     private String proxyServer;
     private int maxServerTimeout = DEFAULT_MAX_TIMEOUT;
-    private int batchPageSize = DEFAULT_PAGE_SIZE;
+    private int maxPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
     private boolean sameAppMixing;
     private Double appWidth;
@@ -503,8 +503,8 @@ public class Config {
         return maxServerTimeout;
     }
 
-    public int getBatchPageSize() {
-        return batchPageSize;
+    public int getMaxPageSize() {
+        return maxPageSize;
     }
 
     public boolean isUsePayNym() {

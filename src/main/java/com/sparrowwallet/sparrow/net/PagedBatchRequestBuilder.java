@@ -17,7 +17,7 @@ import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.DEFAULT_MAX
 import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.RETRY_DELAY_SECS;
 
 public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
-    public static final int DEFAULT_PAGE_SIZE = 500;
+    public static final int DEFAULT_PAGE_SIZE = 100;
 
     private final AtomicLong counter;
 
@@ -147,9 +147,17 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
     }
 
     private int getPageSize() {
-        int pageSize = Config.get().getBatchPageSize();
+        int pageSize = Config.get().getMaxPageSize();
         if(pageSize < 1) {
             pageSize = DEFAULT_PAGE_SIZE;
+        }
+
+        //Halve the page size if there have been timeouts
+        if(transport instanceof TimeoutCounter timeoutCounter) {
+            int timeouts = timeoutCounter.getTimeoutCount();
+            if(timeouts > 0) {
+                return pageSize / 2;
+            }
         }
 
         return pageSize;

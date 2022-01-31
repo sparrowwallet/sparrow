@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TcpTransport implements Transport, Closeable {
+public class TcpTransport implements Transport, Closeable, TimeoutCounter {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
@@ -249,6 +249,11 @@ public class TcpTransport implements Transport, Closeable {
         if(socket != null) {
             socket.close();
         }
+    }
+
+    @Override
+    public int getTimeoutCount() {
+        return readTimeoutIndex;
     }
 
     private static class Rpc {
