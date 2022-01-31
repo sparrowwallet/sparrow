@@ -42,6 +42,10 @@ public abstract class Entry {
 
     public abstract Long getValue();
 
+    public abstract String getEntryType();
+
+    public abstract Function getWalletFunction();
+
     public void updateLabel(Entry entry) {
         if(this.equals(entry)) {
             labelProperty.set(entry.getLabel());

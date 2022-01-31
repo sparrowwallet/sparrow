@@ -100,6 +100,16 @@ public class AddressesController extends WalletFormController implements Initial
         }
     }
 
+    @Subscribe
+    public void selectEntry(SelectEntryEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet()) && event.getEntry().getWalletFunction() == Function.ADDRESSES) {
+            List<AddressTreeTable> addressTreeTables = List.of(receiveTable, changeTable);
+            for(AddressTreeTable addressTreeTable : addressTreeTables) {
+                selectEntry(addressTreeTable, event.getEntry());
+            }
+        }
+    }
+
     public void exportReceiveAddresses(ActionEvent event) {
         exportAddresses(KeyPurpose.RECEIVE);
     }

@@ -70,9 +70,6 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             dialogPane.setGraphic(imageView);
         }
 
-        VBox vBox = new VBox();
-        vBox.setSpacing(20);
-
         Form form = new Form();
         Fieldset fieldset = new Fieldset();
         fieldset.setText("");

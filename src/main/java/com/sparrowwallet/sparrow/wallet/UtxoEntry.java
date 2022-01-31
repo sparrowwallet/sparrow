@@ -37,6 +37,16 @@ public class UtxoEntry extends HashIndexEntry {
         return false;
     }
 
+    @Override
+    public String getEntryType() {
+        return "UTXO";
+    }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.UTXOS;
+    }
+
     public boolean isMixing() {
         return mixStatusProperty != null && ((mixStatusProperty.get().getMixProgress() != null && mixStatusProperty.get().getMixProgress().getMixStep() != MixStep.FAIL) || mixStatusProperty.get().getNextMixUtxo() != null);
     }

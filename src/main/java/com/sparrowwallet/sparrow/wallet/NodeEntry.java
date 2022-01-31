@@ -64,6 +64,16 @@ public class NodeEntry extends Entry implements Comparable<NodeEntry> {
     }
 
     @Override
+    public String getEntryType() {
+        return "Address";
+    }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.ADDRESSES;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;

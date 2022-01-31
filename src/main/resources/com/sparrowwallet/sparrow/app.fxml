@@ -104,6 +104,7 @@
                         <MenuItem fx:id="lockWallet" mnemonicParsing="false" text="Lock Wallet" accelerator="Shortcut+L" onAction="#lockWallet"/>
                         <MenuItem mnemonicParsing="false" text="Lock All Wallets" accelerator="Shortcut+Shift+L" onAction="#lockWallets"/>
                         <SeparatorMenuItem />
+                        <MenuItem fx:id="searchWallet" mnemonicParsing="false" text="Search Wallet" accelerator="Shortcut+Shift+S" onAction="#searchWallet"/>
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>

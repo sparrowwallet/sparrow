@@ -80,6 +80,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 HBox actionBox = new HBox();
+                actionBox.getStyleClass().add("cell-actions");
                 Button viewTransactionButton = new Button("");
                 viewTransactionButton.setGraphic(getViewTransactionGlyph());
                 viewTransactionButton.setOnAction(event -> {
@@ -118,6 +119,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 getStyleClass().add("address-cell");
 
                 HBox actionBox = new HBox();
+                actionBox.getStyleClass().add("cell-actions");
                 Button receiveButton = new Button("");
                 receiveButton.setGraphic(getReceiveGlyph());
                 receiveButton.setOnAction(event -> {
@@ -152,6 +154,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 setTooltip(tooltip);
 
                 HBox actionBox = new HBox();
+                actionBox.getStyleClass().add("cell-actions");
                 Button viewTransactionButton = new Button("");
                 viewTransactionButton.setGraphic(getViewTransactionGlyph());
                 viewTransactionButton.setOnAction(event -> {

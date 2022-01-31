@@ -74,6 +74,16 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         return value;
     }
 
+    @Override
+    public String getEntryType() {
+        return "Transaction";
+    }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.TRANSACTIONS;
+    }
+
     public boolean isConfirming() {
         return getConfirmations() < BlockTransactionHash.BLOCKS_TO_CONFIRM;
     }

@@ -20,6 +20,16 @@ public class WalletUtxosEntry extends Entry {
         return 0L;
     }
 
+    @Override
+    public String getEntryType() {
+        return "Wallet UTXOs";
+    }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.UTXOS;
+    }
+
     protected void calculateDuplicates() {
         Map<String, UtxoEntry> addressMap = new HashMap<>();
 

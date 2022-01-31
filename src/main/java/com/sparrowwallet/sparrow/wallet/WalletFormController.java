@@ -10,6 +10,9 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.control.FiatLabel;
 import com.sparrowwallet.sparrow.event.WalletTabsClosedEvent;
+import javafx.application.Platform;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeTableView;
 
 public abstract class WalletFormController extends BaseController {
     public WalletForm walletForm;
@@ -62,6 +65,19 @@ public abstract class WalletFormController extends BaseController {
         } else {
             fiatLabel.setCurrency(null);
             fiatLabel.setBtcRate(0.0);
+        }
+    }
+
+    protected void selectEntry(TreeTableView<Entry> treeTableView, Entry entry) {
+        for(TreeItem<Entry> treeEntry : treeTableView.getRoot().getChildren()) {
+            if(treeEntry.getValue().equals(entry)) {
+                treeTableView.getSelectionModel().select(treeEntry);
+                Platform.runLater(() -> {
+                    treeTableView.requestFocus();
+                    treeTableView.scrollTo(treeTableView.getSelectionModel().getSelectedIndex());
+                });
+                break;
+            }
         }
     }
 }

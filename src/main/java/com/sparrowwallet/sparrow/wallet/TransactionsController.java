@@ -277,4 +277,11 @@ public class TransactionsController extends WalletFormController implements Init
     public void loadingLogChanged(LoadingLogChangedEvent event) {
         transactionsMasterDetail.setShowDetailNode(event.isVisible());
     }
+
+    @Subscribe
+    public void selectEntry(SelectEntryEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet()) && event.getEntry().getWalletFunction() == Function.TRANSACTIONS) {
+            selectEntry(transactionsTable, event.getEntry());
+        }
+    }
 }

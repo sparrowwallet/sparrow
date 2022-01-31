@@ -30,6 +30,16 @@ public class WalletTransactionsEntry extends Entry {
         return getBalance();
     }
 
+    @Override
+    public String getEntryType() {
+        return "Wallet Transactions";
+    }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.TRANSACTIONS;
+    }
+
     private void calculateBalances(boolean resort) {
         long balance = 0L;
         long mempoolBalance = 0L;

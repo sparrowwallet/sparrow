@@ -69,6 +69,16 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         return hashIndex.getValue();
     }
 
+    @Override
+    public String getEntryType() {
+        return "Hash Index";
+    }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.ADDRESSES;
+    }
+
     public enum Type {
         INPUT, OUTPUT
     }

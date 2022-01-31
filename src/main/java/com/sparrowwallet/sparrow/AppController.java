@@ -34,6 +34,7 @@ import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
+import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
@@ -154,6 +155,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem lockWallet;
+
+    @FXML
+    private MenuItem searchWallet;
 
     @FXML
     private MenuItem refreshWallet;
@@ -334,6 +338,7 @@ public class AppController implements Initializable {
         showPSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
         lockWallet.setDisable(true);
+        searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
         sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
@@ -1349,6 +1354,19 @@ public class AppController implements Initializable {
                 if(!walletTabData.getWalletForm().isLocked()) {
                     EventManager.get().post(new WalletLockEvent(walletTabData.getWalletForm().getMasterWallet()));
                 }
+            }
+        }
+    }
+
+    public void searchWallet(ActionEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null) {
+            SearchWalletDialog searchWalletDialog = new SearchWalletDialog(selectedWalletForm);
+            Optional<Entry> optEntry = searchWalletDialog.showAndWait();
+            if(optEntry.isPresent()) {
+                Entry entry = optEntry.get();
+                EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
+                Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
             }
         }
     }
@@ -2430,12 +2448,7 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void sendAction(SendActionEvent event) {
-        selectTab(event.getWallet());
-    }
-
-    @Subscribe
-    public void recieveAction(ReceiveActionEvent event) {
+    public void functionAction(FunctionActionEvent event) {
         selectTab(event.getWallet());
     }
 
