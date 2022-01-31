@@ -281,7 +281,7 @@ public class TransactionsController extends WalletFormController implements Init
     @Subscribe
     public void selectEntry(SelectEntryEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet()) && event.getEntry().getWalletFunction() == Function.TRANSACTIONS) {
-            selectEntry(transactionsTable, event.getEntry());
+            selectEntry(transactionsTable, transactionsTable.getRoot(), event.getEntry());
         }
     }
 }

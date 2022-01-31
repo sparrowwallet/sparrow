@@ -1359,14 +1359,21 @@ public class AppController implements Initializable {
     }
 
     public void searchWallet(ActionEvent event) {
-        WalletForm selectedWalletForm = getSelectedWalletForm();
-        if(selectedWalletForm != null) {
-            SearchWalletDialog searchWalletDialog = new SearchWalletDialog(selectedWalletForm);
-            Optional<Entry> optEntry = searchWalletDialog.showAndWait();
-            if(optEntry.isPresent()) {
-                Entry entry = optEntry.get();
-                EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
-                Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        if(selectedTab != null) {
+            TabData tabData = (TabData) selectedTab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                TabPane subTabs = (TabPane) selectedTab.getContent();
+                List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
+                if(!walletForms.isEmpty()) {
+                    SearchWalletDialog searchWalletDialog = new SearchWalletDialog(walletForms);
+                    Optional<Entry> optEntry = searchWalletDialog.showAndWait();
+                    if(optEntry.isPresent()) {
+                        Entry entry = optEntry.get();
+                        EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
+                        Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
+                    }
+                }
             }
         }
     }

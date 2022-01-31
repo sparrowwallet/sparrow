@@ -33,4 +33,9 @@ public class TransactionHashIndexEntry extends HashIndexEntry {
     public boolean isSpent() {
         return false;
     }
+
+    @Override
+    public Function getWalletFunction() {
+        return Function.TRANSACTIONS;
+    }
 }

@@ -23,12 +23,16 @@ import java.util.List;
 public class SearchWalletDialog extends Dialog<Entry> {
     private static final Logger log = LoggerFactory.getLogger(SearchWalletDialog.class);
 
-    private final WalletForm walletForm;
+    private final List<WalletForm> walletForms;
     private final TextField search;
     private final CoinTreeTable results;
 
-    public SearchWalletDialog(WalletForm walletForm) {
-        this.walletForm = walletForm;
+    public SearchWalletDialog(List<WalletForm> walletForms) {
+        this.walletForms = walletForms;
+
+        if(walletForms.isEmpty()) {
+            throw new IllegalArgumentException("No wallets selected to search");
+        }
 
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
@@ -65,10 +69,18 @@ public class SearchWalletDialog extends Dialog<Entry> {
 
         results = new CoinTreeTable();
         results.setShowRoot(false);
-        results.setPrefWidth(850);
-        results.setBitcoinUnit(walletForm.getWallet());
+        results.setPrefWidth(walletForms.size() > 1 ? 950 : 850);
+        results.setBitcoinUnit(walletForms.iterator().next().getWallet());
         results.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         results.setPlaceholder(new Label("No results"));
+
+        if(walletForms.size() > 1) {
+            TreeTableColumn<Entry, String> walletColumn = new TreeTableColumn<>("Wallet");
+            walletColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
+                return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getWallet().getDisplayName());
+            });
+            results.getColumns().add(walletColumn);
+        }
 
         TreeTableColumn<Entry, String> typeColumn = new TreeTableColumn<>("Type");
         typeColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
@@ -81,10 +93,8 @@ public class SearchWalletDialog extends Dialog<Entry> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
         });
         entryCol.setCellFactory(p -> new SearchEntryCell());
-        String address = walletForm.getNodeEntry(KeyPurpose.RECEIVE).getAddress().toString();
-        if(address != null) {
-            entryCol.setMinWidth(TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0));
-        }
+        String address = walletForms.iterator().next().getNodeEntry(KeyPurpose.RECEIVE).getAddress().toString();
+        entryCol.setMinWidth(TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0));
         results.getColumns().add(entryCol);
 
         TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>("Label");
@@ -138,43 +148,45 @@ public class SearchWalletDialog extends Dialog<Entry> {
                 //ignore
             }
 
-            WalletTransactionsEntry walletTransactionsEntry = walletForm.getWalletTransactionsEntry();
-            for(Entry entry : walletTransactionsEntry.getChildren()) {
-                if(entry instanceof TransactionEntry transactionEntry) {
-                    if(transactionEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
-                            (transactionEntry.getLabel() != null && transactionEntry.getLabel().toLowerCase().contains(searchText)) ||
-                            (transactionEntry.getValue() != null && searchValue != null && Math.abs(transactionEntry.getValue()) == searchValue)) {
-                        matchingEntries.add(entry);
+            for(WalletForm walletForm : walletForms) {
+                WalletTransactionsEntry walletTransactionsEntry = walletForm.getWalletTransactionsEntry();
+                for(Entry entry : walletTransactionsEntry.getChildren()) {
+                    if(entry instanceof TransactionEntry transactionEntry) {
+                        if(transactionEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
+                                (transactionEntry.getLabel() != null && transactionEntry.getLabel().toLowerCase().contains(searchText)) ||
+                                (transactionEntry.getValue() != null && searchValue != null && Math.abs(transactionEntry.getValue()) == searchValue)) {
+                            matchingEntries.add(entry);
+                        }
                     }
                 }
-            }
 
-            for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
-                NodeEntry purposeEntry = walletForm.getNodeEntry(keyPurpose);
-                for(Entry entry : purposeEntry.getChildren()) {
-                    if(entry instanceof NodeEntry nodeEntry) {
-                        if(nodeEntry.getAddress().toString().contains(searchText) ||
-                                (nodeEntry.getLabel() != null && nodeEntry.getLabel().toLowerCase().contains(searchText)) ||
-                                (nodeEntry.getValue() != null && searchValue != null && Math.abs(nodeEntry.getValue()) == searchValue)) {
+                for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+                    NodeEntry purposeEntry = walletForm.getNodeEntry(keyPurpose);
+                    for(Entry entry : purposeEntry.getChildren()) {
+                        if(entry instanceof NodeEntry nodeEntry) {
+                            if(nodeEntry.getAddress().toString().contains(searchText) ||
+                                    (nodeEntry.getLabel() != null && nodeEntry.getLabel().toLowerCase().contains(searchText)) ||
+                                    (nodeEntry.getValue() != null && searchValue != null && Math.abs(nodeEntry.getValue()) == searchValue)) {
+                                matchingEntries.add(entry);
+                            }
+                        }
+                    }
+                }
+
+                WalletUtxosEntry walletUtxosEntry = walletForm.getWalletUtxosEntry();
+                for(Entry entry : walletUtxosEntry.getChildren()) {
+                    if(entry instanceof HashIndexEntry hashIndexEntry) {
+                        if(hashIndexEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
+                                (hashIndexEntry.getLabel() != null && hashIndexEntry.getLabel().toLowerCase().contains(searchText)) ||
+                                (hashIndexEntry.getValue() != null && searchValue != null && Math.abs(hashIndexEntry.getValue()) == searchValue)) {
                             matchingEntries.add(entry);
                         }
                     }
                 }
             }
-
-            WalletUtxosEntry walletUtxosEntry = walletForm.getWalletUtxosEntry();
-            for(Entry entry : walletUtxosEntry.getChildren()) {
-                if(entry instanceof HashIndexEntry hashIndexEntry) {
-                    if(hashIndexEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
-                            (hashIndexEntry.getLabel() != null && hashIndexEntry.getLabel().toLowerCase().contains(searchText)) ||
-                            (hashIndexEntry.getValue() != null && searchValue != null && Math.abs(hashIndexEntry.getValue()) == searchValue)) {
-                        matchingEntries.add(entry);
-                    }
-                }
-            }
         }
 
-        SearchWalletEntry rootEntry = new SearchWalletEntry(walletForm.getWallet(), matchingEntries);
+        SearchWalletEntry rootEntry = new SearchWalletEntry(walletForms.iterator().next().getWallet(), matchingEntries);
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         results.setRoot(rootItem);
     }

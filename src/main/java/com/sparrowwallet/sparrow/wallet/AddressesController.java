@@ -105,7 +105,7 @@ public class AddressesController extends WalletFormController implements Initial
         if(event.getWallet().equals(getWalletForm().getWallet()) && event.getEntry().getWalletFunction() == Function.ADDRESSES) {
             List<AddressTreeTable> addressTreeTables = List.of(receiveTable, changeTable);
             for(AddressTreeTable addressTreeTable : addressTreeTables) {
-                selectEntry(addressTreeTable, event.getEntry());
+                selectEntry(addressTreeTable, addressTreeTable.getRoot(), event.getEntry());
             }
         }
     }

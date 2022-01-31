@@ -68,16 +68,24 @@ public abstract class WalletFormController extends BaseController {
         }
     }
 
-    protected void selectEntry(TreeTableView<Entry> treeTableView, Entry entry) {
-        for(TreeItem<Entry> treeEntry : treeTableView.getRoot().getChildren()) {
+    protected boolean selectEntry(TreeTableView<Entry> treeTableView, TreeItem<Entry> parentEntry, Entry entry) {
+        for(TreeItem<Entry> treeEntry : parentEntry.getChildren()) {
             if(treeEntry.getValue().equals(entry)) {
-                treeTableView.getSelectionModel().select(treeEntry);
                 Platform.runLater(() -> {
                     treeTableView.requestFocus();
+                    treeTableView.getSelectionModel().select(treeEntry);
                     treeTableView.scrollTo(treeTableView.getSelectionModel().getSelectedIndex());
                 });
-                break;
+                return true;
+            }
+
+            boolean selectedChild = selectEntry(treeTableView, treeEntry, entry);
+            if(selectedChild) {
+                treeEntry.setExpanded(true);
+                return true;
             }
         }
+
+        return false;
     }
 }

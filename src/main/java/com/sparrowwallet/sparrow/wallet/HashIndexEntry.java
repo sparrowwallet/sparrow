@@ -71,7 +71,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
 
     @Override
     public String getEntryType() {
-        return "Hash Index";
+        return type == Type.INPUT ? "Input" : "Output";
     }
 
     @Override
