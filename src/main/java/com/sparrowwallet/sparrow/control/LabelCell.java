@@ -92,18 +92,15 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> {
             });
             getItems().add(copyLabel);
 
-            Object content = Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
-            if(content instanceof String) {
-                MenuItem pasteLabel = new MenuItem("Paste Label");
-                pasteLabel.setOnAction(AE -> {
-                    hide();
-                    Object currentContent = Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
-                    if(currentContent instanceof String) {
-                        entry.labelProperty().set((String)currentContent);
-                    }
-                });
-                getItems().add(pasteLabel);
-            }
+            MenuItem pasteLabel = new MenuItem("Paste Label");
+            pasteLabel.setOnAction(AE -> {
+                hide();
+                Object currentContent = Clipboard.getSystemClipboard().getContent(DataFormat.PLAIN_TEXT);
+                if(currentContent instanceof String) {
+                    entry.labelProperty().set((String)currentContent);
+                }
+            });
+            getItems().add(pasteLabel);
         }
     }
 }
