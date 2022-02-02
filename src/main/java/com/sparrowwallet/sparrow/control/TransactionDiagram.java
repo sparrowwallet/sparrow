@@ -371,7 +371,7 @@ public class TransactionDiagram extends GridPane {
         inputsBox.setPrefWidth(isExpanded() ? 230 : 150);
         inputsBox.setPadding(new Insets(0, 10, 0, 10));
         inputsBox.minHeightProperty().bind(minHeightProperty());
-        inputsBox.setAlignment(Pos.CENTER_RIGHT);
+        inputsBox.setAlignment(Pos.BASELINE_RIGHT);
         inputsBox.getChildren().add(createSpacer());
         Label helper = new Label();
         double labelHeight = Math.max(TextUtils.computeTextHeight(AppServices.getMonospaceFont(), "0"), TextUtils.computeTextHeight(helper.getFont(), "0")) + 1;
@@ -409,6 +409,7 @@ public class TransactionDiagram extends GridPane {
                     if(input instanceof PayjoinBlockTransactionHashIndex) {
                         tooltip.setText("Added once transaction is signed and sent to the payjoin server");
                     } else if(input instanceof AdditionalBlockTransactionHashIndex additionalReference) {
+                        inputValue = input.getValue();
                         StringJoiner joiner = new StringJoiner("\n");
                         for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
                             joiner.add(getInputDescription(additionalInput));
@@ -435,6 +436,11 @@ public class TransactionDiagram extends GridPane {
                             tooltip.setText(input.getHashAsString() + ":" + input.getIndex());
                         }
                         label.getStyleClass().add("input-label");
+                    }
+                    if(!isFinal()) {
+                        label.setGraphic(excludeUtxoButton);
+                        label.setContentDisplay(ContentDisplay.LEFT);
+                        excludeUtxoButton.setVisible(false);
                     }
                     tooltip.getStyleClass().add("input-label");
                 }
@@ -1084,6 +1090,11 @@ public class TransactionDiagram extends GridPane {
         @Override
         public String getLabel() {
             return additionalInputs.size() + " more...";
+        }
+
+        @Override
+        public long getValue() {
+            return additionalInputs.stream().mapToLong(BlockTransactionHashIndex::getValue).sum();
         }
 
         public List<BlockTransactionHashIndex> getAdditionalInputs() {
