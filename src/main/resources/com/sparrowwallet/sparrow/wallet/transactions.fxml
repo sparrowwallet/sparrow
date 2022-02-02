@@ -12,7 +12,7 @@
 <?import tornadofx.control.Form?>
 <?import tornadofx.control.Fieldset?>
 <?import tornadofx.control.Field?>
-<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableCoinLabel?>
 <?import com.sparrowwallet.sparrow.control.FiatLabel?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import org.controlsfx.glyphfont.Glyph?>
@@ -35,10 +35,10 @@
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                     <Fieldset inputGrow="SOMETIMES" text="Transactions" styleClass="header">
                         <Field text="Balance:">
-                            <CoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
+                            <CopyableCoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
                         </Field>
                         <Field text="Mempool:">
-                            <CoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" minWidth="110" />
+                            <CopyableCoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" minWidth="110" />
                         </Field>
                         <Field text="Transactions:">
                             <CopyableLabel fx:id="transactionCount" />

@@ -424,7 +424,9 @@ public class AppController implements Initializable {
 
             Stage stage = new Stage();
             stage.setTitle("About " + MainApp.APP_NAME);
-            stage.initStyle(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? StageStyle.UNDECORATED : StageStyle.DECORATED);
+            stage.initStyle(StageStyle.UNDECORATED);
+            stage.initOwner(tabs.getScene().getWindow());
+            stage.initModality(Modality.WINDOW_MODAL);
             stage.setResizable(false);
             Scene scene = new Scene(root);
             AppServices.onEscapePressed(scene, stage::close);

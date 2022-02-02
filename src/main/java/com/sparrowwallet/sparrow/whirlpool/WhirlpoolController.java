@@ -11,6 +11,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CoinLabel;
+import com.sparrowwallet.sparrow.control.CopyableCoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.WalletMasterMixConfigChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
@@ -62,7 +63,7 @@ public class WhirlpoolController {
     private VBox selectedPool;
 
     @FXML
-    private CoinLabel poolFee;
+    private CopyableCoinLabel poolFee;
 
     @FXML
     private Label poolInsufficient;
@@ -83,7 +84,7 @@ public class WhirlpoolController {
     private Label nbOutputs;
 
     @FXML
-    private CoinLabel discountFee;
+    private CopyableCoinLabel discountFee;
 
     private String walletId;
     private Wallet wallet;
@@ -273,7 +274,7 @@ public class WhirlpoolController {
                     OptionalLong optMinValue = allPoolsService.getValue().stream().mapToLong(pool1 -> pool1.getPremixValueMin() + pool1.getFeeValue()).min();
                     if(optMinValue.isPresent() && totalUtxoValue < optMinValue.getAsLong()) {
                         String satsValue = String.format(Locale.ENGLISH, "%,d", optMinValue.getAsLong()) + " sats";
-                        String btcValue = CoinLabel.BTC_FORMAT.format((double)optMinValue.getAsLong() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+                        String btcValue = CoinLabel.getBTCFormat().format((double)optMinValue.getAsLong() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
                         poolInsufficient.setText("No available pools. Select a value over " + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + ".");
                     }
                 });

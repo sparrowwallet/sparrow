@@ -31,7 +31,7 @@ public class OutputController extends TransactionFormController implements Initi
     private Fieldset outputFieldset;
 
     @FXML
-    private CoinLabel value;
+    private CopyableCoinLabel value;
 
     @FXML
     private CopyableLabel to;

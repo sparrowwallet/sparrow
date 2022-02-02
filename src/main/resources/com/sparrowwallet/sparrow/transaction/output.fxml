@@ -12,7 +12,7 @@
 <?import tornadofx.control.Form?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
-<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableCoinLabel?>
 <?import com.sparrowwallet.sparrow.control.AddressLabel?>
 <?import com.sparrowwallet.sparrow.control.ScriptArea?>
 
@@ -31,7 +31,7 @@
     <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
         <Fieldset fx:id="outputFieldset" inputGrow="SOMETIMES" text="Output">
             <Field text="Sends:">
-                <CoinLabel fx:id="value"/>
+                <CopyableCoinLabel fx:id="value"/>
                 <CopyableLabel fx:id="to" text="to" />
                 <AddressLabel fx:id="address" />
             </Field>

@@ -18,18 +18,24 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
@@ -40,16 +46,68 @@ import java.util.stream.Collectors;
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
     private static final int REDUCED_MAX_UTXOS = MAX_UTXOS - 2;
+    private static final int EXPANDED_MAX_UTXOS = 20;
     private static final int MAX_PAYMENTS = 6;
     private static final int REDUCED_MAX_PAYMENTS = MAX_PAYMENTS - 2;
+    private static final int EXPANDED_MAX_PAYMENTS = 18;
     private static final double DIAGRAM_HEIGHT = 210.0;
     private static final double REDUCED_DIAGRAM_HEIGHT = DIAGRAM_HEIGHT - 60;
+    private static final double EXPANDED_DIAGRAM_HEIGHT = 500;
     private static final int TOOLTIP_SHOW_DELAY = 50;
     private static final int RELATIVE_SIZE_MAX_RADIUS = 7;
+    private static final int ROW_HEIGHT = 27;
 
     private WalletTransaction walletTx;
     private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
     private final ObjectProperty<OptimizationStrategy> optimizationStrategyProperty = new SimpleObjectProperty<>(OptimizationStrategy.EFFICIENCY);
+    private boolean expanded;
+    private TransactionDiagram expandedDiagram;
+
+    private final EventHandler<MouseEvent> expandedDiagramHandler = new EventHandler<>() {
+        @Override
+        public void handle(MouseEvent event) {
+            if(!event.isConsumed()) {
+                Stage stage = new Stage();
+                stage.setTitle(walletTx.getPayments().iterator().next().getLabel());
+                stage.initStyle(StageStyle.UNDECORATED);
+                stage.initOwner(TransactionDiagram.this.getScene().getWindow());
+                stage.initModality(Modality.WINDOW_MODAL);
+                stage.setResizable(false);
+
+                VBox vBox = new VBox(20);
+                vBox.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+                vBox.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
+                vBox.getStylesheets().add(AppServices.class.getResource("wallet/send.css").toExternalForm());
+                vBox.setPadding(new Insets(20, 40, 20, 50));
+
+                expandedDiagram = new TransactionDiagram();
+                expandedDiagram.setId("transactionDiagram");
+                expandedDiagram.setExpanded(true);
+                updateExpandedDiagram();
+
+                HBox buttonBox = new HBox();
+                buttonBox.setAlignment(Pos.CENTER_RIGHT);
+                Button button = new Button("Close");
+                button.setOnAction(e -> {
+                    stage.close();
+                });
+                buttonBox.getChildren().add(button);
+                vBox.getChildren().addAll(expandedDiagram, buttonBox);
+
+                Scene scene = new Scene(vBox);
+                AppServices.onEscapePressed(scene, stage::close);
+                AppServices.setStageIcon(stage);
+                stage.setScene(scene);
+                stage.setOnShowing(e -> {
+                    AppServices.moveToActiveWindowScreen(stage, 600, 460);
+                });
+                stage.setOnHidden(e -> {
+                    expandedDiagram = null;
+                });
+                stage.show();
+            }
+        }
+    };
 
     public void update(WalletTransaction walletTx) {
         setMinHeight(getDiagramHeight());
@@ -60,6 +118,10 @@ public class TransactionDiagram extends GridPane {
         } else {
             this.walletTx = walletTx;
             update();
+            setOnMouseClicked(expandedDiagramHandler);
+            if(expandedDiagram != null) {
+                updateExpandedDiagram();
+            }
         }
     }
 
@@ -85,6 +147,24 @@ public class TransactionDiagram extends GridPane {
 
     public void clear() {
         getChildren().clear();
+    }
+
+    private void updateExpandedDiagram() {
+        expandedDiagram.setFinal(isFinal());
+        expandedDiagram.setOptimizationStrategy(getOptimizationStrategy());
+        expandedDiagram.walletTx = walletTx;
+
+        List<Map<BlockTransactionHashIndex, WalletNode>> utxoSets = expandedDiagram.getDisplayedUtxoSets();
+        int maxSetSize = utxoSets.stream().mapToInt(Map::size).max().orElse(0);
+        int maxRows = Math.max(maxSetSize * utxoSets.size(), walletTx.getPayments().size() + 2);
+        double diagramHeight = Math.max(DIAGRAM_HEIGHT, Math.min(EXPANDED_DIAGRAM_HEIGHT, maxRows * ROW_HEIGHT));
+        expandedDiagram.setMinHeight(diagramHeight);
+        expandedDiagram.setMaxHeight(diagramHeight);
+        expandedDiagram.update();
+
+        if(expandedDiagram.getScene() != null && expandedDiagram.getScene().getWindow() instanceof Stage stage) {
+            stage.sizeToScene();
+        }
     }
 
     public void update() {
@@ -287,17 +367,19 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getInputsLabels(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {
         VBox inputsBox = new VBox();
-        inputsBox.setMaxWidth(150);
-        inputsBox.setPrefWidth(150);
+        inputsBox.setMaxWidth(isExpanded() ? 300 : 150);
+        inputsBox.setPrefWidth(isExpanded() ? 230 : 150);
         inputsBox.setPadding(new Insets(0, 10, 0, 10));
         inputsBox.minHeightProperty().bind(minHeightProperty());
         inputsBox.setAlignment(Pos.CENTER_RIGHT);
         inputsBox.getChildren().add(createSpacer());
+        double labelHeight = TextUtils.computeTextHeight(AppServices.getMonospaceFont(), "0") + 1;
         for(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos : displayedUtxoSets) {
             for(BlockTransactionHashIndex input : displayedUtxos.keySet()) {
                 WalletNode walletNode = displayedUtxos.get(input);
                 String desc = getInputDescription(input);
                 Label label = new Label(desc);
+                label.setPrefHeight(labelHeight);
                 label.getStyleClass().add("utxo-label");
 
                 Button excludeUtxoButton = new Button("");
@@ -307,8 +389,10 @@ public class TransactionDiagram extends GridPane {
                 });
 
                 Tooltip tooltip = new Tooltip();
+                Long inputValue = null;
                 if(walletNode != null) {
-                    tooltip.setText("Spending " + getSatsValue(input.getValue()) + " sats from " + (isFinal() ? walletTx.getWallet().getFullDisplayName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                    inputValue = input.getValue();
+                    tooltip.setText("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? walletTx.getWallet().getFullDisplayName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
                     tooltip.getStyleClass().add("input-label");
 
                     if(input.getLabel() == null || input.getLabel().isEmpty()) {
@@ -335,13 +419,16 @@ public class TransactionDiagram extends GridPane {
                         label.setGraphic(walletTx.isTwoPersonCoinjoin() ? getQuestionGlyph() : getWarningGlyph());
                         label.setOnMouseClicked(event -> {
                             EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
+                            closeExpanded();
+                            event.consume();
                         });
                     } else {
                         if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
                             BlockTransaction blockTransaction = walletTx.getInputTransactions().get(input.getHash());
                             TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int) input.getIndex());
                             Address fromAddress = txOutput.getScript().getToAddress();
-                            tooltip.setText("Input of " + getSatsValue(txOutput.getValue()) + " sats\n" + input.getHashAsString() + ":" + input.getIndex() + (fromAddress != null ? "\n" + fromAddress : ""));
+                            inputValue = txOutput.getValue();
+                            tooltip.setText("Input of " + getSatsValue(inputValue) + " sats\n" + input.getHashAsString() + ":" + input.getIndex() + (fromAddress != null ? "\n" + fromAddress : ""));
                         } else {
                             tooltip.setText(input.getHashAsString() + ":" + input.getIndex());
                         }
@@ -355,7 +442,21 @@ public class TransactionDiagram extends GridPane {
                     label.setTooltip(tooltip);
                 }
 
-                inputsBox.getChildren().add(label);
+                HBox inputBox = new HBox();
+                inputBox.setAlignment(Pos.CENTER_RIGHT);
+                inputBox.getChildren().add(label);
+
+                if(isExpanded() && inputValue != null) {
+                    label.setMinWidth(120);
+                    Region region = new Region();
+                    HBox.setHgrow(region, Priority.ALWAYS);
+                    CoinLabel amountLabel = new CoinLabel();
+                    amountLabel.setValue(inputValue);
+                    amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+                    inputBox.getChildren().addAll(region, amountLabel);
+                }
+
+                inputsBox.getChildren().add(inputBox);
                 inputsBox.getChildren().add(createSpacer());
             }
         }
@@ -505,7 +606,8 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getOutputsLabels(List<Payment> displayedPayments) {
         VBox outputsBox = new VBox();
-        outputsBox.setMaxWidth(150);
+        outputsBox.setMaxWidth(isExpanded() ? 350 : 150);
+        outputsBox.setPrefWidth(isExpanded() ? 230 : 150);
         outputsBox.setPadding(new Insets(0, 20, 0, 10));
         outputsBox.setAlignment(Pos.CENTER_LEFT);
         outputsBox.getChildren().add(createSpacer());
@@ -527,7 +629,20 @@ public class TransactionDiagram extends GridPane {
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
             recipientLabel.setTooltip(recipientTooltip);
-            outputNodes.add(new OutputNode(recipientLabel, payment.getAddress(), payment.getAmount()));
+            HBox paymentBox = new HBox();
+            paymentBox.setAlignment(Pos.CENTER_LEFT);
+            paymentBox.getChildren().add(recipientLabel);
+            if(isExpanded()) {
+                Region region = new Region();
+                region.setMinWidth(20);
+                HBox.setHgrow(region, Priority.ALWAYS);
+                CoinLabel amountLabel = new CoinLabel();
+                amountLabel.setValue(payment.getAmount());
+                amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+                paymentBox.getChildren().addAll(region, amountLabel);
+            }
+
+            outputNodes.add(new OutputNode(paymentBox, payment.getAddress(), payment.getAmount()));
         }
 
         for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
@@ -536,6 +651,7 @@ public class TransactionDiagram extends GridPane {
             boolean overGapLimit = (changeNode.getIndex() - defaultChangeNode.getIndex()) > walletTx.getWallet().getGapLimit();
 
             HBox actionBox = new HBox();
+            actionBox.setAlignment(Pos.CENTER_LEFT);
             Address changeAddress = walletTx.getChangeAddress(changeNode);
             String changeDesc = changeAddress.toString().substring(0, 8) + "...";
             Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
@@ -563,6 +679,17 @@ public class TransactionDiagram extends GridPane {
                 actionBox.getChildren().add(replaceChangeLabel);
             }
 
+            if(isExpanded()) {
+                changeLabel.setMinWidth(120);
+                Region region = new Region();
+                region.setMinWidth(20);
+                HBox.setHgrow(region, Priority.ALWAYS);
+                CoinLabel amountLabel = new CoinLabel();
+                amountLabel.setValue(changeEntry.getValue());
+                amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+                actionBox.getChildren().addAll(region, amountLabel);
+            }
+
             outputNodes.add(new OutputNode(actionBox, changeAddress, changeEntry.getValue()));
         }
 
@@ -584,7 +711,21 @@ public class TransactionDiagram extends GridPane {
         feeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         feeTooltip.setShowDuration(Duration.INDEFINITE);
         feeLabel.setTooltip(feeTooltip);
-        outputsBox.getChildren().add(feeLabel);
+
+        HBox feeBox = new HBox();
+        feeBox.setAlignment(Pos.CENTER_LEFT);
+        feeBox.getChildren().add(feeLabel);
+        if(isExpanded()) {
+            Region region = new Region();
+            region.setMinWidth(20);
+            HBox.setHgrow(region, Priority.ALWAYS);
+            CoinLabel amountLabel = new CoinLabel();
+            amountLabel.setValue(walletTx.getFee());
+            amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+            feeBox.getChildren().addAll(region, amountLabel);
+        }
+
+        outputsBox.getChildren().add(feeBox);
         outputsBox.getChildren().add(createSpacer());
 
         return outputsBox;
@@ -613,6 +754,10 @@ public class TransactionDiagram extends GridPane {
     }
 
     public double getDiagramHeight() {
+        if(isExpanded()) {
+            return getMaxHeight();
+        }
+
         if(isReducedHeight()) {
             return REDUCED_DIAGRAM_HEIGHT;
         }
@@ -621,6 +766,10 @@ public class TransactionDiagram extends GridPane {
     }
 
     private int getMaxUtxos() {
+        if(isExpanded()) {
+            return EXPANDED_MAX_UTXOS;
+        }
+
         if(isReducedHeight()) {
             return REDUCED_MAX_UTXOS;
         }
@@ -629,6 +778,10 @@ public class TransactionDiagram extends GridPane {
     }
 
     private int getMaxPayments() {
+        if(isExpanded()) {
+            return EXPANDED_MAX_PAYMENTS;
+        }
+
         if(isReducedHeight()) {
             return REDUCED_MAX_PAYMENTS;
         }
@@ -834,6 +987,8 @@ public class TransactionDiagram extends GridPane {
         });
         userAddGlyph.setOnMouseClicked(event -> {
             EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
+            closeExpanded();
+            event.consume();
         });
         return userAddGlyph;
     }
@@ -853,12 +1008,20 @@ public class TransactionDiagram extends GridPane {
             });
             coinsGlyph.setOnMouseClicked(event -> {
                 EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
+                closeExpanded();
+                event.consume();
             });
         } else {
             coinsGlyph.getStyleClass().add("coins-icon");
         }
 
         return coinsGlyph;
+    }
+
+    private void closeExpanded() {
+        if(isExpanded() && this.getScene() != null && this.getScene().getWindow() instanceof Stage stage) {
+            stage.close();
+        }
     }
 
     public boolean isFinal() {
@@ -883,6 +1046,14 @@ public class TransactionDiagram extends GridPane {
 
     public void setOptimizationStrategy(OptimizationStrategy optimizationStrategy) {
         this.optimizationStrategyProperty.set(optimizationStrategy);
+    }
+
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
     }
 
     private static class PayjoinBlockTransactionHashIndex extends BlockTransactionHashIndex {

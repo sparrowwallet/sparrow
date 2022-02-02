@@ -13,7 +13,7 @@
 <?import org.controlsfx.control.SegmentedButton?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
-<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableCoinLabel?>
 <?import javafx.scene.control.Button?>
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import javafx.scene.control.ComboBox?>
@@ -143,7 +143,7 @@
                 <Form GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="details-lower">
                     <Fieldset text="Fee" inputGrow="SOMETIMES">
                         <Field text="Amount:">
-                            <CoinLabel fx:id="fee" />
+                            <CopyableCoinLabel fx:id="fee" />
                         </Field>
                         <Field text="Rate:">
                             <CopyableLabel fx:id="feeRate" />

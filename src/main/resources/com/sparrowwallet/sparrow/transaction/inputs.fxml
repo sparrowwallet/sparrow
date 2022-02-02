@@ -6,7 +6,7 @@
 <?import tornadofx.control.*?>
 <?import javafx.scene.chart.PieChart?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
-<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableCoinLabel?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" stylesheets="@inputs.css, @transaction.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.InputsController">
     <padding>
@@ -25,7 +25,7 @@
                 <CopyableLabel fx:id="count" />
             </Field>
             <Field text="Total:">
-                <CoinLabel fx:id="total" />
+                <CopyableCoinLabel fx:id="total" />
             </Field>
         </Fieldset>
     </Form>

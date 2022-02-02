@@ -53,13 +53,13 @@ public class UtxosController extends WalletFormController implements Initializab
     private static final Logger log = LoggerFactory.getLogger(UtxosController.class);
 
     @FXML
-    private CoinLabel balance;
+    private CopyableCoinLabel balance;
 
     @FXML
     private FiatLabel fiatBalance;
 
     @FXML
-    private CoinLabel mempoolBalance;
+    private CopyableCoinLabel mempoolBalance;
 
     @FXML
     private FiatLabel fiatMempoolBalance;

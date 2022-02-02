@@ -4,7 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CoinLabel;
+import com.sparrowwallet.sparrow.control.CopyableCoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import javafx.fxml.FXML;
@@ -21,7 +21,7 @@ public class OutputsController extends TransactionFormController implements Init
     private CopyableLabel count;
 
     @FXML
-    private CoinLabel total;
+    private CopyableCoinLabel total;
 
     @FXML
     private PieChart outputsPie;

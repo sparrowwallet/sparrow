@@ -34,4 +34,18 @@ public class TextUtils {
         helper.setText(DEFAULT_TEXT);
         return d;
     }
+
+    public static double computeTextHeight(Font font, String text) {
+        helper.setText(text);
+        helper.setFont(font);
+
+        helper.setWrappingWidth(0.0D);
+        helper.setLineSpacing(0.0D);
+        double d = Math.ceil(helper.getLayoutBounds().getHeight());
+
+        helper.setWrappingWidth(DEFAULT_WRAPPING_WIDTH);
+        helper.setLineSpacing(DEFAULT_LINE_SPACING);
+        helper.setText(DEFAULT_TEXT);
+        return d;
+    }
 }

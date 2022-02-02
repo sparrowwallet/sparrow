@@ -13,7 +13,7 @@
 <?import com.sparrowwallet.sparrow.control.RelativeTimelockSpinner?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.sparrow.control.IdLabel?>
-<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableCoinLabel?>
 <?import com.sparrowwallet.sparrow.control.AddressLabel?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.ScriptArea?>
@@ -37,7 +37,7 @@
                 <Hyperlink fx:id="linkedOutpoint" styleClass="id" visible="false" />
             </Field>
             <Field text="Spends:">
-                <CoinLabel fx:id="spends" />
+                <CopyableCoinLabel fx:id="spends" />
                 <CopyableLabel fx:id="from" text="from" />
                 <AddressLabel fx:id="address" />
             </Field>

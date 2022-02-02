@@ -42,13 +42,13 @@ public class TransactionsController extends WalletFormController implements Init
     private static final DateFormat LOG_DATE_FORMAT = new SimpleDateFormat("[MMM dd HH:mm:ss]");
 
     @FXML
-    private CoinLabel balance;
+    private CopyableCoinLabel balance;
 
     @FXML
     private FiatLabel fiatBalance;
 
     @FXML
-    private CoinLabel mempoolBalance;
+    private CopyableCoinLabel mempoolBalance;
 
     @FXML
     private FiatLabel fiatMempoolBalance;
@@ -228,7 +228,7 @@ public class TransactionsController extends WalletFormController implements Init
     public void walletHistoryStatus(WalletHistoryStatusEvent event) {
         transactionsTable.updateHistoryStatus(event);
 
-        if(event.getWallet() != null && getWalletForm().getWallet() == event.getWallet()) {
+        if(event.getWallet() != null && getWalletForm() != null && getWalletForm().getWallet() == event.getWallet()) {
             String logMessage = event.getStatusMessage();
             if(logMessage == null) {
                 if(event instanceof WalletHistoryFinishedEvent) {

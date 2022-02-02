@@ -132,7 +132,7 @@ public class HeadersController extends TransactionFormController implements Init
     private CopyableLabel virtualSize;
 
     @FXML
-    private CoinLabel fee;
+    private CopyableCoinLabel fee;
 
     @FXML
     private CopyableLabel feeRate;

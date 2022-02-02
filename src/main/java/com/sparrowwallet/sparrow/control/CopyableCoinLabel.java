@@ -6,28 +6,23 @@ import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
 import javafx.scene.control.ContextMenu;
-import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-public class CoinLabel extends Label {
-    public static final DecimalFormat BTC_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-
+public class CopyableCoinLabel extends CopyableLabel {
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final Tooltip tooltip;
     private final CoinContextMenu contextMenu;
 
-    public CoinLabel() {
+    public CopyableCoinLabel() {
         this("Unknown");
     }
 
-    public CoinLabel(String text) {
+    public CopyableCoinLabel(String text) {
         super(text);
         valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getBitcoinUnit()));
         tooltip = new Tooltip();
@@ -59,7 +54,7 @@ public class CoinLabel extends Label {
         setContextMenu(contextMenu);
 
         String satsValue = String.format(Locale.ENGLISH, "%,d", value) + " sats";
-        String btcValue = BTC_FORMAT.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+        String btcValue = CoinLabel.getBTCFormat().format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
 
         BitcoinUnit unit = bitcoinUnit;
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
@@ -89,16 +84,11 @@ public class CoinLabel extends Label {
             copyBtcValue.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(BTC_FORMAT.format((double)getValue() / Transaction.SATOSHIS_PER_BITCOIN));
+                content.putString(CoinLabel.getBTCFormat().format((double)getValue() / Transaction.SATOSHIS_PER_BITCOIN));
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
             getItems().addAll(copySatsValue, copyBtcValue);
         }
-    }
-
-    public static DecimalFormat getBTCFormat() {
-        BTC_FORMAT.setMaximumFractionDigits(8);
-        return BTC_FORMAT;
     }
 }

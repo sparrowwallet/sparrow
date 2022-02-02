@@ -10,7 +10,7 @@
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
-<?import com.sparrowwallet.sparrow.control.CoinLabel?>
+<?import com.sparrowwallet.sparrow.control.CopyableCoinLabel?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@whirlpool.css, @../general.css" styleClass="whirlpool-pane" fx:controller="com.sparrowwallet.sparrow.whirlpool.WhirlpoolController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="20">
@@ -131,10 +131,10 @@
                     </HBox>
                     <HBox styleClass="field-box">
                         <Label text="Pool Fee:" styleClass="field-label" />
-                        <CoinLabel fx:id="poolFee" />
+                        <CopyableCoinLabel fx:id="poolFee" />
                         <HBox fx:id="discountFeeBox" alignment="CENTER_LEFT">
                             <Label text=" (discounted to " />
-                            <CoinLabel fx:id="discountFee" />
+                            <CopyableCoinLabel fx:id="discountFee" />
                             <Label text=")" />
                         </HBox>
                     </HBox>

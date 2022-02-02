@@ -44,7 +44,7 @@ public class InputController extends TransactionFormController implements Initia
     private Hyperlink linkedOutpoint;
 
     @FXML
-    private CoinLabel spends;
+    private CopyableCoinLabel spends;
 
     @FXML
     private CopyableLabel from;
