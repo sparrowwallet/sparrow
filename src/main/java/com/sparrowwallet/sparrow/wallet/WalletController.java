@@ -12,6 +12,9 @@ import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.beans.value.WeakChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
@@ -48,7 +51,18 @@ public class WalletController extends WalletFormController implements Initializa
 
     private BorderPane lockPane;
 
+    private CustomPasswordField passwordField;
+
     private final BooleanProperty walletEncryptedProperty = new SimpleBooleanProperty(false);
+
+    private final ChangeListener<Boolean> lockFocusListener = new ChangeListener<>() {
+        @Override
+        public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+            if(newValue && getWalletForm().isLocked() && passwordField != null && passwordField.isVisible()) {
+                passwordField.requestFocus();
+            }
+        }
+    };
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -148,7 +162,7 @@ public class WalletController extends WalletFormController implements Initializa
         Label label = new Label("Enter password to unlock:");
         label.managedProperty().bind(label.visibleProperty());
         label.visibleProperty().bind(walletEncryptedProperty);
-        CustomPasswordField passwordField = new ViewPasswordField();
+        passwordField = new ViewPasswordField();
         passwordField.setMaxWidth(300);
         passwordField.managedProperty().bind(passwordField.visibleProperty());
         passwordField.visibleProperty().bind(walletEncryptedProperty);
@@ -165,6 +179,8 @@ public class WalletController extends WalletFormController implements Initializa
         stackPane.getChildren().add(vBox);
         lockPane.setCenter(stackPane);
         walletPane.getChildren().add(lockPane);
+
+        walletPane.getScene().getWindow().focusedProperty().addListener(new WeakChangeListener<>(lockFocusListener));
     }
 
     private void unlockWallet(CustomPasswordField passwordField) {
