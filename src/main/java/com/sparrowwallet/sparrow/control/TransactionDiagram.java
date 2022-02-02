@@ -373,13 +373,15 @@ public class TransactionDiagram extends GridPane {
         inputsBox.minHeightProperty().bind(minHeightProperty());
         inputsBox.setAlignment(Pos.CENTER_RIGHT);
         inputsBox.getChildren().add(createSpacer());
-        double labelHeight = TextUtils.computeTextHeight(AppServices.getMonospaceFont(), "0") + 1;
+        Label helper = new Label();
+        double labelHeight = Math.max(TextUtils.computeTextHeight(AppServices.getMonospaceFont(), "0"), TextUtils.computeTextHeight(helper.getFont(), "0")) + 1;
         for(Map<BlockTransactionHashIndex, WalletNode> displayedUtxos : displayedUtxoSets) {
             for(BlockTransactionHashIndex input : displayedUtxos.keySet()) {
                 WalletNode walletNode = displayedUtxos.get(input);
                 String desc = getInputDescription(input);
                 Label label = new Label(desc);
                 label.setPrefHeight(labelHeight);
+                label.setAlignment(Pos.BASELINE_LEFT);
                 label.getStyleClass().add("utxo-label");
 
                 Button excludeUtxoButton = new Button("");
@@ -446,12 +448,16 @@ public class TransactionDiagram extends GridPane {
                 inputBox.setAlignment(Pos.CENTER_RIGHT);
                 inputBox.getChildren().add(label);
 
-                if(isExpanded() && inputValue != null) {
+                if(isExpanded()) {
                     label.setMinWidth(120);
                     Region region = new Region();
                     HBox.setHgrow(region, Priority.ALWAYS);
                     CoinLabel amountLabel = new CoinLabel();
-                    amountLabel.setValue(inputValue);
+                    if(inputValue != null) {
+                        amountLabel.setValue(inputValue);
+                    } else if(label.getText().trim().isEmpty()) {
+                        amountLabel.setText("");
+                    }
                     amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
                     inputBox.getChildren().addAll(region, amountLabel);
                 }
@@ -609,7 +615,7 @@ public class TransactionDiagram extends GridPane {
         outputsBox.setMaxWidth(isExpanded() ? 350 : 150);
         outputsBox.setPrefWidth(isExpanded() ? 230 : 150);
         outputsBox.setPadding(new Insets(0, 20, 0, 10));
-        outputsBox.setAlignment(Pos.CENTER_LEFT);
+        outputsBox.setAlignment(Pos.BASELINE_LEFT);
         outputsBox.getChildren().add(createSpacer());
 
         List<OutputNode> outputNodes = new ArrayList<>();
