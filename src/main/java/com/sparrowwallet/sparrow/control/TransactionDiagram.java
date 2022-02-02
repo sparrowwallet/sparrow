@@ -464,7 +464,8 @@ public class TransactionDiagram extends GridPane {
                     } else if(label.getText().trim().isEmpty()) {
                         amountLabel.setText("");
                     }
-                    amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+                    amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 7);
+                    amountLabel.setPadding(new Insets(0, 0, 0, 5));
                     inputBox.getChildren().addAll(region, amountLabel);
                 }
 
@@ -645,6 +646,7 @@ public class TransactionDiagram extends GridPane {
             paymentBox.setAlignment(Pos.CENTER_LEFT);
             paymentBox.getChildren().add(recipientLabel);
             if(isExpanded()) {
+                recipientLabel.setMinWidth(120);
                 Region region = new Region();
                 region.setMinWidth(20);
                 HBox.setHgrow(region, Priority.ALWAYS);
