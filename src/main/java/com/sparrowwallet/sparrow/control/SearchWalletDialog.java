@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.wallet.*;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.*;
@@ -134,6 +135,8 @@ public class SearchWalletDialog extends Dialog<Entry> {
         });
 
         setResizable(true);
+
+        Platform.runLater(search::requestFocus);
     }
 
     private void searchWallet(String searchText) {

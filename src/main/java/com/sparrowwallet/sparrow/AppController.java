@@ -422,9 +422,8 @@ public class AppController implements Initializable {
             Parent root = loader.load();
             AboutController controller = loader.getController();
 
-            Stage stage = new Stage();
+            Stage stage = new Stage(StageStyle.UNDECORATED);
             stage.setTitle("About " + MainApp.APP_NAME);
-            stage.initStyle(StageStyle.UNDECORATED);
             stage.initOwner(tabs.getScene().getWindow());
             stage.initModality(Modality.WINDOW_MODAL);
             stage.setResizable(false);
@@ -1960,7 +1959,7 @@ public class AppController implements Initializable {
                 saveTransaction.setVisible(true);
                 saveTransaction.setDisable(true);
                 lockWallet.setDisable(walletTabData.getWalletForm().lockedProperty().get());
-                exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid());
+                exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid() || walletTabData.getWalletForm().isLocked());
                 showLoadingLog.setDisable(false);
                 showTxHex.setDisable(true);
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(walletTabData.getWallet()) || !AppServices.onlineProperty().get());
@@ -1987,7 +1986,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             if(selectedWalletForm.getWalletId().equals(event.getWalletId())) {
-                exportWallet.setDisable(!event.getWallet().isValid());
+                exportWallet.setDisable(!event.getWallet().isValid() || selectedWalletForm.isLocked());
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(event.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
@@ -2476,6 +2475,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(true);
+            exportWallet.setDisable(true);
         }
     }
 
@@ -2484,6 +2484,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(false);
+            exportWallet.setDisable(!event.getWallet().isValid());
         }
     }
 }

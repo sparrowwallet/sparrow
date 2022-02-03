@@ -5,6 +5,8 @@ import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.builder.AbstractBuilder;
 import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
+import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
+import com.github.arteam.simplejsonrpc.core.domain.ErrorMessage;
 import com.google.common.collect.Lists;
 import com.sparrowwallet.sparrow.io.Config;
 import org.jetbrains.annotations.NotNull;
@@ -122,9 +124,21 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
                     batchRequest.add(request.counterId, request.method, request.params);
                 }
 
-                Map<Long, V> pageResult = new RetryLogic<Map<Long, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
-                for(Map.Entry<Long, V> pageEntry : pageResult.entrySet()) {
-                    allResults.put(counterIdMap.get(pageEntry.getKey()), pageEntry.getValue());
+                try {
+                    Map<Long, V> pageResult = new RetryLogic<Map<Long, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+                    for(Map.Entry<Long, V> pageEntry : pageResult.entrySet()) {
+                        allResults.put(counterIdMap.get(pageEntry.getKey()), pageEntry.getValue());
+                    }
+                } catch(JsonRpcBatchException e) {
+                    Map<Object, Object> mappedSuccesess = new HashMap<>();
+                    for(Map.Entry<?, ?> successEntry : e.getSuccesses().entrySet()) {
+                        mappedSuccesess.put(counterIdMap.get((Long)successEntry.getKey()), successEntry.getValue());
+                    }
+                    Map<Object, ErrorMessage> mappedErrors = new HashMap<>();
+                    for(Map.Entry<?, ErrorMessage> errorEntry : e.getErrors().entrySet()) {
+                        mappedErrors.put(counterIdMap.get((Long)errorEntry.getKey()), errorEntry.getValue());
+                    }
+                    throw new JsonRpcBatchException(e.getMessage(), mappedSuccesess, mappedErrors);
                 }
             } else {
                 BatchRequestBuilder<K, V> batchRequest = client.createBatchRequest().keysType(keysType).returnType(returnType);

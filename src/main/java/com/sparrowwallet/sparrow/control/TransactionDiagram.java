@@ -8,10 +8,12 @@ import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
 import com.sparrowwallet.sparrow.event.SorobanInitiatedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
 import javafx.beans.property.BooleanProperty;
@@ -67,15 +69,17 @@ public class TransactionDiagram extends GridPane {
         @Override
         public void handle(MouseEvent event) {
             if(!event.isConsumed()) {
-                Stage stage = new Stage();
+                Stage stage = new Stage(StageStyle.UNDECORATED);
                 stage.setTitle(walletTx.getPayments().iterator().next().getLabel());
-                stage.initStyle(StageStyle.UNDECORATED);
                 stage.initOwner(TransactionDiagram.this.getScene().getWindow());
                 stage.initModality(Modality.WINDOW_MODAL);
                 stage.setResizable(false);
 
                 VBox vBox = new VBox(20);
                 vBox.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+                if(Config.get().getTheme() == Theme.DARK) {
+                    vBox.getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+                }
                 vBox.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
                 vBox.getStylesheets().add(AppServices.class.getResource("wallet/send.css").toExternalForm());
                 vBox.setPadding(new Insets(20, 40, 20, 50));
@@ -411,8 +415,9 @@ public class TransactionDiagram extends GridPane {
                     } else if(input instanceof AdditionalBlockTransactionHashIndex additionalReference) {
                         inputValue = input.getValue();
                         StringJoiner joiner = new StringJoiner("\n");
+                        joiner.add("Spending " + getSatsValue(inputValue) + " sats from" + (isExpanded() ? ":" : " (click to expand):"));
                         for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
-                            joiner.add(getInputDescription(additionalInput));
+                            joiner.add(additionalInput.getHashAsString() + ":" + additionalInput.getIndex());
                         }
                         tooltip.setText(joiner.toString());
                     } else if(input instanceof InvisibleBlockTransactionHashIndex) {
@@ -464,8 +469,8 @@ public class TransactionDiagram extends GridPane {
                     } else if(label.getText().trim().isEmpty()) {
                         amountLabel.setText("");
                     }
-                    amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 7);
-                    amountLabel.setPadding(new Insets(0, 0, 0, 5));
+                    amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 12);
+                    amountLabel.setPadding(new Insets(0, 0, 0, 10));
                     inputBox.getChildren().addAll(region, amountLabel);
                 }
 
@@ -637,7 +642,7 @@ public class TransactionDiagram extends GridPane {
             WalletNode toNode = walletTx.getWallet() != null ? walletTx.getWallet().getWalletAddresses().get(payment.getAddress()) : null;
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "
-                    + (payment instanceof AdditionalPayment ? "\n" + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
+                    + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
