@@ -59,13 +59,17 @@
     -fx-spacing: 10;
 }
 
-.version-hyperlink {
+.version-hyperlink, .status-bar .status-label .hyperlink {
     -fx-border-color: transparent;
     -fx-text-fill: #1e88cf;
 }
 
-.version-hyperlink:visited {
+.version-hyperlink:visited, .status-bar .status-label .hyperlink {
     -fx-underline: false;
+}
+
+.status-bar .status-label {
+    -fx-content-display: RIGHT;
 }
 
 .core-server.toggle-switch:selected .thumb-area {

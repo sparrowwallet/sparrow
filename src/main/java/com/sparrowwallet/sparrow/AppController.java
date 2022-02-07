@@ -1213,6 +1213,11 @@ public class AppController implements Initializable {
         preferencesDialog.showAndWait();
     }
 
+    public void openServerPreferences(ActionEvent event) {
+        PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER);
+        preferencesDialog.showAndWait();
+    }
+
     public void signVerifyMessage(ActionEvent event) {
         MessageSignDialog messageSignDialog = null;
         WalletForm selectedWalletForm = getSelectedWalletForm();
@@ -2096,6 +2101,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void statusUpdated(StatusEvent event) {
         statusBar.setText(event.getStatus());
+        statusBar.setGraphic(event.getGraphic());
 
         if(wait != null && wait.getStatus() == Animation.Status.RUNNING) {
             wait.stop();
@@ -2104,6 +2110,7 @@ public class AppController implements Initializable {
         wait.setOnFinished((e) -> {
             if(statusBar.getText().equals(event.getStatus())) {
                 statusBar.setText("");
+                statusBar.setGraphic(null);
             }
         });
         wait.play();
@@ -2133,6 +2140,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void timedWorker(TimedEvent event) {
+        statusBar.setGraphic(null);
         if(event.getTimeMills() == 0) {
             if(statusTimeline != null && statusTimeline.getStatus() == Animation.Status.RUNNING) {
                 statusTimeline.stop();
@@ -2148,6 +2156,7 @@ public class AppController implements Initializable {
                     new KeyFrame(Duration.ZERO, new KeyValue(statusBar.progressProperty(), 0)),
                     new KeyFrame(Duration.millis(event.getTimeMills()), e -> {
                         statusBar.setText("");
+                        statusBar.setGraphic(null);
                         statusBar.setProgress(0);
                     }, new KeyValue(statusBar.progressProperty(), 1))
             );
@@ -2192,7 +2201,9 @@ public class AppController implements Initializable {
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
         String status = CONNECTION_FAILED_PREFIX + event.getMessage();
-        statusUpdated(new StatusEvent(status));
+        Hyperlink hyperlink = new Hyperlink("Server Preferences");
+        hyperlink.setOnAction(this::openServerPreferences);
+        statusUpdated(new StatusEvent(status, hyperlink));
         serverToggleStopAnimation();
         setTorIcon();
     }
