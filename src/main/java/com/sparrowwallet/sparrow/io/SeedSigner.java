@@ -17,4 +17,9 @@ public class SeedSigner extends SpecterDIY {
     public WalletModel getWalletModel() {
         return WalletModel.SEEDSIGNER;
     }
+
+    @Override
+    public boolean isFileFormatAvailable() {
+        return false;
+    }
 }
