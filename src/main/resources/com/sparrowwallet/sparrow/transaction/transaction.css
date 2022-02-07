@@ -17,6 +17,7 @@
 
 .tx-pane {
     -fx-background-color: -fx-background;
+    -fx-min-height: 0;
 }
 
 .color-0 { -fx-fill: #ca1243 }

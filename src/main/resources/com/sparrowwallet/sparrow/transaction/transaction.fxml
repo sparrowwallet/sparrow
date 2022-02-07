@@ -15,7 +15,7 @@
                     <TreeView fx:id="txtree" minWidth="120">
                         <SplitPane.resizableWithParent>false</SplitPane.resizableWithParent>
                     </TreeView>
-                    <StackPane fx:id="txpane" styleClass="tx-pane"/>
+                    <StackPane fx:id="txpane" styleClass="tx-pane" minHeight="0"/>
                 </items>
             </SplitPane>
         </masterNode>
