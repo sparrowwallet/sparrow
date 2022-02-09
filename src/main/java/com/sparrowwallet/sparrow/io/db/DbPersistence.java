@@ -227,6 +227,8 @@ public class DbPersistence implements Persistence {
                 if(dirtyPersistables.clearHistory) {
                     WalletNodeDao walletNodeDao = handle.attach(WalletNodeDao.class);
                     BlockTransactionDao blockTransactionDao = handle.attach(BlockTransactionDao.class);
+                    DetachedLabelDao detachedLabelDao = handle.attach(DetachedLabelDao.class);
+                    detachedLabelDao.clearAndAddAll(wallet);
                     walletNodeDao.clearHistory(wallet);
                     blockTransactionDao.clear(wallet.getId());
                 }

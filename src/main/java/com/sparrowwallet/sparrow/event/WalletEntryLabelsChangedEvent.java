@@ -3,25 +3,37 @@ package com.sparrowwallet.sparrow.event;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.wallet.Entry;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * This event is fired when a wallet entry (transaction, txi or txo) label is changed.
  */
 public class WalletEntryLabelsChangedEvent extends WalletChangedEvent {
-    private final List<Entry> entries;
+    //Contains the changed entry mapped to the entry that changed it, if changed recursively (otherwise null)
+    private final Map<Entry, Entry> entrySourceMap;
 
     public WalletEntryLabelsChangedEvent(Wallet wallet, Entry entry) {
-        super(wallet);
-        this.entries = List.of(entry);
+        this(wallet, List.of(entry));
     }
 
     public WalletEntryLabelsChangedEvent(Wallet wallet, List<Entry> entries) {
         super(wallet);
-        this.entries = entries;
+        this.entrySourceMap = new LinkedHashMap<>();
+        for(Entry entry : entries) {
+            entrySourceMap.put(entry, null);
+        }
     }
 
-    public List<Entry> getEntries() {
-        return entries;
+    public WalletEntryLabelsChangedEvent(Wallet wallet, Map<Entry, Entry> entrySourceMap) {
+        super(wallet);
+        this.entrySourceMap = entrySourceMap;
+    }
+
+    public Collection<Entry> getEntries() {
+        return entrySourceMap.keySet();
+    }
+
+    public Entry getSource(Entry entry) {
+        return entrySourceMap.get(entry);
     }
 }

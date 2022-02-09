@@ -472,48 +472,46 @@ public class WalletForm {
     @Subscribe
     public void walletLabelsChanged(WalletEntryLabelsChangedEvent event) {
         if(event.getWallet() == wallet) {
-            List<Entry> labelChangedEntries = new ArrayList<>();
+            Map<Entry, Entry> labelChangedEntries = new LinkedHashMap<>();
             for(Entry entry : event.getEntries()) {
                 if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
-                    if(entry instanceof TransactionEntry) {
-                        TransactionEntry transactionEntry = (TransactionEntry)entry;
+                    if(entry instanceof TransactionEntry transactionEntry) {
                         for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
                             for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
                                 for(BlockTransactionHashIndex receivedRef : childNode.getTransactionOutputs()) {
                                     if(receivedRef.getHash().equals(transactionEntry.getBlockTransaction().getHash())) {
                                         if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
                                             receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? " (change)" : " (received)"));
-                                            labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose));
+                                            labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose), entry);
                                         }
-                                        if(childNode.getLabel() == null || childNode.getLabel().isEmpty()) {
+                                        //Avoid recursive changes to address labels - only initial transaction label changes can change address labels
+                                        if((childNode.getLabel() == null || childNode.getLabel().isEmpty()) && event.getSource(entry) == null) {
                                             childNode.setLabel(entry.getLabel());
-                                            labelChangedEntries.add(new NodeEntry(event.getWallet(), childNode));
+                                            labelChangedEntries.put(new NodeEntry(event.getWallet(), childNode), entry);
                                         }
                                     }
                                     if(receivedRef.isSpent() && receivedRef.getSpentBy().getHash().equals(transactionEntry.getBlockTransaction().getHash()) && (receivedRef.getSpentBy().getLabel() == null || receivedRef.getSpentBy().getLabel().isEmpty())) {
                                         receivedRef.getSpentBy().setLabel(entry.getLabel() + " (input)");
-                                        labelChangedEntries.add(new HashIndexEntry(event.getWallet(), receivedRef.getSpentBy(), HashIndexEntry.Type.INPUT, keyPurpose));
+                                        labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef.getSpentBy(), HashIndexEntry.Type.INPUT, keyPurpose), entry);
                                     }
                                 }
                             }
                         }
                     }
-                    if(entry instanceof NodeEntry) {
-                        NodeEntry nodeEntry = (NodeEntry)entry;
+                    if(entry instanceof NodeEntry nodeEntry) {
                         for(BlockTransactionHashIndex receivedRef : nodeEntry.getNode().getTransactionOutputs()) {
                             BlockTransaction blockTransaction = event.getWallet().getTransactions().get(receivedRef.getHash());
                             if(blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) {
                                 blockTransaction.setLabel(entry.getLabel());
-                                labelChangedEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
+                                labelChangedEntries.put(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()), entry);
                             }
                         }
                     }
-                    if(entry instanceof HashIndexEntry) {
-                        HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
+                    if(entry instanceof HashIndexEntry hashIndexEntry) {
                         BlockTransaction blockTransaction = hashIndexEntry.getBlockTransaction();
                         if(blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) {
                             blockTransaction.setLabel(entry.getLabel());
-                            labelChangedEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
+                            labelChangedEntries.put(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()), entry);
                         }
                     }
                 }
@@ -573,7 +571,7 @@ public class WalletForm {
                 Optional<WalletNode> optPurposeNode = wallet.getPurposeNodes().stream().filter(node -> node.getKeyPurpose() == keyPurpose).findFirst();
                 if(optPurposeNode.isPresent()) {
                     WalletNode purposeNode = optPurposeNode.get();
-                    newNodes.addAll(purposeNode.fillToIndex(wallet.getLookAheadIndex(purposeNode)));
+                    newNodes.addAll(purposeNode.fillToIndex(wallet, wallet.getLookAheadIndex(purposeNode)));
                 }
             }
 

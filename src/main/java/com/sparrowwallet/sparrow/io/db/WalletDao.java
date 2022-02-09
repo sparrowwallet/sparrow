@@ -31,6 +31,9 @@ public interface WalletDao {
     BlockTransactionDao createBlockTransactionDao();
 
     @CreateSqlObject
+    DetachedLabelDao createDetachedLabelDao();
+
+    @CreateSqlObject
     MixConfigDao createMixConfigDao();
 
     @CreateSqlObject
@@ -100,8 +103,11 @@ public interface WalletDao {
         List<WalletNode> walletNodes = createWalletNodeDao().getForWalletId(wallet.getId());
         wallet.getPurposeNodes().addAll(walletNodes.stream().filter(walletNode -> walletNode.getDerivation().size() == 1).collect(Collectors.toList()));
 
-        Map<Sha256Hash, BlockTransaction> blockTransactions = createBlockTransactionDao().getForWalletId(wallet.getId()); //.stream().collect(Collectors.toMap(BlockTransaction::getHash, Function.identity(), (existing, replacement) -> existing, LinkedHashMap::new));
+        Map<Sha256Hash, BlockTransaction> blockTransactions = createBlockTransactionDao().getForWalletId(wallet.getId());
         wallet.updateTransactions(blockTransactions);
+
+        Map<String, String> detachedLabels = createDetachedLabelDao().getAll();
+        wallet.getDetachedLabels().putAll(detachedLabels);
 
         wallet.setMixConfig(createMixConfigDao().getForWalletId(wallet.getId()));
 
@@ -120,6 +126,7 @@ public interface WalletDao {
             createKeystoreDao().addKeystores(wallet);
             createWalletNodeDao().addWalletNodes(wallet);
             createBlockTransactionDao().addBlockTransactions(wallet);
+            createDetachedLabelDao().clearAndAddAll(wallet);
             createMixConfigDao().addMixConfig(wallet);
             createUtxoMixDataDao().addUtxoMixData(wallet);
         } finally {

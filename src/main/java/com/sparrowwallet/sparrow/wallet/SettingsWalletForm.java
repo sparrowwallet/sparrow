@@ -64,8 +64,8 @@ public class SettingsWalletForm extends WalletForm {
                 AppServices.clearTransactionHistoryCache(wallet);
             }
 
-            //Clear node tree
-            walletCopy.clearNodes();
+            //Clear node tree, detaching and saving any labels from the existing wallet
+            walletCopy.clearNodes(wallet);
 
             Integer childIndex = wallet.isMasterWallet() ? null : wallet.getMasterWallet().getChildWallets().indexOf(wallet);
 
