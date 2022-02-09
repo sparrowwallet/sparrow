@@ -262,6 +262,10 @@ public class DbPersistence implements Persistence {
                         BlockTransaction blkTx = wallet.getTransactions().get(txid);
                         blockTransactionDao.addOrUpdate(wallet, txid, blkTx);
                     }
+                    if(!dirtyPersistables.clearHistory) {
+                        DetachedLabelDao detachedLabelDao = handle.attach(DetachedLabelDao.class);
+                        detachedLabelDao.clearAndAddAll(wallet);
+                    }
                 }
 
                 if(dirtyPersistables.label != null) {
