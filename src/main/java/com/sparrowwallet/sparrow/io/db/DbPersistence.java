@@ -66,17 +66,17 @@ public class DbPersistence implements Persistence {
     }
 
     @Override
-    public WalletBackupAndKey loadWallet(Storage storage) throws IOException, StorageException {
+    public WalletAndKey loadWallet(Storage storage) throws IOException, StorageException {
         return loadWallet(storage, null, null);
     }
 
     @Override
-    public WalletBackupAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException {
+    public WalletAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException {
         return loadWallet(storage, password, null);
     }
 
     @Override
-    public WalletBackupAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
+    public WalletAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
         ECKey encryptionKey = getEncryptionKey(password, storage.getWalletFile(), alreadyDerivedKey);
 
         migrate(storage, MASTER_SCHEMA, encryptionKey);
@@ -87,31 +87,22 @@ public class DbPersistence implements Persistence {
             return walletDao.getMainWallet(MASTER_SCHEMA);
         });
 
-        File backupFile = storage.getTempBackup();
-        Wallet backupWallet = null;
-        if(backupFile != null) {
-            Persistence backupPersistence = PersistenceType.DB.getInstance();
-            backupPersistence.setKeyDeriver(keyDeriver);
-            backupWallet = backupPersistence.loadWallet(new Storage(backupPersistence, backupFile), password, encryptionKey).getWallet();
-            backupPersistence.close();
-        }
-
-        Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, backupWallet, encryptionKey);
-        masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+        Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, encryptionKey);
+        masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
 
         createUpdateExecutor(masterWallet);
 
-        return new WalletBackupAndKey(masterWallet, backupWallet, encryptionKey, keyDeriver, childWallets);
+        return new WalletAndKey(masterWallet, encryptionKey, keyDeriver, childWallets);
     }
 
-    private Map<WalletBackupAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, Wallet backupWallet, ECKey encryptionKey) throws StorageException {
+    private Map<WalletAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws StorageException {
         Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
         List<String> schemas = jdbi.withHandle(handle -> {
            return handle.createQuery("show schemas").mapTo(String.class).list();
         });
 
         List<String> childSchemas = schemas.stream().filter(schema -> schema.startsWith(WALLET_SCHEMA_PREFIX) && !schema.equals(MASTER_SCHEMA)).collect(Collectors.toList());
-        Map<WalletBackupAndKey, Storage> childWallets = new TreeMap<>();
+        Map<WalletAndKey, Storage> childWallets = new TreeMap<>();
         for(String schema : childSchemas) {
             migrate(storage, schema, encryptionKey);
 
@@ -123,8 +114,7 @@ public class DbPersistence implements Persistence {
                 childWallet.setMasterWallet(masterWallet);
                 return childWallet;
             });
-            Wallet backupChildWallet = backupWallet == null ? null : backupWallet.getChildWallets().stream().filter(child -> wallet.getName().equals(child.getName())).findFirst().orElse(null);
-            childWallets.put(new WalletBackupAndKey(wallet, backupChildWallet, encryptionKey, keyDeriver, Collections.emptyMap()), storage);
+            childWallets.put(new WalletAndKey(wallet, encryptionKey, keyDeriver, Collections.emptyMap()), storage);
         }
 
         return childWallets;

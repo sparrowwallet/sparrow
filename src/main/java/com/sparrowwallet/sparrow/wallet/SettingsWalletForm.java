@@ -24,7 +24,7 @@ public class SettingsWalletForm extends WalletForm {
     private Wallet walletCopy;
 
     public SettingsWalletForm(Storage storage, Wallet currentWallet) {
-        super(storage, currentWallet, null, false);
+        super(storage, currentWallet, false);
         this.walletCopy = currentWallet.copy();
     }
 
@@ -51,15 +51,6 @@ public class SettingsWalletForm extends WalletForm {
             boolean addressChange = isAddressChange();
 
             if(wallet.isValid()) {
-                //Don't create temp backup on changing addresses - there are no labels to lose
-                if(!addressChange) {
-                    backgroundUpdate(); //Save existing wallet here for the temp backup in case password has been changed - this will update the password on the existing wallet
-                    if(AppServices.isConnected()) {
-                        //Backup the wallet so labels will survive application shutdown
-                        getStorage().backupTempWallet();
-                    }
-                }
-
                 //Clear transaction history cache before we clear the nodes
                 AppServices.clearTransactionHistoryCache(wallet);
             }

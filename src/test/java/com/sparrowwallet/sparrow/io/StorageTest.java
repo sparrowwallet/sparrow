@@ -23,7 +23,7 @@ public class StorageTest extends IoTest {
     @Test
     public void loadSeedWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-seed-wallet"));
-        WalletBackupAndKey walletAndKey = storage.loadEncryptedWallet("pass");
+        WalletAndKey walletAndKey = storage.loadEncryptedWallet("pass");
         Wallet wallet = walletAndKey.getWallet();
         Wallet copy = wallet.copy();
         copy.decrypt(walletAndKey.getKey());

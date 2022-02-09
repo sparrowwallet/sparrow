@@ -5,16 +5,14 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 
 import java.util.Map;
 
-public class WalletBackupAndKey implements Comparable<WalletBackupAndKey> {
+public class WalletAndKey implements Comparable<WalletAndKey> {
     private final Wallet wallet;
-    private final Wallet backupWallet;
     private final ECKey encryptionKey;
     private final Key key;
-    private final Map<WalletBackupAndKey, Storage> childWallets;
+    private final Map<WalletAndKey, Storage> childWallets;
 
-    public WalletBackupAndKey(Wallet wallet, Wallet backupWallet, ECKey encryptionKey, AsymmetricKeyDeriver keyDeriver, Map<WalletBackupAndKey, Storage> childWallets) {
+    public WalletAndKey(Wallet wallet, ECKey encryptionKey, AsymmetricKeyDeriver keyDeriver, Map<WalletAndKey, Storage> childWallets) {
         this.wallet = wallet;
-        this.backupWallet = backupWallet;
         this.encryptionKey = encryptionKey;
         this.key = encryptionKey == null ? null : new Key(encryptionKey.getPrivKeyBytes(), keyDeriver.getSalt(), EncryptionType.Deriver.ARGON2);
         this.childWallets = childWallets;
@@ -22,10 +20,6 @@ public class WalletBackupAndKey implements Comparable<WalletBackupAndKey> {
 
     public Wallet getWallet() {
         return wallet;
-    }
-
-    public Wallet getBackupWallet() {
-        return backupWallet;
     }
 
     public ECKey getEncryptionKey() {
@@ -36,7 +30,7 @@ public class WalletBackupAndKey implements Comparable<WalletBackupAndKey> {
         return key;
     }
 
-    public Map<WalletBackupAndKey, Storage> getChildWallets() {
+    public Map<WalletAndKey, Storage> getChildWallets() {
         return childWallets;
     }
 
@@ -50,7 +44,7 @@ public class WalletBackupAndKey implements Comparable<WalletBackupAndKey> {
     }
 
     @Override
-    public int compareTo(WalletBackupAndKey other) {
+    public int compareTo(WalletAndKey other) {
         return wallet.compareTo(other.wallet);
     }
 }

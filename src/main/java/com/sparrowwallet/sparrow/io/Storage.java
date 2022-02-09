@@ -20,7 +20,6 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -38,7 +37,6 @@ public class Storage {
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
-    public static final String TEMP_BACKUP_PREFIX = "tmp";
     public static final List<String> RESERVED_WALLET_NAMES = List.of("temp");
 
     private Persistence persistence;
@@ -87,14 +85,14 @@ public class Storage {
         return "";
     }
 
-    public WalletBackupAndKey loadUnencryptedWallet() throws IOException, StorageException {
-        WalletBackupAndKey masterWalletAndKey = persistence.loadWallet(this);
+    public WalletAndKey loadUnencryptedWallet() throws IOException, StorageException {
+        WalletAndKey masterWalletAndKey = persistence.loadWallet(this);
         encryptionPubKey = NO_PASSWORD_KEY;
         return migrateToDb(masterWalletAndKey);
     }
 
-    public WalletBackupAndKey loadEncryptedWallet(CharSequence password) throws IOException, StorageException {
-        WalletBackupAndKey masterWalletAndKey = persistence.loadWallet(this, password);
+    public WalletAndKey loadEncryptedWallet(CharSequence password) throws IOException, StorageException {
+        WalletAndKey masterWalletAndKey = persistence.loadWallet(this, password);
         encryptionPubKey = ECKey.fromPublicOnly(masterWalletAndKey.getEncryptionKey());
         return migrateToDb(masterWalletAndKey);
     }
@@ -136,14 +134,6 @@ public class Storage {
         }
     }
 
-    public void backupTempWallet() {
-        try {
-            backupWallet(TEMP_BACKUP_PREFIX);
-        } catch(IOException e) {
-            log.error("Error creating " + TEMP_BACKUP_PREFIX + " backup wallet", e);
-        }
-    }
-
     private void backupWallet(String prefix) throws IOException {
         File backupDir = getWalletsBackupDir();
 
@@ -174,16 +164,6 @@ public class Storage {
         deleteBackups(null);
     }
 
-    public void deleteTempBackups(boolean forceSave) {
-        File[] backups = getBackups(Storage.TEMP_BACKUP_PREFIX);
-        if(backups.length > 0 && (forceSave || hasStartedSince(backups[0]))) {
-            File permanent = new File(backups[0].getParent(), backups[0].getName().substring(Storage.TEMP_BACKUP_PREFIX.length() + 1));
-            backups[0].renameTo(permanent);
-        }
-
-        deleteBackups(Storage.TEMP_BACKUP_PREFIX);
-    }
-
     private boolean hasStartedSince(File lastBackup) {
         try {
             Date date = BACKUP_DATE_FORMAT.parse(getBackupDate(lastBackup.getName()));
@@ -200,11 +180,6 @@ public class Storage {
         for(File backup : backups) {
             backup.delete();
         }
-    }
-
-    public File getTempBackup() {
-        File[] backups = getBackups(TEMP_BACKUP_PREFIX);
-        return backups.length == 0 ? null : backups[0];
     }
 
     File[] getBackups(String prefix) {
@@ -232,7 +207,7 @@ public class Storage {
         return null;
     }
 
-    private WalletBackupAndKey migrateToDb(WalletBackupAndKey masterWalletAndKey) throws IOException, StorageException {
+    private WalletAndKey migrateToDb(WalletAndKey masterWalletAndKey) throws IOException, StorageException {
         if(getType() == PersistenceType.JSON) {
             log.info("Migrating " + masterWalletAndKey.getWallet().getName() + " from JSON to DB persistence");
             masterWalletAndKey = migrateType(PersistenceType.DB, masterWalletAndKey.getWallet(), masterWalletAndKey.getEncryptionKey());
@@ -241,7 +216,7 @@ public class Storage {
         return masterWalletAndKey;
     }
 
-    private WalletBackupAndKey migrateType(PersistenceType type, Wallet wallet, ECKey encryptionKey) throws IOException, StorageException {
+    private WalletAndKey migrateType(PersistenceType type, Wallet wallet, ECKey encryptionKey) throws IOException, StorageException {
         File existingFile = walletFile;
 
         try {
@@ -530,7 +505,7 @@ public class Storage {
         return ownerOnly;
     }
 
-    public static class LoadWalletService extends Service<WalletBackupAndKey> {
+    public static class LoadWalletService extends Service<WalletAndKey> {
         private final Storage storage;
         private final SecureString password;
 
@@ -545,19 +520,19 @@ public class Storage {
         }
 
         @Override
-        protected Task<WalletBackupAndKey> createTask() {
+        protected Task<WalletAndKey> createTask() {
             return new Task<>() {
-                protected WalletBackupAndKey call() throws IOException, StorageException {
-                    WalletBackupAndKey walletBackupAndKey;
+                protected WalletAndKey call() throws IOException, StorageException {
+                    WalletAndKey walletAndKey;
 
                     if(password != null) {
-                        walletBackupAndKey = storage.loadEncryptedWallet(password);
+                        walletAndKey = storage.loadEncryptedWallet(password);
                         password.clear();
                     } else {
-                        walletBackupAndKey = storage.loadUnencryptedWallet();
+                        walletAndKey = storage.loadUnencryptedWallet();
                     }
 
-                    return walletBackupAndKey;
+                    return walletAndKey;
                 }
             };
         }

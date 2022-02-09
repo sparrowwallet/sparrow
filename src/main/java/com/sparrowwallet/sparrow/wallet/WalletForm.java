@@ -8,12 +8,10 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
-import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.AllHistoryChangedException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -26,7 +24,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.sparrowwallet.drongo.wallet.WalletNode.nodeRangesToString;
 
@@ -35,7 +32,6 @@ public class WalletForm {
 
     private final Storage storage;
     protected Wallet wallet;
-    private Wallet savedPastWallet;
 
     private WalletTransactionsEntry walletTransactionsEntry;
     private WalletUtxosEntry walletUtxosEntry;
@@ -47,19 +43,16 @@ public class WalletForm {
 
     private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
 
-    public WalletForm(Storage storage, Wallet currentWallet, Wallet backupWallet) {
-        this(storage, currentWallet, backupWallet, true);
+    public WalletForm(Storage storage, Wallet currentWallet) {
+        this(storage, currentWallet, true);
     }
 
-    public WalletForm(Storage storage, Wallet currentWallet, Wallet backupWallet, boolean refreshHistory) {
+    public WalletForm(Storage storage, Wallet currentWallet, boolean refreshHistory) {
         this.storage = storage;
         this.wallet = currentWallet;
 
-        //Unencrypted wallets load before isConnected is true, waiting for the ConnectionEvent to refresh history - save the backup for this event
-        savedPastWallet = backupWallet;
-
         if(refreshHistory && wallet.isValid()) {
-            refreshHistory(AppServices.getCurrentBlockHeight(), backupWallet);
+            refreshHistory(AppServices.getCurrentBlockHeight());
         }
     }
 
@@ -100,11 +93,9 @@ public class WalletForm {
     }
 
     public void saveAndRefresh() throws IOException, StorageException {
-        Wallet pastWallet = wallet.copy();
-        storage.backupTempWallet();
         wallet.clearHistory();
         save();
-        refreshHistory(AppServices.getCurrentBlockHeight(), pastWallet);
+        refreshHistory(AppServices.getCurrentBlockHeight());
     }
 
     public void saveBackup() throws IOException {
@@ -124,11 +115,11 @@ public class WalletForm {
         storage.deleteBackups();
     }
 
-    public void refreshHistory(Integer blockHeight, Wallet pastWallet) {
-        refreshHistory(blockHeight, pastWallet, null);
+    public void refreshHistory(Integer blockHeight) {
+        refreshHistory(blockHeight, null);
     }
 
-    public void refreshHistory(Integer blockHeight, Wallet pastWallet, Set<WalletNode> nodes) {
+    public void refreshHistory(Integer blockHeight, Set<WalletNode> nodes) {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppServices.isConnected()) {
             if(log.isDebugEnabled()) {
@@ -139,7 +130,7 @@ public class WalletForm {
             historyService.setOnSucceeded(workerStateEvent -> {
                 if(historyService.getValue()) {
                     EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
-                    updateWallet(blockHeight, pastWallet, previousWallet);
+                    updateWallet(blockHeight, previousWallet);
                 }
             });
             historyService.setOnFailed(workerStateEvent -> {
@@ -152,7 +143,7 @@ public class WalletForm {
 
                     wallet.clearHistory();
                     AppServices.clearTransactionHistoryCache(wallet);
-                    EventManager.get().post(new WalletHistoryClearedEvent(wallet, pastWallet == null ? previousWallet : pastWallet, getWalletId()));
+                    EventManager.get().post(new WalletHistoryClearedEvent(wallet, previousWallet, getWalletId()));
                 } else {
                     if(AppServices.isConnected()) {
                         log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
@@ -169,72 +160,20 @@ public class WalletForm {
         }
     }
 
-    private void updateWallet(Integer blockHeight, Wallet pastWallet, Wallet previousWallet) {
+    private void updateWallet(Integer blockHeight, Wallet previousWallet) {
         if(blockHeight != null) {
             wallet.setStoredBlockHeight(blockHeight);
         }
 
-        //After the wallet settings are changed, the previous wallet is copied to pastWallet and used here to copy labels from past nodes, txos and txes
-        Set<Entry> labelChangedEntries = Collections.emptySet();
-        if(pastWallet != null) {
-            labelChangedEntries = copyLabels(pastWallet);
-            copyMixData(pastWallet);
-        }
-
-        notifyIfChanged(blockHeight, previousWallet, labelChangedEntries);
+        notifyIfChanged(blockHeight, previousWallet);
     }
 
-    private Set<Entry> copyLabels(Wallet pastWallet) {
-        Set<Entry> changedEntries = new LinkedHashSet<>();
-
-        //On a full wallet refresh, walletUtxosEntry and walletTransactionsEntry will have no children yet, but AddressesController may have created accountEntries on a walletNodesChangedEvent
-        //Copy nodeEntry labels
-        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
-            NodeEntry purposeEntry = getNodeEntry(keyPurpose);
-            changedEntries.addAll(purposeEntry.copyLabels(pastWallet.getNode(purposeEntry.getNode().getKeyPurpose())));
-        }
-
-        //Copy node and txo labels
-        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
-            if(wallet.getNode(keyPurpose).copyLabels(pastWallet.getNode(keyPurpose))) {
-                changedEntries.add(getWalletUtxosEntry());
-            }
-        }
-
-        //Copy tx labels
-        for(Map.Entry<Sha256Hash, BlockTransaction> txEntry : wallet.getTransactions().entrySet()) {
-            BlockTransaction pastBlockTransaction = pastWallet.getTransactions().get(txEntry.getKey());
-            if(pastBlockTransaction != null && txEntry.getValue() != null && txEntry.getValue().getLabel() == null && pastBlockTransaction.getLabel() != null) {
-                txEntry.getValue().setLabel(pastBlockTransaction.getLabel());
-                changedEntries.add(getWalletTransactionsEntry());
-            }
-        }
-
-        //Force saving the backup if the current wallet has fewer transactions than the past wallet (i.e. incomplete load)
-        storage.deleteTempBackups(wallet.getTransactions().size() < pastWallet.getTransactions().size());
-
-        return changedEntries;
-    }
-
-    private void copyMixData(Wallet pastWallet) {
-        wallet.getUtxoMixes().forEach(pastWallet.getUtxoMixes()::putIfAbsent);
-    }
-
-    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet, Set<Entry> labelChangedEntries) {
+    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
         boolean changed = false;
-        if(!labelChangedEntries.isEmpty()) {
-            List<Entry> eventEntries = labelChangedEntries.stream().filter(entry -> entry != getWalletTransactionsEntry() && entry != getWalletUtxosEntry()).collect(Collectors.toList());
-            if(!eventEntries.isEmpty()) {
-                Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, eventEntries)));
-            }
-
-            changed = true;
-        }
-
         if(!historyChangedNodes.isEmpty()) {
             Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, storage, historyChangedNodes)));
             changed = true;
@@ -374,14 +313,9 @@ public class WalletForm {
             accountEntries.clear();
             EventManager.get().post(new WalletNodesChangedEvent(wallet));
 
-            //It is necessary to save the past wallet because the actual copying of the past labels only occurs on a later ConnectionEvent with bwt
-            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                savedPastWallet = event.getPastWallet();
-            }
-
             //Clear the cache - we will need to fetch everything again
             AppServices.clearTransactionHistoryCache(wallet);
-            refreshHistory(AppServices.getCurrentBlockHeight(), event.getPastWallet());
+            refreshHistory(AppServices.getCurrentBlockHeight());
         }
     }
 
@@ -417,14 +351,13 @@ public class WalletForm {
     public void newBlock(NewBlockEvent event) {
         //Check if wallet is valid to avoid saving wallets in initial setup
         if(wallet.isValid()) {
-            updateWallet(event.getHeight(), null, wallet.copy());
+            updateWallet(event.getHeight(), wallet.copy());
         }
     }
 
     @Subscribe
     public void connected(ConnectionEvent event) {
-        refreshHistory(event.getBlockHeight(), savedPastWallet);
-        savedPastWallet = null;
+        refreshHistory(event.getBlockHeight());
     }
 
     @Subscribe
@@ -437,7 +370,7 @@ public class WalletForm {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
                 log.debug(wallet.getFullName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
-                refreshHistory(AppServices.getCurrentBlockHeight(), null, Set.of(walletNode));
+                refreshHistory(AppServices.getCurrentBlockHeight(), Set.of(walletNode));
             }
         }
     }
@@ -576,7 +509,7 @@ public class WalletForm {
             }
 
             if(!newNodes.isEmpty()) {
-                Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight(), null, newNodes));
+                Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight(), newNodes));
             }
         }
     }

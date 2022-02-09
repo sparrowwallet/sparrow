@@ -9,9 +9,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public interface Persistence {
-    WalletBackupAndKey loadWallet(Storage storage) throws IOException, StorageException;
-    WalletBackupAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException;
-    WalletBackupAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException;
+    WalletAndKey loadWallet(Storage storage) throws IOException, StorageException;
+    WalletAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException;
+    WalletAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException;
     File storeWallet(Storage storage, Wallet wallet) throws IOException, StorageException;
     File storeWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws IOException, StorageException;
     void updateWallet(Storage storage, Wallet wallet) throws IOException, StorageException;

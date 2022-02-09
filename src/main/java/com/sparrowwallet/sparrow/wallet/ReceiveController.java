@@ -278,7 +278,10 @@ public class ReceiveController extends WalletFormController implements Initializ
     @Subscribe
     public void walletNodesChanged(WalletNodesChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            currentEntry = null;
+            if(currentEntry != null) {
+                label.textProperty().unbindBidirectional(currentEntry.labelProperty());
+                currentEntry = null;
+            }
             refreshAddress();
         }
     }

@@ -36,29 +36,26 @@ public class JsonPersistence implements Persistence {
     }
 
     @Override
-    public WalletBackupAndKey loadWallet(Storage storage) throws IOException, StorageException {
+    public WalletAndKey loadWallet(Storage storage) throws IOException, StorageException {
         Wallet wallet;
 
         try(Reader reader = new FileReader(storage.getWalletFile())) {
             wallet = gson.fromJson(reader, Wallet.class);
         }
 
-        Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, wallet, null);
-        wallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+        Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, wallet, null);
+        wallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
 
-        File backupFile = storage.getTempBackup();
-        Wallet backupWallet = backupFile == null ? null : loadWallet(backupFile, null);
-
-        return new WalletBackupAndKey(wallet, backupWallet, null, null, childWallets);
+        return new WalletAndKey(wallet, null, null, childWallets);
     }
 
     @Override
-    public WalletBackupAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException {
+    public WalletAndKey loadWallet(Storage storage, CharSequence password) throws IOException, StorageException {
         return loadWallet(storage, password, null);
     }
 
     @Override
-    public WalletBackupAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
+    public WalletAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
         Wallet wallet;
         ECKey encryptionKey;
 
@@ -68,25 +65,22 @@ public class JsonPersistence implements Persistence {
             wallet = gson.fromJson(reader, Wallet.class);
         }
 
-        Map<WalletBackupAndKey, Storage> childWallets = loadChildWallets(storage, wallet, encryptionKey);
-        wallet.setChildWallets(childWallets.keySet().stream().map(WalletBackupAndKey::getWallet).collect(Collectors.toList()));
+        Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, wallet, encryptionKey);
+        wallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
 
-        File backupFile = storage.getTempBackup();
-        Wallet backupWallet = backupFile == null ? null : loadWallet(backupFile, encryptionKey);
-
-        return new WalletBackupAndKey(wallet, backupWallet, encryptionKey, keyDeriver, childWallets);
+        return new WalletAndKey(wallet, encryptionKey, keyDeriver, childWallets);
     }
 
-    private Map<WalletBackupAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException {
+    private Map<WalletAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws IOException, StorageException {
         File[] walletFiles = getChildWalletFiles(storage.getWalletFile(), masterWallet);
-        Map<WalletBackupAndKey, Storage> childWallets = new TreeMap<>();
+        Map<WalletAndKey, Storage> childWallets = new TreeMap<>();
         for(File childFile : walletFiles) {
             Wallet childWallet = loadWallet(childFile, encryptionKey);
             Storage childStorage = new Storage(childFile);
             childStorage.setEncryptionPubKey(encryptionKey == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(encryptionKey));
             childStorage.setKeyDeriver(getKeyDeriver());
             childWallet.setMasterWallet(masterWallet);
-            childWallets.put(new WalletBackupAndKey(childWallet, null, encryptionKey, keyDeriver, Collections.emptyMap()), storage);
+            childWallets.put(new WalletAndKey(childWallet, encryptionKey, keyDeriver, Collections.emptyMap()), storage);
         }
 
         return childWallets;
