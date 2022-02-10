@@ -61,7 +61,8 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.*;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
@@ -419,8 +420,12 @@ public class AppController implements Initializable {
     private Stage getAboutStage() {
         try {
             FXMLLoader loader = new FXMLLoader(AppController.class.getResource("about.fxml"));
-            Parent root = loader.load();
+            StackPane root = loader.load();
             AboutController controller = loader.getController();
+
+            if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+                root.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+            }
 
             Stage stage = new Stage(StageStyle.UNDECORATED);
             stage.setTitle("About " + MainApp.APP_NAME);

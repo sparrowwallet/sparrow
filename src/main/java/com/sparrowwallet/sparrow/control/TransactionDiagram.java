@@ -32,6 +32,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
@@ -41,6 +42,7 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.tools.Platform;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -75,6 +77,11 @@ public class TransactionDiagram extends GridPane {
                 stage.initModality(Modality.WINDOW_MODAL);
                 stage.setResizable(false);
 
+                StackPane scenePane = new StackPane();
+                if(Platform.getCurrent() == Platform.WINDOWS) {
+                    scenePane.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+                }
+
                 VBox vBox = new VBox(20);
                 vBox.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
                 if(Config.get().getTheme() == Theme.DARK) {
@@ -97,8 +104,9 @@ public class TransactionDiagram extends GridPane {
                 });
                 buttonBox.getChildren().add(button);
                 vBox.getChildren().addAll(expandedDiagram, buttonBox);
+                scenePane.getChildren().add(vBox);
 
-                Scene scene = new Scene(vBox);
+                Scene scene = new Scene(scenePane);
                 AppServices.onEscapePressed(scene, stage::close);
                 AppServices.setStageIcon(stage);
                 stage.setScene(scene);
