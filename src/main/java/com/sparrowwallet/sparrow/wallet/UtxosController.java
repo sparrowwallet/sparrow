@@ -245,7 +245,7 @@ public class UtxosController extends WalletFormController implements Initializab
         return utxosTable.getSelectionModel().getSelectedCells().stream()
                 .filter(tp -> tp.getTreeItem() != null)
                 .map(tp -> (UtxoEntry)tp.getTreeItem().getValue())
-                .filter(utxoEntry -> utxoEntry.isSpendable() && !utxoEntry.isMixing())
+                .filter(HashIndexEntry::isSpendable)
                 .collect(Collectors.toList());
     }
 

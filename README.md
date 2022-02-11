@@ -2,7 +2,7 @@
 
 Sparrow is a modern desktop Bitcoin wallet application supporting most hardware wallets and built on common standards such as PSBT, with an emphasis on transparency and usability.
 
-More information (and release binaries) can be found at https://sparrowwallet.com. Release binaries are also available directly from [Github](https://github.com/sparrowwallet/sparrow/releases).
+More information (and release binaries) can be found at https://sparrowwallet.com. Release binaries are also available directly from [GitHub](https://github.com/sparrowwallet/sparrow/releases).
 
 ![Sparrow Wallet](https://sparrowwallet.com/assets/images/control-your-sends.png)
 
