@@ -21,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -115,6 +117,17 @@ public class Bwt {
 
         Config config = Config.get();
         bwtConfig.bitcoindUrl = config.getCoreServer();
+        if(bwtConfig.bitcoindUrl != null) {
+            try {
+                HostAndPort hostAndPort = Protocol.HTTP.getServerHostAndPort(bwtConfig.bitcoindUrl);
+                if(hostAndPort.getHost().endsWith(".local")) {
+                    InetAddress inetAddress = InetAddress.getByName(hostAndPort.getHost());
+                    bwtConfig.bitcoindUrl = Protocol.HTTP.toUrlString(inetAddress.getHostAddress(), hostAndPort.getPort());
+                }
+            } catch(Exception e) {
+                //ignore
+            }
+        }
 
         HostAndPort torProxy = getTorProxy();
         if(Protocol.isOnionAddress(bwtConfig.bitcoindUrl) && torProxy != null) {
