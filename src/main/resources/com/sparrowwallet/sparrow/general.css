@@ -284,12 +284,17 @@ CellView > .text-input.text-field {
     -fx-text-fill: -fx-text-inner-color;
 }
 
-.progress-indicator.progress-timer .percentage {
+.progress-indicator.progress-timer .percentage, .progress-indicator.button-progress .percentage {
     -fx-fill: null;
 }
 
-.progress-indicator.progress-timer {
+.progress-indicator.progress-timer, .progress-indicator.button-progress {
     -fx-padding: 0 0 -16 0;
+}
+
+.progress-indicator.button-progress {
+    -fx-scale-x: 0.6;
+    -fx-scale-y: 0.6;
 }
 
 .progress-indicator.progress-timer > .determinate-indicator > .tick {

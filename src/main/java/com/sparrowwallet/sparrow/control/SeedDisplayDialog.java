@@ -33,7 +33,7 @@ public class SeedDisplayDialog extends Dialog<Void> {
         Accordion keystoreAccordion = new Accordion();
         scrollPane.setContent(keystoreAccordion);
 
-        MnemonicKeystoreImportPane keystorePane = new MnemonicKeystoreImportPane(decryptedKeystore);
+        MnemonicKeystoreDisplayPane keystorePane = new MnemonicKeystoreDisplayPane(decryptedKeystore);
         keystorePane.setAnimated(false);
         keystoreAccordion.getPanes().add(keystorePane);
 

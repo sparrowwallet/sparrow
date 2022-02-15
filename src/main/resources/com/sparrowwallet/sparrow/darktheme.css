@@ -107,10 +107,6 @@
     -fx-fill: #e06c75;
 }
 
-.root .invalid-checksum {
-    -fx-text-fill: #e06c75;
-}
-
 .root #noWalletsWarning .glyph-font {
     -fx-text-fill: #e06c75;
 }

@@ -485,19 +485,19 @@ public class SettingsController extends WalletFormController implements Initiali
                         masterWallet.decrypt(key);
 
                         if(discoverAccounts) {
-                            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(masterWallet, standardAccounts);
-                            walletDiscoveryService.setOnSucceeded(event -> {
-                                addAndEncryptAccounts(masterWallet, walletDiscoveryService.getValue(), key);
-                                if(walletDiscoveryService.getValue().isEmpty()) {
+                            ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
+                            accountDiscoveryService.setOnSucceeded(event -> {
+                                addAndEncryptAccounts(masterWallet, accountDiscoveryService.getValue(), key);
+                                if(accountDiscoveryService.getValue().isEmpty()) {
                                     AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
                                 }
                             });
-                            walletDiscoveryService.setOnFailed(event -> {
+                            accountDiscoveryService.setOnFailed(event -> {
                                 log.error("Failed to discover accounts", event.getSource().getException());
                                 addAndEncryptAccounts(masterWallet, Collections.emptyList(), key);
                                 AppServices.showErrorDialog("Failed to discover accounts", event.getSource().getException().getMessage());
                             });
-                            walletDiscoveryService.start();
+                            accountDiscoveryService.start();
                         } else {
                             addAndEncryptAccounts(masterWallet, standardAccounts, key);
                         }
@@ -518,18 +518,18 @@ public class SettingsController extends WalletFormController implements Initiali
                 }
             } else {
                 if(discoverAccounts) {
-                    ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(masterWallet, standardAccounts);
-                    walletDiscoveryService.setOnSucceeded(event -> {
-                        addAndSaveAccounts(masterWallet, walletDiscoveryService.getValue());
-                        if(walletDiscoveryService.getValue().isEmpty()) {
+                    ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
+                    accountDiscoveryService.setOnSucceeded(event -> {
+                        addAndSaveAccounts(masterWallet, accountDiscoveryService.getValue());
+                        if(accountDiscoveryService.getValue().isEmpty()) {
                             AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
                         }
                     });
-                    walletDiscoveryService.setOnFailed(event -> {
+                    accountDiscoveryService.setOnFailed(event -> {
                         log.error("Failed to discover accounts", event.getSource().getException());
                         AppServices.showErrorDialog("Failed to discover accounts", event.getSource().getException().getMessage());
                     });
-                    walletDiscoveryService.start();
+                    accountDiscoveryService.start();
                 } else {
                     addAndSaveAccounts(masterWallet, standardAccounts);
                 }

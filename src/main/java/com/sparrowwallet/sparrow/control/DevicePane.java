@@ -26,7 +26,6 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import org.controlsfx.control.textfield.CustomPasswordField;
-import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -697,17 +696,17 @@ public class DevicePane extends TitledDescriptionPane {
                 }
             }
 
-            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallet, importedKeystores);
-            walletDiscoveryService.setOnSucceeded(event -> {
-                importedKeystores.keySet().retainAll(walletDiscoveryService.getValue());
+            ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(wallet, importedKeystores);
+            accountDiscoveryService.setOnSucceeded(event -> {
+                importedKeystores.keySet().retainAll(accountDiscoveryService.getValue());
                 EventManager.get().post(new KeystoresDiscoveredEvent(importedKeystores));
             });
-            walletDiscoveryService.setOnFailed(event -> {
+            accountDiscoveryService.setOnFailed(event -> {
                 log.error("Failed to discover accounts", event.getSource().getException());
                 setError("Failed to discover accounts", event.getSource().getException().getMessage());
                 discoverKeystoresButton.setDisable(false);
             });
-            walletDiscoveryService.start();
+            accountDiscoveryService.start();
         });
         getXpubsService.setOnFailed(workerStateEvent -> {
             setError("Could not retrieve xpub", getXpubsService.getException().getMessage());

@@ -1518,18 +1518,71 @@ public class ElectrumServer {
         }
     }
 
-    public static class WalletDiscoveryService extends Service<List<StandardAccount>> {
+    public static class WalletDiscoveryService extends Service<Optional<Wallet>> {
+        private final List<Wallet> wallets;
+
+        public WalletDiscoveryService(List<Wallet> wallets) {
+            this.wallets = wallets;
+        }
+
+        @Override
+        protected Task<Optional<Wallet>> createTask() {
+            return new Task<>() {
+                protected Optional<Wallet> call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+
+                    for(int i = 0; i < wallets.size(); i++) {
+                        Wallet wallet = wallets.get(i);
+                        updateProgress(i, wallets.size() + StandardAccount.values().length);
+                        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
+                        electrumServer.getReferences(wallet, wallet.getNode(KeyPurpose.RECEIVE).getChildren(), nodeTransactionMap, 0);
+                        if(nodeTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {
+                            Wallet masterWalletCopy = wallet.copy();
+                            List<StandardAccount> searchAccounts = getStandardAccounts(wallet);
+                            for(int j = 0; j < searchAccounts.size(); j++) {
+                                StandardAccount standardAccount = searchAccounts.get(j);
+                                Wallet childWallet = masterWalletCopy.addChildWallet(standardAccount);
+                                Map<WalletNode, Set<BlockTransactionHash>> childTransactionMap = new TreeMap<>();
+                                electrumServer.getReferences(childWallet, childWallet.getNode(KeyPurpose.RECEIVE).getChildren(), childTransactionMap, 0);
+                                if(childTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {
+                                    wallet.addChildWallet(standardAccount);
+                                }
+                                updateProgress(i + j, wallets.size() + StandardAccount.values().length);
+                            }
+
+                            return Optional.of(wallet);
+                        }
+                    }
+
+                    return Optional.empty();
+                }
+            };
+        }
+
+        private List<StandardAccount> getStandardAccounts(Wallet wallet) {
+            List<StandardAccount> accounts = new ArrayList<>();
+            for(StandardAccount account : StandardAccount.values()) {
+                if(account != StandardAccount.ACCOUNT_0 && (!StandardAccount.WHIRLPOOL_ACCOUNTS.contains(account) || wallet.getScriptType() == ScriptType.P2WPKH)) {
+                    accounts.add(account);
+                }
+            }
+
+            return accounts;
+        }
+    }
+
+    public static class AccountDiscoveryService extends Service<List<StandardAccount>> {
         private final Wallet masterWalletCopy;
         private final List<StandardAccount> standardAccounts;
         private final Map<StandardAccount, Keystore> importedKeystores;
 
-        public WalletDiscoveryService(Wallet masterWallet, List<StandardAccount> standardAccounts) {
+        public AccountDiscoveryService(Wallet masterWallet, List<StandardAccount> standardAccounts) {
             this.masterWalletCopy = masterWallet.copy();
             this.standardAccounts = standardAccounts;
             this.importedKeystores = new HashMap<>();
         }
 
-        public WalletDiscoveryService(Wallet masterWallet, Map<StandardAccount, Keystore> importedKeystores) {
+        public AccountDiscoveryService(Wallet masterWallet, Map<StandardAccount, Keystore> importedKeystores) {
             this.masterWalletCopy = masterWallet.copy();
             this.standardAccounts = new ArrayList<>(importedKeystores.keySet());
             this.importedKeystores = importedKeystores;

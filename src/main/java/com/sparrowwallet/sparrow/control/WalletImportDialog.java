@@ -31,6 +31,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         });
 
         final DialogPane dialogPane = getDialogPane();
+        dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
@@ -40,7 +41,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         stackPane.getChildren().add(anchorPane);
 
         ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setPrefHeight(420);
+        scrollPane.setPrefHeight(520);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         anchorPane.getChildren().add(scrollPane);
         scrollPane.setFitToWidth(true);
@@ -61,6 +62,10 @@ public class WalletImportDialog extends Dialog<Wallet> {
         }
 
         importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));
+
+        MnemonicWalletKeystoreImportPane mnemonicImportPane = new MnemonicWalletKeystoreImportPane(new Bip39());
+        importAccordion.getPanes().add(0, mnemonicImportPane);
+
         scrollPane.setContent(importAccordion);
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -75,7 +80,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         });
 
         dialogPane.setPrefWidth(500);
-        dialogPane.setPrefHeight(500);
+        dialogPane.setPrefHeight(600);
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);

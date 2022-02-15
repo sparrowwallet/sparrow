@@ -1266,7 +1266,7 @@ public class AppController implements Initializable {
     public void sweepPrivateKey(ActionEvent event) {
         Wallet wallet = null;
         WalletForm selectedWalletForm = getSelectedWalletForm();
-        if(selectedWalletForm != null) {
+        if(selectedWalletForm != null && selectedWalletForm.getWallet().isValid()) {
             wallet = selectedWalletForm.getWallet();
         }
 
