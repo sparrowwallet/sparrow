@@ -61,6 +61,7 @@ public interface WalletNodeDao {
         for(WalletNode purposeNode : wallet.getPurposeNodes()) {
             long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null);
             purposeNode.setId(purposeNodeId);
+            addTransactionOutputs(purposeNode);
             List<WalletNode> childNodes = new ArrayList<>(purposeNode.getChildren());
             for(WalletNode addressNode : childNodes) {
                 long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId);

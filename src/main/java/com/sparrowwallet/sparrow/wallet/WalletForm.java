@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.sparrowwallet.drongo.wallet.WalletNode.nodeRangesToString;
 
@@ -126,37 +127,62 @@ public class WalletForm {
                 log.debug(nodes == null ? wallet.getFullName() + " refreshing full wallet history" : wallet.getFullName() + " requesting node wallet history for " + nodeRangesToString(nodes));
             }
 
-            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, getWalletTransactionNodes(nodes));
-            historyService.setOnSucceeded(workerStateEvent -> {
-                if(historyService.getValue()) {
-                    EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
-                    updateWallet(blockHeight, previousWallet);
-                }
-            });
-            historyService.setOnFailed(workerStateEvent -> {
-                if(workerStateEvent.getSource().getException() instanceof AllHistoryChangedException) {
-                    try {
-                        storage.backupWallet();
-                    } catch(IOException e) {
-                        log.error("Error backing up wallet", e);
+            Set<WalletNode> walletTransactionNodes = getWalletTransactionNodes(nodes);
+            if(walletTransactionNodes == null || !walletTransactionNodes.isEmpty()) {
+                ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, walletTransactionNodes);
+                historyService.setOnSucceeded(workerStateEvent -> {
+                    if(historyService.getValue()) {
+                        EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
+                        updateWallet(blockHeight, previousWallet);
                     }
+                });
+                historyService.setOnFailed(workerStateEvent -> {
+                    if(workerStateEvent.getSource().getException() instanceof AllHistoryChangedException) {
+                        try {
+                            storage.backupWallet();
+                        } catch(IOException e) {
+                            log.error("Error backing up wallet", e);
+                        }
 
-                    wallet.clearHistory();
-                    AppServices.clearTransactionHistoryCache(wallet);
-                    EventManager.get().post(new WalletHistoryClearedEvent(wallet, previousWallet, getWalletId()));
-                } else {
-                    if(AppServices.isConnected()) {
-                        log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
+                        wallet.clearHistory();
+                        AppServices.clearTransactionHistoryCache(wallet);
+                        EventManager.get().post(new WalletHistoryClearedEvent(wallet, previousWallet, getWalletId()));
                     } else {
-                        log.debug("Disconnected while retrieving wallet history", workerStateEvent.getSource().getException());
+                        if(AppServices.isConnected()) {
+                            log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
+                        } else {
+                            log.debug("Disconnected while retrieving wallet history", workerStateEvent.getSource().getException());
+                        }
+
+                        EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
                     }
+                });
 
-                    EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
-                }
-            });
+                EventManager.get().post(new WalletHistoryStartedEvent(wallet, nodes));
+                historyService.start();
+            }
 
-            EventManager.get().post(new WalletHistoryStartedEvent(wallet, nodes));
-            historyService.start();
+            if(wallet.isMasterWallet() && wallet.hasPaymentCode() && refreshNotificationNode(nodes)) {
+                ElectrumServer.PaymentCodesService paymentCodesService = new ElectrumServer.PaymentCodesService(getWalletId(), wallet);
+                paymentCodesService.setOnSucceeded(successEvent -> {
+                    List<Wallet> addedWallets = paymentCodesService.getValue();
+                    for(Wallet addedWallet : addedWallets) {
+                        if(!storage.isPersisted(addedWallet)) {
+                            try {
+                                storage.saveWallet(addedWallet);
+                            } catch(Exception e) {
+                                log.error("Error saving wallet", e);
+                                AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
+                            }
+                        }
+                        EventManager.get().post(new ChildWalletAddedEvent(storage, wallet, addedWallet));
+                    }
+                });
+                paymentCodesService.setOnFailed(failedEvent -> {
+                    log.error("Could not determine payment codes for wallet " + wallet.getFullName(), failedEvent.getSource().getException());
+                });
+                paymentCodesService.start();
+            }
         }
     }
 
@@ -226,7 +252,20 @@ public class WalletForm {
             }
         }
 
-        return allNodes.isEmpty() ? walletNodes : allNodes;
+        Set<WalletNode> nodes = allNodes.isEmpty() ? walletNodes : allNodes;
+        if(nodes.stream().anyMatch(node -> node.getDerivation().size() == 1)) {
+            return nodes.stream().filter(node -> node.getDerivation().size() > 1).collect(Collectors.toSet());
+        }
+
+        return nodes;
+    }
+
+    public boolean refreshNotificationNode(Set<WalletNode> walletNodes) {
+        if(walletNodes == null) {
+            return true;
+        }
+
+        return walletNodes.stream().anyMatch(node -> node.getDerivation().size() == 1);
     }
 
     public WalletTransaction getCreatedWalletTransaction() {

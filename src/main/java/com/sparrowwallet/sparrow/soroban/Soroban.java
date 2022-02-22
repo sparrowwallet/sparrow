@@ -73,7 +73,7 @@ public class Soroban {
             String passphrase = keystore.getSeed().getPassphrase().asString();
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
             BIP47Wallet bip47Wallet = hdWalletFactory.getBIP47(Utils.bytesToHex(seed), passphrase, sorobanServer.getParams());
-            paymentCode = bip47Util.getPaymentCode(bip47Wallet);
+            paymentCode = bip47Util.getPaymentCode(bip47Wallet, wallet.isMasterWallet() ? wallet.getAccountIndex() : wallet.getMasterWallet().getAccountIndex());
         } catch(Exception e) {
             throw new IllegalStateException("Could not create payment code", e);
         }
@@ -93,7 +93,7 @@ public class Soroban {
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
             hdWallet = new HD_Wallet(purpose, new ArrayList<>(words), sorobanServer.getParams(), seed, passphrase);
             bip47Wallet = hdWalletFactory.getBIP47(hdWallet.getSeedHex(), hdWallet.getPassphrase(), sorobanServer.getParams());
-            paymentCode = bip47Util.getPaymentCode(bip47Wallet);
+            paymentCode = bip47Util.getPaymentCode(bip47Wallet, wallet.isMasterWallet() ? wallet.getAccountIndex() : wallet.getMasterWallet().getAccountIndex());
         } catch(Exception e) {
             throw new IllegalStateException("Could not create Soroban HD wallet ", e);
         }
@@ -160,8 +160,8 @@ public class Soroban {
         return payNymService.claimPayNym(authToken, signature);
     }
 
-    public Observable<Map<String, Object>> addSamouraiPaymentCode(String authToken, String signature) {
-        return payNymService.addSamouraiPaymentCode(paymentCode, authToken, signature);
+    public Observable<Map<String, Object>> addPaymentCode(String authToken, String signature, boolean segwit) {
+        return payNymService.addPaymentCode(paymentCode, authToken, signature, segwit);
     }
 
     public Observable<Map<String, Object>> followPaymentCode(PaymentCode paymentCode, String authToken, String signature) {

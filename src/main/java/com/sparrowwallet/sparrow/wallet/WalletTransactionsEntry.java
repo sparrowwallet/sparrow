@@ -100,8 +100,9 @@ public class WalletTransactionsEntry extends Entry {
     private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet) {
         Map<BlockTransaction, WalletTransaction> walletTransactionMap = new HashMap<>(wallet.getTransactions().size());
 
-        getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.RECEIVE));
-        getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(KeyPurpose.CHANGE));
+        for(KeyPurpose keyPurpose : wallet.getWalletKeyPurposes()) {
+            getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(keyPurpose));
+        }
 
         List<WalletTransaction> walletTransactions = new ArrayList<>(walletTransactionMap.values());
         Collections.sort(walletTransactions);

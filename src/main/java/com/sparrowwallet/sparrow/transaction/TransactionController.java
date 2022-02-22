@@ -157,10 +157,10 @@ public class TransactionController implements Initializable {
                         }
                         if(form instanceof OutputForm) {
                             OutputForm outputForm = (OutputForm)form;
-                            if(outputForm.isWalletConsolidation()) {
-                                setGraphic(TransactionDiagram.getConsolidationGlyph());
-                            } else if(outputForm.isWalletChange()) {
+                            if(outputForm.isWalletChange()) {
                                 setGraphic(TransactionDiagram.getChangeGlyph());
+                            } else if(outputForm.isWalletConsolidation()) {
+                                setGraphic(TransactionDiagram.getConsolidationGlyph());
                             } else {
                                 setGraphic(TransactionDiagram.getPaymentGlyph());
                             }

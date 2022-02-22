@@ -6,6 +6,10 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
+import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -20,10 +24,7 @@ import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
 import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
-import com.sparrowwallet.sparrow.soroban.PayNym;
-import com.sparrowwallet.sparrow.soroban.PayNymAddress;
-import com.sparrowwallet.sparrow.soroban.PayNymDialog;
-import com.sparrowwallet.sparrow.soroban.SorobanServices;
+import com.sparrowwallet.sparrow.soroban.*;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -119,6 +120,8 @@ public class PaymentController extends WalletFormController implements Initializ
                 emptyAmountProperty.set(true);
             }
 
+            updateMixOnlyStatus();
+
             sendController.updateTransaction();
         }
     };
@@ -159,7 +162,8 @@ public class PaymentController extends WalletFormController implements Initializ
         openWallets.prefWidthProperty().bind(address.widthProperty());
         openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue == payNymWallet) {
-                PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), true);
+                boolean selectLinkedOnly = sendController.getPaymentTabs().getTabs().size() > 1 || !SorobanServices.canWalletMix(sendController.getWalletForm().getWallet());
+                PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), true, selectLinkedOnly);
                 Optional<PayNym> optPayNym = payNymDialog.showAndWait();
                 if(optPayNym.isPresent()) {
                     PayNym payNym = optPayNym.get();
@@ -175,11 +179,8 @@ public class PaymentController extends WalletFormController implements Initializ
             }
         });
 
-        payNymProperty.addListener((observable, oldValue, newValue) -> {
-            addPaymentButton.setDisable(newValue != null);
-            if(newValue != null) {
-                sendController.setPayNymPayment();
-            }
+        payNymProperty.addListener((observable, oldValue, payNym) -> {
+            updateMixOnlyStatus(payNym);
             revalidateAmount();
         });
 
@@ -249,14 +250,32 @@ public class PaymentController extends WalletFormController implements Initializ
         addValidation(validationSupport);
     }
 
+    public void updateMixOnlyStatus() {
+        updateMixOnlyStatus(payNymProperty.get());
+    }
+
+    public void updateMixOnlyStatus(PayNym payNym) {
+        boolean mixOnly = false;
+        try {
+            mixOnly = payNym != null && getRecipientAddress() instanceof PayNymAddress;
+        } catch(InvalidAddressException e) {
+            log.error("Error creating payment code from PayNym", e);
+        }
+
+        addPaymentButton.setDisable(mixOnly);
+        if(mixOnly) {
+            sendController.setPayNymMixOnlyPayment();
+        }
+    }
+
     private void updateOpenWallets() {
         updateOpenWallets(AppServices.get().getOpenWallets().keySet());
     }
 
     private void updateOpenWallets(Collection<Wallet> wallets) {
-        List<Wallet> openWalletList = wallets.stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet()).collect(Collectors.toList());
+        List<Wallet> openWalletList = wallets.stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet() && !wallet.isBip47()).collect(Collectors.toList());
 
-        if(sendController.getPaymentTabs().getTabs().size() <= 1 && SorobanServices.canWalletMix(sendController.getWalletForm().getWallet())) {
+        if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
             openWalletList.add(payNymWallet);
         }
 
@@ -296,7 +315,30 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
-        return payNymProperty.get() == null ? Address.fromString(address.getText()) : new PayNymAddress(payNymProperty.get());
+        if(payNymProperty.get() == null) {
+            return Address.fromString(address.getText());
+        }
+
+        try {
+            Wallet recipientBip47Wallet = getWalletForPayNym(payNymProperty.get());
+            if(recipientBip47Wallet != null) {
+                WalletNode sendNode = recipientBip47Wallet.getFreshNode(KeyPurpose.SEND);
+                ECKey pubKey = recipientBip47Wallet.getPubKey(sendNode);
+                Address address = recipientBip47Wallet.getScriptType().getAddress(pubKey);
+                if(sendController.getPaymentTabs().getTabs().size() > 1 || (getRecipientValueSats() != null && getRecipientValueSats() > getRecipientDustThreshold(address))) {
+                    return address;
+                }
+            }
+        } catch(InvalidPaymentCodeException e) {
+            log.error("Error creating payment code from PayNym", e);
+        }
+
+        return new PayNymAddress(payNymProperty.get());
+    }
+
+    private Wallet getWalletForPayNym(PayNym payNym) throws InvalidPaymentCodeException {
+        Wallet masterWallet = sendController.getWalletForm().getMasterWallet();
+        return masterWallet.getChildWallet(new PaymentCode(payNym.paymentCode().toString()), payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH);
     }
 
     private Long getRecipientValueSats() {
@@ -321,10 +363,6 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private long getRecipientDustThreshold() {
-        if(payNymProperty.get() != null) {
-            return 0;
-        }
-
         Address address;
         try {
             address = getRecipientAddress();
@@ -332,6 +370,14 @@ public class PaymentController extends WalletFormController implements Initializ
             address = new P2PKHAddress(new byte[20]);
         }
 
+        if(address instanceof PayNymAddress && SorobanServices.canWalletMix(sendController.getWalletForm().getWallet())) {
+            return 0;
+        }
+
+        return getRecipientDustThreshold(address);
+    }
+
+    private long getRecipientDustThreshold(Address address) {
         TransactionOutput txOutput = new TransactionOutput(new Transaction(), 1L, address.getOutputScript());
         return address.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
     }

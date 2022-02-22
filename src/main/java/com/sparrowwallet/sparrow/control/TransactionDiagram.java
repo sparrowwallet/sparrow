@@ -647,7 +647,7 @@ public class TransactionDiagram extends GridPane {
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
             Wallet toWallet = getToWallet(payment);
-            WalletNode toNode = walletTx.getWallet() != null ? walletTx.getWallet().getWalletAddresses().get(payment.getAddress()) : null;
+            WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getWallet().getWalletAddresses().get(payment.getAddress()) : null;
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "
                     + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
@@ -849,7 +849,7 @@ public class TransactionDiagram extends GridPane {
 
     private Wallet getToWallet(Payment payment) {
         for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
-            if(openWallet != walletTx.getWallet() && openWallet.isValid() && openWallet.isWalletAddress(payment.getAddress())) {
+            if(openWallet != walletTx.getWallet() && openWallet.isValid() && !openWallet.isBip47() && openWallet.isWalletAddress(payment.getAddress())) {
                 return openWallet;
             }
         }

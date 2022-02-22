@@ -105,12 +105,12 @@ public class OutputController extends TransactionFormController implements Initi
     private void updateOutputLegendFromWallet(TransactionOutput txOutput, Wallet signingWallet) {
         String baseText = getLegendText(txOutput);
         if(signingWallet != null) {
-            if(outputForm.isWalletConsolidation()) {
-                outputFieldset.setText(baseText + " - Consolidation");
-                outputFieldset.setIcon(TransactionDiagram.getConsolidationGlyph());
-            } else if(outputForm.isWalletChange()) {
+            if(outputForm.isWalletChange()) {
                 outputFieldset.setText(baseText + " - Change");
                 outputFieldset.setIcon(TransactionDiagram.getChangeGlyph());
+            } else if(outputForm.isWalletConsolidation()) {
+                outputFieldset.setText(baseText + " - Consolidation");
+                outputFieldset.setIcon(TransactionDiagram.getConsolidationGlyph());
             } else {
                 outputFieldset.setText(baseText + " - Payment");
                 outputFieldset.setIcon(TransactionDiagram.getPaymentGlyph());

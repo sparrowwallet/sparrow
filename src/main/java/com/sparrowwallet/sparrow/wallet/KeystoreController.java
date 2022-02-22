@@ -336,6 +336,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             keystore.setExtendedPublicKey(importedKeystore.getExtendedPublicKey());
             keystore.setMasterPrivateExtendedKey(importedKeystore.getMasterPrivateExtendedKey());
             keystore.setSeed(importedKeystore.getSeed());
+            keystore.setBip47ExtendedPrivateKey(importedKeystore.getBip47ExtendedPrivateKey());
 
             updateType();
             label.setText(keystore.getLabel());

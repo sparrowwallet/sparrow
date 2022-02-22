@@ -343,9 +343,10 @@ public class AppController implements Initializable {
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
         sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
-        showPayNym.disableProperty().bind(findMixingPartner.disableProperty());
+        showPayNym.setDisable(true);
         findMixingPartner.setDisable(true);
         AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
+            showPayNym.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !getSelectedWalletForm().getWallet().hasPaymentCode() || !newValue);
             findMixingPartner.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
         });
 
@@ -979,7 +980,7 @@ public class AppController implements Initializable {
     }
 
     private void restorePublicKeysFromSeed(Storage storage, Wallet wallet, Key key) throws MnemonicException {
-        if(wallet.containsPrivateKeys()) {
+        if(wallet.containsMasterPrivateKeys()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
             Wallet copy = wallet.copy();
             for(int i = 0; i < copy.getKeystores().size(); i++) {
@@ -1037,14 +1038,25 @@ public class AppController implements Initializable {
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                    keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
                     copyKeystore.getSeed().clear();
                 } else if(keystore.hasMasterPrivateExtendedKey()) {
                     Keystore copyKeystore = copy.getKeystores().get(i);
                     Keystore derivedKeystore = Keystore.fromMasterPrivateExtendedKey(copyKeystore.getMasterPrivateExtendedKey(), copyKeystore.getKeyDerivation().getDerivation());
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                    keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
                     copyKeystore.getMasterPrivateKey().clear();
                 }
+            }
+        }
+
+        if(wallet.isBip47()) {
+            try {
+                Keystore keystore = wallet.getKeystores().get(0);
+                keystore.setBip47ExtendedPrivateKey(wallet.getMasterWallet().getKeystores().get(0).getBip47ExtendedPrivateKey());
+            } catch(Exception e) {
+                log.error("Cannot prepare BIP47 keystore", e);
             }
         }
     }
@@ -1342,7 +1354,7 @@ public class AppController implements Initializable {
     public void showPayNym(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
-            PayNymDialog payNymDialog = new PayNymDialog(selectedWalletForm.getWalletId(), false);
+            PayNymDialog payNymDialog = new PayNymDialog(selectedWalletForm.getWalletId());
             payNymDialog.showAndWait();
         }
     }
@@ -1961,6 +1973,7 @@ public class AppController implements Initializable {
                 exportWallet.setDisable(true);
                 showLoadingLog.setDisable(true);
                 showTxHex.setDisable(false);
+                showPayNym.setDisable(true);
                 findMixingPartner.setDisable(true);
             } else if(event instanceof WalletTabSelectedEvent) {
                 WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
@@ -1971,6 +1984,7 @@ public class AppController implements Initializable {
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid() || walletTabData.getWalletForm().isLocked());
                 showLoadingLog.setDisable(false);
                 showTxHex.setDisable(true);
+                showPayNym.setDisable(exportWallet.isDisable() || !walletTabData.getWallet().hasPaymentCode() || !AppServices.onlineProperty().get());
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(walletTabData.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
@@ -1996,6 +2010,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null) {
             if(selectedWalletForm.getWalletId().equals(event.getWalletId())) {
                 exportWallet.setDisable(!event.getWallet().isValid() || selectedWalletForm.isLocked());
+                showPayNym.setDisable(exportWallet.isDisable() || !event.getWallet().hasPaymentCode() || !AppServices.onlineProperty().get());
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(event.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
@@ -2075,12 +2090,9 @@ public class AppController implements Initializable {
                 });
 
                 Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-                String walletName = event.getWallet().getMasterName();
-                if(walletName.length() > 25) {
-                    walletName = walletName.substring(0, 25) + "...";
-                }
-                if(!event.getWallet().isMasterWallet()) {
-                    walletName += " " + event.getWallet().getName();
+                String walletName = event.getWallet().getFullDisplayName();
+                if(walletName.length() > 40) {
+                    walletName = walletName.substring(0, 40) + "...";
                 }
 
                 Notifications notificationBuilder = Notifications.create()

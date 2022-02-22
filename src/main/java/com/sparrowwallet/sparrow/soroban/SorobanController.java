@@ -23,13 +23,13 @@ public class SorobanController {
     private static final Logger log = LoggerFactory.getLogger(SorobanController.class);
     protected static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
 
-    protected void claimPayNym(Soroban soroban, Map<String, Object> createMap) {
+    protected void claimPayNym(Soroban soroban, Map<String, Object> createMap, boolean segwit) {
         if(createMap.get("claimed") == Boolean.FALSE) {
             soroban.getAuthToken(createMap).subscribe(authToken -> {
                 String signature = soroban.getSignature(authToken);
                 soroban.claimPayNym(authToken, signature).subscribe(claimMap -> {
                     log.debug("Claimed payment code " + claimMap.get("claimed"));
-                    soroban.addSamouraiPaymentCode(authToken, signature).subscribe(addMap -> {
+                    soroban.addPaymentCode(authToken, signature, segwit).subscribe(addMap -> {
                         log.debug("Added payment code " + addMap);
                     });
                 }, error -> {
@@ -37,7 +37,7 @@ public class SorobanController {
                         String newSignature = soroban.getSignature(newAuthToken);
                         soroban.claimPayNym(newAuthToken, newSignature).subscribe(claimMap -> {
                             log.debug("Claimed payment code " + claimMap.get("claimed"));
-                            soroban.addSamouraiPaymentCode(newAuthToken, newSignature).subscribe(addMap -> {
+                            soroban.addPaymentCode(newAuthToken, newSignature, segwit).subscribe(addMap -> {
                                 log.debug("Added payment code " + addMap);
                             });
                         }, newError -> {

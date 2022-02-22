@@ -9,6 +9,7 @@ import com.samourai.whirlpool.client.wallet.WhirlpoolWalletService;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +39,7 @@ public class SparrowPostmixHandler implements IPostmixHandler {
         int index = Math.max(getIndexHandler().getAndIncrementUnconfirmed(), startIndex);
 
         // address
-        Address address = wallet.getAddress(keyPurpose, index);
+        Address address = wallet.getAddress(new WalletNode(keyPurpose, index));
         String path = XPubUtil.getInstance().getPath(index, keyPurpose.getPathIndex().num());
 
         log.info("Mixing to external xPub -> receiveAddress=" + address + ", path=" + path);

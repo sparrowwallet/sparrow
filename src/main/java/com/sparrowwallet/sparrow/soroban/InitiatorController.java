@@ -614,7 +614,7 @@ public class InitiatorController extends SorobanController {
     }
 
     public void findPayNym(ActionEvent event) {
-        PayNymDialog payNymDialog = new PayNymDialog(walletId, true);
+        PayNymDialog payNymDialog = new PayNymDialog(walletId, true, false);
         Optional<PayNym> optPayNym = payNymDialog.showAndWait();
         optPayNym.ifPresent(payNym -> {
             counterpartyPayNymName.set(payNym.nymName());

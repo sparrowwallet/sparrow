@@ -1,13 +1,18 @@
 package com.sparrowwallet.sparrow.soroban;
 
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 
 import java.io.IOException;
 
 public class PayNymDialog extends Dialog<PayNym> {
-    public PayNymDialog(String walletId, boolean selectPayNym) {
+    public PayNymDialog(String walletId) {
+        this(walletId, false, false);
+    }
+
+    public PayNymDialog(String walletId, boolean selectPayNym, boolean selectLinkedOnly) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.onEscapePressed(dialogPane.getScene(), this::close);
@@ -16,7 +21,9 @@ public class PayNymDialog extends Dialog<PayNym> {
             FXMLLoader payNymLoader = new FXMLLoader(AppServices.class.getResource("soroban/paynym.fxml"));
             dialogPane.setContent(payNymLoader.load());
             PayNymController payNymController = payNymLoader.getController();
-            payNymController.initializeView(walletId);
+            payNymController.initializeView(walletId, selectLinkedOnly);
+
+            EventManager.get().register(payNymController);
 
             dialogPane.setPrefWidth(730);
             dialogPane.setPrefHeight(600);
@@ -35,11 +42,15 @@ public class PayNymDialog extends Dialog<PayNym> {
                 selectButton.setDisable(true);
                 selectButton.setDefaultButton(true);
                 payNymController.payNymProperty().addListener((observable, oldValue, payNym) -> {
-                    selectButton.setDisable(payNym == null);
+                    selectButton.setDisable(payNym == null || (selectLinkedOnly && !payNymController.isLinked(payNym)));
                 });
             } else {
                 dialogPane.getButtonTypes().add(doneButtonType);
             }
+
+            setOnCloseRequest(event -> {
+                EventManager.get().unregister(payNymController);
+            });
 
             setResultConverter(dialogButton -> dialogButton == selectButtonType ? payNymController.getPayNym() : null);
         } catch(IOException e) {

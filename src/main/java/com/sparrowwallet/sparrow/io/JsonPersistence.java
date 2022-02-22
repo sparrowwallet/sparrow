@@ -425,7 +425,7 @@ public class JsonPersistence implements Persistence {
         @Override
         public JsonElement serialize(Keystore keystore, Type typeOfSrc, JsonSerializationContext context) {
             JsonObject jsonObject = (JsonObject)getGson(false).toJsonTree(keystore);
-            if(keystore.hasPrivateKey()) {
+            if(keystore.hasMasterPrivateKey()) {
                 jsonObject.remove("extendedPublicKey");
                 jsonObject.getAsJsonObject("keyDerivation").remove("masterFingerprint");
             }

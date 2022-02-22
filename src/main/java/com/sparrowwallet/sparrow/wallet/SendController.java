@@ -248,7 +248,10 @@ public class SendController extends WalletFormController implements Initializabl
                 if(!paymentTabs.getStyleClass().contains("multiple-tabs")) {
                     paymentTabs.getStyleClass().add("multiple-tabs");
                 }
-                paymentTabs.getTabs().forEach(tab -> tab.setClosable(true));
+                paymentTabs.getTabs().forEach(tab -> {
+                    tab.setClosable(true);
+                    ((PaymentController)tab.getUserData()).updateMixOnlyStatus();
+                });
             } else {
                 paymentTabs.getStyleClass().remove("multiple-tabs");
                 Tab remainingTab = paymentTabs.getTabs().get(0);
@@ -392,7 +395,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
-            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymPayment(walletTransaction.getPayments()));
+            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(walletTransaction.getPayments()));
         });
 
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -949,11 +952,11 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
-    private boolean isPayNymPayment(List<Payment> payments) {
+    private boolean isPayNymMixOnlyPayment(List<Payment> payments) {
         return payments.size() == 1 && payments.get(0).getAddress() instanceof PayNymAddress;
     }
 
-    public void setPayNymPayment() {
+    public void setPayNymMixOnlyPayment() {
         optimizationToggleGroup.selectToggle(privacyToggle);
         transactionDiagram.setOptimizationStrategy(OptimizationStrategy.PRIVACY);
         efficiencyToggle.setDisable(true);
@@ -967,8 +970,8 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
-        if(isPayNymPayment(payments)) {
-            setPayNymPayment();
+        if(isPayNymMixOnlyPayment(payments)) {
+            setPayNymMixOnlyPayment();
         } else if(isMixPossible(payments)) {
             setPreferredOptimizationStrategy();
             efficiencyToggle.setDisable(false);
@@ -1422,7 +1425,7 @@ public class SendController extends WalletFormController implements Initializabl
             List<Payment> payments = walletTransaction.getPayments();
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
-            boolean payNymPresent = isPayNymPayment(payments);
+            boolean payNymPresent = isPayNymMixOnlyPayment(payments);
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
             boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType());

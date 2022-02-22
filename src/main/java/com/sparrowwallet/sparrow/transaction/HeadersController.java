@@ -579,7 +579,7 @@ public class HeadersController extends TransactionFormController implements Init
 
             List<Payment> payments = new ArrayList<>();
             Map<WalletNode, Long> changeMap = new LinkedHashMap<>();
-            Map<Script, WalletNode> changeOutputScripts = wallet.getWalletOutputScripts(KeyPurpose.CHANGE);
+            Map<Script, WalletNode> changeOutputScripts = wallet.getWalletOutputScripts(wallet.getChangeKeyPurpose());
             for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
                 WalletNode changeNode = changeOutputScripts.get(txOutput.getScript());
                 if(changeNode != null) {
@@ -729,9 +729,10 @@ public class HeadersController extends TransactionFormController implements Init
     private void initializeSignButton(Wallet signingWallet) {
         Optional<Keystore> softwareKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.SW_SEED)).findAny();
         Optional<Keystore> usbKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB)).findAny();
-        if(softwareKeystore.isEmpty() && usbKeystore.isEmpty()) {
+        Optional<Keystore> bip47Keystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.SW_PAYMENT_CODE)).findAny();
+        if(softwareKeystore.isEmpty() && usbKeystore.isEmpty() && bip47Keystore.isEmpty()) {
             signButton.setDisable(true);
-        } else if(softwareKeystore.isEmpty()) {
+        } else if(softwareKeystore.isEmpty() && bip47Keystore.isEmpty()) {
             Glyph usbGlyph = new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
             usbGlyph.setFontSize(20);
             signButton.setGraphic(usbGlyph);

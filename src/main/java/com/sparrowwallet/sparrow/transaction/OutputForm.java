@@ -36,7 +36,7 @@ public class OutputForm extends IndexedTransactionForm {
     }
 
     public boolean isWalletChange() {
-        return (getSigningWallet() != null && getSigningWallet().getWalletOutputScripts(KeyPurpose.CHANGE).containsKey(getTransactionOutput().getScript()));
+        return (getSigningWallet() != null && getSigningWallet().getWalletOutputScripts(getSigningWallet().getChangeKeyPurpose()).containsKey(getTransactionOutput().getScript()));
     }
 
     public boolean isWalletPayment() {

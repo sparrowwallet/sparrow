@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.soroban.PayNym;
 import com.sparrowwallet.sparrow.soroban.PayNymController;
 import javafx.geometry.Insets;
@@ -7,6 +8,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import org.controlsfx.glyphfont.Glyph;
 
 public class PayNymCell extends ListCell<PayNym> {
     private final PayNymController payNymController;
@@ -23,6 +25,8 @@ public class PayNymCell extends ListCell<PayNym> {
     @Override
     protected void updateItem(PayNym payNym, boolean empty) {
         super.updateItem(payNym, empty);
+
+        getStyleClass().remove("unlinked");
 
         if(empty || payNym == null) {
             setText(null);
@@ -53,10 +57,38 @@ public class PayNymCell extends ListCell<PayNym> {
                     button.setDisable(true);
                     payNymController.followPayNym(payNym.paymentCode());
                 });
+            } else if(payNymController != null) {
+                HBox hBox = new HBox();
+                hBox.setAlignment(Pos.CENTER);
+                pane.setRight(hBox);
+
+                if(payNymController.isLinked(payNym)) {
+                    Label linkedLabel = new Label("Linked", getLinkGlyph());
+                    linkedLabel.setTooltip(new Tooltip("You can send non-collaboratively to this contact."));
+                    hBox.getChildren().add(linkedLabel);
+                } else {
+                    Button linkButton = new Button("Link Contact", getLinkGlyph());
+                    linkButton.setTooltip(new Tooltip("Create a transaction that will enable you to send non-collaboratively to this contact."));
+                    hBox.getChildren().add(linkButton);
+                    linkButton.setOnAction(event -> {
+                        linkButton.setDisable(true);
+                        payNymController.linkPayNym(payNym);
+                    });
+
+                    if(payNymController.isSelectLinkedOnly()) {
+                        getStyleClass().add("unlinked");
+                    }
+                }
             }
 
             setText(null);
             setGraphic(pane);
         }
+    }
+
+    public static Glyph getLinkGlyph() {
+        Glyph failGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LINK);
+        failGlyph.setFontSize(12);
+        return failGlyph;
     }
 }

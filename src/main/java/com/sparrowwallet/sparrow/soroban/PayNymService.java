@@ -74,14 +74,14 @@ public class PayNymService {
                 .map(Optional::get);
     }
 
-    public Observable<Map<String, Object>> addSamouraiPaymentCode(PaymentCode paymentCode, String authToken, String signature) {
+    public Observable<Map<String, Object>> addPaymentCode(PaymentCode paymentCode, String authToken, String signature, boolean segwit) {
         Map<String, String> headers = new HashMap<>();
         headers.put("content-type", "application/json");
         headers.put("auth-token", authToken);
 
         HashMap<String, Object> body = new HashMap<>();
         body.put("nym", paymentCode.toString());
-        body.put("code", paymentCode.makeSamouraiPaymentCode());
+        body.put("code", segwit ? paymentCode.makeSamouraiPaymentCode() : paymentCode.toString());
         body.put("signature", signature);
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);

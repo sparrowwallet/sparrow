@@ -1,0 +1,1 @@
+alter table keystore add column externalPaymentCode varchar(255) after extendedPublicKey;

@@ -55,6 +55,14 @@
     -fx-padding: 10 0 10 0;
 }
 
+#followingList .paynym-cell.unlinked .label {
+    -fx-text-fill: #a0a1a7;
+}
+
+#followingList .paynym-cell .button .label.glyph-font {
+    -fx-text-fill: -fx-text-base-color;
+}
+
 #followersList .paynym-cell .label {
     -fx-text-fill: #a0a1a7;
 }

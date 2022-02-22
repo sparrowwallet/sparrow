@@ -285,7 +285,7 @@ public class Payjoin {
     }
 
     private int getChangeOutputIndex() {
-        Map<Script, WalletNode> changeScriptNodes = wallet.getWalletOutputScripts(KeyPurpose.CHANGE);
+        Map<Script, WalletNode> changeScriptNodes = wallet.getWalletOutputScripts(wallet.getChangeKeyPurpose());
         for(int i = 0; i < psbt.getTransaction().getOutputs().size(); i++) {
             if(changeScriptNodes.containsKey(psbt.getTransaction().getOutputs().get(i).getScript())) {
                 return i;

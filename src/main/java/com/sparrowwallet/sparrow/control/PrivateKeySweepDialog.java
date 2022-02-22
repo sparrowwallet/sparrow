@@ -123,7 +123,8 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         toAddress = new ComboBoxTextField();
         toAddress.getStyleClass().add("fixed-width");
         toWallet = new ComboBox<>();
-        toWallet.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream().filter(w -> !w.isWhirlpoolChildWallet()).collect(Collectors.toList())));
+        toWallet.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream()
+                .filter(w -> !w.isWhirlpoolChildWallet() && !w.isBip47()).collect(Collectors.toList())));
         toAddress.setComboProperty(toWallet);
         toWallet.prefWidthProperty().bind(toAddress.widthProperty());
         StackPane stackPane = new StackPane();

@@ -610,6 +610,12 @@ public class AppServices {
         return getTargetBlockFeeRates() == null ? FALLBACK_FEE_RATE : getTargetBlockFeeRates().get(defaultTarget);
     }
 
+    public static Double getMinimumFeeRate() {
+        Optional<Double> optMinFeeRate = getTargetBlockFeeRates().values().stream().min(Double::compareTo);
+        Double minRate = optMinFeeRate.orElse(FALLBACK_FEE_RATE);
+        return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
+    }
+
     public static Map<Integer, Double> getTargetBlockFeeRates() {
         return targetBlockFeeRates;
     }

@@ -7,12 +7,16 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.soroban.PayNym;
+import com.sparrowwallet.sparrow.soroban.Soroban;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -172,6 +176,12 @@ public class ElectrumServer {
         getCalculatedScriptHashes(wallet).forEach(retrievedScriptHashes::putIfAbsent);
     }
 
+    private static void addCalculatedScriptHashes(Wallet wallet, WalletNode walletNode) {
+        Map<String, String> calculatedScriptHashStatuses = new HashMap<>();
+        addScriptHashStatus(calculatedScriptHashStatuses, wallet, walletNode);
+        calculatedScriptHashStatuses.forEach(retrievedScriptHashes::putIfAbsent);
+    }
+
     private static Map<String, String> getCalculatedScriptHashes(Wallet wallet) {
         Map<String, String> storedScriptHashStatuses = new HashMap<>();
         storedScriptHashStatuses.putAll(calculateScriptHashes(wallet, KeyPurpose.RECEIVE));
@@ -182,41 +192,49 @@ public class ElectrumServer {
     private static Map<String, String> calculateScriptHashes(Wallet wallet, KeyPurpose keyPurpose) {
         Map<String, String> calculatedScriptHashes = new LinkedHashMap<>();
         for(WalletNode walletNode : wallet.getNode(keyPurpose).getChildren()) {
-            String scriptHash = getScriptHash(wallet, walletNode);
-
-            List<BlockTransactionHashIndex> txos  = new ArrayList<>(walletNode.getTransactionOutputs());
-            txos.addAll(walletNode.getTransactionOutputs().stream().filter(BlockTransactionHashIndex::isSpent).map(BlockTransactionHashIndex::getSpentBy).collect(Collectors.toList()));
-            Set<Sha256Hash> unique = new HashSet<>(txos.size());
-            txos.removeIf(ref -> !unique.add(ref.getHash()));
-            txos.sort((txo1, txo2) -> {
-                if(txo1.getHeight() != txo2.getHeight()) {
-                    return txo1.getComparisonHeight() - txo2.getComparisonHeight();
-                }
-
-                if(txo1.isSpent() && txo1.getSpentBy().equals(txo2)) {
-                    return -1;
-                }
-
-                if(txo2.isSpent() && txo2.getSpentBy().equals(txo1)) {
-                    return 1;
-                }
-
-                //We cannot further sort by order within a block, so sometimes multiple txos to an address will mean an incorrect status
-                return 0;
-            });
-            if(!txos.isEmpty()) {
-                StringBuilder scriptHashStatus = new StringBuilder();
-                for(BlockTransactionHashIndex txo : txos) {
-                    scriptHashStatus.append(txo.getHash().toString()).append(":").append(txo.getHeight()).append(":");
-                }
-
-                calculatedScriptHashes.put(scriptHash, Utils.bytesToHex(Sha256Hash.hash(scriptHashStatus.toString().getBytes(StandardCharsets.UTF_8))));
-            } else {
-                calculatedScriptHashes.put(scriptHash, null);
-            }
+            addScriptHashStatus(calculatedScriptHashes, wallet, walletNode);
         }
 
         return calculatedScriptHashes;
+    }
+
+    private static void addScriptHashStatus(Map<String, String> calculatedScriptHashes, Wallet wallet, WalletNode walletNode) {
+        String scriptHash = getScriptHash(wallet, walletNode);
+        String scriptHashStatus = getScriptHashStatus(walletNode);
+        calculatedScriptHashes.put(scriptHash, scriptHashStatus);
+    }
+
+    private static String getScriptHashStatus(WalletNode walletNode) {
+        List<BlockTransactionHashIndex> txos  = new ArrayList<>(walletNode.getTransactionOutputs());
+        txos.addAll(walletNode.getTransactionOutputs().stream().filter(BlockTransactionHashIndex::isSpent).map(BlockTransactionHashIndex::getSpentBy).collect(Collectors.toList()));
+        Set<Sha256Hash> unique = new HashSet<>(txos.size());
+        txos.removeIf(ref -> !unique.add(ref.getHash()));
+        txos.sort((txo1, txo2) -> {
+            if(txo1.getHeight() != txo2.getHeight()) {
+                return txo1.getComparisonHeight() - txo2.getComparisonHeight();
+            }
+
+            if(txo1.isSpent() && txo1.getSpentBy().equals(txo2)) {
+                return -1;
+            }
+
+            if(txo2.isSpent() && txo2.getSpentBy().equals(txo1)) {
+                return 1;
+            }
+
+            //We cannot further sort by order within a block, so sometimes multiple txos to an address will mean an incorrect status
+            return 0;
+        });
+        if(!txos.isEmpty()) {
+            StringBuilder scriptHashStatus = new StringBuilder();
+            for(BlockTransactionHashIndex txo : txos) {
+                scriptHashStatus.append(txo.getHash().toString()).append(":").append(txo.getHeight()).append(":");
+            }
+
+            return Utils.bytesToHex(Sha256Hash.hash(scriptHashStatus.toString().getBytes(StandardCharsets.UTF_8)));
+        } else {
+            return null;
+        }
     }
 
     public static void clearRetrievedScriptHashes(Wallet wallet) {
@@ -421,8 +439,8 @@ public class ElectrumServer {
                     String scriptHash = getScriptHash(wallet, node);
                     String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
                     if(subscribedStatus != null) {
-                        //Already subscribed, but still need to fetch history from a used node if not previously fetched
-                        if(!subscribedStatus.equals(retrievedScriptHashes.get(scriptHash))) {
+                        //Already subscribed, but still need to fetch history from a used node if not previously fetched or present
+                        if(!subscribedStatus.equals(retrievedScriptHashes.get(scriptHash)) || !subscribedStatus.equals(getScriptHashStatus(node))) {
                             nodeTransactionMap.put(node, new TreeSet<>());
                         }
                     } else if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
@@ -1630,6 +1648,94 @@ public class ElectrumServer {
                     return electrumServer.getUtxos(address);
                 }
             };
+        }
+    }
+
+    public static class PaymentCodesService extends Service<List<Wallet>> {
+        private final String walletId;
+        private final Wallet wallet;
+
+        public PaymentCodesService(String walletId, Wallet wallet) {
+            this.walletId = walletId;
+            this.wallet = wallet;
+        }
+
+        @Override
+        protected Task<List<Wallet>> createTask() {
+            return new Task<>() {
+                protected List<Wallet> call() throws ServerException {
+                    Wallet notificationWallet = wallet.getNotificationWallet();
+                    WalletNode notificationNode = notificationWallet.getNode(KeyPurpose.NOTIFICATION);
+
+                    for(Wallet childWallet : wallet.getChildWallets()) {
+                        if(childWallet.isBip47()) {
+                            WalletNode savedNotificationNode = childWallet.getNode(KeyPurpose.NOTIFICATION);
+                            notificationNode.getTransactionOutputs().addAll(savedNotificationNode.getTransactionOutputs());
+                            notificationWallet.updateTransactions(childWallet.getTransactions());
+                        }
+                    }
+
+                    addCalculatedScriptHashes(notificationWallet, notificationNode);
+
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = electrumServer.getHistory(notificationWallet, List.of(notificationNode));
+                    electrumServer.getReferencedTransactions(notificationWallet, nodeTransactionMap);
+                    electrumServer.calculateNodeHistory(notificationWallet, nodeTransactionMap);
+
+                    List<Wallet> addedWallets = new ArrayList<>();
+                    if(!nodeTransactionMap.isEmpty()) {
+                        Set<PaymentCode> paymentCodes = new LinkedHashSet<>();
+                        for(BlockTransactionHashIndex output : notificationNode.getTransactionOutputs()) {
+                            BlockTransaction blkTx = notificationWallet.getTransactions().get(output.getHash());
+                            try {
+                                PaymentCode paymentCode = PaymentCode.getPaymentCode(blkTx.getTransaction(), notificationWallet.getKeystores().get(0));
+                                if(paymentCodes.add(paymentCode)) {
+                                    if(getExistingChildWallet(paymentCode) == null) {
+                                        PayNym payNym = Config.get().isUsePayNym() ? getPayNym(paymentCode) : null;
+                                        List<ScriptType> scriptTypes = payNym == null || wallet.getScriptType() != ScriptType.P2PKH ? PayNym.getSegwitScriptTypes() : payNym.getScriptTypes();
+                                        for(ScriptType childScriptType : scriptTypes) {
+                                            Wallet addedWallet = wallet.addChildWallet(paymentCode, childScriptType, output, blkTx);
+                                            if(payNym != null) {
+                                                addedWallet.setLabel(payNym.nymName() + " " + childScriptType.getName());
+                                            }
+                                            //Check this is a valid payment code, will throw IllegalArgumentException if not
+                                            addedWallet.getPubKey(new WalletNode(KeyPurpose.RECEIVE, 0));
+                                            addedWallets.add(addedWallet);
+                                        }
+                                    }
+                                }
+                            } catch(InvalidPaymentCodeException e) {
+                                log.info("Could not determine payment code for notification transaction", e);
+                            } catch(IllegalArgumentException e) {
+                                log.info("Invalid notification transaction creates illegal payment code", e);
+                            }
+                        }
+                    }
+
+                    return addedWallets;
+                }
+            };
+        }
+
+        private PayNym getPayNym(PaymentCode paymentCode) {
+            Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+            try {
+                return soroban.getPayNym(paymentCode.toString()).blockingFirst();
+            } catch(Exception e) {
+                //ignore
+            }
+
+            return null;
+        }
+
+        private Wallet getExistingChildWallet(PaymentCode paymentCode) {
+            for(Wallet childWallet : wallet.getChildWallets()) {
+                if(childWallet.isBip47() && paymentCode.equals(childWallet.getKeystores().get(0).getExternalPaymentCode())) {
+                    return childWallet;
+                }
+            }
+
+            return null;
         }
     }
 }

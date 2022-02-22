@@ -94,7 +94,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
             }
             if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
-                throw new IllegalArgumentException("Cannot sign messages using a wallet without a seed or USB keystore");
+                throw new IllegalArgumentException("Cannot sign messages using a wallet without private keys or a USB keystore");
             }
         }
 
@@ -301,7 +301,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             return;
         }
 
-        if(wallet.containsPrivateKeys()) {
+        //Note we can expect a single keystore due to the check in the constructor
+        if(wallet.getKeystores().get(0).hasPrivateKey()) {
             if(wallet.isEncrypted()) {
                 EventManager.get().post(new RequestOpenWalletsEvent());
             } else {
@@ -314,7 +315,6 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void signUnencryptedKeystore(Wallet decryptedWallet) {
         try {
-            //Note we can expect a single keystore due to the check above
             Keystore keystore = decryptedWallet.getKeystores().get(0);
             ECKey privKey = keystore.getKey(walletNode);
             ScriptType scriptType = electrumSignatureFormat ? ScriptType.P2PKH : decryptedWallet.getScriptType();

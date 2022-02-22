@@ -382,7 +382,7 @@ public class CounterpartyController extends SorobanController {
             payNymAvatar.setPaymentCode(soroban.getPaymentCode());
             payNym.setVisible(true);
 
-            claimPayNym(soroban, createMap);
+            claimPayNym(soroban, createMap, true);
         }, error -> {
             log.error("Error retrieving PayNym", error);
             Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
@@ -395,7 +395,7 @@ public class CounterpartyController extends SorobanController {
     }
 
     public void showPayNym(ActionEvent event) {
-        PayNymDialog payNymDialog = new PayNymDialog(walletId, false);
+        PayNymDialog payNymDialog = new PayNymDialog(walletId);
         payNymDialog.showAndWait();
     }
 
