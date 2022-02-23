@@ -13,7 +13,7 @@
 <?import com.sparrowwallet.sparrow.control.PaymentCodeTextField?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
-<StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@paynym.css, @../general.css" styleClass="paynym-pane" fx:controller="com.sparrowwallet.sparrow.soroban.PayNymController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
+<StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@paynym.css, @../general.css" styleClass="paynym-pane" fx:controller="com.sparrowwallet.sparrow.paynym.PayNymController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="10">
         <HBox styleClass="title-area">
             <HBox alignment="CENTER_LEFT">

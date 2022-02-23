@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppServices.getTorProxy;
+
 public class WhirlpoolServices {
     private static final Logger log = LoggerFactory.getLogger(WhirlpoolServices.class);
 
@@ -59,12 +61,6 @@ public class WhirlpoolServices {
         }
 
         return whirlpool;
-    }
-
-    private HostAndPort getTorProxy() {
-        return AppServices.isTorRunning() ?
-                HostAndPort.fromParts("localhost", TorService.PROXY_PORT) :
-                (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
     }
 
     private void bindDebugAccelerator() {

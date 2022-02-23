@@ -1,11 +1,16 @@
-package com.sparrowwallet.sparrow.soroban;
+package com.sparrowwallet.sparrow.paynym;
 
-import com.samourai.wallet.bip47.rpc.PaymentCode;
+import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class PayNym {
+    private static final Logger log = LoggerFactory.getLogger(PayNym.class);
+
     private final PaymentCode paymentCode;
     private final String nymId;
     private final String nymName;
@@ -56,5 +61,17 @@ public class PayNym {
 
     public static List<ScriptType> getV1ScriptTypes() {
         return List.of(ScriptType.P2PKH);
+    }
+
+    public static PayNym fromString(String strPaymentCode, String nymId, String nymName, boolean segwit, List<PayNym> following, List<PayNym> followers) {
+        PaymentCode paymentCode;
+        try {
+            paymentCode = new PaymentCode(strPaymentCode);
+        } catch(InvalidPaymentCodeException e) {
+            log.error("Error creating PayNym from payment code " + strPaymentCode, e);
+            paymentCode = null;
+        }
+
+        return new PayNym(paymentCode, nymId, nymName, segwit, following, followers);
     }
 }

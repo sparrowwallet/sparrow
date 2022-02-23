@@ -14,6 +14,8 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.paynym.PayNymDialog;
+import com.sparrowwallet.sparrow.paynym.PayNymService;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
 import javafx.application.Platform;
@@ -177,7 +179,8 @@ public class CounterpartyController extends SorobanController {
             payNym.setVisible(false);
         }
 
-        paymentCode.setPaymentCode(soroban.getPaymentCode());
+        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+        paymentCode.setPaymentCode(masterWallet.getPaymentCode());
         paymentCodeQR.prefHeightProperty().bind(paymentCode.heightProperty());
         paymentCodeQR.prefWidthProperty().bind(showPayNym.widthProperty());
 
@@ -228,7 +231,7 @@ public class CounterpartyController extends SorobanController {
                         String code = requestMessage.getSender();
                         CahootsType cahootsType = requestMessage.getType();
                         PaymentCode paymentCodeInitiator = new PaymentCode(code);
-                        updateMixPartner(soroban, paymentCodeInitiator, cahootsType);
+                        updateMixPartner(paymentCodeInitiator, cahootsType);
                         Boolean accepted = (Boolean)Platform.enterNestedEventLoop(meetingAccepted);
                         sorobanMeetingService.sendMeetingResponse(paymentCodeInitiator, requestMessage, accepted)
                                 .subscribeOn(Schedulers.io())
@@ -236,7 +239,7 @@ public class CounterpartyController extends SorobanController {
                                 .subscribe(responseMessage -> {
                                     if(accepted) {
                                         startCounterpartyCollaboration(counterpartyCahootsWallet, paymentCodeInitiator, cahootsType);
-                                        followPaymentCode(soroban, paymentCodeInitiator);
+                                        followPaymentCode(paymentCodeInitiator);
                                     }
                                 }, error -> {
                                     log.error("Error sending meeting response", error);
@@ -251,12 +254,12 @@ public class CounterpartyController extends SorobanController {
         }
     }
 
-    private void updateMixPartner(Soroban soroban, PaymentCode paymentCodeInitiator, CahootsType cahootsType) {
+    private void updateMixPartner(PaymentCode paymentCodeInitiator, CahootsType cahootsType) {
         String code = paymentCodeInitiator.toString();
         mixingPartner.setText(code.substring(0, 12) + "..." + code.substring(code.length() - 5));
         if(Config.get().isUsePayNym()) {
             mixPartnerAvatar.setPaymentCode(paymentCodeInitiator);
-            soroban.getPayNym(paymentCodeInitiator.toString()).subscribe(payNym -> {
+            AppServices.getPayNymService().getPayNym(paymentCodeInitiator.toString()).subscribe(payNym -> {
                 mixingPartner.setText(payNym.nymName());
             }, error -> {
                 //ignore, may not be a PayNym
@@ -332,11 +335,12 @@ public class CounterpartyController extends SorobanController {
         }
     }
 
-    private void followPaymentCode(Soroban soroban, PaymentCode paymentCodeInitiator) {
-        if(Config.get().isUsePayNym() && soroban.getHdWallet() != null) {
-            soroban.getAuthToken(new HashMap<>()).subscribe(authToken -> {
-                String signature = soroban.getSignature(authToken);
-                soroban.followPaymentCode(paymentCodeInitiator, authToken, signature).subscribe(followMap -> {
+    private void followPaymentCode(PaymentCode paymentCodeInitiator) {
+        if(Config.get().isUsePayNym()) {
+            PayNymService payNymService = AppServices.getPayNymService();
+            payNymService.getAuthToken(wallet, new HashMap<>()).subscribe(authToken -> {
+                String signature = payNymService.getSignature(wallet, authToken);
+                payNymService.followPaymentCode(paymentCodeInitiator, authToken, signature).subscribe(followMap -> {
                    log.debug("Followed payment code " + followMap.get("following"));
                 }, error -> {
                     log.warn("Could not follow payment code", error);
@@ -376,13 +380,13 @@ public class CounterpartyController extends SorobanController {
     public void retrievePayNym(ActionEvent event) {
         Config.get().setUsePayNym(true);
 
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        soroban.createPayNym().subscribe(createMap -> {
+        PayNymService payNymService = AppServices.getPayNymService();
+        payNymService.createPayNym(wallet).subscribe(createMap -> {
             payNym.setText((String)createMap.get("nymName"));
-            payNymAvatar.setPaymentCode(soroban.getPaymentCode());
+            payNymAvatar.setPaymentCode(wallet.isMasterWallet() ? wallet.getPaymentCode() : wallet.getMasterWallet().getPaymentCode());
             payNym.setVisible(true);
 
-            claimPayNym(soroban, createMap, true);
+            payNymService.claimPayNym(wallet, createMap, true);
         }, error -> {
             log.error("Error retrieving PayNym", error);
             Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
@@ -400,8 +404,8 @@ public class CounterpartyController extends SorobanController {
     }
 
     public void showPayNymQR(ActionEvent event) {
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(soroban.getPaymentCode().toString());
+        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(masterWallet.getPaymentCode().toString());
         qrDisplayDialog.showAndWait();
     }
 

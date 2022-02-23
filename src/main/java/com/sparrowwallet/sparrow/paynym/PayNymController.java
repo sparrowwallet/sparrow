@@ -1,13 +1,10 @@
-package com.sparrowwallet.sparrow.soroban;
+package com.sparrowwallet.sparrow.paynym;
 
 import com.google.common.eventbus.Subscribe;
-import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.bip47.SecretPoint;
 import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.crypto.EncryptionType;
-import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
-import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
@@ -38,11 +35,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
-public class PayNymController extends SorobanController {
+public class PayNymController {
     private static final Logger log = LoggerFactory.getLogger(PayNymController.class);
+
+    public static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
 
     private static final long MINIMUM_P2PKH_OUTPUT_SATS = 546L;
 
@@ -97,7 +97,7 @@ public class PayNymController extends SorobanController {
 
         Wallet masterWallet = getMasterWallet();
         if(masterWallet.hasPaymentCode()) {
-            paymentCode.setPaymentCode(new PaymentCode(masterWallet.getPaymentCode().toString()));
+            paymentCode.setPaymentCode(masterWallet.getPaymentCode());
         }
 
         findNymProperty.addListener((observable, oldValue, nymIdentifier) -> {
@@ -166,13 +166,12 @@ public class PayNymController extends SorobanController {
     }
 
     private void refresh() {
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         if(!getMasterWallet().hasPaymentCode()) {
             throw new IllegalStateException("Payment code is not present");
         }
         retrievePayNymProgress.setVisible(true);
 
-        soroban.getPayNym(getMasterWallet().getPaymentCode().toString()).subscribe(payNym -> {
+        AppServices.getPayNymService().getPayNym(getMasterWallet().getPaymentCode().toString()).subscribe(payNym -> {
             retrievePayNymProgress.setVisible(false);
             walletPayNym = payNym;
             payNymName.setText(payNym.nymName());
@@ -219,8 +218,7 @@ public class PayNymController extends SorobanController {
             followingList.setItems(FXCollections.observableList(new ArrayList<>()));
             findPayNym.setVisible(true);
 
-            Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-            soroban.getPayNym(nymIdentifier).subscribe(searchedPayNym -> {
+            AppServices.getPayNymService().getPayNym(nymIdentifier).subscribe(searchedPayNym -> {
                 findPayNym.setVisible(false);
                 List<PayNym> searchList = new ArrayList<>();
                 searchList.add(searchedPayNym);
@@ -233,7 +231,6 @@ public class PayNymController extends SorobanController {
     }
 
     public void showQR(ActionEvent event) {
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(getMasterWallet().getPaymentCode().toString());
         qrDisplayDialog.showAndWait();
     }
@@ -253,97 +250,36 @@ public class PayNymController extends SorobanController {
 
     public void retrievePayNym(ActionEvent event) {
         Config.get().setUsePayNym(true);
-        makeAuthenticatedCall(null);
-    }
-
-    public void followPayNym(PaymentCode paymentCode) {
-        makeAuthenticatedCall(paymentCode);
-    }
-
-    private void makeAuthenticatedCall(PaymentCode contact) {
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        if(soroban.getHdWallet() == null) {
-            Wallet wallet = getMasterWallet();
-            if(wallet.isEncrypted()) {
-                Wallet copy = wallet.copy();
-                WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
-                Optional<SecureString> password = dlg.showAndWait();
-                if(password.isPresent()) {
-                    Storage storage = AppServices.get().getOpenWallets().get(wallet);
-                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
-                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
-                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                        ECKey encryptionFullKey = keyDerivationService.getValue();
-                        Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                        copy.decrypt(key);
-
-                        try {
-                            soroban.setHDWallet(copy);
-                            makeAuthenticatedCall(soroban, contact);
-                        } finally {
-                            key.clear();
-                            encryptionFullKey.clear();
-                            password.get().clear();
-                        }
-                    });
-                    keyDerivationService.setOnFailed(workerStateEvent -> {
-                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
-                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
-                            Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
-                            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                                Platform.runLater(() -> makeAuthenticatedCall(contact));
-                            }
-                        } else {
-                            log.error("Error deriving wallet key", keyDerivationService.getException());
-                        }
-                    });
-                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
-                    keyDerivationService.start();
-                }
-            } else {
-                soroban.setHDWallet(wallet);
-                makeAuthenticatedCall(soroban, contact);
-            }
-        } else {
-            makeAuthenticatedCall(soroban, contact);
-        }
-    }
-
-    private void makeAuthenticatedCall(Soroban soroban, PaymentCode contact) {
-        if(contact != null) {
-            followPayNym(soroban, contact);
-        } else {
-            retrievePayNym(soroban);
-        }
-    }
-
-    private void retrievePayNym(Soroban soroban) {
-        soroban.createPayNym().subscribe(createMap -> {
+        PayNymService payNymService = AppServices.getPayNymService();
+        Wallet masterWallet = getMasterWallet();
+        payNymService.createPayNym(masterWallet).subscribe(createMap -> {
             payNymName.setText((String)createMap.get("nymName"));
-            payNymAvatar.setPaymentCode(new PaymentCode(getMasterWallet().getPaymentCode().toString()));
+            payNymAvatar.setPaymentCode(masterWallet.getPaymentCode());
             payNymName.setVisible(true);
 
-            claimPayNym(soroban, createMap, getMasterWallet().getScriptType() != ScriptType.P2PKH);
+            payNymService.claimPayNym(masterWallet, createMap, getMasterWallet().getScriptType() != ScriptType.P2PKH);
             refresh();
         }, error -> {
             log.error("Error retrieving PayNym", error);
             Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
             if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                retrievePayNym(soroban);
+                retrievePayNym(event);
             }
         });
     }
 
-    private void followPayNym(Soroban soroban, PaymentCode contact) {
-        soroban.getAuthToken(new HashMap<>()).subscribe(authToken -> {
-            String signature = soroban.getSignature(authToken);
-            soroban.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
+    public void followPayNym(PaymentCode contact) {
+        PayNymService payNymService = AppServices.getPayNymService();
+        Wallet masterWallet = getMasterWallet();
+        payNymService.getAuthToken(masterWallet, new HashMap<>()).subscribe(authToken -> {
+            String signature = payNymService.getSignature(masterWallet, authToken);
+            payNymService.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
                 refresh();
             }, error -> {
                 log.error("Could not follow payment code", error);
                 Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not follow payment code. Try again?", ButtonType.CANCEL, ButtonType.OK);
                 if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                    followPayNym(soroban, contact);
+                    followPayNym(contact);
                 } else {
                     followingList.refresh();
                 }
@@ -352,7 +288,7 @@ public class PayNymController extends SorobanController {
             log.error("Could not follow payment code", error);
             Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not follow payment code. Try again?", ButtonType.CANCEL, ButtonType.OK);
             if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                followPayNym(soroban, contact);
+                followPayNym(contact);
             } else {
                 followingList.refresh();
             }

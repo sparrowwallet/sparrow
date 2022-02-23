@@ -28,6 +28,9 @@ import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.paynym.PayNym;
+import com.sparrowwallet.sparrow.paynym.PayNymAddress;
+import com.sparrowwallet.sparrow.paynym.PayNymDialog;
 import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -54,6 +57,7 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+import static com.sparrowwallet.sparrow.paynym.PayNymController.PAYNYM_REGEX;
 import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
 
 public class InitiatorController extends SorobanController {
@@ -200,7 +204,7 @@ public class InitiatorController extends SorobanController {
                 setPayNymFollowers();
             } else if(payNym != null) {
                 counterpartyPayNymName.set(payNym.nymName());
-                counterpartyPaymentCode.set(payNym.paymentCode());
+                counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
                 payNymAvatar.setPaymentCode(payNym.paymentCode());
                 counterparty.setText(payNym.nymName());
                 step1.requestFocus();
@@ -250,12 +254,11 @@ public class InitiatorController extends SorobanController {
                     //Assumed valid payment code
                 } else if(Config.get().isUsePayNym() && PAYNYM_REGEX.matcher(newValue).matches()) {
                     if(!newValue.equals(counterpartyPayNymName.get())) {
-                        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
                         payNymLoading.setVisible(true);
-                        soroban.getPayNym(newValue).subscribe(payNym -> {
+                        AppServices.getPayNymService().getPayNym(newValue).subscribe(payNym -> {
                             payNymLoading.setVisible(false);
                             counterpartyPayNymName.set(payNym.nymName());
-                            counterpartyPaymentCode.set(payNym.paymentCode());
+                            counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
                             payNymAvatar.setPaymentCode(payNym.paymentCode());
                         }, error -> {
                             payNymLoading.setVisible(false);
@@ -265,7 +268,7 @@ public class InitiatorController extends SorobanController {
                 } else {
                     counterpartyPayNymName.set(null);
                     counterpartyPaymentCode.set(null);
-                    payNymAvatar.setPaymentCode(null);
+                    payNymAvatar.clearPaymentCode();
                 }
             }
         });
@@ -284,7 +287,7 @@ public class InitiatorController extends SorobanController {
         if(payment.getAddress() instanceof PayNymAddress payNymAddress) {
             PayNym payNym = payNymAddress.getPayNym();
             counterpartyPayNymName.set(payNym.nymName());
-            counterpartyPaymentCode.set(payNym.paymentCode());
+            counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
             payNymAvatar.setPaymentCode(payNym.paymentCode());
             counterparty.setText(payNym.nymName());
             counterparty.setEditable(false);
@@ -306,20 +309,18 @@ public class InitiatorController extends SorobanController {
     }
 
     private void setPayNymFollowers() {
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        if(soroban.getPaymentCode() != null) {
-            soroban.getFollowing().subscribe(followerPayNyms -> {
-                findPayNym.setVisible(true);
-                payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
-            }, error -> {
-                if(error.getMessage().endsWith("404")) {
-                    Config.get().setUsePayNym(false);
-                    AppServices.showErrorDialog("Could not retrieve PayNym", "This wallet does not have an associated PayNym or any followers yet. You can retrieve the PayNym using the Find PayNym button.");
-                } else {
-                    log.warn("Could not retrieve followers: ", error);
-                }
-            });
-        }
+        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+        AppServices.getPayNymService().getPayNym(masterWallet.getPaymentCode().toString()).map(PayNym::following).subscribe(followerPayNyms -> {
+            findPayNym.setVisible(true);
+            payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
+        }, error -> {
+            if(error.getMessage().endsWith("404")) {
+                Config.get().setUsePayNym(false);
+                AppServices.showErrorDialog("Could not retrieve PayNym", "This wallet does not have an associated PayNym or any followers yet. You can retrieve the PayNym using the Find PayNym button.");
+            } else {
+                log.warn("Could not retrieve followers: ", error);
+            }
+        });
     }
 
     private void startInitiatorMeetingRequest() {
@@ -376,7 +377,7 @@ public class InitiatorController extends SorobanController {
     private void startInitiatorMeetingRequest(Soroban soroban, Wallet wallet) {
         SparrowCahootsWallet initiatorCahootsWallet = soroban.getCahootsWallet(wallet, (long)walletTransaction.getFeeRate());
 
-        getPaymentCodeCounterparty(soroban).subscribe(paymentCodeCounterparty -> {
+        getPaymentCodeCounterparty().subscribe(paymentCodeCounterparty -> {
             try {
                 SorobanCahootsService sorobanMeetingService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
                 sorobanMeetingService.sendMeetingRequest(paymentCodeCounterparty, cahootsType)
@@ -585,11 +586,11 @@ public class InitiatorController extends SorobanController {
         }
     }
 
-    private Observable<PaymentCode> getPaymentCodeCounterparty(Soroban soroban) {
+    private Observable<PaymentCode> getPaymentCodeCounterparty() {
         if(counterpartyPaymentCode.get() != null) {
             return Observable.just(counterpartyPaymentCode.get());
         } else {
-            return soroban.getPayNym(counterparty.getText()).map(PayNym::paymentCode);
+            return AppServices.getPayNymService().getPayNym(counterparty.getText()).map(payNym -> new PaymentCode(payNym.paymentCode().toString()));
         }
     }
 
@@ -618,7 +619,7 @@ public class InitiatorController extends SorobanController {
         Optional<PayNym> optPayNym = payNymDialog.showAndWait();
         optPayNym.ifPresent(payNym -> {
             counterpartyPayNymName.set(payNym.nymName());
-            counterpartyPaymentCode.set(payNym.paymentCode());
+            counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
             payNymAvatar.setPaymentCode(payNym.paymentCode());
             counterparty.setText(payNym.nymName());
             step1.requestFocus();

@@ -21,37 +21,6 @@ import java.util.stream.Collectors;
 
 public class SorobanController {
     private static final Logger log = LoggerFactory.getLogger(SorobanController.class);
-    protected static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
-
-    protected void claimPayNym(Soroban soroban, Map<String, Object> createMap, boolean segwit) {
-        if(createMap.get("claimed") == Boolean.FALSE) {
-            soroban.getAuthToken(createMap).subscribe(authToken -> {
-                String signature = soroban.getSignature(authToken);
-                soroban.claimPayNym(authToken, signature).subscribe(claimMap -> {
-                    log.debug("Claimed payment code " + claimMap.get("claimed"));
-                    soroban.addPaymentCode(authToken, signature, segwit).subscribe(addMap -> {
-                        log.debug("Added payment code " + addMap);
-                    });
-                }, error -> {
-                    soroban.getAuthToken(new HashMap<>()).subscribe(newAuthToken -> {
-                        String newSignature = soroban.getSignature(newAuthToken);
-                        soroban.claimPayNym(newAuthToken, newSignature).subscribe(claimMap -> {
-                            log.debug("Claimed payment code " + claimMap.get("claimed"));
-                            soroban.addPaymentCode(newAuthToken, newSignature, segwit).subscribe(addMap -> {
-                                log.debug("Added payment code " + addMap);
-                            });
-                        }, newError -> {
-                            log.error("Error claiming PayNym with new authToken", newError);
-                        });
-                    }, newError -> {
-                        log.error("Error retrieving new authToken", newError);
-                    });
-                });
-            }, error -> {
-                log.error("Error retrieving authToken", error);
-            });
-        }
-    }
 
     protected Transaction getTransaction(Cahoots cahoots) throws PSBTParseException {
         if(cahoots.getPSBT() != null) {

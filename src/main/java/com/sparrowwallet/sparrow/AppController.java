@@ -28,7 +28,7 @@ import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.soroban.CounterpartyDialog;
-import com.sparrowwallet.sparrow.soroban.PayNymDialog;
+import com.sparrowwallet.sparrow.paynym.PayNymDialog;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
@@ -55,7 +55,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Node;
-import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -1019,10 +1018,6 @@ public class AppController implements Initializable {
                 whirlpool.setHDWallet(storage.getWalletId(wallet), copy);
                 Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
                 soroban.setHDWallet(copy);
-            } else if(Config.get().isUsePayNym() && SorobanServices.canWalletMix(wallet)) {
-                String walletId = storage.getWalletId(wallet);
-                Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-                soroban.setPaymentCode(copy);
             }
 
             StandardAccount standardAccount = wallet.getStandardAccountType();

@@ -15,8 +15,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.soroban.PayNym;
-import com.sparrowwallet.sparrow.soroban.Soroban;
+import com.sparrowwallet.sparrow.paynym.PayNym;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -1718,9 +1717,8 @@ public class ElectrumServer {
         }
 
         private PayNym getPayNym(PaymentCode paymentCode) {
-            Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
             try {
-                return soroban.getPayNym(paymentCode.toString()).blockingFirst();
+                return AppServices.getPayNymService().getPayNym(paymentCode.toString()).blockingFirst();
             } catch(Exception e) {
                 //ignore
             }

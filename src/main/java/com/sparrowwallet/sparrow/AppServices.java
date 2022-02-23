@@ -18,6 +18,7 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
+import com.sparrowwallet.sparrow.paynym.PayNymService;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
@@ -85,6 +86,8 @@ public class AppServices {
     private final WhirlpoolServices whirlpoolServices = new WhirlpoolServices();
 
     private final SorobanServices sorobanServices = new SorobanServices();
+
+    private static PayNymService payNymService;
 
     private final MainApp application;
 
@@ -230,6 +233,11 @@ public class AppServices {
 
         if(versionCheckService != null) {
             versionCheckService.cancel();
+        }
+
+        if(payNymService != null) {
+            PayNymService.ShutdownService shutdownService = new PayNymService.ShutdownService(payNymService);
+            shutdownService.start();
         }
 
         if(Tor.getDefault() != null) {
@@ -485,6 +493,26 @@ public class AppServices {
 
     public static SorobanServices getSorobanServices() {
         return get().sorobanServices;
+    }
+
+    public static PayNymService getPayNymService() {
+        if(payNymService == null) {
+            HostAndPort torProxy = getTorProxy();
+            payNymService = new PayNymService(torProxy);
+        } else {
+            HostAndPort torProxy = getTorProxy();
+            if(!Objects.equals(payNymService.getTorProxy(), torProxy)) {
+                payNymService.setTorProxy(getTorProxy());
+            }
+        }
+
+        return payNymService;
+    }
+
+    public static HostAndPort getTorProxy() {
+        return AppServices.isTorRunning() ?
+                HostAndPort.fromParts("localhost", TorService.PROXY_PORT) :
+                (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
     }
 
     public static AppController newAppWindow(Stage stage) {

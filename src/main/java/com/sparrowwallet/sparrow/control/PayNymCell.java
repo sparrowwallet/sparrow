@@ -1,8 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.soroban.PayNym;
-import com.sparrowwallet.sparrow.soroban.PayNymController;
+import com.sparrowwallet.sparrow.paynym.PayNym;
+import com.sparrowwallet.sparrow.paynym.PayNymController;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;

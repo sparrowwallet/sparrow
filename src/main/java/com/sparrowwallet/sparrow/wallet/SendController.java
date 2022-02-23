@@ -19,7 +19,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.soroban.InitiatorDialog;
-import com.sparrowwallet.sparrow.soroban.PayNymAddress;
+import com.sparrowwallet.sparrow.paynym.PayNymAddress;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.animation.KeyFrame;

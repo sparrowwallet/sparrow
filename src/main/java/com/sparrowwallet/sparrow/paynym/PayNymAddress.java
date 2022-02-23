@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.soroban;
+package com.sparrowwallet.sparrow.paynym;
 
 import com.sparrowwallet.drongo.address.P2WPKHAddress;
 

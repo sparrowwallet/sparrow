@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.sparrowwallet.sparrow.AppServices.getTorProxy;
+
 public class SorobanServices {
     private static final Logger log = LoggerFactory.getLogger(SorobanServices.class);
 
@@ -49,12 +51,6 @@ public class SorobanServices {
         }
 
         return soroban;
-    }
-
-    private HostAndPort getTorProxy() {
-        return AppServices.isTorRunning() ?
-                HostAndPort.fromParts("localhost", TorService.PROXY_PORT) :
-                (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
     }
 
     public static boolean canWalletMix(Wallet wallet) {

@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.samourai.wallet.bip47.rpc.PaymentCode;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.ObjectProperty;
@@ -73,6 +73,14 @@ public class PayNymAvatar extends StackPane {
 
     public void setPaymentCode(PaymentCode paymentCode) {
         this.paymentCodeProperty.set(paymentCode);
+    }
+
+    public void setPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode) {
+        setPaymentCode(PaymentCode.fromString(paymentCode.toString()));
+    }
+
+    public void clearPaymentCode() {
+        this.paymentCodeProperty.set(null);
     }
 
     private static String getCacheId(PaymentCode paymentCode, double width) {

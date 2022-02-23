@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.soroban;
+package com.sparrowwallet.sparrow.paynym;
 
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
