@@ -44,6 +44,12 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
     }
 
     @Override
+    protected void enterMnemonic(int numWords) {
+        super.enterMnemonic(numWords);
+        setDescription("Enter word list");
+    }
+
+    @Override
     protected List<Node> createRightButtons() {
         discoverButton = new Button("Discover Wallet");
         discoverButton.setDisable(true);

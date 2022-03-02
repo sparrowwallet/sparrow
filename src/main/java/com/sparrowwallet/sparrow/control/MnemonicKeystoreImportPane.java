@@ -44,7 +44,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     private List<String> generatedMnemonicCode;
 
     public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer) {
-        super(importer.getName(), "Seed import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Seed generation or import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
         this.wallet = wallet;
         this.importer = importer;
 

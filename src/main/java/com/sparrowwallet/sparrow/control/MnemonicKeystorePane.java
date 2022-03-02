@@ -55,17 +55,17 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     private void createEnterMnemonicButton() {
         enterMnemonicButton = new SplitMenuButton();
         enterMnemonicButton.setAlignment(Pos.CENTER_RIGHT);
-        enterMnemonicButton.setText("Enter 24 Words");
+        enterMnemonicButton.setText("Use 24 Words");
         defaultWordSizeProperty = new SimpleIntegerProperty(24);
         defaultWordSizeProperty.addListener((observable, oldValue, newValue) -> {
-            enterMnemonicButton.setText("Enter " + newValue + " Words");
+            enterMnemonicButton.setText("Use " + newValue + " Words");
         });
         enterMnemonicButton.setOnAction(event -> {
             enterMnemonic(defaultWordSizeProperty.get());
         });
         int[] numberWords = new int[] {24, 21, 18, 15, 12};
         for(int i = 0; i < numberWords.length; i++) {
-            MenuItem item = new MenuItem("Enter " + numberWords[i] + " Words");
+            MenuItem item = new MenuItem("Use " + numberWords[i] + " Words");
             final int words = numberWords[i];
             item.setOnAction(event -> {
                 defaultWordSizeProperty.set(words);
@@ -77,7 +77,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     }
 
     protected void enterMnemonic(int numWords) {
-        setDescription("Enter mnemonic word list");
+        setDescription("Generate or enter words");
         showHideLink.setVisible(false);
         setContent(getMnemonicWordsEntry(numWords));
         setExpanded(true);
