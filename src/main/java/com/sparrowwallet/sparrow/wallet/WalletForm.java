@@ -34,6 +34,8 @@ public class WalletForm {
     private final Storage storage;
     protected Wallet wallet;
 
+    private final List<WalletForm> nestedWalletForms = new ArrayList<>();
+
     private WalletTransactionsEntry walletTransactionsEntry;
     private WalletUtxosEntry walletUtxosEntry;
     private final List<NodeEntry> accountEntries = new ArrayList<>();
@@ -85,6 +87,10 @@ public class WalletForm {
         throw new UnsupportedOperationException("Only SettingsWalletForm supports setWallet");
     }
 
+    public List<WalletForm> getNestedWalletForms() {
+        return nestedWalletForms;
+    }
+
     public void revert() {
         throw new UnsupportedOperationException("Only SettingsWalletForm supports revert");
     }
@@ -117,10 +123,14 @@ public class WalletForm {
     }
 
     public void refreshHistory(Integer blockHeight) {
-        refreshHistory(blockHeight, null);
+        refreshHistory(blockHeight, null, null);
     }
 
     public void refreshHistory(Integer blockHeight, Set<WalletNode> nodes) {
+        refreshHistory(blockHeight, null, nodes);
+    }
+
+    public void refreshHistory(Integer blockHeight, List<Wallet> filterToWallets, Set<WalletNode> nodes) {
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppServices.isConnected()) {
             if(log.isDebugEnabled()) {
@@ -128,12 +138,12 @@ public class WalletForm {
             }
 
             Set<WalletNode> walletTransactionNodes = getWalletTransactionNodes(nodes);
-            if(walletTransactionNodes == null || !walletTransactionNodes.isEmpty()) {
-                ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, walletTransactionNodes);
+            if(!wallet.isNested() && (walletTransactionNodes == null || !walletTransactionNodes.isEmpty())) {
+                ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, filterToWallets, walletTransactionNodes);
                 historyService.setOnSucceeded(workerStateEvent -> {
                     if(historyService.getValue()) {
                         EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
-                        updateWallet(blockHeight, previousWallet);
+                        updateWallets(blockHeight, previousWallet);
                     }
                 });
                 historyService.setOnFailed(workerStateEvent -> {
@@ -175,8 +185,8 @@ public class WalletForm {
                                 AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
                             }
                         }
-                        EventManager.get().post(new ChildWalletAddedEvent(storage, wallet, addedWallet));
                     }
+                    EventManager.get().post(new ChildWalletsAddedEvent(storage, wallet, addedWallets));
                 });
                 paymentCodesService.setOnFailed(failedEvent -> {
                     log.error("Could not determine payment codes for wallet " + wallet.getFullName(), failedEvent.getSource().getException());
@@ -186,33 +196,51 @@ public class WalletForm {
         }
     }
 
-    private void updateWallet(Integer blockHeight, Wallet previousWallet) {
-        if(blockHeight != null) {
-            wallet.setStoredBlockHeight(blockHeight);
+    private void updateWallets(Integer blockHeight, Wallet previousWallet) {
+        List<WalletNode> nestedHistoryChangedNodes = new ArrayList<>();
+        for(Wallet childWallet : wallet.getChildWallets()) {
+            if(childWallet.isNested()) {
+                Wallet previousChildWallet = previousWallet.getChildWallet(childWallet.getName());
+                if(previousChildWallet != null) {
+                    nestedHistoryChangedNodes.addAll(updateWallet(blockHeight, childWallet, previousChildWallet, Collections.emptyList()));
+                }
+            }
         }
 
-        notifyIfChanged(blockHeight, previousWallet);
+        updateWallet(blockHeight, wallet, previousWallet, nestedHistoryChangedNodes);
     }
 
-    private void notifyIfChanged(Integer blockHeight, Wallet previousWallet) {
+    private List<WalletNode> updateWallet(Integer blockHeight, Wallet currentWallet, Wallet previousWallet, List<WalletNode> nestedHistoryChangedNodes) {
+        if(blockHeight != null) {
+            currentWallet.setStoredBlockHeight(blockHeight);
+        }
+
+        return notifyIfChanged(blockHeight, currentWallet, previousWallet, nestedHistoryChangedNodes);
+    }
+
+    private List<WalletNode> notifyIfChanged(Integer blockHeight, Wallet currentWallet, Wallet previousWallet, List<WalletNode> nestedHistoryChangedNodes) {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
-        historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), wallet.getNode(KeyPurpose.RECEIVE).getChildren()));
-        historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), wallet.getNode(KeyPurpose.CHANGE).getChildren()));
+        historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), currentWallet.getNode(KeyPurpose.RECEIVE).getChildren()));
+        historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), currentWallet.getNode(KeyPurpose.CHANGE).getChildren()));
 
         boolean changed = false;
-        if(!historyChangedNodes.isEmpty()) {
-            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(wallet, storage, historyChangedNodes)));
-            changed = true;
+        if(!historyChangedNodes.isEmpty() || !nestedHistoryChangedNodes.isEmpty()) {
+            Platform.runLater(() -> EventManager.get().post(new WalletHistoryChangedEvent(currentWallet, storage, historyChangedNodes, nestedHistoryChangedNodes)));
+            if(!historyChangedNodes.isEmpty()) {
+                changed = true;
+            }
         }
 
         if(blockHeight != null && !blockHeight.equals(previousWallet.getStoredBlockHeight())) {
-            Platform.runLater(() -> EventManager.get().post(new WalletBlockHeightChangedEvent(wallet, blockHeight)));
+            Platform.runLater(() -> EventManager.get().post(new WalletBlockHeightChangedEvent(currentWallet, blockHeight)));
             changed = true;
         }
 
         if(changed) {
-            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(currentWallet)));
         }
+
+        return historyChangedNodes;
     }
 
     private List<WalletNode> getHistoryChangedNodes(Set<WalletNode> previousNodes, Set<WalletNode> currentNodes) {
@@ -390,7 +418,7 @@ public class WalletForm {
     public void newBlock(NewBlockEvent event) {
         //Check if wallet is valid to avoid saving wallets in initial setup
         if(wallet.isValid()) {
-            updateWallet(event.getHeight(), wallet.copy());
+            updateWallet(event.getHeight(), wallet, wallet.copy(), Collections.emptyList());
         }
     }
 
@@ -401,7 +429,7 @@ public class WalletForm {
 
     @Subscribe
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
-        if(wallet.isValid()) {
+        if(wallet.isValid() && !wallet.isNested()) {
             if(transactionMempoolService != null) {
                 transactionMempoolService.cancel();
             }
@@ -443,7 +471,7 @@ public class WalletForm {
 
     @Subscribe
     public void walletLabelsChanged(WalletEntryLabelsChangedEvent event) {
-        if(event.getWallet() == wallet) {
+        if(event.toThisOrNested(wallet)) {
             Map<Entry, Entry> labelChangedEntries = new LinkedHashMap<>();
             for(Entry entry : event.getEntries()) {
                 if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
@@ -456,8 +484,7 @@ public class WalletForm {
                                             receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? " (change)" : " (received)"));
                                             labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose), entry);
                                         }
-                                        //Avoid recursive changes to address labels - only initial transaction label changes can change address labels
-                                        if((childNode.getLabel() == null || childNode.getLabel().isEmpty()) && event.getSource(entry) == null) {
+                                        if((childNode.getLabel() == null || childNode.getLabel().isEmpty())) {
                                             childNode.setLabel(entry.getLabel());
                                             labelChangedEntries.put(new NodeEntry(event.getWallet(), childNode), entry);
                                         }
@@ -481,7 +508,8 @@ public class WalletForm {
                     }
                     if(entry instanceof HashIndexEntry hashIndexEntry) {
                         BlockTransaction blockTransaction = hashIndexEntry.getBlockTransaction();
-                        if(blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) {
+                        //Avoid recursive changes from hashIndexEntries
+                        if((blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) && event.getSource(entry) == null) {
                             blockTransaction.setLabel(entry.getLabel());
                             labelChangedEntries.put(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()), entry);
                         }
@@ -589,6 +617,9 @@ public class WalletForm {
                     AppServices.clearTransactionHistoryCache(wallet);
                 }
                 EventManager.get().unregister(this);
+                for(WalletForm nestedWalletForm : nestedWalletForms) {
+                    EventManager.get().unregister(nestedWalletForm);
+                }
             }
         }
     }
@@ -597,5 +628,15 @@ public class WalletForm {
     public void hideEmptyUsedAddressesStatusChanged(HideEmptyUsedAddressesStatusEvent event) {
         accountEntries.clear();
         EventManager.get().post(new WalletAddressesStatusEvent(wallet));
+    }
+
+    @Subscribe
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
+        if(event.getWallet() == wallet) {
+            List<Wallet> nestedWallets = event.getChildWallets().stream().filter(Wallet::isNested).collect(Collectors.toList());
+            if(!nestedWallets.isEmpty()) {
+                Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight(), nestedWallets, null));
+            }
+        }
     }
 }

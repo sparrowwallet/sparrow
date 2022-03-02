@@ -67,6 +67,9 @@ public class WalletTransactionsEntry extends Entry {
     }
 
     public void updateTransactions() {
+        Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWallet().getWalletTxos().entrySet().stream()
+                .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey));
+
         List<Entry> current = getWalletTransactions(getWallet()).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
 
@@ -80,8 +83,6 @@ public class WalletTransactionsEntry extends Entry {
 
         calculateBalances(true);
 
-        Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWallet().getWalletTxos().entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey));
         List<Entry> entriesComplete = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).isComplete(walletTxos)).collect(Collectors.toList());
         if(!entriesComplete.isEmpty()) {
             EventManager.get().post(new NewWalletTransactionsEvent(getWallet(), entriesAdded.stream().map(entry -> (TransactionEntry)entry).collect(Collectors.toList())));
@@ -104,6 +105,14 @@ public class WalletTransactionsEntry extends Entry {
             getWalletTransactions(wallet, walletTransactionMap, wallet.getNode(keyPurpose));
         }
 
+        for(Wallet childWallet : wallet.getChildWallets()) {
+            if(childWallet.isNested()) {
+                for(KeyPurpose keyPurpose : childWallet.getWalletKeyPurposes()) {
+                    getWalletTransactions(childWallet, walletTransactionMap, childWallet.getNode(keyPurpose));
+                }
+            }
+        }
+
         List<WalletTransaction> walletTransactions = new ArrayList<>(walletTransactionMap.values());
         Collections.sort(walletTransactions);
         return walletTransactions;
@@ -114,7 +123,7 @@ public class WalletTransactionsEntry extends Entry {
         List<WalletNode> childNodes = new ArrayList<>(purposeNode.getChildren());
         for(WalletNode addressNode : childNodes) {
             for(BlockTransactionHashIndex hashIndex : addressNode.getTransactionOutputs()) {
-                BlockTransaction inputTx = wallet.getTransactions().get(hashIndex.getHash());
+                BlockTransaction inputTx = wallet.getWalletTransaction(hashIndex.getHash());
                 //A null inputTx here means the wallet is still updating - ignore as the WalletHistoryChangedEvent will run this again
                 if(inputTx != null) {
                     WalletTransaction inputWalletTx = walletTransactionMap.get(inputTx);
@@ -125,7 +134,7 @@ public class WalletTransactionsEntry extends Entry {
                     inputWalletTx.incoming.put(hashIndex, keyPurpose);
 
                     if(hashIndex.getSpentBy() != null) {
-                        BlockTransaction outputTx = wallet.getTransactions().get(hashIndex.getSpentBy().getHash());
+                        BlockTransaction outputTx = wallet.getWalletTransaction(hashIndex.getSpentBy().getHash());
                         if(outputTx != null) {
                             WalletTransaction outputWalletTx = walletTransactionMap.get(outputTx);
                             if(outputWalletTx == null) {

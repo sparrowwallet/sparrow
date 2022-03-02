@@ -32,15 +32,15 @@ public class NodeEntry extends Entry implements Comparable<NodeEntry> {
     }
 
     public Address getAddress() {
-        return getWallet().getAddress(node);
+        return node.getAddress();
     }
 
     public Script getOutputScript() {
-        return getWallet().getOutputScript(node);
+        return node.getOutputScript();
     }
 
     public String getOutputDescriptor() {
-        return getWallet().getOutputDescriptor(node);
+        return node.getOutputDescriptor();
     }
 
     public void refreshChildren() {

@@ -669,7 +669,7 @@ public class ElectrumServer {
         Set<BlockTransactionHashIndex> transactionOutputs = new TreeSet<>();
 
         //First check all provided txes that pay to this node
-        Script nodeScript = wallet.getOutputScript(node);
+        Script nodeScript = node.getOutputScript();
         Set<BlockTransactionHash> history = nodeTransactionMap.get(node);
         for(BlockTransactionHash reference : history) {
             BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
@@ -930,7 +930,7 @@ public class ElectrumServer {
     }
 
     public static String getScriptHash(Wallet wallet, WalletNode node) {
-        byte[] hash = Sha256Hash.hash(wallet.getOutputScript(node).getProgram());
+        byte[] hash = Sha256Hash.hash(node.getOutputScript().getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);
     }
@@ -1265,76 +1265,96 @@ public class ElectrumServer {
     }
 
     public static class TransactionHistoryService extends Service<Boolean> {
-        private final Wallet wallet;
-        private final Set<WalletNode> nodes;
+        private final Wallet mainWallet;
+        private final List<Wallet> filterToWallets;
+        private final Set<WalletNode> filterToNodes;
         private final static Map<Wallet, Object> walletSynchronizeLocks = new HashMap<>();
 
         public TransactionHistoryService(Wallet wallet) {
-            this.wallet = wallet;
-            this.nodes = null;
+            this.mainWallet = wallet;
+            this.filterToWallets = null;
+            this.filterToNodes = null;
         }
 
-        public TransactionHistoryService(Wallet wallet, Set<WalletNode> nodes) {
-            this.wallet = wallet;
-            this.nodes = nodes;
+        public TransactionHistoryService(Wallet mainWallet, List<Wallet> filterToWallets, Set<WalletNode> filterToNodes) {
+            this.mainWallet = mainWallet;
+            this.filterToWallets = filterToWallets;
+            this.filterToNodes = filterToNodes;
         }
 
         @Override
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() throws ServerException {
-                    boolean initial = (walletSynchronizeLocks.putIfAbsent(wallet, new Object()) == null);
-                    synchronized(walletSynchronizeLocks.get(wallet)) {
-                        if(initial) {
-                            addCalculatedScriptHashes(wallet);
+                    boolean historyFetched = getTransactionHistory(mainWallet);
+                    for(Wallet childWallet : new ArrayList<>(mainWallet.getChildWallets())) {
+                        if(childWallet.isNested()) {
+                            historyFetched |= getTransactionHistory(childWallet);
                         }
-
-                        if(isConnected()) {
-                            ElectrumServer electrumServer = new ElectrumServer();
-                            Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);
-                            Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));
-                            electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
-                            electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
-
-                            //Add all of the script hashes we have now fetched the history for so we don't need to fetch again until the script hash status changes
-                            Set<WalletNode> updatedNodes = new HashSet<>();
-                            Map<WalletNode, Set<BlockTransactionHashIndex>> walletNodes = wallet.getWalletNodes();
-                            for(WalletNode node : (nodes == null ? walletNodes.keySet() : nodes)) {
-                                String scriptHash = getScriptHash(wallet, node);
-                                String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
-                                if(!Objects.equals(subscribedStatus, retrievedScriptHashes.get(scriptHash))) {
-                                    updatedNodes.add(node);
-                                }
-                                retrievedScriptHashes.put(scriptHash, subscribedStatus);
-                            }
-
-                            //If wallet was not empty, check if all used updated nodes have changed history
-                            if(nodes == null && previousScriptHashes.values().stream().anyMatch(Objects::nonNull)) {
-                                if(!updatedNodes.isEmpty() && updatedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))) {
-                                    //All used nodes on a non-empty wallet have changed history. Abort and trigger a full refresh.
-                                    log.info("All used nodes on a non-empty wallet have changed history. Triggering a full wallet refresh.");
-                                    throw new AllHistoryChangedException();
-                                }
-                            }
-
-                            //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool
-                            if(nodes != null) {
-                                for(WalletNode node : nodes) {
-                                    String scriptHash = getScriptHash(wallet, node);
-                                    if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()) {
-                                        log.debug("Clearing transaction history for " + node);
-                                        node.getTransactionOutputs().clear();
-                                    }
-                                }
-                            }
-
-                            return true;
-                        }
-
-                        return false;
                     }
+
+                    return historyFetched;
                 }
             };
+        }
+
+        private boolean getTransactionHistory(Wallet wallet) throws ServerException {
+            if(filterToWallets != null && !filterToWallets.contains(wallet)) {
+                return false;
+            }
+
+            boolean initial = (walletSynchronizeLocks.putIfAbsent(wallet, new Object()) == null);
+            synchronized(walletSynchronizeLocks.get(wallet)) {
+                if(initial) {
+                    addCalculatedScriptHashes(wallet);
+                }
+
+                if(isConnected()) {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    Set<WalletNode> nodes = (filterToNodes == null ? null : filterToNodes.stream().filter(node -> node.getWallet().equals(wallet)).collect(Collectors.toSet()));
+
+                    Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);
+                    Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));
+                    electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
+                    electrumServer.calculateNodeHistory(wallet, nodeTransactionMap);
+
+                    //Add all of the script hashes we have now fetched the history for so we don't need to fetch again until the script hash status changes
+                    Set<WalletNode> updatedNodes = new HashSet<>();
+                    Map<WalletNode, Set<BlockTransactionHashIndex>> walletNodes = wallet.getWalletNodes();
+                    for(WalletNode node : (nodes == null ? walletNodes.keySet() : nodes)) {
+                        String scriptHash = getScriptHash(wallet, node);
+                        String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
+                        if(!Objects.equals(subscribedStatus, retrievedScriptHashes.get(scriptHash))) {
+                            updatedNodes.add(node);
+                        }
+                        retrievedScriptHashes.put(scriptHash, subscribedStatus);
+                    }
+
+                    //If wallet was not empty, check if all used updated nodes have changed history
+                    if(nodes == null && previousScriptHashes.values().stream().anyMatch(Objects::nonNull)) {
+                        if(!updatedNodes.isEmpty() && updatedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))) {
+                            //All used nodes on a non-empty wallet have changed history. Abort and trigger a full refresh.
+                            log.info("All used nodes on a non-empty wallet have changed history. Triggering a full wallet refresh.");
+                            throw new AllHistoryChangedException();
+                        }
+                    }
+
+                    //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool
+                    if(nodes != null) {
+                        for(WalletNode node : nodes) {
+                            String scriptHash = getScriptHash(wallet, node);
+                            if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()) {
+                                log.debug("Clearing transaction history for " + node);
+                                node.getTransactionOutputs().clear();
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
         }
     }
 
@@ -1696,9 +1716,18 @@ public class ElectrumServer {
                                             Wallet addedWallet = wallet.addChildWallet(paymentCode, childScriptType, output, blkTx);
                                             if(payNym != null) {
                                                 addedWallet.setLabel(payNym.nymName() + " " + childScriptType.getName());
+                                            } else {
+                                                addedWallet.setLabel(paymentCode.toAbbreviatedString() + " " + childScriptType.getName());
                                             }
                                             //Check this is a valid payment code, will throw IllegalArgumentException if not
-                                            addedWallet.getPubKey(new WalletNode(KeyPurpose.RECEIVE, 0));
+                                            try {
+                                                WalletNode receiveNode = new WalletNode(addedWallet, KeyPurpose.RECEIVE, 0);
+                                                receiveNode.getPubKey();
+                                            } catch(IllegalArgumentException e) {
+                                                wallet.getChildWallets().remove(addedWallet);
+                                                throw e;
+                                            }
+
                                             addedWallets.add(addedWallet);
                                         }
                                     }

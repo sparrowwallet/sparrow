@@ -318,7 +318,7 @@ public class WhirlpoolController {
             whirlpool.setScode(mixConfig.getScode());
             whirlpool.setTx0FeeTarget(FEE_TARGETS.get(premixPriority.valueProperty().intValue()));
 
-            Whirlpool.Tx0PreviewsService tx0PreviewsService = new Whirlpool.Tx0PreviewsService(whirlpool, wallet, utxoEntries);
+            Whirlpool.Tx0PreviewsService tx0PreviewsService = new Whirlpool.Tx0PreviewsService(whirlpool, utxoEntries);
             tx0PreviewsService.setOnRunning(workerStateEvent -> {
                 nbOutputsBox.setVisible(true);
                 nbOutputsLoading.setText("Calculating...");

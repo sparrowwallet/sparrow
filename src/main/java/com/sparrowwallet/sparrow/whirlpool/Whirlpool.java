@@ -237,7 +237,7 @@ public class Whirlpool {
     }
 
     public MixProgress getMixProgress(BlockTransactionHashIndex utxo) {
-        if(whirlpoolWalletService.whirlpoolWallet() == null) {
+        if(whirlpoolWalletService.whirlpoolWallet() == null || utxo.getStatus() == Status.FROZEN) {
             return null;
         }
 
@@ -409,7 +409,7 @@ public class Whirlpool {
         return StandardAccount.ACCOUNT_0;
     }
 
-    public static UnspentOutput getUnspentOutput(Wallet wallet, WalletNode node, BlockTransaction blockTransaction, int index) {
+    public static UnspentOutput getUnspentOutput(WalletNode node, BlockTransaction blockTransaction, int index) {
         TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get(index);
 
         UnspentOutput out = new UnspentOutput();
@@ -431,6 +431,7 @@ public class Whirlpool {
             out.confirmations = blockTransaction.getConfirmations(AppServices.getCurrentBlockHeight());
         }
 
+        Wallet wallet = node.getWallet().isBip47() ? node.getWallet().getMasterWallet() : node.getWallet();
         if(wallet.getKeystores().size() != 1) {
             throw new IllegalStateException("Cannot mix outputs from a wallet with multiple keystores");
         }
@@ -558,7 +559,7 @@ public class Whirlpool {
 
     private WalletNode getReceiveNode(MixSuccessEvent e, WalletUtxo walletUtxo) {
         for(WalletNode walletNode : walletUtxo.wallet.getNode(KeyPurpose.RECEIVE).getChildren()) {
-            if(walletUtxo.wallet.getAddress(walletNode).toString().equals(e.getMixProgress().getDestination().getAddress())) {
+            if(walletNode.getAddress().toString().equals(e.getMixProgress().getDestination().getAddress())) {
                 return walletNode;
             }
         }
@@ -638,12 +639,10 @@ public class Whirlpool {
 
     public static class Tx0PreviewsService extends Service<Tx0Previews> {
         private final Whirlpool whirlpool;
-        private final Wallet wallet;
         private final List<UtxoEntry> utxoEntries;
 
-        public Tx0PreviewsService(Whirlpool whirlpool, Wallet wallet, List<UtxoEntry> utxoEntries) {
+        public Tx0PreviewsService(Whirlpool whirlpool, List<UtxoEntry> utxoEntries) {
             this.whirlpool = whirlpool;
-            this.wallet = wallet;
             this.utxoEntries = utxoEntries;
         }
 
@@ -654,7 +653,7 @@ public class Whirlpool {
                     updateProgress(-1, 1);
                     updateMessage("Fetching premix preview...");
 
-                    Collection<UnspentOutput> utxos = utxoEntries.stream().map(utxoEntry -> Whirlpool.getUnspentOutput(wallet, utxoEntry.getNode(), utxoEntry.getBlockTransaction(), (int)utxoEntry.getHashIndex().getIndex())).collect(Collectors.toList());
+                    Collection<UnspentOutput> utxos = utxoEntries.stream().map(utxoEntry -> Whirlpool.getUnspentOutput(utxoEntry.getNode(), utxoEntry.getBlockTransaction(), (int)utxoEntry.getHashIndex().getIndex())).collect(Collectors.toList());
                     return whirlpool.getTx0Previews(utxos);
                 }
             };

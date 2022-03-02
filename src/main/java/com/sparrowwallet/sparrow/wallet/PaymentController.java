@@ -176,7 +176,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 }
             } else if(newValue != null) {
                 WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
-                Address freshAddress = newValue.getAddress(freshNode);
+                Address freshAddress = freshNode.getAddress();
                 address.setText(freshAddress.toString());
                 label.requestFocus();
             }
@@ -326,7 +326,7 @@ public class PaymentController extends WalletFormController implements Initializ
             Wallet recipientBip47Wallet = getWalletForPayNym(payNymProperty.get());
             if(recipientBip47Wallet != null) {
                 WalletNode sendNode = recipientBip47Wallet.getFreshNode(KeyPurpose.SEND);
-                ECKey pubKey = recipientBip47Wallet.getPubKey(sendNode);
+                ECKey pubKey = sendNode.getPubKey();
                 Address address = recipientBip47Wallet.getScriptType().getAddress(pubKey);
                 if(sendController.getPaymentTabs().getTabs().size() > 1 || (getRecipientValueSats() != null && getRecipientValueSats() > getRecipientDustThreshold(address))) {
                     return address;

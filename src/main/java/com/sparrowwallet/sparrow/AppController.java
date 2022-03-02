@@ -1046,12 +1046,14 @@ public class AppController implements Initializable {
             }
         }
 
-        if(wallet.isBip47()) {
-            try {
-                Keystore keystore = wallet.getKeystores().get(0);
-                keystore.setBip47ExtendedPrivateKey(wallet.getMasterWallet().getKeystores().get(0).getBip47ExtendedPrivateKey());
-            } catch(Exception e) {
-                log.error("Cannot prepare BIP47 keystore", e);
+        for(Wallet childWallet : wallet.getChildWallets()) {
+            if(childWallet.isBip47()) {
+                try {
+                    Keystore keystore = childWallet.getKeystores().get(0);
+                    keystore.setBip47ExtendedPrivateKey(wallet.getKeystores().get(0).getBip47ExtendedPrivateKey());
+                } catch(Exception e) {
+                    log.error("Cannot prepare BIP47 keystore", e);
+                }
             }
         }
     }
@@ -1183,7 +1185,9 @@ public class AppController implements Initializable {
                         addWalletTabOrWindow(storage, wallet, false);
 
                         for(Wallet childWallet : wallet.getChildWallets()) {
-                            childWallet.encrypt(key);
+                            if(!childWallet.isNested()) {
+                                childWallet.encrypt(key);
+                            }
                             storage.saveWallet(childWallet);
                             checkWalletNetwork(childWallet);
                             restorePublicKeysFromSeed(storage, childWallet, key);
@@ -1488,14 +1492,20 @@ public class AppController implements Initializable {
                 if(tabData instanceof WalletTabData) {
                     WalletTabData walletTabData = (WalletTabData)tabData;
                     if(walletTabData.getWallet() == wallet.getMasterWallet()) {
-                        TabPane subTabs = (TabPane)walletTab.getContent();
-                        addWalletSubTab(subTabs, storage, wallet);
-                        Tab masterTab = subTabs.getTabs().stream().filter(tab -> ((WalletTabData)tab.getUserData()).getWallet().isMasterWallet()).findFirst().orElse(subTabs.getTabs().get(0));
-                        Label masterLabel = (Label)masterTab.getGraphic();
-                        masterLabel.setText(wallet.getMasterWallet().getLabel() != null ? wallet.getMasterWallet().getLabel() : wallet.getMasterWallet().getAutomaticName());
-                        Platform.runLater(() -> {
-                            setSubTabsVisible(subTabs, true);
-                        });
+                        if(wallet.isNested()) {
+                            WalletForm walletForm = new WalletForm(storage, wallet);
+                            EventManager.get().register(walletForm);
+                            walletTabData.getWalletForm().getNestedWalletForms().add(walletForm);
+                        } else {
+                            TabPane subTabs = (TabPane)walletTab.getContent();
+                            addWalletSubTab(subTabs, storage, wallet);
+                            Tab masterTab = subTabs.getTabs().stream().filter(tab -> ((WalletTabData)tab.getUserData()).getWallet().isMasterWallet()).findFirst().orElse(subTabs.getTabs().get(0));
+                            Label masterLabel = (Label)masterTab.getGraphic();
+                            masterLabel.setText(wallet.getMasterWallet().getLabel() != null ? wallet.getMasterWallet().getLabel() : wallet.getMasterWallet().getAutomaticName());
+                            Platform.runLater(() -> {
+                                setSubTabsVisible(subTabs, true);
+                            });
+                        }
                     }
                 }
             }
@@ -2268,7 +2278,7 @@ public class AppController implements Initializable {
     @Subscribe
     public void walletHistoryStarted(WalletHistoryStartedEvent event) {
         if(AppServices.isConnected() && getOpenWallets().containsKey(event.getWallet())) {
-            if(event.getWalletNodes() == null && event.getWallet().getTransactions().isEmpty()) {
+            if(event.getWalletNodes() == null && !event.getWallet().hasTransactions()) {
                 statusUpdated(new StatusEvent(LOADING_TRANSACTIONS_MESSAGE, 120));
                 if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
                     statusBar.setProgress(-1);
@@ -2483,13 +2493,15 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void childWalletAdded(ChildWalletAddedEvent event) {
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
         Storage storage = AppServices.get().getOpenWallets().get(event.getWallet());
         if(storage == null) {
             throw new IllegalStateException("Cannot find storage for master wallet");
         }
 
-        addWalletTab(storage, event.getChildWallet());
+        for(Wallet childWallet : event.getChildWallets()) {
+            addWalletTab(storage, childWallet);
+        }
     }
 
     @Subscribe

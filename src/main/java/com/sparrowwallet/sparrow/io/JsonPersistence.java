@@ -41,6 +41,7 @@ public class JsonPersistence implements Persistence {
 
         try(Reader reader = new FileReader(storage.getWalletFile())) {
             wallet = gson.fromJson(reader, Wallet.class);
+            wallet.getPurposeNodes().forEach(purposeNode -> purposeNode.setWallet(wallet));
         }
 
         Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, wallet, null);
@@ -63,6 +64,7 @@ public class JsonPersistence implements Persistence {
             encryptionKey = getEncryptionKey(password, fileStream, alreadyDerivedKey);
             Reader reader = new InputStreamReader(new InflaterInputStream(new ECIESInputStream(fileStream, encryptionKey, getEncryptionMagic())), StandardCharsets.UTF_8);
             wallet = gson.fromJson(reader, Wallet.class);
+            wallet.getPurposeNodes().forEach(purposeNode -> purposeNode.setWallet(wallet));
         }
 
         Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, wallet, encryptionKey);
@@ -76,6 +78,7 @@ public class JsonPersistence implements Persistence {
         Map<WalletAndKey, Storage> childWallets = new TreeMap<>();
         for(File childFile : walletFiles) {
             Wallet childWallet = loadWallet(childFile, encryptionKey);
+            childWallet.getPurposeNodes().forEach(purposeNode -> purposeNode.setWallet(childWallet));
             Storage childStorage = new Storage(childFile);
             childStorage.setEncryptionPubKey(encryptionKey == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(encryptionKey));
             childStorage.setKeyDeriver(getKeyDeriver());

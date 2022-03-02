@@ -226,7 +226,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                                 WalletNode purposeNode = wallet.getNode(keyPurpose);
                                 purposeNode.fillToIndex(keyPurposes.get(keyPurpose).size() - 1);
                                 for(WalletNode addressNode : purposeNode.getChildren()) {
-                                    if(address.equals(wallet.getAddress(addressNode))) {
+                                    if(address.equals(addressNode.getAddress())) {
                                         addressNode.setLabel(ew.labels.get(key));
                                     }
                                 }

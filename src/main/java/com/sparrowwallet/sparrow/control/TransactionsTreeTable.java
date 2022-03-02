@@ -71,7 +71,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         }
     }
 
-    public void updateHistory(List<WalletNode> updatedNodes) {
+    public void updateHistory() {
         //Transaction entries should have already been updated using WalletTransactionsEntry.updateHistory, so only a resort required
         sort();
     }

@@ -287,7 +287,7 @@ public class CounterpartyController extends SorobanController {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : walletUtxos.entrySet()) {
-            counterpartyCahootsWallet.addUtxo(wallet, entry.getValue(), wallet.getTransactions().get(entry.getKey().getHash()), (int)entry.getKey().getIndex());
+            counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
         }
 
         try {

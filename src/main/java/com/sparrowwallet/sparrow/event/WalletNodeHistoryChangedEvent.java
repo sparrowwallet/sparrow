@@ -20,10 +20,17 @@ public class WalletNodeHistoryChangedEvent {
     }
 
     public WalletNode getWalletNode(Wallet wallet) {
-        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
-            WalletNode changedNode = getWalletNode(wallet, keyPurpose);
-            if(changedNode != null) {
-                return changedNode;
+        WalletNode changedNode = getNode(wallet);
+        if(changedNode != null) {
+            return changedNode;
+        }
+
+        for(Wallet childWallet : wallet.getChildWallets()) {
+            if(childWallet.isNested()) {
+                changedNode = getNode(childWallet);
+                if(changedNode != null) {
+                    return changedNode;
+                }
             }
         }
 
@@ -32,6 +39,17 @@ public class WalletNodeHistoryChangedEvent {
             WalletNode notificationNode = notificationWallet.getNode(KeyPurpose.NOTIFICATION);
             if(ElectrumServer.getScriptHash(notificationWallet, notificationNode).equals(scriptHash)) {
                 return notificationNode;
+            }
+        }
+
+        return null;
+    }
+
+    private WalletNode getNode(Wallet wallet) {
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+            WalletNode changedNode = getWalletNode(wallet, keyPurpose);
+            if(changedNode != null) {
+                return changedNode;
             }
         }
 

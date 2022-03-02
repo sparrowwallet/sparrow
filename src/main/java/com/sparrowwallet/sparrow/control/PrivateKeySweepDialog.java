@@ -168,13 +168,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
         toWallet.valueProperty().addListener((observable, oldValue, selectedWallet) -> {
             if(selectedWallet != null) {
-                toAddress.setText(selectedWallet.getAddress(selectedWallet.getFreshNode(KeyPurpose.RECEIVE)).toString());
+                toAddress.setText(selectedWallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
             }
         });
 
         keyScriptType.setValue(ScriptType.P2PKH);
         if(wallet != null) {
-            toAddress.setText(wallet.getAddress(wallet.getFreshNode(KeyPurpose.RECEIVE)).toString());
+            toAddress.setText(wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
         }
 
         AppServices.onEscapePressed(dialogPane.getScene(), () -> setResult(null));

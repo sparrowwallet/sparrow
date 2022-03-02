@@ -12,9 +12,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
-import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.net.TorService;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -182,7 +180,7 @@ public class WhirlpoolServices {
         for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
             if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {
                 Wallet childWallet = decryptedWallet.addChildWallet(whirlpoolAccount);
-                EventManager.get().post(new ChildWalletAddedEvent(storage, decryptedWallet, childWallet));
+                EventManager.get().post(new ChildWalletsAddedEvent(storage, decryptedWallet, childWallet));
             }
         }
     }

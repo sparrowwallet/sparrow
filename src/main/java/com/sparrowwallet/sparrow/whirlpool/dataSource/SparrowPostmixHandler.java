@@ -39,7 +39,8 @@ public class SparrowPostmixHandler implements IPostmixHandler {
         int index = Math.max(getIndexHandler().getAndIncrementUnconfirmed(), startIndex);
 
         // address
-        Address address = wallet.getAddress(new WalletNode(keyPurpose, index));
+        WalletNode node = new WalletNode(wallet, keyPurpose, index);
+        Address address = node.getAddress();
         String path = XPubUtil.getInstance().getPath(index, keyPurpose.getPathIndex().num());
 
         log.info("Mixing to external xPub -> receiveAddress=" + address + ", path=" + path);

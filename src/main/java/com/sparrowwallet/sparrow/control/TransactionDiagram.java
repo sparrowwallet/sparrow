@@ -209,7 +209,7 @@ public class TransactionDiagram extends GridPane {
     private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {
         boolean addUserSet = getOptimizationStrategy() == OptimizationStrategy.PRIVACY && SorobanServices.canWalletMix(walletTx.getWallet())
                 && walletTx.getPayments().size() == 1
-                && (walletTx.getPayments().get(0).getAddress().getScriptType() == walletTx.getWallet().getAddress(walletTx.getWallet().getFreshNode(KeyPurpose.RECEIVE)).getScriptType());
+                && (walletTx.getPayments().get(0).getAddress().getScriptType() == walletTx.getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
 
         List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets = new ArrayList<>();
         for(Map<BlockTransactionHashIndex, WalletNode> selectedUtxoSet : walletTx.getSelectedUtxoSets()) {
@@ -406,7 +406,9 @@ public class TransactionDiagram extends GridPane {
                 Long inputValue = null;
                 if(walletNode != null) {
                     inputValue = input.getValue();
-                    tooltip.setText("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? walletTx.getWallet().getFullDisplayName() : "") + " " + walletNode + "\n" + input.getHashAsString() + ":" + input.getIndex() + "\n" + walletTx.getWallet().getAddress(walletNode));
+                    Wallet nodeWallet = walletNode.getWallet();
+                    tooltip.setText("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? nodeWallet.getFullDisplayName() : (nodeWallet.isNested() ? nodeWallet.getDisplayName() : "")) + " " + walletNode + "\n" +
+                            input.getHashAsString() + ":" + input.getIndex() + "\n" + walletNode.getAddress());
                     tooltip.getStyleClass().add("input-label");
 
                     if(input.getLabel() == null || input.getLabel().isEmpty()) {
@@ -648,9 +650,10 @@ public class TransactionDiagram extends GridPane {
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
             Wallet toWallet = getToWallet(payment);
             WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getWallet().getWalletAddresses().get(payment.getAddress()) : null;
+            Wallet toBip47Wallet = getBip47SendWallet(payment);
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "
-                    + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : "external address") : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
+                    + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : (toBip47Wallet == null ? "external address" : toBip47Wallet.getDisplayName())) : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
@@ -849,8 +852,28 @@ public class TransactionDiagram extends GridPane {
 
     private Wallet getToWallet(Payment payment) {
         for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
-            if(openWallet != walletTx.getWallet() && openWallet.isValid() && !openWallet.isBip47() && openWallet.isWalletAddress(payment.getAddress())) {
-                return openWallet;
+            if(openWallet != walletTx.getWallet() && openWallet.isValid()) {
+                WalletNode addressNode = openWallet.getWalletAddresses().get(payment.getAddress());
+                if(addressNode != null) {
+                    return addressNode.getWallet();
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private Wallet getBip47SendWallet(Payment payment) {
+        if(walletTx.getWallet() != null) {
+            for(Wallet childWallet : walletTx.getWallet().getChildWallets()) {
+                if(childWallet.isNested()) {
+                    WalletNode sendNode = childWallet.getNode(KeyPurpose.SEND);
+                    for(WalletNode sendAddressNode : sendNode.getChildren()) {
+                        if(sendAddressNode.getAddress().equals(payment.getAddress())) {
+                            return childWallet;
+                        }
+                    }
+                }
             }
         }
 

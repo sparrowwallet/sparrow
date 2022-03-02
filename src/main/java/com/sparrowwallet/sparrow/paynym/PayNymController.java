@@ -296,7 +296,7 @@ public class PayNymController {
     }
 
     public boolean isLinked(PayNym payNym) {
-        com.sparrowwallet.drongo.bip47.PaymentCode externalPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.fromString(payNym.paymentCode().toString());
+        PaymentCode externalPaymentCode = payNym.paymentCode();
         return getMasterWallet().getChildWallet(externalPaymentCode, payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH) != null;
     }
 
@@ -305,7 +305,7 @@ public class PayNymController {
         Map<BlockTransaction, WalletNode> unlinkedNotifications = new HashMap<>();
         for(PayNym payNym : following) {
             if(!isLinked(payNym)) {
-                com.sparrowwallet.drongo.bip47.PaymentCode externalPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.fromString(payNym.paymentCode().toString());
+                PaymentCode externalPaymentCode = payNym.paymentCode();
                 Map<BlockTransaction, WalletNode> unlinkedNotification = getMasterWallet().getNotificationTransaction(externalPaymentCode);
                 if(!unlinkedNotification.isEmpty()) {
                     unlinkedNotifications.putAll(unlinkedNotification);
@@ -345,27 +345,37 @@ public class PayNymController {
     }
 
     private void addWalletIfNotificationTransactionPresent(Wallet decryptedWallet, Map<BlockTransaction, PayNym> unlinkedPayNyms, Map<BlockTransaction, WalletNode> unlinkedNotifications) {
+        List<Wallet> addedWallets = new ArrayList<>();
         for(BlockTransaction blockTransaction : unlinkedNotifications.keySet()) {
             try {
                 PayNym payNym = unlinkedPayNyms.get(blockTransaction);
-                com.sparrowwallet.drongo.bip47.PaymentCode externalPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.fromString(payNym.paymentCode().toString());
-                ECKey input0Key = decryptedWallet.getKeystores().get(0).getKey(unlinkedNotifications.get(blockTransaction));
-                TransactionOutPoint input0Outpoint = com.sparrowwallet.drongo.bip47.PaymentCode.getDesignatedInput(blockTransaction.getTransaction()).getOutpoint();
+                PaymentCode externalPaymentCode = payNym.paymentCode();
+                WalletNode input0Node = unlinkedNotifications.get(blockTransaction);
+                Keystore keystore = input0Node.getWallet().isNested() ? decryptedWallet.getChildWallet(input0Node.getWallet().getName()).getKeystores().get(0) : decryptedWallet.getKeystores().get(0);
+                ECKey input0Key = keystore.getKey(input0Node);
+                TransactionOutPoint input0Outpoint = PaymentCode.getDesignatedInput(blockTransaction.getTransaction()).getOutpoint();
                 SecretPoint secretPoint = new SecretPoint(input0Key.getPrivKeyBytes(), externalPaymentCode.getNotificationKey().getPubKey());
-                byte[] blindingMask = com.sparrowwallet.drongo.bip47.PaymentCode.getMask(secretPoint.ECDHSecretAsBytes(), input0Outpoint.bitcoinSerialize());
-                byte[] blindedPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.blind(getMasterWallet().getPaymentCode().getPayload(), blindingMask);
-                byte[] opReturnData = com.sparrowwallet.drongo.bip47.PaymentCode.getOpReturnData(blockTransaction.getTransaction());
+                byte[] blindingMask = PaymentCode.getMask(secretPoint.ECDHSecretAsBytes(), input0Outpoint.bitcoinSerialize());
+                byte[] blindedPaymentCode = PaymentCode.blind(getMasterWallet().getPaymentCode().getPayload(), blindingMask);
+                byte[] opReturnData = PaymentCode.getOpReturnData(blockTransaction.getTransaction());
                 if(Arrays.equals(opReturnData, blindedPaymentCode)) {
-                    addChildWallet(payNym, externalPaymentCode);
-                    followingList.refresh();
+                    addedWallets.addAll(addChildWallets(payNym, externalPaymentCode));
                 }
             } catch(Exception e) {
                 log.error("Error adding linked contact from notification transaction", e);
             }
         }
+
+        if(!addedWallets.isEmpty()) {
+            Wallet masterWallet = getMasterWallet();
+            Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
+            EventManager.get().post(new ChildWalletsAddedEvent(storage, masterWallet, addedWallets));
+            followingList.refresh();
+        }
     }
 
-    public void addChildWallet(PayNym payNym, com.sparrowwallet.drongo.bip47.PaymentCode externalPaymentCode) {
+    public List<Wallet> addChildWallets(PayNym payNym, PaymentCode externalPaymentCode) {
+        List<Wallet> addedWallets = new ArrayList<>();
         Wallet masterWallet = getMasterWallet();
         Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
         List<ScriptType> scriptTypes = masterWallet.getScriptType() != ScriptType.P2PKH ? PayNym.getSegwitScriptTypes() : payNym.getScriptTypes();
@@ -380,8 +390,10 @@ public class PayNymController {
                     AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
                 }
             }
-            EventManager.get().post(new ChildWalletAddedEvent(storage, masterWallet, addedWallet));
+            addedWallets.add(addedWallet);
         }
+
+        return addedWallets;
     }
 
     public void linkPayNym(PayNym payNym) {
@@ -412,7 +424,7 @@ public class PayNymController {
         }
 
         final WalletTransaction walletTx = walletTransaction;
-        final com.sparrowwallet.drongo.bip47.PaymentCode paymentCode = masterWallet.getPaymentCode();
+        final PaymentCode paymentCode = masterWallet.getPaymentCode();
         Wallet wallet = walletTransaction.getWallet();
         Storage storage = AppServices.get().getOpenWallets().get(wallet);
         if(wallet.isEncrypted()) {
@@ -439,15 +451,16 @@ public class PayNymController {
         }
     }
 
-    private void broadcastNotificationTransaction(Wallet decryptedWallet, WalletTransaction walletTransaction, com.sparrowwallet.drongo.bip47.PaymentCode paymentCode, PayNym payNym) {
+    private void broadcastNotificationTransaction(Wallet decryptedWallet, WalletTransaction walletTransaction, PaymentCode paymentCode, PayNym payNym) {
         try {
-            com.sparrowwallet.drongo.bip47.PaymentCode externalPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.fromString(payNym.paymentCode().toString());
+            PaymentCode externalPaymentCode = payNym.paymentCode();
             WalletNode input0Node = walletTransaction.getSelectedUtxos().entrySet().iterator().next().getValue();
-            ECKey input0Key = decryptedWallet.getKeystores().get(0).getKey(input0Node);
+            Keystore keystore = input0Node.getWallet().isNested() ? decryptedWallet.getChildWallet(input0Node.getWallet().getName()).getKeystores().get(0) : decryptedWallet.getKeystores().get(0);
+            ECKey input0Key = keystore.getKey(input0Node);
             TransactionOutPoint input0Outpoint = walletTransaction.getTransaction().getInputs().iterator().next().getOutpoint();
             SecretPoint secretPoint = new SecretPoint(input0Key.getPrivKeyBytes(), externalPaymentCode.getNotificationKey().getPubKey());
-            byte[] blindingMask = com.sparrowwallet.drongo.bip47.PaymentCode.getMask(secretPoint.ECDHSecretAsBytes(), input0Outpoint.bitcoinSerialize());
-            byte[] blindedPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.blind(paymentCode.getPayload(), blindingMask);
+            byte[] blindingMask = PaymentCode.getMask(secretPoint.ECDHSecretAsBytes(), input0Outpoint.bitcoinSerialize());
+            byte[] blindedPaymentCode = PaymentCode.blind(paymentCode.getPayload(), blindingMask);
 
             WalletTransaction finalWalletTx = getWalletTransaction(decryptedWallet, payNym, blindedPaymentCode, walletTransaction.getSelectedUtxos().keySet());
             PSBT psbt = finalWalletTx.createPSBT();
@@ -465,11 +478,14 @@ public class PayNymController {
                     Set<String> scriptHashes = transactionMempoolService.getValue();
                     if(!scriptHashes.isEmpty()) {
                         transactionMempoolService.cancel();
-                        addChildWallet(payNym, externalPaymentCode);
+                        List<Wallet> addedWallets = addChildWallets(payNym, externalPaymentCode);
+                        Wallet masterWallet = getMasterWallet();
+                        Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
+                        EventManager.get().post(new ChildWalletsAddedEvent(storage, masterWallet, addedWallets));
                         retrievePayNymProgress.setVisible(false);
                         followingList.refresh();
 
-                        BlockTransaction blockTransaction = walletTransaction.getWallet().getTransactions().get(transaction.getTxId());
+                        BlockTransaction blockTransaction = walletTransaction.getWallet().getWalletTransaction(transaction.getTxId());
                         if(blockTransaction != null && blockTransaction.getLabel() == null) {
                             blockTransaction.setLabel("Link " + payNym.nymName());
                             TransactionEntry transactionEntry = new TransactionEntry(walletTransaction.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap());
@@ -512,7 +528,7 @@ public class PayNymController {
     }
 
     private WalletTransaction getWalletTransaction(Wallet wallet, PayNym payNym, byte[] blindedPaymentCode, Collection<BlockTransactionHashIndex> utxos) throws InsufficientFundsException {
-        com.sparrowwallet.drongo.bip47.PaymentCode externalPaymentCode = com.sparrowwallet.drongo.bip47.PaymentCode.fromString(payNym.paymentCode().toString());
+        PaymentCode externalPaymentCode = payNym.paymentCode();
         Payment payment = new Payment(externalPaymentCode.getNotificationAddress(), "Link " + payNym.nymName(), MINIMUM_P2PKH_OUTPUT_SATS, false);
         List<Payment> payments = List.of(payment);
         List<byte[]> opReturns = List.of(blindedPaymentCode);
@@ -549,7 +565,7 @@ public class PayNymController {
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         List<Entry> changedLabelEntries = new ArrayList<>();
         for(Map.Entry<Sha256Hash, PayNym> notificationTx : notificationTransactions.entrySet()) {
-            BlockTransaction blockTransaction = event.getWallet().getTransactions().get(notificationTx.getKey());
+            BlockTransaction blockTransaction = event.getWallet().getWalletTransaction(notificationTx.getKey());
             if(blockTransaction != null && blockTransaction.getLabel() == null) {
                 blockTransaction.setLabel("Link " + notificationTx.getValue().nymName());
                 changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));

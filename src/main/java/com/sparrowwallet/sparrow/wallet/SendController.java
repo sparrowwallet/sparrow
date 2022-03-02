@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -606,9 +607,9 @@ public class SendController extends WalletFormController implements Initializabl
         OptimizationStrategy optimizationStrategy = (OptimizationStrategy)optimizationToggleGroup.getSelectedToggle().getUserData();
         if(optimizationStrategy == OptimizationStrategy.PRIVACY
                 && payments.size() == 1
-                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType())
+                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType())
                 && !(payments.get(0).getAddress() instanceof PayNymAddress)) {
-            selectors.add(new StonewallUtxoSelector(noInputsFee));
+            selectors.add(new StonewallUtxoSelector(payments.get(0).getAddress().getScriptType(), noInputsFee));
         }
 
         selectors.addAll(List.of(new BnBUtxoSelector(noInputsFee, costOfChange), new KnapsackUtxoSelector(noInputsFee)));
@@ -810,7 +811,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setEffectiveFeeRate(WalletTransaction walletTransaction) {
         List<BlockTransaction> unconfirmedUtxoTxs = walletTransaction.getSelectedUtxos().keySet().stream().filter(ref -> ref.getHeight() <= 0)
-                .map(ref -> getWalletForm().getWallet().getTransactions().get(ref.getHash())).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+                .map(ref -> getWalletForm().getWallet().getWalletTransaction(ref.getHash())).filter(Objects::nonNull).distinct().collect(Collectors.toList());
         if(!unconfirmedUtxoTxs.isEmpty()) {
             long utxoTxFee = unconfirmedUtxoTxs.stream().mapToLong(BlockTransaction::getFee).sum();
             double utxoTxSize = unconfirmedUtxoTxs.stream().mapToDouble(blkTx -> blkTx.getTransaction().getVirtualSize()).sum();
@@ -966,7 +967,7 @@ public class SendController extends WalletFormController implements Initializabl
     private boolean isMixPossible(List<Payment> payments) {
         return (utxoSelectorProperty.get() == null || SorobanServices.canWalletMix(walletForm.getWallet()))
                 && payments.size() == 1
-                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType());
+                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
@@ -1141,12 +1142,14 @@ public class SendController extends WalletFormController implements Initializabl
         //Ensure all child wallets have been saved
         Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
         for(Wallet childWallet : masterWallet.getChildWallets()) {
-            Storage storage = AppServices.get().getOpenWallets().get(childWallet);
-            if(!storage.isPersisted(childWallet)) {
-                try {
-                    storage.saveWallet(childWallet);
-                } catch(Exception e) {
-                    AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
+            if(!childWallet.isNested()) {
+                Storage storage = AppServices.get().getOpenWallets().get(childWallet);
+                if(!storage.isPersisted(childWallet)) {
+                    try {
+                        storage.saveWallet(childWallet);
+                    } catch(Exception e) {
+                        AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
+                    }
                 }
             }
         }
@@ -1201,8 +1204,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        if(event.getWallet().equals(walletForm.getWallet()) && walletForm.getCreatedWalletTransaction() != null) {
-            if(walletForm.getCreatedWalletTransaction().getSelectedUtxos() != null && allSelectedUtxosSpent(event.getHistoryChangedNodes())) {
+        if(event.fromThisOrNested(walletForm.getWallet()) && walletForm.getCreatedWalletTransaction() != null) {
+            if(walletForm.getCreatedWalletTransaction().getSelectedUtxos() != null && allSelectedUtxosSpent(event.getAllHistoryChangedNodes())) {
                 clear(null);
             } else {
                 updateTransaction();
@@ -1232,7 +1235,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
-        if(event.getWallet().equals(walletForm.getWallet())) {
+        if(event.fromThisOrNested(walletForm.getWallet())) {
             updateTransaction();
         }
     }
@@ -1367,7 +1370,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
-        if(event.getWallet().equals(getWalletForm().getWallet())) {
+        if(event.fromThisOrNested(getWalletForm().getWallet())) {
             UtxoSelector utxoSelector = utxoSelectorProperty.get();
             if(utxoSelector instanceof MaxUtxoSelector) {
                 updateTransaction(true);
@@ -1424,12 +1427,13 @@ public class SendController extends WalletFormController implements Initializabl
         public PrivacyAnalysisTooltip(WalletTransaction walletTransaction) {
             List<Payment> payments = walletTransaction.getPayments();
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
+            Map<Address, WalletNode> walletAddresses = getWalletForm().getWallet().getWalletAddresses();
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
             boolean payNymPresent = isPayNymMixOnlyPayment(payments);
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
-            boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getAddress(getWalletForm().wallet.getFreshNode(KeyPurpose.RECEIVE)).getScriptType());
-            boolean addressReuse = userPayments.stream().anyMatch(payment -> getWalletForm().getWallet().getWalletAddresses().get(payment.getAddress()) != null && !getWalletForm().getWallet().getWalletAddresses().get(payment.getAddress()).getTransactionOutputs().isEmpty());
+            boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
+            boolean addressReuse = userPayments.stream().anyMatch(payment -> walletAddresses.get(payment.getAddress()) != null && !walletAddresses.get(payment.getAddress()).getTransactionOutputs().isEmpty());
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {
                 if(payNymPresent) {

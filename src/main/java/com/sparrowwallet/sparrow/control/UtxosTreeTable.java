@@ -99,7 +99,7 @@ public class UtxosTreeTable extends CoinTreeTable {
         }
     }
 
-    public void updateHistory(List<WalletNode> updatedNodes) {
+    public void updateHistory() {
         //Utxo entries should have already been updated, so only a resort required
         if(!getRoot().getChildren().isEmpty()) {
             sort();

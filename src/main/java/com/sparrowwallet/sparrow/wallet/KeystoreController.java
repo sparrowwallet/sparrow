@@ -450,7 +450,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     @Subscribe
-    public void childWalletAdded(ChildWalletAddedEvent event) {
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
         if(event.getMasterWalletId().equals(walletForm.getWalletId())) {
             setInputFieldsDisabled(keystore.getSource() != KeystoreSource.SW_WATCH);
         }

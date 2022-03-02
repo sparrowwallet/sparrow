@@ -20,7 +20,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     private final KeyPurpose keyPurpose;
 
     public HashIndexEntry(Wallet wallet, BlockTransactionHashIndex hashIndex, Type type, KeyPurpose keyPurpose) {
-        super(wallet, hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT, keyPurpose)) : Collections.emptyList());
+        super(wallet.isNested() ? wallet.getMasterWallet() : wallet, hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT, keyPurpose)) : Collections.emptyList());
         this.hashIndex = hashIndex;
         this.type = type;
         this.keyPurpose = keyPurpose;
@@ -46,7 +46,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
     }
 
     public BlockTransaction getBlockTransaction() {
-        return getWallet().getTransactions().get(hashIndex.getHash());
+        return getWallet().getWalletTransaction(hashIndex.getHash());
     }
 
     public String getDescription() {
@@ -88,7 +88,7 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         if (this == o) return true;
         if (!(o instanceof HashIndexEntry)) return false;
         HashIndexEntry that = (HashIndexEntry) o;
-        return getWallet().equals(that.getWallet()) &&
+        return super.equals(that) &&
                 hashIndex.equals(that.hashIndex) &&
                 type == that.type &&
                 keyPurpose == that.keyPurpose;

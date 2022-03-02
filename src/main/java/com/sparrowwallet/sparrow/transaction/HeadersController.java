@@ -406,7 +406,7 @@ public class HeadersController extends TransactionFormController implements Init
         } else {
             Wallet wallet = getWalletFromTransactionInputs();
             if(wallet != null) {
-                feeAmt = calculateFee(wallet.getTransactions());
+                feeAmt = calculateFee(wallet.getWalletTransactions());
             }
         }
 
@@ -565,7 +565,7 @@ public class HeadersController extends TransactionFormController implements Init
             Map<Sha256Hash, BlockTransaction> walletInputTransactions = inputTransactions;
             if(walletInputTransactions == null) {
                 Set<Sha256Hash> refs = headersForm.getTransaction().getInputs().stream().map(txInput -> txInput.getOutpoint().getHash()).collect(Collectors.toSet());
-                walletInputTransactions = new HashMap<>(wallet.getTransactions());
+                walletInputTransactions = wallet.getWalletTransactions();
                 walletInputTransactions.keySet().retainAll(refs);
             }
 
@@ -1092,8 +1092,8 @@ public class HeadersController extends TransactionFormController implements Init
     public void update() {
         BlockTransaction blockTransaction = headersForm.getBlockTransaction();
         Sha256Hash txId = headersForm.getTransaction().getTxId();
-        if(headersForm.getSigningWallet() != null && headersForm.getSigningWallet().getTransactions().containsKey(txId)) {
-            blockTransaction = headersForm.getSigningWallet().getTransactions().get(txId);
+        if(headersForm.getSigningWallet() != null && headersForm.getSigningWallet().getWalletTransaction(txId) != null) {
+            blockTransaction = headersForm.getSigningWallet().getWalletTransaction(txId);
         }
 
         if(blockTransaction != null && AppServices.getCurrentBlockHeight() != null) {
@@ -1341,7 +1341,7 @@ public class HeadersController extends TransactionFormController implements Init
             Sha256Hash txid = headersForm.getTransaction().getTxId();
 
             List<Entry> changedLabelEntries = new ArrayList<>();
-            BlockTransaction blockTransaction = event.getWallet().getTransactions().get(txid);
+            BlockTransaction blockTransaction = event.getWallet().getWalletTransaction(txid);
             if(blockTransaction != null && blockTransaction.getLabel() == null) {
                 blockTransaction.setLabel(headersForm.getName());
                 changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));

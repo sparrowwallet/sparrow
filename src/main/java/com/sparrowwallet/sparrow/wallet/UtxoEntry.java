@@ -52,7 +52,7 @@ public class UtxoEntry extends HashIndexEntry {
     }
 
     public Address getAddress() {
-        return getWallet().getAddress(node);
+        return node.getAddress();
     }
 
     public WalletNode getNode() {
@@ -60,7 +60,7 @@ public class UtxoEntry extends HashIndexEntry {
     }
 
     public String getOutputDescriptor() {
-        return getWallet().getOutputDescriptor(node);
+        return node.getOutputDescriptor();
     }
 
     /**

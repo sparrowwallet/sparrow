@@ -548,7 +548,7 @@ public class SettingsController extends WalletFormController implements Initiali
                             Wallet childWallet = masterWallet.addChildWallet(entry.getKey());
                             childWallet.getKeystores().clear();
                             childWallet.getKeystores().add(entry.getValue());
-                            EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                            EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
                         }
                         saveChildWallets(masterWallet);
                     }
@@ -556,7 +556,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else {
                 for(StandardAccount standardAccount : standardAccounts) {
                     Wallet childWallet = masterWallet.addChildWallet(standardAccount);
-                    EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                    EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
                 }
             }
         }
@@ -568,7 +568,7 @@ public class SettingsController extends WalletFormController implements Initiali
         } finally {
             masterWallet.encrypt(key);
             for(Wallet childWallet : masterWallet.getChildWallets()) {
-                if(!childWallet.isEncrypted()) {
+                if(!childWallet.isNested() && !childWallet.isEncrypted()) {
                     childWallet.encrypt(key);
                 }
             }
@@ -587,7 +587,7 @@ public class SettingsController extends WalletFormController implements Initiali
             WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);
-            EventManager.get().post(new ChildWalletAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+            EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
         }
 
         saveChildWallets(masterWallet);
@@ -595,13 +595,15 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private void saveChildWallets(Wallet masterWallet) {
         for(Wallet childWallet : masterWallet.getChildWallets()) {
-            Storage storage = AppServices.get().getOpenWallets().get(childWallet);
-            if(!storage.isPersisted(childWallet)) {
-                try {
-                    storage.saveWallet(childWallet);
-                } catch(Exception e) {
-                    log.error("Error saving wallet", e);
-                    AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
+            if(!childWallet.isNested()) {
+                Storage storage = AppServices.get().getOpenWallets().get(childWallet);
+                if(!storage.isPersisted(childWallet)) {
+                    try {
+                        storage.saveWallet(childWallet);
+                    } catch(Exception e) {
+                        log.error("Error saving wallet", e);
+                        AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
+                    }
                 }
             }
         }
@@ -679,7 +681,7 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     @Subscribe
-    public void childWalletAdded(ChildWalletAddedEvent event) {
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
         if(event.getMasterWalletId().equals(walletForm.getWalletId())) {
             setInputFieldsDisabled(true);
         }
@@ -701,7 +703,7 @@ public class SettingsController extends WalletFormController implements Initiali
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_SET;
         }
 
-        if(!changePassword && ((SettingsWalletForm)walletForm).isAddressChange() && !walletForm.getWallet().getTransactions().isEmpty()) {
+        if(!changePassword && ((SettingsWalletForm)walletForm).isAddressChange() && walletForm.getWallet().hasTransactions()) {
             Optional<ButtonType> optResponse = AppServices.showWarningDialog("Change Wallet Addresses?", "This wallet has existing transactions which will be replaced as the wallet addresses will change. Ok to proceed?", ButtonType.CANCEL, ButtonType.OK);
             if(optResponse.isPresent() && optResponse.get().equals(ButtonType.CANCEL)) {
                 revert.setDisable(false);
@@ -764,7 +766,9 @@ public class SettingsController extends WalletFormController implements Initiali
                             walletForm.getStorage().setEncryptionPubKey(null);
                             masterWallet.decrypt(key);
                             for(Wallet childWallet : masterWallet.getChildWallets()) {
-                                childWallet.decrypt(key);
+                                if(!childWallet.isNested()) {
+                                    childWallet.decrypt(key);
+                                }
                             }
                             saveWallet(true, false);
                             return;
@@ -776,7 +780,9 @@ public class SettingsController extends WalletFormController implements Initiali
 
                         masterWallet.encrypt(key);
                         for(Wallet childWallet : masterWallet.getChildWallets()) {
-                            childWallet.encrypt(key);
+                            if(!childWallet.isNested()) {
+                                childWallet.encrypt(key);
+                            }
                         }
                         walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
                         walletForm.saveAndRefresh();

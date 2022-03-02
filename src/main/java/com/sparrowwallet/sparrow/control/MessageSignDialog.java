@@ -89,13 +89,12 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
      * @param buttons The dialog buttons to display. If one contains the text "sign" it will trigger the signing process
      */
     public MessageSignDialog(Wallet wallet, WalletNode walletNode, String title, String msg, ButtonType... buttons) {
+        if(walletNode != null) {
+            checkWalletSigning(walletNode.getWallet());
+        }
+
         if(wallet != null) {
-            if(wallet.getKeystores().size() != 1) {
-                throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
-            }
-            if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
-                throw new IllegalArgumentException("Cannot sign messages using a wallet without private keys or a USB keystore");
-            }
+            checkWalletSigning(wallet);
         }
 
         this.wallet = wallet;
@@ -131,7 +130,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         addressField.getInputs().add(address);
 
         if(walletNode != null) {
-            address.setText(wallet.getAddress(walletNode).toString());
+            address.setText(walletNode.getAddress().toString());
         }
 
         Field messageField = new Field();
@@ -264,6 +263,15 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         });
     }
 
+    private void checkWalletSigning(Wallet wallet) {
+        if(wallet.getKeystores().size() != 1) {
+            throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
+        }
+        if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
+            throw new IllegalArgumentException("Cannot sign messages using a wallet without private keys or a USB keystore");
+        }
+    }
+
     private Address getAddress()throws InvalidAddressException {
         return Address.fromString(address.getText());
     }
@@ -302,14 +310,15 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         //Note we can expect a single keystore due to the check in the constructor
-        if(wallet.getKeystores().get(0).hasPrivateKey()) {
-            if(wallet.isEncrypted()) {
+        Wallet signingWallet = walletNode.getWallet();
+        if(signingWallet.getKeystores().get(0).hasPrivateKey()) {
+            if(signingWallet.isEncrypted()) {
                 EventManager.get().post(new RequestOpenWalletsEvent());
             } else {
-                signUnencryptedKeystore(wallet);
+                signUnencryptedKeystore(signingWallet);
             }
-        } else if(wallet.containsSource(KeystoreSource.HW_USB)) {
-            signUsbKeystore(wallet);
+        } else if(signingWallet.containsSource(KeystoreSource.HW_USB)) {
+            signUsbKeystore(signingWallet);
         }
     }
 
@@ -404,7 +413,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+            Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(walletNode.getWallet().copy(), password.get());
             decryptWalletService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                 Wallet decryptedWallet = decryptWalletService.getValue();

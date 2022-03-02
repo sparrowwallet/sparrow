@@ -46,6 +46,16 @@ public abstract class Entry {
 
     public abstract Function getWalletFunction();
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Entry)) return false;
+        Entry entry = (Entry) o;
+        return wallet.equals(entry.wallet)
+                || (wallet.isNested() && entry.wallet.getChildWallets().contains(wallet))
+                || (entry.wallet.isNested() && wallet.getChildWallets().contains(entry.wallet));
+    }
+
     public void updateLabel(Entry entry) {
         if(this.equals(entry)) {
             labelProperty.set(entry.getLabel());

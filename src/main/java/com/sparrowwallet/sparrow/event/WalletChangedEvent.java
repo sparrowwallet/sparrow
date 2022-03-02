@@ -15,4 +15,20 @@ public class WalletChangedEvent {
     public Wallet getWallet() {
         return wallet;
     }
+
+    public boolean fromThisOrNested(Wallet targetWallet) {
+        if(wallet.equals(targetWallet)) {
+            return true;
+        }
+
+        return wallet.isNested() && targetWallet.getChildWallets().contains(wallet);
+    }
+
+    public boolean toThisOrNested(Wallet targetWallet) {
+        if(wallet.equals(targetWallet)) {
+            return true;
+        }
+
+        return targetWallet.isNested() && wallet.getChildWallets().contains(targetWallet);
+    }
 }

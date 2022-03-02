@@ -137,7 +137,7 @@ public class AddressesController extends WalletFormController implements Initial
                 writer.writeRecord(new String[] {"Index", "Payment Address", "Derivation", "Label"});
                 for(WalletNode indexNode : purposeNode.getChildren()) {
                     writer.write(Integer.toString(indexNode.getIndex()));
-                    writer.write(copy.getAddress(indexNode).toString());
+                    writer.write(indexNode.getAddress().toString());
                     writer.write(getDerivationPath(indexNode));
                     Optional<Entry> optLabelEntry = getWalletForm().getNodeEntry(keyPurpose).getChildren().stream()
                             .filter(entry -> ((NodeEntry)entry).getNode().getIndex() == indexNode.getIndex()).findFirst();

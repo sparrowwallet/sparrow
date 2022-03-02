@@ -283,7 +283,7 @@ public class UtxosController extends WalletFormController implements Initializab
                     } finally {
                         wallet.encrypt(key);
                         for(Wallet childWallet : wallet.getChildWallets()) {
-                            if(!childWallet.isEncrypted()) {
+                            if(!childWallet.isNested() && !childWallet.isEncrypted()) {
                                 childWallet.encrypt(key);
                             }
                         }
@@ -340,13 +340,13 @@ public class UtxosController extends WalletFormController implements Initializab
         }
 
         WalletNode badbankNode = badbankWallet.getFreshNode(KeyPurpose.RECEIVE);
-        Payment changePayment = new Payment(badbankWallet.getAddress(badbankNode), "Badbank Change", tx0Preview.getChangeValue(), false);
+        Payment changePayment = new Payment(badbankNode.getAddress(), "Badbank Change", tx0Preview.getChangeValue(), false);
         payments.add(changePayment);
 
         WalletNode premixNode = null;
         for(int i = 0; i < tx0Preview.getNbPremix(); i++) {
             premixNode = premixWallet.getFreshNode(KeyPurpose.RECEIVE, premixNode);
-            Address premixAddress = premixWallet.getAddress(premixNode);
+            Address premixAddress = premixNode.getAddress();
             payments.add(new Payment(premixAddress, "Premix #" + i, tx0Preview.getPremixValue(), false));
         }
 
@@ -509,14 +509,14 @@ public class UtxosController extends WalletFormController implements Initializab
             }
 
             updateFields(walletUtxosEntry);
-            utxosTable.updateHistory(event.getHistoryChangedNodes());
+            utxosTable.updateHistory();
             utxosChart.update(walletUtxosEntry);
         }
     }
 
     @Subscribe
     public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
-        if(event.getWallet().equals(walletForm.getWallet())) {
+        if(event.fromThisOrNested(walletForm.getWallet())) {
             for(Entry entry : event.getEntries()) {
                 utxosTable.updateLabel(entry);
             }
@@ -565,7 +565,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
-        if(event.getWallet().equals(getWalletForm().getWallet())) {
+        if(event.fromThisOrNested(getWalletForm().getWallet())) {
             utxosTable.refresh();
             updateButtons(Config.get().getBitcoinUnit());
         }

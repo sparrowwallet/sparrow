@@ -692,7 +692,7 @@ public class DbPersistence implements Persistence {
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        if(persistsFor(event.getWallet())) {
+        if(persistsFor(event.getWallet()) && !event.getHistoryChangedNodes().isEmpty()) {
             updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).historyNodes.addAll(event.getHistoryChangedNodes()));
         }
     }

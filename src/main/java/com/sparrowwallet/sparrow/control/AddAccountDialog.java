@@ -46,7 +46,9 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         existingIndexes.add(masterWallet.getAccountIndex());
         for(Wallet childWallet : masterWallet.getChildWallets()) {
-            existingIndexes.add(childWallet.getAccountIndex());
+            if(!childWallet.isNested()) {
+                existingIndexes.add(childWallet.getAccountIndex());
+            }
         }
 
         List<StandardAccount> availableAccounts = new ArrayList<>();

@@ -128,7 +128,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 });
                 actionBox.getChildren().add(receiveButton);
 
-                if(canSignMessage(nodeEntry.getWallet())) {
+                if(canSignMessage(nodeEntry.getNode().getWallet())) {
                     Button signMessageButton = new Button("");
                     signMessageButton.setGraphic(getSignMessageGlyph());
                     signMessageButton.setOnAction(event -> {
@@ -277,7 +277,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         WalletNode freshNode = transactionEntry.getWallet().getFreshNode(KeyPurpose.RECEIVE);
         String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
         label += (label.isEmpty() ? "" : " ") + "(CPFP)";
-        Payment payment = new Payment(transactionEntry.getWallet().getAddress(freshNode), label, utxo.getValue(), true);
+        Payment payment = new Payment(freshNode.getAddress(), label, utxo.getValue(), true);
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), List.of(utxo)));
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), blockTransaction.getFee(), false)));
@@ -507,7 +507,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             });
             getItems().add(receiveToAddress);
 
-            if(nodeEntry != null && canSignMessage(nodeEntry.getWallet())) {
+            if(nodeEntry != null && canSignMessage(nodeEntry.getNode().getWallet())) {
                 MenuItem signVerifyMessage = new MenuItem("Sign/Verify Message");
                 signVerifyMessage.setGraphic(getSignMessageGlyph());
                 signVerifyMessage.setOnAction(AE -> {

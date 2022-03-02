@@ -1,15 +1,22 @@
 package com.sparrowwallet.sparrow.whirlpool.dataSource;
 
 import com.google.common.eventbus.Subscribe;
-import com.samourai.wallet.api.backend.MinerFee;
 import com.samourai.wallet.api.backend.MinerFeeTarget;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.api.backend.beans.WalletResponse;
 import com.samourai.wallet.hd.HD_Wallet;
+import com.samourai.whirlpool.client.tx0.Tx0ParamService;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
+import com.samourai.whirlpool.client.wallet.beans.WhirlpoolUtxo;
+import com.samourai.whirlpool.client.wallet.data.chain.ChainSupplier;
 import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersister;
 import com.samourai.whirlpool.client.wallet.data.dataSource.WalletResponseDataSource;
 import com.samourai.whirlpool.client.wallet.data.minerFee.MinerFeeSupplier;
+import com.samourai.whirlpool.client.wallet.data.pool.PoolSupplier;
+import com.samourai.whirlpool.client.wallet.data.utxo.BasicUtxoSupplier;
+import com.samourai.whirlpool.client.wallet.data.utxo.UtxoData;
+import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigSupplier;
+import com.samourai.whirlpool.client.wallet.data.wallet.WalletSupplier;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
@@ -79,8 +86,9 @@ public class SparrowDataSource extends WalletResponseDataSource {
                 continue;
             }
 
-            allTransactions.putAll(wallet.getTransactions());
-            wallet.getTransactions().keySet().forEach(txid -> allTransactionsZpubs.put(txid, zpub));
+            Map<Sha256Hash, BlockTransaction> walletTransactions = wallet.getWalletTransactions();
+            allTransactions.putAll(walletTransactions);
+            walletTransactions.keySet().forEach(txid -> allTransactionsZpubs.put(txid, zpub));
             if(wallet.getStoredBlockHeight() != null) {
                 storedBlockHeight = Math.max(storedBlockHeight, wallet.getStoredBlockHeight());
             }
@@ -93,13 +101,13 @@ public class SparrowDataSource extends WalletResponseDataSource {
             address.account_index = wallet.getMixConfig() != null ? Math.max(receiveIndex, wallet.getMixConfig().getReceiveIndex()) : receiveIndex;
             int changeIndex = wallet.getNode(KeyPurpose.CHANGE).getHighestUsedIndex() == null ? 0 : wallet.getNode(KeyPurpose.CHANGE).getHighestUsedIndex() + 1;
             address.change_index = wallet.getMixConfig() != null ? Math.max(changeIndex, wallet.getMixConfig().getChangeIndex()) : changeIndex;
-            address.n_tx = wallet.getTransactions().size();
+            address.n_tx = walletTransactions.size();
             addresses.add(address);
 
             for(Map.Entry<BlockTransactionHashIndex, WalletNode> utxo : wallet.getWalletUtxos().entrySet()) {
-                BlockTransaction blockTransaction = wallet.getTransactions().get(utxo.getKey().getHash());
+                BlockTransaction blockTransaction = wallet.getWalletTransaction(utxo.getKey().getHash());
                 if(blockTransaction != null && utxo.getKey().getStatus() != Status.FROZEN) {
-                    unspentOutputs.add(Whirlpool.getUnspentOutput(wallet, utxo.getValue(), blockTransaction, (int)utxo.getKey().getIndex()));
+                    unspentOutputs.add(Whirlpool.getUnspentOutput(utxo.getValue(), blockTransaction, (int)utxo.getKey().getIndex()));
                 }
             }
         }
@@ -162,6 +170,50 @@ public class SparrowDataSource extends WalletResponseDataSource {
         }
 
         return walletResponse;
+    }
+
+    @Override
+    protected BasicUtxoSupplier computeUtxoSupplier(WhirlpoolWallet whirlpoolWallet, WalletSupplier walletSupplier, UtxoConfigSupplier utxoConfigSupplier, ChainSupplier chainSupplier, PoolSupplier poolSupplier, Tx0ParamService tx0ParamService) throws Exception {
+        return new BasicUtxoSupplier(
+                walletSupplier,
+                utxoConfigSupplier,
+                chainSupplier,
+                poolSupplier,
+                tx0ParamService) {
+            @Override
+            public void refresh() throws Exception {
+                SparrowDataSource.this.refresh();
+            }
+
+            @Override
+            protected void onUtxoChanges(UtxoData utxoData) {
+                super.onUtxoChanges(utxoData);
+                whirlpoolWallet.onUtxoChanges(utxoData);
+            }
+
+            @Override
+            protected byte[] _getPrivKeyBytes(WhirlpoolUtxo whirlpoolUtxo) {
+                UnspentOutput utxo = whirlpoolUtxo.getUtxo();
+                Wallet wallet = getWallet(utxo.xpub.m);
+                Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
+                WalletNode node = walletUtxos.entrySet().stream()
+                        .filter(entry -> entry.getKey().getHash().equals(Sha256Hash.wrap(utxo.tx_hash)) && entry.getKey().getIndex() == utxo.tx_output_n)
+                        .map(Map.Entry::getValue)
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("Cannot find UTXO " + utxo));
+
+                if(node.getWallet().isBip47()) {
+                    try {
+                        Keystore keystore = node.getWallet().getKeystores().get(0);
+                        return keystore.getKey(node).getPrivKeyBytes();
+                    } catch(Exception e) {
+                        log.error("Error getting private key", e);
+                    }
+                }
+
+                return null;
+            }
+        };
     }
 
     @Override

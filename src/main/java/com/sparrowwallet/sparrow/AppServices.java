@@ -689,6 +689,12 @@ public class AppServices {
 
     public static void clearTransactionHistoryCache(Wallet wallet) {
         ElectrumServer.clearRetrievedScriptHashes(wallet);
+
+        for(Wallet childWallet : wallet.getChildWallets()) {
+            if(childWallet.isNested()) {
+                AppServices.clearTransactionHistoryCache(childWallet);
+            }
+        }
     }
 
     public static boolean isWalletFile(File file) {

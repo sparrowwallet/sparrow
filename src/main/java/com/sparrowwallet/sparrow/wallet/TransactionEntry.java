@@ -28,7 +28,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     private final BlockTransaction blockTransaction;
 
     public TransactionEntry(Wallet wallet, BlockTransaction blockTransaction, Map<BlockTransactionHashIndex, KeyPurpose> inputs, Map<BlockTransactionHashIndex, KeyPurpose> outputs) {
-        super(wallet, blockTransaction.getLabel(), createChildEntries(wallet, inputs, outputs));
+        super(wallet.isNested() ? wallet.getMasterWallet() : wallet, blockTransaction.getLabel(), createChildEntries(wallet, inputs, outputs));
         this.blockTransaction = blockTransaction;
 
         labelProperty().addListener((observable, oldValue, newValue) -> {
@@ -169,7 +169,9 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TransactionEntry that = (TransactionEntry) o;
-        return getWallet().equals(that.getWallet()) && blockTransaction.equals(that.blockTransaction);
+        //Note we check children count only if both are non-zero because we need to match TransactionEntry objects without children for WalletEntryLabelsChangedEvent
+        return super.equals(that) && blockTransaction.equals(that.blockTransaction)
+                && (getChildren().isEmpty() || that.getChildren().isEmpty() || getChildren().size() == that.getChildren().size());
     }
 
     @Override
@@ -244,7 +246,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
     @Subscribe
     public void blockHeightChanged(WalletBlockHeightChangedEvent event) {
-        if(getWallet().equals(event.getWallet())) {
+        if(event.getWallet().equals(getWallet())) {
             setConfirmations(calculateConfirmations());
 
             if(!isFullyConfirming()) {

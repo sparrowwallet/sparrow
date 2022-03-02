@@ -182,7 +182,7 @@ public class TransactionsController extends WalletFormController implements Init
             //Will automatically update transactionsTable transactions and recalculate balances
             walletTransactionsEntry.updateTransactions();
 
-            transactionsTable.updateHistory(event.getHistoryChangedNodes());
+            transactionsTable.updateHistory();
             balance.setValue(walletTransactionsEntry.getBalance());
             mempoolBalance.setValue(walletTransactionsEntry.getMempoolBalance());
             balanceChart.update(walletTransactionsEntry);
@@ -192,7 +192,7 @@ public class TransactionsController extends WalletFormController implements Init
 
     @Subscribe
     public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
-        if(event.getWallet().equals(walletForm.getWallet())) {
+        if(event.fromThisOrNested(walletForm.getWallet())) {
             for(Entry entry : event.getEntries()) {
                 transactionsTable.updateLabel(entry);
             }
@@ -270,7 +270,7 @@ public class TransactionsController extends WalletFormController implements Init
 
     @Subscribe
     public void includeMempoolOutputsChangedEvent(IncludeMempoolOutputsChangedEvent event) {
-        walletHistoryChanged(new WalletHistoryChangedEvent(getWalletForm().getWallet(), getWalletForm().getStorage(), Collections.emptyList()));
+        walletHistoryChanged(new WalletHistoryChangedEvent(getWalletForm().getWallet(), getWalletForm().getStorage(), Collections.emptyList(), Collections.emptyList()));
     }
 
     @Subscribe
