@@ -319,7 +319,8 @@ public class Whirlpool {
             if(!whirlpoolWalletService.whirlpoolWallet().isStarted()) {
                 log.warn("Wallet is not started, but mixingProperty is true");
                 WhirlpoolEventService.getInstance().post(new WalletStopEvent(whirlpoolWalletService.whirlpoolWallet()));
-            } else if(whirlpoolWalletService.whirlpoolWallet().getMixingState().getUtxosMixing().isEmpty()) {
+            } else if(whirlpoolWalletService.whirlpoolWallet().getMixingState().getUtxosMixing().isEmpty() &&
+                    !whirlpoolWalletService.whirlpoolWallet().getUtxoSupplier().findUtxos(WhirlpoolAccount.PREMIX, WhirlpoolAccount.POSTMIX).isEmpty()) {
                 log.warn("No UTXOs mixing, but mixingProperty is true");
                 //Will automatically restart
                 AppServices.getWhirlpoolServices().stopWhirlpool(this, false);

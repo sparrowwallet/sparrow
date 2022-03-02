@@ -33,6 +33,7 @@ import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
+import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -246,12 +247,12 @@ public class SparrowDataSource extends WalletResponseDataSource {
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        refreshWallet(event.getWalletId());
+        refreshWallet(event.getWalletId(), event.getWallet());
     }
 
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
-        refreshWallet(event.getWalletId());
+        refreshWallet(event.getWalletId(), event.getWallet());
     }
 
     @Subscribe
@@ -263,14 +264,19 @@ public class SparrowDataSource extends WalletResponseDataSource {
         }
     }
 
-    private void refreshWallet(String eventWalletId) {
+    private void refreshWallet(String walletId, Wallet wallet) {
         try {
             // match <prefix>:master, :Premix, :Postmix
-            if (eventWalletId.startsWith(walletIdentifierPrefix)) {
-                refresh();
+            if(walletId.startsWith(walletIdentifierPrefix) && (wallet.isWhirlpoolMasterWallet() || wallet.isWhirlpoolChildWallet())) {
+                Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(wallet);
+                if(whirlpool != null && whirlpool.isStarting()) {
+                    Platform.runLater(() -> refreshWallet(walletId, wallet));
+                } else {
+                    refresh();
+                }
             }
         } catch (Exception e) {
-            log.error("", e);
+            log.error("Error refreshing wallet", e);
         }
     }
 }
