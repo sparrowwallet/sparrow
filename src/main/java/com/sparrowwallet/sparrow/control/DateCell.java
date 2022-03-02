@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.util.Duration;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -46,6 +47,7 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 Tooltip tooltip = new Tooltip();
+                tooltip.setShowDelay(Duration.millis(250));
                 int height = utxoEntry.getHashIndex().getHeight();
                 tooltip.setText(height > 0 ? Integer.toString(height) : "Mempool");
                 setTooltip(tooltip);

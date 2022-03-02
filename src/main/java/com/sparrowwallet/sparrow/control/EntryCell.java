@@ -20,6 +20,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
@@ -70,6 +71,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 Tooltip tooltip = new Tooltip();
+                tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(getTooltip(transactionEntry));
                 setTooltip(tooltip);
 
@@ -114,6 +116,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 setText(address.toString());
                 setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
                 Tooltip tooltip = new Tooltip();
+                tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(nodeEntry.getNode().toString());
                 setTooltip(tooltip);
                 getStyleClass().add("address-cell");
@@ -150,6 +153,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 setText(hashIndexEntry.getDescription());
                 setContextMenu(new HashIndexEntryContextMenu(getTreeTableView(), hashIndexEntry));
                 Tooltip tooltip = new Tooltip();
+                tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(hashIndexEntry.getHashIndex().toString());
                 setTooltip(tooltip);
 

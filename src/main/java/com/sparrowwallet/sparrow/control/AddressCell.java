@@ -9,6 +9,7 @@ import javafx.geometry.Pos;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 
 public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
@@ -35,6 +36,7 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
                 setText(address.toString());
                 setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode())));
                 Tooltip tooltip = new Tooltip();
+                tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate()));
                 setTooltip(tooltip);
 

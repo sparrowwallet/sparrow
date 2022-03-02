@@ -10,6 +10,7 @@ import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.layout.Region;
+import javafx.util.Duration;
 import org.controlsfx.tools.Platform;
 
 import java.text.DecimalFormat;
@@ -24,6 +25,7 @@ class CoinCell extends TreeTableCell<Entry, Number> {
     public CoinCell() {
         super();
         tooltip = new Tooltip();
+        tooltip.setShowDelay(Duration.millis(500));
         getStyleClass().add("coin-cell");
         if(Platform.getCurrent() == Platform.OSX) {
             getStyleClass().add("number-field");
