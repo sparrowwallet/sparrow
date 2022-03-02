@@ -77,7 +77,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     }
 
     protected void enterMnemonic(int numWords) {
-        setDescription("Generate or enter words");
+        setDescription("Generate new or enter existing");
         showHideLink.setVisible(false);
         setContent(getMnemonicWordsEntry(numWords));
         setExpanded(true);
