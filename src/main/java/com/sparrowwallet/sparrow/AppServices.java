@@ -734,8 +734,9 @@ public class AppServices {
         }
 
         String[] lines = content.split("\r\n|\r|\n");
-        if(lines.length > 3) {
-            alert.getDialogPane().setPrefHeight(200 + lines.length * 20);
+        if(lines.length > 3 || org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+            double numLines = Arrays.stream(lines).mapToDouble(line -> Math.ceil(TextUtils.computeTextWidth(Font.getDefault(), line, 0) / 300)).sum();
+            alert.getDialogPane().setPrefHeight(200 + numLines * 20);
         }
 
         moveToActiveWindowScreen(alert);
