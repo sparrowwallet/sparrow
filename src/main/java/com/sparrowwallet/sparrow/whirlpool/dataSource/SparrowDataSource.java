@@ -247,12 +247,12 @@ public class SparrowDataSource extends WalletResponseDataSource {
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
-        refreshWallet(event.getWalletId(), event.getWallet());
+        refreshWallet(event.getWalletId(), event.getWallet(), 0);
     }
 
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
-        refreshWallet(event.getWalletId(), event.getWallet());
+        refreshWallet(event.getWalletId(), event.getWallet(), 0);
     }
 
     @Subscribe
@@ -264,13 +264,14 @@ public class SparrowDataSource extends WalletResponseDataSource {
         }
     }
 
-    private void refreshWallet(String walletId, Wallet wallet) {
+    private void refreshWallet(String walletId, Wallet wallet, int i) {
         try {
             // match <prefix>:master, :Premix, :Postmix
             if(walletId.startsWith(walletIdentifierPrefix) && (wallet.isWhirlpoolMasterWallet() || wallet.isWhirlpoolChildWallet())) {
+                //Workaround to avoid refreshing the wallet after it has been opened, but before it has been started
                 Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(wallet);
-                if(whirlpool != null && whirlpool.isStarting()) {
-                    Platform.runLater(() -> refreshWallet(walletId, wallet));
+                if(whirlpool != null && whirlpool.isStarting() && i < 1000) {
+                    Platform.runLater(() -> refreshWallet(walletId, wallet, i+1));
                 } else {
                     refresh();
                 }
