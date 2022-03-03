@@ -93,7 +93,8 @@ public class WalletTransactionsEntry extends Entry {
             for(Entry entry : entriesAdded) {
                 TransactionEntry txEntry = (TransactionEntry)entry;
                 getChildren().remove(txEntry);
-                log.warn("Removing and not notifying incomplete entry " + ((TransactionEntry)entry).getBlockTransaction().getHashAsString() + " value " + txEntry.getValue());
+                log.warn("Removing and not notifying incomplete entry " + ((TransactionEntry)entry).getBlockTransaction().getHashAsString() + " value " + txEntry.getValue()
+                        + " children " + entry.getChildren().stream().map(e -> e.getEntryType() + " " + ((HashIndexEntry)e).getHashIndex()).collect(Collectors.toList()));
             }
         }
     }
