@@ -12,6 +12,8 @@ import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.AllHistoryChangedException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
+import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
+import io.reactivex.subjects.PublishSubject;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -24,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.drongo.wallet.WalletNode.nodeRangesToString;
@@ -33,6 +36,8 @@ public class WalletForm {
 
     private final Storage storage;
     protected Wallet wallet;
+
+    private final PublishSubject<WalletNode> refreshNodesSubject;
 
     private final List<WalletForm> nestedWalletForms = new ArrayList<>();
 
@@ -53,6 +58,16 @@ public class WalletForm {
     public WalletForm(Storage storage, Wallet currentWallet, boolean refreshHistory) {
         this.storage = storage;
         this.wallet = currentWallet;
+
+        refreshNodesSubject = PublishSubject.create();
+        refreshNodesSubject.buffer(1, TimeUnit.SECONDS)
+                .filter(walletNodes -> !walletNodes.isEmpty())
+                .observeOn(JavaFxScheduler.platform())
+                .subscribe(walletNodes -> {
+                    refreshHistory(AppServices.getCurrentBlockHeight(), new HashSet<>(walletNodes));
+                }, exception -> {
+                    log.error("Error refreshing nodes", exception);
+                });
 
         if(refreshHistory && wallet.isValid()) {
             refreshHistory(AppServices.getCurrentBlockHeight());
@@ -437,7 +452,7 @@ public class WalletForm {
             WalletNode walletNode = event.getWalletNode(wallet);
             if(walletNode != null) {
                 log.debug(wallet.getFullName() + " history event for node " + walletNode + " (" + event.getScriptHash() + ")");
-                refreshHistory(AppServices.getCurrentBlockHeight(), Set.of(walletNode));
+                refreshNodesSubject.onNext(walletNode);
             }
         }
     }

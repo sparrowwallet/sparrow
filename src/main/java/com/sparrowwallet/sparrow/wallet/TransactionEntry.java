@@ -113,7 +113,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             BlockTransactionHashIndex ref = walletTxos.get(new HashIndex(txInput.getOutpoint().getHash(), txInput.getOutpoint().getIndex()));
             if(ref != null) {
                 validEntries++;
-                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().equals(ref.getSpentBy()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.INPUT))) {
+                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().toString().equals(ref.getSpentBy().toString()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.INPUT))) {
                     log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " missing child for input " + ref.getSpentBy() + " on output " + ref);
                     return false;
                 }
@@ -123,7 +123,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             BlockTransactionHashIndex ref = walletTxos.get(new HashIndex(txOutput.getHash(), txOutput.getIndex()));
             if(ref != null) {
                 validEntries++;
-                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().equals(ref) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.OUTPUT))) {
+                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().toString().equals(ref.toString()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.OUTPUT))) {
                     log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " missing child for output " + ref);
                     return false;
                 }
