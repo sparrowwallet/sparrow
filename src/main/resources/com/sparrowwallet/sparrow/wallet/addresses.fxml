@@ -33,6 +33,15 @@
                         <Tooltip text="Export receive addresses as CSV" />
                     </tooltip>
                 </Button>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="showPayNymAddresses" onAction="#showPayNymAddresses" text="PayNyms">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ROBOT" fontSize="12" />
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Show PayNym addresses" />
+                    </tooltip>
+                </Button>
             </HBox>
         </top>
         <center>

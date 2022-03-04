@@ -9,9 +9,11 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.paynym.PayNymAddressesDialog;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -34,6 +36,9 @@ public class AddressesController extends WalletFormController implements Initial
     @FXML
     private AddressTreeTable changeTable;
 
+    @FXML
+    private Button showPayNymAddresses;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -43,6 +48,9 @@ public class AddressesController extends WalletFormController implements Initial
     public void initializeView() {
         receiveTable.initialize(getWalletForm().getNodeEntry(KeyPurpose.RECEIVE));
         changeTable.initialize(getWalletForm().getNodeEntry(KeyPurpose.CHANGE));
+
+        showPayNymAddresses.managedProperty().bind(showPayNymAddresses.visibleProperty());
+        showPayNymAddresses.setVisible(getWalletForm().getWallet().getChildWallets().stream().anyMatch(Wallet::isBip47));
     }
 
     @Subscribe
@@ -110,6 +118,13 @@ public class AddressesController extends WalletFormController implements Initial
         }
     }
 
+    @Subscribe
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
+        if(event.getWallet().equals(getWalletForm().getWallet())) {
+            showPayNymAddresses.setVisible(getWalletForm().getWallet().getChildWallets().stream().anyMatch(Wallet::isBip47));
+        }
+    }
+
     public void exportReceiveAddresses(ActionEvent event) {
         exportAddresses(KeyPurpose.RECEIVE);
     }
@@ -150,5 +165,10 @@ public class AddressesController extends WalletFormController implements Initial
                 AppServices.showErrorDialog("Error exporting addresses as CSV", e.getMessage());
             }
         }
+    }
+
+    public void showPayNymAddresses(ActionEvent event) {
+        PayNymAddressesDialog payNymAddressesDialog = new PayNymAddressesDialog(getWalletForm());
+        payNymAddressesDialog.showAndWait();
     }
 }

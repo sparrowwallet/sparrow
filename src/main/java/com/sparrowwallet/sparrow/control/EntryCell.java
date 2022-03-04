@@ -123,15 +123,18 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
 
                 HBox actionBox = new HBox();
                 actionBox.getStyleClass().add("cell-actions");
-                Button receiveButton = new Button("");
-                receiveButton.setGraphic(getReceiveGlyph());
-                receiveButton.setOnAction(event -> {
-                    EventManager.get().post(new ReceiveActionEvent(nodeEntry));
-                    Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
-                });
-                actionBox.getChildren().add(receiveButton);
 
-                if(canSignMessage(nodeEntry.getNode().getWallet())) {
+                if(!nodeEntry.getNode().getWallet().isBip47()) {
+                    Button receiveButton = new Button("");
+                    receiveButton.setGraphic(getReceiveGlyph());
+                    receiveButton.setOnAction(event -> {
+                        EventManager.get().post(new ReceiveActionEvent(nodeEntry));
+                        Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
+                    });
+                    actionBox.getChildren().add(receiveButton);
+                }
+
+                if(canSignMessage(nodeEntry.getNode())) {
                     Button signMessageButton = new Button("");
                     signMessageButton.setGraphic(getSignMessageGlyph());
                     signMessageButton.setOnAction(event -> {
@@ -151,7 +154,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             } else if(entry instanceof HashIndexEntry) {
                 HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                 setText(hashIndexEntry.getDescription());
-                setContextMenu(new HashIndexEntryContextMenu(getTreeTableView(), hashIndexEntry));
+                setContextMenu(getTreeTableView().getStyleClass().contains("bip47") ? null : new HashIndexEntryContextMenu(getTreeTableView(), hashIndexEntry));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(hashIndexEntry.getHashIndex().toString());
@@ -175,7 +178,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     actionBox.getChildren().add(spendUtxoButton);
                 }
 
-                setGraphic(actionBox);
+                setGraphic(getTreeTableView().getStyleClass().contains("bip47") ? null : actionBox);
             }
         }
     }
@@ -287,9 +290,11 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), blockTransaction.getFee(), false)));
     }
 
-    private static boolean canSignMessage(Wallet wallet) {
+    private static boolean canSignMessage(WalletNode walletNode) {
+        Wallet wallet = walletNode.getWallet();
         return wallet.getKeystores().size() == 1 && wallet.getScriptType() != ScriptType.P2TR &&
-                (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB);
+                (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB) &&
+                (!wallet.isBip47() || walletNode.getKeyPurpose() == KeyPurpose.RECEIVE);
     }
 
     private static boolean containsWalletOutputs(TransactionEntry transactionEntry) {
@@ -502,16 +507,18 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
 
     public static class AddressContextMenu extends ContextMenu {
         public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry) {
-            MenuItem receiveToAddress = new MenuItem("Receive To");
-            receiveToAddress.setGraphic(getReceiveGlyph());
-            receiveToAddress.setOnAction(event -> {
-                hide();
-                EventManager.get().post(new ReceiveActionEvent(nodeEntry));
-                Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
-            });
-            getItems().add(receiveToAddress);
+            if(nodeEntry == null || !nodeEntry.getWallet().isBip47()) {
+                MenuItem receiveToAddress = new MenuItem("Receive To");
+                receiveToAddress.setGraphic(getReceiveGlyph());
+                receiveToAddress.setOnAction(event -> {
+                    hide();
+                    EventManager.get().post(new ReceiveActionEvent(nodeEntry));
+                    Platform.runLater(() -> EventManager.get().post(new ReceiveToEvent(nodeEntry)));
+                });
+                getItems().add(receiveToAddress);
+            }
 
-            if(nodeEntry != null && canSignMessage(nodeEntry.getNode().getWallet())) {
+            if(nodeEntry != null && canSignMessage(nodeEntry.getNode())) {
                 MenuItem signVerifyMessage = new MenuItem("Sign/Verify Message");
                 signVerifyMessage.setGraphic(getSignMessageGlyph());
                 signVerifyMessage.setOnAction(AE -> {

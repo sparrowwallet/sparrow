@@ -1351,7 +1351,7 @@ public class HeadersController extends TransactionFormController implements Init
                 for(BlockTransactionHashIndex output : walletNode.getTransactionOutputs()) {
                     if(output.getHash().equals(txid) && output.getLabel() == null) { //If we send to ourselves, usually change
                         String label = outputIndexLabels.containsKey((int)output.getIndex()) ? outputIndexLabels.get((int)output.getIndex()) : headersForm.getName();
-                        output.setLabel(label + (walletNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
+                        output.setLabel(label + (walletNode.getKeyPurpose() == KeyPurpose.CHANGE ? (walletNode.getWallet().isBip47() ? " (sent)" : " (change)") : " (received)"));
                         changedLabelEntries.add(new HashIndexEntry(event.getWallet(), output, HashIndexEntry.Type.OUTPUT, walletNode.getKeyPurpose()));
                     }
                     if(output.getSpentBy() != null && output.getSpentBy().getHash().equals(txid) && output.getSpentBy().getLabel() == null) { //The norm - sending out

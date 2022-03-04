@@ -18,7 +18,7 @@ public class PayNymDialog extends Dialog<PayNym> {
         AppServices.onEscapePressed(dialogPane.getScene(), this::close);
 
         try {
-            FXMLLoader payNymLoader = new FXMLLoader(AppServices.class.getResource("soroban/paynym.fxml"));
+            FXMLLoader payNymLoader = new FXMLLoader(AppServices.class.getResource("paynym/paynym.fxml"));
             dialogPane.setContent(payNymLoader.load());
             PayNymController payNymController = payNymLoader.getController();
             payNymController.initializeView(walletId, selectLinkedOnly);
@@ -30,7 +30,7 @@ public class PayNymDialog extends Dialog<PayNym> {
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
-            dialogPane.getStylesheets().add(AppServices.class.getResource("soroban/paynym.css").toExternalForm());
+            dialogPane.getStylesheets().add(AppServices.class.getResource("paynym/paynym.css").toExternalForm());
 
             final ButtonType selectButtonType = new javafx.scene.control.ButtonType("Select Contact", ButtonBar.ButtonData.APPLY);
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);

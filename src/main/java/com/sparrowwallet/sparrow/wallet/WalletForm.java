@@ -377,6 +377,10 @@ public class WalletForm {
         this.lockedProperty.set(locked);
     }
 
+    public List<NodeEntry> getAccountEntries() {
+        return accountEntries;
+    }
+
     @Subscribe
     public void walletDataChanged(WalletDataChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
@@ -471,7 +475,7 @@ public class WalletForm {
                         }
 
                         if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
-                            receivedRef.setLabel(changedNode.getLabel() + (changedNode.getKeyPurpose() == KeyPurpose.CHANGE ? " (change)" : " (received)"));
+                            receivedRef.setLabel(changedNode.getLabel() + (changedNode.getKeyPurpose() == KeyPurpose.CHANGE ? (changedNode.getWallet().isBip47() ? " (sent)" : " (change)") : " (received)"));
                             changedLabelEntries.add(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, changedNode.getKeyPurpose()));
                         }
                     }
@@ -496,7 +500,7 @@ public class WalletForm {
                                 for(BlockTransactionHashIndex receivedRef : childNode.getTransactionOutputs()) {
                                     if(receivedRef.getHash().equals(transactionEntry.getBlockTransaction().getHash())) {
                                         if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
-                                            receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? " (change)" : " (received)"));
+                                            receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? (event.getWallet().isBip47() ? " (sent)" : " (change)") : " (received)"));
                                             labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose), entry);
                                         }
                                         if((childNode.getLabel() == null || childNode.getLabel().isEmpty())) {

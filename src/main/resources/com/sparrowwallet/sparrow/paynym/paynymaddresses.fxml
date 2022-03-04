@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.AddressTreeTable?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Field?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+<StackPane stylesheets="@../wallet/addresses.css, @../wallet/wallet.css, @paynym.css, @../general.css" styleClass="paynym-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.paynym.PayNymAddressesController">
+    <VBox>
+        <HBox styleClass="title-area">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="PayNym Addresses" styleClass="title-label" />
+            </HBox>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ImageView AnchorPane.rightAnchor="0">
+                <Image url="/image/paynym.png" requestedWidth="50" requestedHeight="50" smooth="false" />
+            </ImageView>
+        </HBox>
+        <BorderPane>
+            <padding>
+                <Insets left="25" right="25" bottom="25" />
+            </padding>
+            <center>
+                <VBox spacing="15">
+                    <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+                        <Fieldset inputGrow="SOMETIMES" text="" styleClass="header">
+                            <Field text="PayNym:">
+                                <ComboBox fx:id="payNymWalletForms" />
+                            </Field>
+                        </Fieldset>
+                    </Form>
+                    <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
+                        <top>
+                            <HBox alignment="CENTER_LEFT">
+                                <Label styleClass="addresses-treetable-label" text="Receive Addresses"/>
+                            </HBox>
+                        </top>
+                        <center>
+                            <AddressTreeTable fx:id="receiveTable" maxHeight="160" styleClass="bip47" />
+                        </center>
+                    </BorderPane>
+                    <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="2">
+                        <top>
+                            <HBox alignment="CENTER_LEFT">
+                                <Label styleClass="addresses-treetable-label" text="Send Addresses"/>
+                            </HBox>
+                        </top>
+                        <center>
+                            <AddressTreeTable fx:id="sendTable" maxHeight="160" styleClass="bip47" />
+                        </center>
+                    </BorderPane>
+                </VBox>
+            </center>
+        </BorderPane>
+    </VBox>
+</StackPane>
