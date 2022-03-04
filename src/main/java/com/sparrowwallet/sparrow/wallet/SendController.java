@@ -392,6 +392,10 @@ public class SendController extends WalletFormController implements Initializabl
 
                 setFeeRate(feeRate);
                 setEffectiveFeeRate(walletTransaction);
+
+                if(walletTransaction.getPayments().stream().anyMatch(Payment::isSendMax)) {
+                    updateOptimizationButtons(getPayments());
+                }
             }
 
             transactionDiagram.update(walletTransaction);
