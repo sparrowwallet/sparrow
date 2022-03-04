@@ -1303,6 +1303,11 @@ public class ElectrumServer {
                 return false;
             }
 
+            Set<WalletNode> nodes = (filterToNodes == null ? null : filterToNodes.stream().filter(node -> node.getWallet().equals(wallet)).collect(Collectors.toSet()));
+            if(filterToNodes != null && nodes.isEmpty()) {
+                return false;
+            }
+
             boolean initial = (walletSynchronizeLocks.putIfAbsent(wallet, new Object()) == null);
             synchronized(walletSynchronizeLocks.get(wallet)) {
                 if(initial) {
@@ -1311,7 +1316,6 @@ public class ElectrumServer {
 
                 if(isConnected()) {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    Set<WalletNode> nodes = (filterToNodes == null ? null : filterToNodes.stream().filter(node -> node.getWallet().equals(wallet)).collect(Collectors.toSet()));
 
                     Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);
                     Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? electrumServer.getHistory(wallet) : electrumServer.getHistory(wallet, nodes));

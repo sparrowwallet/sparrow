@@ -259,12 +259,12 @@ public class WalletForm {
     }
 
     private List<WalletNode> getHistoryChangedNodes(Set<WalletNode> previousNodes, Set<WalletNode> currentNodes) {
-        Map<WalletNode, WalletNode> previousNodeMap = new HashMap<>(previousNodes.size());
-        previousNodes.forEach(walletNode -> previousNodeMap.put(walletNode, walletNode));
+        Map<String, WalletNode> previousNodeMap = new HashMap<>(previousNodes.size());
+        previousNodes.forEach(walletNode -> previousNodeMap.put(walletNode.getDerivationPath(), walletNode));
 
         List<WalletNode> changedNodes = new ArrayList<>();
         for(WalletNode currentNode : currentNodes) {
-            WalletNode previousNode = previousNodeMap.get(currentNode);
+            WalletNode previousNode = previousNodeMap.get(currentNode.getDerivationPath());
             if(previousNode != null) {
                 if(!currentNode.getTransactionOutputs().equals(previousNode.getTransactionOutputs())) {
                     changedNodes.add(currentNode);
@@ -286,7 +286,7 @@ public class WalletForm {
             return null;
         }
 
-        Set<WalletNode> allNodes = new LinkedHashSet<>();
+        Set<WalletNode> allNodes = new LinkedHashSet<>(walletNodes);
         for(WalletNode walletNode : walletNodes) {
             for(Set<WalletNode> nodes : walletTransactionNodes) {
                 if(nodes.contains(walletNode)) {
