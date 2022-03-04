@@ -82,13 +82,14 @@ public class TransactionDiagram extends GridPane {
                     scenePane.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
                 }
 
-                VBox vBox = new VBox(20);
-                vBox.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+                scenePane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
                 if(Config.get().getTheme() == Theme.DARK) {
-                    vBox.getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+                    scenePane.getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
                 }
-                vBox.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
-                vBox.getStylesheets().add(AppServices.class.getResource("wallet/send.css").toExternalForm());
+                scenePane.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
+                scenePane.getStylesheets().add(AppServices.class.getResource("wallet/send.css").toExternalForm());
+
+                VBox vBox = new VBox(20);
                 vBox.setPadding(new Insets(20, 40, 20, 50));
 
                 expandedDiagram = new TransactionDiagram();
