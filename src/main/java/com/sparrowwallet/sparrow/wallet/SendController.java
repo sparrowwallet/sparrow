@@ -400,7 +400,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
-            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(walletTransaction.getPayments()));
+            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(getPayments()));
         });
 
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
