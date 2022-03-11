@@ -392,15 +392,11 @@ public class SendController extends WalletFormController implements Initializabl
 
                 setFeeRate(feeRate);
                 setEffectiveFeeRate(walletTransaction);
-
-                if(walletTransaction.getPayments().stream().anyMatch(Payment::isSendMax)) {
-                    updateOptimizationButtons(getPayments());
-                }
             }
 
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
-            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(getPayments()));
+            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(walletTransaction.getPayments()));
         });
 
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {

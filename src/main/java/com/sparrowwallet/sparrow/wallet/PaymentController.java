@@ -328,7 +328,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 WalletNode sendNode = recipientBip47Wallet.getFreshNode(KeyPurpose.SEND);
                 ECKey pubKey = sendNode.getPubKey();
                 Address address = recipientBip47Wallet.getScriptType().getAddress(pubKey);
-                if(sendController.getPaymentTabs().getTabs().size() > 1 || (getRecipientValueSats() != null && getRecipientValueSats() > getRecipientDustThreshold(address))) {
+                if(sendController.getPaymentTabs().getTabs().size() > 1 || (getRecipientValueSats() != null && getRecipientValueSats() > getRecipientDustThreshold(address)) || maxButton.isSelected()) {
                     return address;
                 }
             }
