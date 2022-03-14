@@ -114,6 +114,10 @@
     -fx-underline: false;
 }
 
+.failure.hyperlink:visited {
+    -fx-text-fill: rgb(202, 18, 67);
+}
+
 .hyperlink:hover:visited {
     -fx-underline: true;
 }

@@ -25,6 +25,7 @@ public class ProgressTimer extends ProgressIndicator {
     }
 
     public void start(EventHandler<ActionEvent> onFinished) {
+        getStyleClass().remove("warn");
         timeline = new Timeline(
                 new KeyFrame(Duration.ZERO, new KeyValue(progressProperty(), 0)),
                 new KeyFrame(Duration.seconds(getSeconds() * 0.8), e -> getStyleClass().add("warn")),

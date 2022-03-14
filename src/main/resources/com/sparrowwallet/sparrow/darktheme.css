@@ -173,6 +173,10 @@
     -fx-text-fill: #e06c75;
 }
 
+.root .failure.hyperlink:visited {
+    -fx-text-fill: #e06c75;
+}
+
 .root .titled-description-pane > .title {
     -fx-background-color: derive(-fx-base, 10%);
     -fx-padding: 0;

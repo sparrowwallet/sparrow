@@ -107,11 +107,11 @@
                             <HBox styleClass="field-box">
                                 <Label text="Mix partner:" styleClass="field-label" />
                                 <Label fx:id="mixingPartner" text="Waiting for mix partner..." styleClass="field-control" />
-                                <Label fx:id="meetingFail" text="Failed to find mix partner." styleClass="failure" graphicTextGap="5">
+                                <Hyperlink fx:id="meetingFail" text="Failed to find mix partner. Try again?" styleClass="failure" graphicTextGap="5">
                                     <graphic>
                                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" styleClass="failure" />
                                     </graphic>
-                                </Label>
+                                </Hyperlink>
                             </HBox>
                             <VBox fx:id="mixDetails" spacing="10">
                                 <HBox styleClass="field-box">

@@ -90,7 +90,7 @@ public class CounterpartyController extends SorobanController {
     private PayNymAvatar mixPartnerAvatar;
 
     @FXML
-    private Label meetingFail;
+    private Hyperlink meetingFail;
 
     @FXML
     private VBox mixDetails;
@@ -187,6 +187,15 @@ public class CounterpartyController extends SorobanController {
         mixingPartner.managedProperty().bind(mixingPartner.visibleProperty());
         meetingFail.managedProperty().bind(meetingFail.visibleProperty());
         meetingFail.visibleProperty().bind(mixingPartner.visibleProperty().not());
+        meetingFail.setOnAction(event -> {
+            step2Desc.setText("Ask your mix partner to initiate the Soroban communication.");
+            mixingPartner.setVisible(true);
+            startCounterpartyMeetingReceive();
+            step2Timer.start(e -> {
+                step2Desc.setText("Mix declined due to timeout.");
+                meetingReceived.set(Boolean.FALSE);
+            });
+        });
 
         mixDetails.managedProperty().bind(mixDetails.visibleProperty());
         mixDetails.setVisible(false);
