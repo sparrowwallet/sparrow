@@ -48,6 +48,12 @@ public class PayNymDialog extends Dialog<PayNym> {
                 dialogPane.getButtonTypes().add(doneButtonType);
             }
 
+            payNymController.closeProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue) {
+                    close();
+                }
+            });
+
             setOnCloseRequest(event -> {
                 EventManager.get().unregister(payNymController);
             });

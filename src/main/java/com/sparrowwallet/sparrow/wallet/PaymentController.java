@@ -18,10 +18,8 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
-import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
-import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
+import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.paynym.PayNym;
@@ -41,7 +39,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.util.StringConverter;
+import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -58,6 +56,8 @@ import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class PaymentController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
+
+    public static final long MINIMUM_P2PKH_OUTPUT_SATS = 546L;
 
     private SendController sendController;
 
@@ -115,7 +115,7 @@ public class PaymentController extends WalletFormController implements Initializ
             Long recipientValueSats = getRecipientValueSats();
             if(recipientValueSats != null) {
                 setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), recipientValueSats);
-                dustAmountProperty.set(recipientValueSats <= getRecipientDustThreshold());
+                dustAmountProperty.set(recipientValueSats < getRecipientDustThreshold());
                 emptyAmountProperty.set(false);
             } else {
                 fiatAmount.setText("");
@@ -134,7 +134,7 @@ public class PaymentController extends WalletFormController implements Initializ
     private static final Wallet payNymWallet = new Wallet() {
         @Override
         public String getFullDisplayName() {
-            return "PayNym...";
+            return "PayNym or Payment code...";
         }
     };
 
@@ -150,17 +150,6 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @Override
     public void initializeView() {
-        openWallets.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(Wallet wallet) {
-                return wallet == null ? "" : wallet.getFullDisplayName() + (wallet == sendController.getWalletForm().getWallet() ? " (Consolidation)" : "");
-            }
-
-            @Override
-            public Wallet fromString(String string) {
-                return null;
-            }
-        });
         updateOpenWallets();
         openWallets.prefWidthProperty().bind(address.widthProperty());
         openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
@@ -168,17 +157,25 @@ public class PaymentController extends WalletFormController implements Initializ
                 boolean selectLinkedOnly = sendController.getPaymentTabs().getTabs().size() > 1 || !SorobanServices.canWalletMix(sendController.getWalletForm().getWallet());
                 PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), true, selectLinkedOnly);
                 Optional<PayNym> optPayNym = payNymDialog.showAndWait();
-                if(optPayNym.isPresent()) {
-                    PayNym payNym = optPayNym.get();
-                    payNymProperty.set(payNym);
-                    address.setText(payNym.nymName());
-                    label.requestFocus();
-                }
+                optPayNym.ifPresent(this::setPayNym);
             } else if(newValue != null) {
                 WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
                 Address freshAddress = freshNode.getAddress();
                 address.setText(freshAddress.toString());
                 label.requestFocus();
+            }
+        });
+        openWallets.setCellFactory(c -> new ListCell<>() {
+            @Override
+            protected void updateItem(Wallet wallet, boolean empty) {
+                super.updateItem(wallet, empty);
+                if(empty || wallet == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(wallet.getFullDisplayName() + (wallet == sendController.getWalletForm().getWallet() ? " (Consolidation)" : ""));
+                    setGraphic(wallet == payNymWallet ? getPayNymGlyph() : null);
+                }
             }
         });
 
@@ -188,6 +185,8 @@ public class PaymentController extends WalletFormController implements Initializ
         });
 
         address.textProperty().addListener((observable, oldValue, newValue) -> {
+            address.leftProperty().set(null);
+
             if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
                 payNymProperty.set(null);
             }
@@ -198,6 +197,32 @@ public class PaymentController extends WalletFormController implements Initializ
                 return;
             } catch(Exception e) {
                 //ignore, not a URI
+            }
+
+            if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
+                try {
+                    PaymentCode paymentCode = new PaymentCode(newValue);
+                    Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
+                    if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
+                        recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
+                    }
+
+                    if(recipientBip47Wallet != null) {
+                        PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
+                        Platform.runLater(() -> setPayNym(payNym));
+                    } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
+                        ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
+                        Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
+                        if(optButton.isPresent() && optButton.get() == previewType) {
+                            Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
+                            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
+                        } else {
+                            Platform.runLater(() -> address.setText(""));
+                        }
+                    }
+                } catch(Exception e) {
+                    //ignore, not a payment code
+                }
             }
 
             revalidateAmount();
@@ -253,6 +278,13 @@ public class PaymentController extends WalletFormController implements Initializ
         addValidation(validationSupport);
     }
 
+    public void setPayNym(PayNym payNym) {
+        payNymProperty.set(payNym);
+        address.setText(payNym.nymName());
+        address.leftProperty().set(getPayNymGlyph());
+        label.requestFocus();
+    }
+
     public void updateMixOnlyStatus() {
         updateMixOnlyStatus(payNymProperty.get());
     }
@@ -296,7 +328,7 @@ public class PaymentController extends WalletFormController implements Initializ
         ));
         validationSupport.registerValidator(amount, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", getRecipientValueSats() != null && sendController.isInsufficientInputs()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() <= getRecipientDustThreshold())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() < getRecipientDustThreshold())
         ));
     }
 
@@ -394,7 +426,7 @@ public class PaymentController extends WalletFormController implements Initializ
     public void revalidateAmount() {
         revalidate(amount, amountListener);
         Long recipientValueSats = getRecipientValueSats();
-        dustAmountProperty.set(recipientValueSats != null && recipientValueSats <= getRecipientDustThreshold());
+        dustAmountProperty.set(recipientValueSats != null && recipientValueSats < getRecipientDustThreshold());
         emptyAmountProperty.set(recipientValueSats == null);
     }
 
@@ -426,7 +458,7 @@ public class PaymentController extends WalletFormController implements Initializ
             Address recipientAddress = getRecipientAddress();
             Long value = sendAll ? Long.valueOf(getRecipientDustThreshold() + 1) : getRecipientValueSats();
 
-            if(!label.getText().isEmpty() && value != null && value > getRecipientDustThreshold()) {
+            if(!label.getText().isEmpty() && value != null && value >= getRecipientDustThreshold()) {
                 Payment payment = new Payment(recipientAddress, label.getText(), value, sendAll);
                 if(address.getUserData() != null) {
                     payment.setType((Payment.Type)address.getUserData());
@@ -509,6 +541,8 @@ public class PaymentController extends WalletFormController implements Initializ
             QRScanDialog.Result result = optionalResult.get();
             if(result.uri != null) {
                 updateFromURI(result.uri);
+            } else if(result.payload != null) {
+                address.setText(result.payload);
             } else if(result.exception != null) {
                 log.error("Error scanning QR", result.exception);
                 showErrorDialog("Error scanning QR", result.exception.getMessage());
@@ -556,6 +590,14 @@ public class PaymentController extends WalletFormController implements Initializ
         amountUnit.setDisable(disable);
         scanQrButton.setDisable(disable);
         addPaymentButton.setDisable(disable);
+        maxButton.setDisable(disable);
+    }
+
+    public static Glyph getPayNymGlyph() {
+        Glyph payNymGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ROBOT);
+        payNymGlyph.getStyleClass().add("paynym-icon");
+        payNymGlyph.setFontSize(12);
+        return payNymGlyph;
     }
 
     @Subscribe

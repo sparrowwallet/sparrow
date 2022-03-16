@@ -3,9 +3,11 @@ package com.sparrowwallet.sparrow.paynym;
 import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 
 public class PayNym {
@@ -73,5 +75,23 @@ public class PayNym {
         }
 
         return new PayNym(paymentCode, nymId, nymName, segwit, following, followers);
+    }
+
+    public static PayNym fromWallet(Wallet bip47Wallet) {
+        if(!bip47Wallet.isBip47()) {
+            throw new IllegalArgumentException("Not a BIP47 wallet");
+        }
+
+        PaymentCode externalPaymentCode = bip47Wallet.getKeystores().get(0).getExternalPaymentCode();
+        String nymName = externalPaymentCode.toAbbreviatedString();
+        if(bip47Wallet.getLabel() != null) {
+            String suffix = " " + bip47Wallet.getScriptType().getName();
+            if(bip47Wallet.getLabel().endsWith(suffix)) {
+                nymName = bip47Wallet.getLabel().substring(0, bip47Wallet.getLabel().length() - suffix.length());
+            }
+        }
+
+        boolean segwit = bip47Wallet.getScriptType() != ScriptType.P2PKH;
+        return new PayNym(externalPaymentCode, null, nymName, segwit, Collections.emptyList(), Collections.emptyList());
     }
 }

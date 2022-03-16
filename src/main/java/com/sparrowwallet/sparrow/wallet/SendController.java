@@ -4,10 +4,16 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
+import com.sparrowwallet.drongo.bip47.SecretPoint;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionOutPoint;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -19,6 +25,7 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
+import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.soroban.InitiatorDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymAddress;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
@@ -26,6 +33,7 @@ import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -143,6 +151,9 @@ public class SendController extends WalletFormController implements Initializabl
     @FXML
     private Button premixButton;
 
+    @FXML
+    private Button notificationButton;
+
     private StackPane tabHeader;
 
     private final BooleanProperty userFeeSet = new SimpleBooleanProperty(false);
@@ -152,6 +163,8 @@ public class SendController extends WalletFormController implements Initializabl
     private final ObjectProperty<UtxoFilter> utxoFilterProperty = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<Pool> whirlpoolProperty = new SimpleObjectProperty<>(null);
+
+    private final ObjectProperty<PaymentCode> paymentCodeProperty = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<WalletTransaction> walletTransactionProperty = new SimpleObjectProperty<>(null);
 
@@ -218,8 +231,9 @@ public class SendController extends WalletFormController implements Initializabl
         }
     };
 
-    private final ChangeListener<Boolean> premixButtonOnlineListener = (observable, oldValue, newValue) -> {
+    private final ChangeListener<Boolean> broadcastButtonsOnlineListener = (observable, oldValue, newValue) -> {
         premixButton.setDisable(!newValue);
+        notificationButton.setDisable(walletTransactionProperty.get() == null || isInsufficientFeeRate() || !newValue);
     };
 
     private ValidationSupport validationSupport;
@@ -397,6 +411,7 @@ public class SendController extends WalletFormController implements Initializabl
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
             createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(walletTransaction.getPayments()));
+            notificationButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || !AppServices.isConnected());
         });
 
         transactionDiagram.sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -430,9 +445,11 @@ public class SendController extends WalletFormController implements Initializabl
 
         createButton.managedProperty().bind(createButton.visibleProperty());
         premixButton.managedProperty().bind(premixButton.visibleProperty());
-        createButton.visibleProperty().bind(premixButton.visibleProperty().not());
+        notificationButton.managedProperty().bind(notificationButton.visibleProperty());
+        createButton.visibleProperty().bind(Bindings.and(premixButton.visibleProperty().not(), notificationButton.visibleProperty().not()));
         premixButton.setVisible(false);
-        AppServices.onlineProperty().addListener(new WeakChangeListener<>(premixButtonOnlineListener));
+        notificationButton.setVisible(false);
+        AppServices.onlineProperty().addListener(new WeakChangeListener<>(broadcastButtonsOnlineListener));
     }
 
     private void initializeTabHeader(int count) {
@@ -582,6 +599,7 @@ public class SendController extends WalletFormController implements Initializabl
                     if(currentWalletTransactionService.isRunning()) {
                         transactionDiagram.update("Selecting UTXOs...");
                         createButton.setDisable(true);
+                        notificationButton.setDisable(true);
                     }
                 });
                 final Timeline timeline = new Timeline(delay);
@@ -1047,13 +1065,17 @@ public class SendController extends WalletFormController implements Initializabl
 
         validationSupport.setErrorDecorationEnabled(false);
 
-        setInputFieldsDisabled(false);
+        setInputFieldsDisabled(false, false);
 
         efficiencyToggle.setDisable(false);
         privacyToggle.setDisable(false);
 
         premixButton.setVisible(false);
+        notificationButton.setVisible(false);
         createButton.setDefaultButton(true);
+
+        whirlpoolProperty.set(null);
+        paymentCodeProperty.set(null);
     }
 
     public UtxoSelector getUtxoSelector() {
@@ -1181,18 +1203,182 @@ public class SendController extends WalletFormController implements Initializabl
         tx0BroadcastService.start();
     }
 
-    private void setInputFieldsDisabled(boolean disable) {
+    public void broadcastNotification(ActionEvent event) {
+        Wallet wallet = getWalletForm().getWallet();
+        Storage storage = AppServices.get().getOpenWallets().get(wallet);
+        if(wallet.isEncrypted()) {
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            Optional<SecureString> password = dlg.showAndWait();
+            if(password.isPresent()) {
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+                decryptWalletService.setOnSucceeded(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
+                    Wallet decryptedWallet = decryptWalletService.getValue();
+                    broadcastNotification(decryptedWallet);
+                    decryptedWallet.clearPrivate();
+                });
+                decryptWalletService.setOnFailed(workerStateEvent -> {
+                    EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
+                    AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                });
+                EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
+                decryptWalletService.start();
+            }
+        } else {
+            broadcastNotification(wallet);
+        }
+    }
+
+    public void broadcastNotification(Wallet decryptedWallet) {
+        try {
+            PaymentCode paymentCode = decryptedWallet.getPaymentCode();
+            PaymentCode externalPaymentCode = paymentCodeProperty.get();
+            WalletTransaction walletTransaction = walletTransactionProperty.get();
+            WalletNode input0Node = walletTransaction.getSelectedUtxos().entrySet().iterator().next().getValue();
+            Keystore keystore = input0Node.getWallet().isNested() ? decryptedWallet.getChildWallet(input0Node.getWallet().getName()).getKeystores().get(0) : decryptedWallet.getKeystores().get(0);
+            ECKey input0Key = keystore.getKey(input0Node);
+            TransactionOutPoint input0Outpoint = walletTransaction.getTransaction().getInputs().iterator().next().getOutpoint();
+            SecretPoint secretPoint = new SecretPoint(input0Key.getPrivKeyBytes(), externalPaymentCode.getNotificationKey().getPubKey());
+            byte[] blindingMask = PaymentCode.getMask(secretPoint.ECDHSecretAsBytes(), input0Outpoint.bitcoinSerialize());
+            byte[] blindedPaymentCode = PaymentCode.blind(paymentCode.getPayload(), blindingMask);
+
+            List<UtxoSelector> utxoSelectors = List.of(new PresetUtxoSelector(walletTransaction.getSelectedUtxos().keySet(), true));
+            Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
+            double feeRate = getUserFeeRate();
+            Integer currentBlockHeight = AppServices.getCurrentBlockHeight();
+            boolean groupByAddress = Config.get().isGroupByAddress();
+            boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
+            boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
+
+            WalletTransaction finalWalletTx = decryptedWallet.createWalletTransaction(utxoSelectors, getUtxoFilters(), walletTransaction.getPayments(), List.of(blindedPaymentCode), excludedChangeNodes, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+            PSBT psbt = finalWalletTx.createPSBT();
+            decryptedWallet.sign(psbt);
+            decryptedWallet.finalise(psbt);
+            Transaction transaction = psbt.extractTransaction();
+
+            ServiceProgressDialog.ProxyWorker proxyWorker = new ServiceProgressDialog.ProxyWorker();
+            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction);
+            broadcastTransactionService.setOnSucceeded(successEvent -> {
+                ElectrumServer.TransactionMempoolService transactionMempoolService = new ElectrumServer.TransactionMempoolService(walletTransaction.getWallet(), transaction.getTxId(), new HashSet<>(walletTransaction.getSelectedUtxos().values()));
+                transactionMempoolService.setDelay(Duration.seconds(2));
+                transactionMempoolService.setPeriod(Duration.seconds(5));
+                transactionMempoolService.setRestartOnFailure(false);
+                transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
+                    Set<String> scriptHashes = transactionMempoolService.getValue();
+                    if(!scriptHashes.isEmpty()) {
+                        transactionMempoolService.cancel();
+                        clear(null);
+                        if(Config.get().isUsePayNym()) {
+                            proxyWorker.setMessage("Finding PayNym...");
+                            AppServices.getPayNymService().getPayNym(externalPaymentCode.toString()).subscribe(payNym -> {
+                                proxyWorker.end();
+                                addChildWallets(walletTransaction.getWallet(), externalPaymentCode, transaction, payNym);
+                            }, error -> {
+                                proxyWorker.end();
+                                addChildWallets(walletTransaction.getWallet(), externalPaymentCode, transaction, null);
+                            });
+                        } else {
+                            proxyWorker.end();
+                            addChildWallets(walletTransaction.getWallet(), externalPaymentCode, transaction, null);
+                        }
+                    }
+
+                    if(transactionMempoolService.getIterationCount() > 5 && transactionMempoolService.isRunning()) {
+                        transactionMempoolService.cancel();
+                        proxyWorker.end();
+                        log.error("Timeout searching for broadcasted notification transaction");
+                        AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not register it in the mempool. It is safe to try broadcasting again.");
+                    }
+                });
+                transactionMempoolService.setOnFailed(mempoolWorkerStateEvent -> {
+                    transactionMempoolService.cancel();
+                    proxyWorker.end();
+                    log.error("Error searching for broadcasted notification transaction", mempoolWorkerStateEvent.getSource().getException());
+                    AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not register it in the mempool. It is safe to try broadcasting again.");
+                });
+                proxyWorker.setMessage("Receiving notification transaction...");
+                transactionMempoolService.start();
+            });
+            broadcastTransactionService.setOnFailed(failedEvent -> {
+                proxyWorker.end();
+                log.error("Error broadcasting notification transaction", failedEvent.getSource().getException());
+                AppServices.showErrorDialog("Error broadcasting notification transaction", failedEvent.getSource().getException().getMessage());
+            });
+            ServiceProgressDialog progressDialog = new ServiceProgressDialog("Broadcast", "Broadcast Notification Transaction", "/image/paynym.png", proxyWorker);
+            AppServices.moveToActiveWindowScreen(progressDialog);
+            proxyWorker.setMessage("Broadcasting notification transaction...");
+            proxyWorker.start();
+            broadcastTransactionService.start();
+        } catch(Exception e) {
+            log.error("Error creating notification transaction", e);
+            AppServices.showErrorDialog("Error creating notification transaction", e.getMessage());
+        }
+    }
+
+    private void addChildWallets(Wallet wallet, PaymentCode externalPaymentCode, Transaction transaction, PayNym payNym) {
+        List<Wallet> addedWallets = addChildWallets(externalPaymentCode, payNym);
+        Wallet masterWallet = getWalletForm().getMasterWallet();
+        Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
+        EventManager.get().post(new ChildWalletsAddedEvent(storage, masterWallet, addedWallets));
+
+        BlockTransaction blockTransaction = wallet.getWalletTransaction(transaction.getTxId());
+        if(blockTransaction != null && blockTransaction.getLabel() == null) {
+            blockTransaction.setLabel("Link " + (payNym == null ? externalPaymentCode.toAbbreviatedString() : payNym.nymName()));
+            TransactionEntry transactionEntry = new TransactionEntry(wallet, blockTransaction, Collections.emptyMap(), Collections.emptyMap());
+            EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, List.of(transactionEntry)));
+        }
+
+        if(paymentTabs.getTabs().size() > 0 && !addedWallets.isEmpty()) {
+            Wallet addedWallet = addedWallets.stream().filter(w -> w.getScriptType() == ScriptType.P2WPKH).findFirst().orElse(addedWallets.iterator().next());
+            PaymentController controller = (PaymentController)paymentTabs.getTabs().get(0).getUserData();
+            controller.setPayNym(payNym == null ? PayNym.fromWallet(addedWallet) : payNym);
+        }
+
+        Glyph successGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
+        successGlyph.getStyleClass().add("success");
+        successGlyph.setFontSize(50);
+
+        AppServices.showAlertDialog("Notification Successful", "The notification transaction was successfully sent for payment code " +
+                externalPaymentCode.toAbbreviatedString() + (payNym == null ? "" : " (" + payNym.nymName() + ")") +
+                ".\n\nYou can send to it by entering the payment code, or selecting `PayNym or Payment code` in the Pay to dropdown.", Alert.AlertType.INFORMATION, successGlyph, ButtonType.OK);
+    }
+
+    public List<Wallet> addChildWallets(PaymentCode externalPaymentCode, PayNym payNym) {
+        List<Wallet> addedWallets = new ArrayList<>();
+        Wallet masterWallet = getWalletForm().getMasterWallet();
+        Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
+        List<ScriptType> scriptTypes = PayNym.getSegwitScriptTypes();
+        for(ScriptType childScriptType : scriptTypes) {
+            Wallet addedWallet = masterWallet.addChildWallet(externalPaymentCode, childScriptType);
+            addedWallet.setLabel((payNym == null ? externalPaymentCode.toAbbreviatedString() : payNym.nymName()) + " " + childScriptType.getName());
+            if(!storage.isPersisted(addedWallet)) {
+                try {
+                    storage.saveWallet(addedWallet);
+                } catch(Exception e) {
+                    log.error("Error saving wallet", e);
+                    AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
+                }
+            }
+            addedWallets.add(addedWallet);
+        }
+
+        return addedWallets;
+    }
+
+    private void setInputFieldsDisabled(boolean disablePayments, boolean disableFeeSelection) {
         for(int i = 0; i < paymentTabs.getTabs().size(); i++) {
             Tab tab = paymentTabs.getTabs().get(i);
-            tab.setClosable(!disable);
+            tab.setClosable(!disablePayments);
             PaymentController controller = (PaymentController)tab.getUserData();
-            controller.setInputFieldsDisabled(disable);
-
-            feeRange.setDisable(disable);
-            targetBlocks.setDisable(disable);
-            fee.setDisable(disable);
-            feeAmountUnit.setDisable(disable);
+            controller.setInputFieldsDisabled(disablePayments);
         }
+
+        feeRange.setDisable(disableFeeSelection);
+        targetBlocks.setDisable(disableFeeSelection);
+        fee.setDisable(disableFeeSelection);
+        feeAmountUnit.setDisable(disableFeeSelection);
+
+        transactionDiagram.requestFocus();
     }
 
     @Subscribe
@@ -1262,11 +1448,15 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void spendUtxos(SpendUtxoEvent event) {
-        if(!event.getUtxos().isEmpty() && event.getWallet().equals(getWalletForm().getWallet())) {
+        if((event.getUtxos() == null || !event.getUtxos().isEmpty()) && event.getWallet().equals(getWalletForm().getWallet())) {
+            if(whirlpoolProperty.get() != null || paymentCodeProperty.get() != null) {
+                clear(null);
+            }
+
             if(event.getPayments() != null) {
                 clear(null);
                 setPayments(event.getPayments());
-            } else if(paymentTabs.getTabs().size() == 1) {
+            } else if(paymentTabs.getTabs().size() == 1 && event.getUtxos() != null) {
                 Payment payment = new Payment(null, null, event.getUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum(), true);
                 setPayments(List.of(payment));
             }
@@ -1282,16 +1472,25 @@ public class SendController extends WalletFormController implements Initializabl
 
             includeSpentMempoolOutputsProperty.set(event.isIncludeSpentMempoolOutputs());
 
-            List<BlockTransactionHashIndex> utxos = event.getUtxos();
-            utxoSelectorProperty.set(new PresetUtxoSelector(utxos));
+            if(event.getUtxos() != null) {
+                List<BlockTransactionHashIndex> utxos = event.getUtxos();
+                utxoSelectorProperty.set(new PresetUtxoSelector(utxos));
+            }
+
             utxoFilterProperty.set(null);
             whirlpoolProperty.set(event.getPool());
+            paymentCodeProperty.set(event.getPaymentCode());
             updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
 
             boolean isWhirlpoolPremix = (event.getPool() != null);
-            setInputFieldsDisabled(isWhirlpoolPremix);
             premixButton.setVisible(isWhirlpoolPremix);
             premixButton.setDefaultButton(isWhirlpoolPremix);
+
+            boolean isNotificationTransaction = (event.getPaymentCode() != null);
+            notificationButton.setVisible(isNotificationTransaction);
+            notificationButton.setDefaultButton(isNotificationTransaction);
+
+            setInputFieldsDisabled(isWhirlpoolPremix || isNotificationTransaction, isWhirlpoolPremix);
         }
     }
 

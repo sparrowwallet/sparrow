@@ -3,10 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionInput;
-import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -242,11 +239,27 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     label += (label.isEmpty() ? "" : " ") + "(Replaced By Fee)";
                 }
 
-                return new Payment(txOutput.getScript().getToAddresses()[0], label, txOutput.getValue(), false);
+                if(txOutput.getScript().getToAddress() != null) {
+                    return new Payment(txOutput.getScript().getToAddress(), label, txOutput.getValue(), false);
+                }
+
+                return null;
             } catch(Exception e) {
                 log.error("Error creating RBF payment", e);
                 return null;
             }
+        }).filter(Objects::nonNull).collect(Collectors.toList());
+
+        List<byte[]> opReturns = externalOutputs.stream().map(txOutput -> {
+            List<ScriptChunk> scriptChunks = txOutput.getScript().getChunks();
+            if(scriptChunks.size() != 2 || scriptChunks.get(0).getOpcode() != ScriptOpCodes.OP_RETURN) {
+                return null;
+            }
+            if(scriptChunks.get(1).getData() != null) {
+                return scriptChunks.get(1).getData();
+            }
+
+            return null;
         }).filter(Objects::nonNull).collect(Collectors.toList());
 
         if(payments.isEmpty()) {
@@ -255,7 +268,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         }
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, blockTransaction.getFee(), true)));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, opReturns.isEmpty() ? null : opReturns, blockTransaction.getFee(), true)));
     }
 
     private static Double getMaxFeeRate() {
@@ -287,7 +300,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         Payment payment = new Payment(freshNode.getAddress(), label, utxo.getValue(), true);
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), List.of(utxo)));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), blockTransaction.getFee(), false)));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), null, blockTransaction.getFee(), false)));
     }
 
     private static boolean canSignMessage(WalletNode walletNode) {

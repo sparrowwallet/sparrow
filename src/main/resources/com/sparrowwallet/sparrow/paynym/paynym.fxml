@@ -64,7 +64,7 @@
                         <Label text="Find Contact:" styleClass="field-label" />
                         <HBox spacing="10">
                             <CopyableTextField fx:id="searchPayNyms" promptText="PayNym or Payment code" styleClass="field-control"/>
-                            <Button onAction="#scanQR">
+                            <Button fx:id="searchPayNymsScan" onAction="#scanQR">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                                 </graphic>

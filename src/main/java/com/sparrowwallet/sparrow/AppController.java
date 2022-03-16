@@ -345,7 +345,6 @@ public class AppController implements Initializable {
         showPayNym.setDisable(true);
         findMixingPartner.setDisable(true);
         AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
-            showPayNym.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !getSelectedWalletForm().getWallet().hasPaymentCode() || !newValue);
             findMixingPartner.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
         });
 
@@ -1989,7 +1988,7 @@ public class AppController implements Initializable {
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid() || walletTabData.getWalletForm().isLocked());
                 showLoadingLog.setDisable(false);
                 showTxHex.setDisable(true);
-                showPayNym.setDisable(exportWallet.isDisable() || !walletTabData.getWallet().hasPaymentCode() || !AppServices.onlineProperty().get());
+                showPayNym.setDisable(exportWallet.isDisable() || !walletTabData.getWallet().hasPaymentCode());
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(walletTabData.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
@@ -2015,7 +2014,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null) {
             if(selectedWalletForm.getWalletId().equals(event.getWalletId())) {
                 exportWallet.setDisable(!event.getWallet().isValid() || selectedWalletForm.isLocked());
-                showPayNym.setDisable(exportWallet.isDisable() || !event.getWallet().hasPaymentCode() || !AppServices.onlineProperty().get());
+                showPayNym.setDisable(exportWallet.isDisable() || !event.getWallet().hasPaymentCode());
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(event.getWallet()) || !AppServices.onlineProperty().get());
             }
         }

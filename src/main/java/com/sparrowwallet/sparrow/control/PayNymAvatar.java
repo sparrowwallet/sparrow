@@ -39,7 +39,7 @@ public class PayNymAvatar extends StackPane {
                 String cacheId = getCacheId(paymentCode, getPrefWidth());
                 if(paymentCodeCache.containsKey(cacheId)) {
                     setImage(paymentCodeCache.get(cacheId));
-                } else {
+                } else if(AppServices.isConnected()) {
                     PayNymAvatarService payNymAvatarService = new PayNymAvatarService(paymentCode, getPrefWidth());
                     payNymAvatarService.setOnRunning(runningEvent -> {
                         getChildren().clear();
@@ -48,7 +48,7 @@ public class PayNymAvatar extends StackPane {
                         setImage(payNymAvatarService.getValue());
                     });
                     payNymAvatarService.setOnFailed(failedEvent -> {
-                        log.error("Error", failedEvent.getSource().getException());
+                        log.debug("Error loading PayNym avatar", failedEvent.getSource().getException());
                     });
                     payNymAvatarService.start();
                 }

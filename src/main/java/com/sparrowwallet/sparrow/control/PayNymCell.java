@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletLabelChangedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymController;
@@ -9,6 +12,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import org.controlsfx.glyphfont.Glyph;
+
+import java.util.Optional;
 
 public class PayNymCell extends ListCell<PayNym> {
     private final PayNymController payNymController;
@@ -83,6 +88,12 @@ public class PayNymCell extends ListCell<PayNym> {
 
             setText(null);
             setGraphic(pane);
+
+            if(payNymController != null && payNym.nymId() == null) {
+                setContextMenu(new PayNymCellContextMenu(payNym));
+            } else {
+                setContextMenu(null);
+            }
         }
     }
 
@@ -90,5 +101,31 @@ public class PayNymCell extends ListCell<PayNym> {
         Glyph failGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LINK);
         failGlyph.setFontSize(12);
         return failGlyph;
+    }
+
+    private class PayNymCellContextMenu extends ContextMenu {
+        public PayNymCellContextMenu(PayNym payNym) {
+            MenuItem rename = new MenuItem("Rename Contact...");
+            rename.setOnAction(event -> {
+                WalletLabelDialog walletLabelDialog = new WalletLabelDialog(payNym.nymName(), "Contact");
+                Optional<String> optLabel = walletLabelDialog.showAndWait();
+                if(optLabel.isPresent()) {
+                    int index = getListView().getItems().indexOf(payNym);
+                    for(Wallet childWallet : payNymController.getMasterWallet().getChildWallets()) {
+                        if(childWallet.isBip47()
+                                && childWallet.getKeystores().get(0).getExternalPaymentCode().equals(payNym.paymentCode())
+                                && (childWallet.getLabel() == null || childWallet.getLabel().startsWith(payNym.nymName()))) {
+                            childWallet.setLabel(optLabel.get() + " " + childWallet.getScriptType().getName());
+                            EventManager.get().post(new WalletLabelChangedEvent(childWallet));
+                        }
+                    }
+
+                    payNymController.updateFollowing();
+                    getListView().getSelectionModel().select(index);
+                }
+            });
+
+            getItems().add(rename);
+        }
     }
 }

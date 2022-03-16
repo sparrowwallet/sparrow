@@ -710,11 +710,18 @@ public class AppServices {
     }
 
     public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, ButtonType... buttons) {
+        return showAlertDialog(title, content, alertType, null, buttons);
+    }
+
+    public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, Node graphic, ButtonType... buttons) {
         Alert alert = new Alert(alertType, content, buttons);
         setStageIcon(alert.getDialogPane().getScene().getWindow());
         alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
         alert.setHeaderText(title);
+        if(graphic != null) {
+            alert.setGraphic(graphic);
+        }
 
         Pattern linkPattern = Pattern.compile("\\[(http.+)]");
         Matcher matcher = linkPattern.matcher(content);

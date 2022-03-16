@@ -186,6 +186,11 @@
             <HBox AnchorPane.rightAnchor="10">
                 <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
                 <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
+                <Button fx:id="notificationButton" text="Broadcast Notification" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastNotification">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="SATELLITE_DISH" />
+                    </graphic>
+                </Button>
                 <Button fx:id="premixButton" text="Broadcast Premix Transaction" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastPremix">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="RANDOM" />

@@ -18,10 +18,7 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.application.Platform;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -34,17 +31,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+import static com.sparrowwallet.sparrow.wallet.PaymentController.MINIMUM_P2PKH_OUTPUT_SATS;
 
 public class PayNymController {
     private static final Logger log = LoggerFactory.getLogger(PayNymController.class);
 
     public static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
-
-    private static final long MINIMUM_P2PKH_OUTPUT_SATS = 546L;
 
     private String walletId;
     private boolean selectLinkedOnly;
@@ -66,6 +64,9 @@ public class PayNymController {
     private CopyableTextField searchPayNyms;
 
     @FXML
+    private Button searchPayNymsScan;
+
+    @FXML
     private ProgressIndicator findPayNym;
 
     @FXML
@@ -83,6 +84,8 @@ public class PayNymController {
 
     private final Map<Sha256Hash, PayNym> notificationTransactions = new HashMap<>();
 
+    private final BooleanProperty closeProperty = new SimpleBooleanProperty(false);
+
     public void initializeView(String walletId, boolean selectLinkedOnly) {
         this.walletId = walletId;
         this.selectLinkedOnly = selectLinkedOnly;
@@ -90,6 +93,7 @@ public class PayNymController {
         payNymName.managedProperty().bind(payNymName.visibleProperty());
         payNymRetrieve.managedProperty().bind(payNymRetrieve.visibleProperty());
         payNymRetrieve.visibleProperty().bind(payNymName.visibleProperty().not());
+        payNymRetrieve.setDisable(!AppServices.isConnected());
 
         retrievePayNymProgress.managedProperty().bind(retrievePayNymProgress.visibleProperty());
         retrievePayNymProgress.maxHeightProperty().bind(payNymName.heightProperty());
@@ -132,6 +136,8 @@ public class PayNymController {
 
             return change;
         };
+        searchPayNymsScan.disableProperty().bind(searchPayNyms.disableProperty());
+        searchPayNyms.setDisable(true);
         searchPayNyms.setTextFormatter(new TextFormatter<>(paymentCodeFilter));
         searchPayNyms.addEventFilter(KeyEvent.ANY, event -> {
             if(event.getCode() == KeyCode.ENTER) {
@@ -158,10 +164,11 @@ public class PayNymController {
         followersList.setSelectionModel(new NoSelectionModel<>());
         followersList.setFocusTraversable(false);
 
-        if(Config.get().isUsePayNym() && masterWallet.hasPaymentCode()) {
+        if(Config.get().isUsePayNym() && AppServices.isConnected() && masterWallet.hasPaymentCode()) {
             refresh();
         } else {
             payNymName.setVisible(false);
+            updateFollowing();
         }
     }
 
@@ -174,12 +181,13 @@ public class PayNymController {
         AppServices.getPayNymService().getPayNym(getMasterWallet().getPaymentCode().toString()).subscribe(payNym -> {
             retrievePayNymProgress.setVisible(false);
             walletPayNym = payNym;
+            searchPayNyms.setDisable(false);
             payNymName.setText(payNym.nymName());
             paymentCode.setPaymentCode(payNym.paymentCode());
             payNymAvatar.setPaymentCode(payNym.paymentCode());
             followingList.setUserData(null);
             followingList.setPlaceholder(new Label("No contacts"));
-            followingList.setItems(FXCollections.observableList(payNym.following()));
+            updateFollowing();
             followersList.setPlaceholder(new Label("No followers"));
             followersList.setItems(FXCollections.observableList(payNym.followers()));
             Platform.runLater(() -> addWalletIfNotificationTransactionPresent(payNym.following()));
@@ -187,6 +195,7 @@ public class PayNymController {
             retrievePayNymProgress.setVisible(false);
             if(error.getMessage().endsWith("404")) {
                 payNymName.setVisible(false);
+                updateFollowing();
             } else {
                 log.error("Error retrieving PayNym", error);
                 Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);
@@ -194,6 +203,7 @@ public class PayNymController {
                     refresh();
                 } else {
                     payNymName.setVisible(false);
+                    updateFollowing();
                 }
             }
         });
@@ -202,7 +212,7 @@ public class PayNymController {
     private void resetFollowing() {
         if(followingList.getUserData() != null) {
             followingList.setUserData(null);
-            followingList.setItems(FXCollections.observableList(walletPayNym.following()));
+            updateFollowing();
         }
     }
 
@@ -298,6 +308,33 @@ public class PayNymController {
     public boolean isLinked(PayNym payNym) {
         PaymentCode externalPaymentCode = payNym.paymentCode();
         return getMasterWallet().getChildWallet(externalPaymentCode, payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH) != null;
+    }
+
+    public void updateFollowing() {
+        List<PayNym> followingPayNyms = new ArrayList<>();
+        if(walletPayNym != null) {
+            followingPayNyms.addAll(walletPayNym.following());
+        }
+
+        Map<PaymentCode, PayNym> followingPayNymMap = followingPayNyms.stream().collect(Collectors.toMap(PayNym::paymentCode, Function.identity()));
+        followingPayNyms.addAll(getExistingWalletPayNyms(followingPayNymMap));
+        followingList.setItems(FXCollections.observableList(followingPayNyms));
+    }
+
+    private List<PayNym> getExistingWalletPayNyms(Map<PaymentCode, PayNym> followingPayNymMap) {
+        Map<PaymentCode, PayNym> existingPayNyms = new LinkedHashMap<>();
+        List<Wallet> childWallets = new ArrayList<>(getMasterWallet().getChildWallets());
+        childWallets.sort(Comparator.comparingInt(o -> -o.getScriptType().ordinal()));
+        for(Wallet childWallet : childWallets) {
+            if(childWallet.isBip47()) {
+                PaymentCode externalPaymentCode = childWallet.getKeystores().get(0).getExternalPaymentCode();
+                if(!existingPayNyms.containsKey(externalPaymentCode) && !followingPayNymMap.containsKey(externalPaymentCode)) {
+                    existingPayNyms.put(externalPaymentCode, PayNym.fromWallet(childWallet));
+                }
+            }
+        }
+
+        return new ArrayList<>(existingPayNyms.values());
     }
 
     private void addWalletIfNotificationTransactionPresent(List<PayNym> following) {
@@ -397,11 +434,20 @@ public class PayNymController {
     }
 
     public void linkPayNym(PayNym payNym) {
+        ButtonType previewType = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
+        ButtonType sendType = new ButtonType("Send", ButtonBar.ButtonData.YES);
         Optional<ButtonType> optButtonType = AppServices.showAlertDialog("Link PayNym?",
                 "Linking to this contact will allow you to send to it non-collaboratively through unique private addresses you can generate independently.\n\n" +
-                "It will cost " + MINIMUM_P2PKH_OUTPUT_SATS + " sats to create the link, plus the mining fee. Send transaction?", Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
-        if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
+                "It will cost " + MINIMUM_P2PKH_OUTPUT_SATS + " sats to create the link through a notification transaction, plus the mining fee. Send transaction?", Alert.AlertType.CONFIRMATION, previewType, ButtonType.CANCEL, sendType);
+        if(optButtonType.isPresent() && optButtonType.get() == sendType) {
             broadcastNotificationTransaction(payNym);
+        } else if(optButtonType.isPresent() && optButtonType.get() == previewType) {
+            PaymentCode paymentCode = payNym.paymentCode();
+            Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + payNym.nymName(), MINIMUM_P2PKH_OUTPUT_SATS, false);
+            Wallet wallet = AppServices.get().getWallet(walletId);
+            EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getWalletUtxos().keySet())));
+            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(wallet, List.of(payment), List.of(new byte[80]), paymentCode)));
+            closeProperty.set(true);
         } else {
             followingList.refresh();
         }
@@ -544,7 +590,7 @@ public class PayNymController {
         return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, Collections.emptySet(), feeRate, minimumFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs, false);
     }
 
-    private Wallet getMasterWallet() {
+    public Wallet getMasterWallet() {
         Wallet wallet = AppServices.get().getWallet(walletId);
         return wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
     }
@@ -559,6 +605,10 @@ public class PayNymController {
 
     public ObjectProperty<PayNym> payNymProperty() {
         return payNymProperty;
+    }
+
+    public BooleanProperty closeProperty() {
+        return closeProperty;
     }
 
     @Subscribe

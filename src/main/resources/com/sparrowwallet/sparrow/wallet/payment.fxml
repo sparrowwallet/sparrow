@@ -35,7 +35,7 @@
                     <ComboBox fx:id="openWallets" />
                     <ComboBoxTextField fx:id="address" styleClass="address-text-field" comboProperty="$openWallets">
                         <tooltip>
-                            <Tooltip text="Address or bitcoin: URI"/>
+                            <Tooltip text="Address, payment code or bitcoin: URI"/>
                         </tooltip>
                     </ComboBoxTextField>
                 </StackPane>
