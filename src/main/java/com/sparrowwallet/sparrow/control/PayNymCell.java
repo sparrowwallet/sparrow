@@ -17,14 +17,16 @@ import java.util.Optional;
 
 public class PayNymCell extends ListCell<PayNym> {
     private final PayNymController payNymController;
+    private final boolean contact;
 
-    public PayNymCell(PayNymController payNymController) {
+    public PayNymCell(PayNymController payNymController, boolean contact) {
         super();
         setAlignment(Pos.CENTER_LEFT);
         setContentDisplay(ContentDisplay.LEFT);
         getStyleClass().add("paynym-cell");
         setPrefHeight(50);
         this.payNymController = payNymController;
+        this.contact = contact;
     }
 
     @Override
@@ -52,7 +54,7 @@ public class PayNymCell extends ListCell<PayNym> {
             labelBox.getChildren().add(label);
             pane.setLeft(labelBox);
 
-            if(getListView().getUserData() == Boolean.TRUE) {
+            if(getListView().getUserData() == Boolean.TRUE || (!contact && payNymController != null && payNymController.isFollowing(payNym) == Boolean.FALSE)) {
                 HBox hBox = new HBox();
                 hBox.setAlignment(Pos.CENTER);
                 Button button = new Button("Add Contact");
@@ -62,7 +64,7 @@ public class PayNymCell extends ListCell<PayNym> {
                     button.setDisable(true);
                     payNymController.followPayNym(payNym.paymentCode());
                 });
-            } else if(payNymController != null) {
+            } else if(contact && payNymController != null) {
                 HBox hBox = new HBox();
                 hBox.setAlignment(Pos.CENTER);
                 pane.setRight(hBox);
@@ -89,7 +91,7 @@ public class PayNymCell extends ListCell<PayNym> {
             setText(null);
             setGraphic(pane);
 
-            if(payNymController != null && payNymController.isLinked(payNym)) {
+            if(contact && payNymController != null && payNymController.isLinked(payNym)) {
                 setContextMenu(new PayNymCellContextMenu(payNym));
             } else {
                 setContextMenu(null);

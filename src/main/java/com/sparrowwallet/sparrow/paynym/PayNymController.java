@@ -151,7 +151,7 @@ public class PayNymController {
         findPayNym.setVisible(false);
 
         followingList.setCellFactory(param -> {
-            return new PayNymCell(this);
+            return new PayNymCell(this, true);
         });
 
         followingList.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, payNym) -> {
@@ -159,7 +159,7 @@ public class PayNymController {
         });
 
         followersList.setCellFactory(param -> {
-            return new PayNymCell(null);
+            return new PayNymCell(this, false);
         });
 
         followersList.setSelectionModel(new NoSelectionModel<>());
@@ -282,28 +282,41 @@ public class PayNymController {
     public void followPayNym(PaymentCode contact) {
         PayNymService payNymService = AppServices.getPayNymService();
         Wallet masterWallet = getMasterWallet();
+        retrievePayNymProgress.setVisible(true);
         payNymService.getAuthToken(masterWallet, new HashMap<>()).subscribe(authToken -> {
             String signature = payNymService.getSignature(masterWallet, authToken);
             payNymService.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
                 refresh();
             }, error -> {
+                retrievePayNymProgress.setVisible(false);
                 log.error("Could not follow payment code", error);
                 Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not follow payment code. Try again?", ButtonType.CANCEL, ButtonType.OK);
                 if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
                     followPayNym(contact);
                 } else {
                     followingList.refresh();
+                    followersList.refresh();
                 }
             });
         }, error -> {
+            retrievePayNymProgress.setVisible(false);
             log.error("Could not follow payment code", error);
             Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not follow payment code. Try again?", ButtonType.CANCEL, ButtonType.OK);
             if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
                 followPayNym(contact);
             } else {
                 followingList.refresh();
+                followersList.refresh();
             }
         });
+    }
+
+    public Boolean isFollowing(PayNym payNym) {
+        if(followingList.getItems() != null) {
+            return followingList.getItems().stream().anyMatch(following -> payNym.paymentCode().equals(following.paymentCode()));
+        }
+
+        return null;
     }
 
     public boolean isLinked(PayNym payNym) {
