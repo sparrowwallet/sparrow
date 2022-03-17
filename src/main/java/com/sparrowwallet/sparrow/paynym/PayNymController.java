@@ -421,8 +421,8 @@ public class PayNymController {
         Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
         List<ScriptType> scriptTypes = masterWallet.getScriptType() != ScriptType.P2PKH ? PayNym.getSegwitScriptTypes() : payNym.getScriptTypes();
         for(ScriptType childScriptType : scriptTypes) {
-            Wallet addedWallet = masterWallet.addChildWallet(externalPaymentCode, childScriptType);
-            addedWallet.setLabel(payNym.nymName() + " " + childScriptType.getName());
+            String label = payNym.nymName() + " " + childScriptType.getName();
+            Wallet addedWallet = masterWallet.addChildWallet(externalPaymentCode, childScriptType, label);
             if(!storage.isPersisted(addedWallet)) {
                 try {
                     storage.saveWallet(addedWallet);

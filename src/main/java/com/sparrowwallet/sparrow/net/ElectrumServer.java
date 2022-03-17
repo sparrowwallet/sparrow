@@ -1717,12 +1717,8 @@ public class ElectrumServer {
                                         PayNym payNym = Config.get().isUsePayNym() ? getPayNym(paymentCode) : null;
                                         List<ScriptType> scriptTypes = payNym == null || wallet.getScriptType() != ScriptType.P2PKH ? PayNym.getSegwitScriptTypes() : payNym.getScriptTypes();
                                         for(ScriptType childScriptType : scriptTypes) {
-                                            Wallet addedWallet = wallet.addChildWallet(paymentCode, childScriptType, output, blkTx);
-                                            if(payNym != null) {
-                                                addedWallet.setLabel(payNym.nymName() + " " + childScriptType.getName());
-                                            } else {
-                                                addedWallet.setLabel(paymentCode.toAbbreviatedString() + " " + childScriptType.getName());
-                                            }
+                                            String label = (payNym == null ? paymentCode.toAbbreviatedString() : payNym.nymName()) + " " + childScriptType.getName();
+                                            Wallet addedWallet = wallet.addChildWallet(paymentCode, childScriptType, output, blkTx, label);
                                             //Check this is a valid payment code, will throw IllegalArgumentException if not
                                             try {
                                                 WalletNode receiveNode = new WalletNode(addedWallet, KeyPurpose.RECEIVE, 0);
