@@ -17,6 +17,7 @@
 .witness-count { -fx-fill: color-grey }
 .witness-length { -fx-fill: color-grey }
 .witness-data { -fx-fill: color-grey }
+.witness-data-signature { -fx-fill: color-grey }
 
 .locktime { -fx-fill: color-grey }
 

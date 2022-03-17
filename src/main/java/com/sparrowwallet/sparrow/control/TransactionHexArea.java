@@ -165,8 +165,9 @@ public class TransactionHexArea extends CodeArea {
                     for(int j = 0; j < witness.getPushes().size(); j++) {
                         byte[] push = witness.getPushes().get(j);
                         VarInt witnessLen = new VarInt(push.length);
+                        boolean isSignature = isSignature(push);
                         cursor = addSegment(segments, cursor, witnessLen.getSizeInBytes() * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
-                        cursor = addSegment(segments, cursor, (int) witnessLen.value * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data"));
+                        cursor = addSegment(segments, cursor, (int) witnessLen.value * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data" + (isSignature ? "-signature" : "")));
                     }
                 }
             }
@@ -204,6 +205,19 @@ public class TransactionHexArea extends CodeArea {
         return "other";
     }
 
+    private boolean isSignature(byte[] data) {
+        if(data.length >= 64) {
+            try {
+                TransactionSignature.decodeFromBitcoin(data, false);
+                return true;
+            } catch(Exception e) {
+                //ignore, not a signature
+            }
+        }
+
+        return false;
+    }
+
     private String describeTransactionPart(Collection<String> styles) {
         String style = "";
         Integer index = null;
@@ -238,7 +252,7 @@ public class TransactionHexArea extends CodeArea {
             case "output-pubkeyscript" -> "Output #" + index + " scriptPubKey";
             case "witness-count" -> "Input #" + index + " witness count";
             case "witness-length" -> "Input #" + index + " witness #" + witnessIndex + " length";
-            case "witness-data" -> "Input #" + index + " witness #" + witnessIndex + " data";
+            case "witness-data", "witness-data-signature" -> "Input #" + index + " witness #" + witnessIndex + " data";
             case "locktime" -> "Locktime";
             default -> "";
         };
