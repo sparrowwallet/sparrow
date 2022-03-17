@@ -89,7 +89,7 @@ public class PayNymCell extends ListCell<PayNym> {
             setText(null);
             setGraphic(pane);
 
-            if(payNymController != null && payNym.nymId() == null) {
+            if(payNymController != null && payNymController.isLinked(payNym)) {
                 setContextMenu(new PayNymCellContextMenu(payNym));
             } else {
                 setContextMenu(null);

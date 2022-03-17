@@ -84,14 +84,23 @@ public class PayNym {
 
         PaymentCode externalPaymentCode = bip47Wallet.getKeystores().get(0).getExternalPaymentCode();
         String nymName = externalPaymentCode.toAbbreviatedString();
-        if(bip47Wallet.getLabel() != null) {
-            String suffix = " " + bip47Wallet.getScriptType().getName();
-            if(bip47Wallet.getLabel().endsWith(suffix)) {
-                nymName = bip47Wallet.getLabel().substring(0, bip47Wallet.getLabel().length() - suffix.length());
-            }
+        String walletNymName = getNymName(bip47Wallet);
+        if(walletNymName != null) {
+            nymName = walletNymName;
         }
 
         boolean segwit = bip47Wallet.getScriptType() != ScriptType.P2PKH;
         return new PayNym(externalPaymentCode, null, nymName, segwit, Collections.emptyList(), Collections.emptyList());
+    }
+
+    public static String getNymName(Wallet bip47Wallet) {
+        if(bip47Wallet.getLabel() != null) {
+            String suffix = " " + bip47Wallet.getScriptType().getName();
+            if(bip47Wallet.getLabel().endsWith(suffix)) {
+                return bip47Wallet.getLabel().substring(0, bip47Wallet.getLabel().length() - suffix.length());
+            }
+        }
+
+        return null;
     }
 }

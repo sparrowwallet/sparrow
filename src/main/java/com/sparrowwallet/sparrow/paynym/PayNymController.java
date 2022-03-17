@@ -317,25 +317,24 @@ public class PayNymController {
             followingPayNyms.addAll(walletPayNym.following());
         }
 
-        Map<PaymentCode, PayNym> followingPayNymMap = followingPayNyms.stream().collect(Collectors.toMap(PayNym::paymentCode, Function.identity()));
-        followingPayNyms.addAll(getExistingWalletPayNyms(followingPayNymMap));
-        followingList.setItems(FXCollections.observableList(followingPayNyms));
+        Map<PaymentCode, PayNym> payNymMap = followingPayNyms.stream().collect(Collectors.toMap(PayNym::paymentCode, Function.identity(), (u, v) -> u, LinkedHashMap::new));
+        followingList.setItems(FXCollections.observableList(getExistingWalletPayNyms(payNymMap)));
     }
 
-    private List<PayNym> getExistingWalletPayNyms(Map<PaymentCode, PayNym> followingPayNymMap) {
-        Map<PaymentCode, PayNym> existingPayNyms = new LinkedHashMap<>();
+    private List<PayNym> getExistingWalletPayNyms(Map<PaymentCode, PayNym> payNymMap) {
         List<Wallet> childWallets = new ArrayList<>(getMasterWallet().getChildWallets());
         childWallets.sort(Comparator.comparingInt(o -> -o.getScriptType().ordinal()));
         for(Wallet childWallet : childWallets) {
             if(childWallet.isBip47()) {
                 PaymentCode externalPaymentCode = childWallet.getKeystores().get(0).getExternalPaymentCode();
-                if(!existingPayNyms.containsKey(externalPaymentCode) && !followingPayNymMap.containsKey(externalPaymentCode)) {
-                    existingPayNyms.put(externalPaymentCode, PayNym.fromWallet(childWallet));
+                String walletNymName = PayNym.getNymName(childWallet);
+                if(payNymMap.get(externalPaymentCode) == null || (walletNymName != null && !walletNymName.equals(payNymMap.get(externalPaymentCode).nymName()))) {
+                    payNymMap.put(externalPaymentCode, PayNym.fromWallet(childWallet));
                 }
             }
         }
 
-        return new ArrayList<>(existingPayNyms.values());
+        return new ArrayList<>(payNymMap.values());
     }
 
     private void addWalletIfNotificationTransactionPresent(List<PayNym> following) {
