@@ -43,6 +43,7 @@ public class PayNymController {
     private static final Logger log = LoggerFactory.getLogger(PayNymController.class);
 
     public static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
+    public static final String INVALID_PAYMENT_CODE_LABEL = "Invalid Payment Code";
 
     private String walletId;
     private boolean selectLinkedOnly;
@@ -344,7 +345,7 @@ public class PayNymController {
             if(!isLinked(payNym)) {
                 PaymentCode externalPaymentCode = payNym.paymentCode();
                 Map<BlockTransaction, WalletNode> unlinkedNotification = getMasterWallet().getNotificationTransaction(externalPaymentCode);
-                if(!unlinkedNotification.isEmpty()) {
+                if(!unlinkedNotification.isEmpty() && !INVALID_PAYMENT_CODE_LABEL.equals(unlinkedNotification.keySet().iterator().next().getLabel())) {
                     unlinkedNotifications.putAll(unlinkedNotification);
                     unlinkedPayNyms.put(unlinkedNotification.keySet().iterator().next(), payNym);
                 }
@@ -397,6 +398,9 @@ public class PayNymController {
                 byte[] opReturnData = PaymentCode.getOpReturnData(blockTransaction.getTransaction());
                 if(Arrays.equals(opReturnData, blindedPaymentCode)) {
                     addedWallets.addAll(addChildWallets(payNym, externalPaymentCode));
+                } else {
+                    blockTransaction.setLabel(INVALID_PAYMENT_CODE_LABEL);
+                    EventManager.get().post(new WalletEntryLabelsChangedEvent(input0Node.getWallet(), new TransactionEntry(input0Node.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap())));
                 }
             } catch(Exception e) {
                 log.error("Error adding linked contact from notification transaction", e);
