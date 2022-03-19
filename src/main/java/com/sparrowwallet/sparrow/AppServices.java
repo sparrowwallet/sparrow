@@ -292,9 +292,12 @@ public class AppServices {
                                     "\n\nThis may indicate a man-in-the-middle attack!" +
                                     "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
                             if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
-                                crtFile.delete();
-                                Platform.runLater(() -> restartService(connectionService));
-                                return;
+                                if(crtFile.delete()) {
+                                    Platform.runLater(() -> restartService(connectionService));
+                                    return;
+                                } else {
+                                    AppServices.showErrorDialog("Could not delete certificate", "The certificate file at " + crtFile.getAbsolutePath() + " could not be deleted.\n\nPlease delete this file manually.");
+                                }
                             }
                         }
                     }

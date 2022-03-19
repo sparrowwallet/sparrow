@@ -587,11 +587,12 @@ public class ServerPreferencesController extends PreferencesDetailController {
                     Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
                             "\n\nThis may indicate a man-in-the-middle attack!" +
                             "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
-                    if(optButton.isPresent()) {
-                        if(optButton.get() == ButtonType.YES) {
-                            savedCrtFile.delete();
+                    if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
+                        if(savedCrtFile.delete()) {
                             Platform.runLater(this::startElectrumConnection);
                             return;
+                        } else {
+                            AppServices.showErrorDialog("Could not delete certificate", "The certificate file at " + savedCrtFile.getAbsolutePath() + " could not be deleted.\n\nPlease delete this file manually.");
                         }
                     }
                 }
