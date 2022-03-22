@@ -34,12 +34,19 @@
 
 .master-only > .tab-header-area {
     visibility: hidden;
+    -fx-pref-height: 0;
 }
 
 .wallet-subtabs > .tab-header-area .tab {
     -fx-pref-height: 50;
     -fx-pref-width: 90;
     -fx-alignment: CENTER;
+    -fx-background-color: derive(#3da0e3, 32%);
+    -fx-background-insets: 0 1 0 1,0,0;
+}
+
+.wallet-subtabs > .tab-header-area .tab:selected {
+    -fx-background-color: #3da0e3;
 }
 
 .wallet-subtabs > .tab-header-area .tab-label {
@@ -47,6 +54,10 @@
     -fx-pref-width: 90;
     -fx-alignment: CENTER;
     -fx-translate-x: -6;
+}
+
+.wallet-subtabs > .tab-header-area .tab-label .label {
+    -fx-text-fill: #fff;
 }
 
 .status-bar .status-label {

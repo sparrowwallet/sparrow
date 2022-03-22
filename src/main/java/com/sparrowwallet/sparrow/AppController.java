@@ -196,6 +196,8 @@ public class AppController implements Initializable {
 
     private Tab previouslySelectedTab;
 
+    private boolean subTabsVisible;
+
     private final Set<Wallet> loadingWallets = new LinkedHashSet<>();
 
     private final Set<Wallet> emptyLoadingWallets = new LinkedHashSet<>();
@@ -1458,8 +1460,8 @@ public class AppController implements Initializable {
             });
 
             TabPane subTabs = new TabPane();
-            subTabs.setSide(Side.RIGHT);
-            setSubTabsVisible(subTabs, false);
+            subTabs.setSide(Side.LEFT);
+            setSubTabsVisible(subTabs, areSubTabsVisible());
             subTabs.rotateGraphicProperty().set(true);
             tab.setContent(subTabs);
 
@@ -1468,7 +1470,7 @@ public class AppController implements Initializable {
             tab.setUserData(tabData);
             tab.setContextMenu(getTabContextMenu(tab));
             walletForm.lockedProperty().addListener((observable, oldValue, newValue) -> {
-                setSubTabsVisible(subTabs, !newValue && subTabs.getTabs().size() > 1);
+                setSubTabsVisible(subTabs, !newValue && areSubTabsVisible());
             });
 
             subTabs.getSelectionModel().selectedItemProperty().addListener((observable, old_val, selectedTab) -> {
@@ -1525,6 +1527,30 @@ public class AppController implements Initializable {
             }
             subTabs.getStyleClass().remove("wallet-subtabs");
         }
+    }
+
+    private void setSubTabsVisible(boolean visible) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData) tab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                setSubTabsVisible((TabPane)tab.getContent(), visible);
+            }
+        }
+    }
+
+    private boolean areSubTabsVisible() {
+        if(subTabsVisible) {
+            return true;
+        }
+
+        for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+            if(wallet.getChildWallets().stream().anyMatch(childWallet -> !childWallet.isNested())) {
+                subTabsVisible = true;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public WalletForm addWalletSubTab(TabPane subTabs, Storage storage, Wallet wallet) {
@@ -2018,6 +2044,18 @@ public class AppController implements Initializable {
                 findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(event.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
+
+        for(Tab walletTab : tabs.getTabs()) {
+            TabData tabData = (TabData) walletTab.getUserData();
+            if(tabData instanceof WalletTabData walletTabData) {
+                if(walletTabData.getWalletForm().getWalletId().equals(event.getWalletId()) && event.getWallet().isMasterWallet()) {
+                    TabPane subTabs = (TabPane)walletTab.getContent();
+                    Tab masterTab = subTabs.getTabs().stream().filter(tab -> ((WalletTabData)tab.getUserData()).getWallet().isMasterWallet()).findFirst().orElse(subTabs.getTabs().get(0));
+                    Label masterLabel = (Label)masterTab.getGraphic();
+                    masterLabel.setText(event.getWallet().getLabel() != null ? event.getWallet().getLabel() : event.getWallet().getAutomaticName());
+                }
+            }
+        }
     }
 
     @Subscribe
@@ -2250,6 +2288,14 @@ public class AppController implements Initializable {
             tabLabelStopAnimation(wallet);
         }
         serverToggleStopAnimation();
+    }
+
+    @Subscribe
+    public void walletOpened(WalletOpenedEvent walletOpenedEvent) {
+        if(!subTabsVisible && walletOpenedEvent.getWallet().getChildWallets().stream().anyMatch(childWallet -> !childWallet.isNested())) {
+            subTabsVisible = true;
+            setSubTabsVisible(true);
+        }
     }
 
     @Subscribe

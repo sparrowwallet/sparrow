@@ -13,11 +13,11 @@
 }
 
 .list-item:hover {
-    -fx-background-color: #4aa7e5;
+    -fx-background-color: linear-gradient(to right, #3da0e3, derive(#4aa7e5, 10%));
 }
 
 .list-item:selected {
-    -fx-background-color: #1e88cf;
+    -fx-background-color: linear-gradient(to right, #3da0e3, derive(#1e88cf, -10%));
 }
 
 .list-item:disabled {
