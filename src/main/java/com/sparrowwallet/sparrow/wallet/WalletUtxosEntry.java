@@ -76,4 +76,12 @@ public class WalletUtxosEntry extends Entry {
         calculateDuplicates();
         updateMixProgress();
     }
+
+    public long getBalance() {
+        return getChildren().stream().mapToLong(Entry::getValue).sum();
+    }
+
+    public long getMempoolBalance() {
+        return getChildren().stream().filter(entry -> ((UtxoEntry)entry).getHashIndex().getHeight() <= 0).mapToLong(Entry::getValue).sum();
+    }
 }

@@ -18,6 +18,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolDialog;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
@@ -186,8 +187,8 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private void updateFields(WalletUtxosEntry walletUtxosEntry) {
-        balance.setValue(walletUtxosEntry.getChildren().stream().mapToLong(Entry::getValue).sum());
-        mempoolBalance.setValue(walletUtxosEntry.getChildren().stream().filter(entry -> ((UtxoEntry)entry).getHashIndex().getHeight() <= 0).mapToLong(Entry::getValue).sum());
+        balance.setValue(walletUtxosEntry.getBalance());
+        mempoolBalance.setValue(walletUtxosEntry.getMempoolBalance());
         utxoCount.setText(walletUtxosEntry.getChildren() != null ? Integer.toString(walletUtxosEntry.getChildren().size()) : "0");
     }
 
@@ -611,5 +612,21 @@ public class UtxosController extends WalletFormController implements Initializab
             utxosTable.getSelectionModel().clearSelection();
             selectEntry(utxosTable, utxosTable.getRoot(), event.getEntry());
         }
+    }
+
+    @Subscribe
+    public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
+        if(event.getExchangeSource() == ExchangeSource.NONE) {
+            fiatBalance.setCurrency(null);
+            fiatBalance.setBtcRate(0.0);
+            fiatMempoolBalance.setCurrency(null);
+            fiatMempoolBalance.setBtcRate(0.0);
+        }
+    }
+
+    @Subscribe
+    public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
+        setFiatBalance(fiatBalance, event.getCurrencyRate(), getWalletForm().getWalletUtxosEntry().getBalance());
+        setFiatBalance(fiatMempoolBalance, event.getCurrencyRate(), getWalletForm().getWalletUtxosEntry().getMempoolBalance());
     }
 }
