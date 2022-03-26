@@ -9,6 +9,7 @@ import com.samourai.wallet.cahoots.CahootsType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Status;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
@@ -296,7 +297,9 @@ public class CounterpartyController extends SorobanController {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : walletUtxos.entrySet()) {
-            counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
+            if(entry.getKey().getStatus() != Status.FROZEN) {
+                counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
+            }
         }
 
         try {
