@@ -951,8 +951,13 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void finalizePSBT() {
         if(headersForm.getPsbt() != null && headersForm.getPsbt().isSigned() && !headersForm.getPsbt().isFinalized()) {
-            headersForm.getSigningWallet().finalise(headersForm.getPsbt());
-            EventManager.get().post(new PSBTFinalizedEvent(headersForm.getPsbt()));
+            try {
+                headersForm.getSigningWallet().finalise(headersForm.getPsbt());
+                EventManager.get().post(new PSBTFinalizedEvent(headersForm.getPsbt()));
+            } catch(IllegalArgumentException e) {
+                AppServices.showErrorDialog("Cannot finalize PSBT", e.getMessage());
+                throw e;
+            }
         }
     }
 
