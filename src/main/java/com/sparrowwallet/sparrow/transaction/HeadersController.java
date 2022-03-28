@@ -14,6 +14,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -1174,6 +1175,23 @@ public class HeadersController extends TransactionFormController implements Init
                 allFetchedInputTransactions.putAll(headersForm.getInputTransactions());
             }
             transactionDiagram.update(getWalletTransaction(allFetchedInputTransactions));
+        }
+    }
+
+    @Subscribe
+    public void transactionFetchFailed(TransactionFetchFailedEvent event) {
+        if(event.getTransaction().getTxId().equals(headersForm.getTransaction().getTxId())
+                && !blockchainForm.isVisible() && !signingWalletForm.isVisible() && !signaturesForm.isVisible()) {
+            blockchainForm.setVisible(true);
+            blockStatus.setText("Unknown transaction status, server failed to respond");
+            Glyph errorGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+            errorGlyph.setFontSize(12);
+            blockStatus.setGraphic(errorGlyph);
+            blockStatus.setContentDisplay(ContentDisplay.LEFT);
+            errorGlyph.getStyleClass().add("failure");
+            blockHeightField.setVisible(false);
+            blockTimestampField.setVisible(false);
+            blockHashField.setVisible(false);
         }
     }
 

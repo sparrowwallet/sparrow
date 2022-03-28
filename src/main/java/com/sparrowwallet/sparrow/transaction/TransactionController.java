@@ -379,7 +379,11 @@ public class TransactionController implements Initializable {
             });
             transactionReferenceService.setOnFailed(failedEvent -> {
                 log.error("Error fetching transaction or input references", failedEvent.getSource().getException());
-                EventManager.get().post(new TransactionReferencesFailedEvent(getTransaction(), failedEvent.getSource().getException(), indexStart, maxIndex));
+                if(references.contains(getTransaction().getTxId())) {
+                    EventManager.get().post(new TransactionFetchFailedEvent(getTransaction(), failedEvent.getSource().getException(), indexStart, maxIndex));
+                } else {
+                    EventManager.get().post(new TransactionReferencesFailedEvent(getTransaction(), failedEvent.getSource().getException(), indexStart, maxIndex));
+                }
             });
             EventManager.get().post(new TransactionReferencesStartedEvent(getTransaction(), indexStart, maxIndex));
             transactionReferenceService.start();
