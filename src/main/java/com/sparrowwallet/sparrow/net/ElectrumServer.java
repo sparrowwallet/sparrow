@@ -348,7 +348,7 @@ public class ElectrumServer {
 
     private Set<WalletNode> getAddressNodes(Wallet wallet, WalletNode purposeNode) {
         Integer watchLast = wallet.getWatchLast();
-        if(watchLast == null || watchLast < wallet.getGapLimit() || wallet.getStoredBlockHeight() == 0 || wallet.getTransactions().isEmpty()) {
+        if(watchLast == null || watchLast < wallet.getGapLimit() || wallet.getStoredBlockHeight() == null || wallet.getStoredBlockHeight() == 0 || wallet.getTransactions().isEmpty()) {
             return purposeNode.getChildren();
         }
 
