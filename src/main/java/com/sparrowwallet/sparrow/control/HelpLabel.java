@@ -21,6 +21,7 @@ public class HelpLabel extends Label {
         tooltip.textProperty().bind(helpTextProperty());
         tooltip.graphicProperty().bind(helpGraphicProperty());
         tooltip.setShowDuration(Duration.seconds(15));
+        tooltip.setShowDelay(Duration.millis(500));
         getStyleClass().add("help-label");
 
         Platform.runLater(() -> setTooltip(tooltip));
