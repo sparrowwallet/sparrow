@@ -57,6 +57,7 @@ public class UtxosChart extends BarChart<String, Number> {
 
         for(int i = 0; i < utxoDataList.size(); i++) {
             XYChart.Data<String, Number> newData = utxoDataList.get(i);
+            newData.setXValue((i+1) + ". " + newData.getXValue());
             if(i < utxoSeries.getData().size()) {
                 XYChart.Data<String, Number> existingData = utxoSeries.getData().get(i);
                 if(!newData.getXValue().equals(existingData.getXValue()) || !newData.getYValue().equals(existingData.getYValue()) || (newData.getExtraValue() instanceof Entry && !newData.getExtraValue().equals(existingData.getExtraValue()))) {
@@ -70,7 +71,7 @@ public class UtxosChart extends BarChart<String, Number> {
         }
 
         if(utxoSeries.getData().size() > utxoDataList.size()) {
-            utxoSeries.getData().remove(Math.max(0, utxoDataList.size() - 1), utxoSeries.getData().size());
+            utxoSeries.getData().remove(utxoDataList.size(), utxoSeries.getData().size());
         }
 
         if(selectedEntries != null) {
