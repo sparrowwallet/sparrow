@@ -20,6 +20,8 @@ public class PayNym {
     private final List<PayNym> following;
     private final List<PayNym> followers;
 
+    private boolean collaborativeSend;
+
     public PayNym(PaymentCode paymentCode, String nymId, String nymName, boolean segwit, List<PayNym> following, List<PayNym> followers) {
         this.paymentCode = paymentCode;
         this.nymId = nymId;
@@ -51,6 +53,14 @@ public class PayNym {
 
     public List<PayNym> followers() {
         return followers;
+    }
+
+    public boolean isCollaborativeSend() {
+        return collaborativeSend;
+    }
+
+    public void setCollaborativeSend(boolean collaborativeSend) {
+        this.collaborativeSend = collaborativeSend;
     }
 
     public List<ScriptType> getScriptTypes() {

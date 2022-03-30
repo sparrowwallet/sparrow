@@ -39,10 +39,13 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
@@ -148,6 +151,22 @@ public class InitiatorController extends SorobanController {
 
     private boolean closed;
 
+    private final ChangeListener<String> counterpartyListener = (observable, oldValue, newValue) -> {
+        if(newValue != null) {
+            if(newValue.startsWith("P") && newValue.contains("...") && newValue.length() == 20 && counterpartyPaymentCode.get() != null) {
+                //Assumed valid payment code
+            } else if(Config.get().isUsePayNym() && PAYNYM_REGEX.matcher(newValue).matches()) {
+                if(!newValue.equals(counterpartyPayNymName.get())) {
+                    searchPayNyms(newValue);
+                }
+            } else if(!newValue.equals(counterpartyPayNymName.get())) {
+                counterpartyPayNymName.set(null);
+                counterpartyPaymentCode.set(null);
+                payNymAvatar.clearPaymentCode();
+            }
+        }
+    };
+
     public void initializeView(String walletId, Wallet wallet, WalletTransaction walletTransaction) {
         this.walletId = walletId;
         this.wallet = wallet;
@@ -247,29 +266,11 @@ public class InitiatorController extends SorobanController {
             return change;
         };
         counterparty.setTextFormatter(new TextFormatter<>(paymentCodeFilter));
-
-        counterparty.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null) {
-                if(newValue.startsWith("P") && newValue.contains("...") && newValue.length() == 20 && counterpartyPaymentCode.get() != null) {
-                    //Assumed valid payment code
-                } else if(Config.get().isUsePayNym() && PAYNYM_REGEX.matcher(newValue).matches()) {
-                    if(!newValue.equals(counterpartyPayNymName.get())) {
-                        payNymLoading.setVisible(true);
-                        AppServices.getPayNymService().getPayNym(newValue).subscribe(payNym -> {
-                            payNymLoading.setVisible(false);
-                            counterpartyPayNymName.set(payNym.nymName());
-                            counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
-                            payNymAvatar.setPaymentCode(payNym.paymentCode());
-                        }, error -> {
-                            payNymLoading.setVisible(false);
-                            //ignore, probably doesn't exist but will try again on meeting request
-                        });
-                    }
-                } else {
-                    counterpartyPayNymName.set(null);
-                    counterpartyPaymentCode.set(null);
-                    payNymAvatar.clearPaymentCode();
-                }
+        counterparty.textProperty().addListener(counterpartyListener);
+        counterparty.addEventFilter(KeyEvent.ANY, event -> {
+            if(counterparty.isEditable() && event.getCode() == KeyCode.ENTER) {
+                searchPayNyms(counterparty.getText());
+                event.consume();
             }
         });
 
@@ -305,6 +306,25 @@ public class InitiatorController extends SorobanController {
         Platform.runLater(() -> {
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
             validationSupport.registerValidator(counterparty, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Invalid counterparty", !isValidCounterparty()));
+        });
+    }
+
+    private void searchPayNyms(String identifier) {
+        payNymLoading.setVisible(true);
+        AppServices.getPayNymService().getPayNym(identifier).subscribe(payNym -> {
+            payNymLoading.setVisible(false);
+            counterpartyPayNymName.set(payNym.nymName());
+            counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
+            payNymAvatar.setPaymentCode(payNym.paymentCode());
+            counterparty.textProperty().removeListener(counterpartyListener);
+            int caret = counterparty.getCaretPosition();
+            counterparty.setText("");
+            counterparty.setText(payNym.nymName());
+            counterparty.positionCaret(caret);
+            counterparty.textProperty().addListener(counterpartyListener);
+        }, error -> {
+            payNymLoading.setVisible(false);
+            //ignore, probably doesn't exist but will try again on meeting request
         });
     }
 
@@ -617,7 +637,7 @@ public class InitiatorController extends SorobanController {
     }
 
     public void findPayNym(ActionEvent event) {
-        PayNymDialog payNymDialog = new PayNymDialog(walletId, true, false);
+        PayNymDialog payNymDialog = new PayNymDialog(walletId, PayNymDialog.Operation.SELECT, false);
         Optional<PayNym> optPayNym = payNymDialog.showAndWait();
         optPayNym.ifPresent(payNym -> {
             counterpartyPayNymName.set(payNym.nymName());
