@@ -97,6 +97,7 @@ dependencies {
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.7')
     implementation('net.sourceforge.streamsupport:streamsupport:1.7.0')
+    implementation('com.github.librepdf:openpdf:1.3.27')
     testImplementation('junit:junit:4.12')
 }
 

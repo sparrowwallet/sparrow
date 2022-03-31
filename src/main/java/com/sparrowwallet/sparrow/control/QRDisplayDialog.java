@@ -137,7 +137,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         }
     }
 
-    private Image getQrCode(String fragment) {
+    protected Image getQrCode(String fragment) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
             BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT);

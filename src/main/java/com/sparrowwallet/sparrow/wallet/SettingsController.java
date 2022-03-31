@@ -324,6 +324,7 @@ public class SettingsController extends WalletFormController implements Initiali
             return;
         }
 
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet(), KeyPurpose.DEFAULT_PURPOSES, null);
         List<ScriptExpression> scriptExpressions = getScriptExpressions(walletForm.getWallet().getScriptType());
 
         CryptoOutput cryptoOutput;
@@ -341,7 +342,7 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         UR cryptoOutputUR = cryptoOutput.toUR();
-        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoOutputUR);
+        QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR);
         qrDisplayDialog.showAndWait();
     }
 
