@@ -52,7 +52,7 @@ public class PayNymService {
         body.put("code", paymentCode.toString());
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson("https://paynym.is/api/v1/create", Map.class, headers, body)
+        return httpClient.postJson(getHostUrl() + "/api/v1/create", Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -70,7 +70,7 @@ public class PayNymService {
         body.put("code", paymentCode.toString());
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson("https://paynym.is/api/v1/token", Map.class, headers, body)
+        return httpClient.postJson(getHostUrl() + "/api/v1/token", Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -115,7 +115,7 @@ public class PayNymService {
         body.put("signature", signature);
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson("https://paynym.is/api/v1/claim", Map.class, headers, body)
+        return httpClient.postJson(getHostUrl() + "/api/v1/claim", Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -140,7 +140,7 @@ public class PayNymService {
         body.put("signature", signature);
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson("https://paynym.is/api/v1/nym/add", Map.class, headers, body)
+        return httpClient.postJson(getHostUrl() + "/api/v1/nym/add", Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -160,7 +160,7 @@ public class PayNymService {
         body.put("target", paymentCode.toString());
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson("https://paynym.is/api/v1/follow", Map.class, headers, body)
+        return httpClient.postJson(getHostUrl() + "/api/v1/follow", Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -174,7 +174,7 @@ public class PayNymService {
         body.put("nym", nymIdentifier);
 
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson("https://paynym.is/api/v1/nym", Map.class, headers, body)
+        return httpClient.postJson(getHostUrl() + "/api/v1/nym", Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -233,6 +233,14 @@ public class PayNymService {
         //Ensure all http clients are shutdown first
         httpClientService.shutdown();
         httpClientService.setTorProxy(torProxy);
+    }
+
+    private String getHostUrl() {
+        return getHostUrl(getTorProxy() != null);
+    }
+
+    public static String getHostUrl(boolean tor) {
+        return tor ? "http://paynym7bwekdtb2hzgkpl6y2waqcrs2dii7lwincvxme7mdpcpxzfsad.onion" : "https://paynym.is";
     }
 
     public void shutdown() {

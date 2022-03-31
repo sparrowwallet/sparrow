@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.paynym.PayNymService;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Service;
@@ -117,8 +118,8 @@ public class PayNymAvatar extends StackPane {
                     }
 
                     synchronized(lock) {
-                        String url = "https://paynym.is/" + paymentCodeStr + "/avatar";
                         Proxy proxy = AppServices.getProxy();
+                        String url = PayNymService.getHostUrl(proxy != null) + "/" + paymentCodeStr + "/avatar";
 
                         try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
                             Image image = new Image(is, 150, 150, true, false);
