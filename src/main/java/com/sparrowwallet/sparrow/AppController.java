@@ -893,6 +893,7 @@ public class AppController implements Initializable {
             Storage storage = new Storage(file);
             if(!storage.isEncrypted()) {
                 Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage);
+                loadWalletService.setExecutor(Storage.LoadWalletService.getSingleThreadedExecutor());
                 loadWalletService.setOnSucceeded(workerStateEvent -> {
                     WalletAndKey walletAndKey = loadWalletService.getValue();
                     openWallet(storage, walletAndKey, this, forceSameWindow);

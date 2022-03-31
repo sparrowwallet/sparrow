@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.MainApp;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,8 @@ import java.security.cert.CertificateEncodingException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -509,6 +512,8 @@ public class Storage {
         private final Storage storage;
         private final SecureString password;
 
+        private static Executor singleThreadedExecutor;
+
         public LoadWalletService(Storage storage) {
             this.storage = storage;
             this.password = null;
@@ -535,6 +540,15 @@ public class Storage {
                     return walletAndKey;
                 }
             };
+        }
+
+        public static Executor getSingleThreadedExecutor() {
+            if(singleThreadedExecutor == null) {
+                BasicThreadFactory factory = new BasicThreadFactory.Builder().namingPattern("LoadWalletService-single").daemon(true).priority(Thread.MIN_PRIORITY).build();
+                singleThreadedExecutor = Executors.newSingleThreadScheduledExecutor(factory);
+            }
+
+            return singleThreadedExecutor;
         }
     }
 
