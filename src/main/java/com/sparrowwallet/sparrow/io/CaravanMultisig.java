@@ -53,7 +53,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
             ScriptType scriptType = ScriptType.valueOf(cf.addressType.replace('-', '_'));
 
             for(ExtPublicKey extKey : cf.extendedPublicKeys) {
-                Keystore keystore = new Keystore(extKey.name);
+                Keystore keystore = new Keystore(extKey.name.length() > Keystore.MAX_LABEL_LENGTH ? extKey.name.substring(0, Keystore.MAX_LABEL_LENGTH) : extKey.name);
                 try {
                     keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path));
                 } catch(NumberFormatException e) {
@@ -70,6 +70,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
                     keystore.setWalletModel(walletModel);
                     keystore.setSource(KeystoreSource.HW_USB);
                 }
+                wallet.makeLabelsUnique(keystore);
                 wallet.getKeystores().add(keystore);
             }
 
