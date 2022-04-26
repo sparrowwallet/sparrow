@@ -35,7 +35,12 @@ public class UtxosTreeTable extends CoinTreeTable {
         outputCol.setComparator((o1, o2) -> {
             UtxoEntry entry1 = (UtxoEntry)o1;
             UtxoEntry entry2 = (UtxoEntry)o2;
-            return entry1.getDescription().compareTo(entry2.getDescription());
+            int hashCompare = entry1.getHashIndex().getHash().toString().compareTo(entry2.getHashIndex().getHash().toString());
+            if(hashCompare != 0) {
+                return hashCompare;
+            }
+
+            return (int)(entry1.getHashIndex().getIndex() - entry2.getHashIndex().getIndex());
         });
         getColumns().add(outputCol);
 
