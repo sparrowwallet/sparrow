@@ -84,6 +84,9 @@ public class UtxosController extends WalletFormController implements Initializab
     private Button mixTo;
 
     @FXML
+    private Button clear;
+
+    @FXML
     private Button sendSelected;
 
     @FXML
@@ -172,6 +175,7 @@ public class UtxosController extends WalletFormController implements Initializab
             }
         }
 
+        clear.setDisable(true);
         sendSelected.setDisable(true);
         sendSelected.setTooltip(new Tooltip("Send selected UTXOs. Use " + (org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? "Cmd" : "Ctrl") + "+click to select multiple." ));
         mixSelected.managedProperty().bind(mixSelected.visibleProperty());
@@ -199,6 +203,7 @@ public class UtxosController extends WalletFormController implements Initializab
     private void updateButtons(BitcoinUnit unit) {
         List<Entry> selectedEntries = getSelectedEntries();
 
+        clear.setDisable(selectedEntries.isEmpty());
         sendSelected.setDisable(selectedEntries.isEmpty());
         mixSelected.setDisable(selectedEntries.isEmpty() || !AppServices.isConnected());
 
