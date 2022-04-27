@@ -16,7 +16,7 @@ public class FileKeystoreImportPane extends FileImportPane {
     private final KeyDerivation requiredDerivation;
 
     public FileKeystoreImportPane(Wallet wallet, KeystoreFileImport importer, KeyDerivation requiredDerivation) {
-        super(importer, importer.getName(), "Keystore import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png", importer.isKeystoreImportScannable(), importer.isFileFormatAvailable());
+        super(importer, importer.getName(), "Keystore import", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), "image/" + importer.getWalletModel().getType() + ".png", importer.isKeystoreImportScannable(), importer.isFileFormatAvailable());
         this.wallet = wallet;
         this.importer = importer;
         this.requiredDerivation = requiredDerivation;
@@ -33,5 +33,18 @@ public class FileKeystoreImportPane extends FileImportPane {
         } else {
             EventManager.get().post(new KeystoreImportEvent(keystore));
         }
+    }
+
+    private static int getAccount(Wallet wallet, KeyDerivation requiredDerivation) {
+        if(wallet == null || requiredDerivation == null) {
+            return 0;
+        }
+
+        int account = wallet.getScriptType().getAccount(requiredDerivation.getDerivationPath());
+        if(account < 0) {
+            account = 0;
+        }
+
+        return account;
     }
 }

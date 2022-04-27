@@ -27,7 +27,7 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public String getKeystoreImportDescription() {
+    public String getKeystoreImportDescription(int account) {
         return "Import file or QR created by using the My Keystone > ... > Export Wallet feature on your Keystone. Make sure to set the Watch-only Wallet to Sparrow in the Settings first.";
     }
 

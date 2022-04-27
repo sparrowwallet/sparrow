@@ -28,7 +28,7 @@ public class KeystoneMultisig extends ColdcardMultisig {
     }
 
     @Override
-    public String getKeystoreImportDescription() {
+    public String getKeystoreImportDescription(int account) {
         return "Import file or QR created by using the Multisig Wallet > ... > Show/Export XPUB feature on your Keystone.";
     }
 

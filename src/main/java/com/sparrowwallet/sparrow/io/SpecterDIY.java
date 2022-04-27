@@ -45,7 +45,7 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
     }
 
     @Override
-    public String getKeystoreImportDescription() {
+    public String getKeystoreImportDescription(int account) {
         return "Import file or QR created by using the Master Public Keys feature on your Specter DIY device. Note the default is P2WPKH for Single Signature, and P2WSH for Multi Signature.";
     }
 

@@ -35,7 +35,7 @@ public class GordianSeedTool implements KeystoreFileImport {
     }
 
     @Override
-    public String getKeystoreImportDescription() {
+    public String getKeystoreImportDescription(int account) {
         return "Select your seed and scan the QR code created by Authenticate > Derive Key > Other Key Derivations > " + Network.get().toDisplayString() + " > Master Key > Account Descriptor. Click the share icon at the bottom.";
     }
 

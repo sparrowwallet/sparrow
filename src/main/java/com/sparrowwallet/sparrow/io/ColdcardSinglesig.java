@@ -28,8 +28,8 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public String getKeystoreImportDescription() {
-        return "Import file created by using the Advanced > MicroSD > Export Wallet > Generic JSON > 0 feature on your Coldcard. Note this requires firmware version 3.1.3 or later.";
+    public String getKeystoreImportDescription(int account) {
+        return "Import file created by using the Advanced > MicroSD > Export Wallet > Generic JSON > " + account + " feature on your Coldcard. Note this requires firmware version 3.1.3 or later.";
     }
 
     @Override

@@ -24,7 +24,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public String getKeystoreImportDescription() {
+    public String getKeystoreImportDescription(int account) {
         return "Import file or QR created by using the My Cobo Vault > ... > Export Wallet feature on your Cobo Vault.";
     }
 
