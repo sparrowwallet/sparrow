@@ -1387,6 +1387,12 @@ public class HeadersController extends TransactionFormController implements Init
             if(!changedLabelEntries.isEmpty()) {
                 Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(event.getWallet(), changedLabelEntries)));
             }
+        } else if(headersForm.getBlockTransaction() != null && headersForm.getBlockTransaction().getHeight() <= 0) {
+            BlockTransaction walletTransaction = event.getWallet().getWalletTransaction(headersForm.getBlockTransaction().getHash());
+            if(walletTransaction != null && walletTransaction.getHeight() > 0) {
+                headersForm.setBlockTransaction(walletTransaction);
+                updateBlockchainForm(headersForm.getBlockTransaction(), AppServices.getCurrentBlockHeight());
+            }
         }
     }
 
