@@ -2013,6 +2013,7 @@ public class AppController implements Initializable {
                 saveTransaction.setDisable(true);
                 lockWallet.setDisable(walletTabData.getWalletForm().lockedProperty().get());
                 exportWallet.setDisable(walletTabData.getWallet() == null || !walletTabData.getWallet().isValid() || walletTabData.getWalletForm().isLocked());
+                refreshWallet.setText(walletTabData.getWallet() == null || walletTabData.getWalletForm().getMasterWallet().getChildWallets().stream().allMatch(Wallet::isNested) ? "Refresh Wallet" : "Refresh Wallet Account");
                 showLoadingLog.setDisable(false);
                 showTxHex.setDisable(true);
                 showPayNym.setDisable(exportWallet.isDisable() || !walletTabData.getWallet().hasPaymentCode());
