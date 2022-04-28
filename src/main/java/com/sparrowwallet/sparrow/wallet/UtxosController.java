@@ -84,6 +84,9 @@ public class UtxosController extends WalletFormController implements Initializab
     private Button mixTo;
 
     @FXML
+    private Button selectAll;
+
+    @FXML
     private Button clear;
 
     @FXML
@@ -194,6 +197,7 @@ public class UtxosController extends WalletFormController implements Initializab
         balance.setValue(walletUtxosEntry.getBalance());
         mempoolBalance.setValue(walletUtxosEntry.getMempoolBalance());
         utxoCount.setText(walletUtxosEntry.getChildren() != null ? Integer.toString(walletUtxosEntry.getChildren().size()) : "0");
+        selectAll.setDisable(walletUtxosEntry.getChildren() == null || walletUtxosEntry.getChildren().size() == 0);
     }
 
     private boolean canWalletMix() {
@@ -203,6 +207,7 @@ public class UtxosController extends WalletFormController implements Initializab
     private void updateButtons(BitcoinUnit unit) {
         List<Entry> selectedEntries = getSelectedEntries();
 
+        selectAll.setDisable(utxosTable.getRoot().getChildren().size() == utxosTable.getSelectionModel().getSelectedCells().size());
         clear.setDisable(selectedEntries.isEmpty());
         sendSelected.setDisable(selectedEntries.isEmpty());
         mixSelected.setDisable(selectedEntries.isEmpty() || !AppServices.isConnected());
@@ -372,6 +377,10 @@ public class UtxosController extends WalletFormController implements Initializab
                 .map(e -> (UtxoEntry)e)
                 .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
                 .collect(Collectors.toList());
+    }
+
+    public void selectAll(ActionEvent event) {
+        utxosTable.getSelectionModel().selectAll();
     }
 
     public void clear(ActionEvent event) {

@@ -213,7 +213,7 @@ public class WalletForm {
 
     private void updateWallets(Integer blockHeight, Wallet previousWallet) {
         List<WalletNode> nestedHistoryChangedNodes = new ArrayList<>();
-        for(Wallet childWallet : wallet.getChildWallets()) {
+        for(Wallet childWallet : new ArrayList<>(wallet.getChildWallets())) {
             if(childWallet.isNested()) {
                 Wallet previousChildWallet = previousWallet.getChildWallet(childWallet.getName());
                 if(previousChildWallet != null) {

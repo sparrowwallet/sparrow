@@ -83,6 +83,7 @@
                         </HBox>
                         <Region HBox.hgrow="ALWAYS" />
                         <HBox styleClass="utxos-buttons-box" spacing="20" alignment="BOTTOM_RIGHT">
+                            <Button fx:id="selectAll" text="Select All" onAction="#selectAll"/>
                             <Button fx:id="clear" text="Clear" onAction="#clear"/>
                             <Button fx:id="mixSelected" text="Mix Selected" graphicTextGap="5" onAction="#mixSelected">
                                 <graphic>
