@@ -55,6 +55,9 @@ public interface WalletDao {
     @GetGeneratedKeys("id")
     long insert(String name, String label, int network, int policyType, int scriptType, Integer storedBlockHeight, Integer gapLimit, Integer watchLast, Date birthDate, long defaultPolicy);
 
+    @SqlUpdate("update wallet set name = :name where id = :id")
+    void updateName(@Bind("id") long id, @Bind("name") String name);
+
     @SqlUpdate("update wallet set label = :label where id = :id")
     void updateLabel(@Bind("id") long id, @Bind("label") String label);
 
@@ -70,12 +73,17 @@ public interface WalletDao {
     @SqlUpdate("set schema ?")
     int setSchema(String schema);
 
-    default Wallet getMainWallet(String schema) {
+    default Wallet getMainWallet(String schema, String walletName) {
         try {
             setSchema(schema);
             Wallet mainWallet = loadMainWallet();
             if(mainWallet != null) {
                 loadWallet(mainWallet);
+
+                if(walletName != null && !walletName.equals(mainWallet.getName())) {
+                    mainWallet.setName(walletName);
+                    updateName(mainWallet.getId(), walletName);
+                }
             }
 
             return mainWallet;

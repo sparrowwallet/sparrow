@@ -84,7 +84,7 @@ public class DbPersistence implements Persistence {
         Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
         masterWallet = jdbi.withHandle(handle -> {
             WalletDao walletDao = handle.attach(WalletDao.class);
-            return walletDao.getMainWallet(MASTER_SCHEMA);
+            return walletDao.getMainWallet(MASTER_SCHEMA, getWalletName(storage.getWalletFile(), null));
         });
 
         Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, encryptionKey);
@@ -109,7 +109,7 @@ public class DbPersistence implements Persistence {
             Jdbi childJdbi = getJdbi(storage, getFilePassword(encryptionKey));
             Wallet wallet = childJdbi.withHandle(handle -> {
                 WalletDao walletDao = handle.attach(WalletDao.class);
-                Wallet childWallet = walletDao.getMainWallet(schema);
+                Wallet childWallet = walletDao.getMainWallet(schema, null);
                 childWallet.setName(schema.substring(WALLET_SCHEMA_PREFIX.length()));
                 childWallet.setMasterWallet(masterWallet);
                 return childWallet;
