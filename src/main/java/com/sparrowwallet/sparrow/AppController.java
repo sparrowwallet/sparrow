@@ -157,6 +157,9 @@ public class AppController implements Initializable {
     private MenuItem lockWallet;
 
     @FXML
+    private MenuItem lockAllWallets;
+
+    @FXML
     private MenuItem searchWallet;
 
     @FXML
@@ -1382,6 +1385,17 @@ public class AppController implements Initializable {
         }
     }
 
+    private boolean allWalletsLocked(Wallet lockingWallet) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData instanceof WalletTabData walletTabData && walletTabData.getWallet() != lockingWallet && !walletTabData.getWalletForm().isLocked()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public void searchWallet(ActionEvent event) {
         Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
         if(selectedTab != null) {
@@ -2557,6 +2571,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(true);
             exportWallet.setDisable(true);
+            lockAllWallets.setDisable(allWalletsLocked(event.getWallet()));
         }
     }
 
@@ -2566,6 +2581,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(false);
             exportWallet.setDisable(!event.getWallet().isValid());
+            lockAllWallets.setDisable(false);
         }
     }
 }
