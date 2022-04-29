@@ -14,6 +14,7 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
@@ -47,7 +48,19 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         List<Payment> initialPayments = IntStream.range(0, 100).mapToObj(i -> new Payment(null, null, -1, false)).collect(Collectors.toList());
         Grid grid = getGrid(initialPayments);
 
-        spreadsheetView = new SpreadsheetView(grid);
+        spreadsheetView = new SpreadsheetView(grid) {
+            @Override
+            public void pasteClipboard() {
+                final Clipboard clipboard = Clipboard.getSystemClipboard();
+                if(clipboard.hasString()) {
+                    final TablePosition<?,?> tp = getSelectionModel().getFocusedCell();
+                    SpreadsheetCell cell = getGrid().getRows().get(tp.getRow()).get(tp.getColumn());
+                    getGrid().setCellValue(cell.getRow(), cell.getColumn(), cell.getCellType().convertValue(clipboard.getString()));
+                } else {
+                    super.pasteClipboard();
+                }
+            }
+        };
         spreadsheetView.getColumns().get(0).setPrefWidth(400);
         spreadsheetView.getColumns().get(1).setPrefWidth(150);
         spreadsheetView.getColumns().get(2).setPrefWidth(247);
