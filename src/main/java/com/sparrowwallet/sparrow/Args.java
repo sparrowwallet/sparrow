@@ -4,6 +4,9 @@ import com.beust.jcommander.Parameter;
 import com.sparrowwallet.drongo.Network;
 import org.slf4j.event.Level;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Args {
     @Parameter(names = { "--dir", "-d" }, description = "Path to Sparrow home folder")
     public String dir;
@@ -16,4 +19,23 @@ public class Args {
 
     @Parameter(names = { "--help", "-h" }, description = "Show usage", help = true)
     public boolean help;
+
+    public List<String> toParams() {
+        List<String> params = new ArrayList<>();
+
+        if(dir != null) {
+            params.add("-d");
+            params.add(dir);
+        }
+        if(network != null) {
+            params.add("-n");
+            params.add(network.toString());
+        }
+        if(level != null) {
+            params.add("-l");
+            params.add(level.toString());
+        }
+
+        return params;
+    }
 }

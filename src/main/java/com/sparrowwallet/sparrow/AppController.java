@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow;
 
+import com.beust.jcommander.JCommander;
 import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
@@ -90,6 +91,7 @@ public class AppController implements Initializable {
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
     public static final String CONNECTION_FAILED_PREFIX = "Connection failed: ";
     public static final String TRYING_ANOTHER_SERVER_MESSAGE = "trying another server...";
+    public static final String JPACKAGE_APP_PATH = "jpackage.app-path";
 
     @FXML
     private MenuItem saveTransaction;
@@ -180,6 +182,9 @@ public class AppController implements Initializable {
     @FXML
     private CheckMenuItem preventSleep;
     private static final BooleanProperty preventSleepProperty = new SimpleBooleanProperty();
+
+    @FXML
+    private MenuItem restart;
 
     @FXML
     private StackPane rootStack;
@@ -334,6 +339,8 @@ public class AppController implements Initializable {
         showLoadingLog.selectedProperty().bindBidirectional(showLoadingLogProperty);
         preventSleepProperty.set(Config.get().isPreventSleep());
         preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
+        restart.setText("Restart in " + (Network.get() == Network.MAINNET ? Network.TESTNET.toDisplayString() : Network.MAINNET.toDisplayString()));
+        restart.setVisible(System.getProperty(JPACKAGE_APP_PATH) != null);
 
         saveTransaction.setDisable(true);
         showTransaction.visibleProperty().bind(Bindings.and(saveTransaction.visibleProperty(), saveTransaction.disableProperty().not()));
@@ -837,6 +844,31 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setPreventSleep(item.isSelected());
         AppServices.get().setPreventSleep(item.isSelected());
+    }
+
+    public void restart(ActionEvent event) {
+        if(System.getProperty(JPACKAGE_APP_PATH) == null) {
+            throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
+        }
+
+        Args args = new Args();
+        ProcessHandle.current().info().arguments().ifPresent(argv -> {
+            JCommander jCommander = JCommander.newBuilder().addObject(args).acceptUnknownOptions(true).build();
+            jCommander.parse(argv);
+        });
+
+        args.network = (Network.get() == Network.MAINNET ? Network.TESTNET : Network.MAINNET);
+
+        try {
+            List<String> cmd = new ArrayList<>();
+            cmd.add(System.getProperty(JPACKAGE_APP_PATH));
+            cmd.addAll(args.toParams());
+            final ProcessBuilder builder = new ProcessBuilder(cmd);
+            builder.start();
+            quit(event);
+        } catch(Exception e) {
+            log.error("Error restarting application", e);
+        }
     }
 
     public void openFile(File file) {
