@@ -28,6 +28,8 @@ The Sparrow binaries can be built from source using
 
 `./gradlew jpackage`
 
+Note that to build the Windows installer, you will need to install [WiX](https://github.com/wixtoolset/wix3/releases).
+
 When updating to the latest HEAD
 
 `git pull --recurse-submodules`
