@@ -602,6 +602,11 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     @Subscribe
+    public void walletLabelChanged(WalletLabelChangedEvent event) {
+        Platform.runLater(this::updateMixToButton);
+    }
+
+    @Subscribe
     public void whirlpoolMix(WhirlpoolMixEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
             WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();

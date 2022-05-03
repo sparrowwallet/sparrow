@@ -1879,7 +1879,7 @@ public class AppController implements Initializable {
                 if(optButtonType.isPresent() && optButtonType.get() == ButtonType.OK) {
                     subTabs.getTabs().remove(subTab);
                     if(subTabs.getTabs().size() == 1) {
-                        setSubTabsVisible(subTabs, false);
+                        setSubTabsVisible(subTabs, areSubTabsVisible());
                     }
                     EventManager.get().post(new WalletDeletedEvent(wallet));
                 }
