@@ -33,7 +33,7 @@ public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
     private static final String HWI_HOME_DIR = "hwi";
     private static final String HWI_VERSION_PREFIX = "hwi-";
-    private static final String HWI_VERSION = "2.0.2";
+    private static final String HWI_VERSION = "2.1.0";
     private static final String HWI_VERSION_DIR = HWI_VERSION_PREFIX + HWI_VERSION;
 
     private static boolean isPromptActive = false;
@@ -337,7 +337,7 @@ public class Hwi {
                     Path tempExecPath;
                     if(platform == Platform.WINDOWS) {
                         inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
-                        tempExecPath = Files.createTempFile(HWI_VERSION_DIR, null);
+                        tempExecPath = Files.createTempFile(getHwiHomeDir().toPath(), HWI_VERSION_DIR, null);
                     } else {
                         inputStream = Hwi.class.getResourceAsStream("/native/linux/x64/hwi");
                         tempExecPath = Files.createTempFile(HWI_VERSION_DIR, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
@@ -368,7 +368,7 @@ public class Hwi {
     }
 
     private File getHwiHomeDir() {
-        if(Platform.getCurrent() == Platform.OSX) {
+        if(Platform.getCurrent() == Platform.OSX || Platform.getCurrent() == Platform.WINDOWS) {
             return new File(Storage.getSparrowDir(), HWI_HOME_DIR);
         }
 
