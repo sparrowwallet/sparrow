@@ -336,6 +336,7 @@ public class Hwi {
                     InputStream inputStream;
                     Path tempExecPath;
                     if(platform == Platform.WINDOWS) {
+                        Files.createDirectories(getHwiHomeDir().toPath());
                         inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
                         tempExecPath = Files.createTempFile(getHwiHomeDir().toPath(), HWI_VERSION_DIR, null);
                     } else {
