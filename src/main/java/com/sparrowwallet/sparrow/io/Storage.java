@@ -126,6 +126,10 @@ public class Storage {
         return persistence.isPersisted(this, wallet);
     }
 
+    public boolean isClosed() {
+        return persistence.isClosed();
+    }
+
     public void close() {
         ClosePersistenceService closePersistenceService = new ClosePersistenceService();
         closePersistenceService.start();
@@ -163,6 +167,11 @@ public class Storage {
         persistence.copyWallet(walletFile, outputStream);
     }
 
+    public void delete() {
+        deleteBackups();
+        IOUtils.secureDelete(walletFile);
+    }
+
     public void deleteBackups() {
         deleteBackups(null);
     }
@@ -181,7 +190,7 @@ public class Storage {
     private void deleteBackups(String prefix) {
         File[] backups = getBackups(prefix);
         for(File backup : backups) {
-            backup.delete();
+            IOUtils.secureDelete(backup);
         }
     }
 

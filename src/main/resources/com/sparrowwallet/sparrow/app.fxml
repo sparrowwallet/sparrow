@@ -48,7 +48,8 @@
                         <SeparatorMenuItem styleClass="osxHide" />
                         <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Preferences..." accelerator="Shortcut+P" onAction="#openPreferences"/>
                         <SeparatorMenuItem />
-                        <MenuItem mnemonicParsing="false" text="Close Tab" accelerator="Shortcut+W" onAction="#closeTab"/>
+                        <MenuItem fx:id="deleteWallet" mnemonicParsing="false" text="Delete Wallet..." onAction="#deleteWallet"/>
+                        <MenuItem fx:id="closeTab" mnemonicParsing="false" text="Close Tab" accelerator="Shortcut+W" onAction="#closeTab"/>
                         <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Quit" accelerator="Shortcut+Q" onAction="#quit"/>
                     </items>
                 </Menu>

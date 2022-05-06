@@ -112,6 +112,12 @@ public class AppController implements Initializable {
     private MenuItem exportWallet;
 
     @FXML
+    private MenuItem deleteWallet;
+
+    @FXML
+    private MenuItem closeTab;
+
+    @FXML
     private Menu fileMenu;
 
     @FXML
@@ -294,11 +300,13 @@ public class AppController implements Initializable {
                     EventManager.get().post(new TransactionTabsClosedEvent(closedTransactionTabs));
                 }
 
+                closeTab.setDisable(tabs.getTabs().isEmpty());
                 if(tabs.getTabs().isEmpty()) {
                     Stage tabStage = (Stage)tabs.getScene().getWindow();
                     tabStage.setTitle("Sparrow");
                     saveTransaction.setVisible(true);
                     saveTransaction.setDisable(true);
+                    exportWallet.setDisable(true);
                 }
             }
         });
@@ -349,6 +357,8 @@ public class AppController implements Initializable {
         savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
         showPSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
+        deleteWallet.disableProperty().bind(exportWallet.disableProperty());
+        closeTab.setDisable(true);
         lockWallet.setDisable(true);
         searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
@@ -790,6 +800,10 @@ public class AppController implements Initializable {
                 }
             }
         }
+    }
+
+    public void deleteWallet(ActionEvent event) {
+        deleteWallet(getSelectedWalletForm());
     }
 
     public void closeTab(ActionEvent event) {
@@ -1851,8 +1865,63 @@ public class AppController implements Initializable {
             tabs.getTabs().removeAll(tabs.getTabs());
         });
 
-        contextMenu.getItems().addAll(close, closeOthers, closeAll);
+        MenuItem delete = new MenuItem("Delete...");
+        delete.setOnAction(event -> {
+            deleteWallet(getSelectedWalletForm());
+        });
+
+        contextMenu.getItems().addAll(close, closeOthers, closeAll, delete);
         return contextMenu;
+    }
+
+    private void deleteWallet(WalletForm selectedWalletForm) {
+        Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete Wallet?", "The wallet file and any backups will be deleted. Are you sure?", ButtonType.NO, ButtonType.YES);
+        if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
+            Storage storage = selectedWalletForm.getStorage();
+            if(selectedWalletForm.getMasterWallet().isEncrypted()) {
+                WalletPasswordDialog dlg = new WalletPasswordDialog(selectedWalletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                Optional<SecureString> password = dlg.showAndWait();
+                if(password.isPresent()) {
+                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
+                        ECKey encryptionFullKey = keyDerivationService.getValue();
+
+                        try {
+                            tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
+                            deleteStorage(storage);
+                        } finally {
+                            encryptionFullKey.clear();
+                            password.get().clear();
+                        }
+                    });
+                    keyDerivationService.setOnFailed(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Failed"));
+                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                            Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                            if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                                Platform.runLater(() -> deleteWallet(getSelectedWalletForm()));
+                            }
+                        } else {
+                            log.error("Error deriving wallet key", keyDerivationService.getException());
+                        }
+                    });
+                    EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
+                    keyDerivationService.start();
+                }
+            } else {
+                tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
+                deleteStorage(storage);
+            }
+        }
+    }
+
+    private void deleteStorage(Storage storage) {
+        if(storage.isClosed()) {
+            Platform.runLater(storage::delete);
+        } else {
+            Platform.runLater(() -> deleteStorage(storage));
+        }
     }
 
     private ContextMenu getSubTabContextMenu(Wallet wallet, TabPane subTabs, Tab subTab) {

@@ -569,6 +569,11 @@ public class DbPersistence implements Persistence {
     }
 
     @Override
+    public boolean isClosed() {
+        return dataSource.isClosed();
+    }
+
+    @Override
     public void close() {
         EventManager.get().unregister(this);
         if(updateExecutor != null) {

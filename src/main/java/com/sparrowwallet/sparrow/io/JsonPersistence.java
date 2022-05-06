@@ -306,6 +306,11 @@ public class JsonPersistence implements Persistence {
     }
 
     @Override
+    public boolean isClosed() {
+        return true;
+    }
+
+    @Override
     public void close() {
         //Nothing required
     }

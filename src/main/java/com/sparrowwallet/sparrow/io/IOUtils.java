@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.io;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -9,11 +12,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class IOUtils {
+    private static final Logger log = LoggerFactory.getLogger(IOUtils.class);
+
     public static FileType getFileType(File file) {
         try {
             String type = Files.probeContentType(file.toPath());
@@ -119,5 +125,29 @@ public class IOUtils {
         }
 
         return true;
+    }
+
+    public static boolean secureDelete(File file) {
+        if(file.exists()) {
+            long length = file.length();
+            SecureRandom random = new SecureRandom();
+            try(RandomAccessFile raf = new RandomAccessFile(file, "rws")) {
+                raf.seek(0);
+                raf.getFilePointer();
+                byte[] data = new byte[64];
+                int pos = 0;
+                while(pos < length) {
+                    random.nextBytes(data);
+                    raf.write(data);
+                    pos += data.length;
+                }
+            } catch(IOException e) {
+                log.warn("Error overwriting file for deletion " + file.getName(), e);
+            }
+
+            return file.delete();
+        }
+
+        return false;
     }
 }

@@ -25,5 +25,6 @@ public interface Persistence {
     String getWalletId(Storage storage, Wallet wallet);
     String getWalletName(File walletFile, Wallet wallet);
     void copyWallet(File walletFile, OutputStream outputStream) throws IOException;
+    boolean isClosed();
     void close();
 }
