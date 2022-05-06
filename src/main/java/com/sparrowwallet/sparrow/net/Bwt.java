@@ -41,7 +41,10 @@ public class Bwt {
         if(!initialized) {
             try {
                 org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
-                if(platform == org.controlsfx.tools.Platform.OSX) {
+                String osArch = System.getProperty("os.arch");
+                if(platform == org.controlsfx.tools.Platform.OSX && osArch.equals("aarch64")) {
+                    NativeUtils.loadLibraryFromJar("/native/osx/aarch64/libbwt_jni.dylib");
+                } else if(platform == org.controlsfx.tools.Platform.OSX) {
                     NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
                 } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
                     NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");

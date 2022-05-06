@@ -294,7 +294,14 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
-                    InputStream inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + HWI_VERSION_DIR + "-mac-amd64-signed.zip");
+                    String osArch = System.getProperty("os.arch");
+                    InputStream inputStream;
+                    if(osArch.equals("aarch64")) {
+                        inputStream = Hwi.class.getResourceAsStream("/native/osx/aarch64/" + HWI_VERSION_DIR + "-mac-aarch64-signed.zip");
+                    } else {
+                        inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + HWI_VERSION_DIR + "-mac-amd64-signed.zip");
+                    }
+
                     if(inputStream == null) {
                         throw new IllegalStateException("Cannot load " + HWI_VERSION_DIR + " from classpath");
                     }

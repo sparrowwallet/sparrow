@@ -11,6 +11,12 @@ def osName = os.getFamilyName()
 if(os.macOsX) {
     osName = "osx"
 }
+def targetName = osName
+def osArch = "x64"
+if(System.getProperty("os.arch") == "aarch64") {
+    osArch = "aarch64"
+    targetName = osName + "-" + osArch
+}
 
 group "com.sparrowwallet"
 version "${sparrowVersion}"
@@ -118,7 +124,7 @@ compileJava {
 processResources {
     doLast {
         delete fileTree("$buildDir/resources/main/native").matching {
-            exclude "${osName}/**"
+            exclude "${osName}/${osArch}/**"
         }
     }
 }
@@ -550,7 +556,7 @@ extraJavaModuleInfo {
     module('jcip-annotations-1.0.jar', 'net.jcip.annotations', '1.0') {
         exports('net.jcip.annotations')
     }
-    module("netlayer-jpms-${osName}-0.6.8.jar", 'netlayer.jpms', '0.6.8') {
+    module("netlayer-jpms-${targetName}-0.6.8.jar", 'netlayer.jpms', '0.6.8') {
         exports('org.berndpruenster.netlayer.tor')
         requires('com.github.ravn.jsocks')
         requires('com.github.JesusMcCloud.jtorctl')
