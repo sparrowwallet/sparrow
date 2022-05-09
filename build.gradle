@@ -11,11 +11,11 @@ def osName = os.getFamilyName()
 if(os.macOsX) {
     osName = "osx"
 }
-def targetName = osName
+def targetName = ""
 def osArch = "x64"
 if(System.getProperty("os.arch") == "aarch64") {
     osArch = "aarch64"
-    targetName = osName + "-" + osArch
+    targetName = "-" + osArch
 }
 
 group "com.sparrowwallet"
@@ -73,13 +73,13 @@ dependencies {
     }
     implementation('com.sparrowwallet:hummingbird:1.6.4')
     implementation('co.nstant.in:cbor:0.9')
-    implementation('com.nativelibs4java:bridj:0.7-20140918-3') {
+    implementation("com.nativelibs4java:bridj${targetName}:0.7-20140918-3") {
         exclude group: 'com.google.android.tools', module: 'dx'
     }
-    implementation('com.github.sarxos:webcam-capture:0.3.13-SNAPSHOT') {
+    implementation("com.github.sarxos:webcam-capture${targetName}:0.3.13-SNAPSHOT") {
         exclude group: 'com.nativelibs4java', module: 'bridj'
     }
-    implementation("com.sparrowwallet:netlayer-jpms-${osName}:0.6.8") {
+    implementation("com.sparrowwallet:netlayer-jpms-${osName}${targetName}:0.6.8") {
         exclude group: 'org.jetbrains.kotlin'
     }
     implementation('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.20')
@@ -335,12 +335,12 @@ extraJavaModuleInfo {
         requires('org.slf4j')
         requires('com.fasterxml.jackson.databind')
     }
-    module('bridj-0.7-20140918-3.jar', 'com.nativelibs4java.bridj', '0.7-20140918-3') {
+    module("bridj${targetName}-0.7-20140918-3.jar", 'com.nativelibs4java.bridj', '0.7-20140918-3') {
         exports('org.bridj')
         exports('org.bridj.cpp')
         requires('java.logging')
     }
-    module('webcam-capture-0.3.13-SNAPSHOT.jar', 'com.github.sarxos.webcam.capture', '0.3.13-SNAPSHOT') {
+    module("webcam-capture${targetName}-0.3.13-SNAPSHOT.jar", 'com.github.sarxos.webcam.capture', '0.3.13-SNAPSHOT') {
         exports('com.github.sarxos.webcam')
         exports('com.github.sarxos.webcam.ds.buildin')
         exports('com.github.sarxos.webcam.ds.buildin.natives')
@@ -556,7 +556,7 @@ extraJavaModuleInfo {
     module('jcip-annotations-1.0.jar', 'net.jcip.annotations', '1.0') {
         exports('net.jcip.annotations')
     }
-    module("netlayer-jpms-${targetName}-0.6.8.jar", 'netlayer.jpms', '0.6.8') {
+    module("netlayer-jpms-${osName}${targetName}-0.6.8.jar", 'netlayer.jpms', '0.6.8') {
         exports('org.berndpruenster.netlayer.tor')
         requires('com.github.ravn.jsocks')
         requires('com.github.JesusMcCloud.jtorctl')
