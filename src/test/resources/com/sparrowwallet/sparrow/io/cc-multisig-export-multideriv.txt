@@ -3,12 +3,12 @@ Name: el-CC-3-of-3-sb-2
 Policy: 3 of 3
 Format: P2WSH
 
-# derivation: m/48'/0'/0'/2'
+Derivation: m/48'/0'/0'/2'
 06B57041: xpub6EfEGa5isJbQFSswM5Uptw5BSq2Td1ZDJr3QUNUcMySpC7itZ3ccypVHtLPnvMzKQ2qxrAgH49vhVxRcaQLFbixAVRR8RACrYTp88Uv9h8Z
 
-# derivation: m/48'/0'/0'/2'
+Derivation: m/48'/0'/0'/2'
 4B569672: xpub6FFEQVG6QR28giDuML74Y7EMPwqEiKftNjScLzg5WKM41bf6LMP2XspjBgNp28tvkNUZdokmTY4TcRbuGZBSMvNoUECrKW1y3TBPeQJVmAg
 
-# derivation: m/47'/0'/0'/1'
+Derivation: m/47'/0'/0'/1'
 CA9A2B19: xpub6Eb6Z1xtmWRiWKgRpHf6dHiEagGd6FLiBXrnma1nFK4PGRYqSVqVyJaxna5Mb8etSP4ATKVAvKnXG1a9HZauoAawuSDJT5RgH2HqEVHZVHY
 

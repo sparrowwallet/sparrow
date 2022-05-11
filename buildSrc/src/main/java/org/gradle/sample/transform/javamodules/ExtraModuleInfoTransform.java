@@ -67,6 +67,8 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
             outputs.file(originalJar);
         } else if (automaticModules.containsKey(originalJarName)) {
             addAutomaticModuleName(originalJar,  getModuleJar(outputs, originalJar), automaticModules.get(originalJarName));
+        } else if(originalJarName.startsWith("kotlin-stdlib-common")) {
+            //ignore
         } else {
             throw new RuntimeException("Not a module and no mapping defined: " + originalJarName);
         }
