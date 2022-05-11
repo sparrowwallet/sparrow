@@ -312,7 +312,9 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private void updateOpenWallets(Collection<Wallet> wallets) {
-        List<Wallet> openWalletList = wallets.stream().filter(wallet -> wallet.isValid() && !wallet.isWhirlpoolChildWallet() && !wallet.isBip47()).collect(Collectors.toList());
+        List<Wallet> openWalletList = wallets.stream().filter(wallet -> wallet.isValid()
+                && (wallet == sendController.getWalletForm().getWallet() || !wallet.isWhirlpoolChildWallet())
+                && !wallet.isBip47()).collect(Collectors.toList());
 
         if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
             openWalletList.add(payNymWallet);

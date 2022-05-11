@@ -240,7 +240,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 if(txOutput.getScript().getToAddress() != null) {
-                    return new Payment(txOutput.getScript().getToAddress(), label, txOutput.getValue(), false);
+                    return new Payment(txOutput.getScript().getToAddress(), label, txOutput.getValue(), blockTransaction.getTransaction().getOutputs().size() == 1);
                 }
 
                 return null;
