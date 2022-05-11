@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
@@ -161,6 +162,7 @@ public class WhirlpoolServices {
 
     public static boolean canWalletMix(Wallet wallet) {
         return Whirlpool.WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getScriptType() == ScriptType.P2WPKH
                 && wallet.getKeystores().size() == 1
                 && wallet.getKeystores().get(0).hasSeed()
                 && wallet.getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
