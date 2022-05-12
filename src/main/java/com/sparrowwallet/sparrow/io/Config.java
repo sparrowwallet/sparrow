@@ -15,6 +15,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppServices.ENUMERATE_HW_PERIOD_SECS;
 import static com.sparrowwallet.sparrow.net.PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE;
 import static com.sparrowwallet.sparrow.net.TcpTransport.DEFAULT_MAX_TIMEOUT;
 
@@ -45,6 +46,7 @@ public class Config {
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private File hwi;
+    private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private Boolean hdCapture;
     private String webcamDevice;
     private ServerType serverType;
@@ -307,6 +309,10 @@ public class Config {
     public void setHwi(File hwi) {
         this.hwi = hwi;
         flush();
+    }
+
+    public int getEnumerateHwPeriod() {
+        return enumerateHwPeriod;
     }
 
     public Boolean getHdCapture() {
