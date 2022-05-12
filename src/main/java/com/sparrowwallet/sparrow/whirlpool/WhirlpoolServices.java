@@ -162,7 +162,7 @@ public class WhirlpoolServices {
 
     public static boolean canWalletMix(Wallet wallet) {
         return Whirlpool.WHIRLPOOL_NETWORKS.contains(Network.get())
-                && wallet.getScriptType() == ScriptType.P2WPKH
+                && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
                 && wallet.getKeystores().size() == 1
                 && wallet.getKeystores().get(0).hasSeed()
                 && wallet.getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39

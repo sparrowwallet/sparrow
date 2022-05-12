@@ -499,6 +499,12 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     public void clear() {
+        try {
+            AppServices.clearPayjoinURI(getRecipientAddress());
+        } catch(InvalidAddressException e) {
+            //ignore
+        }
+
         address.setText("");
         label.setText("");
 

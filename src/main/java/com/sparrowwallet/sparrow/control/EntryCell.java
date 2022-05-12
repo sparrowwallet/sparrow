@@ -206,14 +206,16 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 .map(e -> e.getBlockTransaction().getTransaction().getOutputs().get((int)e.getHashIndex().getIndex()))
                 .collect(Collectors.toList());
 
-        long changeTotal = ourOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
+        long changeTotal = ourOutputs.stream().mapToLong(TransactionOutput::getValue).sum() - consolidationOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
         Transaction tx = blockTransaction.getTransaction();
         double vSize = tx.getVirtualSize();
         int inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
         List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getWalletUtxos().keySet());
+        //Remove any UTXOs created by the transaction that is to be replaced
+        walletUtxos.removeIf(utxo -> ourOutputs.stream().anyMatch(output -> output.getHash().equals(utxo.getHash()) && output.getIndex() == utxo.getIndex()));
         Collections.shuffle(walletUtxos);
         while((double)changeTotal / vSize < getMaxFeeRate() && !walletUtxos.isEmpty()) {
-            //If there is insufficent change output, include another random UTXO so the fee can be increased
+            //If there is insufficient change output, include another random UTXO so the fee can be increased
             BlockTransactionHashIndex utxo = walletUtxos.remove(0);
             utxos.add(utxo);
             changeTotal += utxo.getValue();
@@ -223,6 +225,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         List<TransactionOutput> externalOutputs = new ArrayList<>(blockTransaction.getTransaction().getOutputs());
         externalOutputs.removeAll(ourOutputs);
         externalOutputs.addAll(consolidationOutputs);
+        final long rbfChange = changeTotal;
         List<Payment> payments = externalOutputs.stream().map(txOutput -> {
             try {
                 String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
@@ -240,7 +243,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 }
 
                 if(txOutput.getScript().getToAddress() != null) {
-                    return new Payment(txOutput.getScript().getToAddress(), label, txOutput.getValue(), blockTransaction.getTransaction().getOutputs().size() == 1);
+                    //Disable change creation by enabling max payment when there is only one output and no additional UTXOs included
+                    return new Payment(txOutput.getScript().getToAddress(), label, txOutput.getValue(), blockTransaction.getTransaction().getOutputs().size() == 1 && rbfChange == 0);
                 }
 
                 return null;

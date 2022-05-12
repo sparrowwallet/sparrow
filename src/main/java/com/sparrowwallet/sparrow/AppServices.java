@@ -690,6 +690,10 @@ public class AppServices {
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
 
+    public static void clearPayjoinURI(Address address) {
+        payjoinURIs.remove(address);
+    }
+
     public static void clearTransactionHistoryCache(Wallet wallet) {
         ElectrumServer.clearRetrievedScriptHashes(wallet);
 

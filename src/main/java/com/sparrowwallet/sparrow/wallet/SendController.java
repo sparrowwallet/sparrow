@@ -985,7 +985,8 @@ public class SendController extends WalletFormController implements Initializabl
     private boolean isMixPossible(List<Payment> payments) {
         return (utxoSelectorProperty.get() == null || SorobanServices.canWalletMix(walletForm.getWallet()))
                 && payments.size() == 1
-                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
+                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType())
+                && AppServices.getPayjoinURI(payments.get(0).getAddress()) == null;
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
@@ -1633,6 +1634,7 @@ public class SendController extends WalletFormController implements Initializabl
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
             boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
             boolean addressReuse = userPayments.stream().anyMatch(payment -> walletAddresses.get(payment.getAddress()) != null && !walletAddresses.get(payment.getAddress()).getTransactionOutputs().isEmpty());
+            boolean payjoinPresent = userPayments.stream().anyMatch(payment -> AppServices.getPayjoinURI(payment.getAddress()) != null);
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {
                 if(payNymPresent) {
@@ -1644,6 +1646,8 @@ public class SendController extends WalletFormController implements Initializabl
                         addLabel("Cannot coinjoin due to mixed address types", getInfoGlyph());
                     } else if(userPayments.size() > 1) {
                         addLabel("Cannot coinjoin due to multiple payments", getInfoGlyph());
+                    } else if(payjoinPresent) {
+                        addLabel("Cannot coinjoin due to payjoin", getInfoGlyph());
                     } else {
                         if(utxoSelectorProperty().get() != null) {
                             addLabel("Cannot fake coinjoin due to coin control", getInfoGlyph());
