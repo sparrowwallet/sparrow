@@ -76,7 +76,7 @@
                     <VBox spacing="15">
                         <Label text="Initiating your first CoinJoin in Sparrow will add three new wallets to your existing wallet: Premix, Postmix and Badbank." wrapText="true" styleClass="content-text" />
                         <Label text="Premix contains UTXOs that have been split from your deposit UTXOs into equal amounts, waiting for their first mixing round. Postmix contains UTXOs that have been through at least one mixing round. Badbank contains any change from your premix transaction, and should be treated carefully." wrapText="true" styleClass="content-text" />
-                        <Label text="Click on the tabs at the right of the wallet to use these wallets. Note that they will have reduced functionality (for example they will not display receiving addresses)." wrapText="true" styleClass="content-text" />
+                        <Label text="Click on the tabs on the left to use these wallets. Note that they will have reduced functionality (for example they will not display receiving addresses)." wrapText="true" styleClass="content-text" />
                     </VBox>
                 </HBox>
             </VBox>
