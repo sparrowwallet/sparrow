@@ -9,18 +9,18 @@ jobs:
       matrix:
         os: [windows-latest, ubuntu-latest]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Set up JDK 16.0.1
-        uses: actions/setup-java@v2
+      - name: Set up JDK 17.0.2
+        uses: actions/setup-java@v3
         with:
-          distribution: 'adopt'
-          java-version: '16.0.1'
+          distribution: 'temurin'
+          java-version: '17.0.2'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Cache Gradle packages
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.gradle/caches
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
