@@ -82,7 +82,7 @@ public class HeadersController extends TransactionFormController implements Init
     private TransactionDiagram transactionDiagram;
 
     @FXML
-    private Spinner<Integer> version;
+    private IntegerSpinner version;
 
     @FXML
     private CopyableLabel segwit;
@@ -112,10 +112,10 @@ public class HeadersController extends TransactionFormController implements Init
     private Field locktimeDateField;
 
     @FXML
-    private Spinner<Integer> locktimeNone;
+    private IntegerSpinner locktimeNone;
 
     @FXML
-    private Spinner<Integer> locktimeBlock;
+    private IntegerSpinner locktimeBlock;
 
     @FXML
     private Hyperlink locktimeCurrentHeight;
@@ -243,8 +243,12 @@ public class HeadersController extends TransactionFormController implements Init
 
         updateTxId();
 
-        version.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2, (int)tx.getVersion()));
+        version.setValueFactory(new IntegerSpinner.ValueFactory(1, 2, (int)tx.getVersion()));
         version.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if(newValue == null || newValue < 1 || newValue > 2) {
+                return;
+            }
+
             tx.setVersion(newValue);
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
@@ -305,9 +309,9 @@ public class HeadersController extends TransactionFormController implements Init
         futureDateWarning.managedProperty().bind(futureDateWarning.visibleProperty());
         futureDateWarning.setVisible(false);
 
-        locktimeNone.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, 0));
+        locktimeNone.setValueFactory(new IntegerSpinner.ValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, 0));
         if(tx.getLocktime() < Transaction.MAX_BLOCK_LOCKTIME) {
-            locktimeBlock.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, (int)tx.getLocktime()));
+            locktimeBlock.setValueFactory(new IntegerSpinner.ValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, (int)tx.getLocktime()));
             if(tx.getLocktime() == 0) {
                 locktimeToggleGroup.selectToggle(locktimeNoneType);
             } else {
@@ -316,13 +320,17 @@ public class HeadersController extends TransactionFormController implements Init
             LocalDateTime date = Instant.now().atZone(ZoneId.systemDefault()).toLocalDateTime();
             locktimeDate.setDateTimeValue(date);
         } else {
-            locktimeBlock.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1));
+            locktimeBlock.setValueFactory(new IntegerSpinner.ValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1));
             LocalDateTime date = Instant.ofEpochSecond(tx.getLocktime()).atZone(ZoneId.systemDefault()).toLocalDateTime();
             locktimeDate.setDateTimeValue(date);
             locktimeToggleGroup.selectToggle(locktimeDateType);
         }
 
         locktimeBlock.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if(newValue == null || newValue < 0 || newValue >= Transaction.MAX_BLOCK_LOCKTIME) {
+                return;
+            }
+
             tx.setLocktime(newValue);
             locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppServices.getCurrentBlockHeight() != null && newValue < AppServices.getCurrentBlockHeight());
             futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && newValue > AppServices.getCurrentBlockHeight());

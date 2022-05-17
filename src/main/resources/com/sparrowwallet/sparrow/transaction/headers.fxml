@@ -28,6 +28,7 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.Tab?>
 <?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
+<?import com.sparrowwallet.sparrow.control.IntegerSpinner?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -71,7 +72,7 @@
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                     <Fieldset text="Headers" inputGrow="SOMETIMES">
                         <Field text="Version:">
-                            <Spinner fx:id="version" prefWidth="60" editable="true" />
+                            <IntegerSpinner fx:id="version" prefWidth="60" editable="true" />
                         </Field>
                         <Field text="Type:">
                             <CopyableLabel fx:id="segwit" />
@@ -94,10 +95,10 @@
                             </SegmentedButton>
                         </Field>
                         <Field fx:id="locktimeNoneField" text="Block:">
-                            <Spinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
+                            <IntegerSpinner fx:id="locktimeNone" disable="true" prefWidth="120"/>
                         </Field>
                         <Field fx:id="locktimeBlockField" text="Block:">
-                            <Spinner fx:id="locktimeBlock" editable="true" max="499999999" prefWidth="120"/>
+                            <IntegerSpinner fx:id="locktimeBlock" editable="true" max="499999999" prefWidth="120"/>
                             <Hyperlink fx:id="locktimeCurrentHeight" text="Set current height" onAction="#setLocktimeToCurrentHeight" />
                             <Label fx:id="futureBlockWarning">
                                 <graphic>

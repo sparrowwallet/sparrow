@@ -11,8 +11,8 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.collections.FXCollections?>
 <?import javafx.scene.control.ComboBox?>
-<?import javafx.scene.control.Spinner?>
 <?import com.samourai.whirlpool.client.wallet.beans.IndexRange?>
+<?import com.sparrowwallet.sparrow.control.IntegerSpinner?>
 
 <BorderPane stylesheets="@../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.MixToController">
     <center>
@@ -34,7 +34,7 @@
                         <HelpLabel helpText="Select an open wallet to mix to."/>
                     </Field>
                     <Field text="Minimum mixes:">
-                        <Spinner fx:id="minMixes" editable="true" prefWidth="90" />
+                        <IntegerSpinner fx:id="minMixes" editable="true" prefWidth="90" />
                         <HelpLabel helpText="The minimum number of mixes required before mixing to the selected wallet.\nTo ensure privacy, each mix beyond this number will have a 75% probability to mix to the selected wallet."/>
                     </Field>
                 </Fieldset>

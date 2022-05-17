@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.DateStringConverter;
+import com.sparrowwallet.sparrow.control.IntegerSpinner;
 import com.sparrowwallet.sparrow.event.SettingsChangedEvent;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -10,8 +11,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
 import javafx.util.StringConverter;
 
 import java.net.URL;
@@ -28,7 +27,7 @@ public class AdvancedController implements Initializable {
     private DatePicker birthDate;
 
     @FXML
-    private Spinner<Integer> gapLimit;
+    private IntegerSpinner gapLimit;
 
     @FXML
     private ComboBox<Integer> watchLast;
@@ -50,8 +49,12 @@ public class AdvancedController implements Initializable {
             }
         });
 
-        gapLimit.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(Wallet.DEFAULT_LOOKAHEAD, 9999, wallet.getGapLimit()));
+        gapLimit.setValueFactory(new IntegerSpinner.ValueFactory(Wallet.DEFAULT_LOOKAHEAD, 9999, wallet.getGapLimit()));
         gapLimit.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue == null || newValue < Wallet.DEFAULT_LOOKAHEAD || newValue > 9999) {
+                return;
+            }
+
             wallet.setGapLimit(newValue);
             if(!watchLast.getItems().equals(getWatchListItems(wallet))) {
                 Integer value = watchLast.getValue();

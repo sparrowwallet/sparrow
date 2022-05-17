@@ -104,7 +104,7 @@ public class InputController extends TransactionFormController implements Initia
     private CopyableLabel locktimeAbsolute;
 
     @FXML
-    private Spinner<Integer> locktimeRelativeBlocks;
+    private IntegerSpinner locktimeRelativeBlocks;
 
     @FXML
     private RelativeTimelockSpinner locktimeRelativeSeconds;
@@ -406,7 +406,7 @@ public class InputController extends TransactionFormController implements Initia
             }
         });
 
-        locktimeRelativeBlocks.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, (int)TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK, 0));
+        locktimeRelativeBlocks.setValueFactory(new IntegerSpinner.ValueFactory(0, (int)TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK, 0));
         locktimeRelativeBlocks.managedProperty().bind(locktimeRelativeBlocks.visibleProperty());
         locktimeRelativeSeconds.managedProperty().bind(locktimeRelativeSeconds.visibleProperty());
         locktimeRelativeCombo.getSelectionModel().selectedItemProperty().addListener((ov, old_toggle, new_toggle) -> {
@@ -433,6 +433,10 @@ public class InputController extends TransactionFormController implements Initia
         }
 
         locktimeRelativeBlocks.valueProperty().addListener((obs, oldValue, newValue) -> {
+            if(newValue == null || newValue < 0 || newValue > TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK) {
+                return;
+            }
+
             setRelativeLocktime(txInput, transaction, oldValue != null);
         });
         locktimeRelativeSeconds.valueProperty().addListener((obs, oldValue, newValue) -> {

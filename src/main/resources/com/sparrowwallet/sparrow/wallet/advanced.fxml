@@ -10,6 +10,7 @@
 <?import tornadofx.control.Field?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.IntegerSpinner?>
 
 <BorderPane stylesheets="@../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.AdvancedController">
     <center>
@@ -31,7 +32,7 @@
                     <HelpLabel helpText="The date of the earliest transaction (used to avoid scanning the entire blockchain)."/>
                 </Field>
                 <Field text="Gap limit:">
-                    <Spinner fx:id="gapLimit" editable="true" prefWidth="90" />
+                    <IntegerSpinner fx:id="gapLimit" editable="true" prefWidth="90" />
                     <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs."/>
                 </Field>
                 <Field text="Watch addresses:">

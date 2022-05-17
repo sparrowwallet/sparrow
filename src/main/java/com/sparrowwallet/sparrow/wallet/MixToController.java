@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.IntegerSpinner;
 import com.sparrowwallet.sparrow.event.MixToConfigChangedEvent;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.collections.FXCollections;
@@ -31,7 +32,7 @@ public class MixToController implements Initializable {
     private ComboBox<Wallet> mixToWallets;
 
     @FXML
-    private Spinner<Integer> minMixes;
+    private IntegerSpinner minMixes;
 
     @FXML
     private ComboBox<IndexRange> indexRange;
@@ -94,8 +95,12 @@ public class MixToController implements Initializable {
         });
 
         int initialMinMixes = mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes();
-        minMixes.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10000, initialMinMixes));
+        minMixes.setValueFactory(new IntegerSpinner.ValueFactory(1, 10000, initialMinMixes));
         minMixes.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue == null || newValue < 1 || newValue > 10000) {
+                return;
+            }
+
             mixConfig.setMinMixes(newValue);
             EventManager.get().post(new MixToConfigChangedEvent(wallet));
         });
