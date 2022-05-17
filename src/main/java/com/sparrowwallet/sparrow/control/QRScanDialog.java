@@ -10,15 +10,14 @@ import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.address.P2SHAddress;
 import com.sparrowwallet.drongo.address.P2WPKHAddress;
 import com.sparrowwallet.drongo.crypto.*;
-import com.sparrowwallet.drongo.policy.Policy;
-import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.Base43;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
-import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
+import com.sparrowwallet.drongo.wallet.SeedQR;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.hummingbird.LegacyURDecoder;
 import com.sparrowwallet.hummingbird.registry.*;
@@ -257,6 +256,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 BitcoinURI bitcoinURI;
                 Address address;
                 ExtendedKey extendedKey;
+                DeterministicSeed seed;
                 try {
                     extendedKey = ExtendedKey.fromDescriptor(qrtext);
                     result = new Result(extendedKey);
@@ -334,6 +334,22 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     //Ignore, not parseable as base43 decoded bytes
                 }
 
+                try {
+                    seed = SeedQR.getSeed(qrtext);
+                    result = new Result(seed);
+                    return;
+                } catch(Exception e) {
+                    //Ignore, not parseable as a SeedQR
+                }
+
+                try {
+                    seed = SeedQR.getSeed(qrResult.getRawBytes());
+                    result = new Result(seed);
+                    return;
+                } catch(Exception e) {
+                    //Ignore, not parseable as a CompactSeedQR
+                }
+
                 result = new Result(qrtext);
             }
         }
@@ -401,6 +417,14 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     CryptoAccount cryptoAccount = (CryptoAccount)ur.decodeFromRegistry();
                     List<Wallet> wallets = getWallets(cryptoAccount);
                     return new Result(wallets);
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_SEED)) {
+                    CryptoSeed cryptoSeed = (CryptoSeed)ur.decodeFromRegistry();
+                    DeterministicSeed seed = getSeed(cryptoSeed);
+                    return new Result(seed);
+                } else if(urRegistryType.equals(RegistryType.CRYPTO_BIP39)) {
+                    CryptoBip39 cryptoBip39 = (CryptoBip39)ur.decodeFromRegistry();
+                    DeterministicSeed seed = getSeed(cryptoBip39);
+                    return new Result(seed);
                 } else {
                     log.error("Unsupported UR type " + urRegistryType);
                     return new Result(new URException("UR type " + urRegistryType + " is not supported"));
@@ -523,6 +547,14 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
             return null;
         }
+
+        private DeterministicSeed getSeed(CryptoSeed cryptoSeed) {
+            return new DeterministicSeed(cryptoSeed.getSeed(), null, cryptoSeed.getBirthdate().getTime());
+        }
+
+        private DeterministicSeed getSeed(CryptoBip39 cryptoBip39) {
+            return new DeterministicSeed(cryptoBip39.getWords(), null, System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
+        }
     }
 
     private class QRScanListener implements WebcamListener {
@@ -626,6 +658,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public final ExtendedKey extendedKey;
         public final OutputDescriptor outputDescriptor;
         public final List<Wallet> wallets;
+        public final DeterministicSeed seed;
         public final String payload;
         public final Throwable exception;
 
@@ -636,6 +669,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = null;
         }
@@ -647,6 +681,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = null;
         }
@@ -658,6 +693,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = null;
         }
@@ -669,6 +705,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = null;
         }
@@ -680,6 +717,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = extendedKey;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = null;
         }
@@ -691,6 +729,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = outputDescriptor;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = null;
         }
@@ -702,6 +741,19 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = wallets;
+            this.seed = null;
+            this.payload = null;
+            this.exception = null;
+        }
+
+        public Result(DeterministicSeed seed) {
+            this.transaction = null;
+            this.psbt = null;
+            this.uri = null;
+            this.extendedKey = null;
+            this.outputDescriptor = null;
+            this.wallets = null;
+            this.seed = seed;
             this.payload = null;
             this.exception = null;
         }
@@ -713,6 +765,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = payload;
             this.exception = null;
         }
@@ -724,6 +777,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.extendedKey = null;
             this.outputDescriptor = null;
             this.wallets = null;
+            this.seed = null;
             this.payload = null;
             this.exception = exception;
         }

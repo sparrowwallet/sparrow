@@ -1732,6 +1732,10 @@ public class AppController implements Initializable {
         }
     }
 
+    private void addTransactionTab(Transaction transaction, TransactionView initialView, Integer initialIndex) {
+        addTransactionTab(null, null, transaction, null, null, initialView, initialIndex);
+    }
+
     private void addTransactionTab(BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
         addTransactionTab(null, null, blockTransaction.getTransaction(), null, blockTransaction, initialView, initialIndex);
     }
@@ -2588,7 +2592,11 @@ public class AppController implements Initializable {
     @Subscribe
     public void viewTransaction(ViewTransactionEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
+            if(event.getBlockTransaction() != null) {
+                addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
+            } else {
+                addTransactionTab(event.getTransaction(), event.getInitialView(), event.getInitialIndex());
+            }
         }
     }
 

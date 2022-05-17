@@ -60,6 +60,9 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class HeadersController extends TransactionFormController implements Initializable, DynamicUpdate {
     private static final Logger log = LoggerFactory.getLogger(HeadersController.class);
@@ -829,7 +832,49 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
-        EventManager.get().post(new RequestQRScanEvent(toggleButton.getScene().getWindow()));
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.transaction != null) {
+                EventManager.get().post(new ViewTransactionEvent(toggleButton.getScene().getWindow(), result.transaction));
+            } else if(result.psbt != null) {
+                EventManager.get().post(new ViewPSBTEvent(toggleButton.getScene().getWindow(), null, null, result.psbt));
+            } else if(result.seed != null) {
+                signFromSeed(result.seed);
+            } else if(result.exception != null) {
+                log.error("Error scanning QR", result.exception);
+                showErrorDialog("Error scanning QR", result.exception.getMessage());
+            } else {
+                AppServices.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a transaction or seed.");
+            }
+        }
+    }
+
+    private void signFromSeed(DeterministicSeed seed) {
+        try {
+            String masterFingerprint = Keystore.fromSeed(seed, ScriptType.P2PKH.getDefaultDerivation()).getKeyDerivation().getMasterFingerprint();
+            Wallet walletCopy = headersForm.getSigningWallet().copy();
+            OptionalInt optIndex = IntStream.range(0, walletCopy.getKeystores().size())
+                    .filter(i -> walletCopy.getKeystores().get(i).getKeyDerivation().getMasterFingerprint().equals(masterFingerprint)).findFirst();
+            if(optIndex.isPresent()) {
+                walletCopy.getKeystores().forEach(keystore -> {
+                    keystore.setSeed(null);
+                    keystore.setMasterPrivateExtendedKey(null);
+                });
+                Keystore original = walletCopy.getKeystores().get(optIndex.getAsInt());
+                Keystore replacement = Keystore.fromSeed(seed, original.getKeyDerivation().getDerivation());
+                walletCopy.getKeystores().set(optIndex.getAsInt(), replacement);
+                signUnencryptedKeystores(walletCopy);
+            } else {
+                AppServices.showErrorDialog("Invalid seed", "The QR code contains a seed that does not match any of the keystores in the signing wallet.");
+            }
+        } catch(MnemonicException e) {
+            log.error("Invalid seed", e);
+            AppServices.showErrorDialog("Invalid seed", e.getMessage());
+        } finally {
+            seed.clear();
+        }
     }
 
     public void savePSBT(ActionEvent event) {

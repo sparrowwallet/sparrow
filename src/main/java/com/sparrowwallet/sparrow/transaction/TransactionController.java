@@ -432,7 +432,7 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void viewTransaction(ViewTransactionEvent event) {
-        if(txdata.getTransaction().getTxId().equals(event.getBlockTransaction().getTransaction().getTxId())) {
+        if(txdata.getTransaction().getTxId().equals(event.getTransaction().getTxId())) {
             TreeItem<TransactionForm> existingItem = getTreeItem(event.getInitialView(), event.getInitialIndex());
             if(existingItem != null && !(existingItem.getValue() instanceof PageForm)) {
                 setTreeSelection(event.getInitialView(), event.getInitialIndex());
