@@ -24,18 +24,6 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
         showWordList(keystore.getSeed());
     }
 
-    private void showWordList(DeterministicSeed seed) {
-        List<String> words = seed.getMnemonicCode();
-        setContent(getMnemonicWordsEntry(words.size()));
-        setExpanded(true);
-
-        for(int i = 0; i < wordsPane.getChildren().size(); i++) {
-            WordEntry wordEntry = (WordEntry)wordsPane.getChildren().get(i);
-            wordEntry.getEditor().setText(words.get(i));
-            wordEntry.getEditor().setEditable(false);
-        }
-    }
-
     protected Node getMnemonicWordsEntry(int numWords) {
         VBox vBox = new VBox();
         vBox.setSpacing(10);

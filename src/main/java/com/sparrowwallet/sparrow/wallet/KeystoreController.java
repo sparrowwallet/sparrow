@@ -2,10 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.*;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -413,6 +410,18 @@ public class KeystoreController extends WalletFormController implements Initiali
                 }
 
                 AppServices.showErrorDialog("Missing Script Type", "QR Code did not contain any information for the " + getWalletForm().getWallet().getScriptType().getDescription() + " script type.");
+            } else if(result.seed != null) {
+                try {
+                    Keystore keystore = Keystore.fromSeed(result.seed, getWalletForm().getWallet().getScriptType().getDefaultDerivation());
+                    fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
+                    derivation.setText(keystore.getKeyDerivation().getDerivationPath());
+                    xpub.setText(keystore.getExtendedPublicKey().toString());
+                } catch(MnemonicException e) {
+                    log.error("Error parsing seed", e);
+                    AppServices.showErrorDialog("Error parsing seed", e.getMessage());
+                } finally {
+                    result.seed.clear();
+                }
             } else if(result.exception != null) {
                 log.error("Error scanning QR", result.exception);
                 AppServices.showErrorDialog("Error scanning QR", result.exception.getMessage());

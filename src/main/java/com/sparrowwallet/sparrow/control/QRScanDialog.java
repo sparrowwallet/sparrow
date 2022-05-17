@@ -549,7 +549,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         }
 
         private DeterministicSeed getSeed(CryptoSeed cryptoSeed) {
-            return new DeterministicSeed(cryptoSeed.getSeed(), null, cryptoSeed.getBirthdate().getTime());
+            return new DeterministicSeed(cryptoSeed.getSeed(), null, cryptoSeed.getBirthdate() == null ? System.currentTimeMillis() : cryptoSeed.getBirthdate().getTime());
         }
 
         private DeterministicSeed getSeed(CryptoBip39 cryptoBip39) {

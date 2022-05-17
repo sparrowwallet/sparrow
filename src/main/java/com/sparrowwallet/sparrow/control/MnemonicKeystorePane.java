@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
@@ -26,13 +28,16 @@ import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class MnemonicKeystorePane extends TitledDescriptionPane {
+    private static final Logger log = LoggerFactory.getLogger(MnemonicKeystorePane.class);
+
     protected SplitMenuButton enterMnemonicButton;
     protected TilePane wordsPane;
     protected Label validLabel;
@@ -73,7 +78,42 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             });
             enterMnemonicButton.getItems().add(item);
         }
+        enterMnemonicButton.getItems().add(new SeparatorMenuItem());
+        MenuItem scanItem = new MenuItem("Scan QR...");
+        scanItem.setOnAction(event -> {
+            scanQR();
+        });
+        enterMnemonicButton.getItems().add(scanItem);
         enterMnemonicButton.managedProperty().bind(enterMnemonicButton.visibleProperty());
+    }
+
+    protected void scanQR() {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.seed != null) {
+                showWordList(result.seed);
+                Platform.runLater(() -> validLabel.requestFocus());
+            } else if(result.exception != null) {
+                log.error("Error scanning QR", result.exception);
+                showErrorDialog("Error scanning QR", result.exception.getMessage());
+            } else {
+                AppServices.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a seed.");
+            }
+        }
+    }
+
+    protected void showWordList(DeterministicSeed seed) {
+        List<String> words = seed.getMnemonicCode();
+        setContent(getMnemonicWordsEntry(words.size()));
+        setExpanded(true);
+
+        for(int i = 0; i < wordsPane.getChildren().size(); i++) {
+            WordEntry wordEntry = (WordEntry)wordsPane.getChildren().get(i);
+            wordEntry.getEditor().setText(words.get(i));
+            wordEntry.getEditor().setEditable(false);
+        }
     }
 
     protected void enterMnemonic(int numWords) {
