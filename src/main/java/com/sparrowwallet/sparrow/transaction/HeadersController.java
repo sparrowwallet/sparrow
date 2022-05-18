@@ -805,7 +805,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     public void copyId(ActionEvent event) {
         ClipboardContent content = new ClipboardContent();
-        content.putString(headersForm.getTransaction().getTxId().toString());
+        content.putString(headersForm.getTransaction().calculateTxId(false).toString());
         Clipboard.getSystemClipboard().setContent(content);
     }
 
