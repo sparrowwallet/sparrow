@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import static com.sparrowwallet.sparrow.AppServices.ENUMERATE_HW_PERIOD_SECS;
 import static com.sparrowwallet.sparrow.net.PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE;
 import static com.sparrowwallet.sparrow.net.TcpTransport.DEFAULT_MAX_TIMEOUT;
+import static com.sparrowwallet.sparrow.wallet.WalletUtxosEntry.DUST_ATTACK_THRESHOLD_SATS;
 
 public class Config {
     private static final Logger log = LoggerFactory.getLogger(Config.class);
@@ -45,6 +46,7 @@ public class Config {
     private boolean preventSleep = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
+    private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
     private File hwi;
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private Boolean hdCapture;
@@ -300,6 +302,10 @@ public class Config {
     public void setKeyDerivationPeriod(Integer keyDerivationPeriod) {
         this.keyDerivationPeriod = keyDerivationPeriod;
         flush();
+    }
+
+    public long getDustAttackThreshold() {
+        return dustAttackThreshold;
     }
 
     public File getHwi() {

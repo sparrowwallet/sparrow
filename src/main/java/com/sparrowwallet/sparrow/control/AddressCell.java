@@ -37,11 +37,13 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
                 setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode())));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
-                tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate()));
+                tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate(), addressStatus.isDustAttack()));
                 setTooltip(tooltip);
 
                 if(addressStatus.isDuplicate()) {
                     setGraphic(getDuplicateGlyph());
+                } else if(addressStatus.isDustAttack()) {
+                    setGraphic(getDustAttackGlyph());
                 } else {
                     setGraphic(null);
                 }
@@ -49,9 +51,9 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
         }
     }
 
-    private String getTooltipText(UtxoEntry utxoEntry, boolean duplicate) {
+    private String getTooltipText(UtxoEntry utxoEntry, boolean duplicate, boolean dustAttack) {
         return (utxoEntry.getNode().getWallet().isNested() ? utxoEntry.getNode().getWallet().getDisplayName() + " " : "" ) +
-                utxoEntry.getNode().toString() + (duplicate ? " (Duplicate address)" : "");
+                utxoEntry.getNode().toString() + (duplicate ? " (Duplicate address)" : (dustAttack ? " (Possible dust attack)" : ""));
     }
 
     public static Glyph getDuplicateGlyph() {
@@ -59,5 +61,12 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
         duplicateGlyph.getStyleClass().add("duplicate-warning");
         duplicateGlyph.setFontSize(12);
         return duplicateGlyph;
+    }
+
+    public static Glyph getDustAttackGlyph() {
+        Glyph dustAttackGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
+        dustAttackGlyph.getStyleClass().add("dust-attack-warning");
+        dustAttackGlyph.setFontSize(12);
+        return dustAttackGlyph;
     }
 }

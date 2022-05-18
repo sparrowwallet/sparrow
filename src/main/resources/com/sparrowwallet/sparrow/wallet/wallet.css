@@ -123,6 +123,10 @@
     -fx-text-fill: rgb(202, 18, 67);
 }
 
+.dust-attack-warning {
+    -fx-text-fill: rgb(238, 210, 2);
+}
+
 .unused-check {
     -fx-text-fill: #50a14f;
 }

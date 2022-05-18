@@ -69,7 +69,13 @@ public class UtxoEntry extends HashIndexEntry {
     private ObjectProperty<AddressStatus> addressStatusProperty;
 
     public final void setDuplicateAddress(boolean value) {
-        addressStatusProperty().set(new AddressStatus(value));
+        AddressStatus addressStatus = addressStatusProperty().get();
+        addressStatusProperty().set(new AddressStatus(value, addressStatus.dustAttack));
+    }
+
+    public final void setDustAttack(boolean value) {
+        AddressStatus addressStatus = addressStatusProperty().get();
+        addressStatusProperty().set(new AddressStatus(addressStatus.duplicate, value));
     }
 
     public final boolean isDuplicateAddress() {
@@ -78,7 +84,7 @@ public class UtxoEntry extends HashIndexEntry {
 
     public final ObjectProperty<AddressStatus> addressStatusProperty() {
         if(addressStatusProperty == null) {
-            addressStatusProperty = new SimpleObjectProperty<>(UtxoEntry.this, "addressStatus", new AddressStatus(false));
+            addressStatusProperty = new SimpleObjectProperty<>(UtxoEntry.this, "addressStatus", new AddressStatus(false, false));
         }
 
         return addressStatusProperty;
@@ -86,9 +92,11 @@ public class UtxoEntry extends HashIndexEntry {
 
     public class AddressStatus {
         private final boolean duplicate;
+        private final boolean dustAttack;
 
-        public AddressStatus(boolean duplicate) {
+        public AddressStatus(boolean duplicate, boolean dustAttack) {
             this.duplicate = duplicate;
+            this.dustAttack = dustAttack;
         }
 
         public UtxoEntry getUtxoEntry() {
@@ -101,6 +109,10 @@ public class UtxoEntry extends HashIndexEntry {
 
         public boolean isDuplicate() {
             return duplicate;
+        }
+
+        public boolean isDustAttack() {
+            return dustAttack;
         }
     }
 
