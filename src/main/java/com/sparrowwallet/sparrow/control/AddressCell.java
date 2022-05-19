@@ -1,16 +1,22 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.wallet.Status;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletUtxoStatusChangedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.geometry.Pos;
 import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
+
+import java.util.Collections;
 
 public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
     public AddressCell() {
@@ -40,10 +46,10 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
                 tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate(), addressStatus.isDustAttack()));
                 setTooltip(tooltip);
 
-                if(addressStatus.isDuplicate()) {
+                if(addressStatus.isDustAttack()) {
+                    setGraphic(getDustAttackHyperlink(utxoEntry));
+                } else if(addressStatus.isDuplicate()) {
                     setGraphic(getDuplicateGlyph());
-                } else if(addressStatus.isDustAttack()) {
-                    setGraphic(getDustAttackGlyph());
                 } else {
                     setGraphic(null);
                 }
@@ -63,10 +69,21 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
         return duplicateGlyph;
     }
 
-    public static Glyph getDustAttackGlyph() {
+    public static Hyperlink getDustAttackHyperlink(UtxoEntry utxoEntry) {
         Glyph dustAttackGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
         dustAttackGlyph.getStyleClass().add("dust-attack-warning");
         dustAttackGlyph.setFontSize(12);
-        return dustAttackGlyph;
+
+        Hyperlink hyperlink = new Hyperlink(utxoEntry.getHashIndex().getStatus() == Status.FROZEN ? "" : "Freeze?", dustAttackGlyph);
+        hyperlink.getStyleClass().add("freeze-dust-utxo");
+        hyperlink.setOnAction(event -> {
+            if(utxoEntry.getHashIndex().getStatus() != Status.FROZEN) {
+                hyperlink.setText("");
+                utxoEntry.getHashIndex().setStatus(Status.FROZEN);
+                EventManager.get().post(new WalletUtxoStatusChangedEvent(utxoEntry.getWallet(), Collections.singletonList(utxoEntry.getHashIndex())));
+            }
+        });
+
+        return hyperlink;
     }
 }

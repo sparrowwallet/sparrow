@@ -19,3 +19,11 @@
 .chart-bar.selected {
     -fx-bar-fill: rgba(30, 136, 207, 0.6);
 }
+
+.freeze-dust-utxo {
+    -fx-padding: 0 0 0 5px;
+}
+
+.tree-table-view:focused:row-selection .tree-table-row-cell:selected .freeze-dust-utxo {
+    -fx-text-fill: derive(white, -15%);
+}

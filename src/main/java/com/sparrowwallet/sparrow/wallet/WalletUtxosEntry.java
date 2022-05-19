@@ -61,7 +61,7 @@ public class WalletUtxosEntry extends Entry {
 
         for(Entry entry : getChildren()) {
             UtxoEntry utxoEntry = (UtxoEntry) entry;
-            utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && duplicateNodes.contains(utxoEntry.getNode()));
+            utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && duplicateNodes.contains(utxoEntry.getNode()) && !utxoEntry.getWallet().allInputsFromWallet(utxoEntry.getHashIndex().getHash()));
         }
     }
 
