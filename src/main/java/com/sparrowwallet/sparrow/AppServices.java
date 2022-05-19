@@ -927,7 +927,7 @@ public class AppServices {
         System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
         targetBlockFeeRates = event.getTargetBlockFeeRates();
         addMempoolRateSizes(event.getMempoolRateSizes());
-        minimumRelayFeeRate = event.getMinimumRelayFeeRate();
+        minimumRelayFeeRate = Math.max(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
     }

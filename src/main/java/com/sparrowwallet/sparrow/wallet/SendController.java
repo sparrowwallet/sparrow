@@ -400,6 +400,7 @@ public class SendController extends WalletFormController implements Initializabl
                 if(userFeeSet.get()) {
                     setTargetBlocks(getTargetBlocks(feeRate));
                     setFeeRangeRate(feeRate);
+                    revalidate(fee, feeListener);
                 } else {
                     setFeeValueSats(walletTransaction.getFee());
                 }
