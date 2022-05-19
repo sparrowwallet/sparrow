@@ -164,7 +164,7 @@ public class InputsController extends TransactionFormController implements Initi
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if(event.getTxId().equals(inputsForm.getTransaction().getTxId()) && inputsForm.getPsbt() == null) {
+        if(event.getTxId().equals(inputsForm.getTransaction().getTxId()) && !event.getInputTransactions().isEmpty() && inputsForm.getPsbt() == null) {
             updateBlockTransactionInputs(event.getInputTransactions());
         }
     }

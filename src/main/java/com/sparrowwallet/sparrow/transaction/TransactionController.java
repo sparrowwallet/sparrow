@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class TransactionController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
@@ -57,6 +59,8 @@ public class TransactionController implements Initializable {
     private int selectedInputIndex = -1;
     private int selectedOutputIndex = -1;
 
+    private boolean transactionsFetched;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -68,6 +72,16 @@ public class TransactionController implements Initializable {
         transactionMasterDetail.setShowDetailNode(Config.get().isShowTransactionHex());
         txhex.setTransaction(getTransaction());
         highlightTxHex();
+        fetchTransactions();
+
+        transactionMasterDetail.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if(oldScene == null && newScene != null) {
+                transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82);
+            }
+        });
+    }
+
+    private void fetchTransactions() {
         fetchThisAndInputBlockTransactions(0, Math.min(getTransaction().getInputs().size(), PageForm.PAGE_SIZE));
         fetchOutputBlockTransactions(0, Math.min(getTransaction().getOutputs().size(), PageForm.PAGE_SIZE));
 
@@ -76,12 +90,6 @@ public class TransactionController implements Initializable {
         } else if(TransactionView.OUTPUT.equals(initialView) && initialIndex >= PageForm.PAGE_SIZE) {
             fetchOutputBlockTransactions(initialIndex, initialIndex + 1);
         }
-
-        transactionMasterDetail.sceneProperty().addListener((observable, oldScene, newScene) -> {
-            if(oldScene == null && newScene != null) {
-                transactionMasterDetail.setDividerPosition(AppServices.isReducedWindowHeight(transactionMasterDetail) ? 0.9 : 0.82);
-            }
-        });
     }
 
     private void initializeTxTree() {
@@ -353,6 +361,7 @@ public class TransactionController implements Initializable {
 
             ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(references);
             transactionReferenceService.setOnSucceeded(successEvent -> {
+                transactionsFetched = true;
                 Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
                 BlockTransaction thisBlockTx = null;
                 Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
@@ -387,6 +396,28 @@ public class TransactionController implements Initializable {
             });
             EventManager.get().post(new TransactionReferencesStartedEvent(getTransaction(), indexStart, maxIndex));
             transactionReferenceService.start();
+        } else if(!AppServices.isConnected()) {
+            BlockTransaction blockTx = null;
+            Set<Sha256Hash> inputReferences = getTransaction().getInputs().stream().map(input -> input.getOutpoint().getHash()).collect(Collectors.toSet());
+            Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
+
+            for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+                Map<Sha256Hash, BlockTransaction> walletTransactions = wallet.getWalletTransactions();
+                if(blockTx == null && walletTransactions.get(getTransaction().getTxId()) != null) {
+                    blockTx = walletTransactions.get(getTransaction().getTxId());
+                }
+                for(Sha256Hash inputReference : inputReferences) {
+                    if(inputTransactions.get(inputReference) == null && walletTransactions.get(inputReference) != null) {
+                        inputTransactions.put(inputReference, walletTransactions.get(inputReference));
+                    }
+                }
+            }
+
+            if(inputTransactions.size() == inputReferences.size()) {
+                EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, inputTransactions, 0, getTransaction().getInputs().size()));
+            } else {
+                EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, Collections.emptyMap(), 0, getTransaction().getInputs().size()));
+            }
         }
     }
 
@@ -500,7 +531,7 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if(event.getTxId().equals(getTransaction().getTxId())) {
+        if(event.getTxId().equals(getTransaction().getTxId()) && !event.getInputTransactions().isEmpty()) {
             if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || txdata.getBlockTransaction() == null)) {
                 txdata.setBlockTransaction(event.getBlockTransaction());
             }
@@ -545,6 +576,20 @@ public class TransactionController implements Initializable {
             if(tabData.getTransactionData() == txdata) {
                 EventManager.get().unregister(this);
             }
+        }
+    }
+
+    @Subscribe
+    public void newConnection(ConnectionEvent event) {
+        if(!transactionsFetched) {
+            fetchTransactions();
+        }
+    }
+
+    @Subscribe
+    public void openWallets(OpenWalletsEvent event) {
+        if(!transactionsFetched) {
+            fetchTransactions();
         }
     }
 }

@@ -513,7 +513,7 @@ public class InputController extends TransactionFormController implements Initia
 
     @Subscribe
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
-        if(event.getTxId().equals(inputForm.getTransaction().getTxId()) && inputForm.getIndex() >= event.getPageStart() && inputForm.getIndex() < event.getPageEnd()) {
+        if(event.getTxId().equals(inputForm.getTransaction().getTxId()) && !event.getInputTransactions().isEmpty() && inputForm.getIndex() >= event.getPageStart() && inputForm.getIndex() < event.getPageEnd()) {
             updateOutpoint(event.getInputTransactions());
             if(inputForm.getPsbt() == null) {
                 updateSpends(event.getInputTransactions());

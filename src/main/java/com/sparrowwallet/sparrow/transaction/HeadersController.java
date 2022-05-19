@@ -1218,16 +1218,18 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             }
 
-            Long feeAmt = calculateFee(event.getInputTransactions());
-            if(feeAmt != null) {
-                updateFee(feeAmt);
-            }
+            if(!event.getInputTransactions().isEmpty()) {
+                Long feeAmt = calculateFee(event.getInputTransactions());
+                if(feeAmt != null) {
+                    updateFee(feeAmt);
+                }
 
-            Map<Sha256Hash, BlockTransaction> allFetchedInputTransactions = new HashMap<>(event.getInputTransactions());
-            if(headersForm.getInputTransactions() != null) {
-                allFetchedInputTransactions.putAll(headersForm.getInputTransactions());
+                Map<Sha256Hash, BlockTransaction> allFetchedInputTransactions = new HashMap<>(event.getInputTransactions());
+                if(headersForm.getInputTransactions() != null) {
+                    allFetchedInputTransactions.putAll(headersForm.getInputTransactions());
+                }
+                transactionDiagram.update(getWalletTransaction(allFetchedInputTransactions));
             }
-            transactionDiagram.update(getWalletTransaction(allFetchedInputTransactions));
         }
     }
 
