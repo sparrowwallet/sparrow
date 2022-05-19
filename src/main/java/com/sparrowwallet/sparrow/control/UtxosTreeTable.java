@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.control.TableColumnBase;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
@@ -24,7 +25,7 @@ public class UtxosTreeTable extends CoinTreeTable {
         });
         dateCol.setCellFactory(p -> new DateCell());
         dateCol.setSortable(true);
-        dateCol.setComparator((o1, o2) -> (int) (o2.getValue() - o1.getValue()));
+        dateCol.setComparator(TableColumnBase.DEFAULT_COMPARATOR.reversed());
         getColumns().add(dateCol);
 
         TreeTableColumn<Entry, Entry> outputCol = new TreeTableColumn<>("Output");
