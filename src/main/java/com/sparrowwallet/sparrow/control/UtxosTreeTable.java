@@ -25,7 +25,7 @@ public class UtxosTreeTable extends CoinTreeTable {
         });
         dateCol.setCellFactory(p -> new DateCell());
         dateCol.setSortable(true);
-        dateCol.setComparator(TableColumnBase.DEFAULT_COMPARATOR.reversed());
+        dateCol.setComparator(dateCol.getComparator().reversed());
         getColumns().add(dateCol);
 
         TreeTableColumn<Entry, Entry> outputCol = new TreeTableColumn<>("Output");

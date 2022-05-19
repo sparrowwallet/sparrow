@@ -95,9 +95,9 @@ public class MixToController implements Initializable {
         });
 
         int initialMinMixes = mixConfig.getMinMixes() == null ? Whirlpool.DEFAULT_MIXTO_MIN_MIXES : mixConfig.getMinMixes();
-        minMixes.setValueFactory(new IntegerSpinner.ValueFactory(1, 10000, initialMinMixes));
+        minMixes.setValueFactory(new IntegerSpinner.ValueFactory(2, 10000, initialMinMixes));
         minMixes.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue == null || newValue < 1 || newValue > 10000) {
+            if(newValue == null || newValue < 2 || newValue > 10000) {
                 return;
             }
 
