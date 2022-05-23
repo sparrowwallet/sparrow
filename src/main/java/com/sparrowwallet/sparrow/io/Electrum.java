@@ -95,6 +95,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     }
                 }
 
+                if(key.equals("gap_limit") && map.get(key) instanceof JsonPrimitive gapLimit) {
+                    ew.gap_limit = gapLimit.getAsInt();
+                }
+
                 if(key.equals("addresses")) {
                     ew.addresses = gson.fromJson(map.get(key), ElectrumAddresses.class);
                 }
@@ -207,6 +211,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                 wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.MULTI, scriptType, wallet.getKeystores(), threshold));
             } else {
                 throw new ImportException("Unknown Electrum wallet type of " + ew.wallet_type);
+            }
+
+            if(ew.gap_limit != null) {
+                wallet.setGapLimit(ew.gap_limit);
             }
 
             for(String key : ew.labels.keySet()) {
@@ -408,6 +416,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
         public String seed_type;
         public Boolean use_encryption;
         public ElectrumAddresses addresses;
+        public Integer gap_limit;
         public Map<String, String> labels = new LinkedHashMap<>();
         public Map<Sha256Hash, BlockTransaction> transactions = new HashMap<>();
     }
