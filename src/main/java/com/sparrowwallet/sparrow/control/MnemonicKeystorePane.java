@@ -351,7 +351,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
             setAlignment(Pos.CENTER_LEFT);
             setSpacing(10);
-            Label passphraseLabel = new Label("Passphrase:");
+            Label passphraseLabel = new Label("Salt:");
             passphraseField = (CustomTextField) TextFields.createClearableTextField();
             passphraseProperty.bind(passphraseField.textProperty());
             passphraseField.setPromptText("Leave blank for none");
