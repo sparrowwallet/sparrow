@@ -5,6 +5,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.ReceiveActionEvent;
 import com.sparrowwallet.sparrow.event.ReceiveToEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import javafx.application.Platform;
@@ -106,7 +107,7 @@ public class AddressTreeTable extends CoinTreeTable {
     }
 
     public void updateHistory(List<WalletNode> updatedNodes) {
-        //We only ever add child nodes - never remove in order to keep a full sequence
+        //We only ever add child nodes - never remove in order to keep a full sequence (unless hide empty used addresses is set)
         NodeEntry rootEntry = (NodeEntry)getRoot().getValue();
 
         for(WalletNode updatedNode : updatedNodes) {
@@ -114,6 +115,10 @@ public class AddressTreeTable extends CoinTreeTable {
             if(optEntry.isPresent()) {
                 NodeEntry existingEntry = (NodeEntry)optEntry.get();
                 existingEntry.refreshChildren();
+
+                if(Config.get().isHideEmptyUsedAddresses() && existingEntry.getValue() == 0L) {
+                    rootEntry.getChildren().remove(existingEntry);
+                }
             } else {
                 NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
                 rootEntry.getChildren().add(nodeEntry);
