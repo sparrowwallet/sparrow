@@ -121,7 +121,19 @@ public class AddressTreeTable extends CoinTreeTable {
                 }
             } else {
                 NodeEntry nodeEntry = new NodeEntry(rootEntry.getWallet(), updatedNode);
-                rootEntry.getChildren().add(nodeEntry);
+
+                if(Config.get().isHideEmptyUsedAddresses()) {
+                    int index = 0;
+                    for( ; index < rootEntry.getChildren().size(); index++) {
+                        NodeEntry existingEntry = (NodeEntry)rootEntry.getChildren().get(index);
+                        if(nodeEntry.compareTo(existingEntry) < 0) {
+                             break;
+                        }
+                    }
+                    rootEntry.getChildren().add(index, nodeEntry);
+                } else {
+                    rootEntry.getChildren().add(nodeEntry);
+                }
             }
         }
 
