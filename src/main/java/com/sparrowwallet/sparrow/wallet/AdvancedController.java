@@ -83,6 +83,10 @@ public class AdvancedController implements Initializable {
         });
     }
 
+    public void close() {
+        gapLimit.commitValue();
+    }
+
     private ObservableList<Integer> getWatchListItems(Wallet wallet) {
         return FXCollections.observableList(DEFAULT_WATCH_LIST_ITEMS.stream().filter(val -> val < 0 || val > wallet.getGapLimit()).collect(Collectors.toList()));
     }

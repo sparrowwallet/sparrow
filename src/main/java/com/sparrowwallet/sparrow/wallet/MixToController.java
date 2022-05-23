@@ -135,6 +135,10 @@ public class MixToController implements Initializable {
         });
     }
 
+    public void close() {
+        minMixes.commitValue();
+    }
+
     public MixConfig getMixConfig() {
         return mixConfig;
     }

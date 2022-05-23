@@ -51,6 +51,7 @@ public class MixToDialog extends Dialog<MixConfig> {
             setResultConverter(dialogButton -> dialogButton == applyButtonType ? mixToController.getMixConfig() : null);
 
             setOnCloseRequest(event -> {
+                mixToController.close();
                 EventManager.get().unregister(this);
             });
             EventManager.get().register(this);
