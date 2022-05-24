@@ -131,13 +131,13 @@ public class IOUtils {
         if(file.exists()) {
             long length = file.length();
             SecureRandom random = new SecureRandom();
+            byte[] data = new byte[64];
+            random.nextBytes(data);
             try(RandomAccessFile raf = new RandomAccessFile(file, "rws")) {
                 raf.seek(0);
                 raf.getFilePointer();
-                byte[] data = new byte[64];
                 int pos = 0;
                 while(pos < length) {
-                    random.nextBytes(data);
                     raf.write(data);
                     pos += data.length;
                 }
