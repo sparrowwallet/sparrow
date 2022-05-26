@@ -2680,8 +2680,9 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(true);
             exportWallet.setDisable(true);
-            lockAllWallets.setDisable(allWalletsLocked(event.getWallet()));
         }
+
+        lockAllWallets.setDisable(allWalletsLocked(event.getWallet()));
     }
 
     @Subscribe
