@@ -54,6 +54,11 @@ public class CaravanMultisig implements WalletImport, WalletExport {
 
             for(ExtPublicKey extKey : cf.extendedPublicKeys) {
                 Keystore keystore = new Keystore(extKey.name.length() > Keystore.MAX_LABEL_LENGTH ? extKey.name.substring(0, Keystore.MAX_LABEL_LENGTH) : extKey.name);
+
+                if("Unknown".equals(extKey.bip32Path)) {
+                    extKey.bip32Path = "m/45'/0/0/0";
+                }
+
                 try {
                     keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path));
                 } catch(NumberFormatException e) {
