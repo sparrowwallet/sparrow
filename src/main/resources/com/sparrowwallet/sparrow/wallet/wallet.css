@@ -109,10 +109,12 @@
 
 .entry-cell .button .label .text {
     -fx-fill: -fx-background;
+    visibility: hidden;
 }
 
 .entry-cell:hover .button .label .text {
     -fx-fill: -fx-text-base-color;
+    visibility: visible;
 }
 
 .tree-table-row-cell:selected .entry-cell:hover .button .label .text {
