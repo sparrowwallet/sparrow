@@ -484,16 +484,28 @@ public class HeadersController extends TransactionFormController implements Init
             noWalletsWarningLink.managedProperty().bind(noWalletsWarningLink.visibleProperty());
             noWalletsWarningLink.visibleProperty().bind(noWalletsWarning.visibleProperty());
 
-            SigHash psbtSigHash = SigHash.ALL;
-            for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
-                if(psbtInput.getSigHash() != null) {
-                    psbtSigHash = psbtInput.getSigHash();
+            boolean taprootInput = psbt.getPsbtInputs().stream().anyMatch(PSBTInput::isTaproot);
+            SigHash psbtSigHash = psbt.getPsbtInputs().stream().map(PSBTInput::getSigHash).filter(Objects::nonNull).findFirst().orElse(taprootInput ? SigHash.DEFAULT : SigHash.ALL);
+            sigHash.setItems(FXCollections.observableList(taprootInput ? SigHash.TAPROOT_SIGNING_TYPES : SigHash.LEGACY_SIGNING_TYPES));
+            sigHash.setValue(psbtSigHash);
+            sigHash.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(SigHash sigHash) {
+                    if(sigHash == null) {
+                        return "";
+                    }
+
+                    return sigHash.getName() + ((taprootInput && sigHash == SigHash.DEFAULT) || (!taprootInput && sigHash == SigHash.ALL) ? " (Recommended)" : "");
                 }
-            }
-            sigHash.setValue(psbtSigHash == SigHash.ALL_TAPROOT ? SigHash.ALL : psbtSigHash);
+
+                @Override
+                public SigHash fromString(String string) {
+                    return null;
+                }
+            });
             sigHash.valueProperty().addListener((observable, oldValue, newValue) -> {
                 for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
-                    psbtInput.setSigHash(psbtInput.isTaproot() && newValue == SigHash.ALL ? SigHash.ALL_TAPROOT : newValue);
+                    psbtInput.setSigHash(newValue == SigHash.DEFAULT && !psbtInput.isTaproot() ? SigHash.ALL : newValue);
                 }
             });
 
