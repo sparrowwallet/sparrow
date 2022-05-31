@@ -2027,6 +2027,7 @@ public class AppController implements Initializable {
         Label tabLabel = (Label)tab.getGraphic();
         if(!tabLabel.getStyleClass().contains("failure")) {
             tabLabel.getGraphic().getStyleClass().add("failure");
+            tabLabel.setTooltip(new Tooltip("Error loading transaction history from server"));
         }
     }
 
@@ -2059,6 +2060,7 @@ public class AppController implements Initializable {
     private void tabLabelRemoveFailure(Tab tab) {
         Label tabLabel = (Label)tab.getGraphic();
         tabLabel.getGraphic().getStyleClass().remove("failure");
+        tabLabel.setTooltip(null);
     }
 
     private void setTorIcon() {
