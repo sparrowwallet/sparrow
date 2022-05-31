@@ -14,8 +14,6 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Spinner;
-import javafx.scene.control.SpinnerValueFactory;
 import javafx.util.StringConverter;
 
 import java.net.URL;
@@ -24,6 +22,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
+
+import static com.sparrowwallet.drongo.wallet.StandardAccount.*;
 
 public class MixToController implements Initializable {
     private static final Wallet NONE_WALLET = new Wallet("None");
@@ -53,7 +53,7 @@ public class MixToController implements Initializable {
         List<Wallet> destinationWallets = AppServices.get().getOpenWallets().keySet().stream().filter(openWallet -> openWallet.isValid()
                 && (openWallet.getScriptType() == ScriptType.P2WPKH || openWallet.getScriptType() == ScriptType.P2WSH)
                 && openWallet != wallet && openWallet != wallet.getMasterWallet()
-                && (openWallet.getStandardAccountType() == null || !StandardAccount.WHIRLPOOL_ACCOUNTS.contains(openWallet.getStandardAccountType()))).collect(Collectors.toList());
+                && (openWallet.getStandardAccountType() == null || !List.of(WHIRLPOOL_PREMIX, WHIRLPOOL_BADBANK).contains(openWallet.getStandardAccountType()))).collect(Collectors.toList());
         allWallets.addAll(destinationWallets);
 
         mixToWallets.setItems(FXCollections.observableList(allWallets));
