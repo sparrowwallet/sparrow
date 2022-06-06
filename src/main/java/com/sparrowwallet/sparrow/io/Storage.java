@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.MainApp;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -297,6 +298,10 @@ public class Storage {
             if(unencrypted.exists()) {
                 return true;
             }
+        }
+
+        if(AppServices.get().getOpenWallets().keySet().stream().anyMatch(wallet -> walletName.equals(wallet.getName()))) {
+            return true;
         }
 
         return RESERVED_WALLET_NAMES.contains(walletName);
