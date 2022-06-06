@@ -247,11 +247,14 @@ public class AppServices {
 
     private ElectrumServer.ConnectionService createConnectionService() {
         ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService();
+        //Delay startup on first connection to Bitcoin Core to allow any unencrypted wallets to open first
+        connectionService.setDelay(Config.get().getServerType() == ServerType.BITCOIN_CORE ? Duration.seconds(2) : Duration.ZERO);
         connectionService.setPeriod(Duration.seconds(SERVER_PING_PERIOD_SECS));
         connectionService.setRestartOnFailure(true);
         EventManager.get().register(connectionService);
 
         connectionService.setOnRunning(workerStateEvent -> {
+            connectionService.setDelay(Duration.ZERO);
             if(!ElectrumServer.isConnected()) {
                 EventManager.get().post(new ConnectionStartEvent(Config.get().getServerAddress()));
             }
@@ -1056,11 +1059,27 @@ public class AppServices {
 
     @Subscribe
     public void walletOpening(WalletOpeningEvent event) {
-        restartBwt(event.getWallet());
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+            Platform.runLater(() -> restartBwt(event.getWallet()));
+        }
+    }
+
+    @Subscribe
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
+        if(event.getChildWallets().stream().anyMatch(Wallet::isNested)) {
+            restartBwt(event.getWallet());
+        }
+    }
+
+    @Subscribe
+    public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && event.getNestedHistoryChangedNodes().stream().anyMatch(node -> node.getTransactionOutputs().isEmpty())) {
+            Platform.runLater(() -> restartBwt(event.getWallet()));
+        }
     }
 
     private void restartBwt(Wallet wallet) {
-        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && isConnected() && wallet.isValid()) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && connectionService != null && connectionService.isConnectionRunning() && wallet.isValid()) {
             connectionService.cancel();
         }
     }

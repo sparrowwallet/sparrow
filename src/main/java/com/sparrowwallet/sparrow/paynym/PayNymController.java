@@ -410,10 +410,11 @@ public class PayNymController {
                 byte[] opReturnData = PaymentCode.getOpReturnData(blockTransaction.getTransaction());
                 if(Arrays.equals(opReturnData, blindedPaymentCode)) {
                     addedWallets.addAll(addChildWallets(payNym, externalPaymentCode));
+                    blockTransaction.setLabel("Link " + payNym.nymName());
                 } else {
                     blockTransaction.setLabel(INVALID_PAYMENT_CODE_LABEL);
-                    EventManager.get().post(new WalletEntryLabelsChangedEvent(input0Node.getWallet(), new TransactionEntry(input0Node.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap())));
                 }
+                EventManager.get().post(new WalletEntryLabelsChangedEvent(input0Node.getWallet(), new TransactionEntry(input0Node.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap())));
             } catch(Exception e) {
                 log.error("Error adding linked contact from notification transaction", e);
             }
@@ -640,6 +641,11 @@ public class PayNymController {
 
         if(!changedLabelEntries.isEmpty()) {
             Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(event.getWallet(), changedLabelEntries)));
+        }
+
+        if(walletPayNym != null) {
+            //If we have just linked a PayNym wallet that paid for another notification transaction, attempt to link
+            Platform.runLater(() -> addWalletIfNotificationTransactionPresent(walletPayNym.following()));
         }
     }
 

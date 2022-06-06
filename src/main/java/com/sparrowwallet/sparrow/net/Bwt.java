@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
@@ -31,6 +32,8 @@ public class Bwt {
     private static final Logger log = LoggerFactory.getLogger(Bwt.class);
 
     public static final String DEFAULT_CORE_WALLET = "sparrow";
+    public static final String ELECTRUM_HOST = "127.0.0.1";
+    public static final String ELECTRUM_PORT = "0";
     private static final int IMPORT_BATCH_SIZE = 350;
     private static boolean initialized;
     private Long shutdownPtr;
@@ -59,18 +62,35 @@ public class Bwt {
     }
 
     private void start(CallbackNotifier callback) {
-        start(Collections.emptyList(), null, null, null, callback);
+        start(Collections.emptyList(), Collections.emptyList(), null, null, null, callback);
     }
 
     private void start(Collection<Wallet> wallets, CallbackNotifier callback) {
         List<Wallet> validWallets = wallets.stream().filter(Wallet::isValid).collect(Collectors.toList());
 
         Set<String> outputDescriptors = new LinkedHashSet<>();
+        Set<String> addresses = new LinkedHashSet<>();
         for(Wallet wallet : validWallets) {
             OutputDescriptor receiveOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE);
             outputDescriptors.add(receiveOutputDescriptor.toString(false, false));
             OutputDescriptor changeOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE);
             outputDescriptors.add(changeOutputDescriptor.toString(false, false));
+
+            if(wallet.isMasterWallet() && wallet.hasPaymentCode()) {
+                Wallet notificationWallet = wallet.getNotificationWallet();
+                WalletNode notificationNode = notificationWallet.getNode(KeyPurpose.NOTIFICATION);
+                addresses.add(notificationNode.getAddress().toString());
+
+                for(Wallet childWallet : wallet.getChildWallets()) {
+                    if(childWallet.isNested()) {
+                        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+                            for(WalletNode addressNode : childWallet.getNode(keyPurpose).getChildren()) {
+                                addresses.add(addressNode.getAddress().toString());
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         int rescanSince = validWallets.stream().filter(wallet -> wallet.getBirthDate() != null).mapToInt(wallet -> (int)(wallet.getBirthDate().getTime() / 1000)).min().orElse(-1);
@@ -84,7 +104,7 @@ public class Bwt {
             }
         }
 
-        start(outputDescriptors, rescanSince, forceRescan, gapLimit, callback);
+        start(outputDescriptors, addresses, rescanSince, forceRescan, gapLimit, callback);
     }
 
     /**
@@ -96,7 +116,7 @@ public class Bwt {
      * @param gapLimit desired gap limit beyond last used address
      * @param callback object receiving notifications
      */
-    private void start(Collection<String> outputDescriptors, Integer rescanSince, Boolean forceRescan, Integer gapLimit, CallbackNotifier callback) {
+    private void start(Collection<String> outputDescriptors, Collection<String> addresses, Integer rescanSince, Boolean forceRescan, Integer gapLimit, CallbackNotifier callback) {
         BwtConfig bwtConfig = new BwtConfig();
         bwtConfig.network = Network.get() == Network.MAINNET ? "bitcoin" : Network.get().getName();
 
@@ -105,6 +125,10 @@ public class Bwt {
             bwtConfig.rescanSince = (rescanSince == null || rescanSince < 0 ? "now" : rescanSince);
             bwtConfig.forceRescan = forceRescan;
             bwtConfig.gapLimit = gapLimit;
+
+            if(!addresses.isEmpty()) {
+                bwtConfig.addresses = addresses;
+            }
         } else {
             bwtConfig.requireAddresses = false;
             bwtConfig.bitcoindTimeout = 30;
@@ -115,7 +139,7 @@ public class Bwt {
             bwtConfig.setupLogger = false;
         }
 
-        bwtConfig.electrumAddr = "127.0.0.1:0";
+        bwtConfig.electrumAddr = ELECTRUM_HOST + ":" + ELECTRUM_PORT;
         bwtConfig.electrumSkipMerkle = true;
 
         Config config = Config.get();
@@ -187,8 +211,8 @@ public class Bwt {
         return terminating;
     }
 
-    public ConnectionService getConnectionService(Collection<Wallet> wallets) {
-        return wallets != null ? new ConnectionService(wallets) : new ConnectionService();
+    public ConnectionService getConnectionService(boolean useWallets) {
+        return new ConnectionService(useWallets);
     }
 
     public DisconnectionService getDisconnectionService() {
@@ -226,6 +250,9 @@ public class Bwt {
         @SerializedName("descriptors")
         public Collection<String> descriptors;
 
+        @SerializedName("addresses")
+        public Collection<String> addresses;
+
         @SerializedName("xpubs")
         public String xpubs;
 
@@ -261,14 +288,10 @@ public class Bwt {
     }
 
     public final class ConnectionService extends Service<Void> {
-        private final Collection<Wallet> wallets;
+        private final boolean useWallets;
 
-        public ConnectionService() {
-            this.wallets = null;
-        }
-
-        public ConnectionService(Collection<Wallet> wallets) {
-            this.wallets = wallets;
+        public ConnectionService(boolean useWallets) {
+            this.useWallets = useWallets;
         }
 
         @Override
@@ -332,10 +355,10 @@ public class Bwt {
                         }
                     };
 
-                    if(wallets == null) {
+                    if(!useWallets) {
                         Bwt.this.start(notifier);
                     } else {
-                        Bwt.this.start(wallets, notifier);
+                        Bwt.this.start(AppServices.get().getOpenWallets().keySet(), notifier);
                     }
 
                     return null;

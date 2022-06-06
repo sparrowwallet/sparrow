@@ -78,6 +78,9 @@ public class ElectrumServer {
                         throw new ServerConfigException("Could not connect to Bitcoin Core RPC");
                     }
                     electrumServer = bwtElectrumServer;
+                    if(previousServerAddress != null && previousServerAddress.contains(Bwt.ELECTRUM_HOST)) {
+                        previousServerAddress = bwtElectrumServer;
+                    }
                 } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
                     electrumServer = Config.get().getElectrumServer();
                     electrumServerCert = Config.get().getElectrumServerCert();
@@ -1062,7 +1065,7 @@ public class ElectrumServer {
                         Bwt.initialize();
 
                         if(!bwt.isRunning()) {
-                            Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe ? AppServices.get().getOpenWallets().keySet() : null);
+                            Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe);
                             bwtStartException = null;
                             bwtConnectionService.setOnFailed(workerStateEvent -> {
                                 log.error("Failed to start BWT", workerStateEvent.getSource().getException());
@@ -1174,6 +1177,10 @@ public class ElectrumServer {
 
         public boolean isConnecting() {
             return isRunning() && Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning() && !bwt.isReady();
+        }
+
+        public boolean isConnectionRunning() {
+            return isRunning() && (Config.get().getServerType() != ServerType.BITCOIN_CORE || bwt.isRunning());
         }
 
         public boolean isConnected() {
