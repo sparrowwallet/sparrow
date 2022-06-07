@@ -245,6 +245,7 @@ task packageZipDistribution(type: Zip) {
     destinationDirectory = file("$buildDir/jpackage")
     from("$buildDir/jpackage/") {
         include "Sparrow/**"
+        include "Sparrow.app/**"
     }
 }
 

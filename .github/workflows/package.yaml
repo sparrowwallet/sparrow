@@ -28,10 +28,10 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew jpackage
       - name: Package zip distribution
-        if: ${{ runner.os == 'Windows' }}
+        if: ${{ runner.os == 'Windows' || runner.os == 'macOS' }}
         run: ./gradlew packageZipDistribution
       - name: Package tar distribution
-        if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
+        if: ${{ runner.os == 'Linux' }}
         run: ./gradlew packageTarDistribution
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
