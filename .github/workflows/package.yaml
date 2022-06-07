@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v3
         with:
@@ -31,7 +31,7 @@ jobs:
         if: ${{ runner.os == 'Windows' }}
         run: ./gradlew packageZipDistribution
       - name: Package tar distribution
-        if: ${{ runner.os == 'Linux' }}
+        if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
         run: ./gradlew packageTarDistribution
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2
