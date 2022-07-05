@@ -1879,7 +1879,7 @@ public class AppController implements Initializable {
     }
 
     private void deleteWallet(WalletForm selectedWalletForm) {
-        Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete Wallet?", "The wallet file and any backups will be deleted. Are you sure?", ButtonType.NO, ButtonType.YES);
+        Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete " + selectedWalletForm.getWallet().getMasterName() + "?", "The wallet file and any backups will be deleted. Are you sure?", ButtonType.NO, ButtonType.YES);
         if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
             Storage storage = selectedWalletForm.getStorage();
             if(selectedWalletForm.getMasterWallet().isEncrypted()) {
