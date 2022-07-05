@@ -1035,7 +1035,7 @@ public class AppController implements Initializable {
             Wallet copy = wallet.copy();
             for(int i = 0; i < copy.getKeystores().size(); i++) {
                 Keystore copyKeystore = copy.getKeystores().get(i);
-                if(copyKeystore.hasSeed()) {
+                if(copyKeystore.hasSeed() && copyKeystore.getSeed().getPassphrase() == null) {
                     if(copyKeystore.getSeed().needsPassphrase()) {
                         if(!wallet.isMasterWallet() && wallet.getMasterWallet().getKeystores().size() == copy.getKeystores().size() && wallet.getMasterWallet().getKeystores().get(i).hasSeed()) {
                             copyKeystore.getSeed().setPassphrase(wallet.getMasterWallet().getKeystores().get(i).getSeed().getPassphrase());

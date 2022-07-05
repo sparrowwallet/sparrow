@@ -84,7 +84,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         okButton.setPrefWidth(130);
-        BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> passwordConfirm.isVisible() && !password.getText().equals(passwordConfirm.getText()), password.textProperty(), passwordConfirm.textProperty());
+        BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> (requirement == PasswordRequirement.LOAD && password.getText().isEmpty()) || (passwordConfirm.isVisible() && !password.getText().equals(passwordConfirm.getText())), password.textProperty(), passwordConfirm.textProperty());
         okButton.disableProperty().bind(isInvalid);
 
         if(requirement != PasswordRequirement.UPDATE_NEW && requirement != PasswordRequirement.UPDATE_CHANGE) {

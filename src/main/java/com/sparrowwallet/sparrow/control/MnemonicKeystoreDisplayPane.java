@@ -17,7 +17,7 @@ import java.util.List;
 
 public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
     public MnemonicKeystoreDisplayPane(Keystore keystore) {
-        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() ? "Passphrase entered" : "No passphrase", "", "image/" + WalletModel.SEED.getType() + ".png");
+        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() && (keystore.getSeed().getPassphrase() == null || keystore.getSeed().getPassphrase().length() > 0) ? "Passphrase entered" : "No passphrase", "", "image/" + WalletModel.SEED.getType() + ".png");
         showHideLink.setVisible(false);
         buttonBox.getChildren().clear();
 
