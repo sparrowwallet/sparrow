@@ -26,6 +26,7 @@ public class SettingsWalletForm extends WalletForm {
     public SettingsWalletForm(Storage storage, Wallet currentWallet) {
         super(storage, currentWallet, false);
         this.walletCopy = currentWallet.copy();
+        this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
     }
 
     @Override
@@ -41,6 +42,7 @@ public class SettingsWalletForm extends WalletForm {
     @Override
     public void revert() {
         this.walletCopy = super.getWallet().copy();
+        this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
     }
 
     @Override
@@ -82,18 +84,19 @@ public class SettingsWalletForm extends WalletForm {
                 EventManager.get().post(new WalletWatchLastChangedEvent(wallet, pastWallet, getWalletId(), walletCopy.getWatchLast()));
             }
 
-            List<Keystore> encryptionChangedKeystores = getEncryptionChangedKeystores(wallet, walletCopy);
+            Wallet masterWallet = getMasterWallet();
+            Wallet masterWalletCopy = walletCopy.isMasterWallet() ? walletCopy : walletCopy.getMasterWallet();
+            List<Keystore> encryptionChangedKeystores = getEncryptionChangedKeystores(masterWallet, masterWalletCopy);
             if(!encryptionChangedKeystores.isEmpty()) {
-                EventManager.get().post(new KeystoreEncryptionChangedEvent(wallet, pastWallet, getWalletId(), encryptionChangedKeystores));
+                EventManager.get().post(new KeystoreEncryptionChangedEvent(masterWallet, masterWallet.copy(), getStorage().getWalletId(masterWallet), encryptionChangedKeystores));
             }
 
-            for(Wallet childWallet : wallet.getChildWallets()) {
-                Wallet childWalletCopy = walletCopy.getChildWallet(childWallet.getName());
+            for(Wallet childWallet : masterWallet.getChildWallets()) {
+                Wallet childWalletCopy = masterWalletCopy.getChildWallet(childWallet.getName());
                 if(childWalletCopy != null) {
-                    Wallet pastChildWallet = childWallet.copy();
                     List<Keystore> childEncryptionChangedKeystores = getEncryptionChangedKeystores(childWallet, childWalletCopy);
                     if(!childEncryptionChangedKeystores.isEmpty()) {
-                        EventManager.get().post(new KeystoreEncryptionChangedEvent(childWallet, pastChildWallet, getStorage().getWalletId(childWallet), childEncryptionChangedKeystores));
+                        EventManager.get().post(new KeystoreEncryptionChangedEvent(childWallet, childWallet.copy(), getStorage().getWalletId(childWallet), childEncryptionChangedKeystores));
                     }
                 }
             }
