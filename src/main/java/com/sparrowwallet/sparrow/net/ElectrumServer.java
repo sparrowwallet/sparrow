@@ -1587,15 +1587,24 @@ public class ElectrumServer {
                         if(nodeTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {
                             Wallet masterWalletCopy = wallet.copy();
                             List<StandardAccount> searchAccounts = getStandardAccounts(wallet);
+                            Set<StandardAccount> foundAccounts = new LinkedHashSet<>();
                             for(int j = 0; j < searchAccounts.size(); j++) {
                                 StandardAccount standardAccount = searchAccounts.get(j);
                                 Wallet childWallet = masterWalletCopy.addChildWallet(standardAccount);
                                 Map<WalletNode, Set<BlockTransactionHash>> childTransactionMap = new TreeMap<>();
                                 electrumServer.getReferences(childWallet, childWallet.getNode(KeyPurpose.RECEIVE).getChildren(), childTransactionMap, 0);
                                 if(childTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {
-                                    wallet.addChildWallet(standardAccount);
+                                    if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+                                        foundAccounts.addAll(StandardAccount.WHIRLPOOL_ACCOUNTS);
+                                    } else {
+                                        foundAccounts.add(standardAccount);
+                                    }
                                 }
                                 updateProgress(i + j, wallets.size() + StandardAccount.values().length);
+                            }
+
+                            for(StandardAccount standardAccount : foundAccounts) {
+                                wallet.addChildWallet(standardAccount);
                             }
 
                             return Optional.of(wallet);

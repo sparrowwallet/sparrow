@@ -1014,7 +1014,9 @@ public class AppController implements Initializable {
             for(Map.Entry<WalletAndKey, Storage> entry : walletAndKey.getChildWallets().entrySet()) {
                 openWallet(entry.getValue(), entry.getKey(), walletAppController, true);
             }
-            Platform.runLater(() -> selectTab(walletAndKey.getWallet()));
+            if(walletAndKey.getWallet().isMasterWallet()) {
+                Platform.runLater(() -> selectTab(walletAndKey.getWallet()));
+            }
         } catch(Exception e) {
             log.error("Error opening wallet", e);
             showErrorDialog("Error Opening Wallet", e.getMessage());
