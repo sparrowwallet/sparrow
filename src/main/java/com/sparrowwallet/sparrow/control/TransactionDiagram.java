@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
@@ -26,10 +27,10 @@ import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -46,6 +47,8 @@ import org.controlsfx.tools.Platform;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.sparrowwallet.sparrow.control.CoinLabel.BTC_FORMAT;
 
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
@@ -70,7 +73,7 @@ public class TransactionDiagram extends GridPane {
     private final EventHandler<MouseEvent> expandedDiagramHandler = new EventHandler<>() {
         @Override
         public void handle(MouseEvent event) {
-            if(!event.isConsumed()) {
+            if(!event.isConsumed() && event.getButton() != MouseButton.SECONDARY) {
                 Stage stage = new Stage(StageStyle.UNDECORATED);
                 stage.setTitle(walletTx.getPayments().iterator().next().getLabel());
                 stage.initOwner(TransactionDiagram.this.getScene().getWindow());
@@ -420,6 +423,9 @@ public class TransactionDiagram extends GridPane {
                         label.setGraphic(excludeUtxoButton);
                         label.setContentDisplay(ContentDisplay.LEFT);
                     }
+
+                    ContextMenu contextMenu = new LabelContextMenu(walletNode.getAddress(), inputValue);
+                    label.setContextMenu(contextMenu);
                 } else {
                     if(input instanceof PayjoinBlockTransactionHashIndex) {
                         tooltip.setText("Added once transaction is signed and sent to the payjoin server");
@@ -448,6 +454,9 @@ public class TransactionDiagram extends GridPane {
                             Address fromAddress = txOutput.getScript().getToAddress();
                             inputValue = txOutput.getValue();
                             tooltip.setText("Input of " + getSatsValue(inputValue) + " sats\n" + input.getHashAsString() + ":" + input.getIndex() + (fromAddress != null ? "\n" + fromAddress : ""));
+
+                            ContextMenu contextMenu = new LabelContextMenu(fromAddress, inputValue);
+                            label.setContextMenu(contextMenu);
                         } else {
                             tooltip.setText(input.getHashAsString() + ":" + input.getIndex());
                         }
@@ -731,6 +740,11 @@ public class TransactionDiagram extends GridPane {
         for(OutputNode outputNode : outputNodes) {
             outputsBox.getChildren().add(outputNode.outputLabel);
             outputsBox.getChildren().add(createSpacer());
+
+            ContextMenu contextMenu = new LabelContextMenu(outputNode.address, outputNode.amount);
+            if(!outputNode.outputLabel.getChildren().isEmpty() && outputNode.outputLabel.getChildren().get(0) instanceof Label outputLabelControl) {
+                outputLabelControl.setContextMenu(contextMenu);
+            }
         }
 
         boolean highFee = (walletTx.getFeePercentage() > 0.1);
@@ -758,6 +772,11 @@ public class TransactionDiagram extends GridPane {
 
         outputsBox.getChildren().add(feeBox);
         outputsBox.getChildren().add(createSpacer());
+
+        if(walletTx.getFee() >= 0) {
+            ContextMenu contextMenu = new LabelContextMenu(null, walletTx.getFee());
+            feeLabel.setContextMenu(contextMenu);
+        }
 
         return outputsBox;
     }
@@ -1194,11 +1213,11 @@ public class TransactionDiagram extends GridPane {
     }
 
     private class OutputNode implements Comparable<OutputNode> {
-        public Node outputLabel;
+        public Pane outputLabel;
         public Address address;
         public long amount;
 
-        public OutputNode(Node outputLabel, Address address, long amount) {
+        public OutputNode(Pane outputLabel, Address address, long amount) {
             this.outputLabel = outputLabel;
             this.address = address;
             this.amount = amount;
@@ -1211,6 +1230,37 @@ public class TransactionDiagram extends GridPane {
             } catch(Exception e) {
                 return 0;
             }
+        }
+    }
+
+    private static class LabelContextMenu extends ContextMenu {
+        public LabelContextMenu(Address address, long value) {
+            if(address != null) {
+                MenuItem copyAddress = new MenuItem("Copy Address");
+                copyAddress.setOnAction(event -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(address.toString());
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().add(copyAddress);
+            }
+
+            MenuItem copySatsValue = new MenuItem("Copy Value in sats");
+            copySatsValue.setOnAction(event -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(Long.toString(value));
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+            MenuItem copyBtcValue = new MenuItem("Copy Value in BTC");
+            copyBtcValue.setOnAction(event -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(BTC_FORMAT.format((double)value / Transaction.SATOSHIS_PER_BITCOIN));
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+            getItems().addAll(copySatsValue, copyBtcValue);
         }
     }
 }
