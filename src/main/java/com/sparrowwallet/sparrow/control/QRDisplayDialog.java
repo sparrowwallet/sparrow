@@ -78,12 +78,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         if(encoder.isSinglePart()) {
             qrImageView.setImage(getQrCode(currentPart));
         } else {
-            animateQRService = new AnimateQRService();
-            animateQRService.setPeriod(Duration.millis(ANIMATION_PERIOD_MILLIS));
-            animateQRService.start();
-            setOnCloseRequest(event -> {
-                animateQRService.cancel();
-            });
+            createAnimateQRService();
         }
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -122,6 +117,15 @@ public class QRDisplayDialog extends Dialog<UR> {
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
+    }
+
+    private void createAnimateQRService() {
+        animateQRService = new AnimateQRService();
+        animateQRService.setPeriod(Duration.millis(ANIMATION_PERIOD_MILLIS));
+        animateQRService.start();
+        setOnCloseRequest(event -> {
+            animateQRService.cancel();
+        });
     }
 
     private void nextPart() {
@@ -169,6 +173,8 @@ public class QRDisplayDialog extends Dialog<UR> {
 
                     nextPart();
                     qrImageView.setImage(getQrCode(currentPart));
+                } else if(animateQRService == null) {
+                    createAnimateQRService();
                 } else if(!animateQRService.isRunning()) {
                     animateQRService.reset();
                     animateQRService.start();
@@ -185,6 +191,8 @@ public class QRDisplayDialog extends Dialog<UR> {
                 }
 
                 qrImageView.setImage(getQrCode(currentPart));
+            } else if(animateQRService == null) {
+                createAnimateQRService();
             } else if(!animateQRService.isRunning()) {
                 animateQRService.reset();
                 animateQRService.start();
