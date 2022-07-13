@@ -51,7 +51,7 @@ dependencies {
     }
     implementation('com.google.guava:guava:28.2-jre')
     implementation('com.google.code.gson:gson:2.8.6')
-    implementation('com.h2database:h2:2.0.206')
+    implementation('com.h2database:h2:2.1.214')
     implementation('com.zaxxer:HikariCP:4.0.3')
     implementation('org.jdbi:jdbi3-core:3.20.0') {
         exclude group: 'org.slf4j'
