@@ -1634,7 +1634,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private class PrivacyAnalysisTooltip extends VBox {
-        private List<Label> analysisLabels = new ArrayList<>();
+        private final List<Label> analysisLabels = new ArrayList<>();
 
         public PrivacyAnalysisTooltip(WalletTransaction walletTransaction) {
             List<Payment> payments = walletTransaction.getPayments();

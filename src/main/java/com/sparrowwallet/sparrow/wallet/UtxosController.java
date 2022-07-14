@@ -190,14 +190,20 @@ public class UtxosController extends WalletFormController implements Initializab
             List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().filter(tp -> tp.getTreeItem() != null).map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
             utxosChart.select(selectedEntries);
             updateButtons(Config.get().getBitcoinUnit());
+            updateUtxoCount(getWalletForm().getWalletUtxosEntry());
         });
     }
 
     private void updateFields(WalletUtxosEntry walletUtxosEntry) {
         balance.setValue(walletUtxosEntry.getBalance());
         mempoolBalance.setValue(walletUtxosEntry.getMempoolBalance());
-        utxoCount.setText(walletUtxosEntry.getChildren() != null ? Integer.toString(walletUtxosEntry.getChildren().size()) : "0");
+        updateUtxoCount(walletUtxosEntry);
         selectAll.setDisable(walletUtxosEntry.getChildren() == null || walletUtxosEntry.getChildren().size() == 0);
+    }
+
+    private void updateUtxoCount(WalletUtxosEntry walletUtxosEntry) {
+        int selectedCount = utxosTable.getSelectionModel().getSelectedCells().size();
+        utxoCount.setText((selectedCount > 0 ? selectedCount + "/" : "") + (walletUtxosEntry.getChildren() != null ? Integer.toString(walletUtxosEntry.getChildren().size()) : "0"));
     }
 
     private boolean canWalletMix() {
