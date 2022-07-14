@@ -10,10 +10,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.bip47.SecretPoint;
 import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionOutPoint;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -177,6 +174,8 @@ public class SendController extends WalletFormController implements Initializabl
     private final List<byte[]> opReturnsList = new ArrayList<>();
 
     private final Set<WalletNode> excludedChangeNodes = new HashSet<>();
+
+    private final Map<Wallet, Map<Address, WalletNode>> addressNodeMap = new HashMap<>();
 
     private final ChangeListener<String> feeListener = new ChangeListener<>() {
         @Override
@@ -578,7 +577,9 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 boolean includeSpentMempoolOutputs = includeSpentMempoolOutputsProperty.get();
 
-                walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(payments), getUtxoFilters(), payments, opReturnsList, excludedChangeNodes, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                walletTransactionService = new WalletTransactionService(addressNodeMap, wallet, getUtxoSelectors(payments), getUtxoFilters(),
+                        payments, opReturnsList, excludedChangeNodes,
+                        feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
                 walletTransactionService.setOnSucceeded(event -> {
                     if(!walletTransactionService.isIgnoreResult()) {
                         walletTransactionProperty.setValue(walletTransactionService.getValue());
@@ -636,6 +637,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private static class WalletTransactionService extends Service<WalletTransaction> {
+        private final Map<Wallet, Map<Address, WalletNode>> addressNodeMap;
         private final Wallet wallet;
         private final List<UtxoSelector> utxoSelectors;
         private final List<UtxoFilter> utxoFilters;
@@ -651,7 +653,11 @@ public class SendController extends WalletFormController implements Initializabl
         private final boolean includeSpentMempoolOutputs;
         private boolean ignoreResult;
 
-        public WalletTransactionService(Wallet wallet, List<UtxoSelector> utxoSelectors, List<UtxoFilter> utxoFilters, List<Payment> payments, List<byte[]> opReturns, Set<WalletNode> excludedChangeNodes, double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, boolean includeSpentMempoolOutputs) {
+        public WalletTransactionService(Map<Wallet, Map<Address, WalletNode>> addressNodeMap,
+                                        Wallet wallet, List<UtxoSelector> utxoSelectors, List<UtxoFilter> utxoFilters,
+                                        List<Payment> payments, List<byte[]> opReturns, Set<WalletNode> excludedChangeNodes,
+                                        double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, boolean includeSpentMempoolOutputs) {
+            this.addressNodeMap = addressNodeMap;
             this.wallet = wallet;
             this.utxoSelectors = utxoSelectors;
             this.utxoFilters = utxoFilters;
@@ -671,7 +677,10 @@ public class SendController extends WalletFormController implements Initializabl
         protected Task<WalletTransaction> createTask() {
             return new Task<>() {
                 protected WalletTransaction call() throws InsufficientFundsException {
-                    return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, excludedChangeNodes, feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                    WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, excludedChangeNodes,
+                            feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                    walletTransaction.updateAddressNodeMap(addressNodeMap, walletTransaction.getWallet());
+                    return walletTransaction;
                 }
             };
         }
@@ -1078,6 +1087,8 @@ public class SendController extends WalletFormController implements Initializabl
 
         whirlpoolProperty.set(null);
         paymentCodeProperty.set(null);
+
+        addressNodeMap.clear();
     }
 
     public UtxoSelector getUtxoSelector() {
@@ -1155,8 +1166,8 @@ public class SendController extends WalletFormController implements Initializabl
         WalletTransaction walletTransaction = walletTransactionProperty.get();
         Set<WalletNode> nodes = new LinkedHashSet<>(walletTransaction.getSelectedUtxos().values());
         nodes.addAll(walletTransaction.getChangeMap().keySet());
-        List<WalletNode> consolidationNodes = walletTransaction.getConsolidationSendNodes();
-        nodes.addAll(consolidationNodes);
+        Map<Address, WalletNode> addressNodeMap = walletTransaction.getAddressNodeMap(walletTransaction.getWallet());
+        nodes.addAll(addressNodeMap.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
         //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
         walletForm.addWalletTransactionNodes(nodes);
