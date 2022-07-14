@@ -36,6 +36,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private static final Pattern REPLACED_BY_FEE_SUFFIX = Pattern.compile("(.*)\\(Replaced By Fee( #)?(\\d+)?\\).*");
 
+    private static EntryCell lastCell;
+
     public EntryCell() {
         super();
         setAlignment(Pos.CENTER_LEFT);
@@ -46,6 +48,12 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
     @Override
     protected void updateItem(Entry entry, boolean empty) {
         super.updateItem(entry, empty);
+
+        //Return immediately to avoid CPU usage when updating the same invisible cell to determine tableview size (see https://bugs.openjdk.org/browse/JDK-8280442)
+        if(this == lastCell && !getTableRow().isVisible()) {
+            return;
+        }
+        lastCell = this;
 
         applyRowStyles(this, entry);
 
