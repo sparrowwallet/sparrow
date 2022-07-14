@@ -599,7 +599,12 @@ public class SendController extends WalletFormController implements Initializabl
                 final WalletTransactionService currentWalletTransactionService = walletTransactionService;
                 final KeyFrame delay = new KeyFrame(Duration.millis(200), e -> {
                     if(currentWalletTransactionService.isRunning()) {
-                        transactionDiagram.update("Selecting UTXOs...");
+                        transactionDiagram.update(currentWalletTransactionService.getMessage());
+                        currentWalletTransactionService.messageProperty().addListener((observable1, oldValue, newValue) -> {
+                            if(currentWalletTransactionService.isRunning()) {
+                                transactionDiagram.update(newValue);
+                            }
+                        });
                         createButton.setDisable(true);
                         notificationButton.setDisable(true);
                     }
@@ -677,8 +682,10 @@ public class SendController extends WalletFormController implements Initializabl
         protected Task<WalletTransaction> createTask() {
             return new Task<>() {
                 protected WalletTransaction call() throws InsufficientFundsException {
+                    updateMessage("Selecting UTXOs...");
                     WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, excludedChangeNodes,
                             feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
+                    updateMessage("Deriving keys...");
                     walletTransaction.updateAddressNodeMap(addressNodeMap, walletTransaction.getWallet());
                     return walletTransaction;
                 }
