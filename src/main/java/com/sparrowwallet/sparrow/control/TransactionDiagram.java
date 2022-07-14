@@ -659,7 +659,7 @@ public class TransactionDiagram extends GridPane {
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
             Wallet toWallet = getToWallet(payment);
-            WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getWallet().getWalletAddresses().get(payment.getAddress()) : null;
+            WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap(walletTx.getWallet()).get(payment.getAddress()) : null;
             Wallet toBip47Wallet = getBip47SendWallet(payment);
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "

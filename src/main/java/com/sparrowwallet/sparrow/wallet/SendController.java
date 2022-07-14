@@ -1639,7 +1639,7 @@ public class SendController extends WalletFormController implements Initializabl
         public PrivacyAnalysisTooltip(WalletTransaction walletTransaction) {
             List<Payment> payments = walletTransaction.getPayments();
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
-            Map<Address, WalletNode> walletAddresses = getWalletForm().getWallet().getWalletAddresses();
+            Map<Address, WalletNode> walletAddresses = walletTransaction.getAddressNodeMap(walletTransaction.getWallet());
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
             boolean payNymPresent = isPayNymMixOnlyPayment(payments);
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
