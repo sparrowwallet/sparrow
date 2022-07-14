@@ -27,6 +27,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
@@ -1062,6 +1063,13 @@ public class AppServices {
         if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
             Platform.runLater(() -> restartBwt(event.getWallet()));
         }
+
+        //Ensure public key cache is warm
+        WalletKeyDerivationService walletKeyDerivationService = new WalletKeyDerivationService(event.getWallet());
+        walletKeyDerivationService.setOnFailed(workerStateEvent -> {
+            log.error("Error deriving public keys", workerStateEvent.getSource().getException());
+        });
+        walletKeyDerivationService.start();
     }
 
     @Subscribe
@@ -1099,6 +1107,24 @@ public class AppServices {
             log.warn("Failed to fetch wallet history from " + Config.get().getServerAddress() + ", reconnecting to another server...");
             Config.get().changePublicServer();
             onlineProperty.set(true);
+        }
+    }
+
+    private static final class WalletKeyDerivationService extends Service<Boolean> {
+        private final Wallet wallet;
+
+        public WalletKeyDerivationService(Wallet wallet) {
+            this.wallet = wallet;
+        }
+
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                protected Boolean call() {
+                    wallet.derivePublicKeys();
+                    return true;
+                }
+            };
         }
     }
 }
