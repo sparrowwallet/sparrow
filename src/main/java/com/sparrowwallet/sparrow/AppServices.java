@@ -1121,7 +1121,7 @@ public class AppServices {
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() {
-                    wallet.derivePublicKeys();
+                    wallet.copy().derivePublicKeys();
                     return true;
                 }
             };
