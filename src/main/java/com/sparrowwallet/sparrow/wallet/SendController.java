@@ -1173,7 +1173,7 @@ public class SendController extends WalletFormController implements Initializabl
         WalletTransaction walletTransaction = walletTransactionProperty.get();
         Set<WalletNode> nodes = new LinkedHashSet<>(walletTransaction.getSelectedUtxos().values());
         nodes.addAll(walletTransaction.getChangeMap().keySet());
-        Map<Address, WalletNode> addressNodeMap = walletTransaction.getAddressNodeMap(walletTransaction.getWallet());
+        Map<Address, WalletNode> addressNodeMap = walletTransaction.getAddressNodeMap();
         nodes.addAll(addressNodeMap.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
         //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
@@ -1646,7 +1646,7 @@ public class SendController extends WalletFormController implements Initializabl
         public PrivacyAnalysisTooltip(WalletTransaction walletTransaction) {
             List<Payment> payments = walletTransaction.getPayments();
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
-            Map<Address, WalletNode> walletAddresses = walletTransaction.getAddressNodeMap(walletTransaction.getWallet());
+            Map<Address, WalletNode> walletAddresses = walletTransaction.getAddressNodeMap();
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
             boolean payNymPresent = isPayNymMixOnlyPayment(payments);
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
