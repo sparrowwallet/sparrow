@@ -16,18 +16,18 @@ import java.util.Date;
 import java.util.List;
 
 public interface WalletNodeDao {
-    @SqlQuery("select walletNode.id, walletNode.derivationPath, walletNode.label, walletNode.parent, " +
+    @SqlQuery("select walletNode.id, walletNode.derivationPath, walletNode.label, walletNode.parent, walletNode.addressData, ?, " +
             "blockTransactionHashIndex.id, blockTransactionHashIndex.hash, blockTransactionHashIndex.height, blockTransactionHashIndex.date, blockTransactionHashIndex.fee, blockTransactionHashIndex.label, " +
             "blockTransactionHashIndex.index, blockTransactionHashIndex.outputValue, blockTransactionHashIndex.status, blockTransactionHashIndex.spentBy, blockTransactionHashIndex.node " +
             "from walletNode left join blockTransactionHashIndex on walletNode.id = blockTransactionHashIndex.node where walletNode.wallet = ? order by walletNode.parent asc nulls first, blockTransactionHashIndex.spentBy asc nulls first")
     @RegisterRowMapper(WalletNodeMapper.class)
     @RegisterRowMapper(BlockTransactionHashIndexMapper.class)
     @UseRowReducer(WalletNodeReducer.class)
-    List<WalletNode> getForWalletId(Long id);
+    List<WalletNode> getForWalletId(int scriptType, Long id);
 
-    @SqlUpdate("insert into walletNode (derivationPath, label, wallet, parent) values (?, ?, ?, ?)")
+    @SqlUpdate("insert into walletNode (derivationPath, label, wallet, parent, addressData) values (?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insertWalletNode(String derivationPath, String label, long wallet, Long parent);
+    long insertWalletNode(String derivationPath, String label, long wallet, Long parent, byte[] addressData);
 
     @SqlUpdate("insert into blockTransactionHashIndex (hash, height, date, fee, label, index, outputValue, status, spentBy, node) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
@@ -38,6 +38,9 @@ public interface WalletNodeDao {
 
     @SqlUpdate("update walletNode set label = :label where id = :id")
     void updateNodeLabel(@Bind("id") long id, @Bind("label") String label);
+
+    @SqlUpdate("update walletNode set addressData = :addressData where id = :id and addressData is null")
+    void updateNodeAddressData(@Bind("id") long id, @Bind("addressData") byte[] addressData);
 
     @SqlUpdate("update blockTransactionHashIndex set label = :label where id = :id")
     void updateTxoLabel(@Bind("id") long id, @Bind("label") String label);
@@ -59,12 +62,12 @@ public interface WalletNodeDao {
 
     default void addWalletNodes(Wallet wallet) {
         for(WalletNode purposeNode : wallet.getPurposeNodes()) {
-            long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null);
+            long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null, null);
             purposeNode.setId(purposeNodeId);
             addTransactionOutputs(purposeNode);
             List<WalletNode> childNodes = new ArrayList<>(purposeNode.getChildren());
             for(WalletNode addressNode : childNodes) {
-                long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId);
+                long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId, addressNode.getAddressData());
                 addressNode.setId(addressNodeId);
                 addTransactionOutputs(addressNode);
             }

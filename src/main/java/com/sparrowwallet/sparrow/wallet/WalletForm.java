@@ -201,7 +201,9 @@ public class WalletForm {
                             }
                         }
                     }
-                    EventManager.get().post(new ChildWalletsAddedEvent(storage, wallet, addedWallets));
+                    if(!addedWallets.isEmpty()) {
+                        EventManager.get().post(new ChildWalletsAddedEvent(storage, wallet, addedWallets));
+                    }
                 });
                 paymentCodesService.setOnFailed(failedEvent -> {
                     log.error("Could not determine payment codes for wallet " + wallet.getFullName(), failedEvent.getSource().getException());

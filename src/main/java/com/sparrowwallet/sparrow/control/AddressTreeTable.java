@@ -14,9 +14,7 @@ import javafx.collections.ListChangeListener;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalInt;
+import java.util.*;
 
 public class AddressTreeTable extends CoinTreeTable {
     public void initialize(NodeEntry rootEntry) {
@@ -110,10 +108,15 @@ public class AddressTreeTable extends CoinTreeTable {
         //We only ever add child nodes - never remove in order to keep a full sequence (unless hide empty used addresses is set)
         NodeEntry rootEntry = (NodeEntry)getRoot().getValue();
 
+        Map<WalletNode, NodeEntry> childNodes = new HashMap<>();
+        for(Entry childEntry : rootEntry.getChildren()) {
+            NodeEntry nodeEntry = (NodeEntry)childEntry;
+            childNodes.put(nodeEntry.getNode(), nodeEntry);
+        }
+
         for(WalletNode updatedNode : updatedNodes) {
-            Optional<Entry> optEntry = rootEntry.getChildren().stream().filter(childEntry -> ((NodeEntry)childEntry).getNode().equals(updatedNode)).findFirst();
-            if(optEntry.isPresent()) {
-                NodeEntry existingEntry = (NodeEntry)optEntry.get();
+            NodeEntry existingEntry = childNodes.get(updatedNode);
+            if(existingEntry != null) {
                 existingEntry.refreshChildren();
 
                 if(Config.get().isHideEmptyUsedAddresses() && existingEntry.getValue() == 0L) {
@@ -125,7 +128,7 @@ public class AddressTreeTable extends CoinTreeTable {
                 if(Config.get().isHideEmptyUsedAddresses()) {
                     int index = 0;
                     for( ; index < rootEntry.getChildren().size(); index++) {
-                        NodeEntry existingEntry = (NodeEntry)rootEntry.getChildren().get(index);
+                        existingEntry = (NodeEntry)rootEntry.getChildren().get(index);
                         if(nodeEntry.compareTo(existingEntry) < 0) {
                              break;
                         }

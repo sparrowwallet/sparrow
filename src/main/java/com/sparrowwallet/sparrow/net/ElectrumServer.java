@@ -432,6 +432,7 @@ public class ElectrumServer {
         try {
             Set<String> scriptHashes = new HashSet<>();
             Map<String, String> pathScriptHashes = new LinkedHashMap<>();
+            Map<String, WalletNode> pathNodes = new HashMap<>();
             for(WalletNode node : nodes) {
                 if(node == null) {
                     log.error("Null node for wallet " + wallet.getFullName() + " subscribing nodes " + nodes + " startIndex " + startIndex, new Throwable());
@@ -448,6 +449,7 @@ public class ElectrumServer {
                     } else if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
                         //Unique script hash we are not yet subscribed to
                         pathScriptHashes.put(node.getDerivationPath(), scriptHash);
+                        pathNodes.put(node.getDerivationPath(), node);
                     }
                 }
             }
@@ -463,9 +465,8 @@ public class ElectrumServer {
             for(String path : result.keySet()) {
                 String status = result.get(path);
 
-                Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
-                if(optionalNode.isPresent()) {
-                    WalletNode node = optionalNode.get();
+                WalletNode node = pathNodes.computeIfAbsent(path, p -> nodes.stream().filter(n -> n.getDerivationPath().equals(p)).findFirst().orElse(null));
+                if(node != null) {
                     String scriptHash = getScriptHash(wallet, node);
 
                     //Check if there is history for this script hash, and if the history has changed since last fetched

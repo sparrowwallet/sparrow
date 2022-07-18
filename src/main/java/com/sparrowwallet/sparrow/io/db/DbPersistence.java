@@ -87,6 +87,10 @@ public class DbPersistence implements Persistence {
             return walletDao.getMainWallet(MASTER_SCHEMA, getWalletName(storage.getWalletFile(), null));
         });
 
+        if(masterWallet == null) {
+            throw new StorageException("The wallet file was corrupted. Check the backups folder for previous copies.");
+        }
+
         Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, encryptionKey);
         masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
 
@@ -231,12 +235,14 @@ public class DbPersistence implements Persistence {
                         if(addressNode.getId() == null) {
                             WalletNode purposeNode = wallet.getNode(addressNode.getKeyPurpose());
                             if(purposeNode.getId() == null) {
-                                long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null);
+                                long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null, null);
                                 purposeNode.setId(purposeNodeId);
                             }
 
-                            long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId());
+                            long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId(), addressNode.getAddressData());
                             addressNode.setId(nodeId);
+                        } else if(addressNode.getAddress() != null) {
+                            walletNodeDao.updateNodeAddressData(addressNode.getId(), addressNode.getAddressData());
                         }
 
                         Set<BlockTransactionHashIndex> txos = addressNode.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo, txo.getSpentBy()) : Stream.of(txo)).collect(Collectors.toSet());
@@ -285,12 +291,14 @@ public class DbPersistence implements Persistence {
                             if(addressNode.getId() == null) {
                                 WalletNode purposeNode = wallet.getNode(addressNode.getKeyPurpose());
                                 if(purposeNode.getId() == null) {
-                                    long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null);
+                                    long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null, null);
                                     purposeNode.setId(purposeNodeId);
                                 }
 
-                                long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId());
+                                long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId(), addressNode.getAddressData());
                                 addressNode.setId(nodeId);
+                            } else if(addressNode.getAddress() != null) {
+                                walletNodeDao.updateNodeAddressData(addressNode.getId(), addressNode.getAddressData());
                             }
 
                             walletNodeDao.updateNodeLabel(addressNode.getId(), entry.getLabel());
@@ -666,7 +674,7 @@ public class DbPersistence implements Persistence {
     }
 
     private String getUrl(File walletFile, String password) {
-        return "jdbc:h2:" + walletFile.getAbsolutePath().replace("." + getType().getExtension(), "") + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
+        return "jdbc:h2:" + walletFile.getAbsolutePath().replace("." + getType().getExtension(), "") + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
     }
 
     private boolean persistsFor(Wallet wallet) {

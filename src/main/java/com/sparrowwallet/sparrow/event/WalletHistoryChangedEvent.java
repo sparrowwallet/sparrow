@@ -45,10 +45,10 @@ public class WalletHistoryChangedEvent extends WalletChangedEvent {
     }
 
     public List<WalletNode> getReceiveNodes() {
-        return getWallet().getNode(KeyPurpose.RECEIVE).getChildren().stream().filter(historyChangedNodes::contains).collect(Collectors.toList());
+        return historyChangedNodes.stream().filter(node -> node.getKeyPurpose() == KeyPurpose.RECEIVE).collect(Collectors.toList());
     }
 
     public List<WalletNode> getChangeNodes() {
-        return getWallet().getNode(KeyPurpose.CHANGE).getChildren().stream().filter(historyChangedNodes::contains).collect(Collectors.toList());
+        return historyChangedNodes.stream().filter(node -> node.getKeyPurpose() == KeyPurpose.CHANGE).collect(Collectors.toList());
     }
 }

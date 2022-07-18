@@ -3,6 +3,8 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
 import com.sparrowwallet.drongo.crypto.ECKey;
@@ -331,6 +333,8 @@ public class JsonPersistence implements Persistence {
         gsonBuilder.registerTypeAdapter(Date.class, new DateDeserializer());
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionSerializer());
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
+        gsonBuilder.registerTypeAdapter(Address.class, new AddressSerializer());
+        gsonBuilder.registerTypeAdapter(Address.class, new AddressDeserializer());
         if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
             gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeSerializer());
@@ -426,6 +430,24 @@ public class JsonPersistence implements Persistence {
         public Transaction deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             byte[] rawTx = Utils.hexToBytes(json.getAsJsonPrimitive().getAsString());
             return new Transaction(rawTx);
+        }
+    }
+
+    private static class AddressSerializer implements JsonSerializer<Address> {
+        @Override
+        public JsonElement serialize(Address src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toString());
+        }
+    }
+
+    private static class AddressDeserializer implements JsonDeserializer<Address> {
+        @Override
+        public Address deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            try {
+                return Address.fromString(json.getAsJsonPrimitive().getAsString());
+            } catch(InvalidAddressException e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
 
