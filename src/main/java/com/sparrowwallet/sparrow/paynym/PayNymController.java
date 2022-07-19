@@ -321,7 +321,9 @@ public class PayNymController {
 
     public boolean isLinked(PayNym payNym) {
         PaymentCode externalPaymentCode = payNym.paymentCode();
-        return getMasterWallet().getChildWallet(externalPaymentCode, payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH) != null;
+        //As per BIP47 a notification transaction must have been sent from this wallet to enable the recipient to restore funds from seed
+        return getMasterWallet().getChildWallet(externalPaymentCode, payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH) != null
+                && !getNotificationTransaction(externalPaymentCode).isEmpty();
     }
 
     public void updateFollowing() {
@@ -356,7 +358,7 @@ public class PayNymController {
         for(PayNym payNym : following) {
             if(!isLinked(payNym)) {
                 PaymentCode externalPaymentCode = payNym.paymentCode();
-                Map<BlockTransaction, WalletNode> unlinkedNotification = getMasterWallet().getNotificationTransaction(externalPaymentCode);
+                Map<BlockTransaction, WalletNode> unlinkedNotification = getNotificationTransaction(externalPaymentCode);
                 if(!unlinkedNotification.isEmpty() && !INVALID_PAYMENT_CODE_LABEL.equals(unlinkedNotification.keySet().iterator().next().getLabel())) {
                     unlinkedNotifications.putAll(unlinkedNotification);
                     unlinkedPayNyms.put(unlinkedNotification.keySet().iterator().next(), payNym);
@@ -605,6 +607,22 @@ public class PayNymController {
         List<UtxoFilter> utxoFilters = List.of(new FrozenUtxoFilter(), new CoinbaseUtxoFilter(wallet));
 
         return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, Collections.emptySet(), feeRate, minimumFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs, false);
+    }
+
+    private Map<BlockTransaction, WalletNode> getNotificationTransaction(PaymentCode externalPaymentCode) {
+        Map<BlockTransaction, WalletNode> notificationTransaction = getMasterWallet().getNotificationTransaction(externalPaymentCode);
+        if(notificationTransaction.isEmpty()) {
+            for(Wallet childWallet : getMasterWallet().getChildWallets()) {
+                if(!childWallet.isNested()) {
+                    notificationTransaction = childWallet.getNotificationTransaction(externalPaymentCode);
+                    if(!notificationTransaction.isEmpty()) {
+                        return notificationTransaction;
+                    }
+                }
+            }
+        }
+
+        return notificationTransaction;
     }
 
     public Wallet getMasterWallet() {

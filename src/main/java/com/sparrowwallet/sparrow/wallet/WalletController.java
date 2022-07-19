@@ -90,7 +90,12 @@ public class WalletController extends WalletFormController implements Initializa
 
             try {
                 if(!existing) {
-                    FXMLLoader functionLoader = new FXMLLoader(AppServices.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml"));
+                    URL url = AppServices.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml");
+                    if(url == null) {
+                        throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase() + ".fxml");
+                    }
+
+                    FXMLLoader functionLoader = new FXMLLoader(url);
                     Node walletFunction = functionLoader.load();
                     walletFunction.setUserData(function);
                     WalletFormController controller = functionLoader.getController();
