@@ -82,7 +82,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         keyField.setText("Private Key:");
         key = new TextArea();
         key.setWrapText(true);
-        key.setPromptText("Wallet Import Format (WIF)");
+        key.setPromptText("Wallet Import Format (WIF) or BIP38 encrypted key");
         key.setPrefRowCount(2);
         key.getStyleClass().add("fixed-width");
         HBox keyBox = new HBox(5);
