@@ -4,6 +4,7 @@ import com.google.common.io.Files;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.crypto.BIP38;
 import com.sparrowwallet.drongo.crypto.DumpedPrivateKey;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -27,6 +28,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
+import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -149,6 +151,10 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         });
 
         key.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(isEncryptedKey()) {
+                decryptKey();
+            }
+
             boolean isValidKey = isValidKey();
             createButton.setDisable(!isValidKey || !isValidToAddress());
             if(isValidKey) {
@@ -196,6 +202,27 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             return true;
         } catch(Exception e) {
             return false;
+        }
+    }
+
+    private boolean isEncryptedKey() {
+        return key.getText().length() == 58 && key.getText().startsWith("6P");
+    }
+
+    private void decryptKey() {
+        PassphraseDialog passphraseDialog = new PassphraseDialog();
+        Optional<String> optPassphrase = passphraseDialog.showAndWait();
+        if(optPassphrase.isPresent()) {
+            try {
+                DumpedPrivateKey decryptedKey = BIP38.decrypt(optPassphrase.get(), key.getText());
+                Platform.runLater(() -> key.setText(decryptedKey.toString()));
+            } catch(Exception e) {
+                log.error("Failed to decrypt BIP38 key", e);
+                AppServices.showErrorDialog("Failed to decrypt BIP38 key", e.getMessage());
+                Platform.runLater(() -> key.setText(""));
+            }
+        } else {
+            Platform.runLater(() -> key.setText(""));
         }
     }
 
@@ -341,5 +368,36 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphEnum);
         glyph.setFontSize(12);
         return glyph;
+    }
+
+    public class PassphraseDialog extends Dialog<String> {
+        private final CustomPasswordField passphrase;
+
+        public PassphraseDialog() {
+            this.passphrase = new ViewPasswordField();
+
+            final DialogPane dialogPane = getDialogPane();
+            setTitle("BIP38 Passphrase");
+            dialogPane.setHeaderText("Enter the BIP38 passphrase for this key:");
+            dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+            AppServices.setStageIcon(dialogPane.getScene().getWindow());
+            dialogPane.getButtonTypes().addAll(ButtonType.CANCEL, ButtonType.OK);
+            dialogPane.setPrefWidth(380);
+            dialogPane.setPrefHeight(200);
+            AppServices.moveToActiveWindowScreen(this);
+
+            Glyph key = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.KEY);
+            key.setFontSize(50);
+            dialogPane.setGraphic(key);
+
+            final VBox content = new VBox(10);
+            content.setPrefHeight(50);
+            content.getChildren().add(passphrase);
+
+            dialogPane.setContent(content);
+            Platform.runLater(passphrase::requestFocus);
+
+            setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? passphrase.getText() : null);
+        }
     }
 }
