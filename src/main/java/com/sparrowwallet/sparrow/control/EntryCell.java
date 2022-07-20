@@ -373,11 +373,11 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
     private String getTooltip(TransactionEntry transactionEntry) {
         String tooltip = transactionEntry.getBlockTransaction().getHash().toString();
         if(transactionEntry.getBlockTransaction().getHeight() <= 0) {
-            if(!AppServices.getMempoolHistogram().isEmpty()) {
-                Set<MempoolRateSize> rateSizes = AppServices.getMempoolHistogram().get(AppServices.getMempoolHistogram().lastKey());
-                double vSize = transactionEntry.getBlockTransaction().getTransaction().getVirtualSize();
-                double feeRate = transactionEntry.getBlockTransaction().getFee() / vSize;
-                long vSizefromTip = rateSizes.stream().filter(rateSize -> rateSize.getFee() > feeRate).mapToLong(MempoolRateSize::getVSize).sum();
+            Double feeRate = transactionEntry.getBlockTransaction().getFeeRate();
+            Long vSizefromTip = transactionEntry.getVSizeFromTip();
+            if(feeRate != null && vSizefromTip != null) {
+                long blocksFromTip = (long)Math.ceil((double)vSizefromTip / Transaction.MAX_BLOCK_SIZE);
+
                 String amount = vSizefromTip + " vB";
                 if(vSizefromTip > 1000 * 1000) {
                     amount = String.format("%.2f", (double)vSizefromTip / (1000 * 1000)) + " MvB";
@@ -385,7 +385,11 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     amount = String.format("%.2f", (double)vSizefromTip / 1000) + " kvB";
                 }
 
-                tooltip += "\nFee rate: " + String.format("%.2f", feeRate) + " sats/vB (" + amount + " from tip)";
+                tooltip += "\nConfirms in: ±" + blocksFromTip + " block" + (blocksFromTip > 1 ? "s" : "") + " (" + amount + " from tip)";
+            }
+
+            if(feeRate != null) {
+                tooltip += "\nFee rate: " + String.format("%.2f", feeRate) + " sats/vB";
             }
 
             tooltip += "\nRBF: " + (transactionEntry.getBlockTransaction().getTransaction().isReplaceByFee() ? "Enabled" : "Disabled");

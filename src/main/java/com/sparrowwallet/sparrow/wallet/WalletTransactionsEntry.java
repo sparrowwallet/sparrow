@@ -246,9 +246,11 @@ public class WalletTransactionsEntry extends Entry {
         @Override
         public int compareTo(WalletTransactionsEntry.WalletTransaction other) {
             //This comparison must be identical to that of TransactionEntry so we can avoid a resort calculating balances when creating WalletTransactionsEntry
-            int blockOrder = blockTransaction.compareBlockOrder(other.blockTransaction);
-            if(blockOrder != 0) {
-                return blockOrder;
+            if(blockTransaction.getHeight() != other.blockTransaction.getHeight()) {
+                int blockOrder = blockTransaction.getComparisonHeight() - other.blockTransaction.getComparisonHeight();
+                if(blockOrder != 0) {
+                    return blockOrder;
+                }
             }
 
             int valueOrder = Long.compare(other.getValue(), getValue());
@@ -256,7 +258,7 @@ public class WalletTransactionsEntry extends Entry {
                 return valueOrder;
             }
 
-            return blockTransaction.compareTo(other.blockTransaction);
+            return blockTransaction.getHash().compareTo(other.blockTransaction.getHash());
         }
     }
 }

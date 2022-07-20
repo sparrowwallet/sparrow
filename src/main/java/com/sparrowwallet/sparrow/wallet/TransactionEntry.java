@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletTabsClosedEvent;
+import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.IntegerPropertyBase;
 import javafx.beans.property.LongProperty;
@@ -181,9 +182,12 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
     @Override
     public int compareTo(TransactionEntry other) {
-        int blockOrder = blockTransaction.compareBlockOrder(other.blockTransaction);
-        if(blockOrder != 0) {
-            return blockOrder;
+        //This comparison must be identical to that of WalletTransactionsEntry.WalletTransaction
+        if(blockTransaction.getHeight() != other.blockTransaction.getHeight()) {
+            int blockOrder = blockTransaction.getComparisonHeight() - other.blockTransaction.getComparisonHeight();
+            if(blockOrder != 0) {
+                return blockOrder;
+            }
         }
 
         int valueOrder = Long.compare(other.getValue(), getValue());
@@ -191,7 +195,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             return valueOrder;
         }
 
-        return blockTransaction.compareTo(other.blockTransaction);
+        return blockTransaction.getHash().compareTo(other.blockTransaction.getHash());
     }
 
     /**
@@ -242,6 +246,16 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             };
         }
         return balance;
+    }
+
+    public Long getVSizeFromTip() {
+        if(!AppServices.getMempoolHistogram().isEmpty()) {
+            Set<MempoolRateSize> rateSizes = AppServices.getMempoolHistogram().get(AppServices.getMempoolHistogram().lastKey());
+            double feeRate = blockTransaction.getFeeRate();
+            return rateSizes.stream().filter(rateSize -> rateSize.getFee() > feeRate).mapToLong(MempoolRateSize::getVSize).sum();
+        }
+
+        return null;
     }
 
     @Subscribe
