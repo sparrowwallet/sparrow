@@ -132,7 +132,7 @@ compileJava {
 
 processResources {
     doFirst {
-        delete file("$buildDir/resources/main/com/sparrowwallet/sparrow/about.fxml")
+        delete files("$buildDir/resources/main/com/sparrowwallet/sparrow/about.fxml")
     }
     doLast {
         delete fileTree("$buildDir/resources/main/native").matching {
