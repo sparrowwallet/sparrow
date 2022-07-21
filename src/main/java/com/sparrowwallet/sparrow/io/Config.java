@@ -43,6 +43,7 @@ public class Config {
     private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
     private boolean showLoadingLog = true;
+    private boolean showAddressTransactionCount = false;
     private boolean preventSleep = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -275,6 +276,15 @@ public class Config {
 
     public void setShowLoadingLog(boolean showLoadingLog) {
         this.showLoadingLog = showLoadingLog;
+        flush();
+    }
+
+    public boolean isShowAddressTransactionCount() {
+        return showAddressTransactionCount;
+    }
+
+    public void setShowAddressTransactionCount(boolean showAddressTransactionCount) {
+        this.showAddressTransactionCount = showAddressTransactionCount;
         flush();
     }
 

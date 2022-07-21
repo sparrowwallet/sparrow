@@ -58,6 +58,10 @@
     -fx-text-fill: derive(white, -15%);
 }
 
+.number-cell {
+    -fx-alignment: center-right;
+}
+
 .label-cell .text-field {
     -fx-padding: 0;
 }

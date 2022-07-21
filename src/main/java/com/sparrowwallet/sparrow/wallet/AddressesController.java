@@ -125,6 +125,12 @@ public class AddressesController extends WalletFormController implements Initial
         }
     }
 
+    @Subscribe
+    public void showTransactionsCount(ShowTransactionsCountEvent event) {
+        receiveTable.showTransactionsCount(event.isShowCount());
+        changeTable.showTransactionsCount(event.isShowCount());
+    }
+
     public void exportReceiveAddresses(ActionEvent event) {
         exportAddresses(KeyPurpose.RECEIVE);
     }
