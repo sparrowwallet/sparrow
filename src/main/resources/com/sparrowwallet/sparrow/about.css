@@ -13,3 +13,7 @@
     -fx-padding: 10 25 25 25;
 }
 
+.commit-hash {
+    -fx-opacity: 0.3;
+}
+

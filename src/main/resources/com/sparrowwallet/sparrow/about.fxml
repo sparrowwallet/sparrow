@@ -26,6 +26,8 @@
             <HBox><Label text="If you find Sparrow useful, consider donating at "/><Hyperlink text="https://sparrowwallet.com/donate" onAction="#openDonate"/></HBox>
         </VBox>
         <HBox styleClass="button-area" alignment="BOTTOM_RIGHT" VBox.vgrow="SOMETIMES">
+            <!--COMMIT_HASH-->
+            <Region HBox.hgrow="ALWAYS" />
             <Button text="Close" onAction="#close" />
         </HBox>
     </VBox>
