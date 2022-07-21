@@ -18,15 +18,6 @@ if(System.getProperty("os.arch") == "aarch64") {
     targetName = "-" + osArch
 }
 
-def getCommitHash = { ->
-    def stdout = new ByteArrayOutputStream()
-    exec {
-        commandLine 'git', 'rev-parse', '--short', 'HEAD'
-        standardOutput = stdout
-    }
-    return stdout.toString().trim()
-}
-
 group "com.sparrowwallet"
 version "${sparrowVersion}"
 
@@ -131,19 +122,9 @@ compileJava {
 }
 
 processResources {
-    doFirst {
-        delete fileTree("$buildDir/resources/main/com/sparrowwallet/sparrow") {
-            include "about.fxml"
-        }
-    }
     doLast {
         delete fileTree("$buildDir/resources/main/native").matching {
             exclude "${osName}/${osArch}/**"
-        }
-    }
-    filesMatching('**/about.fxml') {
-        filter { line ->
-            line.replace('<!--COMMIT_HASH-->', "<Label text=\"Commit Hash: ${getCommitHash()}\" styleClass=\"commit-hash\"/>")
         }
     }
 }
