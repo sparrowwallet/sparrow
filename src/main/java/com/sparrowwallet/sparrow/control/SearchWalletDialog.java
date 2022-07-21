@@ -170,7 +170,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
                     NodeEntry purposeEntry = walletForm.getNodeEntry(keyPurpose);
                     for(Entry entry : purposeEntry.getChildren()) {
                         if(entry instanceof NodeEntry nodeEntry) {
-                            if(nodeEntry.getAddress().toString().contains(searchText) ||
+                            if(nodeEntry.getAddress().toString().toLowerCase().contains(searchText) ||
                                     (nodeEntry.getLabel() != null && nodeEntry.getLabel().toLowerCase().contains(searchText)) ||
                                     (nodeEntry.getValue() != null && searchValue != null && Math.abs(nodeEntry.getValue()) == searchValue)) {
                                 matchingEntries.add(entry);
@@ -184,7 +184,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
                         NodeEntry purposeEntry = nestedWalletForm.getNodeEntry(keyPurpose);
                         for(Entry entry : purposeEntry.getChildren()) {
                             if(entry instanceof NodeEntry nodeEntry) {
-                                if(nodeEntry.getAddress().toString().contains(searchText) ||
+                                if(nodeEntry.getAddress().toString().toLowerCase().contains(searchText) ||
                                         (nodeEntry.getLabel() != null && nodeEntry.getLabel().toLowerCase().contains(searchText)) ||
                                         (nodeEntry.getValue() != null && searchValue != null && Math.abs(nodeEntry.getValue()) == searchValue)) {
                                     matchingEntries.add(entry);
@@ -197,7 +197,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
                 WalletUtxosEntry walletUtxosEntry = walletForm.getWalletUtxosEntry();
                 for(Entry entry : walletUtxosEntry.getChildren()) {
                     if(entry instanceof HashIndexEntry hashIndexEntry) {
-                        if(hashIndexEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
+                        if(hashIndexEntry.getBlockTransaction().getHash().toString().toLowerCase().equals(searchText) ||
                                 (hashIndexEntry.getLabel() != null && hashIndexEntry.getLabel().toLowerCase().contains(searchText)) ||
                                 (hashIndexEntry.getValue() != null && searchValue != null && Math.abs(hashIndexEntry.getValue()) == searchValue)) {
                             matchingEntries.add(entry);
