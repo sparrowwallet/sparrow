@@ -238,7 +238,9 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         validationSupport.registerValidator(xpub, Validator.combine(
                 Validator.createEmptyValidator(Network.get().getXpubHeader().getDisplayName() + " is required"),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is invalid", !ExtendedKey.isValid(newValue))
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is invalid", !ExtendedKey.isValid(newValue)),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Extended key is not unique", ExtendedKey.isValid(newValue) &&
+                        walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore && k.getExtendedPublicKey() != null).map(Keystore::getExtendedPublicKey).collect(Collectors.toList()).contains(ExtendedKey.fromDescriptor(newValue)))
         ));
 
         validationSupport.registerValidator(derivation, Validator.combine(
