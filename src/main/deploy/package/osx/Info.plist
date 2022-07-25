@@ -45,6 +45,14 @@
             <string>bitcoin</string>
           </array>
       </dict>
+      <dict>
+          <key>CFBundleURLName</key>
+          <string>com.sparrowwallet.sparrow.auth47</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>auth47</string>
+          </array>
+      </dict>
   </array>
   <key>UTImportedTypeDeclarations</key>
   <array>

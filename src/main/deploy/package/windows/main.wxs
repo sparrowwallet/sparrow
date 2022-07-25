@@ -77,6 +77,16 @@
 
     <DirectoryRef Id="TARGETDIR">
         <Component Id="RegistryEntries" Guid="{206C911C-56EF-44B8-9257-5FD214427965}">
+            <RegistryKey Root="HKCR" Key="auth47" Action="createAndRemoveOnUninstall">
+                <RegistryValue Type="string" Name="URL Protocol" Value=""/>
+                <RegistryValue Type="string" Value="URL:Auth47 Authentication URI"/>
+                <RegistryKey Key="DefaultIcon">
+                    <RegistryValue Type="string" Value="$(var.JpAppName).exe" />
+                </RegistryKey>
+                <RegistryKey Key="shell\open\command">
+                    <RegistryValue Type="string" Value="&quot;[INSTALLDIR]$(var.JpAppName).exe&quot; &quot;%1&quot;" />
+                </RegistryKey>
+            </RegistryKey>
             <RegistryKey Root="HKCR" Key="bitcoin" Action="createAndRemoveOnUninstall">
                 <RegistryValue Type="string" Name="URL Protocol" Value=""/>
                 <RegistryValue Type="string" Value="URL:Bitcoin Payment URL"/>

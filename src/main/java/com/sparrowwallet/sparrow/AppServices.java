@@ -4,6 +4,8 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -27,7 +29,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.ScheduledService;
-import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
@@ -47,6 +48,7 @@ import javafx.stage.Window;
 import javafx.util.Duration;
 import org.berndpruenster.netlayer.tor.Tor;
 import org.controlsfx.control.HyperlinkLabel;
+import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -720,6 +722,14 @@ public class AppServices {
         return showAlertDialog(title, content == null ? "See log file (Help menu)" : content, Alert.AlertType.ERROR, buttons);
     }
 
+    public static Optional<ButtonType> showSuccessDialog(String title, String content, ButtonType... buttons) {
+        Glyph successGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
+        successGlyph.getStyleClass().add("success");
+        successGlyph.setFontSize(50);
+
+        return showAlertDialog(title, content, Alert.AlertType.INFORMATION, successGlyph, buttons);
+    }
+
     public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, ButtonType... buttons) {
         return showAlertDialog(title, content, alertType, null, buttons);
     }
@@ -863,6 +873,8 @@ public class AppServices {
         Platform.runLater(() -> {
             if("bitcoin".equals(uri.getScheme())) {
                 openBitcoinUri(uri);
+            } else if(("auth47").equals(uri.getScheme())) {
+                openAuth47Uri(uri);
             }
         });
     }
@@ -885,7 +897,7 @@ public class AppServices {
     private static void openBitcoinUri(URI uri) {
         try {
             BitcoinURI bitcoinURI = new BitcoinURI(uri.toString());
-            Wallet wallet = selectWallet(null, "pay from");
+            Wallet wallet = selectWallet(null, null, "pay from");
 
             if(wallet != null) {
                 final Wallet sendingWallet = wallet;
@@ -897,11 +909,30 @@ public class AppServices {
         }
     }
 
-    private static Wallet selectWallet(ScriptType scriptType, String actionDescription) {
+    public static void openAuth47Uri(URI uri) {
+        try {
+            Auth47 auth47 = new Auth47(uri);
+            Wallet wallet = selectWallet(null, Boolean.TRUE, "authenticate using your payment code");
+
+            if(wallet != null) {
+                try {
+                    auth47.sendResponse(wallet);
+                    showSuccessDialog("Successful authentication", "Successfully authenticated to " + auth47.getCallback() + ".");
+                } catch(Exception e) {
+                    log.error("Error authenticating auth47 URI", e);
+                    showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
+                }
+            }
+        } catch(Exception e) {
+            showErrorDialog("Not a valid auth47 URI", e.getMessage());
+        }
+    }
+
+    private static Wallet selectWallet(ScriptType scriptType, Boolean hasPaymentCode, String actionDescription) {
         Wallet wallet = null;
-        List<Wallet> wallets = get().getOpenWallets().keySet().stream().filter(w -> scriptType == null || w.getScriptType() == scriptType).collect(Collectors.toList());
+        List<Wallet> wallets = get().getOpenWallets().keySet().stream().filter(w -> (scriptType == null || w.getScriptType() == scriptType) && (hasPaymentCode == null || w.hasPaymentCode())).collect(Collectors.toList());
         if(wallets.isEmpty()) {
-            showErrorDialog("No wallet available", "Open a" + (scriptType == null ? "" : " " + scriptType.getDescription()) + " wallet to " + actionDescription + ".");
+            showErrorDialog("No wallet available", "Open a" + (hasPaymentCode == null ? "" : " software") + (scriptType == null ? "" : " " + scriptType.getDescription()) + " wallet to " + actionDescription + ".");
         } else if(wallets.size() == 1) {
             wallet = wallets.iterator().next();
         } else {
