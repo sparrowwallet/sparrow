@@ -471,7 +471,7 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     private void addAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts, boolean discoverAccounts) {
-        if(masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
+        if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
             if(masterWallet.isEncrypted()) {
                 String walletId = walletForm.getWalletId();
                 WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
@@ -485,7 +485,12 @@ public class SettingsController extends WalletFormController implements Initiali
                         encryptionFullKey.clear();
                         masterWallet.decrypt(key);
 
-                        if(discoverAccounts) {
+                        if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() != KeystoreSource.SW_SEED)) {
+                            for(StandardAccount standardAccount : standardAccounts) {
+                                Wallet childWallet = masterWallet.addChildWallet(standardAccount);
+                                EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                            }
+                        } else if(discoverAccounts) {
                             ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
                             accountDiscoveryService.setOnSucceeded(event -> {
                                 addAndEncryptAccounts(masterWallet, accountDiscoveryService.getValue(), key);
@@ -518,7 +523,12 @@ public class SettingsController extends WalletFormController implements Initiali
                     keyDerivationService.start();
                 }
             } else {
-                if(discoverAccounts) {
+                if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() != KeystoreSource.SW_SEED)) {
+                    for(StandardAccount standardAccount : standardAccounts) {
+                        Wallet childWallet = masterWallet.addChildWallet(standardAccount);
+                        EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                    }
+                } else if(discoverAccounts) {
                     ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
                     accountDiscoveryService.setOnSucceeded(event -> {
                         addAndSaveAccounts(masterWallet, accountDiscoveryService.getValue());
