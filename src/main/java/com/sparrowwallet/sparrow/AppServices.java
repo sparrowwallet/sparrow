@@ -73,9 +73,11 @@ public class AppServices {
 
     private static final int SERVER_PING_PERIOD_SECS = 60;
     private static final int PUBLIC_SERVER_RETRY_PERIOD_SECS = 3;
+    private static final int PRIVATE_SERVER_RETRY_PERIOD_SECS = 15;
     public static final int ENUMERATE_HW_PERIOD_SECS = 30;
     private static final int RATES_PERIOD_SECS = 5 * 60;
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;
+    private static final int CONNECTION_DELAY_SECS = 2;
     private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
     private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
@@ -251,7 +253,7 @@ public class AppServices {
     private ElectrumServer.ConnectionService createConnectionService() {
         ElectrumServer.ConnectionService connectionService = new ElectrumServer.ConnectionService();
         //Delay startup on first connection to Bitcoin Core to allow any unencrypted wallets to open first
-        connectionService.setDelay(Config.get().getServerType() == ServerType.BITCOIN_CORE ? Duration.seconds(2) : Duration.ZERO);
+        connectionService.setDelay(Config.get().getServerType() == ServerType.BITCOIN_CORE ? Duration.seconds(CONNECTION_DELAY_SECS) : Duration.ZERO);
         connectionService.setPeriod(Duration.seconds(SERVER_PING_PERIOD_SECS));
         connectionService.setRestartOnFailure(true);
         EventManager.get().register(connectionService);
@@ -323,6 +325,8 @@ public class AppServices {
             if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
                 Config.get().changePublicServer();
                 connectionService.setPeriod(Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS));
+            } else {
+                connectionService.setPeriod(Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
             }
 
             log.debug("Connection failed", failEvent.getSource().getException());

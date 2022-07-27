@@ -47,7 +47,7 @@ public class ElectrumServer {
 
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
 
-    private static Transport transport;
+    private static CloseableTransport transport;
 
     private static final Map<String, List<String>> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
@@ -63,7 +63,7 @@ public class ElectrumServer {
 
     private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed:[^\"]*)\".*");
 
-    private static synchronized Transport getTransport() throws ServerException {
+    private static synchronized CloseableTransport getTransport() throws ServerException {
         if(transport == null) {
             try {
                 String electrumServer = null;
@@ -133,8 +133,8 @@ public class ElectrumServer {
     }
 
     public void connect() throws ServerException {
-        TcpTransport tcpTransport = (TcpTransport)getTransport();
-        tcpTransport.connect();
+        CloseableTransport closeableTransport = getTransport();
+        closeableTransport.connect();
     }
 
     public void ping() throws ServerException {
@@ -163,12 +163,15 @@ public class ElectrumServer {
     }
 
     public static synchronized void closeActiveConnection() throws ServerException {
+        if(transport != null) {
+            closeConnection(transport);
+            transport = null;
+        }
+    }
+
+    private static void closeConnection(Closeable closeableTransport) throws ServerException {
         try {
-            if(transport != null) {
-                Closeable closeableTransport = (Closeable)transport;
-                closeableTransport.close();
-                transport = null;
-            }
+            closeableTransport.close();
         } catch (IOException e) {
             throw new ServerException(e);
         }

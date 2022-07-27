@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class TcpTransport implements Transport, Closeable, TimeoutCounter {
+public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
     public static final int DEFAULT_PORT = 50001;
@@ -46,6 +46,7 @@ public class TcpTransport implements Transport, Closeable, TimeoutCounter {
     private final ReentrantLock clientRequestLock = new ReentrantLock();
     private boolean running = false;
     private volatile boolean reading = true;
+    private boolean closed = false;
     private boolean firstRead = true;
     private int readTimeoutIndex;
     private int requestIdCount = 1;
@@ -223,6 +224,7 @@ public class TcpTransport implements Transport, Closeable, TimeoutCounter {
     public void connect() throws ServerException {
         try {
             socket = createSocket();
+            log.debug("Created " + socket);
             socket.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
             running = true;
         } catch(SSLHandshakeException e) {
@@ -237,11 +239,15 @@ public class TcpTransport implements Transport, Closeable, TimeoutCounter {
     }
 
     public boolean isConnected() {
-        return socket != null && running;
+        return socket != null && running && !closed;
     }
 
     protected Socket createSocket() throws IOException {
         return socketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     @Override
@@ -249,6 +255,7 @@ public class TcpTransport implements Transport, Closeable, TimeoutCounter {
         if(socket != null) {
             socket.close();
         }
+        closed = true;
     }
 
     @Override
