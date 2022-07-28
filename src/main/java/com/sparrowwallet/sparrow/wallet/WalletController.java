@@ -25,12 +25,12 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.textfield.CustomPasswordField;
-import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -91,6 +91,9 @@ public class WalletController extends WalletFormController implements Initializa
             try {
                 if(!existing) {
                     URL url = AppServices.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml");
+                    if(url == null) {
+                        url = AppServices.class.getResource("wallet" + File.separator + function.toString().toLowerCase() + ".fxml");
+                    }
                     if(url == null) {
                         throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase() + ".fxml");
                     }
