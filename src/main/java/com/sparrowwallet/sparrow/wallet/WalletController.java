@@ -90,9 +90,9 @@ public class WalletController extends WalletFormController implements Initializa
 
             try {
                 if(!existing) {
-                    URL url = AppServices.class.getResource("wallet/" + function.toString().toLowerCase() + ".fxml");
+                    URL url = AppServices.class.getResource("wallet/" + function.getName() + ".fxml");
                     if(url == null) {
-                        url = AppServices.class.getResource("wallet" + File.separator + function.toString().toLowerCase() + ".fxml");
+                        url = AppServices.class.getResource("wallet" + File.separator + function.getName() + ".fxml");
                     }
                     if(url == null) {
                         throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase() + ".fxml");
