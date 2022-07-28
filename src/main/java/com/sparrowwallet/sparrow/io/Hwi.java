@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -240,32 +241,44 @@ public class Hwi {
     }
 
     private String execute(List<String> command) throws IOException {
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        Process process = processBuilder.start();
-        try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
-            return CharStreams.toString(reader);
+        long start = System.currentTimeMillis();
+        Process process = null;
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            process = processBuilder.start();
+            try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
+                return CharStreams.toString(reader);
+            }
+        } finally {
+            deleteExtractionOnFailure(process, start);
         }
     }
 
     private String execute(List<String> arguments, Command command, String... commandArguments) throws IOException {
-        List<String> processArguments = new ArrayList<>(arguments);
-        processArguments.add("--stdin");
+        long start = System.currentTimeMillis();
+        Process process = null;
+        try {
+            List<String> processArguments = new ArrayList<>(arguments);
+            processArguments.add("--stdin");
 
-        ProcessBuilder processBuilder = new ProcessBuilder(processArguments);
-        Process process = processBuilder.start();
+            ProcessBuilder processBuilder = new ProcessBuilder(processArguments);
+            process = processBuilder.start();
 
-        try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
-            writer.write(command.toString());
-            for(String commandArgument : commandArguments) {
-                writer.write(" \"");
-                writer.write(commandArgument.replace("\\", "\\\\").replace("\"", "\\\""));
-                writer.write("\"");
+            try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
+                writer.write(command.toString());
+                for(String commandArgument : commandArguments) {
+                    writer.write(" \"");
+                    writer.write(commandArgument.replace("\\", "\\\\").replace("\"", "\\\""));
+                    writer.write("\"");
+                }
+                writer.flush();
             }
-            writer.flush();
-        }
 
-        try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
-            return CharStreams.toString(reader);
+            try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
+                return CharStreams.toString(reader);
+            }
+        } finally {
+            deleteExtractionOnFailure(process, start);
         }
     }
 
@@ -430,6 +443,40 @@ public class Hwi {
         }
 
         return result.get("success").getAsBoolean();
+    }
+
+    private void deleteExtractionOnFailure(Process process, long after) {
+        try {
+            if(Platform.getCurrent() != Platform.OSX && process != null && process.waitFor(100, TimeUnit.MILLISECONDS) && process.exitValue() != 0) {
+                File extraction = getTemporaryExtraction(after);
+                if(extraction != null) {
+                    IOUtils.deleteDirectory(extraction);
+                }
+            }
+        } catch(Exception e) {
+            log.debug("Error deleting temporary extraction", e);
+        }
+    }
+
+    private File getTemporaryExtraction(long after) {
+        File tmpDir = new File(System.getProperty("java.io.tmpdir"));
+        if(!tmpDir.exists()) {
+            return null;
+        }
+
+        File[] tmps = tmpDir.listFiles(file -> {
+            if(!file.isDirectory() || file.lastModified() < after) {
+                return false;
+            }
+            String name = file.getName();
+            if(name.length() < 9 || !name.startsWith("_MEI")) {
+                return false;
+            }
+            File hwilib = new File(file, "hwilib");
+            return hwilib.exists();
+        });
+
+        return tmps == null || tmps.length == 0 ? null : Arrays.stream(tmps).sorted(Comparator.comparingLong(File::lastModified)).findFirst().orElse(null);
     }
 
     private List<String> getDeviceArguments(Device device, Command command) throws IOException {

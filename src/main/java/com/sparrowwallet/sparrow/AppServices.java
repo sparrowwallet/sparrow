@@ -146,7 +146,9 @@ public class AppServices {
                         torService.reset();
                     }
 
-                    torService.start();
+                    if(torService.getState() != Worker.State.RUNNING) {
+                        torService.start();
+                    }
                 } else {
                     restartServices();
                 }
