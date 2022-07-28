@@ -744,6 +744,7 @@ public class ElectrumServer {
         if(!transactionOutputs.equals(node.getTransactionOutputs())) {
             node.updateTransactionOutputs(wallet, transactionOutputs);
             copyPostmixLabels(wallet, transactionOutputs);
+            copyBadbankLabels(wallet, transactionOutputs);
         }
     }
 
@@ -755,6 +756,21 @@ public class ElectrumServer {
                 if(prevRef != null && wallet.getMasterWallet().getUtxoMixData(newRef) != null) {
                     if(newRef.getLabel() == null && prevRef.getLabel() != null) {
                         newRef.setLabel(prevRef.getLabel());
+                    }
+                }
+            }
+        }
+    }
+
+    public void copyBadbankLabels(Wallet wallet, Set<BlockTransactionHashIndex> newTransactionOutputs) {
+        if(wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_BADBANK && wallet.getMasterWallet() != null) {
+            Map<BlockTransactionHashIndex, WalletNode> masterWalletTxos = wallet.getMasterWallet().getWalletTxos();
+            for(BlockTransactionHashIndex newRef : newTransactionOutputs) {
+                BlockTransactionHashIndex prevRef = masterWalletTxos.keySet().stream()
+                        .filter(txo -> txo.isSpent() && txo.getSpentBy().getHash().equals(newRef.getHash()) && txo.getLabel() != null).findFirst().orElse(null);
+                if(prevRef != null) {
+                    if(newRef.getLabel() == null && prevRef.getLabel() != null) {
+                        newRef.setLabel("From " + prevRef.getLabel());
                     }
                 }
             }
