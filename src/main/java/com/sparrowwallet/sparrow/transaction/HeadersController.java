@@ -913,7 +913,7 @@ public class HeadersController extends TransactionFormController implements Init
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
-            if(!file.getName().toLowerCase().endsWith(".psbt")) {
+            if(!file.getName().toLowerCase(Locale.ROOT).endsWith(".psbt")) {
                 file = new File(file.getAbsolutePath() + ".psbt");
             }
 

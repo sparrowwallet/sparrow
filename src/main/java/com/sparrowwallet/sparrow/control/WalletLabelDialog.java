@@ -15,6 +15,8 @@ import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 
+import java.util.Locale;
+
 public class WalletLabelDialog extends Dialog<String> {
     private static final int MAX_LABEL_LENGTH = 25;
 
@@ -29,7 +31,7 @@ public class WalletLabelDialog extends Dialog<String> {
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         setTitle(walletType + " Name");
-        dialogPane.setHeaderText("Enter a name for this " + walletType.toLowerCase() + ":");
+        dialogPane.setHeaderText("Enter a name for this " + walletType.toLowerCase(Locale.ROOT) + ":");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(400);

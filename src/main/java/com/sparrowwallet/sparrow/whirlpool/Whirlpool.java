@@ -82,7 +82,7 @@ public class Whirlpool {
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
     public Whirlpool(Network network, HostAndPort torProxy) {
-        this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase());
+        this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase(Locale.ROOT));
         this.httpClientService = new JavaHttpClientService(torProxy);
         this.stompClientService = new JavaStompClientService(httpClientService);
         this.torClientService = new SparrowTorClientService(this);
@@ -441,7 +441,7 @@ public class Whirlpool {
         List<ExtendedKey.Header> headers = ExtendedKey.Header.getHeaders(Network.get());
         ExtendedKey.Header header = headers.stream().filter(head -> head.getDefaultScriptType().equals(wallet.getScriptType()) && !head.isPrivateKey()).findFirst().orElse(ExtendedKey.Header.xpub);
         xpub.m = wallet.getKeystores().get(0).getExtendedPublicKey().toString(header);
-        xpub.path = node.getDerivationPath().toUpperCase();
+        xpub.path = node.getDerivationPath().toUpperCase(Locale.ROOT);
 
         out.xpub = xpub;
 

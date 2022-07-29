@@ -110,7 +110,7 @@ public class WhirlpoolController {
 
         scode.setText(mixConfig.getScode() == null ? "" : mixConfig.getScode());
         scode.setTextFormatter(new TextFormatter<>((change) -> {
-            change.setText(change.getText().toUpperCase());
+            change.setText(change.getText().toUpperCase(Locale.ROOT));
             return change;
         }));
         scode.textProperty().addListener((observable, oldValue, newValue) -> {

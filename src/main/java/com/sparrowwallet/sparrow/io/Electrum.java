@@ -83,7 +83,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     if(ek.root_fingerprint == null && ek.ckcc_xfp != null) {
                         byte[] le = new byte[4];
                         Utils.uint32ToByteArrayLE(Long.parseLong(ek.ckcc_xfp), le, 0);
-                        ek.root_fingerprint = Utils.bytesToHex(le).toUpperCase();
+                        ek.root_fingerprint = Utils.bytesToHex(le).toUpperCase(Locale.ROOT);
                     }
                     ew.keystores.put(key, ek);
                 }

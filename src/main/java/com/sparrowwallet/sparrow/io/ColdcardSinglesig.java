@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 
 public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
@@ -71,7 +72,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                     ColdcardKeystore ck = gson.fromJson(map.get(key), ColdcardKeystore.class);
 
                     if(ck.name != null) {
-                        ScriptType ckScriptType = ScriptType.valueOf(ck.name.replace("p2wpkh-p2sh", "p2sh_p2wpkh").replace("p2sh-p2wpkh", "p2sh_p2wpkh").toUpperCase());
+                        ScriptType ckScriptType = ScriptType.valueOf(ck.name.replace("p2wpkh-p2sh", "p2sh_p2wpkh").replace("p2sh-p2wpkh", "p2sh_p2wpkh").toUpperCase(Locale.ROOT));
                         if(ckScriptType.equals(scriptType)) {
                             Keystore keystore = new Keystore();
                             keystore.setLabel(getName());

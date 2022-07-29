@@ -41,7 +41,7 @@ public class Soroban {
     private int bip47Account;
 
     public Soroban(Network network, HostAndPort torProxy) {
-        this.sorobanServer = SorobanServer.valueOf(network.getName().toUpperCase());
+        this.sorobanServer = SorobanServer.valueOf(network.getName().toUpperCase(Locale.ROOT));
         this.httpClientService = new JavaHttpClientService(torProxy);
     }
 

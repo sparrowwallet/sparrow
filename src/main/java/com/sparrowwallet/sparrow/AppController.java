@@ -709,7 +709,7 @@ public class AppController implements Initializable {
             AppServices.moveToActiveWindowScreen(window, 800, 450);
             File file = fileChooser.showSaveDialog(window);
             if(file != null) {
-                if(!asText && !file.getName().toLowerCase().endsWith(".psbt")) {
+                if(!asText && !file.getName().toLowerCase(Locale.ROOT).endsWith(".psbt")) {
                     file = new File(file.getAbsolutePath() + ".psbt");
                 }
 
@@ -2207,7 +2207,7 @@ public class AppController implements Initializable {
             if(!whirlpoolTransactions.isEmpty()) {
                 BlockTransaction blockTransaction = whirlpoolTransactions.get(0);
                 String status;
-                String walletName = event.getWallet().getMasterName() + " " + event.getWallet().getName().toLowerCase();
+                String walletName = event.getWallet().getMasterName() + " " + event.getWallet().getName().toLowerCase(Locale.ROOT);
                 long value = blockTransaction.getTransaction().getOutputs().iterator().next().getValue();
                 long mempoolValue = whirlpoolTransactions.stream().filter(tx -> tx.getHeight() <= 0).mapToLong(tx -> value).sum();
                 long blockchainValue = whirlpoolTransactions.stream().filter(tx -> tx.getHeight() > 0).mapToLong(tx -> value).sum();

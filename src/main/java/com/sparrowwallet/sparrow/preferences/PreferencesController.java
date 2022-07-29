@@ -15,6 +15,7 @@ import javafx.scene.layout.StackPane;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class PreferencesController implements Initializable {
@@ -48,7 +49,7 @@ public class PreferencesController implements Initializable {
             }
 
             PreferenceGroup preferenceGroup = (PreferenceGroup) selectedToggle.getUserData();
-            String fxmlName = preferenceGroup.toString().toLowerCase();
+            String fxmlName = preferenceGroup.toString().toLowerCase(Locale.ROOT);
             setPreferencePane(fxmlName);
         });
     }

@@ -185,7 +185,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             String qrtext = qrResult.getText();
             Matcher partMatcher = PART_PATTERN.matcher(qrtext);
 
-            if(qrtext.toLowerCase().startsWith(UR.UR_PREFIX)) {
+            if(qrtext.toLowerCase(Locale.ROOT).startsWith(UR.UR_PREFIX)) {
                 if(LegacyURDecoder.isLegacyURFragment(qrtext)) {
                     legacyDecoder.receivePart(qrtext);
                     Platform.runLater(() -> percentComplete.setValue(legacyDecoder.getPercentComplete()));

@@ -12,6 +12,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.*;
+import java.util.Locale;
 
 public class ColdcardMultisigTest extends IoTest {
     @Test
@@ -64,7 +65,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase());
+        Assert.assertEquals("wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
         Assert.assertTrue(wallet.isValid());
     }
 
@@ -77,7 +78,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4)))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase());
+        Assert.assertEquals("sh(wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4)))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
         Assert.assertTrue(wallet.isValid());
     }
 
@@ -89,7 +90,7 @@ public class ColdcardMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assert.assertEquals(3, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("wsh(sortedmulti(3,coldcard1,coldcard2,coldcard3))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase());
+        Assert.assertEquals("wsh(sortedmulti(3,coldcard1,coldcard2,coldcard3))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
         Assert.assertEquals("06b57041", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/0'/0'/2'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assert.assertEquals("xpub6EfEGa5isJbQFSswM5Uptw5BSq2Td1ZDJr3QUNUcMySpC7itZ3ccypVHtLPnvMzKQ2qxrAgH49vhVxRcaQLFbixAVRR8RACrYTp88Uv9h8Z", wallet.getKeystores().get(0).getExtendedPublicKey().toString());

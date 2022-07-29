@@ -136,7 +136,7 @@ public class MainApp extends Application {
 
     public static void main(String[] argv) {
         Args args = new Args();
-        JCommander jCommander = JCommander.newBuilder().addObject(args).programName(APP_NAME.toLowerCase()).acceptUnknownOptions(true).build();
+        JCommander jCommander = JCommander.newBuilder().addObject(args).programName(APP_NAME.toLowerCase(Locale.ROOT)).acceptUnknownOptions(true).build();
         jCommander.parse(argv);
         if(args.help) {
             jCommander.usage();
@@ -158,7 +158,7 @@ public class MainApp extends Application {
             String envNetwork = System.getenv(NETWORK_ENV_PROPERTY);
             if(envNetwork != null) {
                 try {
-                    Network.set(Network.valueOf(envNetwork.toUpperCase()));
+                    Network.set(Network.valueOf(envNetwork.toUpperCase(Locale.ROOT)));
                 } catch(Exception e) {
                     getLogger().warn("Invalid " + NETWORK_ENV_PROPERTY + " property: " + envNetwork);
                 }

@@ -24,7 +24,7 @@ public class IOUtils {
         try {
             String type = Files.probeContentType(file.toPath());
             if(type == null) {
-                if(file.getName().toLowerCase().endsWith("txn") || file.getName().toLowerCase().endsWith("psbt")) {
+                if(file.getName().toLowerCase(Locale.ROOT).endsWith("txn") || file.getName().toLowerCase(Locale.ROOT).endsWith("psbt")) {
                     return FileType.TEXT;
                 }
 

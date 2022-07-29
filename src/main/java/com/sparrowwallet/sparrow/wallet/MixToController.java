@@ -17,10 +17,7 @@ import javafx.scene.control.ComboBox;
 import javafx.util.StringConverter;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.drongo.wallet.StandardAccount.*;
@@ -112,7 +109,7 @@ public class MixToController implements Initializable {
                     return "";
                 }
 
-                return indexRange.toString().charAt(0) + indexRange.toString().substring(1).toLowerCase();
+                return indexRange.toString().charAt(0) + indexRange.toString().substring(1).toLowerCase(Locale.ROOT);
             }
 
             @Override

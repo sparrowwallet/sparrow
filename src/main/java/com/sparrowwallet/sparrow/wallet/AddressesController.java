@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -144,7 +145,7 @@ public class AddressesController extends WalletFormController implements Initial
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Addresses to CSV");
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + "-" + keyPurpose.name().toLowerCase() + "-addresses.csv");
+        fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + "-" + keyPurpose.name().toLowerCase(Locale.ROOT) + "-addresses.csv");
 
         Wallet copy = getWalletForm().getWallet().copy();
         WalletNode purposeNode = copy.getNode(keyPurpose);

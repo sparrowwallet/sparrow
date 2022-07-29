@@ -19,6 +19,7 @@ import javafx.scene.layout.StackPane;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class KeystoreImportController implements Initializable {
@@ -51,7 +52,7 @@ public class KeystoreImportController implements Initializable {
             }
 
             KeystoreSource importType = (KeystoreSource) selectedToggle.getUserData();
-            String fxmlName = importType.toString().toLowerCase();
+            String fxmlName = importType.toString().toLowerCase(Locale.ROOT);
             if(importType == KeystoreSource.SW_SEED || importType == KeystoreSource.SW_WATCH) {
                 fxmlName = "sw";
             }
@@ -91,7 +92,12 @@ public class KeystoreImportController implements Initializable {
         importPane.getChildren().removeAll(importPane.getChildren());
 
         try {
-            FXMLLoader importLoader = new FXMLLoader(AppServices.class.getResource("keystoreimport/" + fxmlName + ".fxml"));
+            URL url = AppServices.class.getResource("keystoreimport/" + fxmlName + ".fxml");
+            if(url == null) {
+                throw new IllegalStateException("Cannot find keystoreimport/" + fxmlName + ".fxml");
+            }
+
+            FXMLLoader importLoader = new FXMLLoader(url);
             Node importTypeNode = importLoader.load();
             KeystoreImportDetailController controller = importLoader.getController();
             controller.setMasterController(this);

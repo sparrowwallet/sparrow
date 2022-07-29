@@ -11,6 +11,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Locale;
 
 public class CaravanMultisigTest extends IoTest {
     @Test
@@ -21,7 +22,7 @@ public class CaravanMultisigTest extends IoTest {
         Assert.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
         Assert.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assert.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("wsh(sortedmulti(2,mercury,venus,earth))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase());
+        Assert.assertEquals("wsh(sortedmulti(2,mercury,venus,earth))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
         Assert.assertTrue(wallet.isValid());
         Assert.assertEquals("8188029f", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assert.assertEquals("m/48'/0'/0'/2'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());

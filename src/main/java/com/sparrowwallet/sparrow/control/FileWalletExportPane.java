@@ -21,6 +21,7 @@ import org.controlsfx.glyphfont.Glyph;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Optional;
 
 public class FileWalletExportPane extends TitledDescriptionPane {
@@ -80,7 +81,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
         String extension = exporter.getExportFileExtension(wallet);
-        String fileName = wallet.getFullName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase().replace(" ", "");
+        String fileName = wallet.getFullName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase(Locale.ROOT).replace(" ", "");
         if(exporter instanceof Sparrow) {
             fileName = wallet.getMasterName();
         }

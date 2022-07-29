@@ -17,6 +17,8 @@ import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Platform;
 
+import java.util.Locale;
+
 public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
     private static final int ERROR_DISPLAY_MILLIS = 5 * 60 * 1000;
 
@@ -114,7 +116,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             progressIndicator.setProgress(mixProgress.getMixStep().getProgressPercent() == 100 ? -1 : mixProgress.getMixStep().getProgressPercent() / 100.0);
             setGraphic(progressIndicator);
             Tooltip tt = new Tooltip();
-            String status = mixProgress.getMixStep().getMessage().substring(0, 1).toUpperCase() + mixProgress.getMixStep().getMessage().substring(1);
+            String status = mixProgress.getMixStep().getMessage().substring(0, 1).toUpperCase(Locale.ROOT) + mixProgress.getMixStep().getMessage().substring(1);
             tt.setText(status);
             setTooltip(tt);
 

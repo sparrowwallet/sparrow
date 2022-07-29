@@ -9,6 +9,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
+import java.util.Locale;
 
 public enum Protocol {
     TCP {
@@ -101,7 +102,7 @@ public enum Protocol {
     }
 
     public String toUrlString() {
-        return toString().toLowerCase() + "://";
+        return toString().toLowerCase(Locale.ROOT) + "://";
     }
 
     public String toUrlString(String host) {
@@ -117,7 +118,7 @@ public enum Protocol {
     }
 
     public static boolean isOnionAddress(HostAndPort server) {
-        return server.getHost().toLowerCase().endsWith(TorService.TOR_ADDRESS_SUFFIX);
+        return server.getHost().toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX);
     }
 
     public static boolean isOnionAddress(String address) {

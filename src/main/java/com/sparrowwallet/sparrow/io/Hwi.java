@@ -757,7 +757,7 @@ public class Hwi {
     private static class DeviceModelSerializer implements JsonSerializer<WalletModel> {
         @Override
         public JsonElement serialize(WalletModel src, Type typeOfSrc, JsonSerializationContext context) {
-            return new JsonPrimitive(src.toString().toLowerCase());
+            return new JsonPrimitive(src.toString().toLowerCase(Locale.ROOT));
         }
     }
 
@@ -766,7 +766,7 @@ public class Hwi {
         public WalletModel deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             String modelStr = json.getAsJsonPrimitive().getAsString();
             try {
-                return WalletModel.valueOf(modelStr.toUpperCase());
+                return WalletModel.valueOf(modelStr.toUpperCase(Locale.ROOT));
             } catch(Exception e) {
                 for(WalletModel model : WalletModel.values()) {
                     if(modelStr.startsWith(model.getType())) {

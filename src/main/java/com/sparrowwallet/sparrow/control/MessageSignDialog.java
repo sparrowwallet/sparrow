@@ -37,6 +37,7 @@ import tornadofx.control.Form;
 import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
@@ -184,7 +185,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         if(buttons.length > 0) {
             dialogPane.getButtonTypes().addAll(buttons);
 
-            ButtonType customSignButtonType = Arrays.stream(buttons).filter(buttonType -> buttonType.getText().toLowerCase().contains("sign")).findFirst().orElse(null);
+            ButtonType customSignButtonType = Arrays.stream(buttons).filter(buttonType -> buttonType.getText().toLowerCase(Locale.ROOT).contains("sign")).findFirst().orElse(null);
             if(customSignButtonType != null) {
                 Button customSignButton = (Button)dialogPane.lookupButton(customSignButtonType);
                 customSignButton.setDefaultButton(true);

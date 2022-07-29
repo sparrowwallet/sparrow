@@ -30,9 +30,9 @@ import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.Locale;
 import java.util.ResourceBundle;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
@@ -90,12 +90,9 @@ public class WalletController extends WalletFormController implements Initializa
 
             try {
                 if(!existing) {
-                    URL url = AppServices.class.getResource("wallet/" + function.getName() + ".fxml");
+                    URL url = AppServices.class.getResource("wallet/" + function.toString().toLowerCase(Locale.ROOT) + ".fxml");
                     if(url == null) {
-                        url = AppServices.class.getResource("wallet" + File.separator + function.getName() + ".fxml");
-                    }
-                    if(url == null) {
-                        throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase() + ".fxml");
+                        throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase(Locale.ROOT) + ".fxml");
                     }
 
                     FXMLLoader functionLoader = new FXMLLoader(url);

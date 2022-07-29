@@ -33,8 +33,8 @@ public enum ExchangeSource {
     COINBASE("Coinbase") {
         @Override
         public List<Currency> getSupportedCurrencies() {
-            return getRates().data.rates.keySet().stream().filter(code -> isValidISO4217Code(code.toUpperCase()))
-                    .map(code -> Currency.getInstance(code.toUpperCase())).collect(Collectors.toList());
+            return getRates().data.rates.keySet().stream().filter(code -> isValidISO4217Code(code.toUpperCase(Locale.ROOT)))
+                    .map(code -> Currency.getInstance(code.toUpperCase(Locale.ROOT))).collect(Collectors.toList());
         }
 
         @Override
@@ -68,8 +68,8 @@ public enum ExchangeSource {
     COINGECKO("Coingecko") {
         @Override
         public List<Currency> getSupportedCurrencies() {
-            return getRates().rates.entrySet().stream().filter(rate -> "fiat".equals(rate.getValue().type) && isValidISO4217Code(rate.getKey().toUpperCase()))
-                    .map(rate -> Currency.getInstance(rate.getKey().toUpperCase())).collect(Collectors.toList());
+            return getRates().rates.entrySet().stream().filter(rate -> "fiat".equals(rate.getValue().type) && isValidISO4217Code(rate.getKey().toUpperCase(Locale.ROOT)))
+                    .map(rate -> Currency.getInstance(rate.getKey().toUpperCase(Locale.ROOT))).collect(Collectors.toList());
         }
 
         @Override

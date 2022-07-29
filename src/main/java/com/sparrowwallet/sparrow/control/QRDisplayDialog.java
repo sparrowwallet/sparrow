@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Locale;
 
 @SuppressWarnings("deprecation")
 public class QRDisplayDialog extends Dialog<UR> {
@@ -131,7 +132,7 @@ public class QRDisplayDialog extends Dialog<UR> {
     private void nextPart() {
         if(!useLegacyEncoding) {
             String fragment = encoder.nextPart();
-            currentPart = fragment.toUpperCase();
+            currentPart = fragment.toUpperCase(Locale.ROOT);
         } else {
             currentPart = legacyParts[legacyPartIndex];
             legacyPartIndex++;

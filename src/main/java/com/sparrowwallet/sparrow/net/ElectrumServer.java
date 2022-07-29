@@ -990,7 +990,7 @@ public class ElectrumServer {
 
     public static boolean supportsBatching(List<String> serverVersion) {
         if(serverVersion.size() > 0) {
-            String server = serverVersion.get(0).toLowerCase();
+            String server = serverVersion.get(0).toLowerCase(Locale.ROOT);
             if(server.contains("electrumx")) {
                 return true;
             }

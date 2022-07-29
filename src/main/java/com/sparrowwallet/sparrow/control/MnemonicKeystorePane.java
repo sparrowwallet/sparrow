@@ -271,7 +271,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                 String text = change.getText();
                 // if text was added, fix the text to fit the requirements
                 if(!text.isEmpty()) {
-                    String newText = text.replace(" ", "").toLowerCase();
+                    String newText = text.replace(" ", "").toLowerCase(Locale.ROOT);
                     int carretPos = change.getCaretPosition() - text.length() + newText.length();
                     change.setText(newText);
                     // fix caret position based on difference in originally added text and fixed text

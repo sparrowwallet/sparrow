@@ -18,6 +18,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class ColdcardMultisig implements WalletImport, KeystoreFileImport, WalletExport {
@@ -198,7 +199,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
                 if(multipleDerivations) {
                     writer.append("Derivation: ").append(keystore.getKeyDerivation().getDerivationPath()).append("\n");
                 }
-                writer.append(keystore.getKeyDerivation().getMasterFingerprint().toUpperCase()).append(": ").append(keystore.getExtendedPublicKey().toString()).append("\n");
+                writer.append(keystore.getKeyDerivation().getMasterFingerprint().toUpperCase(Locale.ROOT)).append(": ").append(keystore.getExtendedPublicKey().toString()).append("\n");
                 if(multipleDerivations) {
                     writer.append("\n");
                 }
