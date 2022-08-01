@@ -5,10 +5,7 @@ import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.*;
-import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.crypto.EncryptionType;
-import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
-import com.sparrowwallet.drongo.crypto.Key;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
@@ -1102,8 +1099,13 @@ public class AppController implements Initializable {
         for(Wallet childWallet : wallet.getChildWallets()) {
             if(childWallet.isBip47()) {
                 try {
+                    Keystore masterKeystore = wallet.getKeystores().get(0);
                     Keystore keystore = childWallet.getKeystores().get(0);
-                    keystore.setBip47ExtendedPrivateKey(wallet.getKeystores().get(0).getBip47ExtendedPrivateKey());
+                    keystore.setBip47ExtendedPrivateKey(masterKeystore.getBip47ExtendedPrivateKey());
+                    List<ChildNumber> derivation = keystore.getKeyDerivation().getDerivation();
+                    keystore.setKeyDerivation(new KeyDerivation(masterKeystore.getKeyDerivation().getMasterFingerprint(), derivation));
+                    DeterministicKey pubKey = keystore.getBip47ExtendedPrivateKey().getKey().dropPrivateBytes().dropParent();
+                    keystore.setExtendedPublicKey(new ExtendedKey(pubKey, keystore.getBip47ExtendedPrivateKey().getParentFingerprint(), derivation.get(derivation.size() - 1)));
                 } catch(Exception e) {
                     log.error("Cannot prepare BIP47 keystore", e);
                 }
