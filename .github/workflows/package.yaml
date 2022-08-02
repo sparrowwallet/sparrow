@@ -12,11 +12,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - name: Set up JDK 17.0.2
+      - name: Set up JDK 18.0.1
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17.0.2'
+          java-version: '18.0.1'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Cache Gradle packages
