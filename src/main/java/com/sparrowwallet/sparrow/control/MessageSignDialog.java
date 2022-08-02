@@ -128,6 +128,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         address = new TextField();
         address.getStyleClass().add("id");
         address.setEditable(walletNode == null);
+        address.setTooltip(new Tooltip("Only Legacy (P2PKH), Nested Segwit (P2SH-P2WPKH) and Native Segwit (P2WPKH) singlesig addresses can sign"));
         addressField.getInputs().add(address);
 
         if(walletNode != null) {
@@ -294,7 +295,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private boolean isValidAddress() {
         try {
             Address address = getAddress();
-            return address.getScriptType() != ScriptType.P2TR;
+            return address.getScriptType() != ScriptType.P2TR && address.getScriptType().isAllowed(PolicyType.SINGLE);
         } catch (InvalidAddressException e) {
             return false;
         }
@@ -371,15 +372,9 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             }
 
             if(verified) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                AppServices.setStageIcon(alert.getDialogPane().getScene().getWindow());
-                alert.setTitle("Verification Succeeded");
-                alert.setHeaderText("Verification Succeeded");
-                alert.setContentText("The signature verified against the message.");
-                AppServices.moveToActiveWindowScreen(alert);
-                alert.showAndWait();
+                AppServices.showSuccessDialog("Verification Succeeded", "The signature verified against the message.");
             } else {
-                AppServices.showErrorDialog("Verification failed", "The provided signature did not match the message for this address.");
+                AppServices.showErrorDialog("Verification Failed", "The provided signature did not match the message for this address.");
             }
         } catch(IllegalArgumentException e) {
             AppServices.showErrorDialog("Could not verify message", e.getMessage());
