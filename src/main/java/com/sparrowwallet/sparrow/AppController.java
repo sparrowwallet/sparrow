@@ -426,6 +426,10 @@ public class AppController implements Initializable {
         }
     }
 
+    public void openSupport(ActionEvent event) {
+        AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/opensupport");
+    }
+
     public void submitBugReport(ActionEvent event) {
         AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/submitbugreport");
     }

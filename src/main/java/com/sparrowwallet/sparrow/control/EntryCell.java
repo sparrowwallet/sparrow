@@ -385,7 +385,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     amount = String.format("%.2f", (double)vSizefromTip / 1000) + " kvB";
                 }
 
-                tooltip += "\nConfirms in: ±" + blocksFromTip + " block" + (blocksFromTip > 1 ? "s" : "") + " (" + amount + " from tip)";
+                tooltip += "\nConfirms in: " + (blocksFromTip > 1 ? blocksFromTip + "+ blocks" : "1 block") + " (" + amount + " from tip)";
             }
 
             if(feeRate != null) {
