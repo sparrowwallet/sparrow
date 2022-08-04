@@ -16,8 +16,8 @@ or for those without SSH credentials:
 
 `git clone --recursive https://github.com/sparrowwallet/sparrow.git`
 
-In order to build, Sparrow requires Java 17 to be installed. 
-The release binaries are built with [Eclipse Temurin 17.0.2+8](https://github.com/adoptium/temurin17-binaries/releases/tag/jdk-17.0.2%2B8).
+In order to build, Sparrow requires Java 17 or higher to be installed. 
+The release binaries are built with [Eclipse Temurin 18.0.1+10](https://github.com/adoptium/temurin18-binaries/releases/tag/jdk-18.0.1%2B10).
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
 
@@ -36,7 +36,7 @@ When updating to the latest HEAD
 
 The release binaries are reproducible from v1.5.0 onwards (pre codesigning and installer packaging). More detailed [instructions on reproducing the binaries](docs/reproducible.md) are provided.
 
-> A video documention of your built process uploaded to [bitcoinbinary.org](https://bitcoinbinary.org/) is appreciated. Alternatively check the site if you wish to see if someone else already verified the provided binaries. 
+> Video documentation of your build process uploaded to [bitcoinbinary.org](https://bitcoinbinary.org/) is appreciated. Alternatively check the site if you wish to see if someone else already verified the provided binaries. 
 
 ## Running
 
@@ -77,11 +77,11 @@ Note that if you are connecting to an Electrum server when using testnet, that s
 
 When not explicitly configured using the command line argument above, Sparrow stores its mainnet config file, log file and wallets in a home folder location appropriate to the operating system:
 
-Platform | Location
--------- | --------
-OSX      | ~/.sparrow
-Linux    | ~/.sparrow
-Windows  | %APPDATA%/Sparrow
+| Platform | Location |
+|----------| -------- |
+| OSX      | ~/.sparrow |
+| Linux    | ~/.sparrow |
+| Windows  | %APPDATA%/Sparrow |
 
 Testnet, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
 
