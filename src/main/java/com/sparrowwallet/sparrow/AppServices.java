@@ -3,7 +3,16 @@ package com.sparrowwallet.sparrow;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptionType;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.Key;
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
@@ -11,10 +20,6 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletTransaction;
 import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
@@ -881,6 +886,8 @@ public class AppServices {
                 openBitcoinUri(uri);
             } else if(("auth47").equals(uri.getScheme())) {
                 openAuth47Uri(uri);
+            } else if(("lightning").equals(uri.getScheme())) {
+                openLnurlAuthUri(uri);
             }
         });
     }
@@ -903,11 +910,13 @@ public class AppServices {
     private static void openBitcoinUri(URI uri) {
         try {
             BitcoinURI bitcoinURI = new BitcoinURI(uri.toString());
-            Wallet wallet = selectWallet(null, null, "pay from");
+            List<PolicyType> policyTypes = Arrays.asList(PolicyType.values());
+            List<ScriptType> scriptTypes = Arrays.asList(ScriptType.ADDRESSABLE_TYPES);
+            Wallet wallet = selectWallet(policyTypes, scriptTypes, true, false, "pay from", false);
 
             if(wallet != null) {
                 final Wallet sendingWallet = wallet;
-                EventManager.get().post(new SendActionEvent(sendingWallet, new ArrayList<>(sendingWallet.getWalletUtxos().keySet())));
+                EventManager.get().post(new SendActionEvent(sendingWallet, new ArrayList<>(sendingWallet.getWalletUtxos().keySet()), true));
                 Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(sendingWallet, List.of(bitcoinURI.toPayment()))));
             }
         } catch(Exception e) {
@@ -915,31 +924,97 @@ public class AppServices {
         }
     }
 
-    public static void openAuth47Uri(URI uri) {
+    private static void openAuth47Uri(URI uri) {
         try {
             Auth47 auth47 = new Auth47(uri);
-            Wallet wallet = selectWallet(null, Boolean.TRUE, "authenticate using your payment code");
+            List<ScriptType> scriptTypes = PaymentCode.SEGWIT_SCRIPT_TYPES;
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE), scriptTypes, false, true, "login to " + auth47.getCallback().getHost(), true);
 
             if(wallet != null) {
                 try {
                     auth47.sendResponse(wallet);
-                    showSuccessDialog("Successful authentication", "Successfully authenticated to " + auth47.getCallback() + ".");
+                    EventManager.get().post(new StatusEvent("Successfully authenticated to " + auth47.getCallback().getHost()));
                 } catch(Exception e) {
                     log.error("Error authenticating auth47 URI", e);
                     showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
                 }
             }
         } catch(Exception e) {
+            log.error("Not a valid auth47 URI", e);
             showErrorDialog("Not a valid auth47 URI", e.getMessage());
         }
     }
 
-    private static Wallet selectWallet(ScriptType scriptType, Boolean hasPaymentCode, String actionDescription) {
+    private static void openLnurlAuthUri(URI uri) {
+        try {
+            LnurlAuth lnurlAuth = new LnurlAuth(uri);
+            List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE);
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE), scriptTypes, true, true, lnurlAuth.getLoginMessage(), true);
+
+            if(wallet != null) {
+                if(wallet.isEncrypted()) {
+                    Storage storage = AppServices.get().getOpenWallets().get(wallet);
+                    Wallet copy = wallet.copy();
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    Optional<SecureString> password = dlg.showAndWait();
+                    if(password.isPresent()) {
+                        Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+                        keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
+                            ECKey encryptionFullKey = keyDerivationService.getValue();
+                            Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                            copy.decrypt(key);
+                            try {
+                                lnurlAuth.sendResponse(copy);
+                                EventManager.get().post(new StatusEvent("Successfully authenticated to " + lnurlAuth.getDomain()));
+                            } catch(Exception e) {
+                                showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
+                            } finally {
+                                key.clear();
+                                encryptionFullKey.clear();
+                                password.get().clear();
+                            }
+                        });
+                        keyDerivationService.setOnFailed(workerStateEvent -> {
+                            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
+                            if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                                Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                                    Platform.runLater(() -> openLnurlAuthUri(uri));
+                                }
+                            } else {
+                                log.error("Error deriving wallet key", keyDerivationService.getException());
+                            }
+                        });
+                        EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
+                        keyDerivationService.start();
+                    }
+                } else {
+                    try {
+                        lnurlAuth.sendResponse(wallet);
+                        EventManager.get().post(new StatusEvent("Successfully authenticated to " + lnurlAuth.getDomain()));
+                    } catch(LnurlAuth.LnurlAuthException e) {
+                        showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
+                    } catch(Exception e) {
+                        log.error("Failed to authenticate using LNURL-auth", e);
+                        showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
+                    }
+                }
+            }
+        } catch(Exception e) {
+            log.error("Not a valid LNURL-auth URI", e);
+            showErrorDialog("Not a valid LNURL-auth URI", e.getMessage());
+        }
+    }
+
+    private static Wallet selectWallet(List<PolicyType> policyTypes, List<ScriptType> scriptTypes, boolean taprootAllowed, boolean privateKeysRequired, String actionDescription, boolean alwaysAsk) {
         Wallet wallet = null;
-        List<Wallet> wallets = get().getOpenWallets().keySet().stream().filter(w -> (scriptType == null || w.getScriptType() == scriptType) && (hasPaymentCode == null || w.hasPaymentCode())).collect(Collectors.toList());
+        List<Wallet> wallets = get().getOpenWallets().keySet().stream().filter(w -> w.isValid() && policyTypes.contains(w.getPolicyType()) && scriptTypes.contains(w.getScriptType())
+                && (!privateKeysRequired || w.getKeystores().stream().allMatch(Keystore::hasPrivateKey))).collect(Collectors.toList());
         if(wallets.isEmpty()) {
-            showErrorDialog("No wallet available", "Open a" + (hasPaymentCode == null ? "" : " software") + (scriptType == null ? "" : " " + scriptType.getDescription()) + " wallet to " + actionDescription + ".");
-        } else if(wallets.size() == 1) {
+            boolean taprootOpen = get().getOpenWallets().keySet().stream().anyMatch(w -> w.getScriptType() == ScriptType.P2TR);
+            showErrorDialog("No wallet available", "Open a" + (taprootOpen && !taprootAllowed ? " non-Taproot" : "") + (privateKeysRequired ? " software" : "") + " wallet to " + actionDescription + ".");
+        } else if(wallets.size() == 1 && !alwaysAsk) {
             wallet = wallets.iterator().next();
         } else {
             ChoiceDialog<Wallet> walletChoiceDialog = new ChoiceDialog<>(wallets.iterator().next(), wallets);

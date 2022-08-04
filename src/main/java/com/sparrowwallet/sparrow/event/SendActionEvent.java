@@ -8,10 +8,16 @@ import java.util.List;
 
 public class SendActionEvent extends FunctionActionEvent {
     private final List<BlockTransactionHashIndex> utxos;
+    private final boolean selectIfEmpty;
 
     public SendActionEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos) {
+        this(wallet, utxos, false);
+    }
+
+    public SendActionEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, boolean selectIfEmpty) {
         super(Function.SEND, wallet);
         this.utxos = utxos;
+        this.selectIfEmpty = selectIfEmpty;
     }
 
     public List<BlockTransactionHashIndex> getUtxos() {
@@ -20,6 +26,6 @@ public class SendActionEvent extends FunctionActionEvent {
 
     @Override
     public boolean selectFunction() {
-        return !getUtxos().isEmpty();
+        return selectIfEmpty || !getUtxos().isEmpty();
     }
 }

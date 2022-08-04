@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 
+import static com.sparrowwallet.drongo.bip47.PaymentCode.SEGWIT_SCRIPT_TYPES;
+import static com.sparrowwallet.drongo.bip47.PaymentCode.V1_SCRIPT_TYPES;
+
 public class PayNym {
     private static final Logger log = LoggerFactory.getLogger(PayNym.class);
 
@@ -68,11 +71,11 @@ public class PayNym {
     }
 
     public static List<ScriptType> getSegwitScriptTypes() {
-        return List.of(ScriptType.P2PKH, ScriptType.P2SH_P2WPKH, ScriptType.P2WPKH);
+        return SEGWIT_SCRIPT_TYPES;
     }
 
     public static List<ScriptType> getV1ScriptTypes() {
-        return List.of(ScriptType.P2PKH);
+        return V1_SCRIPT_TYPES;
     }
 
     public static PayNym fromString(String strPaymentCode, String nymId, String nymName, boolean segwit, List<PayNym> following, List<PayNym> followers) {
