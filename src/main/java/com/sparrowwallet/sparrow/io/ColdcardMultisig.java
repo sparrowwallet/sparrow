@@ -187,7 +187,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
             writer.append("# " + getName() + " setup file (created by Sparrow)\n");
             writer.append("#\n");
-            writer.append("Name: ").append(wallet.getFullName()).append("\n");
+            writer.append("Name: ").append(wallet.getFullName().length() >= 20 ? (wallet.getDisplayName().length() >= 20 ? wallet.getDisplayName().substring(0, 20) : wallet.getDisplayName()) : wallet.getFullName()).append("\n");
             writer.append("Policy: ").append(Integer.toString(wallet.getDefaultPolicy().getNumSignaturesRequired())).append(" of ").append(Integer.toString(wallet.getKeystores().size())).append("\n");
             if(!multipleDerivations) {
                 writer.append("Derivation: ").append(wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath()).append("\n");
@@ -214,7 +214,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public String getWalletExportDescription() {
-        return "Export file that can be read by your Coldcard using the Settings > Multisig Wallets > Import from SD feature.";
+        return "Export file that can be read by your Coldcard using the Settings > Multisig Wallets > Import from File feature.";
     }
 
     @Override
