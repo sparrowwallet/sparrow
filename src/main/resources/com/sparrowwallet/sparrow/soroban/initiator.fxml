@@ -76,7 +76,10 @@
                     <Region HBox.hgrow="ALWAYS" />
                     <ProgressTimer fx:id="step2Timer" seconds="60" />
                 </HBox>
-                <Label fx:id="step2Desc" text="Ask your mix partner to select Find Mix Partner in the Sparrow Tools menu or Receive Online Cahoots in the Samourai Receive menu." wrapText="true" styleClass="content-text" />
+                <HBox spacing="5">
+                    <Label fx:id="step2Desc" text="Ask your mix partner to select Find Mix Partner in the Sparrow Tools menu or Receive Online Cahoots in the Samourai Receive menu." wrapText="true" styleClass="content-text" />
+                    <Hyperlink fx:id="meetingFail" text="Try again?" styleClass="content-text"/>
+                </HBox>
                 <HBox>
                     <padding>
                         <Insets top="20" />

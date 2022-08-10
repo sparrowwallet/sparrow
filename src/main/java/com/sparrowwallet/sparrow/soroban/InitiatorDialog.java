@@ -47,6 +47,7 @@ public class InitiatorDialog extends Dialog<Transaction> {
             dialogPane.setPrefHeight(530);
             AppServices.moveToActiveWindowScreen(this);
 
+            dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
             dialogPane.getStylesheets().add(AppServices.class.getResource("soroban/initiator.css").toExternalForm());
 

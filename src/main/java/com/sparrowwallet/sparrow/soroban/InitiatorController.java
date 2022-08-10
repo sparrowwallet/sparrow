@@ -106,6 +106,9 @@ public class InitiatorController extends SorobanController {
     private Label step2Desc;
 
     @FXML
+    private Hyperlink meetingFail;
+
+    @FXML
     private ProgressBar sorobanProgressBar;
 
     @FXML
@@ -187,6 +190,17 @@ public class InitiatorController extends SorobanController {
         broadcastProgressLabel.managedProperty().bind(broadcastProgressLabel.visibleProperty());
         broadcastSuccessful.managedProperty().bind(broadcastSuccessful.visibleProperty());
         broadcastSuccessful.setVisible(false);
+
+        meetingFail.managedProperty().bind(meetingFail.visibleProperty());
+        meetingFail.setVisited(true);
+        meetingFail.setVisible(false);
+        meetingFail.setOnAction(event -> {
+            meetingFail.setVisible(false);
+            step2Desc.setText("Retrying...");
+            sorobanProgressLabel.setVisible(true);
+            startInitiatorMeetingRequest(AppServices.getSorobanServices().getSoroban(walletId), wallet);
+            step2Timer.start();
+        });
 
         step2.setVisible(false);
         step3.setVisible(false);
@@ -419,17 +433,15 @@ public class InitiatorController extends SorobanController {
                                         }
                                     }, error -> {
                                         log.error("Error receiving meeting response", error);
-                                        String cutFrom = "Exception: ";
-                                        int index = error.getMessage().lastIndexOf(cutFrom);
-                                        String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
-                                        msg = msg.replace("#Cahoots", "mix transaction");
-                                        step2Desc.setText(msg);
+                                        step2Desc.setText(getErrorMessage(error));
                                         sorobanProgressLabel.setVisible(false);
+                                        meetingFail.setVisible(true);
                                     });
                         }, error -> {
                             log.error("Error sending meeting request", error);
-                            step2Desc.setText(error.getMessage());
+                            step2Desc.setText(getErrorMessage(error));
                             sorobanProgressLabel.setVisible(false);
+                            meetingFail.setVisible(true);
                         });
             } catch(Exception e) {
                 log.error("Error sending meeting request", e);
@@ -512,9 +524,7 @@ public class InitiatorController extends SorobanController {
                             },
                             error -> {
                                 log.error("Error creating mix transaction", error);
-                                String cutFrom = "Exception: ";
-                                int index = error.getMessage().lastIndexOf(cutFrom);
-                                step2Desc.setText(index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length()));
+                                step2Desc.setText(getErrorMessage(error));
                                 sorobanProgressLabel.setVisible(false);
                             });
         } catch(Exception e) {
@@ -665,6 +675,15 @@ public class InitiatorController extends SorobanController {
         if(transactionMempoolService != null) {
             transactionMempoolService.cancel();
         }
+    }
+
+    private static String getErrorMessage(Throwable error) {
+        String cutFrom = "Exception: ";
+        int index = error.getMessage().lastIndexOf(cutFrom);
+        String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
+        msg = msg.replace("#Cahoots", "mix transaction");
+        msg = msg.endsWith(".") ? msg : msg + ".";
+        return msg;
     }
 
     public boolean isTransactionAccepted() {
