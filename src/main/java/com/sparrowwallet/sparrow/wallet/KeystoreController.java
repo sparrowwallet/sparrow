@@ -424,6 +424,17 @@ public class KeystoreController extends WalletFormController implements Initiali
                 } finally {
                     result.seed.clear();
                 }
+            } else if(result.payload != null) {
+                try {
+                    OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor("sh(" + result.payload + ")");
+                    Wallet wallet = outputDescriptor.toWallet();
+                    Keystore keystore = wallet.getKeystores().get(0);
+                    fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
+                    derivation.setText(keystore.getKeyDerivation().getDerivationPath());
+                    xpub.setText(keystore.getExtendedPublicKey().toString());
+                } catch(Exception e) {
+                    AppServices.showErrorDialog("Invalid QR Code", "QR Code did not contain a valid " + Network.get().getXpubHeader().getDisplayName());
+                }
             } else if(result.exception != null) {
                 log.error("Error scanning QR", result.exception);
                 AppServices.showErrorDialog("Error scanning QR", result.exception.getMessage());
