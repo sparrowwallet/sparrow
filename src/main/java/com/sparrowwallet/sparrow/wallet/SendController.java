@@ -1634,6 +1634,12 @@ public class SendController extends WalletFormController implements Initializabl
                 }
                 Optional<Transaction> optTransaction = initiatorDialog.showAndWait();
                 if(optTransaction.isPresent()) {
+                    BlockTransaction blockTransaction = walletForm.getWallet().getWalletTransaction(optTransaction.get().getTxId());
+                    if(blockTransaction != null && blockTransaction.getLabel() == null && walletTransactionProperty.get() != null) {
+                        blockTransaction.setLabel(walletTransactionProperty.get().getPayments().stream().map(Payment::getLabel).findFirst().orElse(null));
+                        TransactionEntry transactionEntry = new TransactionEntry(walletForm.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap());
+                        EventManager.get().post(new WalletEntryLabelsChangedEvent(walletForm.getWallet(), List.of(transactionEntry)));
+                    }
                     clear(null);
                 }
             });
