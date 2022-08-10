@@ -117,8 +117,12 @@ public enum Protocol {
         return toUrlString() + hostAndPort.toString();
     }
 
+    public static boolean isOnionHost(String host) {
+        return host != null && host.toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX);
+    }
+
     public static boolean isOnionAddress(HostAndPort server) {
-        return server.getHost().toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX);
+        return isOnionHost(server.getHost());
     }
 
     public static boolean isOnionAddress(String address) {

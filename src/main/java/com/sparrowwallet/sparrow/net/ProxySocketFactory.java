@@ -33,12 +33,12 @@ public class ProxySocketFactory extends SocketFactory {
 
     @Override
     public Socket createSocket(String address, int port) throws IOException {
-        return createSocket(new InetSocketAddress(address, port), null);
+        return createSocket(createAddress(address, port), null);
     }
 
     @Override
     public Socket createSocket(String address, int port, InetAddress localAddress, int localPort) throws IOException {
-        return createSocket(new InetSocketAddress(address, port), new InetSocketAddress(localAddress, localPort));
+        return createSocket(createAddress(address, port), new InetSocketAddress(localAddress, localPort));
     }
 
     @Override
@@ -49,6 +49,14 @@ public class ProxySocketFactory extends SocketFactory {
     @Override
     public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
         return createSocket(new InetSocketAddress(address, port), new InetSocketAddress(localAddress, localPort));
+    }
+
+    private InetSocketAddress createAddress(String address, int port) {
+        if(Protocol.isOnionHost(address)) {
+            return InetSocketAddress.createUnresolved(address, port);
+        } else {
+            return new InetSocketAddress(address, port);
+        }
     }
 
     private Socket createSocket(InetSocketAddress address, InetSocketAddress bindAddress) throws IOException {
