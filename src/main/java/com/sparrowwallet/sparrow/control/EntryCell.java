@@ -558,6 +558,32 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 getItems().add(signVerifyMessage);
             }
 
+            if(nodeEntry != null && !nodeEntry.getNode().getUnspentTransactionOutputs().isEmpty()) {
+                List<BlockTransactionHashIndex> unfrozenUtxos = nodeEntry.getNode().getUnspentTransactionOutputs().stream().filter(utxo -> utxo.getStatus() != Status.FROZEN).collect(Collectors.toList());
+                if(!unfrozenUtxos.isEmpty()) {
+                    MenuItem freezeUtxos = new MenuItem("Freeze UTXOs");
+                    freezeUtxos.setGraphic(getFreezeGlyph());
+                    freezeUtxos.setOnAction(AE -> {
+                        hide();
+                        unfrozenUtxos.forEach(utxo -> utxo.setStatus(Status.FROZEN));
+                        EventManager.get().post(new WalletUtxoStatusChangedEvent(nodeEntry.getWallet(), unfrozenUtxos));
+                    });
+                    getItems().add(freezeUtxos);
+                }
+
+                List<BlockTransactionHashIndex> frozenUtxos = nodeEntry.getNode().getUnspentTransactionOutputs().stream().filter(utxo -> utxo.getStatus() == Status.FROZEN).collect(Collectors.toList());
+                if(!frozenUtxos.isEmpty()) {
+                    MenuItem unfreezeUtxos = new MenuItem("Unfreeze UTXOs");
+                    unfreezeUtxos.setGraphic(getUnfreezeGlyph());
+                    unfreezeUtxos.setOnAction(AE -> {
+                        hide();
+                        frozenUtxos.forEach(utxo -> utxo.setStatus(null));
+                        EventManager.get().post(new WalletUtxoStatusChangedEvent(nodeEntry.getWallet(), frozenUtxos));
+                    });
+                    getItems().add(unfreezeUtxos);
+                }
+            }
+
             MenuItem copyAddress = new MenuItem("Copy Address");
             copyAddress.setOnAction(AE -> {
                 hide();

@@ -89,14 +89,14 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
         if (!(o instanceof HashIndexEntry)) return false;
         HashIndexEntry that = (HashIndexEntry) o;
         return super.equals(that) &&
-                hashIndex.equals(that.hashIndex) &&
+                hashIndex == that.hashIndex &&
                 type == that.type &&
                 keyPurpose == that.keyPurpose;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getWallet(), hashIndex, type, keyPurpose);
+        return Objects.hash(getWallet(), System.identityHashCode(hashIndex), type, keyPurpose);
     }
 
     @Override
