@@ -33,7 +33,6 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WhirlpoolMixEvent;
 import com.sparrowwallet.sparrow.event.WhirlpoolMixSuccessEvent;
-import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.whirlpool.dataPersister.SparrowDataPersister;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowDataSource;
@@ -46,7 +45,6 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -360,6 +358,10 @@ public class Whirlpool {
         }
 
         startupService = new StartupService(this);
+        return startupService;
+    }
+
+    public StartupService getStartupService() {
         return startupService;
     }
 

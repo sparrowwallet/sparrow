@@ -195,6 +195,8 @@ public class WhirlpoolServices {
 
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
+        //Cancel any scheduled attempts to try reconnect
+        whirlpoolMap.values().stream().filter(whirlpool -> whirlpool.getStartupService() != null).forEach(whirlpool -> whirlpool.getStartupService().cancel());
         stopAllWhirlpool();
     }
 
