@@ -96,6 +96,10 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     }
 
     private void writeRequest(String request) throws IOException {
+        if(log.isTraceEnabled()) {
+            log.trace("Sending to electrum server at " + server + ": " + request);
+        }
+
         PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
         out.println(request);
         out.flush();
