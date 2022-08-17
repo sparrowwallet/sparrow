@@ -68,6 +68,10 @@ public enum FeeRatesSource {
     private static Map<Integer, Double> getThreeTierFeeRates(Map<Integer, Double> defaultblockTargetFeeRates, String url) {
         Proxy proxy = AppServices.getProxy();
 
+        if(log.isInfoEnabled()) {
+            log.info("Requesting fee rates from " + url);
+        }
+
         Map<Integer, Double> blockTargetFeeRates = new LinkedHashMap<>();
         try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
             Gson gson = new Gson();

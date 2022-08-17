@@ -51,8 +51,13 @@ public class PayNymService {
         HashMap<String, Object> body = new HashMap<>();
         body.put("code", paymentCode.toString());
 
+        String url = getHostUrl() + "/api/v1/create";
+        if(log.isInfoEnabled()) {
+            log.info("Creating PayNym using " + url);
+        }
+
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(getHostUrl() + "/api/v1/create", Map.class, headers, body)
+        return httpClient.postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -69,8 +74,13 @@ public class PayNymService {
         HashMap<String, Object> body = new HashMap<>();
         body.put("code", paymentCode.toString());
 
+        String url = getHostUrl() + "/api/v1/token";
+        if(log.isInfoEnabled()) {
+            log.info("Updating PayNym token using " + url);
+        }
+
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(getHostUrl() + "/api/v1/token", Map.class, headers, body)
+        return httpClient.postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -114,8 +124,13 @@ public class PayNymService {
         HashMap<String, Object> body = new HashMap<>();
         body.put("signature", signature);
 
+        String url = getHostUrl() + "/api/v1/claim";
+        if(log.isInfoEnabled()) {
+            log.info("Claiming PayNym using " + url);
+        }
+
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(getHostUrl() + "/api/v1/claim", Map.class, headers, body)
+        return httpClient.postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -139,8 +154,13 @@ public class PayNymService {
         body.put("code", strPaymentCode);
         body.put("signature", signature);
 
+        String url = getHostUrl() + "/api/v1/nym/add";
+        if(log.isInfoEnabled()) {
+            log.info("Adding payment code to PayNym using " + url);
+        }
+
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(getHostUrl() + "/api/v1/nym/add", Map.class, headers, body)
+        return httpClient.postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -159,8 +179,13 @@ public class PayNymService {
         body.put("signature", signature);
         body.put("target", paymentCode.toString());
 
+        String url = getHostUrl() + "/api/v1/follow";
+        if(log.isInfoEnabled()) {
+            log.info("Following payment code using " + url);
+        }
+
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(getHostUrl() + "/api/v1/follow", Map.class, headers, body)
+        return httpClient.postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
@@ -173,8 +198,13 @@ public class PayNymService {
         HashMap<String, Object> body = new HashMap<>();
         body.put("nym", nymIdentifier);
 
+        String url = getHostUrl() + "/api/v1/nym";
+        if(log.isInfoEnabled()) {
+            log.info("Fetching PayNym using " + url);
+        }
+
         IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(getHostUrl() + "/api/v1/nym", Map.class, headers, body)
+        return httpClient.postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);

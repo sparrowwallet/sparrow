@@ -123,8 +123,8 @@ public class Auth47 {
     }
 
     private void send(String json) throws IOException, Auth47Exception {
-        if(log.isDebugEnabled()) {
-            log.debug("Sending " + json + " to " + callback);
+        if(log.isInfoEnabled()) {
+            log.info("Sending auth47 response " + json + " to " + callback);
         }
 
         Proxy proxy = AppServices.getProxy();

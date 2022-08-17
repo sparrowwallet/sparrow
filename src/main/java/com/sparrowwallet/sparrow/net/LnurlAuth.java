@@ -103,6 +103,10 @@ public class LnurlAuth {
     public void sendResponse(Wallet wallet) throws LnurlAuthException, IOException {
         URL callback = getReturnURL(wallet);
 
+        if(log.isInfoEnabled()) {
+            log.info("Sending LNURL-auth response to " + callback);
+        }
+
         Proxy proxy = AppServices.getProxy();
         if(proxy == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX)) {
             throw new LnurlAuthException("A Tor proxy must be configured to authenticate this resource.");

@@ -47,6 +47,11 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
     private VersionCheck getVersionCheck() throws IOException {
         URL url = new URL(VERSION_CHECK_URL);
         Proxy proxy = AppServices.getProxy();
+
+        if(log.isInfoEnabled()) {
+            log.info("Requesting application version check from " + url);
+        }
+
         HttpsURLConnection conn = (HttpsURLConnection)(proxy == null ? url.openConnection() : url.openConnection(proxy));
 
         try(InputStreamReader reader = new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)) {

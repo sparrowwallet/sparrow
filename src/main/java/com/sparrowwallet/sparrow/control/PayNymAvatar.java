@@ -121,6 +121,10 @@ public class PayNymAvatar extends StackPane {
                         Proxy proxy = AppServices.getProxy();
                         String url = PayNymService.getHostUrl(proxy != null) + "/" + paymentCodeStr + "/avatar";
 
+                        if(log.isDebugEnabled()) {
+                            log.debug("Requesting PayNym avatar from " + url);
+                        }
+
                         try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
                             Image image = new Image(is, 150, 150, true, false);
                             paymentCodeCache.put(cacheId, image);

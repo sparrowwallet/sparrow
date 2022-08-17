@@ -52,6 +52,10 @@ public enum ExchangeSource {
             String url = "https://api.coinbase.com/v2/exchange-rates?currency=BTC";
             Proxy proxy = AppServices.getProxy();
 
+            if(log.isInfoEnabled()) {
+                log.info("Requesting exchange rates from " + url);
+            }
+
             try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 Gson gson = new Gson();
                 return gson.fromJson(reader, CoinbaseRates.class);
@@ -86,6 +90,10 @@ public enum ExchangeSource {
         private CoinGeckoRates getRates() {
             String url = "https://api.coingecko.com/api/v3/exchange_rates";
             Proxy proxy = AppServices.getProxy();
+
+            if(log.isInfoEnabled()) {
+                log.info("Requesting exchange rates from " + url);
+            }
 
             try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
                 Gson gson = new Gson();

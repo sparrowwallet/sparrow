@@ -146,6 +146,10 @@ public enum BroadcastSource {
         try {
             URL url = getURL(proxy);
 
+            if(log.isInfoEnabled()) {
+                log.info("Broadcasting transaction to " + url);
+            }
+
             HttpURLConnection connection = proxy == null ? (HttpURLConnection)url.openConnection() : (HttpURLConnection)url.openConnection(proxy);
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "text/plain");
