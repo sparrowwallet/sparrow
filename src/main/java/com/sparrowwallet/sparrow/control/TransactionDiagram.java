@@ -1245,7 +1245,7 @@ public class TransactionDiagram extends GridPane {
                 });
                 getItems().add(copyAddress);
 
-                MenuItem showAddress = new MenuItem("Show Address as QR");
+                MenuItem showAddress = new MenuItem("Show Address as QR...");
                 showAddress.setOnAction(event -> {
                     hide();
                     QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(address.toString());
