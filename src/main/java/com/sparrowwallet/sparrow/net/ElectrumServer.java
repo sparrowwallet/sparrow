@@ -364,7 +364,7 @@ public class ElectrumServer {
     }
 
     private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
-        int highestIndex = nodeTransactionMap.keySet().stream().map(WalletNode::getIndex).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
+        int highestIndex = nodeTransactionMap.keySet().stream().filter(node -> node.getDerivation().size() > 1).map(WalletNode::getIndex).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
         return highestIndex + wallet.getGapLimit() + 1;
     }
 
