@@ -1244,6 +1244,14 @@ public class TransactionDiagram extends GridPane {
                     Clipboard.getSystemClipboard().setContent(content);
                 });
                 getItems().add(copyAddress);
+
+                MenuItem showAddress = new MenuItem("Show Address as QR");
+                showAddress.setOnAction(event -> {
+                    hide();
+                    QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(address.toString());
+                    qrDisplayDialog.showAndWait();
+                });
+                getItems().add(showAddress);
             }
 
             MenuItem copySatsValue = new MenuItem("Copy Value in sats");
