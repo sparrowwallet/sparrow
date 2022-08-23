@@ -82,7 +82,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
         String extension = exporter.getExportFileExtension(wallet);
         String fileName = wallet.getFullName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase(Locale.ROOT).replace(" ", "");
-        if(exporter instanceof Sparrow) {
+        if(exporter.exportsAllWallets()) {
             fileName = wallet.getMasterName();
         }
         fileChooser.setInitialFileName(fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));

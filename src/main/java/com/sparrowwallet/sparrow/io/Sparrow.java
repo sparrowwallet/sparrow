@@ -144,4 +144,9 @@ public class Sparrow implements WalletImport, WalletExport {
     public boolean isWalletImportScannable() {
         return false;
     }
+
+    @Override
+    public boolean exportsAllWallets() {
+        return true;
+    }
 }
