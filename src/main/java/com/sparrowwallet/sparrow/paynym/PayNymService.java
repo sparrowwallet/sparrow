@@ -191,14 +191,14 @@ public class PayNymService {
                 .map(Optional::get);
     }
 
-    public Observable<Map<String, Object>> fetchPayNym(String nymIdentifier) {
+    public Observable<Map<String, Object>> fetchPayNym(String nymIdentifier, boolean compact) {
         Map<String, String> headers = new HashMap<>();
         headers.put("content-type", "application/json");
 
         HashMap<String, Object> body = new HashMap<>();
         body.put("nym", nymIdentifier);
 
-        String url = getHostUrl() + "/api/v1/nym";
+        String url = getHostUrl() + "/api/v1/nym" + (compact ? "?compact=true" : "");
         if(log.isInfoEnabled()) {
             log.info("Fetching PayNym using " + url);
         }
@@ -211,9 +211,17 @@ public class PayNymService {
     }
 
     public Observable<PayNym> getPayNym(String nymIdentifier) {
-        return fetchPayNym(nymIdentifier).map(nymMap -> {
+        return getPayNym(nymIdentifier, false);
+    }
+
+    public Observable<PayNym> getPayNym(String nymIdentifier, boolean compact) {
+        return fetchPayNym(nymIdentifier, compact).map(nymMap -> {
             List<Map<String, Object>> codes = (List<Map<String, Object>>)nymMap.get("codes");
             PaymentCode code = new PaymentCode((String)codes.stream().filter(codeMap -> codeMap.get("segwit") == Boolean.FALSE).map(codeMap -> codeMap.get("code")).findFirst().orElse(codes.get(0).get("code")));
+
+            if(compact) {
+                return new PayNym(code, (String)nymMap.get("nymID"), (String)nymMap.get("nymName"), (Boolean)nymMap.get("segwit"), Collections.emptyList(), Collections.emptyList());
+            }
 
             List<Map<String, Object>> followingMaps = (List<Map<String, Object>>)nymMap.get("following");
             List<PayNym> following = followingMaps.stream().map(followingMap -> {

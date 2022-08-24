@@ -229,7 +229,7 @@ public class PayNymController {
             followingList.setItems(FXCollections.observableList(new ArrayList<>()));
             findPayNym.setVisible(true);
 
-            AppServices.getPayNymService().getPayNym(nymIdentifier).subscribe(searchedPayNym -> {
+            AppServices.getPayNymService().getPayNym(nymIdentifier, true).subscribe(searchedPayNym -> {
                 findPayNym.setVisible(false);
                 List<PayNym> searchList = new ArrayList<>();
                 searchList.add(searchedPayNym);
