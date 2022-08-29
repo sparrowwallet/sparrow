@@ -1,18 +1,21 @@
-## Reproducible builds
+# Reproducible builds
 
-Reproducibility is a goal of the Sparrow Wallet project. 
+Reproducibility is a goal of the Sparrow Wallet project.
 As of v1.5.0 and later, it is possible to recreate the exact binaries in the Github releases (specifically, the contents of the `.tar.gz` and `.zip` files).
 
 Due to minor variances, it is not yet possible to reproduce the installer packages (`.deb`, `.rpm` and `.exe`).
-In addition, the OSX binary is code signed and thus can't be directly reproduced yet. 
+In addition, the OSX binary is code signed and thus can't be directly reproduced yet.
 Work on resolving both of these issues is ongoing.
 
-### Reproducing a release
+## Reproducing a release
 
-#### Install Java
+### Install Java
 
 Because Sparrow bundles a Java runtime in the release binaries, it is essential to have the same version of Java installed when creating the release.
-For v1.6.6 and later, this is Eclipse Temurin 18.0.1+10. 
+For v1.6.6 and later, this is Eclipse Temurin 18.0.1+10.
+
+#### Java from Adoptium github repo
+
 It is available for all supported platforms from [Eclipse Temurin 18.0.1+10](https://github.com/adoptium/temurin18-binaries/releases/tag/jdk-18.0.1%2B10).
 
 For reference, the downloads are as follows:
@@ -21,15 +24,44 @@ For reference, the downloads are as follows:
 - [MacOS aarch64](https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_aarch64_mac_hotspot_18.0.1_10.tar.gz)
 - [Windows x64](https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_x64_windows_hotspot_18.0.1_10.zip)
 
+#### Java from Adoptium deb repo
+
 It is also possible to install via a package manager on *nix systems. For example, on Debian/Ubuntu systems:
-```shell
-sudo apt-get install -y wget apt-transport-https gnupg
-wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo apt-key add -
-echo "deb https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+
+- Install dependencies:
+```sh
+sudo apt-get install -y wget curl apt-transport-https gnupg
+```
+
+Download Adoptium public PGP key:
+```sh
+curl --tlsv1.2 --proto =https --location -o adoptium.asc https://packages.adoptium.net/artifactory/api/gpg/key/public
+```
+
+Check if key fingerprint matches: `3B04D753C9050D9A5D343F39843C48A565F8F04B`:
+```
+gpg --import --import-options show-only adoptium.asc
+```
+If key doesn't match, do not procede.
+
+Add Adoptium PGP key to a the keyring shared folder:
+```sh
+sudo cp adoptium.asc /usr/share/keyrings/
+```
+
+Add Adoptium debian repository:
+```sh
+echo "deb [signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+```
+
+Update cache, install the desired temurin version and configure java to be linked to this same version:
+```
 sudo apt update -y
 sudo apt-get install -y temurin-18-jdk=18.0.1+10
 sudo update-alternatives --config java
 ```
+
+#### Java from SDK
 
 A alternative option for all platforms is to use the [sdkman.io](https://sdkman.io/) package manager ([Git Bash for Windows](https://git-scm.com/download/win) is a good choice on that platform).
 See the installation [instructions here](https://sdkman.io/install).
@@ -38,19 +70,19 @@ Once installed, run
 sdk install java 18.0.1-tem
 ```
 
-#### Other requirements
+### Other requirements
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
 ```shell
 sudo apt install -y rpm fakeroot binutils
 ```
 
-#### Building the binaries
+### Building the binaries
 
 The project can cloned for a specific release tag as follows:
 ```shell
 GIT_TAG="1.6.6"
-git clone --recursive --branch "${GIT_TAG}" git@github.com:sparrowwallet/sparrow.git
+git clone --recursive --branch "${GIT_TAG}" https://github.com/sparrowwallet/sparrow.git
 ```
 
 Thereafter, building should be straightforward:
@@ -62,7 +94,9 @@ cd sparrow
 
 The binaries (and installers) will be placed in the `build/jpackage` folder.
 
-#### Verifying the binaries are identical
+### Verifying the binaries are identical
+
+Verify the built binaries against the released binaries on https://github.com/sparrowwallet/sparrow/releases.
 
 Note that you will be verifying the files in the `build/jpackage/Sparrow` folder against either the `.tar.gz` or `.zip` releases.
 Download either of these depending on your platform and extract the contents to a folder (in the following example, `/tmp`).
@@ -74,3 +108,4 @@ diff -r build/jpackage/Sparrow /tmp/Sparrow
 
 This command should have no output indicating that the two folders (and all their contents) are identical.
 
+If there is output, please open an issue with detailed instructions to reproduce, including build system platform.
