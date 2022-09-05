@@ -559,6 +559,16 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             }
 
             if(nodeEntry != null && !nodeEntry.getNode().getUnspentTransactionOutputs().isEmpty()) {
+                List<BlockTransactionHashIndex> utxos = nodeEntry.getNode().getUnspentTransactionOutputs().stream().collect(Collectors.toList());
+                MenuItem spendUtxos = new MenuItem("Spend UTXOs");
+                spendUtxos.setGraphic(getSendGlyph());
+                spendUtxos.setOnAction(AE -> {
+                    hide();
+                    EventManager.get().post(new SendActionEvent(nodeEntry.getWallet(), utxos));
+                    Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(nodeEntry.getWallet(), utxos)));
+                });
+                getItems().add(spendUtxos);
+
                 List<BlockTransactionHashIndex> unfrozenUtxos = nodeEntry.getNode().getUnspentTransactionOutputs().stream().filter(utxo -> utxo.getStatus() != Status.FROZEN).collect(Collectors.toList());
                 if(!unfrozenUtxos.isEmpty()) {
                     MenuItem freezeUtxos = new MenuItem("Freeze UTXOs");
