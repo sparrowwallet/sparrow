@@ -1860,6 +1860,27 @@ public class AppController implements Initializable {
             contextMenu.getItems().addAll(lock);
         }
 
+        MenuItem moveRight = new MenuItem("Move Right");
+        moveRight.setOnAction(event -> {
+            int index = tabs.getTabs().indexOf(tab);
+            tabs.getTabs().remove(tab);
+            tabs.getTabs().add(index + 1, tab);
+            tabs.getSelectionModel().select(tab);
+        });
+        MenuItem moveLeft = new MenuItem("Move Left");
+        moveLeft.setOnAction(event -> {
+            int index = tabs.getTabs().indexOf(tab);
+            tabs.getTabs().remove(tab);
+            tabs.getTabs().add(index - 1, tab);
+            tabs.getSelectionModel().select(tab);
+        });
+        contextMenu.getItems().addAll(moveRight, moveLeft);
+
+        contextMenu.setOnShowing(event -> {
+            moveRight.setDisable(tabs.getTabs().indexOf(tab) == tabs.getTabs().size() - 1);
+            moveLeft.setDisable(tabs.getTabs().indexOf(tab) == 0);
+        });
+
         MenuItem close = new MenuItem("Close");
         close.setOnAction(event -> {
             tabs.getTabs().remove(tab);
@@ -1877,12 +1898,16 @@ public class AppController implements Initializable {
             tabs.getTabs().removeAll(tabs.getTabs());
         });
 
-        MenuItem delete = new MenuItem("Delete...");
-        delete.setOnAction(event -> {
-            deleteWallet(getSelectedWalletForm());
-        });
+        contextMenu.getItems().addAll(new SeparatorMenuItem(), close, closeOthers, closeAll);
 
-        contextMenu.getItems().addAll(close, closeOthers, closeAll, delete);
+        if(tab.getUserData() instanceof WalletTabData) {
+            MenuItem delete = new MenuItem("Delete...");
+            delete.setOnAction(event -> {
+                deleteWallet(getSelectedWalletForm());
+            });
+            contextMenu.getItems().addAll(new SeparatorMenuItem(), delete);
+        }
+
         return contextMenu;
     }
 
