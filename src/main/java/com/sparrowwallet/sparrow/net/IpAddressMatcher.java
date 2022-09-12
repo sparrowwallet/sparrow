@@ -97,7 +97,7 @@ public final class IpAddressMatcher {
             return InetAddress.getByName(address);
         }
         catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Failed to parse address" + address, e);
+            throw new IllegalArgumentException("Failed to parse address: " + address, e);
         }
     }
 

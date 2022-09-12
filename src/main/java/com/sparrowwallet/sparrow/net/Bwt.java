@@ -143,8 +143,8 @@ public class Bwt {
         bwtConfig.electrumSkipMerkle = true;
 
         Config config = Config.get();
-        bwtConfig.bitcoindUrl = config.getCoreServer();
-        if(bwtConfig.bitcoindUrl != null) {
+        if(config.getCoreServer() != null) {
+            bwtConfig.bitcoindUrl = config.getCoreServer().getUrl();
             try {
                 HostAndPort hostAndPort = Protocol.HTTP.getServerHostAndPort(bwtConfig.bitcoindUrl);
                 if(hostAndPort.getHost().endsWith(".local")) {
@@ -308,7 +308,7 @@ public class Bwt {
                                 Bwt.this.shutdown();
                                 terminating = false;
                             } else {
-                                Platform.runLater(() -> EventManager.get().post(new BwtBootStatusEvent("Connecting to Bitcoin Core node at " + Config.get().getCoreServer() + "...")));
+                                Platform.runLater(() -> EventManager.get().post(new BwtBootStatusEvent("Connecting to Bitcoin Core node " + Config.get().getServerDisplayName() + "...")));
                             }
                         }
 

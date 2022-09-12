@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.github.arteam.simplejsonrpc.client.Transport;
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.sparrow.io.Server;
 
 import java.io.File;
 import java.io.IOException;
@@ -119,6 +119,14 @@ public enum Protocol {
 
     public static boolean isOnionHost(String host) {
         return host != null && host.toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX);
+    }
+
+    public static boolean isOnionAddress(Server server) {
+        if(server != null) {
+            return isOnionAddress(server.getHostAndPort());
+        }
+
+        return false;
     }
 
     public static boolean isOnionAddress(HostAndPort server) {

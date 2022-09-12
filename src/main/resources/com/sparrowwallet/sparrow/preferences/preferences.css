@@ -52,3 +52,7 @@
 #electrumUseSsl {
     -fx-padding: 4 0 2 0;
 }
+
+#coreHost .left-pane, #electrumHost .left-pane {
+    -fx-padding: 0 3 0 6;
+}

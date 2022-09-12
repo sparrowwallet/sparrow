@@ -100,6 +100,10 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             log.trace("Sending to electrum server at " + server + ": " + request);
         }
 
+        if(socket == null) {
+            throw new IllegalStateException("Socket connection has not been established.");
+        }
+
         PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())));
         out.println(request);
         out.flush();
@@ -207,7 +211,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         String response = readLine(in);
 
         if(response == null) {
-            throw new IOException("Could not connect to server at " + Config.get().getServerAddress());
+            throw new IOException("Could not connect to server" + (Config.get().hasServer() ? " at " + Config.get().getServer().getUrl() : ""));
         }
 
         return response;

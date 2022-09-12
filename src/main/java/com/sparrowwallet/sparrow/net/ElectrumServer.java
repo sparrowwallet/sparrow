@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.github.arteam.simplejsonrpc.client.Transport;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -15,6 +14,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Server;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
@@ -51,7 +51,7 @@ public class ElectrumServer {
 
     private static final Map<String, List<String>> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
-    private static String previousServerAddress;
+    private static Server previousServer;
 
     private static Map<String, String> retrievedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
@@ -59,14 +59,14 @@ public class ElectrumServer {
 
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
-    private static String bwtElectrumServer;
+    private static Server bwtElectrumServer;
 
     private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed:[^\"]*)\".*");
 
     private static synchronized CloseableTransport getTransport() throws ServerException {
         if(transport == null) {
             try {
-                String electrumServer = null;
+                Server electrumServer = null;
                 File electrumServerCert = null;
                 String proxyServer = null;
 
@@ -78,8 +78,8 @@ public class ElectrumServer {
                         throw new ServerConfigException("Could not connect to Bitcoin Core RPC");
                     }
                     electrumServer = bwtElectrumServer;
-                    if(previousServerAddress != null && previousServerAddress.contains(Bwt.ELECTRUM_HOST)) {
-                        previousServerAddress = bwtElectrumServer;
+                    if(previousServer != null && previousServer.getUrl().contains(Bwt.ELECTRUM_HOST)) {
+                        previousServer = bwtElectrumServer;
                     }
                 } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
                     electrumServer = Config.get().getElectrumServer();
@@ -95,33 +95,30 @@ public class ElectrumServer {
                     throw new ServerConfigException("Electrum server certificate file not found");
                 }
 
-                Protocol protocol = Protocol.getProtocol(electrumServer);
-                if(protocol == null) {
-                    throw new ServerConfigException("Electrum server URL must start with " + Protocol.TCP.toUrlString() + " or " + Protocol.SSL.toUrlString());
-                }
+                Protocol protocol = electrumServer.getProtocol();
 
                 //If changing server, don't rely on previous transaction history
-                if(previousServerAddress != null && !electrumServer.equals(previousServerAddress)) {
+                if(previousServer != null && !electrumServer.equals(previousServer)) {
                     retrievedScriptHashes.clear();
                     retrievedTransactions.clear();
                 }
-                previousServerAddress = electrumServer;
+                previousServer = electrumServer;
 
-                HostAndPort server = protocol.getServerHostAndPort(electrumServer);
-                boolean localNetworkAddress = !protocol.isOnionAddress(server) && IpAddressMatcher.isLocalNetworkAddress(server.getHost());
+                HostAndPort hostAndPort = electrumServer.getHostAndPort();
+                boolean localNetworkAddress = !protocol.isOnionAddress(hostAndPort) && IpAddressMatcher.isLocalNetworkAddress(hostAndPort.getHost());
 
                 if(!localNetworkAddress && Config.get().isUseProxy() && proxyServer != null && !proxyServer.isBlank()) {
                     HostAndPort proxy = HostAndPort.fromString(proxyServer);
                     if(electrumServerCert != null) {
-                        transport = protocol.getTransport(server, electrumServerCert, proxy);
+                        transport = protocol.getTransport(hostAndPort, electrumServerCert, proxy);
                     } else {
-                        transport = protocol.getTransport(server, proxy);
+                        transport = protocol.getTransport(hostAndPort, proxy);
                     }
                 } else {
                     if(electrumServerCert != null) {
-                        transport = protocol.getTransport(server, electrumServerCert);
+                        transport = protocol.getTransport(hostAndPort, electrumServerCert);
                     } else {
-                        transport = protocol.getTransport(server);
+                        transport = protocol.getTransport(hostAndPort);
                     }
                 }
             } catch (Exception e) {
@@ -1251,7 +1248,7 @@ public class ElectrumServer {
         @Subscribe
         public void bwtElectrumReadyStatus(BwtElectrumReadyStatusEvent event) {
             if(this.isRunning()) {
-                ElectrumServer.bwtElectrumServer = Protocol.TCP.toUrlString(HostAndPort.fromString(event.getElectrumAddr()));
+                ElectrumServer.bwtElectrumServer = new Server(Protocol.TCP.toUrlString(HostAndPort.fromString(event.getElectrumAddr())));
             }
         }
 

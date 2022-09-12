@@ -77,7 +77,7 @@ public class MainApp extends Application {
                 } else if(Network.get() == Network.MAINNET) {
                     Config.get().setServerType(ServerType.PUBLIC_ELECTRUM_SERVER);
                     List<PublicElectrumServer> servers = PublicElectrumServer.getServers();
-                    Config.get().setPublicElectrumServer(servers.get(new Random().nextInt(servers.size())).getUrl());
+                    Config.get().setPublicElectrumServer(servers.get(new Random().nextInt(servers.size())).getServer());
                 }
             }
         }

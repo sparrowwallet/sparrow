@@ -12,11 +12,13 @@ import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Server;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.text.Font;
@@ -51,6 +53,8 @@ import java.util.Random;
 public class ServerPreferencesController extends PreferencesDetailController {
     private static final Logger log = LoggerFactory.getLogger(ServerPreferencesController.class);
 
+    private static final Server MANAGE_ALIASES_SERVER = new Server("tcp://localhost", "Manage Aliases...");
+
     @FXML
     private ToggleGroup serverTypeToggleGroup;
 
@@ -79,7 +83,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private Form coreForm;
 
     @FXML
-    private ComboBox<String> recentCoreServers;
+    private ComboBox<Server> recentCoreServers;
 
     @FXML
     private ComboBoxTextField coreHost;
@@ -121,7 +125,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private Form electrumForm;
 
     @FXML
-    private ComboBox<String> recentElectrumServers;
+    private ComboBox<Server> recentElectrumServers;
 
     @FXML
     private ComboBoxTextField electrumHost;
@@ -267,26 +271,52 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         });
 
-        recentCoreServers.setConverter(new UrlHostConverter());
-        recentCoreServers.setItems(FXCollections.observableList(Config.get().getRecentCoreServers() == null ? new ArrayList<>() : Config.get().getRecentCoreServers()));
+        recentCoreServers.setCellFactory(value -> new ServerCell());
+        recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
         recentCoreServers.prefWidthProperty().bind(coreHost.widthProperty());
         recentCoreServers.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null && Protocol.getProtocol(newValue) != null) {
-                HostAndPort hostAndPort = Protocol.getProtocol(newValue).getServerHostAndPort(newValue);
-                coreHost.setText(hostAndPort.getHost());
-                corePort.setText(Integer.toString(hostAndPort.getPort()));
+            if(newValue != null) {
+                if(newValue == MANAGE_ALIASES_SERVER) {
+                    ServerAliasDialog serverAliasDialog = new ServerAliasDialog(ServerType.BITCOIN_CORE);
+                    Optional<Server> optServer = serverAliasDialog.showAndWait();
+                    recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
+                    Server selectedServer = optServer.orElseGet(() -> Config.get().getCoreServer());
+                    Platform.runLater(() -> recentCoreServers.setValue(selectedServer));
+                } else if(newValue.getHostAndPort() != null) {
+                    HostAndPort hostAndPort = newValue.getHostAndPort();
+                    corePort.setText(hostAndPort.hasPort() ? Integer.toString(hostAndPort.getPort()) : "");
+                    if(newValue.getAlias() != null) {
+                        coreHost.setText(newValue.getAlias());
+                    } else {
+                        coreHost.setText(hostAndPort.getHost());
+                    }
+                    coreHost.positionCaret(coreHost.getText().length());
+                }
             }
         });
 
-        recentElectrumServers.setConverter(new UrlHostConverter());
-        recentElectrumServers.setItems(FXCollections.observableList(Config.get().getRecentElectrumServers() == null ? new ArrayList<>() : Config.get().getRecentElectrumServers()));
+        recentElectrumServers.setCellFactory(value -> new ServerCell());
+        recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
         recentElectrumServers.prefWidthProperty().bind(electrumHost.widthProperty());
         recentElectrumServers.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null && Protocol.getProtocol(newValue) != null) {
-                HostAndPort hostAndPort = Protocol.getProtocol(newValue).getServerHostAndPort(newValue);
-                electrumHost.setText(hostAndPort.getHost());
-                electrumPort.setText(Integer.toString(hostAndPort.getPort()));
-                electrumUseSsl.setSelected(Protocol.getProtocol(newValue) == Protocol.SSL);
+            if(newValue != null) {
+                if(newValue == MANAGE_ALIASES_SERVER) {
+                    ServerAliasDialog serverAliasDialog = new ServerAliasDialog(ServerType.ELECTRUM_SERVER);
+                    Optional<Server> optServer = serverAliasDialog.showAndWait();
+                    recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
+                    Server selectedServer = optServer.orElseGet(() -> Config.get().getElectrumServer());
+                    Platform.runLater(() -> recentElectrumServers.setValue(selectedServer));
+                } else if(newValue.getHostAndPort() != null) {
+                    HostAndPort hostAndPort = newValue.getHostAndPort();
+                    electrumPort.setText(hostAndPort.hasPort() ? Integer.toString(hostAndPort.getPort()) : "");
+                    electrumUseSsl.setSelected(newValue.getProtocol() == Protocol.SSL);
+                    if(newValue.getAlias() != null) {
+                        electrumHost.setText(newValue.getAlias());
+                    } else {
+                        electrumHost.setText(hostAndPort.getHost());
+                    }
+                    electrumHost.positionCaret(electrumHost.getText().length());
+                }
             }
         });
 
@@ -339,7 +369,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         setTestResultsFont();
         testConnection.setOnAction(event -> {
             testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.ELLIPSIS_H, null));
-            testResults.setText("Connecting to " + config.getServerAddress() + "...");
+            testResults.setText("Connecting " + (config.hasServer() ? "to " + config.getServer().getUrl() : "") + "...");
 
             if(Config.get().requiresInternalTor() && Tor.getDefault() == null) {
                 startTor();
@@ -358,7 +388,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             testConnection.setVisible(true);
         });
 
-        PublicElectrumServer configPublicElectrumServer = PublicElectrumServer.fromUrl(config.getPublicElectrumServer());
+        PublicElectrumServer configPublicElectrumServer = PublicElectrumServer.fromServer(config.getPublicElectrumServer());
         if(configPublicElectrumServer == null && PublicElectrumServer.supportedNetwork()) {
             List<PublicElectrumServer> servers = PublicElectrumServer.getServers();
             if(!servers.isEmpty()) {
@@ -368,16 +398,16 @@ public class ServerPreferencesController extends PreferencesDetailController {
             publicElectrumServer.setValue(configPublicElectrumServer);
         }
 
-        String coreServer = config.getCoreServer();
+        Server coreServer = config.getCoreServer();
         if(coreServer != null) {
-            Protocol protocol = Protocol.getProtocol(coreServer);
-
-            if(protocol != null) {
-                HostAndPort server = protocol.getServerHostAndPort(coreServer);
-                coreHost.setText(server.getHost());
-                if(server.hasPort()) {
-                    corePort.setText(Integer.toString(server.getPort()));
-                }
+            HostAndPort hostAndPort = coreServer.getHostAndPort();
+            Server server = config.getRecentCoreServers().stream().filter(coreServer::equals).findFirst().orElse(null);
+            if(server != null) {
+                coreHost.setLeft(getGlyph(FontAwesome5.Glyph.TAG, null));
+            }
+            coreHost.setText(server == null || server.getAlias() == null ? hostAndPort.getHost() : server.getAlias());
+            if(hostAndPort.hasPort()) {
+                corePort.setText(Integer.toString(hostAndPort.getPort()));
             }
         } else {
             coreHost.setText("127.0.0.1");
@@ -396,21 +426,22 @@ public class ServerPreferencesController extends PreferencesDetailController {
             }
         }
 
-        String electrumServer = config.getElectrumServer();
+        Server electrumServer = config.getElectrumServer();
         if(electrumServer != null) {
-            Protocol protocol = Protocol.getProtocol(electrumServer);
+            Protocol protocol = electrumServer.getProtocol();
+            boolean ssl = protocol.equals(Protocol.SSL);
+            electrumUseSsl.setSelected(ssl);
+            electrumCertificate.setDisable(!ssl);
+            electrumCertificateSelect.setDisable(!ssl);
 
-            if(protocol != null) {
-                boolean ssl = protocol.equals(Protocol.SSL);
-                electrumUseSsl.setSelected(ssl);
-                electrumCertificate.setDisable(!ssl);
-                electrumCertificateSelect.setDisable(!ssl);
-
-                HostAndPort server = protocol.getServerHostAndPort(electrumServer);
-                electrumHost.setText(server.getHost());
-                if(server.hasPort()) {
-                    electrumPort.setText(Integer.toString(server.getPort()));
-                }
+            HostAndPort hostAndPort = electrumServer.getHostAndPort();
+            Server server = config.getRecentElectrumServers().stream().filter(electrumServer::equals).findFirst().orElse(null);
+            if(server != null) {
+                electrumHost.setLeft(getGlyph(FontAwesome5.Glyph.TAG, null));
+            }
+            electrumHost.setText(server == null || server.getAlias() == null ? hostAndPort.getHost() : server.getAlias());
+            if(hostAndPort.hasPort()) {
+                electrumPort.setText(Integer.toString(hostAndPort.getPort()));
             }
         }
 
@@ -449,7 +480,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         torService.setOnSucceeded(workerStateEvent -> {
             Tor.setDefault(torService.getValue());
             torService.cancel();
-            testResults.appendText("\nTor running, connecting to " + Config.get().getServerAddress() + "...");
+            testResults.appendText("\nTor running, connecting to " + Config.get().getServer().getUrl() + "...");
             startElectrumConnection();
         });
         torService.setOnFailed(workerStateEvent -> {
@@ -495,6 +526,13 @@ public class ServerPreferencesController extends PreferencesDetailController {
             Config.get().setMode(Mode.ONLINE);
             connectionService.cancel();
             useProxyOriginal = null;
+            if(Config.get().addRecentServer()) {
+                if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                    recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
+                } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
+                    recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
+                }
+            }
         });
         connectionService.setOnFailed(workerStateEvent -> {
             EventManager.get().unregister(connectionService);
@@ -668,24 +706,32 @@ public class ServerPreferencesController extends PreferencesDetailController {
     @NotNull
     private ChangeListener<PublicElectrumServer> getPublicElectrumServerListener(Config config) {
         return (observable, oldValue, newValue) -> {
-            config.setPublicElectrumServer(newValue.getUrl());
+            config.setPublicElectrumServer(newValue.getServer());
         };
     }
 
     @NotNull
     private ChangeListener<String> getBitcoinCoreListener(Config config) {
         return (observable, oldValue, newValue) -> {
+            Server existingServer = config.getRecentCoreServers().stream().filter(server -> coreHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+            coreHost.setLeft(existingServer == null ? null : getGlyph(FontAwesome5.Glyph.TAG, null));
             setCoreServerInConfig(config);
         };
     }
 
     private void setCoreServerInConfig(Config config) {
+        Server existingServer = config.getRecentCoreServers().stream().filter(server -> coreHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+        if(existingServer != null) {
+            config.setCoreServer(existingServer);
+            return;
+        }
+
         String hostAsString = getHost(coreHost.getText());
         Integer portAsInteger = getPort(corePort.getText());
         if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
-            config.setCoreServer(Protocol.HTTP.toUrlString(hostAsString, portAsInteger));
+            config.setCoreServer(new Server(Protocol.HTTP.toUrlString(hostAsString, portAsInteger)));
         } else if(hostAsString != null) {
-            config.setCoreServer(Protocol.HTTP.toUrlString(hostAsString));
+            config.setCoreServer(new Server(Protocol.HTTP.toUrlString(hostAsString)));
         }
     }
 
@@ -699,17 +745,25 @@ public class ServerPreferencesController extends PreferencesDetailController {
     @NotNull
     private ChangeListener<String> getElectrumServerListener(Config config) {
         return (observable, oldValue, newValue) -> {
+            Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+            electrumHost.setLeft(existingServer == null ? null : getGlyph(FontAwesome5.Glyph.TAG, null));
             setElectrumServerInConfig(config);
         };
     }
 
     private void setElectrumServerInConfig(Config config) {
+        Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+        if(existingServer != null) {
+            config.setElectrumServer(existingServer);
+            return;
+        }
+
         String hostAsString = getHost(electrumHost.getText());
         Integer portAsInteger = getPort(electrumPort.getText());
         if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
-            config.setElectrumServer(getProtocol().toUrlString(hostAsString, portAsInteger));
+            config.setElectrumServer(new Server(getProtocol().toUrlString(hostAsString, portAsInteger)));
         } else if(hostAsString != null) {
-            config.setElectrumServer(getProtocol().toUrlString(hostAsString));
+            config.setElectrumServer(new Server(getProtocol().toUrlString(hostAsString)));
         }
     }
 
@@ -777,7 +831,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         }
     }
 
-    private Glyph getGlyph(FontAwesome5.Glyph glyphName, String styleClass) {
+    private static Glyph getGlyph(FontAwesome5.Glyph glyphName, String styleClass) {
         Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
         glyph.setFontSize(12);
         if(styleClass != null) {
@@ -813,6 +867,12 @@ public class ServerPreferencesController extends PreferencesDetailController {
         }
     }
 
+    private ObservableList<Server> getObservableServerList(List<Server> servers) {
+        ObservableList<Server> serverObservableList = FXCollections.observableList(new ArrayList<>(servers));
+        serverObservableList.add(MANAGE_ALIASES_SERVER);
+        return serverObservableList;
+    }
+
     @Subscribe
     public void bwtStatus(BwtStatusEvent event) {
         if(!(event instanceof BwtSyncStatusEvent)) {
@@ -844,15 +904,28 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
     }
 
-    private static class UrlHostConverter extends StringConverter<String> {
+    private static class ServerCell extends ListCell<Server> {
         @Override
-        public String toString(String serverUrl) {
-            return serverUrl == null || Protocol.getProtocol(serverUrl) == null ? "" : Protocol.getProtocol(serverUrl).getServerHostAndPort(serverUrl).getHost();
-        }
+        protected void updateItem(Server server, boolean empty) {
+            super.updateItem(server, empty);
+            if(server == null || empty) {
+                setText("");
+                setGraphic(null);
+            } else {
+                String serverAlias = server.getAlias();
 
-        @Override
-        public String fromString(String string) {
-            return null;
+                if(server == MANAGE_ALIASES_SERVER) {
+                    setText(serverAlias);
+                    setStyle("-fx-font-style: italic");
+                    setGraphic(null);
+                } else if(serverAlias != null) {
+                    setText(serverAlias);
+                    setGraphic(getGlyph(FontAwesome5.Glyph.TAG, null));
+                } else {
+                    setText(server.getHost());
+                    setGraphic(null);
+                }
+            }
         }
     }
 }

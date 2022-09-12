@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.sparrow.io.Server;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,23 +16,21 @@ public enum PublicElectrumServer {
     TESTNET_ARANGUREN_ORG("testnet.aranguren.org", "ssl://testnet.aranguren.org:51002", Network.TESTNET);
 
     PublicElectrumServer(String name, String url, Network network) {
-        this.name = name;
-        this.url = url;
+        this.server = new Server(url, name);
         this.network = network;
     }
 
     public static final List<Network> SUPPORTED_NETWORKS = List.of(Network.MAINNET, Network.TESTNET);
 
-    private final String name;
-    private final String url;
+    private final Server server;
     private final Network network;
 
-    public String getName() {
-        return name;
+    public Server getServer() {
+        return server;
     }
 
     public String getUrl() {
-        return url;
+        return server.getUrl();
     }
 
     public Network getNetwork() {
@@ -46,10 +45,10 @@ public enum PublicElectrumServer {
         return SUPPORTED_NETWORKS.contains(Network.get());
     }
 
-    public static PublicElectrumServer fromUrl(String url) {
-        for(PublicElectrumServer server : values()) {
-            if(server.url.equals(url)) {
-                return server;
+    public static PublicElectrumServer fromServer(Server server) {
+        for(PublicElectrumServer publicServer : values()) {
+            if(publicServer.getServer().equals(server)) {
+                return publicServer;
             }
         }
 
@@ -58,6 +57,6 @@ public enum PublicElectrumServer {
 
     @Override
     public String toString() {
-        return name;
+        return server.getAlias();
     }
 }

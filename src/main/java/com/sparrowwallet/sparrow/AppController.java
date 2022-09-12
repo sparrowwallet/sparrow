@@ -183,6 +183,9 @@ public class AppController implements Initializable {
     private MenuItem showPayNym;
 
     @FXML
+    private Menu switchServer;
+
+    @FXML
     private CheckMenuItem preventSleep;
     private static final BooleanProperty preventSleepProperty = new SimpleBooleanProperty();
 
@@ -367,6 +370,7 @@ public class AppController implements Initializable {
             findMixingPartner.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
         });
 
+        configureSwitchServer();
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
         serverToggle.setDisable(Config.get().getServerType() == null);
@@ -408,8 +412,7 @@ public class AppController implements Initializable {
         WelcomeDialog welcomeDialog = new WelcomeDialog();
         Optional<Mode> optionalMode = welcomeDialog.showAndWait();
         if(optionalMode.isPresent() && optionalMode.get().equals(Mode.ONLINE)) {
-            PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER);
-            preferencesDialog.showAndWait();
+            openPreferences(PreferenceGroup.SERVER);
         }
     }
 
@@ -902,7 +905,7 @@ public class AppController implements Initializable {
 
     private String getServerToggleTooltipText(Integer currentBlockHeight) {
         if(AppServices.isConnected()) {
-            return "Connected to " + Config.get().getServerAddress() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") +
+            return "Connected to " + Config.get().getServerDisplayName() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") +
                     (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? "\nWarning! You are connected to a public server and sharing your transaction data with it.\nFor better privacy, consider using your own Bitcoin Core node or private Electrum server." : "");
         }
 
@@ -1284,13 +1287,17 @@ public class AppController implements Initializable {
     }
 
     public void openPreferences(ActionEvent event) {
-        PreferencesDialog preferencesDialog = new PreferencesDialog();
-        preferencesDialog.showAndWait();
+        openPreferences(PreferenceGroup.GENERAL);
     }
 
     public void openServerPreferences(ActionEvent event) {
-        PreferencesDialog preferencesDialog = new PreferencesDialog(PreferenceGroup.SERVER);
+        openPreferences(PreferenceGroup.SERVER);
+    }
+
+    private void openPreferences(PreferenceGroup preferenceGroup) {
+        PreferencesDialog preferencesDialog = new PreferencesDialog(preferenceGroup);
         preferencesDialog.showAndWait();
+        configureSwitchServer();
     }
 
     public void signVerifyMessage(ActionEvent event) {
@@ -1996,6 +2003,48 @@ public class AppController implements Initializable {
         return contextMenu;
     }
 
+    private void configureSwitchServer() {
+        switchServer.getItems().clear();
+
+        Config config = Config.get();
+        if(config.getServerType() == ServerType.BITCOIN_CORE && config.getRecentCoreServers() != null && config.getRecentCoreServers().size() > 1) {
+            for(Server server : config.getRecentCoreServers()) {
+                switchServer.getItems().add(getSwitchServerMenuItem(ServerType.BITCOIN_CORE, server));
+            }
+        } else if(config.getServerType() == ServerType.ELECTRUM_SERVER && config.getRecentElectrumServers() != null && config.getRecentElectrumServers().size() > 1) {
+            for(Server server : config.getRecentElectrumServers()) {
+                switchServer.getItems().add(getSwitchServerMenuItem(ServerType.ELECTRUM_SERVER, server));
+            }
+        }
+
+        switchServer.setVisible(!switchServer.getItems().isEmpty());
+    }
+
+    private CheckMenuItem getSwitchServerMenuItem(ServerType serverType, Server server) {
+        CheckMenuItem checkMenuItem = new CheckMenuItem(server.getDisplayName());
+        boolean selected = (serverType == ServerType.BITCOIN_CORE ? server.equals(Config.get().getCoreServer()) : server.equals(Config.get().getElectrumServer()));
+        checkMenuItem.setSelected(selected);
+        checkMenuItem.setOnAction(event -> {
+            if(!selected) {
+                boolean online = onlineProperty().get();
+                onlineProperty().set(false);
+                if(serverType == ServerType.BITCOIN_CORE) {
+                    Config.get().setCoreServer(server);
+                } else if(serverType == ServerType.ELECTRUM_SERVER) {
+                    Config.get().setElectrumServer(server);
+                }
+                Platform.runLater(() -> {
+                    onlineProperty().set(online);
+                    configureSwitchServer();
+                });
+            } else {
+                checkMenuItem.setSelected(true);
+            }
+        });
+
+        return checkMenuItem;
+    }
+
     public void setServerType(ServerType serverType) {
         if(serverType == ServerType.PUBLIC_ELECTRUM_SERVER && !serverToggle.getStyleClass().contains("public-server")) {
             serverToggle.getStyleClass().add("public-server");
@@ -2424,11 +2473,12 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void connection(ConnectionEvent event) {
-        String status = "Connected to " + Config.get().getServerAddress() + " at height " + event.getBlockHeight();
+        String status = "Connected to " + Config.get().getServerDisplayName() + " at height " + event.getBlockHeight();
         statusUpdated(new StatusEvent(status));
         setServerToggleTooltip(event.getBlockHeight());
         serverToggleStopAnimation();
         setTorIcon();
+        configureSwitchServer();
     }
 
     @Subscribe

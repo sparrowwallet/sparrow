@@ -203,7 +203,7 @@ public class AppServices {
 
     private void restartServices() {
         Config config = Config.get();
-        if(config.hasServerAddress()) {
+        if(config.hasServer()) {
             restartService(connectionService);
         }
 
@@ -268,7 +268,7 @@ public class AppServices {
         connectionService.setOnRunning(workerStateEvent -> {
             connectionService.setDelay(Duration.ZERO);
             if(!ElectrumServer.isConnected()) {
-                EventManager.get().post(new ConnectionStartEvent(Config.get().getServerAddress()));
+                EventManager.get().post(new ConnectionStartEvent(Config.get().getServerDisplayName()));
             }
         });
         connectionService.setOnSucceeded(successEvent -> {
@@ -1157,7 +1157,9 @@ public class AppServices {
 
     @Subscribe
     public void requestConnect(RequestConnectEvent event) {
-        onlineProperty.set(true);
+        if(Config.get().hasServer()) {
+            onlineProperty.set(true);
+        }
     }
 
     @Subscribe
@@ -1209,7 +1211,7 @@ public class AppServices {
     public void walletHistoryFailed(WalletHistoryFailedEvent event) {
         if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && isConnected()) {
             onlineProperty.set(false);
-            log.warn("Failed to fetch wallet history from " + Config.get().getServerAddress() + ", reconnecting to another server...");
+            log.warn("Failed to fetch wallet history from " + Config.get().getServerDisplayName() + ", reconnecting to another server...");
             Config.get().changePublicServer();
             onlineProperty.set(true);
         }

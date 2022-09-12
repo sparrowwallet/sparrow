@@ -53,14 +53,14 @@ public class Config {
     private Boolean hdCapture;
     private String webcamDevice;
     private ServerType serverType;
-    private String publicElectrumServer;
-    private String coreServer;
-    private List<String> recentCoreServers;
+    private Server publicElectrumServer;
+    private Server coreServer;
+    private List<Server> recentCoreServers;
     private CoreAuthType coreAuthType;
     private File coreDataDir;
     private String coreAuth;
-    private String electrumServer;
-    private List<String> recentElectrumServers;
+    private Server electrumServer;
+    private List<Server> recentElectrumServers;
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
@@ -77,6 +77,8 @@ public class Config {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(File.class, new FileSerializer());
         gsonBuilder.registerTypeAdapter(File.class, new FileDeserializer());
+        gsonBuilder.registerTypeAdapter(Server.class, new ServerSerializer());
+        gsonBuilder.registerTypeAdapter(Server.class, new ServerDeserializer());
         return gsonBuilder.setPrettyPrinting().disableHtmlEscaping().create();
     }
 
@@ -362,12 +364,16 @@ public class Config {
         flush();
     }
 
-    public boolean hasServerAddress() {
-        return getServerAddress() != null && !getServerAddress().isEmpty();
+    public boolean hasServer() {
+        return getServer() != null;
     }
 
-    public String getServerAddress() {
+    public Server getServer() {
         return getServerType() == ServerType.BITCOIN_CORE ? getCoreServer() : (getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? getPublicElectrumServer() : getElectrumServer());
+    }
+
+    public String getServerDisplayName() {
+        return getServer() == null ? "server" : getServer().getDisplayName();
     }
 
     public boolean requiresInternalTor() {
@@ -379,56 +385,70 @@ public class Config {
     }
 
     public boolean requiresTor() {
-        if(!hasServerAddress()) {
+        if(!hasServer()) {
             return false;
         }
 
-        Protocol protocol = Protocol.getProtocol(getServerAddress());
-        if(protocol == null) {
-            return false;
-        }
-
-        return protocol.isOnionAddress(protocol.getServerHostAndPort(getServerAddress()));
+        return getServer().isOnionAddress();
     }
 
-    public String getPublicElectrumServer() {
+    public Server getPublicElectrumServer() {
         return publicElectrumServer;
     }
 
-    public void setPublicElectrumServer(String publicElectrumServer) {
+    public void setPublicElectrumServer(Server publicElectrumServer) {
         this.publicElectrumServer = publicElectrumServer;
         flush();
     }
 
     public void changePublicServer() {
-        List<String> otherServers = PublicElectrumServer.getServers().stream().map(PublicElectrumServer::getUrl).filter(url -> !url.equals(getPublicElectrumServer())).collect(Collectors.toList());
+        List<Server> otherServers = PublicElectrumServer.getServers().stream().map(PublicElectrumServer::getServer).filter(server -> !server.equals(getPublicElectrumServer())).collect(Collectors.toList());
         if(!otherServers.isEmpty()) {
             setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
         }
     }
 
-    public String getCoreServer() {
+    public Server getCoreServer() {
         return coreServer;
     }
 
-    public void setCoreServer(String coreServer) {
+    public void setCoreServer(Server coreServer) {
         this.coreServer = coreServer;
         flush();
     }
 
-    public List<String> getRecentCoreServers() {
-        return recentCoreServers;
+    public List<Server> getRecentCoreServers() {
+        return recentCoreServers == null ? new ArrayList<>() : recentCoreServers;
     }
 
-    public void addRecentCoreServer(String coreServer) {
+    public boolean addRecentCoreServer(Server coreServer) {
         if(recentCoreServers == null) {
             recentCoreServers = new ArrayList<>();
         }
 
-        if(!recentCoreServers.contains(coreServer)) {
-            recentCoreServers.stream().filter(url -> Objects.equals(Protocol.getHost(url), Protocol.getHost(coreServer)))
-                    .findFirst().ifPresent(existingUrl -> recentCoreServers.remove(existingUrl));
+        int index = getRecentCoreServers().indexOf(coreServer);
+        if(index < 0) {
+            recentCoreServers.removeIf(server -> server.getHost().equals(coreServer.getHost()) && server.getAlias() == null);
             recentCoreServers.add(coreServer);
+            flush();
+            return true;
+        }
+
+        return false;
+    }
+
+    public void removeRecentCoreServer(Server server) {
+        int index = getRecentCoreServers().indexOf(server);
+        if(index >= 0) {
+            recentCoreServers.remove(index);
+            flush();
+        }
+    }
+
+    public void setCoreServerAlias(Server server) {
+        int index = getRecentCoreServers().indexOf(server);
+        if(index >= 0) {
+            recentCoreServers.set(index, server);
             flush();
         }
     }
@@ -460,36 +480,58 @@ public class Config {
         flush();
     }
 
-    public String getElectrumServer() {
+    public Server getElectrumServer() {
         return electrumServer;
     }
 
-    public void setElectrumServer(String electrumServer) {
+    public void setElectrumServer(Server electrumServer) {
         this.electrumServer = electrumServer;
         flush();
     }
 
-    public List<String> getRecentElectrumServers() {
-        return recentElectrumServers;
+    public List<Server> getRecentElectrumServers() {
+        return recentElectrumServers == null ? new ArrayList<>() : recentElectrumServers;
     }
 
-    public void addRecentServer() {
+    public boolean addRecentServer() {
         if(serverType == ServerType.BITCOIN_CORE && coreServer != null) {
-            addRecentCoreServer(coreServer);
+            return addRecentCoreServer(coreServer);
         } else if(serverType == ServerType.ELECTRUM_SERVER && electrumServer != null) {
-            addRecentElectrumServer(electrumServer);
+            return addRecentElectrumServer(electrumServer);
         }
+
+        return false;
     }
 
-    public void addRecentElectrumServer(String electrumServer) {
+    public boolean addRecentElectrumServer(Server electrumServer) {
         if(recentElectrumServers == null) {
             recentElectrumServers = new ArrayList<>();
         }
 
-        if(!recentElectrumServers.contains(electrumServer)) {
-            recentElectrumServers.stream().filter(url -> Objects.equals(Protocol.getHost(url), Protocol.getHost(electrumServer)))
-                    .findFirst().ifPresent(existingUrl -> recentElectrumServers.remove(existingUrl));
+        int index = getRecentElectrumServers().indexOf(electrumServer);
+        if(index < 0) {
+            recentElectrumServers.removeIf(server -> server.getHost().equals(electrumServer.getHost()) && server.getAlias() == null);
             recentElectrumServers.add(electrumServer);
+            flush();
+
+            return true;
+        }
+
+        return false;
+    }
+
+    public void removeRecentElectrumServer(Server server) {
+        int index = getRecentElectrumServers().indexOf(server);
+        if(index >= 0) {
+            recentElectrumServers.remove(index);
+            flush();
+        }
+    }
+
+    public void setElectrumServerAlias(Server server) {
+        int index = getRecentElectrumServers().indexOf(server);
+        if(index >= 0) {
+            recentElectrumServers.set(index, server);
             flush();
         }
     }
@@ -593,6 +635,20 @@ public class Config {
         @Override
         public File deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return new File(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class ServerSerializer implements JsonSerializer<Server> {
+        @Override
+        public JsonElement serialize(Server src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toString());
+        }
+    }
+
+    private static class ServerDeserializer implements JsonDeserializer<Server> {
+        @Override
+        public Server deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return Server.fromString(json.getAsJsonPrimitive().getAsString());
         }
     }
 }
