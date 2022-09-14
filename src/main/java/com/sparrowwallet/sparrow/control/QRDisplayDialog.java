@@ -244,11 +244,11 @@ public class QRDisplayDialog extends Dialog<UR> {
                 legacy.setGraphic(getGlyph(FontAwesome5.Glyph.BAN));
             }
         }
+    }
 
-        private Glyph getGlyph(FontAwesome5.Glyph glyphName) {
-            Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
-            glyph.setFontSize(11);
-            return glyph;
-        }
+    protected static Glyph getGlyph(FontAwesome5.Glyph glyphName) {
+        Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
+        glyph.setFontSize(11);
+        return glyph;
     }
 }

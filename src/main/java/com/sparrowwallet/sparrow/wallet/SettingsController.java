@@ -217,7 +217,16 @@ public class SettingsController extends WalletFormController implements Initiali
         apply.setOnAction(event -> {
             revert.setDisable(true);
             apply.setDisable(true);
+            boolean addressChange = ((SettingsWalletForm)walletForm).isAddressChange();
             saveWallet(false, false);
+
+            Wallet wallet = walletForm.getWallet();
+            if(wallet.getPolicyType() == PolicyType.MULTI && wallet.getDefaultPolicy().getNumSignaturesRequired() < wallet.getKeystores().size() && addressChange) {
+                String outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null).toString(true);
+                CryptoOutput cryptoOutput = getCryptoOutput(wallet);
+                MultisigBackupDialog dialog = new MultisigBackupDialog(wallet, outputDescriptor, cryptoOutput.toUR());
+                dialog.showAndWait();
+            }
         });
 
         setFieldsFromWallet(walletForm.getWallet());
@@ -325,18 +334,8 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(walletForm.getWallet(), KeyPurpose.DEFAULT_PURPOSES, null);
-        List<ScriptExpression> scriptExpressions = getScriptExpressions(walletForm.getWallet().getScriptType());
-
-        CryptoOutput cryptoOutput;
-        if(walletForm.getWallet().getPolicyType() == PolicyType.SINGLE) {
-            cryptoOutput = new CryptoOutput(scriptExpressions, getCryptoHDKey(walletForm.getWallet().getKeystores().get(0)));
-        } else if(walletForm.getWallet().getPolicyType() == PolicyType.MULTI) {
-            List<CryptoHDKey> cryptoHDKeys = walletForm.getWallet().getKeystores().stream().map(this::getCryptoHDKey).collect(Collectors.toList());
-            MultiKey multiKey = new MultiKey(walletForm.getWallet().getDefaultPolicy().getNumSignaturesRequired(), null, cryptoHDKeys);
-            List<ScriptExpression> multiScriptExpressions = new ArrayList<>(scriptExpressions);
-            multiScriptExpressions.add(ScriptExpression.SORTED_MULTISIG);
-            cryptoOutput = new CryptoOutput(multiScriptExpressions, multiKey);
-        } else {
+        CryptoOutput cryptoOutput = getCryptoOutput(walletForm.getWallet());
+        if(cryptoOutput == null) {
             AppServices.showErrorDialog("Unsupported Wallet Policy", "Cannot show a descriptor for this wallet.");
             return;
         }
@@ -344,6 +343,23 @@ public class SettingsController extends WalletFormController implements Initiali
         UR cryptoOutputUR = cryptoOutput.toUR();
         QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR);
         qrDisplayDialog.showAndWait();
+    }
+
+    private CryptoOutput getCryptoOutput(Wallet wallet) {
+        List<ScriptExpression> scriptExpressions = getScriptExpressions(wallet.getScriptType());
+
+        CryptoOutput cryptoOutput = null;
+        if(wallet.getPolicyType() == PolicyType.SINGLE) {
+            cryptoOutput = new CryptoOutput(scriptExpressions, getCryptoHDKey(wallet.getKeystores().get(0)));
+        } else if(wallet.getPolicyType() == PolicyType.MULTI) {
+            List<CryptoHDKey> cryptoHDKeys = wallet.getKeystores().stream().map(this::getCryptoHDKey).collect(Collectors.toList());
+            MultiKey multiKey = new MultiKey(wallet.getDefaultPolicy().getNumSignaturesRequired(), null, cryptoHDKeys);
+            List<ScriptExpression> multiScriptExpressions = new ArrayList<>(scriptExpressions);
+            multiScriptExpressions.add(ScriptExpression.SORTED_MULTISIG);
+            cryptoOutput = new CryptoOutput(multiScriptExpressions, multiKey);
+        }
+
+        return cryptoOutput;
     }
 
     private List<ScriptExpression> getScriptExpressions(ScriptType scriptType) {
