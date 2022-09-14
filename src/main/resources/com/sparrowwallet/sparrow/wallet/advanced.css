@@ -1,0 +1,4 @@
+.gap-warning {
+    -fx-text-fill: rgb(238, 210, 2);
+    -fx-padding: 0 0 0 12;
+}

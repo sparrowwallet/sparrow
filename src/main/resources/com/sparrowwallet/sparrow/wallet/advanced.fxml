@@ -11,8 +11,9 @@
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.IntegerSpinner?>
+<?import org.controlsfx.glyphfont.Glyph?>
 
-<BorderPane stylesheets="@../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.AdvancedController">
+<BorderPane stylesheets="@advanced.css, @../general.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.AdvancedController">
     <center>
         <GridPane hgap="10.0" vgap="10.0">
         <padding>
@@ -34,6 +35,14 @@
                 <Field text="Gap limit:">
                     <IntegerSpinner fx:id="gapLimit" editable="true" prefWidth="90" />
                     <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs."/>
+                    <Label fx:id="gapWarning">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="gap-warning" />
+                        </graphic>
+                        <tooltip>
+                            <Tooltip text="Large gap limits may cause wallet loading failures on some servers." />
+                        </tooltip>
+                    </Label>
                 </Field>
                 <Field text="Watch addresses:">
                     <ComboBox fx:id="watchLast" />

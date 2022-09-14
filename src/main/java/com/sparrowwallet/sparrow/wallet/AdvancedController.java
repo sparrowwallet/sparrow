@@ -11,6 +11,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
 import javafx.util.StringConverter;
 
 import java.net.URL;
@@ -23,11 +24,17 @@ import java.util.stream.Collectors;
 public class AdvancedController implements Initializable {
     private static final List<Integer> DEFAULT_WATCH_LIST_ITEMS = List.of(-1, 100, 500, 1000, 5000, 10000);
 
+    private static final int MAX_GAP_LIMIT = 1000000;
+    private static final int WARNING_GAP_LIMIT = 1000;
+
     @FXML
     private DatePicker birthDate;
 
     @FXML
     private IntegerSpinner gapLimit;
+
+    @FXML
+    private Label gapWarning;
 
     @FXML
     private ComboBox<Integer> watchLast;
@@ -49,11 +56,13 @@ public class AdvancedController implements Initializable {
             }
         });
 
-        gapLimit.setValueFactory(new IntegerSpinner.ValueFactory(Wallet.DEFAULT_LOOKAHEAD, 9999, wallet.getGapLimit()));
+        gapLimit.setValueFactory(new IntegerSpinner.ValueFactory(Wallet.DEFAULT_LOOKAHEAD, MAX_GAP_LIMIT, wallet.getGapLimit()));
         gapLimit.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue == null || newValue < Wallet.DEFAULT_LOOKAHEAD || newValue > 9999) {
+            if(newValue == null || newValue < Wallet.DEFAULT_LOOKAHEAD || newValue > MAX_GAP_LIMIT) {
                 return;
             }
+
+            gapWarning.setVisible(newValue >= WARNING_GAP_LIMIT);
 
             wallet.setGapLimit(newValue);
             if(!watchLast.getItems().equals(getWatchListItems(wallet))) {
@@ -63,6 +72,17 @@ public class AdvancedController implements Initializable {
             }
             EventManager.get().post(new SettingsChangedEvent(wallet, SettingsChangedEvent.Type.GAP_LIMIT));
         });
+        gapLimit.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            try {
+                int gapLimit = Integer.parseInt(newValue);
+                gapWarning.setVisible(gapLimit >= WARNING_GAP_LIMIT);
+            } catch(Exception e) {
+                //ignore
+            }
+        });
+
+        gapWarning.managedProperty().bind(gapWarning.visibleProperty());
+        gapWarning.setVisible(wallet.getGapLimit() >= WARNING_GAP_LIMIT);
 
         watchLast.setItems(getWatchListItems(wallet));
         watchLast.setConverter(new StringConverter<>() {
