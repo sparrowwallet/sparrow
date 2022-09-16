@@ -206,12 +206,17 @@
     -fx-background-color: transparent;
 }
 
-.root #transactionDiagram .coins-icon, #transactionDiagram .user-icon {
+.root #transactionDiagram .coins-icon, .root #transactionDiagram .user-icon {
     -fx-text-fill: lightgray;
 }
 
 .root #transactionDiagram .size-indicator {
     -fx-fill: lightgray;
+}
+
+.root #transactionDiagram .inputs-type, .root #transactionDiagram .input-line, .root #transactionDiagram .output-line {
+    -fx-text-fill: #696c77;
+    -fx-stroke: #696c77;
 }
 
 .root .progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {

@@ -21,6 +21,7 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,6 +29,10 @@ import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.MenuItem;
+import javafx.scene.image.Image;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseButton;
@@ -37,6 +42,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -45,7 +51,12 @@ import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Platform;
 
+import javax.imageio.ImageIO;
+import java.awt.image.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.control.CoinLabel.BTC_FORMAT;
@@ -75,7 +86,7 @@ public class TransactionDiagram extends GridPane {
         public void handle(MouseEvent event) {
             if(!event.isConsumed() && event.getButton() != MouseButton.SECONDARY) {
                 Stage stage = new Stage(StageStyle.UNDECORATED);
-                stage.setTitle(walletTx.getPayments().iterator().next().getLabel());
+                stage.setTitle(getDiagramTitle());
                 stage.initOwner(TransactionDiagram.this.getScene().getWindow());
                 stage.initModality(Modality.WINDOW_MODAL);
                 stage.setResizable(false);
@@ -98,7 +109,8 @@ public class TransactionDiagram extends GridPane {
                 expandedDiagram = new TransactionDiagram();
                 expandedDiagram.setId("transactionDiagram");
                 expandedDiagram.setExpanded(true);
-                updateExpandedDiagram();
+                expandedDiagram.setFinal(isFinal());
+                updateDerivedDiagram(expandedDiagram);
 
                 HBox buttonBox = new HBox();
                 buttonBox.setAlignment(Pos.CENTER_RIGHT);
@@ -136,7 +148,7 @@ public class TransactionDiagram extends GridPane {
             update();
             setOnMouseClicked(expandedDiagramHandler);
             if(expandedDiagram != null) {
-                updateExpandedDiagram();
+                updateDerivedDiagram(expandedDiagram);
             }
         }
     }
@@ -165,20 +177,22 @@ public class TransactionDiagram extends GridPane {
         getChildren().clear();
     }
 
-    private void updateExpandedDiagram() {
-        expandedDiagram.setFinal(isFinal());
-        expandedDiagram.setOptimizationStrategy(getOptimizationStrategy());
-        expandedDiagram.walletTx = walletTx;
+    private void updateDerivedDiagram(TransactionDiagram diagram) {
+        diagram.setOptimizationStrategy(getOptimizationStrategy());
+        diagram.walletTx = walletTx;
 
-        List<Map<BlockTransactionHashIndex, WalletNode>> utxoSets = expandedDiagram.getDisplayedUtxoSets();
-        int maxSetSize = utxoSets.stream().mapToInt(Map::size).max().orElse(0);
-        int maxRows = Math.max(maxSetSize * utxoSets.size(), walletTx.getPayments().size() + 2);
-        double diagramHeight = Math.max(DIAGRAM_HEIGHT, Math.min(EXPANDED_DIAGRAM_HEIGHT, maxRows * ROW_HEIGHT));
-        expandedDiagram.setMinHeight(diagramHeight);
-        expandedDiagram.setMaxHeight(diagramHeight);
-        expandedDiagram.update();
+        if(diagram.isExpanded()) {
+            List<Map<BlockTransactionHashIndex, WalletNode>> utxoSets = diagram.getDisplayedUtxoSets();
+            int maxSetSize = utxoSets.stream().mapToInt(Map::size).max().orElse(0);
+            int maxRows = Math.max(maxSetSize * utxoSets.size(), walletTx.getPayments().size() + 2);
+            double diagramHeight = Math.max(DIAGRAM_HEIGHT, Math.min(EXPANDED_DIAGRAM_HEIGHT, maxRows * ROW_HEIGHT));
+            diagram.setMinHeight(diagramHeight);
+            diagram.setMaxHeight(diagramHeight);
+        }
 
-        if(expandedDiagram.getScene() != null && expandedDiagram.getScene().getWindow() instanceof Stage stage) {
+        diagram.update();
+
+        if(diagram.getScene() != null && diagram.getScene().getWindow() instanceof Stage stage) {
             stage.sizeToScene();
         }
     }
@@ -797,10 +811,57 @@ public class TransactionDiagram extends GridPane {
         tooltip.setShowDuration(Duration.INDEFINITE);
         tooltip.getStyleClass().add("transaction-tooltip");
         txLabel.setTooltip(tooltip);
+        ContextMenu contextMenu = new ContextMenu();
+        MenuItem menuItem = new MenuItem("Save as Image...");
+        menuItem.setOnAction(event -> {
+            contextMenu.hide();
+            saveAsImage();
+        });
+        contextMenu.getItems().add(menuItem);
+        txLabel.setContextMenu(contextMenu);
+
         txPane.getChildren().add(txLabel);
         txPane.getChildren().add(createSpacer());
 
         return txPane;
+    }
+
+    private void saveAsImage() {
+        Stage window = new Stage();
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Image");
+        fileChooser.setInitialFileName(getDiagramTitle() + ".png");
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
+        File file = fileChooser.showSaveDialog(window);
+        if(file != null) {
+            TransactionDiagram transactionDiagram = new TransactionDiagram();
+            transactionDiagram.setId("transactionDiagram");
+            transactionDiagram.setFinal(true);
+            transactionDiagram.setExpanded(isExpanded());
+            transactionDiagram.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, null, null)));
+            transactionDiagram.setStyle("-fx-text-background-color: #000000");
+            updateDerivedDiagram(transactionDiagram);
+            Scene scene = new Scene(transactionDiagram);
+            scene.setFill(Color.TRANSPARENT);
+            scene.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+            scene.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
+            scene.getStylesheets().add(AppServices.class.getResource("wallet/send.css").toExternalForm());
+            Image image = scene.snapshot(null);
+            BufferedImage bufferedImage = SwingFXUtils.fromFXImage(image, null);
+            try {
+                ImageIO.write(bufferedImage, "png", file);
+            } catch(IOException e) {
+                AppServices.showErrorDialog("Error saving image", e.getMessage());
+            }
+        }
+    }
+
+    private String getDiagramTitle() {
+        if(!isFinal() && walletTx.getPayments().size() > 0 && walletTx.getPayments().get(0).getLabel() != null) {
+            return walletTx.getPayments().get(0).getLabel();
+        } else {
+            return "[" + walletTx.getTransaction().getTxId().toString().substring(0, 6) + "]";
+        }
     }
 
     public double getDiagramHeight() {
