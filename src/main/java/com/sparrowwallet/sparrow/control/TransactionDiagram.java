@@ -33,10 +33,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.image.Image;
-import javafx.scene.input.Clipboard;
-import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -80,6 +77,7 @@ public class TransactionDiagram extends GridPane {
     private final ObjectProperty<OptimizationStrategy> optimizationStrategyProperty = new SimpleObjectProperty<>(OptimizationStrategy.EFFICIENCY);
     private boolean expanded;
     private TransactionDiagram expandedDiagram;
+    private ContextMenu contextMenu;
 
     private final EventHandler<MouseEvent> expandedDiagramHandler = new EventHandler<>() {
         @Override
@@ -134,6 +132,13 @@ public class TransactionDiagram extends GridPane {
                 });
                 stage.show();
             }
+        }
+    };
+
+    private final EventHandler<ContextMenuEvent> contextMenuHandler = new EventHandler<>() {
+        @Override
+        public void handle(ContextMenuEvent event) {
+            contextMenu.show(getChildren().iterator().next(), event.getScreenX(), event.getScreenY());
         }
     };
 
@@ -222,6 +227,17 @@ public class TransactionDiagram extends GridPane {
 
         getChildren().clear();
         getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
+
+        if(contextMenu == null) {
+            contextMenu = new ContextMenu();
+            MenuItem menuItem = new MenuItem("Save as Image...");
+            menuItem.setOnAction(event -> {
+                contextMenu.hide();
+                saveAsImage();
+            });
+            contextMenu.getItems().add(menuItem);
+            setOnContextMenuRequested(contextMenuHandler);
+        }
     }
 
     private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {
@@ -811,14 +827,6 @@ public class TransactionDiagram extends GridPane {
         tooltip.setShowDuration(Duration.INDEFINITE);
         tooltip.getStyleClass().add("transaction-tooltip");
         txLabel.setTooltip(tooltip);
-        ContextMenu contextMenu = new ContextMenu();
-        MenuItem menuItem = new MenuItem("Save as Image...");
-        menuItem.setOnAction(event -> {
-            contextMenu.hide();
-            saveAsImage();
-        });
-        contextMenu.getItems().add(menuItem);
-        txLabel.setContextMenu(contextMenu);
 
         txPane.getChildren().add(txLabel);
         txPane.getChildren().add(createSpacer());
