@@ -133,6 +133,9 @@ public class AppController implements Initializable {
     private ToggleGroup bitcoinUnit;
 
     @FXML
+    private ToggleGroup unitFormat;
+
+    @FXML
     private ToggleGroup theme;
 
     @FXML
@@ -324,6 +327,15 @@ public class AppController implements Initializable {
         final BitcoinUnit selectedUnit = unit;
         Optional<Toggle> selectedUnitToggle = bitcoinUnit.getToggles().stream().filter(toggle -> selectedUnit.equals(toggle.getUserData())).findFirst();
         selectedUnitToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+
+        UnitFormat format = Config.get().getUnitFormat();
+        if(format == null) {
+            format = UnitFormat.DOT;
+            Config.get().setUnitFormat(format);
+        }
+        final UnitFormat selectedFormat = format;
+        Optional<Toggle> selectedFormatToggle = unitFormat.getToggles().stream().filter(toggle -> selectedFormat.equals(toggle.getUserData())).findFirst();
+        selectedFormatToggle.ifPresent(toggle -> unitFormat.selectToggle(toggle));
 
         Theme configTheme = Config.get().getTheme();
         if(configTheme == null) {
@@ -856,6 +868,13 @@ public class AppController implements Initializable {
         BitcoinUnit unit = (BitcoinUnit)item.getUserData();
         Config.get().setBitcoinUnit(unit);
         EventManager.get().post(new BitcoinUnitChangedEvent(unit));
+    }
+
+    public void setUnitFormat(ActionEvent event) {
+        MenuItem item = (MenuItem)event.getSource();
+        UnitFormat format = (UnitFormat)item.getUserData();
+        Config.get().setUnitFormat(format);
+        EventManager.get().post(new UnitFormatChangedEvent(format));
     }
 
     public void preventSleep(ActionEvent event) {
@@ -2696,6 +2715,12 @@ public class AppController implements Initializable {
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         Optional<Toggle> selectedToggle = bitcoinUnit.getToggles().stream().filter(toggle -> event.getBitcoinUnit().equals(toggle.getUserData())).findFirst();
         selectedToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+    }
+
+    @Subscribe
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        Optional<Toggle> selectedToggle = unitFormat.getToggles().stream().filter(toggle -> event.getUnitFormat().equals(toggle.getUserData())).findFirst();
+        selectedToggle.ifPresent(toggle -> unitFormat.selectToggle(toggle));
     }
 
     @Subscribe

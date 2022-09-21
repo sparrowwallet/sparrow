@@ -9,8 +9,8 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.*;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -189,7 +189,7 @@ public class UtxosController extends WalletFormController implements Initializab
         utxosTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
             List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().filter(tp -> tp.getTreeItem() != null).map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
             utxosChart.select(selectedEntries);
-            updateButtons(Config.get().getBitcoinUnit());
+            updateButtons(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
             updateUtxoCount(getWalletForm().getWalletUtxosEntry());
         });
     }
@@ -210,7 +210,7 @@ public class UtxosController extends WalletFormController implements Initializab
         return WhirlpoolServices.canWalletMix(getWalletForm().getWallet());
     }
 
-    private void updateButtons(BitcoinUnit unit) {
+    private void updateButtons(UnitFormat format, BitcoinUnit unit) {
         List<Entry> selectedEntries = getSelectedEntries();
 
         selectAll.setDisable(utxosTable.getRoot().getChildren().size() == utxosTable.getSelectionModel().getSelectedCells().size());
@@ -220,16 +220,20 @@ public class UtxosController extends WalletFormController implements Initializab
 
         long selectedTotal = selectedEntries.stream().mapToLong(Entry::getValue).sum();
         if(selectedTotal > 0) {
+            if(format == null) {
+                format = UnitFormat.DOT;
+            }
+
             if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
                 unit = (selectedTotal >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
             }
 
             if(unit.equals(BitcoinUnit.BTC)) {
-                sendSelected.setText("Send Selected (" + CoinLabel.getBTCFormat().format((double)selectedTotal / Transaction.SATOSHIS_PER_BITCOIN) + " BTC)");
-                mixSelected.setText("Mix Selected (" + CoinLabel.getBTCFormat().format((double)selectedTotal / Transaction.SATOSHIS_PER_BITCOIN) + " BTC)");
+                sendSelected.setText("Send Selected (" + format.formatBtcValue(selectedTotal) + " BTC)");
+                mixSelected.setText("Mix Selected (" + format.formatBtcValue(selectedTotal) + " BTC)");
             } else {
-                sendSelected.setText("Send Selected (" + String.format(Locale.ENGLISH, "%,d", selectedTotal) + " sats)");
-                mixSelected.setText("Mix Selected (" + String.format(Locale.ENGLISH, "%,d", selectedTotal) + " sats)");
+                sendSelected.setText("Send Selected (" + format.formatSatsValue(selectedTotal) + " sats)");
+                mixSelected.setText("Mix Selected (" + format.formatSatsValue(selectedTotal) + " sats)");
             }
         } else {
             sendSelected.setText("Send Selected");
@@ -486,9 +490,8 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private String getCoinValue(Long value) {
-        return BitcoinUnit.BTC.equals(utxosTable.getBitcoinUnit()) ?
-                CoinLabel.getBTCFormat().format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) :
-                String.format(Locale.ENGLISH, "%d", value);
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        return BitcoinUnit.BTC.equals(utxosTable.getBitcoinUnit()) ? format.formatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
     }
 
     private static Glyph getExternalGlyph() {
@@ -546,12 +549,14 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     @Subscribe
-    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        utxosTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
-        utxosChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
-        balance.refresh(event.getBitcoinUnit());
-        mempoolBalance.refresh(event.getBitcoinUnit());
-        updateButtons(event.getBitcoinUnit());
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        utxosTable.setUnitFormat(getWalletForm().getWallet(), event.getUnitFormat(), event.getBitcoinUnit());
+        utxosChart.setUnitFormat(getWalletForm().getWallet(), event.getUnitFormat(), event.getBitcoinUnit());
+        balance.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+        mempoolBalance.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+        updateButtons(event.getUnitFormat(), event.getBitcoinUnit());
+        fiatBalance.refresh(event.getUnitFormat());
+        fiatMempoolBalance.refresh(event.getUnitFormat());
     }
 
     @Subscribe
@@ -588,7 +593,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
         if(event.fromThisOrNested(getWalletForm().getWallet())) {
             utxosTable.refresh();
-            updateButtons(Config.get().getBitcoinUnit());
+            updateButtons(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
         }
     }
 

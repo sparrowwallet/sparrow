@@ -7,6 +7,7 @@
 <?import javafx.scene.shape.Rectangle?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
+<?import com.sparrowwallet.sparrow.UnitFormat?>
 <?import com.sparrowwallet.sparrow.Theme?>
 <?import impl.org.controlsfx.skin.DecorationPane?>
 
@@ -57,6 +58,9 @@
                     <ToggleGroup fx:id="bitcoinUnit"/>
                 </fx:define>
                 <fx:define>
+                    <ToggleGroup fx:id="unitFormat"/>
+                </fx:define>
+                <fx:define>
                     <ToggleGroup fx:id="theme"/>
                 </fx:define>
                 <Menu fx:id="viewMenu" mnemonicParsing="false" text="View">
@@ -76,6 +80,20 @@
                                 <RadioMenuItem mnemonicParsing="false" text="sats" toggleGroup="$bitcoinUnit" onAction="#setBitcoinUnit">
                                     <userData>
                                         <BitcoinUnit fx:constant="SATOSHIS" />
+                                    </userData>
+                                </RadioMenuItem>
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Unit Format">
+                            <items>
+                                <RadioMenuItem mnemonicParsing="false" text="1,234.56" toggleGroup="$unitFormat" onAction="#setUnitFormat">
+                                    <userData>
+                                        <UnitFormat fx:constant="DOT" />
+                                    </userData>
+                                </RadioMenuItem>
+                                <RadioMenuItem mnemonicParsing="false" text="1.234,56" toggleGroup="$unitFormat" onAction="#setUnitFormat">
+                                    <userData>
+                                        <UnitFormat fx:constant="COMMA" />
                                     </userData>
                                 </RadioMenuItem>
                             </items>

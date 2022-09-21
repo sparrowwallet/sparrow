@@ -3,7 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.csvreader.CsvWriter;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
@@ -141,9 +141,8 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     private String getCoinValue(Long value) {
-        return BitcoinUnit.BTC.equals(transactionsTable.getBitcoinUnit()) ?
-                CoinLabel.getBTCFormat().format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) :
-                String.format(Locale.ENGLISH, "%d", value);
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        return BitcoinUnit.BTC.equals(transactionsTable.getBitcoinUnit()) ? format.formatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
     }
 
     private void logMessage(String logMessage) {
@@ -201,11 +200,13 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     @Subscribe
-    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        transactionsTable.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
-        balanceChart.setBitcoinUnit(getWalletForm().getWallet(), event.getBitcoinUnit());
-        balance.refresh(event.getBitcoinUnit());
-        mempoolBalance.refresh(event.getBitcoinUnit());
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        transactionsTable.setUnitFormat(getWalletForm().getWallet(), event.getUnitFormat(), event.getBitcoinUnit());
+        balanceChart.setUnitFormat(getWalletForm().getWallet(), event.getUnitFormat(), event.getBitcoinUnit());
+        balance.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+        mempoolBalance.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+        fiatBalance.refresh(event.getUnitFormat());
+        fiatMempoolBalance.refresh(event.getUnitFormat());
     }
 
     @Subscribe

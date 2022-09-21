@@ -14,6 +14,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
@@ -50,6 +51,7 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
@@ -240,7 +242,7 @@ public class PaymentController extends WalletFormController implements Initializ
             sendController.updateTransaction();
         });
 
-        amount.setTextFormatter(new CoinTextFormatter());
+        amount.setTextFormatter(new CoinTextFormatter(Config.get().getUnitFormat()));
         amount.textProperty().addListener(amountListener);
 
         amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(sendController.getBitcoinUnit(Config.get().getBitcoinUnit())) ? 0 : 1);
@@ -390,8 +392,13 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private Long getRecipientValueSats(BitcoinUnit bitcoinUnit) {
+        return getRecipientValueSats(Config.get().getUnitFormat(), bitcoinUnit);
+    }
+
+    private Long getRecipientValueSats(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
         if(amount.getText() != null && !amount.getText().isEmpty()) {
-            double fieldValue = Double.parseDouble(amount.getText().replaceAll(",", ""));
+            UnitFormat format = unitFormat == null ? UnitFormat.DOT : unitFormat;
+            double fieldValue = Double.parseDouble(amount.getText().replaceAll(Pattern.quote(format.getGroupingSeparator()), "").replaceAll(",", "."));
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 
@@ -400,7 +407,8 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private void setRecipientValueSats(long recipientValue) {
         amount.textProperty().removeListener(amountListener);
-        DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+        UnitFormat unitFormat = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        DecimalFormat df = new DecimalFormat("#.#", unitFormat.getDecimalFormatSymbols());
         df.setMaximumFractionDigits(8);
         amount.setText(df.format(amountUnit.getValue().getValue(recipientValue)));
         amount.textProperty().addListener(amountListener);
@@ -619,6 +627,19 @@ public class PaymentController extends WalletFormController implements Initializ
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         BitcoinUnit unit = sendController.getBitcoinUnit(event.getBitcoinUnit());
         amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
+    }
+
+    @Subscribe
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        if(amount.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
+            Long value = getRecipientValueSats(coinTextFormatter.getUnitFormat(), event.getBitcoinUnit());
+            amount.setTextFormatter(new CoinTextFormatter(event.getUnitFormat()));
+
+            if(value != null) {
+                setRecipientValueSats(value);
+            }
+        }
+        fiatAmount.refresh(event.getUnitFormat());
     }
 
     @Subscribe

@@ -74,7 +74,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         results = new CoinTreeTable();
         results.setShowRoot(false);
         results.setPrefWidth(showWallet ? 950 : 850);
-        results.setBitcoinUnit(walletForms.iterator().next().getWallet());
+        results.setUnitFormat(walletForms.iterator().next().getWallet());
         results.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         results.setPlaceholder(new Label("No results"));
 

@@ -20,7 +20,7 @@ import java.util.*;
 public class AddressTreeTable extends CoinTreeTable {
     public void initialize(NodeEntry rootEntry) {
         getStyleClass().add("address-treetable");
-        setBitcoinUnit(rootEntry.getWallet());
+        setUnitFormat(rootEntry.getWallet());
 
         String address = rootEntry.getAddress().toString();
         updateAll(rootEntry);
@@ -114,7 +114,7 @@ public class AddressTreeTable extends CoinTreeTable {
     }
 
     public void updateAll(NodeEntry rootEntry) {
-        setBitcoinUnit(rootEntry.getWallet());
+        setUnitFormat(rootEntry.getWallet());
 
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);

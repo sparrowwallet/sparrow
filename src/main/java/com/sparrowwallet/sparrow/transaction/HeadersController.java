@@ -1270,8 +1270,8 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     @Subscribe
-    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        fee.refresh(event.getBitcoinUnit());
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        fee.refresh(event.getUnitFormat(), event.getBitcoinUnit());
     }
 
     @Subscribe

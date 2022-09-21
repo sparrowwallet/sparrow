@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
@@ -8,12 +7,10 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
-import java.util.List;
-
 public class TransactionsTreeTable extends CoinTreeTable {
     public void initialize(WalletTransactionsEntry rootEntry) {
         getStyleClass().add("transactions-treetable");
-        setBitcoinUnit(rootEntry.getWallet());
+        setUnitFormat(rootEntry.getWallet());
 
         updateAll(rootEntry);
         setShowRoot(false);
@@ -58,7 +55,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
     }
 
     public void updateAll(WalletTransactionsEntry rootEntry) {
-        setBitcoinUnit(rootEntry.getWallet());
+        setUnitFormat(rootEntry.getWallet());
 
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);

@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
@@ -61,8 +62,8 @@ import tornadofx.control.Field;
 import java.io.IOException;
 import java.net.URL;
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.*;
@@ -354,7 +355,7 @@ public class SendController extends WalletFormController implements Initializabl
             };
         });
 
-        fee.setTextFormatter(new CoinTextFormatter());
+        fee.setTextFormatter(new CoinTextFormatter(Config.get().getUnitFormat()));
         fee.textProperty().addListener(feeListener);
 
         BitcoinUnit unit = getBitcoinUnit(Config.get().getBitcoinUnit());
@@ -737,8 +738,13 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Long getFeeValueSats(BitcoinUnit bitcoinUnit) {
+        return getFeeValueSats(Config.get().getUnitFormat(), bitcoinUnit);
+    }
+
+    private Long getFeeValueSats(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
         if(fee.getText() != null && !fee.getText().isEmpty()) {
-            double fieldValue = Double.parseDouble(fee.getText().replaceAll(",", ""));
+            UnitFormat format = unitFormat == null ? UnitFormat.DOT : unitFormat;
+            double fieldValue = Double.parseDouble(fee.getText().replaceAll(Pattern.quote(format.getGroupingSeparator()), "").replaceAll(",", "."));
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 
@@ -747,7 +753,8 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setFeeValueSats(long feeValue) {
         fee.textProperty().removeListener(feeListener);
-        DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+        UnitFormat unitFormat = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        DecimalFormat df = new DecimalFormat("#.#", unitFormat.getDecimalFormatSymbols());
         df.setMaximumFractionDigits(8);
         fee.setText(df.format(feeAmountUnit.getValue().getValue(feeValue)));
         fee.textProperty().addListener(feeListener);
@@ -1531,6 +1538,19 @@ public class SendController extends WalletFormController implements Initializabl
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         BitcoinUnit unit = getBitcoinUnit(event.getBitcoinUnit());
         feeAmountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(unit) ? 0 : 1);
+    }
+
+    @Subscribe
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        if(fee.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
+            Long value = getFeeValueSats(coinTextFormatter.getUnitFormat(), event.getBitcoinUnit());
+            fee.setTextFormatter(new CoinTextFormatter(event.getUnitFormat()));
+
+            if(value != null) {
+                setFeeValueSats(value);
+            }
+        }
+        fiatFeeAmount.refresh(event.getUnitFormat());
     }
 
     @Subscribe

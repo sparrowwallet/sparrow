@@ -1,20 +1,17 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TableColumnBase;
 import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 
 import java.util.Comparator;
-import java.util.List;
 
 public class UtxosTreeTable extends CoinTreeTable {
     public void initialize(WalletUtxosEntry rootEntry) {
         getStyleClass().add("utxos-treetable");
-        setBitcoinUnit(rootEntry.getWallet());
+        setUnitFormat(rootEntry.getWallet());
 
         updateAll(rootEntry);
         setShowRoot(false);
@@ -93,7 +90,7 @@ public class UtxosTreeTable extends CoinTreeTable {
     }
 
     public void updateAll(WalletUtxosEntry rootEntry) {
-        setBitcoinUnit(rootEntry.getWallet());
+        setUnitFormat(rootEntry.getWallet());
 
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         setRoot(rootItem);

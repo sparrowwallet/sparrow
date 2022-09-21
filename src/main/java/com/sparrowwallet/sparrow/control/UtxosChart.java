@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
@@ -36,8 +37,7 @@ public class UtxosChart extends BarChart<String, Number> {
         getData().add(utxoSeries);
         update(walletUtxosEntry);
 
-        BitcoinUnit unit = Config.get().getBitcoinUnit();
-        setBitcoinUnit(walletUtxosEntry.getWallet(), unit);
+        setUnitFormat(walletUtxosEntry.getWallet(), Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
     }
 
     public void update(WalletUtxosEntry walletUtxosEntry) {
@@ -117,12 +117,16 @@ public class UtxosChart extends BarChart<String, Number> {
         this.selectedEntries = entries;
     }
 
-    public void setBitcoinUnit(Wallet wallet, BitcoinUnit unit) {
+    public void setUnitFormat(Wallet wallet, UnitFormat format, BitcoinUnit unit) {
+        if(format == null) {
+            format = UnitFormat.DOT;
+        }
+
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
             unit = wallet.getAutoUnit();
         }
 
         NumberAxis yaxis = (NumberAxis)getYAxis();
-        yaxis.setTickLabelFormatter(new CoinAxisFormatter(yaxis, unit));
+        yaxis.setTickLabelFormatter(new CoinAxisFormatter(yaxis, format, unit));
     }
 }

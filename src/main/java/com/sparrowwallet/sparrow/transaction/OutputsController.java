@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableCoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
-import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
+import com.sparrowwallet.sparrow.event.UnitFormatChangedEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.chart.PieChart;
@@ -57,7 +57,7 @@ public class OutputsController extends TransactionFormController implements Init
     }
 
     @Subscribe
-    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        total.refresh(event.getBitcoinUnit());
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        total.refresh(event.getUnitFormat(), event.getBitcoinUnit());
     }
 }

@@ -9,7 +9,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
+import com.sparrowwallet.sparrow.event.UnitFormatChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -175,7 +175,7 @@ public class OutputController extends TransactionFormController implements Initi
     }
 
     @Subscribe
-    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        value.refresh(event.getBitcoinUnit());
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        value.refresh(event.getUnitFormat(), event.getBitcoinUnit());
     }
 }

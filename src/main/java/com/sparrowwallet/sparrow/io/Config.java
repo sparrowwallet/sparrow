@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.net.*;
@@ -27,6 +28,7 @@ public class Config {
 
     private Mode mode;
     private BitcoinUnit bitcoinUnit;
+    private UnitFormat unitFormat;
     private FeeRatesSource feeRatesSource;
     private FeeRatesSelection feeRatesSelection;
     private OptimizationStrategy sendOptimizationStrategy;
@@ -130,6 +132,15 @@ public class Config {
 
     public void setBitcoinUnit(BitcoinUnit bitcoinUnit) {
         this.bitcoinUnit = bitcoinUnit;
+        flush();
+    }
+
+    public UnitFormat getUnitFormat() {
+        return unitFormat;
+    }
+
+    public void setUnitFormat(UnitFormat unitFormat) {
+        this.unitFormat = unitFormat;
         flush();
     }
 

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
@@ -14,12 +15,8 @@ import javafx.util.Duration;
 import org.controlsfx.tools.Platform;
 
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 
 class CoinCell extends TreeTableCell<Entry, Number> {
-    public static final DecimalFormat TABLE_BTC_FORMAT = new DecimalFormat("0.00000000", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-
     private final Tooltip tooltip;
 
     public CoinCell() {
@@ -45,10 +42,11 @@ class CoinCell extends TreeTableCell<Entry, Number> {
             EntryCell.applyRowStyles(this, entry);
 
             CoinTreeTable coinTreeTable = (CoinTreeTable)getTreeTableView();
+            UnitFormat format = coinTreeTable.getUnitFormat();
             BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
 
-            String satsValue = String.format(Locale.ENGLISH, "%,d", amount.longValue());
-            DecimalFormat decimalFormat = (amount.longValue() == 0L ? CoinLabel.getBTCFormat() : TABLE_BTC_FORMAT);
+            String satsValue = format.formatSatsValue(amount.longValue());
+            DecimalFormat decimalFormat = (amount.longValue() == 0L ? format.getBtcFormat() : format.getTableBtcFormat());
             final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
 
             if(unit.equals(BitcoinUnit.BTC)) {
@@ -61,8 +59,7 @@ class CoinCell extends TreeTableCell<Entry, Number> {
             setTooltip(tooltip);
             String tooltipValue = tooltip.getText();
 
-            if(entry instanceof TransactionEntry) {
-                TransactionEntry transactionEntry = (TransactionEntry)entry;
+            if(entry instanceof TransactionEntry transactionEntry) {
                 tooltip.setText(tooltipValue + " (" + transactionEntry.getConfirmationsDescription() + ")");
 
                 transactionEntry.confirmationsProperty().addListener((observable, oldValue, newValue) -> {

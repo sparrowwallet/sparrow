@@ -529,8 +529,8 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     @Subscribe
-    public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
-        spends.refresh(event.getBitcoinUnit());
+    public void unitFormatChanged(UnitFormatChangedEvent event) {
+        spends.refresh(event.getUnitFormat(), event.getBitcoinUnit());
     }
 
     @Subscribe

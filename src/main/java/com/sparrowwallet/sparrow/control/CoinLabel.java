@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
@@ -12,13 +12,7 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
-
 public class CoinLabel extends Label {
-    public static final DecimalFormat BTC_FORMAT = new DecimalFormat("0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final Tooltip tooltip;
     private final CoinContextMenu contextMenu;
@@ -58,8 +52,9 @@ public class CoinLabel extends Label {
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 
-        String satsValue = String.format(Locale.ENGLISH, "%,d", value) + " sats";
-        String btcValue = BTC_FORMAT.format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        String satsValue = format.formatSatsValue(value) + " sats";
+        String btcValue = format.formatBtcValue(value) + " BTC";
 
         BitcoinUnit unit = bitcoinUnit;
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
@@ -89,16 +84,12 @@ public class CoinLabel extends Label {
             copyBtcValue.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(BTC_FORMAT.format((double)getValue() / Transaction.SATOSHIS_PER_BITCOIN));
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                content.putString(format.formatBtcValue(getValue()));
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
             getItems().addAll(copySatsValue, copyBtcValue);
         }
-    }
-
-    public static DecimalFormat getBTCFormat() {
-        BTC_FORMAT.setMaximumFractionDigits(8);
-        return BTC_FORMAT;
     }
 }

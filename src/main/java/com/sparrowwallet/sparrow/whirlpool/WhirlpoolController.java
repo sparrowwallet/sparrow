@@ -5,12 +5,11 @@ import com.samourai.whirlpool.client.tx0.Tx0Previews;
 import com.samourai.whirlpool.client.wallet.beans.Tx0FeeTarget;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.MixConfig;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableCoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
 import com.sparrowwallet.sparrow.event.WalletMasterMixConfigChangedEvent;
@@ -157,9 +156,10 @@ public class WhirlpoolController {
                     return "Fetching pools...";
                 }
 
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
                 BitcoinUnit bitcoinUnit = wallet.getAutoUnit();
-                String satsValue = String.format(Locale.ENGLISH, "%,d", selectedPool.getDenomination()) + " sats";
-                String btcValue = CoinLabel.BTC_FORMAT.format((double)selectedPool.getDenomination() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+                String satsValue = format.formatSatsValue(selectedPool.getDenomination()) + " sats";
+                String btcValue = format.formatBtcValue(selectedPool.getDenomination()) + " BTC";
 
                 pool.setTooltip(bitcoinUnit == BitcoinUnit.BTC ? new Tooltip(satsValue) : new Tooltip(btcValue));
                 return bitcoinUnit == BitcoinUnit.BTC ? btcValue : satsValue;
@@ -273,8 +273,9 @@ public class WhirlpoolController {
                 allPoolsService.setOnSucceeded(poolsStateEvent -> {
                     OptionalLong optMinValue = allPoolsService.getValue().stream().mapToLong(pool1 -> pool1.getPremixValueMin() + pool1.getFeeValue()).min();
                     if(optMinValue.isPresent() && totalUtxoValue < optMinValue.getAsLong()) {
-                        String satsValue = String.format(Locale.ENGLISH, "%,d", optMinValue.getAsLong()) + " sats";
-                        String btcValue = CoinLabel.getBTCFormat().format((double)optMinValue.getAsLong() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+                        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                        String satsValue = format.formatSatsValue(optMinValue.getAsLong()) + " sats";
+                        String btcValue = format.formatBtcValue(optMinValue.getAsLong()) + " BTC";
                         poolInsufficient.setText("No available pools. Select a value over " + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + ".");
                     }
                 });

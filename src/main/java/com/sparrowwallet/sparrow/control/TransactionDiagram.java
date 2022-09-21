@@ -3,10 +3,10 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.Theme;
@@ -55,8 +55,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.sparrowwallet.sparrow.control.CoinLabel.BTC_FORMAT;
 
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
@@ -1334,7 +1332,8 @@ public class TransactionDiagram extends GridPane {
             copyBtcValue.setOnAction(event -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(BTC_FORMAT.format((double)value / Transaction.SATOSHIS_PER_BITCOIN));
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                content.putString(format.formatBtcValue(value));
                 Clipboard.getSystemClipboard().setContent(content);
             });
             getItems().addAll(copySatsValue, copyBtcValue);

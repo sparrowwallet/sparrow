@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleLongProperty;
@@ -10,8 +10,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-
-import java.util.Locale;
 
 public class CopyableCoinLabel extends CopyableLabel {
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
@@ -24,7 +22,7 @@ public class CopyableCoinLabel extends CopyableLabel {
 
     public CopyableCoinLabel(String text) {
         super(text);
-        valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getBitcoinUnit()));
+        valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getUnitFormat(), Config.get().getBitcoinUnit()));
         tooltip = new Tooltip();
         contextMenu = new CoinContextMenu();
     }
@@ -42,19 +40,23 @@ public class CopyableCoinLabel extends CopyableLabel {
     }
 
     public void refresh() {
-        refresh(Config.get().getBitcoinUnit());
+        refresh(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
     }
 
-    public void refresh(BitcoinUnit bitcoinUnit) {
-        setValueAsText(getValue(), bitcoinUnit);
+    public void refresh(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
+        setValueAsText(getValue(), unitFormat, bitcoinUnit);
     }
 
-    private void setValueAsText(Long value, BitcoinUnit bitcoinUnit) {
+    private void setValueAsText(Long value, UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 
-        String satsValue = String.format(Locale.ENGLISH, "%,d", value) + " sats";
-        String btcValue = CoinLabel.getBTCFormat().format(value.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+        if(unitFormat == null) {
+            unitFormat = UnitFormat.DOT;
+        }
+
+        String satsValue = unitFormat.formatSatsValue(value) + " sats";
+        String btcValue = unitFormat.formatBtcValue(value) + " BTC";
 
         BitcoinUnit unit = bitcoinUnit;
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
@@ -84,7 +86,8 @@ public class CopyableCoinLabel extends CopyableLabel {
             copyBtcValue.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(CoinLabel.getBTCFormat().format((double)getValue() / Transaction.SATOSHIS_PER_BITCOIN));
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                content.putString(format.formatBtcValue(getValue()));
                 Clipboard.getSystemClipboard().setContent(content);
             });
 

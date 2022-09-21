@@ -1,7 +1,9 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.CurrencyRate;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.*;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -10,14 +12,9 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.Currency;
-import java.util.Locale;
 
 public class FiatLabel extends CopyableLabel {
-    private static final DecimalFormat CURRENCY_FORMAT = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final DoubleProperty btcRateProperty = new SimpleDoubleProperty(0.0);
     private final ObjectProperty<Currency> currencyProperty = new SimpleObjectProperty<>(null);
@@ -30,9 +27,9 @@ public class FiatLabel extends CopyableLabel {
 
     public FiatLabel(String text) {
         super(text);
-        valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue));
-        btcRateProperty().addListener((observable, oldValue, newValue) -> setValueAsText(getValue()));
-        currencyProperty().addListener((observable, oldValue, newValue) -> setValueAsText(getValue()));
+        valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getUnitFormat()));
+        btcRateProperty().addListener((observable, oldValue, newValue) -> setValueAsText(getValue(), Config.get().getUnitFormat()));
+        currencyProperty().addListener((observable, oldValue, newValue) -> setValueAsText(getValue(), Config.get().getUnitFormat()));
         tooltip = new Tooltip();
         contextMenu = new FiatContextMenu();
     }
@@ -83,14 +80,22 @@ public class FiatLabel extends CopyableLabel {
         setCurrency(currency);
     }
 
-    private void setValueAsText(long balance) {
+    public void refresh() {
+        refresh(Config.get().getUnitFormat());
+    }
+
+    public void refresh(UnitFormat unitFormat) {
+        setValueAsText(getValue(), unitFormat);
+    }
+
+    private void setValueAsText(long balance, UnitFormat unitFormat) {
         if(getCurrency() != null && getBtcRate() > 0.0) {
             BigDecimal satsBalance = BigDecimal.valueOf(balance);
             BigDecimal btcBalance = satsBalance.divide(BigDecimal.valueOf(Transaction.SATOSHIS_PER_BITCOIN));
             BigDecimal fiatBalance = btcBalance.multiply(BigDecimal.valueOf(getBtcRate()));
 
-            String label = getCurrency().getSymbol() + " " + CURRENCY_FORMAT.format(fiatBalance.doubleValue());
-            tooltip.setText("1 BTC = " + getCurrency().getSymbol() + " " + CURRENCY_FORMAT.format(getBtcRate()));
+            String label = getCurrency().getSymbol() + " " + unitFormat.formatCurrencyValue(fiatBalance.doubleValue());
+            tooltip.setText("1 BTC = " + getCurrency().getSymbol() + " " + unitFormat.formatCurrencyValue(getBtcRate()));
 
             setText(label);
             setTooltip(tooltip);

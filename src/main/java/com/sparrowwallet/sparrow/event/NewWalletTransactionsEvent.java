@@ -1,10 +1,9 @@
 package com.sparrowwallet.sparrow.event;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.control.CoinLabel;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
@@ -13,7 +12,6 @@ import com.sparrowwallet.sparrow.wallet.TransactionHashIndexEntry;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class NewWalletTransactionsEvent {
@@ -50,16 +48,21 @@ public class NewWalletTransactionsEvent {
     }
 
     public String getValueAsText(long value) {
+        UnitFormat format = Config.get().getUnitFormat();
+        if(format == null) {
+            format = UnitFormat.DOT;
+        }
+
         BitcoinUnit unit = Config.get().getBitcoinUnit();
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
             unit = (value >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
         }
 
         if(unit == BitcoinUnit.BTC) {
-            return CoinLabel.getBTCFormat().format((double) value / Transaction.SATOSHIS_PER_BITCOIN) + " BTC";
+            return format.formatBtcValue(value) + " BTC";
         }
 
-        return String.format(Locale.ENGLISH, "%,d", value) + " sats";
+        return format.formatSatsValue(value) + " sats";
     }
 
     public List<BlockTransaction> getUnspentConfirmingWhirlpoolMixTransactions() {
