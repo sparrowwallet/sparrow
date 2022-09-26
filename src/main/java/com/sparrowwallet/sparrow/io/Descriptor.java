@@ -66,6 +66,12 @@ public class Descriptor implements WalletImport, WalletExport {
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         try {
+            try {
+                return PdfUtils.getOutputDescriptor(inputStream).toWallet();
+            } catch(Exception e) {
+                //ignore
+            }
+
             String outputDescriptor = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(outputDescriptor.trim());
             return descriptor.toWallet();

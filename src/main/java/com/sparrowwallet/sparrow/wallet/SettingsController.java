@@ -402,7 +402,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 (walletForm.getWallet().getPolicyType() == PolicyType.MULTI ? "\nKey expressions are shown in canonical order." : ""));
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
-            setDescriptorText(text.get());
+            setDescriptorText(text.get().replace("\n", ""));
         }
     }
 

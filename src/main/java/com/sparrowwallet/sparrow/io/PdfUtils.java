@@ -9,7 +9,11 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.Image;
+import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfWriter;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
+import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.UREncoder;
 import com.sparrowwallet.sparrow.AppServices;
@@ -21,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
+import java.util.Scanner;
 
 public class PdfUtils {
     private static final Logger log = LoggerFactory.getLogger(PdfUtils.class);
@@ -60,6 +65,36 @@ public class PdfUtils {
                 AppServices.showErrorDialog("Error creating PDF", e.getMessage());
             }
         }
+    }
+
+    public static OutputDescriptor getOutputDescriptor(InputStream inputStream) throws IOException {
+        try {
+            PdfReader pdfReader = new PdfReader(inputStream);
+            String allText = "";
+            for(int page = 1; page <= pdfReader.getNumberOfPages(); page++) {
+                PdfTextExtractor textExtractor = new PdfTextExtractor(pdfReader);
+                allText += textExtractor.getTextFromPage(page) + "\n";
+            }
+
+            String descriptor = null;
+            Scanner scanner = new Scanner(allText);
+            while(scanner.hasNextLine()) {
+                String line = scanner.nextLine().trim();
+                if(descriptor != null) {
+                    descriptor += line;
+                } else if(ScriptType.fromDescriptor(line) != null) {
+                    descriptor = line;
+                }
+            }
+
+            if(descriptor != null) {
+                return OutputDescriptor.getOutputDescriptor(descriptor);
+            }
+        } catch(Exception e) {
+            throw new IllegalArgumentException("Not a valid PDF or output descriptor");
+        }
+
+        throw new IllegalArgumentException("Output descriptor could not be found");
     }
 
     private static javafx.scene.image.Image getQrCode(String fragment) throws IOException, WriterException {
