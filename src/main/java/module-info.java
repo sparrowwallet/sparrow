@@ -45,4 +45,5 @@ open module com.sparrowwallet.sparrow {
     requires net.sourceforge.streamsupport;
     requires co.nstant.in.cbor;
     requires com.github.librepdf.openpdf;
+    requires com.googlecode.lanterna;
 }

@@ -14,6 +14,8 @@ import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
 import com.sparrowwallet.sparrow.instance.InstanceException;
 import com.sparrowwallet.sparrow.instance.InstanceList;
+import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
+import com.sparrowwallet.sparrow.terminal.TerminalInteractionServices;
 import javafx.application.Application;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -177,6 +179,13 @@ public class MainApp extends Application {
 
         if(Network.get() != Network.MAINNET) {
             getLogger().info("Using " + Network.get() + " configuration");
+        }
+
+        if(args.terminal) {
+            MainApp mainApp = new MainApp();
+            AppServices.initialize(mainApp, new TerminalInteractionServices());
+            SparrowTerminal.startTerminal();
+            return;
         }
 
         List<String> fileUriArguments = jCommander.getUnknownOptions();

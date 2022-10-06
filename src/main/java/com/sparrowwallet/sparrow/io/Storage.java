@@ -1,12 +1,15 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.sparrowwallet.drongo.Network;
-import com.sparrowwallet.drongo.SecureString;
-import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MnemonicException;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.MainApp;
+import com.sparrowwallet.sparrow.soroban.Soroban;
+import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -134,6 +137,98 @@ public class Storage {
     public void close() {
         ClosePersistenceService closePersistenceService = new ClosePersistenceService();
         closePersistenceService.start();
+    }
+
+    public void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
+        checkWalletNetwork(wallet);
+
+        if(wallet.containsMasterPrivateKeys()) {
+            //Derive xpub and master fingerprint from seed, potentially with passphrase
+            Wallet copy = wallet.copy();
+            for(int i = 0; i < copy.getKeystores().size(); i++) {
+                Keystore copyKeystore = copy.getKeystores().get(i);
+                if(copyKeystore.hasSeed() && copyKeystore.getSeed().getPassphrase() == null) {
+                    if(copyKeystore.getSeed().needsPassphrase()) {
+                        if(!wallet.isMasterWallet() && wallet.getMasterWallet().getKeystores().size() == copy.getKeystores().size() && wallet.getMasterWallet().getKeystores().get(i).hasSeed()) {
+                            copyKeystore.getSeed().setPassphrase(wallet.getMasterWallet().getKeystores().get(i).getSeed().getPassphrase());
+                        } else {
+                            Optional<String> optionalPassphrase = AppServices.getInteractionServices().requestPassphrase(wallet.getFullDisplayName(), copyKeystore);
+                            if(optionalPassphrase.isPresent()) {
+                                copyKeystore.getSeed().setPassphrase(optionalPassphrase.get());
+                            } else {
+                                return;
+                            }
+                        }
+                    } else {
+                        copyKeystore.getSeed().setPassphrase("");
+                    }
+                }
+            }
+
+            if(wallet.isEncrypted()) {
+                if(key == null) {
+                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
+                }
+
+                copy.decrypt(key);
+            }
+
+            if(wallet.isWhirlpoolMasterWallet()) {
+                String walletId = getWalletId(wallet);
+                Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
+                whirlpool.setScode(wallet.getMasterMixConfig().getScode());
+                whirlpool.setHDWallet(getWalletId(wallet), copy);
+                Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
+                soroban.setHDWallet(copy);
+            }
+
+            StandardAccount standardAccount = wallet.getStandardAccountType();
+            if(standardAccount != null && standardAccount.getMinimumGapLimit() != null && wallet.gapLimit() == null) {
+                wallet.setGapLimit(standardAccount.getMinimumGapLimit());
+            }
+
+            for(int i = 0; i < wallet.getKeystores().size(); i++) {
+                Keystore keystore = wallet.getKeystores().get(i);
+                if(keystore.hasSeed()) {
+                    Keystore copyKeystore = copy.getKeystores().get(i);
+                    Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                    keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                    keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                    keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
+                    keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
+                    copyKeystore.getSeed().clear();
+                } else if(keystore.hasMasterPrivateExtendedKey()) {
+                    Keystore copyKeystore = copy.getKeystores().get(i);
+                    Keystore derivedKeystore = Keystore.fromMasterPrivateExtendedKey(copyKeystore.getMasterPrivateExtendedKey(), copyKeystore.getKeyDerivation().getDerivation());
+                    keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
+                    keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
+                    keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
+                    copyKeystore.getMasterPrivateKey().clear();
+                }
+            }
+        }
+
+        for(Wallet childWallet : wallet.getChildWallets()) {
+            if(childWallet.isBip47()) {
+                try {
+                    Keystore masterKeystore = wallet.getKeystores().get(0);
+                    Keystore keystore = childWallet.getKeystores().get(0);
+                    keystore.setBip47ExtendedPrivateKey(masterKeystore.getBip47ExtendedPrivateKey());
+                    List<ChildNumber> derivation = keystore.getKeyDerivation().getDerivation();
+                    keystore.setKeyDerivation(new KeyDerivation(masterKeystore.getKeyDerivation().getMasterFingerprint(), derivation));
+                    DeterministicKey pubKey = keystore.getBip47ExtendedPrivateKey().getKey().dropPrivateBytes().dropParent();
+                    keystore.setExtendedPublicKey(new ExtendedKey(pubKey, keystore.getBip47ExtendedPrivateKey().getParentFingerprint(), derivation.get(derivation.size() - 1)));
+                } catch(Exception e) {
+                    log.error("Cannot prepare BIP47 keystore", e);
+                }
+            }
+        }
+    }
+
+    private void checkWalletNetwork(Wallet wallet) {
+        if(wallet.getNetwork() != null && wallet.getNetwork() != Network.get()) {
+            throw new IllegalStateException("Provided " + wallet.getNetwork() + " wallet is invalid on a " + Network.get() + " network. Use a " + wallet.getNetwork() + " configuration to load this wallet.");
+        }
     }
 
     public void backupWallet() throws IOException {

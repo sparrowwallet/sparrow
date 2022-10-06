@@ -17,6 +17,9 @@ public class Args {
     @Parameter(names = { "--level", "-l" }, description = "Set log level")
     public Level level;
 
+    @Parameter(names = { "--terminal", "-t" }, description = "Terminal mode", arity = 0)
+    public boolean terminal;
+
     @Parameter(names = { "--help", "-h" }, description = "Show usage", help = true)
     public boolean help;
 

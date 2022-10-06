@@ -66,7 +66,7 @@ public class WhirlpoolServices {
         List<Window> windows = whirlpoolMap.keySet().stream().map(walletId -> AppServices.get().getWindowForWallet(walletId)).filter(Objects::nonNull).distinct().collect(Collectors.toList());
         for(Window window : windows) {
             KeyCombination keyCombination = new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN, KeyCombination.ALT_DOWN);
-            if(!window.getScene().getAccelerators().containsKey(keyCombination)) {
+            if(window.getScene() != null && !window.getScene().getAccelerators().containsKey(keyCombination)) {
                 window.getScene().getAccelerators().put(keyCombination, () -> {
                     for(Whirlpool whirlpool : whirlpoolMap.values()) {
                         whirlpool.logDebug();

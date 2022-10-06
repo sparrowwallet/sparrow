@@ -97,6 +97,8 @@ public class AppServices {
 
     private final SorobanServices sorobanServices = new SorobanServices();
 
+    private InteractionServices interactionServices;
+
     private static PayNymService payNymService;
 
     private final MainApp application;
@@ -173,8 +175,9 @@ public class AppServices {
         openFiles(event.getFiles(), null);
     };
 
-    public AppServices(MainApp application) {
+    private AppServices(MainApp application, InteractionServices interactionServices) {
         this.application = application;
+        this.interactionServices = interactionServices;
         EventManager.get().register(this);
         EventManager.get().register(whirlpoolServices);
         EventManager.get().register(sorobanServices);
@@ -500,7 +503,11 @@ public class AppServices {
     }
 
     static void initialize(MainApp application) {
-        INSTANCE = new AppServices(application);
+        INSTANCE = new AppServices(application, new DefaultInteractionServices());
+    }
+
+    static void initialize(MainApp application, InteractionServices interactionServices) {
+        INSTANCE = new AppServices(application, interactionServices);
     }
 
     public static AppServices get() {
@@ -513,6 +520,10 @@ public class AppServices {
 
     public static SorobanServices getSorobanServices() {
         return get().sorobanServices;
+    }
+
+    public static InteractionServices getInteractionServices() {
+        return get().interactionServices;
     }
 
     public static PayNymService getPayNymService() {
@@ -746,40 +757,7 @@ public class AppServices {
     }
 
     public static Optional<ButtonType> showAlertDialog(String title, String content, Alert.AlertType alertType, Node graphic, ButtonType... buttons) {
-        Alert alert = new Alert(alertType, content, buttons);
-        setStageIcon(alert.getDialogPane().getScene().getWindow());
-        alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
-        alert.setTitle(title);
-        alert.setHeaderText(title);
-        if(graphic != null) {
-            alert.setGraphic(graphic);
-        }
-
-        Pattern linkPattern = Pattern.compile("\\[(http.+)]");
-        Matcher matcher = linkPattern.matcher(content);
-        if(matcher.find()) {
-            String link = matcher.group(1);
-            HyperlinkLabel hyperlinkLabel = new HyperlinkLabel(content);
-            hyperlinkLabel.setMaxWidth(Double.MAX_VALUE);
-            hyperlinkLabel.setMaxHeight(Double.MAX_VALUE);
-            hyperlinkLabel.getStyleClass().add("content");
-            Label label = new Label();
-            hyperlinkLabel.setPrefWidth(Math.max(360, TextUtils.computeTextWidth(label.getFont(), link, 0.0D) + 50));
-            hyperlinkLabel.setOnAction(event -> {
-                alert.close();
-                get().getApplication().getHostServices().showDocument(link);
-            });
-            alert.getDialogPane().setContent(hyperlinkLabel);
-        }
-
-        String[] lines = content.split("\r\n|\r|\n");
-        if(lines.length > 3 || org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
-            double numLines = Arrays.stream(lines).mapToDouble(line -> Math.ceil(TextUtils.computeTextWidth(Font.getDefault(), line, 0) / 300)).sum();
-            alert.getDialogPane().setPrefHeight(200 + numLines * 20);
-        }
-
-        moveToActiveWindowScreen(alert);
-        return alert.showAndWait();
+        return getInteractionServices().showAlert(title, content, alertType, graphic, buttons);
     }
 
     public static void setStageIcon(Window window) {
@@ -1165,6 +1143,10 @@ public class AppServices {
     @Subscribe
     public void requestDisconnect(RequestDisconnectEvent event) {
         onlineProperty.set(false);
+        //Ensure services don't try to reconnect
+        connectionService.cancel();
+        ratesService.cancel();
+        versionCheckService.cancel();
     }
 
     @Subscribe
