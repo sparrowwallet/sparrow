@@ -20,6 +20,7 @@ public class TerminalInteractionServices implements InteractionServices {
     private final Object passphraseShowing = new Object();
 
     @Override
+    @SuppressWarnings("unchecked")
     public Optional<ButtonType> showAlert(String title, String content, Alert.AlertType alertType, Node graphic, ButtonType... buttons) {
         if(Platform.isFxApplicationThread()) {
             SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
@@ -88,6 +89,7 @@ public class TerminalInteractionServices implements InteractionServices {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Optional<String> requestPassphrase(String walletName, Keystore keystore) {
         if(Platform.isFxApplicationThread()) {
             SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
