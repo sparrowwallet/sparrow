@@ -462,7 +462,7 @@ public class TransactionDiagram extends GridPane {
                         StringJoiner joiner = new StringJoiner("\n");
                         joiner.add("Spending " + getSatsValue(inputValue) + " sats from" + (isExpanded() ? ":" : " (click to expand):"));
                         for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
-                            joiner.add(additionalInput.getHashAsString() + ":" + additionalInput.getIndex());
+                            joiner.add(getInputDescription(additionalInput));
                         }
                         tooltip.setText(joiner.toString());
                     } else if(input instanceof InvisibleBlockTransactionHashIndex) {
