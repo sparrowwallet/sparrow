@@ -28,6 +28,7 @@ import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -101,7 +102,7 @@ public class AppServices {
 
     private static PayNymService payNymService;
 
-    private final MainApp application;
+    private final Application application;
 
     private final Map<Window, List<WalletTabData>> walletWindows = new LinkedHashMap<>();
 
@@ -175,7 +176,7 @@ public class AppServices {
         openFiles(event.getFiles(), null);
     };
 
-    private AppServices(MainApp application, InteractionServices interactionServices) {
+    private AppServices(Application application, InteractionServices interactionServices) {
         this.application = application;
         this.interactionServices = interactionServices;
         EventManager.get().register(this);
@@ -502,11 +503,11 @@ public class AppServices {
         return proxy;
     }
 
-    static void initialize(MainApp application) {
+    public static void initialize(Application application) {
         INSTANCE = new AppServices(application, new DefaultInteractionServices());
     }
 
-    static void initialize(MainApp application, InteractionServices interactionServices) {
+    public static void initialize(Application application, InteractionServices interactionServices) {
         INSTANCE = new AppServices(application, interactionServices);
     }
 
@@ -582,7 +583,7 @@ public class AppServices {
         return (node.getScene() != null && node.getScene().getWindow().getHeight() < 768);
     }
 
-    public MainApp getApplication() {
+    public Application getApplication() {
         return application;
     }
 
