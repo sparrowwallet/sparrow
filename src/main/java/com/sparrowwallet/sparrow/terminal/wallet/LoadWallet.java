@@ -52,10 +52,7 @@ public class LoadWallet implements Runnable {
                     loadWalletService.setExecutor(Storage.LoadWalletService.getSingleThreadedExecutor());
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         WalletAndKey walletAndKey = loadWalletService.getValue();
-                        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
-                            SparrowTerminal.get().getGui().removeWindow(loadingDialog);
-                            Platform.runLater(() -> openWallet(storage, walletAndKey));
-                        });
+                        openWallet(storage, walletAndKey);
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         Throwable exception = workerStateEvent.getSource().getException();
@@ -80,10 +77,7 @@ public class LoadWallet implements Runnable {
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Done"));
                         WalletAndKey walletAndKey = loadWalletService.getValue();
-                        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
-                            SparrowTerminal.get().getGui().removeWindow(loadingDialog);
-                            Platform.runLater(() -> openWallet(storage, walletAndKey));
-                        });
+                        openWallet(storage, walletAndKey);
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Failed"));
@@ -124,7 +118,10 @@ public class LoadWallet implements Runnable {
                 openWallet(entry.getValue(), entry.getKey());
             }
             if(walletAndKey.getWallet().isMasterWallet()) {
-                SparrowTerminal.get().getGuiThread().invokeLater(() -> getOpeningDialog(walletAndKey.getWallet()).showDialog(SparrowTerminal.get().getGui()));
+                SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                    SparrowTerminal.get().getGui().removeWindow(loadingDialog);
+                    getOpeningDialog(walletAndKey.getWallet()).showDialog(SparrowTerminal.get().getGui());
+                });
             }
         } catch(Exception e) {
             log.error("Wallet Error", e);
