@@ -86,7 +86,7 @@ public class SparrowWallet {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
-        if(args.terminal) {
+        if(args.terminal || java.awt.GraphicsEnvironment.isHeadless()) {
             PlatformImpl.setTaskbarApplication(false);
             com.sun.javafx.application.LauncherImpl.launchApplication(SparrowTerminal.class, SparrowWalletPreloader.class, argv);
         } else {

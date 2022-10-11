@@ -150,7 +150,9 @@ public class LoadWallet implements Runnable {
 
             Set<File> walletFiles = new LinkedHashSet<>();
             walletFiles.add(storage.getWalletFile());
-            walletFiles.addAll(Config.get().getRecentWalletFiles().stream().limit(MAX_RECENT_WALLETS - 1).collect(Collectors.toList()));
+            if(Config.get().getRecentWalletFiles() != null) {
+                walletFiles.addAll(Config.get().getRecentWalletFiles().stream().limit(MAX_RECENT_WALLETS - 1).collect(Collectors.toList()));
+            }
             Config.get().setRecentWalletFiles(Config.get().isLoadRecentWallets() ? new ArrayList<>(walletFiles) : Collections.emptyList());
         }
 
