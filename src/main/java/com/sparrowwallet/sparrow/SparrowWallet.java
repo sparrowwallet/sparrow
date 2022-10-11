@@ -7,9 +7,7 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.instance.InstanceException;
 import com.sparrowwallet.sparrow.instance.InstanceList;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
-import com.sparrowwallet.sparrow.terminal.TerminalInteractionServices;
 import com.sun.javafx.application.PlatformImpl;
-import javafx.application.Application;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -17,7 +15,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import java.io.File;
 import java.util.*;
 
-public class MainApp {
+public class SparrowWallet {
     public static final String APP_ID = "com.sparrowwallet.sparrow";
     public static final String APP_NAME = "Sparrow";
     public static final String APP_VERSION = "1.6.6";
@@ -25,7 +23,7 @@ public class MainApp {
     public static final String APP_HOME_PROPERTY = "sparrow.home";
     public static final String NETWORK_ENV_PROPERTY = "SPARROW_NETWORK";
 
-    private static SparrowInstance sparrowInstance;
+    private static Instance instance;
 
     public static void main(String[] argv) {
         Args args = new Args();
@@ -72,17 +70,11 @@ public class MainApp {
             getLogger().info("Using " + Network.get() + " configuration");
         }
 
-        if(args.terminal) {
-            PlatformImpl.setTaskbarApplication(false);
-            Application.launch(SparrowTerminal.class, argv);
-            return;
-        }
-
         List<String> fileUriArguments = jCommander.getUnknownOptions();
 
         try {
-            sparrowInstance = new SparrowInstance(fileUriArguments);
-            sparrowInstance.acquireLock(); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
+            instance = new Instance(fileUriArguments);
+            instance.acquireLock(); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
         } catch(InstanceException e) {
             getLogger().error("Could not access application lock", e);
         }
@@ -93,22 +85,28 @@ public class MainApp {
 
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
-        com.sun.javafx.application.LauncherImpl.launchApplication(Sparrow.class, MainAppPreloader.class, argv);
+
+        if(args.terminal) {
+            PlatformImpl.setTaskbarApplication(false);
+            com.sun.javafx.application.LauncherImpl.launchApplication(SparrowTerminal.class, SparrowWalletPreloader.class, argv);
+        } else {
+            com.sun.javafx.application.LauncherImpl.launchApplication(SparrowDesktop.class, SparrowWalletPreloader.class, argv);
+        }
     }
 
-    public static SparrowInstance getSparrowInstance() {
-        return sparrowInstance;
+    public static Instance getSparrowInstance() {
+        return instance;
     }
 
     private static Logger getLogger() {
-        return LoggerFactory.getLogger(MainApp.class);
+        return LoggerFactory.getLogger(SparrowWallet.class);
     }
 
-    public static class SparrowInstance extends InstanceList {
+    public static class Instance extends InstanceList {
         private final List<String> fileUriArguments;
 
-        public SparrowInstance(List<String> fileUriArguments) {
-            super(MainApp.APP_ID + "." + Network.get(), !fileUriArguments.isEmpty());
+        public Instance(List<String> fileUriArguments) {
+            super(SparrowWallet.APP_ID + "." + Network.get(), !fileUriArguments.isEmpty());
             this.fileUriArguments = fileUriArguments;
         }
 

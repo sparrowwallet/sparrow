@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.terminal;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.DefaultWindowManager;
 import com.googlecode.lanterna.gui2.EmptySpace;
+import com.googlecode.lanterna.gui2.TextGUIThread;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
@@ -10,6 +11,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.terminal.wallet.WalletData;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -17,7 +19,6 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,13 +44,30 @@ public class SparrowTerminal extends Application {
 
         sparrowTerminal = this;
 
-        getScreen().startScreen();
-        getGui().getMainWindow().waitUntilClosed();
+        try {
+            getScreen().startScreen();
+            getGui().getMainWindow().waitUntilClosed();
+        } finally {
+            exit();
+        }
     }
 
     @Override
     public void start(Stage primaryStage) throws Exception {
 
+    }
+
+    @Override
+    public void stop() throws Exception {
+        try {
+            AppServices.get().stop();
+            SparrowWallet.Instance instance = SparrowWallet.getSparrowInstance();
+            if(instance != null) {
+                instance.freeLock();
+            }
+        } catch(Exception e) {
+            log.error("Could not stop application", e);
+        }
     }
 
     public Screen getScreen() {
@@ -60,20 +78,20 @@ public class SparrowTerminal extends Application {
         return gui;
     }
 
+    public TextGUIThread getGuiThread() {
+        return gui.getGUIThread();
+    }
+
     public Map<Wallet, WalletData> getWalletData() {
         return walletData;
     }
 
-    public void stop() {
+    public void exit() {
         try {
             screen.stopScreen();
-            terminal.exitPrivateMode();
-            Platform.runLater(() -> {
-                AppServices.get().stop();
-                Platform.exit();
-            });
+            Platform.runLater(Platform::exit);
         } catch(Exception e) {
-            log.error("Could not stop terminal", e);
+            log.error("Could not stop terminal screen", e);
         }
     }
 

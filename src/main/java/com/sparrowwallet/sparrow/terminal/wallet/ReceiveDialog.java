@@ -59,7 +59,7 @@ public class ReceiveDialog extends WalletDialog {
     }
 
     public void refreshAddress() {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
             setNodeEntry(freshEntry);
         });
@@ -93,7 +93,7 @@ public class ReceiveDialog extends WalletDialog {
     }
 
     private void updateLastUsed() {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             Set<BlockTransactionHashIndex> currentOutputs = currentEntry.getNode().getTransactionOutputs();
             if(AppServices.onlineProperty().get() && currentOutputs.isEmpty()) {
                 lastUsed.setText("Never");

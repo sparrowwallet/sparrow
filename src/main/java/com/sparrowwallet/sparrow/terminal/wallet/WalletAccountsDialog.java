@@ -24,7 +24,7 @@ public class WalletAccountsDialog extends DialogWindow {
         for(Wallet wallet : masterWallet.getAllWallets()) {
             actions.addItem(wallet.getDisplayName(), () -> {
                 close();
-                SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+                SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     WalletActionsDialog walletActionsDialog = new WalletActionsDialog(wallet);
                     walletActionsDialog.showDialog(SparrowTerminal.get().getGui());
                 });

@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.terminal.preferences.GeneralDialog;
 import com.sparrowwallet.sparrow.terminal.preferences.ServerStatusDialog;
 import com.sparrowwallet.sparrow.terminal.preferences.ServerTypeDialog;
 import com.sparrowwallet.sparrow.terminal.wallet.LoadWallet;
+import javafx.application.Platform;
 
 import java.io.File;
 import java.util.Map;
@@ -46,7 +47,7 @@ public class MasterActionListBox extends ActionListBox {
                File file = openBuilder.build().showDialog(SparrowTerminal.get().getGui());
                if(file != null) {
                    LoadWallet loadWallet = new LoadWallet(new Storage(file));
-                   SparrowTerminal.get().getGui().getGUIThread().invokeLater(loadWallet);
+                   SparrowTerminal.get().getGuiThread().invokeLater(loadWallet);
                }
            });
            builder.build().showDialog(SparrowTerminal.get().getGui());
@@ -72,6 +73,6 @@ public class MasterActionListBox extends ActionListBox {
                     .showDialog(sparrowTerminal.getGui());
         });
 
-        addItem("Quit", sparrowTerminal::stop);
+        addItem("Quit", () -> sparrowTerminal.getGui().getMainWindow().close());
     }
 }

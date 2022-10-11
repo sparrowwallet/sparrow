@@ -35,7 +35,6 @@ import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
-import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import de.codecentric.centerdevice.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
@@ -402,10 +401,10 @@ public class AppController implements Initializable {
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
             preferences.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
-            Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(MainApp.APP_NAME, getAboutStage()), new SeparatorMenuItem(),
+            Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(SparrowWallet.APP_NAME, getAboutStage()), new SeparatorMenuItem(),
                     preferences, new SeparatorMenuItem(),
-                    tk.createHideMenuItem(MainApp.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
-                    tk.createQuitMenuItem(MainApp.APP_NAME));
+                    tk.createHideMenuItem(SparrowWallet.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
+                    tk.createQuitMenuItem(SparrowWallet.APP_NAME));
             tk.setApplicationMenu(defaultApplicationMenu);
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
@@ -465,7 +464,7 @@ public class AppController implements Initializable {
             }
 
             Stage stage = new Stage(StageStyle.UNDECORATED);
-            stage.setTitle("About " + MainApp.APP_NAME);
+            stage.setTitle("About " + SparrowWallet.APP_NAME);
             stage.initOwner(tabs.getScene().getWindow());
             stage.initModality(Modality.WINDOW_MODAL);
             stage.setResizable(false);
@@ -1018,7 +1017,7 @@ public class AppController implements Initializable {
         } catch(Exception e) {
             if(e instanceof IOException && e.getMessage().startsWith("The process cannot access the file because another process has locked")) {
                 log.error("Error opening wallet", e);
-                showErrorDialog("Error Opening Wallet", "The wallet file is locked. Is another instance of " + MainApp.APP_NAME + " already running?");
+                showErrorDialog("Error Opening Wallet", "The wallet file is locked. Is another instance of " + SparrowWallet.APP_NAME + " already running?");
             } else if(!attemptImportWallet(file, null)) {
                 log.error("Error opening wallet", e);
                 showErrorDialog("Error Opening Wallet", e.getMessage() == null ? "Unsupported file format" : e.getMessage());

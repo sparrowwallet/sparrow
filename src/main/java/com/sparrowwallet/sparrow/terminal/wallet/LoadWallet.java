@@ -7,7 +7,7 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.MainApp;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.TabData;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
@@ -52,7 +52,7 @@ public class LoadWallet implements Runnable {
                     loadWalletService.setExecutor(Storage.LoadWalletService.getSingleThreadedExecutor());
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         WalletAndKey walletAndKey = loadWalletService.getValue();
-                        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> openWallet(storage, walletAndKey));
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> openWallet(storage, walletAndKey));
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         Throwable exception = workerStateEvent.getSource().getException();
@@ -77,7 +77,7 @@ public class LoadWallet implements Runnable {
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Done"));
                         WalletAndKey walletAndKey = loadWalletService.getValue();
-                        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> openWallet(storage, walletAndKey));
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> openWallet(storage, walletAndKey));
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Failed"));
@@ -99,7 +99,7 @@ public class LoadWallet implements Runnable {
             }
         } catch(Exception e) {
             if(e instanceof IOException && e.getMessage().startsWith("The process cannot access the file because another process has locked")) {
-                showErrorDialog("Error Opening Wallet", "The wallet file is locked. Is another instance of " + MainApp.APP_NAME + " already running?");
+                showErrorDialog("Error Opening Wallet", "The wallet file is locked. Is another instance of " + SparrowWallet.APP_NAME + " already running?");
             } else {
                 log.error("Error opening wallet", e);
                 showErrorDialog("Error Opening Wallet", e.getMessage() == null ? "Unsupported file format" : e.getMessage());

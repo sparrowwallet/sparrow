@@ -110,7 +110,7 @@ dependencies {
 
 application {
     mainModule = 'com.sparrowwallet.sparrow'
-    mainClass = 'com.sparrowwallet.sparrow.MainApp'
+    mainClass = 'com.sparrowwallet.sparrow.SparrowWallet'
 }
 
 compileJava {

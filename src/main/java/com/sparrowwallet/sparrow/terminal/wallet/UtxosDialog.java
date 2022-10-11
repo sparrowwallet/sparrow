@@ -36,12 +36,12 @@ public class UtxosDialog extends WalletDialog {
     private Button mixTo;
 
     private final ChangeListener<Boolean> mixingOnlineListener = (observable, oldValue, newValue) -> {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> startMix.setEnabled(newValue));
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> startMix.setEnabled(newValue));
     };
 
     private final ChangeListener<Boolean> mixingStartingListener = (observable, oldValue, newValue) -> {
         try {
-            SparrowTerminal.get().getGui().getGUIThread().invokeAndWait(() -> {
+            SparrowTerminal.get().getGuiThread().invokeAndWait(() -> {
                 startMix.setEnabled(!newValue && AppServices.onlineProperty().get());
                 startMix.setLabel(newValue && AppServices.onlineProperty().get() ? "Starting Mixing..." : isMixing() ? "Stop Mixing" : "Start Mixing");
                 mixTo.setEnabled(!newValue);
@@ -53,7 +53,7 @@ public class UtxosDialog extends WalletDialog {
 
     private final ChangeListener<Boolean> mixingStoppingListener = (observable, oldValue, newValue) -> {
         try {
-            SparrowTerminal.get().getGui().getGUIThread().invokeAndWait(() -> {
+            SparrowTerminal.get().getGuiThread().invokeAndWait(() -> {
                 startMix.setEnabled(!newValue && AppServices.onlineProperty().get());
                 startMix.setLabel(newValue ? "Stopping Mixing..." : isMixing() ? "Stop Mixing" : "Start Mixing");
                 mixTo.setEnabled(!newValue);
@@ -161,7 +161,7 @@ public class UtxosDialog extends WalletDialog {
     }
 
     private void updateHistory(WalletUtxosEntry walletUtxosEntry) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             TableModel<TableCell> tableModel = getTableModel(walletUtxosEntry);
             utxos.setTableModel(tableModel);
         });
@@ -184,7 +184,7 @@ public class UtxosDialog extends WalletDialog {
     }
 
     private void updateLabels(WalletUtxosEntry walletUtxosEntry) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             balance.setText(formatBitcoinValue(walletUtxosEntry.getBalance(), true));
             mempoolBalance.setText(formatBitcoinValue(walletUtxosEntry.getMempoolBalance(), true));
 
@@ -275,7 +275,7 @@ public class UtxosDialog extends WalletDialog {
                     whirlpool.setMixToWallet(null, null);
                 }
 
-                SparrowTerminal.get().getGui().getGUIThread().invokeLater(this::updateMixToButton);
+                SparrowTerminal.get().getGuiThread().invokeLater(this::updateMixToButton);
                 if(whirlpool.isStarted()) {
                     //Will automatically restart
                     AppServices.getWhirlpoolServices().stopWhirlpool(whirlpool, false);
@@ -343,7 +343,7 @@ public class UtxosDialog extends WalletDialog {
                         UtxoEntry tableEntry = (UtxoEntry)tableModel.getRow(row).get(0).getEntry();
                         if(tableEntry.getHashIndex().equals(event.getUtxo())) {
                             final int utxoRow = row;
-                            SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+                            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                                 tableModel.setCell(2, utxoRow, new MixTableCell(utxoEntry));
                             });
                         }
@@ -369,12 +369,12 @@ public class UtxosDialog extends WalletDialog {
 
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(this::updateMixToButton);
+        SparrowTerminal.get().getGuiThread().invokeLater(this::updateMixToButton);
     }
 
     @Subscribe
     public void walletLabelChanged(WalletLabelChangedEvent event) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(this::updateMixToButton);
+        SparrowTerminal.get().getGuiThread().invokeLater(this::updateMixToButton);
     }
 
     @Subscribe
@@ -392,7 +392,7 @@ public class UtxosDialog extends WalletDialog {
     @Subscribe
     public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
         if(event.getExchangeSource() == ExchangeSource.NONE) {
-            SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                 fiatBalance.setText("");
                 fiatMempoolBalance.setText("");
             });
@@ -401,7 +401,7 @@ public class UtxosDialog extends WalletDialog {
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
             fiatBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getBalance(), event.getBtcRate())));
             fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getMempoolBalance(), event.getBtcRate())));

@@ -23,7 +23,7 @@ public class TerminalInteractionServices implements InteractionServices {
     @SuppressWarnings("unchecked")
     public Optional<ButtonType> showAlert(String title, String content, Alert.AlertType alertType, Node graphic, ButtonType... buttons) {
         if(Platform.isFxApplicationThread()) {
-            SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                 Optional<ButtonType> optButtonType = showMessageDialog(title, content, buttons);
                 Platform.runLater(() -> Platform.exitNestedEventLoop(alertShowing, optButtonType));
             });
@@ -92,7 +92,7 @@ public class TerminalInteractionServices implements InteractionServices {
     @SuppressWarnings("unchecked")
     public Optional<String> requestPassphrase(String walletName, Keystore keystore) {
         if(Platform.isFxApplicationThread()) {
-            SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                 Optional<String> optPassphrase = showPassphraseDialog(walletName, keystore);
                 Platform.runLater(() -> Platform.exitNestedEventLoop(passphraseShowing, optPassphrase));
             });

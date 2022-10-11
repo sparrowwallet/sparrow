@@ -6,7 +6,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.MainApp;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.VersionUpdatedEvent;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
@@ -91,10 +91,10 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
     private boolean isNewer(VersionCheck versionCheck) {
         try {
             Version versionCheckVersion = new Version(versionCheck.version);
-            Version currentVersion = new Version(MainApp.APP_VERSION);
+            Version currentVersion = new Version(SparrowWallet.APP_VERSION);
             return versionCheckVersion.compareTo(currentVersion) > 0;
         } catch(IllegalArgumentException e) {
-            log.error("Invalid versions to compare: " + versionCheck.version + " to " + MainApp.APP_VERSION, e);
+            log.error("Invalid versions to compare: " + versionCheck.version + " to " + SparrowWallet.APP_VERSION, e);
         }
 
         return false;

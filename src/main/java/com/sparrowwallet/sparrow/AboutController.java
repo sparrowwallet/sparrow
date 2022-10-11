@@ -12,7 +12,7 @@ public class AboutController {
     private Label title;
 
     public void initializeView() {
-        title.setText(MainApp.APP_NAME + " " + MainApp.APP_VERSION + MainApp.APP_VERSION_SUFFIX);
+        title.setText(SparrowWallet.APP_NAME + " " + SparrowWallet.APP_VERSION + SparrowWallet.APP_VERSION_SUFFIX);
     }
 
     public void setStage(Stage stage) {

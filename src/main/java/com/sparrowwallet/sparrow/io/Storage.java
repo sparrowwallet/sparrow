@@ -7,7 +7,7 @@ import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.MainApp;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.concurrent.Service;
@@ -547,8 +547,8 @@ public class Storage {
     }
 
     public static File getSparrowHome() {
-        if(System.getProperty(MainApp.APP_HOME_PROPERTY) != null) {
-            return new File(System.getProperty(MainApp.APP_HOME_PROPERTY));
+        if(System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
+            return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
         }
 
         if(Platform.getCurrent() == Platform.WINDOWS) {

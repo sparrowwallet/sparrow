@@ -20,7 +20,6 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
-import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
@@ -43,7 +42,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Dialog;
-import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
@@ -53,7 +51,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
 import org.berndpruenster.netlayer.tor.Tor;
-import org.controlsfx.control.HyperlinkLabel;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,8 +67,6 @@ import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class AppServices {
@@ -573,7 +568,7 @@ public class AppServices {
 
     private static Image getWindowIcon() {
         if(windowIcon == null) {
-            windowIcon = new Image(MainApp.class.getResourceAsStream("/image/sparrow-icon.png"));
+            windowIcon = new Image(SparrowWallet.class.getResourceAsStream("/image/sparrow-icon.png"));
         }
 
         return windowIcon;

@@ -21,16 +21,16 @@ import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Sparrow extends Application {
+public class SparrowDesktop extends Application {
     private Stage mainStage;
 
     @Override
     public void init() throws Exception {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if(e instanceof IndexOutOfBoundsException && Arrays.stream(e.getStackTrace()).anyMatch(element -> element.getClassName().equals("javafx.scene.chart.BarChart"))) {
-                LoggerFactory.getLogger(MainApp.class).debug("Exception in thread \"" + t.getName() + "\"", e);;
+                LoggerFactory.getLogger(SparrowWallet.class).debug("Exception in thread \"" + t.getName() + "\"", e);;
             } else {
-                LoggerFactory.getLogger(MainApp.class).error("Exception in thread \"" + t.getName() + "\"", e);
+                LoggerFactory.getLogger(SparrowWallet.class).error("Exception in thread \"" + t.getName() + "\"", e);
             }
         });
         super.init();
@@ -114,9 +114,9 @@ public class Sparrow extends Application {
         Config.get().setAppWidth(mainStage.getWidth());
         Config.get().setAppHeight(mainStage.getHeight());
         mainStage.close();
-        MainApp.SparrowInstance sparrowInstance = MainApp.getSparrowInstance();
-        if(sparrowInstance != null) {
-            sparrowInstance.freeLock();
+        SparrowWallet.Instance instance = SparrowWallet.getSparrowInstance();
+        if(instance != null) {
+            instance.freeLock();
         }
     }
 }

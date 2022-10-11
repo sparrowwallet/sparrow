@@ -78,7 +78,7 @@ public class AddressesDialog extends WalletDialog {
     }
 
     private void updateAddressesLater() {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(this::updateAddresses);
+        SparrowTerminal.get().getGuiThread().invokeLater(this::updateAddresses);
     }
 
     private void updateAddresses() {

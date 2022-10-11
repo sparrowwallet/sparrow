@@ -73,7 +73,7 @@ public class TransactionsDialog extends WalletDialog {
     }
 
     private void updateHistory(WalletTransactionsEntry walletTransactionsEntry) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             TableModel<TableCell> tableModel = getTableModel(walletTransactionsEntry);
             transactions.setTableModel(tableModel);
         });
@@ -89,7 +89,7 @@ public class TransactionsDialog extends WalletDialog {
     }
 
     private void updateLabels(WalletTransactionsEntry walletTransactionsEntry) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             balance.setText(formatBitcoinValue(walletTransactionsEntry.getBalance(), true));
             mempoolBalance.setText(formatBitcoinValue(walletTransactionsEntry.getMempoolBalance(), true));
 
@@ -137,7 +137,7 @@ public class TransactionsDialog extends WalletDialog {
     @Subscribe
     public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
         if(event.getExchangeSource() == ExchangeSource.NONE) {
-            SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                 fiatBalance.setText("");
                 fiatMempoolBalance.setText("");
             });
@@ -146,7 +146,7 @@ public class TransactionsDialog extends WalletDialog {
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
-        SparrowTerminal.get().getGui().getGUIThread().invokeLater(() -> {
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             WalletTransactionsEntry walletTransactionsEntry = getWalletForm().getWalletTransactionsEntry();
             fiatBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getBalance(), event.getBtcRate())));
             fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getMempoolBalance(), event.getBtcRate())));
