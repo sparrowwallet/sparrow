@@ -52,7 +52,10 @@ public class LoadWallet implements Runnable {
                     loadWalletService.setExecutor(Storage.LoadWalletService.getSingleThreadedExecutor());
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         WalletAndKey walletAndKey = loadWalletService.getValue();
-                        SparrowTerminal.get().getGuiThread().invokeLater(() -> openWallet(storage, walletAndKey));
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                            SparrowTerminal.get().getGui().removeWindow(loadingDialog);
+                            Platform.runLater(() -> openWallet(storage, walletAndKey));
+                        });
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         Throwable exception = workerStateEvent.getSource().getException();
@@ -77,7 +80,10 @@ public class LoadWallet implements Runnable {
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Done"));
                         WalletAndKey walletAndKey = loadWalletService.getValue();
-                        SparrowTerminal.get().getGuiThread().invokeLater(() -> openWallet(storage, walletAndKey));
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                            SparrowTerminal.get().getGui().removeWindow(loadingDialog);
+                            Platform.runLater(() -> openWallet(storage, walletAndKey));
+                        });
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Failed"));
@@ -108,8 +114,6 @@ public class LoadWallet implements Runnable {
     }
 
     private void openWallet(Storage storage, WalletAndKey walletAndKey) {
-        SparrowTerminal.get().getGui().removeWindow(loadingDialog);
-
         try {
             storage.restorePublicKeysFromSeed(walletAndKey.getWallet(), walletAndKey.getKey());
             if(!walletAndKey.getWallet().isValid()) {
@@ -120,7 +124,7 @@ public class LoadWallet implements Runnable {
                 openWallet(entry.getValue(), entry.getKey());
             }
             if(walletAndKey.getWallet().isMasterWallet()) {
-                getOpeningDialog(walletAndKey.getWallet()).showDialog(SparrowTerminal.get().getGui());
+                SparrowTerminal.get().getGuiThread().invokeLater(() -> getOpeningDialog(walletAndKey.getWallet()).showDialog(SparrowTerminal.get().getGui()));
             }
         } catch(Exception e) {
             log.error("Wallet Error", e);
@@ -131,31 +135,29 @@ public class LoadWallet implements Runnable {
     }
 
     private void addWallet(Storage storage, Wallet wallet) {
-        Platform.runLater(() -> {
-            if(wallet.isNested()) {
-                WalletData walletData = SparrowTerminal.get().getWalletData().get(wallet.getMasterWallet());
-                WalletForm walletForm = new WalletForm(storage, wallet);
-                EventManager.get().register(walletForm);
-                walletData.getWalletForm().getNestedWalletForms().add(walletForm);
-            } else {
-                EventManager.get().post(new WalletOpeningEvent(storage, wallet));
+        if(wallet.isNested()) {
+            WalletData walletData = SparrowTerminal.get().getWalletData().get(wallet.getMasterWallet());
+            WalletForm walletForm = new WalletForm(storage, wallet);
+            EventManager.get().register(walletForm);
+            walletData.getWalletForm().getNestedWalletForms().add(walletForm);
+        } else {
+            EventManager.get().post(new WalletOpeningEvent(storage, wallet));
 
-                WalletForm walletForm = new WalletForm(storage, wallet);
-                EventManager.get().register(walletForm);
-                SparrowTerminal.get().getWalletData().put(wallet, new WalletData(walletForm));
+            WalletForm walletForm = new WalletForm(storage, wallet);
+            EventManager.get().register(walletForm);
+            SparrowTerminal.get().getWalletData().put(wallet, new WalletData(walletForm));
 
-                List<WalletTabData> walletTabDataList = SparrowTerminal.get().getWalletData().values().stream()
-                        .map(data -> new WalletTabData(TabData.TabType.WALLET, data.getWalletForm())).collect(Collectors.toList());
-                EventManager.get().post(new OpenWalletsEvent(DEFAULT_WINDOW, walletTabDataList));
+            List<WalletTabData> walletTabDataList = SparrowTerminal.get().getWalletData().values().stream()
+                    .map(data -> new WalletTabData(TabData.TabType.WALLET, data.getWalletForm())).collect(Collectors.toList());
+            EventManager.get().post(new OpenWalletsEvent(DEFAULT_WINDOW, walletTabDataList));
 
-                Set<File> walletFiles = new LinkedHashSet<>();
-                walletFiles.add(storage.getWalletFile());
-                walletFiles.addAll(Config.get().getRecentWalletFiles().stream().limit(MAX_RECENT_WALLETS - 1).collect(Collectors.toList()));
-                Config.get().setRecentWalletFiles(Config.get().isLoadRecentWallets() ? new ArrayList<>(walletFiles) : Collections.emptyList());
-            }
+            Set<File> walletFiles = new LinkedHashSet<>();
+            walletFiles.add(storage.getWalletFile());
+            walletFiles.addAll(Config.get().getRecentWalletFiles().stream().limit(MAX_RECENT_WALLETS - 1).collect(Collectors.toList()));
+            Config.get().setRecentWalletFiles(Config.get().isLoadRecentWallets() ? new ArrayList<>(walletFiles) : Collections.emptyList());
+        }
 
-            EventManager.get().post(new WalletOpenedEvent(storage, wallet));
-        });
+        EventManager.get().post(new WalletOpenedEvent(storage, wallet));
     }
 
     public static DialogWindow getOpeningDialog(Wallet masterWallet) {
