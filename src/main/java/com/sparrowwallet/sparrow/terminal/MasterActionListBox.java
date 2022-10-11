@@ -27,17 +27,19 @@ public class MasterActionListBox extends ActionListBox {
         addItem("Wallets", () -> {
            ActionListDialogBuilder builder = new ActionListDialogBuilder();
            builder.setTitle("Wallets");
-           for(int i = 0; i < Config.get().getRecentWalletFiles().size() && i < MAX_RECENT_WALLETS; i++) {
-               File recentWalletFile = Config.get().getRecentWalletFiles().get(i);
-               Storage storage = new Storage(recentWalletFile);
+           if(Config.get().getRecentWalletFiles() != null) {
+               for(int i = 0; i < Config.get().getRecentWalletFiles().size() && i < MAX_RECENT_WALLETS; i++) {
+                   File recentWalletFile = Config.get().getRecentWalletFiles().get(i);
+                   Storage storage = new Storage(recentWalletFile);
 
-               Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream()
-                       .filter(entry -> entry.getValue().getWalletFile().equals(recentWalletFile)).map(Map.Entry::getKey)
-                       .map(wallet -> wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()).findFirst();
-               if(optWallet.isPresent()) {
-                   builder.addAction(storage.getWalletName(null) + "*", () -> LoadWallet.getOpeningDialog(optWallet.get()).showDialog(SparrowTerminal.get().getGui()));
-               } else {
-                   builder.addAction(storage.getWalletName(null), new LoadWallet(storage));
+                   Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream()
+                           .filter(entry -> entry.getValue().getWalletFile().equals(recentWalletFile)).map(Map.Entry::getKey)
+                           .map(wallet -> wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()).findFirst();
+                   if(optWallet.isPresent()) {
+                       builder.addAction(storage.getWalletName(null) + "*", () -> LoadWallet.getOpeningDialog(optWallet.get()).showDialog(SparrowTerminal.get().getGui()));
+                   } else {
+                       builder.addAction(storage.getWalletName(null), new LoadWallet(storage));
+                   }
                }
            }
            builder.addAction("Open Wallet...", () -> {
