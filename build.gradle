@@ -1,3 +1,5 @@
+import java.awt.GraphicsEnvironment
+
 plugins {
     id 'application'
     id 'org-openjfx-javafxplugin'
@@ -17,6 +19,7 @@ if(System.getProperty("os.arch") == "aarch64") {
     osArch = "aarch64"
     targetName = "-" + osArch
 }
+def headless = GraphicsEnvironment.isHeadless()
 
 group "com.sparrowwallet"
 version "${sparrowVersion}"
@@ -159,6 +162,9 @@ run {
         applicationDefaultJvmArgs += ["-Dprism.lcdtext=false", "-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow-large.png",
                                       "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
     }
+    if(headless) {
+        applicationDefaultJvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
+    }
 }
 
 jlink {
@@ -210,6 +216,9 @@ jlink {
 
         if(os.macOsX) {
             jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
+        }
+        if(headless) {
+            jvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
         }
     }
     addExtraDependencies("javafx")
