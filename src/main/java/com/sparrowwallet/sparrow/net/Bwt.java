@@ -51,6 +51,8 @@ public class Bwt {
                     NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
                 } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
                     NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");
+                } else if(osArch.equals("aarch64")) {
+                    NativeUtils.loadLibraryFromJar("/native/linux/aarch64/libbwt_jni.so");
                 } else {
                     NativeUtils.loadLibraryFromJar("/native/linux/x64/libbwt_jni.so");
                 }
