@@ -300,6 +300,7 @@ public class Hwi {
         if(hwiExecutable == null || !hwiExecutable.exists()) {
             try {
                 Platform platform = Platform.getCurrent();
+                String osArch = System.getProperty("os.arch");
                 Set<PosixFilePermission> ownerExecutableWritable = PosixFilePermissions.fromString("rwxr--r--");
 
                 //A PyInstaller --onefile expands into a new directory on every run triggering OSX Gatekeeper checks.
@@ -307,7 +308,6 @@ public class Hwi {
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
                 if(platform == Platform.OSX) {
-                    String osArch = System.getProperty("os.arch");
                     InputStream inputStream;
                     if(osArch.equals("aarch64")) {
                         inputStream = Hwi.class.getResourceAsStream("/native/osx/aarch64/" + HWI_VERSION_DIR + "-mac-aarch64-signed.zip");
@@ -359,6 +359,9 @@ public class Hwi {
                         Files.createDirectories(getHwiHomeDir().toPath());
                         inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
                         tempExecPath = Files.createTempFile(getHwiHomeDir().toPath(), HWI_VERSION_DIR, null);
+                    } else if(osArch.equals("aarch64")) {
+                        inputStream = Hwi.class.getResourceAsStream("/native/linux/aarch64/hwi");
+                        tempExecPath = Files.createTempFile(HWI_VERSION_DIR, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
                     } else {
                         inputStream = Hwi.class.getResourceAsStream("/native/linux/x64/hwi");
                         tempExecPath = Files.createTempFile(HWI_VERSION_DIR, null, PosixFilePermissions.asFileAttribute(ownerExecutableWritable));
