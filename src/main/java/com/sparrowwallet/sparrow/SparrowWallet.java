@@ -88,6 +88,7 @@ public class SparrowWallet {
 
         if(args.terminal || java.awt.GraphicsEnvironment.isHeadless()) {
             PlatformImpl.setTaskbarApplication(false);
+            Drongo.removeRootLogAppender("STDOUT");
             com.sun.javafx.application.LauncherImpl.launchApplication(SparrowTerminal.class, SparrowWalletPreloader.class, argv);
         } else {
             com.sun.javafx.application.LauncherImpl.launchApplication(SparrowDesktop.class, SparrowWalletPreloader.class, argv);
