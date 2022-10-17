@@ -87,6 +87,7 @@ public class SparrowWallet {
         SLF4JBridgeHandler.install();
 
         if(args.terminal || java.awt.GraphicsEnvironment.isHeadless()) {
+            Interface.set(Interface.TERMINAL);
             PlatformImpl.setTaskbarApplication(false);
             Drongo.removeRootLogAppender("STDOUT");
             com.sun.javafx.application.LauncherImpl.launchApplication(SparrowTerminal.class, SparrowWalletPreloader.class, argv);

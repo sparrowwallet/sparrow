@@ -210,7 +210,7 @@ public class AppServices {
             restartService(ratesService);
         }
 
-        if(config.isCheckNewVersions() && Network.get() == Network.MAINNET) {
+        if(config.isCheckNewVersions() && Network.get() == Network.MAINNET && Interface.get() == Interface.DESKTOP) {
             restartService(versionCheckService);
         }
 
@@ -1104,7 +1104,7 @@ public class AppServices {
             Wallet wallet = walletTabData.getWallet();
             Storage storage = walletTabData.getStorage();
 
-            if(!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB)) {
+            if(Interface.get() == Interface.DESKTOP && (!storage.getWalletFile().exists() || wallet.containsSource(KeystoreSource.HW_USB))) {
                 usbWallet = true;
 
                 if(deviceEnumerateService == null) {
