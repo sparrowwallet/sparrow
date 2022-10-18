@@ -31,10 +31,14 @@ public class SparrowTerminal extends Application {
     private Screen screen;
     private SparrowTextGui gui;
 
-    private final Map<Wallet, WalletData> walletData = new HashMap<>();
+    private final Map<String, WalletData> walletData = new HashMap<>();
 
     @Override
     public void init() throws Exception {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            log.error("Exception in thread \"" + t.getName() + "\"", e);
+        });
+
         AppServices.initialize(this, new TerminalInteractionServices());
 
         this.terminal = new DefaultTerminalFactory().createTerminal();
@@ -59,15 +63,7 @@ public class SparrowTerminal extends Application {
 
     @Override
     public void stop() throws Exception {
-        try {
-            AppServices.get().stop();
-            SparrowWallet.Instance instance = SparrowWallet.getSparrowInstance();
-            if(instance != null) {
-                instance.freeLock();
-            }
-        } catch(Exception e) {
-            log.error("Could not stop application", e);
-        }
+
     }
 
     public Screen getScreen() {
@@ -82,14 +78,21 @@ public class SparrowTerminal extends Application {
         return gui.getGUIThread();
     }
 
-    public Map<Wallet, WalletData> getWalletData() {
+    public Map<String, WalletData> getWalletData() {
         return walletData;
     }
 
     public void exit() {
         try {
             screen.stopScreen();
-            Platform.runLater(Platform::exit);
+            Platform.runLater(() -> {
+                AppServices.get().stop();
+                Platform.exit();
+            });
+            SparrowWallet.Instance instance = SparrowWallet.getSparrowInstance();
+            if(instance != null) {
+                instance.freeLock();
+            }
         } catch(Exception e) {
             log.error("Could not stop terminal screen", e);
         }

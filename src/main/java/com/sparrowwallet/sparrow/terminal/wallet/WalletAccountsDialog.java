@@ -4,20 +4,23 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
+import com.sparrowwallet.sparrow.wallet.WalletForm;
 
 import java.util.List;
 
 public class WalletAccountsDialog extends DialogWindow {
-    private final Wallet masterWallet;
     private final ActionListBox actions;
 
-    public WalletAccountsDialog(Wallet masterWallet) {
-        super(masterWallet.getFullDisplayName());
+    public WalletAccountsDialog(String masterWalletId) {
+        super(SparrowTerminal.get().getWalletData().get(masterWalletId).getWalletForm().getWallet().getName());
 
         setHints(List.of(Hint.CENTERED));
 
-        this.masterWallet = masterWallet;
+        WalletForm masterWalletForm = SparrowTerminal.get().getWalletData().get(masterWalletId).getWalletForm();
+        Storage storage = masterWalletForm.getStorage();
+        Wallet masterWallet = masterWalletForm.getWallet();
 
         actions = new ActionListBox();
 
@@ -25,7 +28,7 @@ public class WalletAccountsDialog extends DialogWindow {
             actions.addItem(wallet.getDisplayName(), () -> {
                 close();
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
-                    WalletActionsDialog walletActionsDialog = new WalletActionsDialog(wallet);
+                    WalletActionsDialog walletActionsDialog = new WalletActionsDialog(storage.getWalletId(wallet));
                     walletActionsDialog.showDialog(SparrowTerminal.get().getGui());
                 });
             });

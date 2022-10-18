@@ -10,15 +10,15 @@ import com.sparrowwallet.sparrow.wallet.Function;
 import java.util.List;
 
 public class WalletActionsDialog extends DialogWindow {
-    private final Wallet wallet;
+    private final String walletId;
     private final ActionListBox actions;
 
-    public WalletActionsDialog(Wallet wallet) {
-        super(wallet.getFullDisplayName());
+    public WalletActionsDialog(String walletId) {
+        super(SparrowTerminal.get().getWalletData().get(walletId).getWalletForm().getWallet().getFullDisplayName());
 
         setHints(List.of(Hint.CENTERED));
 
-        this.wallet = wallet;
+        this.walletId = walletId;
 
         actions = new ActionListBox();
         actions.addItem("Transactions", () -> {
@@ -43,6 +43,11 @@ public class WalletActionsDialog extends DialogWindow {
             UtxosDialog utxosDialog = getWalletData().getUtxosDialog();
             utxosDialog.showDialog(SparrowTerminal.get().getGui());
         });
+        actions.addItem("Settings", () -> {
+            close();
+            SettingsDialog settingsDialog = getWalletData().getSettingsDialog();
+            settingsDialog.showDialog(SparrowTerminal.get().getGui());
+        });
 
         Panel mainPanel = new Panel();
         mainPanel.setLayoutManager(new GridLayout(1).setLeftMarginSize(1).setRightMarginSize(1));
@@ -51,7 +56,7 @@ public class WalletActionsDialog extends DialogWindow {
 
         Panel buttonPanel = new Panel();
         buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
-        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+        Wallet masterWallet = getWallet().isMasterWallet() ? getWallet() : getWallet().getMasterWallet();
         if(masterWallet.getChildWallets().stream().anyMatch(childWallet -> !childWallet.isNested())) {
             buttonPanel.addComponent(new Button("Accounts", this::onAccounts).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
         }
@@ -80,17 +85,21 @@ public class WalletActionsDialog extends DialogWindow {
 
     private void onAccounts() {
         close();
-        WalletAccountsDialog walletAccountsDialog = new WalletAccountsDialog(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet());
-        walletAccountsDialog.setWalletAccount(wallet);
+        WalletAccountsDialog walletAccountsDialog = new WalletAccountsDialog(getWalletData().getWalletForm().getMasterWalletId());
+        walletAccountsDialog.setWalletAccount(getWallet());
         walletAccountsDialog.showDialog(SparrowTerminal.get().getGui());
     }
 
     private WalletData getWalletData() {
-        WalletData walletData = SparrowTerminal.get().getWalletData().get(wallet);
+        WalletData walletData = SparrowTerminal.get().getWalletData().get(walletId);
         if(walletData == null) {
-            throw new IllegalStateException("Wallet data is null for " + wallet.getFullDisplayName());
+            throw new IllegalStateException("Wallet data is null for " + walletId);
         }
 
         return walletData;
+    }
+
+    private Wallet getWallet() {
+        return getWalletData().getWalletForm().getWallet();
     }
 }

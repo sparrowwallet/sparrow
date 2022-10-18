@@ -40,7 +40,10 @@ public class ServerTestDialog extends DialogWindow {
         this.testStatus = new Label("");
         mainPanel.addComponent(testStatus);
 
-        this.testResults = new TextBox(new TerminalSize(60, 10));
+        TerminalSize screenSize = SparrowTerminal.get().getScreen().getTerminalSize();
+        int resultsWidth = Math.min(Math.max(20, screenSize.getColumns() - 20), 100);
+
+        this.testResults = new TextBox(new TerminalSize(resultsWidth, 10));
         testResults.setReadOnly(true);
         mainPanel.addComponent(testResults);
 

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.terminal.wallet;
 
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.wallet.SettingsWalletForm;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 
 public class WalletData {
@@ -9,6 +10,7 @@ public class WalletData {
     private ReceiveDialog receiveDialog;
     private AddressesDialog addressesDialog;
     private UtxosDialog utxosDialog;
+    private SettingsDialog settingsDialog;
 
     public WalletData(WalletForm walletForm) {
         this.walletForm = walletForm;
@@ -52,5 +54,15 @@ public class WalletData {
         }
 
         return utxosDialog;
+    }
+
+    public SettingsDialog getSettingsDialog() {
+        if(settingsDialog == null) {
+            SettingsWalletForm settingsWalletForm = new SettingsWalletForm(walletForm.getStorage(), walletForm.getWallet());
+            settingsDialog = new SettingsDialog(settingsWalletForm);
+            EventManager.get().register(settingsDialog);
+        }
+
+        return settingsDialog;
     }
 }

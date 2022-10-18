@@ -36,7 +36,7 @@ public class MasterActionListBox extends ActionListBox {
                            .filter(entry -> entry.getValue().getWalletFile().equals(recentWalletFile)).map(Map.Entry::getKey)
                            .map(wallet -> wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()).findFirst();
                    if(optWallet.isPresent()) {
-                       builder.addAction(storage.getWalletName(null) + "*", () -> LoadWallet.getOpeningDialog(optWallet.get()).showDialog(SparrowTerminal.get().getGui()));
+                       builder.addAction(storage.getWalletName(null) + "*", () -> LoadWallet.getOpeningDialog(storage, optWallet.get()).showDialog(SparrowTerminal.get().getGui()));
                    } else {
                        builder.addAction(storage.getWalletName(null), new LoadWallet(storage));
                    }

@@ -32,7 +32,7 @@ public class WalletDialog extends DialogWindow {
 
     protected void onBack(Function function) {
         close();
-        WalletActionsDialog walletActionsDialog = new WalletActionsDialog(getWalletForm().getWallet());
+        WalletActionsDialog walletActionsDialog = new WalletActionsDialog(getWalletForm().getWalletId());
         walletActionsDialog.setFunction(function);
         walletActionsDialog.showDialog(SparrowTerminal.get().getGui());
     }

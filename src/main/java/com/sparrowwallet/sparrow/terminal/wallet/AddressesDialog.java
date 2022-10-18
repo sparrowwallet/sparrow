@@ -60,7 +60,7 @@ public class AddressesDialog extends WalletDialog {
         table.setSelectAction(() -> {
             NodeEntry nodeEntry = (NodeEntry)getWalletForm().getNodeEntry(keyPurpose).getChildren().get(table.getSelectedRow());
             close();
-            WalletData walletData = SparrowTerminal.get().getWalletData().get(getWalletForm().getWallet());
+            WalletData walletData = SparrowTerminal.get().getWalletData().get(getWalletForm().getWalletId());
             ReceiveDialog receiveDialog = walletData.getReceiveDialog();
             receiveDialog.setNodeEntry(nodeEntry);
             receiveDialog.showDialog(SparrowTerminal.get().getGui());

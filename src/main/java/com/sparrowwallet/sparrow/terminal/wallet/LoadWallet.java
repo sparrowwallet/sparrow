@@ -120,7 +120,7 @@ public class LoadWallet implements Runnable {
             if(walletAndKey.getWallet().isMasterWallet()) {
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     SparrowTerminal.get().getGui().removeWindow(loadingDialog);
-                    getOpeningDialog(walletAndKey.getWallet()).showDialog(SparrowTerminal.get().getGui());
+                    getOpeningDialog(storage, walletAndKey.getWallet()).showDialog(SparrowTerminal.get().getGui());
                 });
             }
         } catch(Exception e) {
@@ -133,7 +133,7 @@ public class LoadWallet implements Runnable {
 
     private void addWallet(Storage storage, Wallet wallet) {
         if(wallet.isNested()) {
-            WalletData walletData = SparrowTerminal.get().getWalletData().get(wallet.getMasterWallet());
+            WalletData walletData = SparrowTerminal.get().getWalletData().get(storage.getWalletId(wallet.getMasterWallet()));
             WalletForm walletForm = new WalletForm(storage, wallet);
             EventManager.get().register(walletForm);
             walletData.getWalletForm().getNestedWalletForms().add(walletForm);
@@ -142,7 +142,7 @@ public class LoadWallet implements Runnable {
 
             WalletForm walletForm = new WalletForm(storage, wallet);
             EventManager.get().register(walletForm);
-            SparrowTerminal.get().getWalletData().put(wallet, new WalletData(walletForm));
+            SparrowTerminal.get().getWalletData().put(walletForm.getWalletId(), new WalletData(walletForm));
 
             List<WalletTabData> walletTabDataList = SparrowTerminal.get().getWalletData().values().stream()
                     .map(data -> new WalletTabData(TabData.TabType.WALLET, data.getWalletForm())).collect(Collectors.toList());
@@ -159,11 +159,11 @@ public class LoadWallet implements Runnable {
         EventManager.get().post(new WalletOpenedEvent(storage, wallet));
     }
 
-    public static DialogWindow getOpeningDialog(Wallet masterWallet) {
+    public static DialogWindow getOpeningDialog(Storage storage, Wallet masterWallet) {
         if(masterWallet.getChildWallets().stream().anyMatch(childWallet -> !childWallet.isNested())) {
-            return new WalletAccountsDialog(masterWallet);
+            return new WalletAccountsDialog(storage.getWalletId(masterWallet));
         } else {
-            return new WalletActionsDialog(masterWallet);
+            return new WalletActionsDialog(storage.getWalletId(masterWallet));
         }
     }
 
