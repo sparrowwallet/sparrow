@@ -5,6 +5,7 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.screen.Screen;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -128,6 +129,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
         } else if(event.getTimeMills() < 0) {
             getGUIThread().invokeLater(() -> {
                 statusLabel.setText(event.getStatus());
+                statusProgress.setValue(0);
             });
         } else {
             getGUIThread().invokeLater(() -> {
@@ -138,6 +140,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
                     new KeyFrame(Duration.millis(event.getTimeMills()), e -> {
                         getGUIThread().invokeLater(() -> {
                             statusLabel.setText("");
+                            statusProgress.setValue(0);
                         });
                     }, new KeyValue(progressProperty, 1))
             );
@@ -162,5 +165,14 @@ public class SparrowTextGui extends MultiWindowTextGUI {
     public void walletHistoryFailed(WalletHistoryFailedEvent event) {
         walletHistoryFinished(new WalletHistoryFinishedEvent(event.getWallet()));
         statusUpdated(new StatusEvent("Error retrieving wallet history" + (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? ", trying another server..." : "")));
+    }
+
+    @Subscribe
+    public void childWalletsAdded(ChildWalletsAddedEvent event) {
+        if(!event.getChildWallets().isEmpty()) {
+            for(Wallet childWallet : event.getChildWallets()) {
+                SparrowTerminal.addWallet(event.getStorage(), childWallet);
+            }
+        }
     }
 }

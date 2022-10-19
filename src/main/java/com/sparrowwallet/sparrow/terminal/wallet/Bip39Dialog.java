@@ -191,7 +191,7 @@ public class Bip39Dialog extends NewWalletDialog {
     }
 
     private static final class WordNumberDialog extends DialogWindow {
-        ComboBox<Integer> wordCount;
+        private final ComboBox<Integer> wordCount;
         private Integer numberOfWords;
 
         public WordNumberDialog() {

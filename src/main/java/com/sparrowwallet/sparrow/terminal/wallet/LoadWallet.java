@@ -63,6 +63,7 @@ public class LoadWallet implements Runnable {
 
                 String password = builder.build().showDialog(SparrowTerminal.get().getGui());
                 if(password == null) {
+                    SparrowTerminal.get().getGui().removeWindow(loadingDialog);
                     return;
                 }
 

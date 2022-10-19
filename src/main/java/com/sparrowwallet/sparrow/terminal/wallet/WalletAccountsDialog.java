@@ -8,6 +8,8 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class WalletAccountsDialog extends DialogWindow {
@@ -24,7 +26,9 @@ public class WalletAccountsDialog extends DialogWindow {
 
         actions = new ActionListBox();
 
-        for(Wallet wallet : masterWallet.getAllWallets()) {
+        List<Wallet> allWallets = new ArrayList<>(masterWallet.getAllWallets());
+        Collections.sort(allWallets);
+        for(Wallet wallet : allWallets) {
             actions.addItem(wallet.getDisplayName(), () -> {
                 close();
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {

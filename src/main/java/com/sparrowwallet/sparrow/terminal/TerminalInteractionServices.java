@@ -36,7 +36,7 @@ public class TerminalInteractionServices implements InteractionServices {
     private Optional<ButtonType> showMessageDialog(String title, String content, ButtonType[] buttons) {
         String formattedContent = formatLines(content, 50);
 
-        MessageDialogBuilder builder = new MessageDialogBuilder().setTitle(title).setText(formattedContent);
+        MessageDialogBuilder builder = new MessageDialogBuilder().setTitle(title).setText("\n" + formattedContent);
         for(ButtonType buttonType : buttons) {
             builder.addButton(getButton(buttonType));
         }
