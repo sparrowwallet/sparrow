@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -69,18 +70,27 @@ public class SettingsDialog extends WalletDialog {
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
 
-        Panel buttonPanel = new Panel();
-        buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
-        buttonPanel.addComponent(new Button("Back", () -> onBack(Function.SETTINGS)));
-        buttonPanel.addComponent(new Button("Advanced", this::showAdvanced).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
-
         if(getWalletForm().getMasterWallet().getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
-            mainPanel.addComponent(new Button("Add Account", this::showAddAccount));
+            Panel leftButtonPanel = new Panel();
+            leftButtonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
+            leftButtonPanel.addComponent(new Button("Add Account", this::showAddAccount));
+            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE) {
+                leftButtonPanel.addComponent(new Button("Show Seed", this::showSeed));
+            } else {
+                leftButtonPanel.addComponent(new EmptySpace(TerminalSize.ZERO));
+            }
+
+            leftButtonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.BEGINNING, GridLayout.Alignment.CENTER,false,false)).addTo(mainPanel);
         } else {
             mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
         }
 
-        buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER,false,false)).addTo(mainPanel);
+        Panel rightButtonPanel = new Panel();
+        rightButtonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
+        rightButtonPanel.addComponent(new Button("Back", () -> onBack(Function.SETTINGS)));
+        rightButtonPanel.addComponent(new Button("Advanced", this::showAdvanced).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+
+        rightButtonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER,false,false)).addTo(mainPanel);
         setComponent(mainPanel);
     }
 
@@ -102,6 +112,53 @@ public class SettingsDialog extends WalletDialog {
 
         if(standardAccount != null) {
             addAccount(masterWallet, standardAccount);
+        }
+    }
+
+    private void showSeed() {
+        Wallet wallet = getWalletForm().getWallet().copy();
+        if(wallet.isEncrypted()) {
+            Wallet copy = wallet.copy();
+            String walletId = getWalletForm().getWalletId();
+
+            TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Password");
+            builder.setDescription("Enter the wallet password:");
+            builder.setPasswordInput(true);
+
+            String password = builder.build().showDialog(SparrowTerminal.get().getGui());
+            if(password != null) {
+                Platform.runLater(() -> {
+                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(getWalletForm().getStorage(), new SecureString(password), true);
+                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+                        ECKey encryptionFullKey = keyDerivationService.getValue();
+                        Key key = null;
+
+                        try {
+                            key = new Key(encryptionFullKey.getPrivKeyBytes(), getWalletForm().getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                            copy.decrypt(key);
+                            showSuccessDialog("Wallet Seed", copy.getKeystores().get(0).getSeed().getMnemonicString().asString());
+                        } finally {
+                            encryptionFullKey.clear();
+                            if(key != null) {
+                                key.clear();
+                            }
+                        }
+                    });
+                    keyDerivationService.setOnFailed(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                            showErrorDialog("Invalid Password", "The wallet password was invalid.");
+                        } else {
+                            log.error("Error deriving wallet key", keyDerivationService.getException());
+                        }
+                    });
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
+                    keyDerivationService.start();
+                });
+            }
+        } else {
+            showSuccessDialog("Wallet Seed", wallet.getKeystores().get(0).getSeed().getMnemonicString().asString());
         }
     }
 
