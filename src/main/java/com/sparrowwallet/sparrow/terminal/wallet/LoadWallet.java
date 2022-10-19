@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.io.WalletAndKey;
+import com.sparrowwallet.sparrow.terminal.ModalDialog;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
@@ -26,11 +27,11 @@ import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 public class LoadWallet implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(LoadWallet.class);
     private final Storage storage;
-    private final LoadingDialog loadingDialog;
+    private final ModalDialog loadingDialog;
 
     public LoadWallet(Storage storage) {
         this.storage = storage;
-        this.loadingDialog = new LoadingDialog(storage);
+        this.loadingDialog = new ModalDialog(storage.getWalletName(null), "Loading...");
     }
 
     @Override
@@ -47,6 +48,7 @@ public class LoadWallet implements Runnable {
                         openWallet(storage, walletAndKey);
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(loadingDialog));
                         Throwable exception = workerStateEvent.getSource().getException();
                         if(exception instanceof StorageException) {
                             showErrorDialog("Error Opening Wallet", exception.getMessage());
@@ -73,6 +75,7 @@ public class LoadWallet implements Runnable {
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Failed"));
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(loadingDialog));
                         Throwable exception = loadWalletService.getException();
                         if(exception instanceof InvalidPasswordException) {
                             Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
@@ -128,26 +131,6 @@ public class LoadWallet implements Runnable {
             return new WalletAccountsDialog(storage.getWalletId(masterWallet));
         } else {
             return new WalletActionsDialog(storage.getWalletId(masterWallet));
-        }
-    }
-
-    private static final class LoadingDialog extends DialogWindow {
-        public LoadingDialog(Storage storage) {
-            super(storage.getWalletName(null));
-
-            setHints(List.of(Hint.CENTERED));
-            setFixedSize(new TerminalSize(30, 5));
-
-            Panel mainPanel = new Panel();
-            mainPanel.setLayoutManager(new LinearLayout());
-            mainPanel.addComponent(new EmptySpace(), LinearLayout.createLayoutData(LinearLayout.Alignment.Beginning, LinearLayout.GrowPolicy.CanGrow));
-
-            Label label = new Label("Loading...");
-            mainPanel.addComponent(label, LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
-
-            mainPanel.addComponent(new EmptySpace(), LinearLayout.createLayoutData(LinearLayout.Alignment.Beginning, LinearLayout.GrowPolicy.CanGrow));
-
-            setComponent(mainPanel);
         }
     }
 }

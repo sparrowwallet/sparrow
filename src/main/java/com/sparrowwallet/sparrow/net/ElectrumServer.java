@@ -1634,6 +1634,10 @@ public class ElectrumServer {
         }
 
         private List<StandardAccount> getStandardAccounts(Wallet wallet) {
+            if(!wallet.getKeystores().stream().allMatch(Keystore::hasMasterPrivateKey)) {
+                return Collections.emptyList();
+            }
+
             List<StandardAccount> accounts = new ArrayList<>();
             for(StandardAccount account : StandardAccount.values()) {
                 if(account != StandardAccount.ACCOUNT_0 && (!StandardAccount.WHIRLPOOL_ACCOUNTS.contains(account) || wallet.getScriptType() == ScriptType.P2WPKH)) {

@@ -14,6 +14,8 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.util.Duration;
 
+import java.util.Objects;
+
 public class SparrowTextGui extends MultiWindowTextGUI {
     private final BasicWindow mainWindow;
 
@@ -45,7 +47,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
         this.statusLabel = new Label("").addTo(statusBar);
         this.statusProgress = new ProgressBar(0, 100, 10);
         statusBar.addComponent(statusProgress, GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, true, false));
-        statusProgress.setVisible(false);
+        statusProgress.setRenderer(new BackgroundProgressBarRenderer());
         statusProgress.setLabelFormat(null);
         progressProperty.addListener((observable, oldValue, newValue) -> statusProgress.setValue((int) (newValue.doubleValue() * 100)));
 
@@ -55,8 +57,10 @@ public class SparrowTextGui extends MultiWindowTextGUI {
         getMainWindow().addWindowListener(new WindowListenerAdapter() {
             @Override
             public void onResized(Window window, TerminalSize oldSize, TerminalSize newSize) {
-                titleBar.invalidate();
-                statusBar.invalidate();
+                if(!Objects.equals(oldSize, newSize)) {
+                    titleBar.invalidate();
+                    statusBar.invalidate();
+                }
             }
         });
 
@@ -119,25 +123,21 @@ public class SparrowTextGui extends MultiWindowTextGUI {
         if(event.getTimeMills() == 0) {
             getGUIThread().invokeLater(() -> {
                 statusLabel.setText("");
-                statusProgress.setVisible(false);
                 statusProgress.setValue(0);
             });
         } else if(event.getTimeMills() < 0) {
             getGUIThread().invokeLater(() -> {
                 statusLabel.setText(event.getStatus());
-                statusProgress.setVisible(false);
             });
         } else {
             getGUIThread().invokeLater(() -> {
                 statusLabel.setText(event.getStatus());
-                statusProgress.setVisible(true);
             });
             statusTimeline = new Timeline(
                     new KeyFrame(Duration.ZERO, new KeyValue(progressProperty, 0)),
                     new KeyFrame(Duration.millis(event.getTimeMills()), e -> {
                         getGUIThread().invokeLater(() -> {
                             statusLabel.setText("");
-                            statusProgress.setVisible(false);
                         });
                     }, new KeyValue(progressProperty, 1))
             );

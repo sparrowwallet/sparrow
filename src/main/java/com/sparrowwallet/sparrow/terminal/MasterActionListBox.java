@@ -14,6 +14,7 @@ import com.sparrowwallet.sparrow.terminal.preferences.ServerStatusDialog;
 import com.sparrowwallet.sparrow.terminal.preferences.ServerTypeDialog;
 import com.sparrowwallet.sparrow.terminal.wallet.Bip39Dialog;
 import com.sparrowwallet.sparrow.terminal.wallet.LoadWallet;
+import com.sparrowwallet.sparrow.terminal.wallet.WatchOnlyDialog;
 
 import java.io.File;
 import java.util.Map;
@@ -31,6 +32,10 @@ public class MasterActionListBox extends ActionListBox {
             if(Config.get().getRecentWalletFiles() != null) {
                 for(int i = 0; i < Config.get().getRecentWalletFiles().size() && i < MAX_RECENT_WALLETS; i++) {
                     File recentWalletFile = Config.get().getRecentWalletFiles().get(i);
+                    if(!recentWalletFile.exists()) {
+                        continue;
+                    }
+
                     Storage storage = new Storage(recentWalletFile);
 
                     Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream()
@@ -92,7 +97,7 @@ public class MasterActionListBox extends ActionListBox {
         TextInputDialogBuilder newWalletNameBuilder = new TextInputDialogBuilder();
         newWalletNameBuilder.setTitle("Create Wallet");
         newWalletNameBuilder.setDescription("Enter a name for the wallet");
-        newWalletNameBuilder.setValidator(content -> Storage.walletExists(content) ? "Wallet already exists" : null);
+        newWalletNameBuilder.setValidator(content -> content.isEmpty() ? "Please enter a name" : (Storage.walletExists(content) ? "Wallet already exists" : null));
         String walletName = newWalletNameBuilder.build().showDialog(SparrowTerminal.get().getGui());
 
         ActionListDialogBuilder newBuilder = new ActionListDialogBuilder();
@@ -103,8 +108,8 @@ public class MasterActionListBox extends ActionListBox {
             bip39Dialog.showDialog(SparrowTerminal.get().getGui());
         });
         newBuilder.addAction("Watch Only", () -> {
-            //OutputDescriptorDialog outputDescriptorDialog = new OutputDescriptorDialog(walletName);
-
+            WatchOnlyDialog watchOnlyDialog = new WatchOnlyDialog(walletName);
+            watchOnlyDialog.showDialog(SparrowTerminal.get().getGui());
         });
         newBuilder.build().showDialog(SparrowTerminal.get().getGui());
     }

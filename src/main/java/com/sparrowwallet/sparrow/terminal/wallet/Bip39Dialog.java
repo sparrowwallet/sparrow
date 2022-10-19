@@ -28,20 +28,15 @@ public class Bip39Dialog extends NewWalletDialog {
 
     private final Bip39 importer = new Bip39();
 
-    private Wallet wallet;
-
-    private final String walletName;
     private final ComboBox<DisplayScriptType> scriptType;
     private final TextBox seedWords;
     private final TextBox passphrase;
     private final Button createWallet;
 
     public Bip39Dialog(String walletName) {
-        super("Create BIP39 Wallet - " + walletName);
+        super("Create BIP39 Wallet - " + walletName, walletName);
 
         setHints(List.of(Hint.CENTERED));
-
-        this.walletName = walletName;
 
         Panel mainPanel = new Panel();
         mainPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(5).setVerticalSpacing(1));
@@ -152,35 +147,15 @@ public class Bip39Dialog extends NewWalletDialog {
         return lines;
     }
 
-    private void createWallet() {
-        close();
-
-        try {
-            wallet = getWallet();
-            discoverAndSaveWallet(wallet);
-        } catch(ImportException e) {
-            log.error("Cannot import wallet", e);
-        }
-    }
-
-    private Wallet getWallet() throws ImportException {
+    @Override
+    protected List<Wallet> getWallets() throws ImportException {
         Wallet wallet = new Wallet(walletName);
         wallet.setPolicyType(PolicyType.SINGLE);
         wallet.setScriptType(scriptType.getSelectedItem().scriptType);
         Keystore keystore = importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), 1));
-        return wallet;
-    }
-
-    private void onCancel() {
-        close();
-    }
-
-    @Override
-    public Wallet showDialog(WindowBasedTextGUI textGUI) {
-        super.showDialog(textGUI);
-        return wallet;
+        return List.of(wallet);
     }
 
     private static final class DisplayScriptType {

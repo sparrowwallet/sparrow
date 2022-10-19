@@ -1,10 +1,6 @@
 package com.sparrowwallet.sparrow.terminal.wallet;
 
-import com.googlecode.lanterna.TerminalSize;
-import com.googlecode.lanterna.gui2.EmptySpace;
-import com.googlecode.lanterna.gui2.Label;
-import com.googlecode.lanterna.gui2.LinearLayout;
-import com.googlecode.lanterna.gui2.Panel;
+import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.sparrowwallet.drongo.SecureString;
@@ -17,9 +13,11 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.terminal.ModalDialog;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -27,37 +25,78 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
-public class NewWalletDialog extends DialogWindow {
+public abstract class NewWalletDialog extends DialogWindow {
     private static final Logger log = LoggerFactory.getLogger(NewWalletDialog.class);
 
-    public NewWalletDialog(String title) {
+    protected Wallet wallet;
+
+    protected final String walletName;
+
+    public NewWalletDialog(String title, String walletName) {
         super(title);
+        this.walletName = walletName;
     }
 
-    protected void discoverAndSaveWallet(Wallet wallet) {
-        if(AppServices.onlineProperty().get()) {
-            discoverAccounts(wallet);
-        } else {
-            saveWallet(wallet);
+    protected void createWallet() {
+        close();
+
+        try {
+            discoverAndSaveWallet(getWallets());
+        } catch(ImportException e) {
+            log.error("Cannot import wallet", e);
         }
     }
 
-    private void discoverAccounts(Wallet wallet) {
-        DiscoveringDialog discoveringDialog = new DiscoveringDialog(wallet);
+    /**
+     * Returns a list of wallets for discovery.
+     * If no existing wallets are discovered, the first wallet is used.
+     *
+     * @return a list of wallet candidates
+     */
+    protected abstract List<Wallet> getWallets() throws ImportException;
+
+    protected void onCancel() {
+        close();
+    }
+
+    @Override
+    public Wallet showDialog(WindowBasedTextGUI textGUI) {
+        super.showDialog(textGUI);
+        return wallet;
+    }
+
+    protected void discoverAndSaveWallet(List<Wallet> wallets) {
+        if(wallets.isEmpty()) {
+            return;
+        }
+
+        if(AppServices.onlineProperty().get()) {
+            discoverAccounts(wallets);
+        } else {
+            saveWallet(wallets.get(0));
+        }
+    }
+
+    private void discoverAccounts(List<Wallet> wallets) {
+        ModalDialog discoveringDialog = new ModalDialog(walletName, "Discovering accounts...");
         SparrowTerminal.get().getGui().addWindow(discoveringDialog);
 
         Platform.runLater(() -> {
-            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(List.of(wallet));
+            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallets);
             walletDiscoveryService.setOnSucceeded(successEvent -> {
+                Optional<Wallet> optWallet = walletDiscoveryService.getValue();
+                wallet = optWallet.orElseGet(() -> wallets.get(0));
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     SparrowTerminal.get().getGui().removeWindow(discoveringDialog);
                     saveWallet(wallet);
                 });
             });
             walletDiscoveryService.setOnFailed(failedEvent -> {
+                wallet = wallets.get(0);
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     SparrowTerminal.get().getGui().removeWindow(discoveringDialog);
                     saveWallet(wallet);
@@ -77,6 +116,9 @@ public class NewWalletDialog extends DialogWindow {
 
         String password = builder.build().showDialog(SparrowTerminal.get().getGui());
         if(password != null) {
+            ModalDialog savingDialog = new ModalDialog(walletName, "Saving wallet...");
+            SparrowTerminal.get().getGui().addWindow(savingDialog);
+
             Platform.runLater(() -> {
                 if(password.length() == 0) {
                     try {
@@ -91,7 +133,10 @@ public class NewWalletDialog extends DialogWindow {
                             SparrowTerminal.addWallet(storage, childWallet);
                         }
 
-                        SparrowTerminal.get().getGuiThread().invokeLater(() -> LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui()));
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                            SparrowTerminal.get().getGui().removeWindow(savingDialog);
+                            LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui());
+                        });
                     } catch(IOException | StorageException | MnemonicException e) {
                         log.error("Error saving imported wallet", e);
                     }
@@ -120,7 +165,10 @@ public class NewWalletDialog extends DialogWindow {
                                 SparrowTerminal.addWallet(storage, childWallet);
                             }
 
-                            SparrowTerminal.get().getGuiThread().invokeLater(() -> LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui()));
+                            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                                SparrowTerminal.get().getGui().removeWindow(savingDialog);
+                                LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui());
+                            });
                         } catch(IOException | StorageException | MnemonicException e) {
                             log.error("Error saving imported wallet", e);
                         } finally {
@@ -131,6 +179,7 @@ public class NewWalletDialog extends DialogWindow {
                         }
                     });
                     keyDerivationService.setOnFailed(workerStateEvent -> {
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(savingDialog));
                         EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()).getAbsolutePath(), TimedEvent.Action.END, "Failed"));
                         showErrorDialog("Error encrypting wallet", keyDerivationService.getException().getMessage());
                     });
@@ -141,23 +190,4 @@ public class NewWalletDialog extends DialogWindow {
         }
     }
 
-    private static final class DiscoveringDialog extends DialogWindow {
-        public DiscoveringDialog(Wallet wallet) {
-            super(wallet.getName());
-
-            setHints(List.of(Hint.CENTERED));
-            setFixedSize(new TerminalSize(30, 5));
-
-            Panel mainPanel = new Panel();
-            mainPanel.setLayoutManager(new LinearLayout());
-            mainPanel.addComponent(new EmptySpace(), LinearLayout.createLayoutData(LinearLayout.Alignment.Beginning, LinearLayout.GrowPolicy.CanGrow));
-
-            Label label = new Label("Discovering Accounts...");
-            mainPanel.addComponent(label, LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
-
-            mainPanel.addComponent(new EmptySpace(), LinearLayout.createLayoutData(LinearLayout.Alignment.Beginning, LinearLayout.GrowPolicy.CanGrow));
-
-            setComponent(mainPanel);
-        }
-    }
 }

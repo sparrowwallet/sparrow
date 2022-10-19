@@ -103,6 +103,14 @@ public class SparrowTerminal extends Application {
             if(instance != null) {
                 instance.freeLock();
             }
+
+            List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
+            if(recentWalletFiles != null && !recentWalletFiles.isEmpty()) {
+                Set<File> openedWalletFiles = new LinkedHashSet<>(recentWalletFiles);
+                openedWalletFiles.removeIf(file -> walletData.values().stream().noneMatch(data -> data.getWalletForm().getWalletFile().equals(file)));
+                openedWalletFiles.addAll(Config.get().getRecentWalletFiles().subList(0, Math.min(3, recentWalletFiles.size())));
+                Config.get().setRecentWalletFiles(new ArrayList<>(openedWalletFiles));
+            }
         } catch(Exception e) {
             log.error("Could not stop terminal screen", e);
         }

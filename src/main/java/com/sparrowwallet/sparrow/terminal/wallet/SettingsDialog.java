@@ -181,10 +181,10 @@ public class SettingsDialog extends WalletDialog {
     public static List<String> splitString(String stringToSplit, int maxLength) {
         String text = stringToSplit;
         List<String> lines = new ArrayList<>();
-        while(text.length() > maxLength) {
+        while(text.length() >= maxLength) {
             int breakAt = maxLength - 1;
             lines.add(text.substring(0, breakAt));
-            text = text.substring(breakAt + 1);
+            text = text.substring(breakAt);
         }
 
         lines.add(text);
