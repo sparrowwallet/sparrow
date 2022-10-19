@@ -48,6 +48,12 @@ public class WalletActionsDialog extends DialogWindow {
             SettingsDialog settingsDialog = getWalletData().getSettingsDialog();
             settingsDialog.showDialog(SparrowTerminal.get().getGui());
         });
+        if(getWalletData().getWalletForm().getWallet().isEncrypted()) {
+            actions.addItem("Lock", () -> {
+                close();
+                SparrowTerminal.get().lockWallet(getWalletData().getWalletForm().getStorage());
+            });
+        }
 
         Panel mainPanel = new Panel();
         mainPanel.setLayoutManager(new GridLayout(1).setLeftMarginSize(1).setRightMarginSize(1));

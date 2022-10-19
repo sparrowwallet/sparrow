@@ -40,6 +40,7 @@ public class SparrowTerminal extends Application {
     private SparrowTextGui gui;
 
     private final Map<String, WalletData> walletData = new HashMap<>();
+    private final Set<File> lockedWallets = new HashSet<>();
 
     private static final javafx.stage.Window DEFAULT_WINDOW = new Window() { };
 
@@ -146,5 +147,17 @@ public class SparrowTerminal extends Application {
         }
 
         EventManager.get().post(new WalletOpenedEvent(storage, wallet));
+    }
+
+    public boolean isLocked(Storage storage) {
+        return lockedWallets.contains(storage.getWalletFile());
+    }
+
+    public void lockWallet(Storage storage) {
+        lockedWallets.add(storage.getWalletFile());
+    }
+
+    public void unlockWallet(Storage storage) {
+        lockedWallets.remove(storage.getWalletFile());
     }
 }
