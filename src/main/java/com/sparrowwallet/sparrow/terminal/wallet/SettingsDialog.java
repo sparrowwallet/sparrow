@@ -204,5 +204,9 @@ public class SettingsDialog extends WalletDialog {
             this.description = description;
             this.okButtonText = okButtonText;
         }
+
+        public String getDescription() {
+            return description;
+        }
     }
 }
