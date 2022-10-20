@@ -57,7 +57,8 @@ public class TransactionsDialog extends WalletDialog {
         updateLabels(walletTransactionsEntry);
         updateHistory(getWalletForm().getWalletTransactionsEntry());
 
-        Panel buttonPanel = new Panel(new GridLayout(4).setHorizontalSpacing(2).setVerticalSpacing(0));
+        Panel buttonPanel = new Panel(new GridLayout(5).setHorizontalSpacing(2).setVerticalSpacing(0));
+        buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
         buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
         buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
         buttonPanel.addComponent(new Button("Back", () -> onBack(Function.TRANSACTIONS)));

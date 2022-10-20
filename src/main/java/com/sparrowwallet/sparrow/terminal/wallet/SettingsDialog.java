@@ -288,32 +288,35 @@ public class SettingsDialog extends WalletDialog {
                 });
             }
         } else {
-            Platform.runLater(() -> addAndSaveAccount(masterWallet, standardAccount));
+            Platform.runLater(() -> addAndSaveAccount(masterWallet, standardAccount, null));
         }
     }
 
     private void addAndEncryptAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
         try {
-            addAndSaveAccount(masterWallet, standardAccount);
+            addAndSaveAccount(masterWallet, standardAccount, key);
         } finally {
             masterWallet.encrypt(key);
-            for(Wallet childWallet : masterWallet.getChildWallets()) {
-                if(!childWallet.isNested() && !childWallet.isEncrypted()) {
-                    childWallet.encrypt(key);
-                }
-            }
             key.clear();
         }
     }
 
-    private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount) {
+    private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
+        List<Wallet> childWallets;
         if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
-            WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
+            childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
             SparrowTerminal.get().getGuiThread().invokeLater(() -> showSuccessDialog("Added Accounts", "Whirlpool Accounts have been successfully added."));
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);
             EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+            childWallets = List.of(childWallet);
             SparrowTerminal.get().getGuiThread().invokeLater(() -> showSuccessDialog("Added Account", standardAccount.getName() + " has been successfully added."));
+        }
+
+        if(key != null) {
+            for(Wallet childWallet : childWallets) {
+                childWallet.encrypt(key);
+            }
         }
 
         saveChildWallets(masterWallet);

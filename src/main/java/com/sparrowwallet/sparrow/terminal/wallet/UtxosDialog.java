@@ -103,12 +103,12 @@ public class UtxosDialog extends WalletDialog {
         updateLabels(walletUtxosEntry);
         updateHistory(getWalletForm().getWalletUtxosEntry());
 
-        Panel buttonPanel = new Panel(new GridLayout(4).setHorizontalSpacing(2).setVerticalSpacing(0));
+        Panel buttonPanel = new Panel(new GridLayout(5).setHorizontalSpacing(2).setVerticalSpacing(0));
         if(getWalletForm().getWallet().isWhirlpoolMixWallet()) {
             startMix = new Button("Start Mixing", this::toggleMixing).setSize(new TerminalSize(20, 1)).addTo(buttonPanel);
             startMix.setEnabled(AppServices.onlineProperty().get());
 
-            mixTo = new Button("Mix to...", this::showMixToDialog).addTo(buttonPanel);
+            mixTo = new Button("Mix to...", this::showMixToDialog);
             if(getWalletForm().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX) {
                 buttonPanel.addComponent(mixTo);
             } else {
@@ -132,9 +132,11 @@ public class UtxosDialog extends WalletDialog {
 
             AppServices.onlineProperty().addListener(new WeakChangeListener<>(mixingOnlineListener));
 
+            buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
             buttonPanel.addComponent(new Button("Back", () -> onBack(Function.UTXOS)));
             buttonPanel.addComponent(new Button("Refresh", this::onRefresh));
         } else {
+            buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
             buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
             buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
             buttonPanel.addComponent(new Button("Back", () -> onBack(Function.UTXOS)));

@@ -547,7 +547,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 } else if(discoverAccounts) {
                     ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
                     accountDiscoveryService.setOnSucceeded(event -> {
-                        addAndSaveAccounts(masterWallet, accountDiscoveryService.getValue());
+                        addAndSaveAccounts(masterWallet, accountDiscoveryService.getValue(), null);
                         if(accountDiscoveryService.getValue().isEmpty()) {
                             AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
                         }
@@ -558,7 +558,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     });
                     accountDiscoveryService.start();
                 } else {
-                    addAndSaveAccounts(masterWallet, standardAccounts);
+                    addAndSaveAccounts(masterWallet, standardAccounts, null);
                 }
             }
         } else {
@@ -591,30 +591,33 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private void addAndEncryptAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts, Key key) {
         try {
-            addAndSaveAccounts(masterWallet, standardAccounts);
+            addAndSaveAccounts(masterWallet, standardAccounts, key);
         } finally {
             masterWallet.encrypt(key);
-            for(Wallet childWallet : masterWallet.getChildWallets()) {
-                if(!childWallet.isNested() && !childWallet.isEncrypted()) {
-                    childWallet.encrypt(key);
-                }
-            }
             key.clear();
         }
     }
 
-    private void addAndSaveAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts) {
+    private void addAndSaveAccounts(Wallet masterWallet, List<StandardAccount> standardAccounts, Key key) {
         for(StandardAccount standardAccount : standardAccounts) {
-            addAndSaveAccount(masterWallet, standardAccount);
+            addAndSaveAccount(masterWallet, standardAccount, key);
         }
     }
 
-    private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount) {
+    private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
+        List<Wallet> childWallets;
         if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
-            WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
+            childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);
             EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+            childWallets = List.of(childWallet);
+        }
+
+        if(key != null) {
+            for(Wallet childWallet : childWallets) {
+                childWallet.encrypt(key);
+            }
         }
 
         saveChildWallets(masterWallet);

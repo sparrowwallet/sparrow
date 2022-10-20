@@ -5,6 +5,7 @@ import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 
 public class AddressTableCell extends TableCell {
+    public static final int ADDRESS_MIN_WIDTH = 52;
     public static final int UTXO_WIDTH = 18;
 
     public AddressTableCell(Entry entry) {

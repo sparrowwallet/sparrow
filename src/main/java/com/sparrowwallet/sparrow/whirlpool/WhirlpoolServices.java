@@ -170,7 +170,7 @@ public class WhirlpoolServices {
                 && StandardAccount.MIXABLE_ACCOUNTS.contains(wallet.getStandardAccountType());
     }
 
-    public static void prepareWhirlpoolWallet(Wallet decryptedWallet, String walletId, Storage storage) {
+    public static List<Wallet> prepareWhirlpoolWallet(Wallet decryptedWallet, String walletId, Storage storage) {
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
         whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());
         whirlpool.setHDWallet(walletId, decryptedWallet);
@@ -179,12 +179,16 @@ public class WhirlpoolServices {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         soroban.setHDWallet(decryptedWallet);
 
+        List<Wallet> childWallets = new ArrayList<>();
         for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
             if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {
                 Wallet childWallet = decryptedWallet.addChildWallet(whirlpoolAccount);
+                childWallets.add(childWallet);
                 EventManager.get().post(new ChildWalletsAddedEvent(storage, decryptedWallet, childWallet));
             }
         }
+
+        return childWallets;
     }
 
     @Subscribe

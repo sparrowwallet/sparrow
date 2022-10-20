@@ -9,7 +9,7 @@ import java.text.SimpleDateFormat;
 
 public class DateTableCell extends TableCell {
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-    public static final int TRANSACTION_WIDTH = 20;
+    public static final int TRANSACTION_WIDTH = 23;
     public static final int UTXO_WIDTH = 18;
 
     public DateTableCell(Entry entry) {

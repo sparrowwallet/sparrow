@@ -5,10 +5,11 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 
 public class CoinTableCell extends TableCell {
-    public static final int TRANSACTION_WIDTH = 20;
+    public static final int TRANSACTION_WIDTH = 24;
     public static final int UTXO_WIDTH = 18;
 
     private final boolean balance;
