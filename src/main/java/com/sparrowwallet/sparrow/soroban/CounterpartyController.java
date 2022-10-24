@@ -32,6 +32,7 @@ import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.Taskbar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -247,6 +248,7 @@ public class CounterpartyController extends SorobanController {
                                 .subscribeOn(Schedulers.io())
                                 .observeOn(JavaFxScheduler.platform())
                                 .subscribe(responseMessage -> {
+                                    Taskbar.getTaskbar().requestUserAttention(true, false);
                                     if(accepted) {
                                         startCounterpartyCollaboration(counterpartyCahootsWallet, paymentCodeInitiator, cahootsType);
                                         followPaymentCode(paymentCodeInitiator);
@@ -254,10 +256,12 @@ public class CounterpartyController extends SorobanController {
                                 }, error -> {
                                     log.error("Error sending meeting response", error);
                                     mixingPartner.setVisible(false);
+                                    Taskbar.getTaskbar().requestUserAttention(true, false);
                                 });
                     }, error -> {
                         log.error("Failed to receive meeting request", error);
                         mixingPartner.setVisible(false);
+                        Taskbar.getTaskbar().requestUserAttention(true, false);
                     });
         } catch(Exception e) {
             log.error("Error sending meeting response", e);
