@@ -204,6 +204,8 @@ public class SettingsController extends WalletFormController implements Initiali
         editDescriptor.managedProperty().bind(editDescriptor.visibleProperty());
         showDescriptor.managedProperty().bind(showDescriptor.visibleProperty());
         showDescriptor.visibleProperty().bind(editDescriptor.visibleProperty().not());
+        editDescriptor.prefHeightProperty().bind(scanDescriptorQR.prefHeightProperty());
+        showDescriptor.prefHeightProperty().bind(scanDescriptorQR.prefHeightProperty());
 
         revert.setOnAction(event -> {
             keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
