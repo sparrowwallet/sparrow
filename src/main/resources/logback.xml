@@ -37,6 +37,8 @@
     <logger name="org.springframework.core.KotlinDetector" level="OFF" />
     <logger name="org.springframework.http.converter.json.Jackson2ObjectMapperBuilder" level="OFF" />
     <logger name="org.springframework.web.HttpLogging" level="OFF" />
+    <logger name="org.springframework.web.socket.sockjs.client.SockJsClient" level="OFF" />
+    <logger name="org.springframework.web.socket.sockjs.client.DefaultTransportRequest" level="OFF" />
     <logger name="com.sparrowwallet.nightjar.stomp.JavaStompClient" level="OFF" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
