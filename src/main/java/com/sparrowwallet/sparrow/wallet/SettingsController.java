@@ -404,6 +404,10 @@ public class SettingsController extends WalletFormController implements Initiali
                 (walletForm.getWallet().getPolicyType() == PolicyType.MULTI ? "\nKey expressions are shown in canonical order." : ""));
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
+            if(text.get().contains("(multi(")) {
+                AppServices.showWarningDialog("Legacy multisig wallet detected", "Sparrow supports BIP67 compatible multisig wallets only.\n\nThe public keys will be lexicographically sorted, and the output descriptor represented with sortedmulti.");
+            }
+
             setDescriptorText(text.get().replace("\n", ""));
         }
     }

@@ -66,13 +66,18 @@ public class Descriptor implements WalletImport, WalletExport {
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            inputStream.transferTo(baos);
+            InputStream firstClone = new ByteArrayInputStream(baos.toByteArray());
+            InputStream secondClone = new ByteArrayInputStream(baos.toByteArray());
+
             try {
-                return PdfUtils.getOutputDescriptor(inputStream).toWallet();
+                return PdfUtils.getOutputDescriptor(firstClone).toWallet();
             } catch(Exception e) {
                 //ignore
             }
 
-            String outputDescriptor = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
+            String outputDescriptor = new BufferedReader(new InputStreamReader(secondClone, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(outputDescriptor.trim());
             return descriptor.toWallet();
         } catch(Exception e) {
