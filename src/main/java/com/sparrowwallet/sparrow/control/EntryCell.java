@@ -9,7 +9,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.net.MempoolRateSize;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -96,7 +96,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 actionBox.getChildren().add(viewTransactionButton);
 
                 BlockTransaction blockTransaction = transactionEntry.getBlockTransaction();
-                if(blockTransaction.getHeight() <= 0 && blockTransaction.getTransaction().isReplaceByFee() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
+                if(blockTransaction.getHeight() <= 0 && blockTransaction.getTransaction().isReplaceByFee() &&
+                        Config.get().isIncludeMempoolOutputs() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
                     Button increaseFeeButton = new Button("");
                     increaseFeeButton.setGraphic(getIncreaseFeeRBFGlyph());
                     increaseFeeButton.setOnAction(event -> {
@@ -199,6 +200,12 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 .filter(TransactionInput::isReplaceByFeeEnabled)
                 .map(txInput -> walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txInput.getOutpoint().getHash()) && txo.getIndex() == txInput.getOutpoint().getIndex()).findFirst().get())
                 .collect(Collectors.toList());
+
+        if(utxos.isEmpty()) {
+            log.error("No UTXOs to replace");
+            AppServices.showErrorDialog("Replace By Fee Error", "Error creating RBF transaction - no replaceable UTXOs were found.");
+            return;
+        }
 
         List<TransactionOutput> ourOutputs = transactionEntry.getChildren().stream()
                 .filter(e -> e instanceof HashIndexEntry)
@@ -463,7 +470,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             });
             getItems().add(viewTransaction);
 
-            if(blockTransaction.getTransaction().isReplaceByFee() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
+            if(blockTransaction.getTransaction().isReplaceByFee() && Config.get().isIncludeMempoolOutputs() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
                 MenuItem increaseFee = new MenuItem("Increase Fee (RBF)");
                 increaseFee.setGraphic(getIncreaseFeeRBFGlyph());
                 increaseFee.setOnAction(AE -> {
