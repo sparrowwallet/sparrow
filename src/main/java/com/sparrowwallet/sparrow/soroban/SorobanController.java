@@ -15,8 +15,8 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.awt.Taskbar;
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class SorobanController {
@@ -119,5 +119,11 @@ public class SorobanController {
         }
 
         return feeAmt;
+    }
+
+    protected void requestUserAttention() {
+        if(Taskbar.isTaskbarSupported()) {
+            Taskbar.getTaskbar().requestUserAttention(true, false);
+        }
     }
 }

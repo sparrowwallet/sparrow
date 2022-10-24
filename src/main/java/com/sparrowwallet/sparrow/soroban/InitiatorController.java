@@ -56,7 +56,6 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.awt.Taskbar;
 import java.util.*;
 import java.util.function.UnaryOperator;
 
@@ -424,7 +423,7 @@ public class InitiatorController extends SorobanController {
                                     .subscribeOn(Schedulers.io())
                                     .observeOn(JavaFxScheduler.platform())
                                     .subscribe(sorobanResponse -> {
-                                        Taskbar.getTaskbar().requestUserAttention(true, false);
+                                        requestUserAttention();
                                         if(sorobanResponse.isAccept()) {
                                             sorobanProgressBar.setProgress(0.1);
                                             sorobanProgressLabel.setText("Mix partner accepted!");
@@ -438,14 +437,14 @@ public class InitiatorController extends SorobanController {
                                         step2Desc.setText(getErrorMessage(error));
                                         sorobanProgressLabel.setVisible(false);
                                         meetingFail.setVisible(true);
-                                        Taskbar.getTaskbar().requestUserAttention(true, false);
+                                        requestUserAttention();
                                     });
                         }, error -> {
                             log.error("Error sending meeting request", error);
                             step2Desc.setText(getErrorMessage(error));
                             sorobanProgressLabel.setVisible(false);
                             meetingFail.setVisible(true);
-                            Taskbar.getTaskbar().requestUserAttention(true, false);
+                            requestUserAttention();
                         });
             } catch(Exception e) {
                 log.error("Error sending meeting request", e);
