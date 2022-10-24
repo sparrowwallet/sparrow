@@ -122,7 +122,7 @@ public class SorobanController {
     }
 
     protected void requestUserAttention() {
-        if(Taskbar.isTaskbarSupported()) {
+        if(Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.USER_ATTENTION)) {
             Taskbar.getTaskbar().requestUserAttention(true, false);
         }
     }
