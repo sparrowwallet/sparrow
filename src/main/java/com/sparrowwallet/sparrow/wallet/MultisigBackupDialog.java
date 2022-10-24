@@ -26,9 +26,9 @@ public class MultisigBackupDialog extends Dialog<String> {
         setTitle("Backup Multisig Wallet?");
 
         DialogPane dialogPane = new MultisigBackupDialogPane();
-        dialogPane.setHeaderText("To restore this multisig wallet, you need at least " + wallet.getDefaultPolicy().getNumSignaturesRequired() + " seeds and ALL of the xpubs!\n" +
-                "It is recommended to backup either this wallet file, or the wallet output descriptor.\n\n" +
-                "The wallet output descriptor contains all the xpubs and is shown below.\n" +
+        dialogPane.setHeaderText("To restore this multisig wallet, you need at least " + wallet.getDefaultPolicy().getNumSignaturesRequired() + " seeds and ALL of the xpubs! " +
+                "For the xpubs, it is recommended to backup either this wallet file, or the wallet output descriptor.\n\n" +
+                "The wallet output descriptor contains all " + wallet.getKeystores().size() + " of the xpubs and is shown below. " +
                 "Alternatively, use the Export button below to export the Sparrow wallet file.");
         setDialogPane(dialogPane);
 
@@ -54,7 +54,7 @@ public class MultisigBackupDialog extends Dialog<String> {
         dialogPane.getButtonTypes().add(qrButtonType);
 
         dialogPane.setPrefWidth(700);
-        dialogPane.setPrefHeight(350);
+        dialogPane.setPrefHeight(500);
         AppServices.moveToActiveWindowScreen(this);
     }
 
