@@ -66,7 +66,7 @@ public enum JavaFXPlatform {
 
         String osClassifier = project.getExtensions().getByType(OsDetector.class).getClassifier();
 
-        if(GraphicsEnvironment.isHeadless()) {
+        if("true".equals(System.getProperty("java.awt.headless")) || GraphicsEnvironment.isHeadless()) {
             osClassifier += "-monocle";
         }
 

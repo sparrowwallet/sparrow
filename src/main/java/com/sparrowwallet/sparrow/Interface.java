@@ -7,10 +7,13 @@ public enum Interface {
 
     public static Interface get() {
         if(currentInterface == null) {
-            if(java.awt.GraphicsEnvironment.isHeadless()) {
-                if("Monocle".equalsIgnoreCase(System.getProperty("glass.platform"))) {
-                    currentInterface = TERMINAL;
-                } else {
+            boolean headless = java.awt.GraphicsEnvironment.isHeadless();
+            boolean monocle = "Monocle".equalsIgnoreCase(System.getProperty("glass.platform"));
+
+            if(headless || monocle) {
+                currentInterface = TERMINAL;
+
+                if(headless && !monocle) {
                     throw new UnsupportedOperationException("Headless environment detected but Monocle platform not found");
                 }
             } else {
