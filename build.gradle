@@ -19,7 +19,7 @@ if(System.getProperty("os.arch") == "aarch64") {
     osArch = "aarch64"
     targetName = "-" + osArch
 }
-def headless = "true".equals(System.getProperty("java.awt.headless")) || GraphicsEnvironment.isHeadless()
+def headless = "true".equals(System.getProperty("java.awt.headless"))
 
 group "com.sparrowwallet"
 version "${sparrowVersion}"
