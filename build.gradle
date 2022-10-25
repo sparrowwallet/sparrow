@@ -15,8 +15,10 @@ if(os.macOsX) {
 }
 def targetName = ""
 def osArch = "x64"
+def releaseArch = "x86_64"
 if(System.getProperty("os.arch") == "aarch64") {
     osArch = "aarch64"
+    releaseArch = "aarch64"
     targetName = "-" + osArch
 }
 def headless = "true".equals(System.getProperty("java.awt.headless"))
@@ -261,7 +263,7 @@ task packageZipDistribution(type: Zip) {
 
 task packageTarDistribution(type: Tar) {
     dependsOn removeGroupWritePermission
-    archiveFileName = "sparrow-${sparrowVersion}.tar.gz"
+    archiveFileName = "sparrow-${sparrowVersion}-${releaseArch}.tar.gz"
     destinationDirectory = file("$buildDir/jpackage")
     compression = Compression.GZIP
     from("$buildDir/jpackage/") {
