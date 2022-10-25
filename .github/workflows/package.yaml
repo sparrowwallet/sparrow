@@ -19,12 +19,6 @@ jobs:
           java-version: '18.0.1'
       - name: Show Build Versions
         run: ./gradlew -v
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
         run: ./gradlew jpackage
       - name: Package zip distribution
@@ -48,10 +42,10 @@ jobs:
         run: ./gradlew -Djava.awt.headless=true packageTarDistribution
       - name: Rename Headless Artifacts
         if: ${{ runner.os == 'Linux' }}
-        run: rename 's/sparrow/sparrow-server/g' build/jpackage/*
+        run: for f in build/jpackage/sparrow*; do mv -v "$f" "${f/sparrow/sparrow-server}"; done;
       - name: Upload Headless Artifact
         if: ${{ runner.os == 'Linux' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Sparrow Build - ${{ runner.os }} Headless
           path: |
