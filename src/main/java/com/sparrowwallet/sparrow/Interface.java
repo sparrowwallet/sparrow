@@ -7,7 +7,15 @@ public enum Interface {
 
     public static Interface get() {
         if(currentInterface == null) {
-            currentInterface = DESKTOP;
+            if(java.awt.GraphicsEnvironment.isHeadless()) {
+                if("Monocle".equalsIgnoreCase(System.getProperty("glass.platform"))) {
+                    currentInterface = TERMINAL;
+                } else {
+                    throw new UnsupportedOperationException("Headless environment detected but Monocle platform not found");
+                }
+            } else {
+                currentInterface = DESKTOP;
+            }
         }
 
         return currentInterface;

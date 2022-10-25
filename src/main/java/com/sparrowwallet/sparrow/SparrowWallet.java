@@ -86,13 +86,21 @@ public class SparrowWallet {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
 
-        if(args.terminal || java.awt.GraphicsEnvironment.isHeadless()) {
+        if(args.terminal) {
             Interface.set(Interface.TERMINAL);
-            PlatformImpl.setTaskbarApplication(false);
-            Drongo.removeRootLogAppender("STDOUT");
-            com.sun.javafx.application.LauncherImpl.launchApplication(SparrowTerminal.class, SparrowWalletPreloader.class, argv);
-        } else {
-            com.sun.javafx.application.LauncherImpl.launchApplication(SparrowDesktop.class, SparrowWalletPreloader.class, argv);
+        }
+
+        try {
+            if(Interface.get() == Interface.TERMINAL) {
+                PlatformImpl.setTaskbarApplication(false);
+                Drongo.removeRootLogAppender("STDOUT");
+                com.sun.javafx.application.LauncherImpl.launchApplication(SparrowTerminal.class, SparrowWalletPreloader.class, argv);
+            } else {
+                com.sun.javafx.application.LauncherImpl.launchApplication(SparrowDesktop.class, SparrowWalletPreloader.class, argv);
+            }
+        } catch(UnsupportedOperationException e) {
+            getLogger().error("Unable to launch application", e);
+            System.out.println("Use Sparrow Server on a headless (no display) system");
         }
     }
 
