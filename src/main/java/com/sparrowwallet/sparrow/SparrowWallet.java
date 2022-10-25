@@ -99,8 +99,17 @@ public class SparrowWallet {
                 com.sun.javafx.application.LauncherImpl.launchApplication(SparrowDesktop.class, SparrowWalletPreloader.class, argv);
             }
         } catch(UnsupportedOperationException e) {
+            Drongo.removeRootLogAppender("STDOUT");
             getLogger().error("Unable to launch application", e);
-            System.out.println("Use Sparrow Server on a headless (no display) system");
+            System.out.println("No display detected. Use Sparrow Server on a headless (no display) system.");
+
+            try {
+                if(instance != null) {
+                    instance.freeLock();
+                }
+            } catch(InstanceException instanceException) {
+                getLogger().error("Unable to free instance lock", e);
+            }
         }
     }
 
