@@ -40,3 +40,17 @@ jobs:
           path: |
             build/jpackage/*
             !build/jpackage/Sparrow/
+      - name: Headless build with Gradle
+        if: ${{ runner.os == 'Linux' }}
+        run: ./gradlew -Djava.awt.headless=true clean jpackage
+      - name: Package headless tar distribution
+        if: ${{ runner.os == 'Linux' }}
+        run: ./gradlew packageTarDistribution
+      - name: Upload Headless Artifact
+        if: ${{ runner.os == 'Linux' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Sparrow Build - ${{ runner.os }} Headless
+          path: |
+            build/jpackage/*
+            !build/jpackage/Sparrow/
