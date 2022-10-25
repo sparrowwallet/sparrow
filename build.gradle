@@ -20,10 +20,6 @@ if(System.getProperty("os.arch") == "aarch64") {
     targetName = "-" + osArch
 }
 def headless = "true".equals(System.getProperty("java.awt.headless")) || GraphicsEnvironment.isHeadless()
-def sparrowBuild = ""
-if(headless) {
-    sparrowBuild = "Server"
-}
 
 group "com.sparrowwallet"
 version "${sparrowVersion}"
@@ -228,7 +224,7 @@ jlink {
     addExtraDependencies("javafx")
     jpackage {
         imageName = "Sparrow"
-        installerName = "Sparrow${sparrowBuild}"
+        installerName = "Sparrow"
         appVersion = "${sparrowVersion}"
         skipInstaller = os.macOsX || properties.skipInstallers
         imageOptions = []
@@ -255,7 +251,7 @@ task removeGroupWritePermission(type: Exec) {
 }
 
 task packageZipDistribution(type: Zip) {
-    archiveFileName = "Sparrow${sparrowBuild}-${sparrowVersion}.zip"
+    archiveFileName = "Sparrow-${sparrowVersion}.zip"
     destinationDirectory = file("$buildDir/jpackage")
     from("$buildDir/jpackage/") {
         include "Sparrow/**"
@@ -265,7 +261,7 @@ task packageZipDistribution(type: Zip) {
 
 task packageTarDistribution(type: Tar) {
     dependsOn removeGroupWritePermission
-    archiveFileName = "sparrow${sparrowBuild.toLowerCase()}-${sparrowVersion}.tar.gz"
+    archiveFileName = "sparrow-${sparrowVersion}.tar.gz"
     destinationDirectory = file("$buildDir/jpackage")
     compression = Compression.GZIP
     from("$buildDir/jpackage/") {

@@ -45,7 +45,10 @@ jobs:
         run: ./gradlew -Djava.awt.headless=true clean jpackage
       - name: Package headless tar distribution
         if: ${{ runner.os == 'Linux' }}
-        run: ./gradlew packageTarDistribution
+        run: ./gradlew -Djava.awt.headless=true packageTarDistribution
+      - name: Rename Headless Artifacts
+        if: ${{ runner.os == 'Linux' }}
+        run: rename 's/sparrow/sparrow-server/g' build/jpackage/*
       - name: Upload Headless Artifact
         if: ${{ runner.os == 'Linux' }}
         uses: actions/upload-artifact@v2
