@@ -101,7 +101,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                     Button increaseFeeButton = new Button("");
                     increaseFeeButton.setGraphic(getIncreaseFeeRBFGlyph());
                     increaseFeeButton.setOnAction(event -> {
-                        increaseFee(transactionEntry);
+                        increaseFee(transactionEntry, false);
                     });
                     actionBox.getChildren().add(increaseFeeButton);
                 }
@@ -189,7 +189,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         }
     }
 
-    private static void increaseFee(TransactionEntry transactionEntry) {
+    private static void increaseFee(TransactionEntry transactionEntry, boolean cancelTransaction) {
         BlockTransaction blockTransaction = transactionEntry.getBlockTransaction();
         Map<BlockTransactionHashIndex, WalletNode> walletTxos = transactionEntry.getWallet().getWalletTxos();
         List<BlockTransactionHashIndex> utxos = transactionEntry.getChildren().stream()
@@ -229,7 +229,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         //Remove any UTXOs created by the transaction that is to be replaced
         walletUtxos.removeIf(utxo -> ourOutputs.stream().anyMatch(output -> output.getHash().equals(utxo.getHash()) && output.getIndex() == utxo.getIndex()));
         Collections.shuffle(walletUtxos);
-        while((double)changeTotal / vSize < getMaxFeeRate() && !walletUtxos.isEmpty()) {
+        while((double)changeTotal / vSize < getMaxFeeRate() && !walletUtxos.isEmpty() && !cancelTransaction) {
             //If there is insufficient change output, include another random UTXO so the fee can be increased
             BlockTransactionHashIndex utxo = walletUtxos.remove(0);
             utxos.add(utxo);
@@ -284,6 +284,15 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         if(payments.isEmpty()) {
             AppServices.showErrorDialog("Replace By Fee Error", "Error creating RBF transaction, check log for details");
             return;
+        }
+
+        if(cancelTransaction) {
+            Payment existing = payments.get(0);
+            Address address = transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getAddress();
+            Payment payment = new Payment(address, existing.getLabel(), existing.getAmount(), true);
+            payments.clear();
+            payments.add(payment);
+            opReturns.clear();
         }
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
@@ -417,6 +426,12 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
         return increaseFeeGlyph;
     }
 
+    private static Glyph getCancelTransactionRBFGlyph() {
+        Glyph cancelTxGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.BAN);
+        cancelTxGlyph.setFontSize(12);
+        return cancelTxGlyph;
+    }
+
     private static Glyph getIncreaseFeeCPFPGlyph() {
         Glyph cpfpGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SIGN_OUT_ALT);
         cpfpGlyph.setFontSize(12);
@@ -475,10 +490,21 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 increaseFee.setGraphic(getIncreaseFeeRBFGlyph());
                 increaseFee.setOnAction(AE -> {
                     hide();
-                    increaseFee(transactionEntry);
+                    increaseFee(transactionEntry, false);
                 });
 
                 getItems().add(increaseFee);
+            }
+
+            if(blockTransaction.getTransaction().isReplaceByFee() && Config.get().isIncludeMempoolOutputs() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
+                MenuItem cancelTx = new MenuItem("Cancel Transaction (RBF)");
+                cancelTx.setGraphic(getCancelTransactionRBFGlyph());
+                cancelTx.setOnAction(AE -> {
+                    hide();
+                    increaseFee(transactionEntry, true);
+                });
+
+                getItems().add(cancelTx);
             }
 
             if(containsWalletOutputs(transactionEntry)) {
