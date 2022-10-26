@@ -18,6 +18,10 @@ public class SwController extends KeystoreImportDetailController {
         List<KeystoreImport> importers = List.of(new Bip39(), new Electrum(), new Bip32());
 
         for(KeystoreImport importer : importers) {
+            if(importer.isDeprecated() && !Config.get().isShowDeprecatedImportExport()) {
+                continue;
+            }
+
             TitledDescriptionPane importPane = null;
 
             if(importer instanceof KeystoreFileImport) {

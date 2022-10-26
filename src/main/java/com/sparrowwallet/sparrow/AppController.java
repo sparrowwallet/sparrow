@@ -1065,6 +1065,10 @@ public class AppController implements Initializable {
                 new KeystoneSinglesig(), new KeystoneMultisig(),
                 new CaravanMultisig());
         for(WalletImport importer : walletImporters) {
+            if(importer.isDeprecated() && !Config.get().isShowDeprecatedImportExport()) {
+                continue;
+            }
+
             try(FileInputStream inputStream = new FileInputStream(file)) {
                 if(importer.isEncrypted(file) && password == null) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);

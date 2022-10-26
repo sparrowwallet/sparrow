@@ -51,14 +51,18 @@ public class WalletImportDialog extends Dialog<Wallet> {
         importAccordion = new Accordion();
         List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new GordianSeedTool(), new SeedSigner(), new SpecterDIY());
         for(KeystoreFileImport importer : keystoreImporters) {
-            FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
-            importAccordion.getPanes().add(importPane);
+            if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
+                FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
+                importAccordion.getPanes().add(importPane);
+            }
         }
 
         List<WalletImport> walletImporters = List.of(new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new KeystoneMultisig(), new Descriptor(), new SpecterDesktop(), new BlueWalletMultisig(), new Sparrow());
         for(WalletImport importer : walletImporters) {
-            FileWalletImportPane importPane = new FileWalletImportPane(importer);
-            importAccordion.getPanes().add(importPane);
+            if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
+                FileWalletImportPane importPane = new FileWalletImportPane(importer);
+                importAccordion.getPanes().add(importPane);
+            }
         }
 
         importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));

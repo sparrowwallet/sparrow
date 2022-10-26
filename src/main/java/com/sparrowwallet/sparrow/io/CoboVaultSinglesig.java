@@ -102,6 +102,11 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
         return true;
     }
 
+    @Override
+    public boolean isDeprecated() {
+        return true;
+    }
+
     private static class CoboVaultSinglesigKeystore {
         public String ExtPubKey;
         public String MasterFingerprint;

@@ -50,9 +50,11 @@ public class WalletExportDialog extends Dialog<Wallet> {
         }
 
         Accordion exportAccordion = new Accordion();
-        for (WalletExport exporter : exporters) {
-            FileWalletExportPane exportPane = new FileWalletExportPane(wallet, exporter);
-            exportAccordion.getPanes().add(exportPane);
+        for(WalletExport exporter : exporters) {
+            if(!exporter.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
+                FileWalletExportPane exportPane = new FileWalletExportPane(wallet, exporter);
+                exportAccordion.getPanes().add(exportPane);
+            }
         }
 
         exportAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));

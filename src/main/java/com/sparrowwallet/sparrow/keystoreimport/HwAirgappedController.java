@@ -24,9 +24,11 @@ public class HwAirgappedController extends KeystoreImportDetailController {
         }
 
         for(KeystoreFileImport importer : importers) {
-            FileKeystoreImportPane importPane = new FileKeystoreImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());
-            if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == importer.getWalletModel()) {
-                importAccordion.getPanes().add(importPane);
+            if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
+                FileKeystoreImportPane importPane = new FileKeystoreImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());
+                if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == importer.getWalletModel()) {
+                    importAccordion.getPanes().add(importPane);
+                }
             }
         }
 

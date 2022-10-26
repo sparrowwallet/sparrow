@@ -46,6 +46,7 @@ public class Config {
     private boolean showTransactionHex = true;
     private boolean showLoadingLog = true;
     private boolean showAddressTransactionCount = false;
+    private boolean showDeprecatedImportExport = false;
     private boolean preventSleep = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -298,6 +299,15 @@ public class Config {
 
     public void setShowAddressTransactionCount(boolean showAddressTransactionCount) {
         this.showAddressTransactionCount = showAddressTransactionCount;
+        flush();
+    }
+
+    public boolean isShowDeprecatedImportExport() {
+        return showDeprecatedImportExport;
+    }
+
+    public void setShowDeprecatedImportExport(boolean showDeprecatedImportExport) {
+        this.showDeprecatedImportExport = showDeprecatedImportExport;
         flush();
     }
 
