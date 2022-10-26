@@ -392,6 +392,7 @@ public class AppController implements Initializable {
         });
 
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
+        setNetworkLabel();
     }
 
     private void setPlatformApplicationMenu() {
@@ -416,6 +417,22 @@ public class AppController implements Initializable {
 
         if(platform == org.controlsfx.tools.Platform.UNIX || !TrayManager.isSupported()) {
             viewMenu.getItems().remove(minimizeToTray);
+        }
+    }
+
+    private void setNetworkLabel() {
+        if(Network.get() != Network.MAINNET) {
+            Platform.runLater(() -> {
+                StackPane tabBackground = (StackPane)tabs.lookup(".tab-header-background");
+                if(tabBackground != null) {
+                    HBox hBox = new HBox();
+                    Label label = new Label(Network.get().toDisplayString());
+                    label.setPadding(new Insets(0, 10, 0, 0));
+                    hBox.getChildren().add(label);
+                    hBox.setAlignment(Pos.CENTER_RIGHT);
+                    tabBackground.getChildren().add(hBox);
+                }
+            });
         }
     }
 
