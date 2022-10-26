@@ -8,6 +8,7 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 
 public class MixTableCell extends TableCell {
+    private static final int ERROR_DISPLAY_MILLIS = 5 * 60 * 1000;
     public static final int WIDTH = 18;
 
     public MixTableCell(Entry entry) {
@@ -41,7 +42,8 @@ public class MixTableCell extends TableCell {
     }
 
     private String getMixFail(UtxoEntry.MixStatus mixStatus) {
-        if(mixStatus.getMixFailReason() == MixFailReason.CANCEL) {
+        long elapsed = mixStatus.getMixErrorTimestamp() == null ? 0L : System.currentTimeMillis() - mixStatus.getMixErrorTimestamp();
+        if(mixStatus.getMixFailReason() == MixFailReason.CANCEL || elapsed >= ERROR_DISPLAY_MILLIS) {
             return getMixCountOnly(mixStatus);
         }
 
