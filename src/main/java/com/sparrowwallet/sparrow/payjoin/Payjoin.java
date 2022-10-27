@@ -15,11 +15,7 @@ import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.net.ElectrumServer;
-import com.sparrowwallet.sparrow.net.MempoolRateSize;
-import com.sparrowwallet.sparrow.net.ServerException;
-import com.sparrowwallet.sparrow.wallet.SendController;
+import com.sparrowwallet.sparrow.net.Protocol;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.slf4j.Logger;
@@ -84,6 +80,10 @@ public class Payjoin {
 
             Proxy proxy = AppServices.getProxy();
 
+            if(proxy == null && Protocol.isOnionHost(finalUri.getHost())) {
+                throw new PayjoinReceiverException("Configure a Tor proxy to get a payjoin transaction from " + finalUri.getHost() + ".");
+            }
+
             HttpURLConnection connection = proxy == null ? (HttpURLConnection)finalUri.toURL().openConnection() : (HttpURLConnection)finalUri.toURL().openConnection(proxy);
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "text/plain");
@@ -117,6 +117,9 @@ public class Payjoin {
         } catch(URISyntaxException e) {
             log.error("Invalid payjoin receiver URI", e);
             throw new PayjoinReceiverException("Invalid payjoin receiver URI", e);
+        } catch(FileNotFoundException e) {
+            log.error("Could not find resource at payjoin URL " + uri, e);
+            throw new PayjoinReceiverException("Could not find resource at payjoin URL " + uri, e);
         } catch(IOException e) {
             log.error("Payjoin receiver error", e);
             throw new PayjoinReceiverException("Payjoin receiver error", e);
