@@ -20,6 +20,9 @@ public class Args {
     @Parameter(names = { "--terminal", "-t" }, description = "Terminal mode", arity = 0)
     public boolean terminal;
 
+    @Parameter(names = { "--version", "-v" }, description = "Show version", arity = 0)
+    public boolean version;
+
     @Parameter(names = { "--help", "-h" }, description = "Show usage", help = true)
     public boolean help;
 

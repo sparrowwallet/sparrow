@@ -34,6 +34,11 @@ public class SparrowWallet {
             System.exit(0);
         }
 
+        if(args.version) {
+            System.out.println("Sparrow Wallet " + APP_VERSION);
+            System.exit(0);
+        }
+
         if(args.level != null) {
             Drongo.setRootLogLevel(args.level);
         }
