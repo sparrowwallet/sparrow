@@ -158,7 +158,7 @@ public class ServerAliasDialog extends Dialog<Server> {
         }
 
         public Server getServer() {
-            return new Server(server.getUrl(), labelProperty.get());
+            return new Server(server.getUrl(), labelProperty.get().isEmpty() ? null : labelProperty.get());
         }
     }
 
