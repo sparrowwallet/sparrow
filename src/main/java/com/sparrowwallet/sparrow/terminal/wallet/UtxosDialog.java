@@ -191,8 +191,8 @@ public class UtxosDialog extends WalletDialog {
             mempoolBalance.setText(formatBitcoinValue(walletUtxosEntry.getMempoolBalance(), true));
 
             if(AppServices.getFiatCurrencyExchangeRate() != null) {
-                fiatBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getBalance(), AppServices.getFiatCurrencyExchangeRate().getBtcRate())));
-                fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getMempoolBalance(), AppServices.getFiatCurrencyExchangeRate().getBtcRate())));
+                fiatBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getBalance(), AppServices.getFiatCurrencyExchangeRate())));
+                fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getMempoolBalance(), AppServices.getFiatCurrencyExchangeRate())));
             } else {
                 fiatBalance.setText("");
                 fiatMempoolBalance.setText("");
@@ -405,8 +405,8 @@ public class UtxosDialog extends WalletDialog {
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             WalletUtxosEntry walletUtxosEntry = getWalletForm().getWalletUtxosEntry();
-            fiatBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getBalance(), event.getBtcRate())));
-            fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getMempoolBalance(), event.getBtcRate())));
+            fiatBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getBalance(), event.getCurrencyRate())));
+            fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getMempoolBalance(), event.getCurrencyRate())));
         });
     }
 }

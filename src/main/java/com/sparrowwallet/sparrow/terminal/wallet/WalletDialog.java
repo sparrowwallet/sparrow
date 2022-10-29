@@ -81,8 +81,12 @@ public class WalletDialog extends DialogWindow {
         }
     }
 
-    protected double getFiatValue(long satsValue, Double btcRate) {
-        return satsValue * btcRate / Transaction.SATOSHIS_PER_BITCOIN;
+    protected double getFiatValue(long satsValue, CurrencyRate currencyRate) {
+        if(currencyRate != null && currencyRate.isAvailable()) {
+            return satsValue * currencyRate.getBtcRate() / Transaction.SATOSHIS_PER_BITCOIN;
+        }
+
+        return 0d;
     }
 
     protected static String centerPad(String text, int length) {

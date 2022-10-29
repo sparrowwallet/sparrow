@@ -95,8 +95,8 @@ public class TransactionsDialog extends WalletDialog {
             mempoolBalance.setText(formatBitcoinValue(walletTransactionsEntry.getMempoolBalance(), true));
 
             if(AppServices.getFiatCurrencyExchangeRate() != null) {
-                fiatBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getBalance(), AppServices.getFiatCurrencyExchangeRate().getBtcRate())));
-                fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getMempoolBalance(), AppServices.getFiatCurrencyExchangeRate().getBtcRate())));
+                fiatBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getBalance(), AppServices.getFiatCurrencyExchangeRate())));
+                fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getMempoolBalance(), AppServices.getFiatCurrencyExchangeRate())));
             } else {
                 fiatBalance.setText("");
                 fiatMempoolBalance.setText("");
@@ -149,8 +149,8 @@ public class TransactionsDialog extends WalletDialog {
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             WalletTransactionsEntry walletTransactionsEntry = getWalletForm().getWalletTransactionsEntry();
-            fiatBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getBalance(), event.getBtcRate())));
-            fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getMempoolBalance(), event.getBtcRate())));
+            fiatBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getBalance(), event.getCurrencyRate())));
+            fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getMempoolBalance(), event.getCurrencyRate())));
         });
     }
 }
