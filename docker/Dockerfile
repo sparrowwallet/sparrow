@@ -37,7 +37,7 @@ RUN case ${TARGETARCH:-amd64} in \
     | grep -q "GOODSIG ${PGP_SIG}" \
     || exit 1 \
     && sha256sum --check sparrow-1.7.0-manifest.txt --ignore-missing || exit 1 \
-    && tar xvf sparrow-server-${SPARROW_VERSION}-${SPARROW_ARCH}.tar.gz -C /opt
+    && tar xf sparrow-server-${SPARROW_VERSION}-${SPARROW_ARCH}.tar.gz -C /opt
 
 # Add user and setup directories for Sparrow
 RUN useradd -ms /bin/bash sparrow
