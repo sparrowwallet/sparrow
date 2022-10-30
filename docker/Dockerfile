@@ -7,25 +7,24 @@ ARG PGP_SIG=E94618334C674B40
 
 # Update all packages and install requirements
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends curl \
+    && apt-get upgrade -y
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends curl \
     gpg \
     gpg-agent \
     wget \
     ca-certificates
 
-# Detect and set architecture to properly download binaries
-ARG TARGETARCH
-
 # Switch to /tmp for verification and install
 WORKDIR /tmp
 
-# Download Sparrow Server binaries and verification assets
+# Detect and set architecture to properly download binaries
+ARG TARGETARCH
 RUN case ${TARGETARCH:-amd64} in \
     "arm64") SPARROW_ARCH="aarch64";; \
     "amd64") SPARROW_ARCH="x86_64";; \
     *) echo "Dockerfile does not support this platform"; exit 1 ;; \
     esac \
+    # Download Sparrow Server binaries and verification assets
     && wget --quiet https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-server-${SPARROW_VERSION}-${SPARROW_ARCH}.tar.gz \
     && wget --quiet https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-${SPARROW_VERSION}-manifest.txt \
     && wget --quiet https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-${SPARROW_VERSION}-manifest.txt.asc \
