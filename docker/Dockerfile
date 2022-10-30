@@ -10,24 +10,33 @@ RUN apt-get update \
     && apt-get upgrade -y \
     && DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends curl \
     gpg \
-    gpg-agent
+    gpg-agent \
+    wget \
+    ca-certificates
 
-# Download Sparrow Server binaries and verification assets
-ADD https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-server-${SPARROW_VERSION}-x86_64.tar.gz /tmp
-ADD https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-${SPARROW_VERSION}-manifest.txt /tmp
-ADD https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-${SPARROW_VERSION}-manifest.txt.asc /tmp
-ADD https://keybase.io/craigraw/pgp_keys.asc /tmp
+# Detect and set architecture to properly download binaries
+ARG TARGETARCH
 
 # Switch to /tmp for verification and install
 WORKDIR /tmp
 
-# GPG verify, sha256sum verify, and unpack Sparrow Server binaries
-RUN gpg --import pgp_keys.asc \
+# Download Sparrow Server binaries and verification assets
+RUN case ${TARGETARCH:-amd64} in \
+    "arm64") SPARROW_ARCH="aarch64";; \
+    "amd64") SPARROW_ARCH="x86_64";; \
+    *) echo "Dockerfile does not support this platform"; exit 1 ;; \
+    esac \
+    && wget --quiet https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-server-${SPARROW_VERSION}-${SPARROW_ARCH}.tar.gz \
+    && wget --quiet https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-${SPARROW_VERSION}-manifest.txt \
+    && wget --quiet https://github.com/sparrowwallet/sparrow/releases/download/${SPARROW_VERSION}/sparrow-${SPARROW_VERSION}-manifest.txt.asc \
+    && wget --quiet https://keybase.io/craigraw/pgp_keys.asc \
+    # GPG verify, sha256sum verify, and unpack Sparrow Server binaries
+    && gpg --import pgp_keys.asc \
     && gpg --status-fd 1 --verify sparrow-${SPARROW_VERSION}-manifest.txt.asc \
     | grep -q "GOODSIG ${PGP_SIG}" \
     || exit 1 \
     && sha256sum --check sparrow-1.7.0-manifest.txt --ignore-missing || exit 1 \
-    && tar xvf sparrow-server-${SPARROW_VERSION}-x86_64.tar.gz -C /opt
+    && tar xvf sparrow-server-${SPARROW_VERSION}-${SPARROW_ARCH}.tar.gz -C /opt
 
 # Add user and setup directories for Sparrow
 RUN useradd -ms /bin/bash sparrow
