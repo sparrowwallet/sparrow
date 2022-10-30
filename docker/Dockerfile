@@ -12,7 +12,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends cu
     gpg \
     gpg-agent \
     wget \
-    ca-certificates
+    ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Switch to /tmp for verification and install
 WORKDIR /tmp
