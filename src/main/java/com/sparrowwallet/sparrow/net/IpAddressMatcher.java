@@ -35,6 +35,7 @@ public final class IpAddressMatcher {
     private static final IpAddressMatcher LOCAL_RANGE_1 = new IpAddressMatcher("10.0.0.0/8");
     private static final IpAddressMatcher LOCAL_RANGE_2 = new IpAddressMatcher("172.16.0.0/12");
     private static final IpAddressMatcher LOCAL_RANGE_3 = new IpAddressMatcher("192.168.0.0/16");
+    private static final IpAddressMatcher LOCAL_RANGE_4 = new IpAddressMatcher("100.64.0.0/10");
 
     private final int nMaskBits;
     private final InetAddress requiredAddress;
@@ -102,6 +103,6 @@ public final class IpAddressMatcher {
     }
 
     public static boolean isLocalNetworkAddress(String address) {
-        return "localhost".equals(address) || "127.0.0.1".equals(address) || LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address);
+        return "localhost".equals(address) || "127.0.0.1".equals(address) || LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address) || LOCAL_RANGE_4.matches(address);
     }
 }
