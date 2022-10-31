@@ -216,6 +216,9 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.core",
                    "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor"]
 
+        if(os.windows) {
+            jvmArgs += ["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"]
+        }
         if(os.macOsX) {
             jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
         }
