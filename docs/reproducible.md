@@ -94,6 +94,7 @@ git clone --recursive --branch "${GIT_TAG}" https://github.com/sparrowwallet/spa
 If you already have the sparrow repo cloned, fetch all new updates and checkout the release. For this, change into your local sparrow folder and execute:
 
 ```shell
+cd {yourPathToSparrow}/sparrow
 git pull --recurse-submodules
 git checkout "${GIT_TAG}"
 ```
@@ -107,6 +108,7 @@ git submodule update --checkout
 Thereafter, building should be straightforward. If not already done, change into the sparrow folder and run:
 
 ```shell
+cd {yourPathToSparrow}/sparrow  # if you aren't already in the sparrow folder
 ./gradlew jpackage
 ```
 
