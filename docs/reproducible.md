@@ -79,16 +79,34 @@ sudo apt install -y rpm fakeroot binutils
 
 ### Building the binaries
 
-The project can cloned for a specific release tag as follows:
+First, assign a temporary variabel in your shell for the specific release you want to build. For the current one specify:
+
 ```shell
 GIT_TAG="1.7.0"
+```
+
+The project can then be initially cloned as follows:
+
+```shell
 git clone --recursive --branch "${GIT_TAG}" https://github.com/sparrowwallet/sparrow.git
 ```
 
-Thereafter, building should be straightforward:
+If you already have the sparrow repo cloned, fetch all new updates and checkout the release. For this, change into your local sparrow folder and execute:
 
 ```shell
-cd sparrow
+git pull --recurse-submodules
+git checkout "${GIT_TAG}"
+```
+
+Note - there is an additional step if you updated rather then intitally cloned the repo. This is due to the [drongo submodule](https://github.com/sparrowwallet/drongo/tree/master) which needs to be synchronized (back) to the commit state it had at the time of the release. Only then your build will be comparable to the provided one in the release section of Github. To synchronize, additionally run:
+
+```shell
+git submodule update --checkout
+```
+
+Thereafter, building should be straightforward. If not already done, change into the sparrow folder and run:
+
+```shell
 ./gradlew jpackage
 ```
 
