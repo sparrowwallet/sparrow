@@ -30,7 +30,7 @@ public class CoinTextFormatter extends TextFormatter<String> {
 
         public CoinFilter(UnitFormat unitFormat) {
             this.unitFormat = unitFormat == null ? UnitFormat.DOT : unitFormat;
-            this.coinFormat = new DecimalFormat("###,###.########", DecimalFormatSymbols.getInstance(unitFormat.getLocale()));
+            this.coinFormat = new DecimalFormat("###,###.########", unitFormat.getDecimalFormatSymbols());
             this.coinValidation = Pattern.compile("[\\d" + Pattern.quote(unitFormat.getGroupingSeparator()) + "]*(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d{0,8})?");
         }
 

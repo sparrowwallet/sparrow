@@ -8,13 +8,18 @@ import java.util.Locale;
 
 public enum UnitFormat {
     DOT {
-        private final DecimalFormat btcFormat = new DecimalFormat("0", DecimalFormatSymbols.getInstance(getLocale()));
-        private final DecimalFormat tableBtcFormat = new DecimalFormat("0.00000000", DecimalFormatSymbols.getInstance(getLocale()));
-        private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(getLocale()));
+        private final DecimalFormat btcFormat = new DecimalFormat("0", getDecimalFormatSymbols());
+        private final DecimalFormat satsFormat = new DecimalFormat("#,##0", getDecimalFormatSymbols());
+        private final DecimalFormat tableBtcFormat = new DecimalFormat("0.00000000", getDecimalFormatSymbols());
+        private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00", getDecimalFormatSymbols());
 
         public DecimalFormat getBtcFormat() {
             btcFormat.setMaximumFractionDigits(8);
             return btcFormat;
+        }
+
+        public DecimalFormat getSatsFormat() {
+            return satsFormat;
         }
 
         public DecimalFormat getTableBtcFormat() {
@@ -25,18 +30,26 @@ public enum UnitFormat {
             return currencyFormat;
         }
 
-        public Locale getLocale() {
-            return Locale.ENGLISH;
+        public DecimalFormatSymbols getDecimalFormatSymbols() {
+            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+            symbols.setDecimalSeparator('.');
+            symbols.setGroupingSeparator(',');
+            return symbols;
         }
     },
     COMMA {
-        private final DecimalFormat btcFormat = new DecimalFormat("0", DecimalFormatSymbols.getInstance(getLocale()));
-        private final DecimalFormat tableBtcFormat = new DecimalFormat("0.00000000", DecimalFormatSymbols.getInstance(getLocale()));
-        private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00", DecimalFormatSymbols.getInstance(getLocale()));
+        private final DecimalFormat btcFormat = new DecimalFormat("0", getDecimalFormatSymbols());
+        private final DecimalFormat satsFormat = new DecimalFormat("#,##0", getDecimalFormatSymbols());
+        private final DecimalFormat tableBtcFormat = new DecimalFormat("0.00000000", getDecimalFormatSymbols());
+        private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00", getDecimalFormatSymbols());
 
         public DecimalFormat getBtcFormat() {
             btcFormat.setMaximumFractionDigits(8);
             return btcFormat;
+        }
+
+        public DecimalFormat getSatsFormat() {
+            return satsFormat;
         }
 
         public DecimalFormat getTableBtcFormat() {
@@ -47,14 +60,19 @@ public enum UnitFormat {
             return currencyFormat;
         }
 
-        public Locale getLocale() {
-            return Locale.GERMAN;
+        public DecimalFormatSymbols getDecimalFormatSymbols() {
+            DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+            symbols.setDecimalSeparator(',');
+            symbols.setGroupingSeparator('.');
+            return symbols;
         }
     };
 
-    public abstract Locale getLocale();
+    public abstract DecimalFormatSymbols getDecimalFormatSymbols();
 
     public abstract DecimalFormat getBtcFormat();
+
+    public abstract DecimalFormat getSatsFormat();
 
     public abstract DecimalFormat getTableBtcFormat();
 
@@ -65,15 +83,11 @@ public enum UnitFormat {
     }
 
     public String formatSatsValue(Long amount) {
-        return String.format(getLocale(), "%,d", amount);
+        return getSatsFormat().format(amount);
     }
 
     public String formatCurrencyValue(double amount) {
         return getCurrencyFormat().format(amount);
-    }
-
-    public DecimalFormatSymbols getDecimalFormatSymbols() {
-        return DecimalFormatSymbols.getInstance(getLocale());
     }
 
     public String getGroupingSeparator() {
