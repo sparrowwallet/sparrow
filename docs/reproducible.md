@@ -79,7 +79,7 @@ sudo apt install -y rpm fakeroot binutils
 
 ### Building the binaries
 
-First, assign a temporary variabel in your shell for the specific release you want to build. For the current one specify:
+First, assign a temporary variable in your shell for the specific release you want to build. For the current one specify:
 
 ```shell
 GIT_TAG="1.7.0"
@@ -99,7 +99,10 @@ git pull --recurse-submodules
 git checkout "${GIT_TAG}"
 ```
 
-Note - there is an additional step if you updated rather then intitally cloned the repo. This is due to the [drongo submodule](https://github.com/sparrowwallet/drongo/tree/master) which needs to be synchronized (back) to the commit state it had at the time of the release. Only then your build will be comparable to the provided one in the release section of Github. To synchronize, additionally run:
+Note - there is an additional step if you updated rather than initially cloned your repo at `GIT_TAG`. 
+This is due to the [drongo submodule](https://github.com/sparrowwallet/drongo/tree/master) which needs to be checked out to the commit state it had at the time of the release. 
+Only then your build will be comparable to the provided one in the release section of Github. 
+To checkout the submodule to the correct commit for `GIT_TAG`, additionally run:
 
 ```shell
 git submodule update --checkout
