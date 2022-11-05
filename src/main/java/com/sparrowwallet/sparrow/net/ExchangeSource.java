@@ -107,6 +107,48 @@ public enum ExchangeSource {
                 return new CoinGeckoRates();
             }
         }
+    },
+    BYLLS("Bylls")
+    {
+        @Override
+        public List<Currency> getSupportedCurrencies() {
+            // Bylls is a CAD only exchange
+            String currency = getRates().public_price.to_currency;
+            if (ExchangeSource.isValidISO4217Code(currency.toUpperCase(Locale.ROOT))) {
+                return Arrays.asList(Currency.getInstance(currency.toUpperCase(Locale.ROOT)));
+            } else {
+                return new ArrayList<Currency>();
+            }
+        }
+
+        @Override
+        public Double getExchangeRate(Currency currency) {
+            return getRates().public_price.to_price;
+        }
+
+        private ByllsRates getRates()
+        {
+            String url = "https://bylls.com/api/price?from_currency=BTC&to_currency=CAD";
+            Proxy proxy = AppServices.getProxy();
+
+            if(log.isInfoEnabled()) {
+                log.info("Requesting exchange rates from " + url);
+            }
+
+            try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8))
+            {
+                Gson gson = new Gson();
+                return gson.fromJson(reader, ByllsRates.class);
+            }
+            catch (Exception e) {
+                if (log.isDebugEnabled()) {
+                    log.warn("Error retrieving currency rates", e);
+                } else {
+                    log.warn("Error retrieving currency rates (" + e.getMessage() + ")");
+                }
+                return new ByllsRates();
+            }
+        }
     };
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
@@ -193,5 +235,16 @@ public enum ExchangeSource {
         String unit;
         Double value;
         String type;
+    }
+
+    private static class ByllsRate {
+        String from_currency;
+        String to_currency;
+        Double from_price;
+        Double to_price;
+    }
+
+    private static class ByllsRates {
+        ByllsRate public_price;
     }
 }
