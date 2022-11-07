@@ -142,7 +142,7 @@ public class IOUtils {
                     pos += data.length;
                 }
             } catch(IOException e) {
-                log.warn("Error overwriting file for deletion " + file.getName(), e);
+                log.warn("Error overwriting file for deletion: " + file.getName(), e);
             }
 
             return file.delete();

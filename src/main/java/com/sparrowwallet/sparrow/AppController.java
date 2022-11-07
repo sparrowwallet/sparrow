@@ -1905,7 +1905,22 @@ public class AppController implements Initializable {
 
     private void deleteStorage(Storage storage) {
         if(storage.isClosed()) {
-            Platform.runLater(storage::delete);
+            Platform.runLater(() -> {
+                Storage.DeleteWalletService deleteWalletService = new Storage.DeleteWalletService(storage);
+                deleteWalletService.setDelay(Duration.seconds(3));
+                deleteWalletService.setPeriod(Duration.hours(1));
+                deleteWalletService.setOnSucceeded(event -> {
+                    deleteWalletService.cancel();
+                    if(!deleteWalletService.getValue()) {
+                        showErrorDialog("Error deleting wallet", "Could not delete " + storage.getWalletFile().getName()  + ". Please delete this file manually.");
+                    }
+                });
+                deleteWalletService.setOnFailed(event -> {
+                    deleteWalletService.cancel();
+                    showErrorDialog("Error deleting wallet", "Could not delete " + storage.getWalletFile().getName()  + ". Please delete this file manually.");
+                });
+                deleteWalletService.start();
+            });
         } else {
             Platform.runLater(() -> deleteStorage(storage));
         }

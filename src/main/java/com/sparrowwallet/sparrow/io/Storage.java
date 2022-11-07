@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
+import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
@@ -263,9 +264,9 @@ public class Storage {
         persistence.copyWallet(walletFile, outputStream);
     }
 
-    public void delete() {
+    public boolean delete() {
         deleteBackups();
-        IOUtils.secureDelete(walletFile);
+        return IOUtils.secureDelete(walletFile);
     }
 
     public void deleteBackups() {
@@ -728,6 +729,23 @@ public class Storage {
                 protected Void call() {
                     persistence.close();
                     return null;
+                }
+            };
+        }
+    }
+
+    public static class DeleteWalletService extends ScheduledService<Boolean> {
+        private final Storage storage;
+
+        public DeleteWalletService(Storage storage) {
+            this.storage = storage;
+        }
+
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                protected Boolean call() {
+                    return storage.delete();
                 }
             };
         }
