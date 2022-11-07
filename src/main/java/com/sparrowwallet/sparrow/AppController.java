@@ -222,6 +222,41 @@ public class AppController implements Initializable {
         Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
     };
 
+    private final ListChangeListener<Tab> tabsChangeListener = (c) -> {
+        if(c.next() && (c.wasAdded() || c.wasRemoved())) {
+            if(c.wasRemoved() && previouslySelectedTab != null) {
+                tabs.getSelectionModel().select(previouslySelectedTab);
+            }
+
+            boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData) tab.getUserData()).getType() == TabData.TabType.WALLET);
+            boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData) tab.getUserData()).getType() == TabData.TabType.WALLET);
+            if(walletAdded || walletRemoved) {
+                EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
+            }
+
+            List<WalletTabData> closedWalletTabs = c.getRemoved().stream().filter(tab -> tab.getUserData() instanceof WalletTabData)
+                    .flatMap(tab -> ((TabPane) tab.getContent()).getTabs().stream().map(subTab -> (WalletTabData) subTab.getUserData())).collect(Collectors.toList());
+            if(!closedWalletTabs.isEmpty()) {
+                EventManager.get().post(new WalletTabsClosedEvent(closedWalletTabs));
+            }
+
+            List<TransactionTabData> closedTransactionTabs = c.getRemoved().stream().map(tab -> (TabData) tab.getUserData())
+                    .filter(tabData -> tabData.getType() == TabData.TabType.TRANSACTION).map(tabData -> (TransactionTabData) tabData).collect(Collectors.toList());
+            if(!closedTransactionTabs.isEmpty()) {
+                EventManager.get().post(new TransactionTabsClosedEvent(closedTransactionTabs));
+            }
+
+            closeTab.setDisable(tabs.getTabs().isEmpty());
+            if(tabs.getTabs().isEmpty()) {
+                Stage tabStage = (Stage) tabs.getScene().getWindow();
+                tabStage.setTitle("Sparrow");
+                saveTransaction.setVisible(true);
+                saveTransaction.setDisable(true);
+                exportWallet.setDisable(true);
+            }
+        }
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -278,40 +313,7 @@ public class AppController implements Initializable {
 
         //Draggle tabs introduce unwanted movement when selecting between them
         //tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
-        tabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
-            if(c.next() && (c.wasAdded() || c.wasRemoved())) {
-                if(c.wasRemoved() && previouslySelectedTab != null) {
-                    tabs.getSelectionModel().select(previouslySelectedTab);
-                }
-
-                boolean walletAdded = c.getAddedSubList().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
-                boolean walletRemoved = c.getRemoved().stream().anyMatch(tab -> ((TabData)tab.getUserData()).getType() == TabData.TabType.WALLET);
-                if(walletAdded || walletRemoved) {
-                    EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
-                }
-
-                List<WalletTabData> closedWalletTabs = c.getRemoved().stream().filter(tab -> tab.getUserData() instanceof WalletTabData)
-                        .flatMap(tab -> ((TabPane)tab.getContent()).getTabs().stream().map(subTab -> (WalletTabData)subTab.getUserData())).collect(Collectors.toList());
-                if(!closedWalletTabs.isEmpty()) {
-                    EventManager.get().post(new WalletTabsClosedEvent(closedWalletTabs));
-                }
-
-                List<TransactionTabData> closedTransactionTabs = c.getRemoved().stream().map(tab -> (TabData)tab.getUserData())
-                        .filter(tabData -> tabData.getType() == TabData.TabType.TRANSACTION).map(tabData -> (TransactionTabData)tabData).collect(Collectors.toList());
-                if(!closedTransactionTabs.isEmpty()) {
-                    EventManager.get().post(new TransactionTabsClosedEvent(closedTransactionTabs));
-                }
-
-                closeTab.setDisable(tabs.getTabs().isEmpty());
-                if(tabs.getTabs().isEmpty()) {
-                    Stage tabStage = (Stage)tabs.getScene().getWindow();
-                    tabStage.setTitle("Sparrow");
-                    saveTransaction.setVisible(true);
-                    saveTransaction.setDisable(true);
-                    exportWallet.setDisable(true);
-                }
-            }
-        });
+        tabs.getTabs().addListener(tabsChangeListener);
 
         tabs.getScene().getWindow().setOnCloseRequest(event -> {
             EventManager.get().unregister(this);
@@ -1813,15 +1815,19 @@ public class AppController implements Initializable {
         MenuItem moveRight = new MenuItem("Move Right");
         moveRight.setOnAction(event -> {
             int index = tabs.getTabs().indexOf(tab);
+            tabs.getTabs().removeListener(tabsChangeListener);
             tabs.getTabs().remove(tab);
             tabs.getTabs().add(index + 1, tab);
+            tabs.getTabs().addListener(tabsChangeListener);
             tabs.getSelectionModel().select(tab);
         });
         MenuItem moveLeft = new MenuItem("Move Left");
         moveLeft.setOnAction(event -> {
             int index = tabs.getTabs().indexOf(tab);
+            tabs.getTabs().removeListener(tabsChangeListener);
             tabs.getTabs().remove(tab);
             tabs.getTabs().add(index - 1, tab);
+            tabs.getTabs().addListener(tabsChangeListener);
             tabs.getSelectionModel().select(tab);
         });
         contextMenu.getItems().addAll(moveRight, moveLeft);
