@@ -31,10 +31,10 @@ public class Sparrow implements WalletImport, WalletExport {
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
             Wallet exportedWallet = !wallet.isMasterWallet() ? wallet.getMasterWallet() : wallet;
-            PersistenceType persistenceType = exportedWallet.getChildWallets().isEmpty() ? PersistenceType.JSON : PersistenceType.DB;
+            PersistenceType persistenceType = PersistenceType.DB;
             Persistence persistence = persistenceType.getInstance();
             Storage storage = AppServices.get().getOpenWallets().get(exportedWallet);
-            File tempFile = File.createTempFile(exportedWallet.getName(), "." + persistenceType.getExtension());
+            File tempFile = File.createTempFile(exportedWallet.getName() + "tmp", "." + persistenceType.getExtension());
             tempFile.delete();
             Storage tempStorage = new Storage(persistence, tempFile);
             tempStorage.setKeyDeriver(storage.getKeyDeriver());
