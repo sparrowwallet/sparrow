@@ -171,7 +171,7 @@ public class UtxoEntry extends HashIndexEntry {
         }
 
         public UtxoMixData getUtxoMixData() {
-            Wallet wallet = getUtxoEntry().getWallet().getMasterWallet();
+            Wallet wallet = getUtxoEntry().getWallet().isMasterWallet() ? getUtxoEntry().getWallet() : getUtxoEntry().getWallet().getMasterWallet();
             if(wallet.getUtxoMixData(getHashIndex()) != null) {
                 return wallet.getUtxoMixData(getHashIndex());
             }

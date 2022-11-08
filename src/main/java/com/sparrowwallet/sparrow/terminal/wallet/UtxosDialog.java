@@ -6,16 +6,19 @@ import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.table.Table;
 import com.googlecode.lanterna.gui2.table.TableModel;
 import com.samourai.whirlpool.client.wallet.beans.MixProgress;
-import com.sparrowwallet.drongo.wallet.MixConfig;
-import com.sparrowwallet.drongo.wallet.StandardAccount;
+import com.samourai.whirlpool.client.whirlpool.beans.Pool;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
+import com.sparrowwallet.sparrow.terminal.ModalDialog;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.terminal.wallet.table.*;
 import com.sparrowwallet.sparrow.wallet.*;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
+import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.WeakChangeListener;
@@ -23,6 +26,7 @@ import javafx.beans.value.WeakChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 public class UtxosDialog extends WalletDialog {
     private final Label balance;
@@ -34,6 +38,7 @@ public class UtxosDialog extends WalletDialog {
 
     private Button startMix;
     private Button mixTo;
+    private Button mixSelected;
 
     private final ChangeListener<Boolean> mixingOnlineListener = (observable, oldValue, newValue) -> {
         SparrowTerminal.get().getGuiThread().invokeLater(() -> startMix.setEnabled(newValue));
@@ -75,6 +80,8 @@ public class UtxosDialog extends WalletDialog {
                 }
             }
         }
+
+        startMix.setLabel(newValue ? "Stop Mixing" : "Start Mixing");
     };
 
     public UtxosDialog(WalletForm walletForm) {
@@ -99,6 +106,13 @@ public class UtxosDialog extends WalletDialog {
 
         utxos = new Table<>(getTableColumns());
         utxos.setTableCellRenderer(new EntryTableCellRenderer());
+        utxos.setSelectAction(() -> {
+            if(utxos.getTableModel().getRowCount() > utxos.getSelectedRow()) {
+                TableCell dateCell = utxos.getTableModel().getRow(utxos.getSelectedRow()).get(0);
+                dateCell.setSelected(!dateCell.isSelected());
+                updateMixSelectedButton();
+            }
+        });
 
         updateLabels(walletUtxosEntry);
         updateHistory(getWalletForm().getWalletUtxosEntry());
@@ -136,7 +150,14 @@ public class UtxosDialog extends WalletDialog {
             buttonPanel.addComponent(new Button("Back", () -> onBack(Function.UTXOS)));
             buttonPanel.addComponent(new Button("Refresh", this::onRefresh));
         } else {
-            buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
+            if(WhirlpoolServices.canWalletMix(getWalletForm().getWallet())) {
+                mixSelected = new Button("Mix Selected", this::mixSelected);
+                mixSelected.setEnabled(false);
+                buttonPanel.addComponent(mixSelected);
+            } else {
+                buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
+            }
+
             buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
             buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
             buttonPanel.addComponent(new Button("Back", () -> onBack(Function.UTXOS)));
@@ -304,6 +325,61 @@ public class UtxosDialog extends WalletDialog {
         } else {
             mixTo.setLabel("Mix to...");
         }
+    }
+
+    private void updateMixSelectedButton() {
+        if(mixSelected == null) {
+            return;
+        }
+
+        mixSelected.setEnabled(!getSelectedEntries().isEmpty());
+    }
+
+    private List<UtxoEntry> getSelectedEntries() {
+        return utxos.getTableModel().getRows().stream().map(row -> row.get(0)).filter(TableCell::isSelected).map(dateCell -> (UtxoEntry)dateCell.getEntry()).collect(Collectors.toList());
+    }
+
+    private void mixSelected() {
+        MixDialog mixDialog = new MixDialog(getWalletForm().getMasterWalletId(), getWalletForm(), getSelectedEntries());
+        Pool pool = mixDialog.showDialog(SparrowTerminal.get().getGui());
+
+        if(pool != null) {
+            Wallet wallet = getWalletForm().getWallet();
+            if(wallet.isMasterWallet() && !wallet.isWhirlpoolMasterWallet()) {
+                addAccount(wallet, StandardAccount.WHIRLPOOL_PREMIX, () -> broadcastPremix(pool));
+            } else {
+                Platform.runLater(() -> broadcastPremix(pool));
+            }
+        }
+    }
+
+    public void broadcastPremix(Pool pool) {
+        ModalDialog broadcastingDialog = new ModalDialog(getWalletForm().getWallet().getFullDisplayName(), "Broadcasting premix...");
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().addWindow(broadcastingDialog));
+
+        //The WhirlpoolWallet has already been configured
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getStorage().getWalletId(getWalletForm().getMasterWallet()));
+        List<BlockTransactionHashIndex> utxos = getSelectedEntries().stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
+        Whirlpool.Tx0BroadcastService tx0BroadcastService = new Whirlpool.Tx0BroadcastService(whirlpool, pool, utxos);
+        tx0BroadcastService.setOnSucceeded(workerStateEvent -> {
+            Sha256Hash txid = tx0BroadcastService.getValue();
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                SparrowTerminal.get().getGui().removeWindow(broadcastingDialog);
+                AppServices.showSuccessDialog("Broadcast Successful", "Premix transaction id:\n" + txid.toString());
+            });
+        });
+        tx0BroadcastService.setOnFailed(workerStateEvent -> {
+            Throwable exception = workerStateEvent.getSource().getException();
+            while(exception.getCause() != null) {
+                exception = exception.getCause();
+            }
+            String message = exception.getMessage();
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                SparrowTerminal.get().getGui().removeWindow(broadcastingDialog);
+                AppServices.showErrorDialog("Error broadcasting premix transaction", message);
+            });
+        });
+        tx0BroadcastService.start();
     }
 
     @Subscribe

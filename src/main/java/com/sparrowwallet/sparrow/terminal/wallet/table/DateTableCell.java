@@ -18,6 +18,16 @@ public class DateTableCell extends TableCell {
 
     @Override
     public String formatCell() {
+        String unselected = formatUnselectedCell();
+
+        if(selected) {
+            return "(*) " + unselected.substring(Math.min(4, unselected.length()));
+        }
+
+        return unselected;
+    }
+
+    public String formatUnselectedCell() {
         if(entry instanceof TransactionEntry transactionEntry && transactionEntry.getBlockTransaction() != null) {
             if(transactionEntry.getBlockTransaction().getHeight() == -1) {
                 return "Unconfirmed Parent";

@@ -111,7 +111,15 @@ public class SettingsDialog extends WalletDialog {
         StandardAccount standardAccount = addAccountDialog.showDialog(SparrowTerminal.get().getGui());
 
         if(standardAccount != null) {
-            addAccount(masterWallet, standardAccount);
+            addAccount(masterWallet, standardAccount, () -> {
+                SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                    if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+                        showSuccessDialog("Added Accounts", "Whirlpool Accounts have been successfully added.");
+                    } else {
+                        showSuccessDialog("Added Account", standardAccount.getName() + " has been successfully added.");
+                    }
+                });
+            });
         }
     }
 
@@ -252,89 +260,6 @@ public class SettingsDialog extends WalletDialog {
                     keyDerivationService.start();
                 }
             });
-        }
-    }
-
-    private void addAccount(Wallet masterWallet, StandardAccount standardAccount) {
-        if(masterWallet.isEncrypted()) {
-            String walletId = getWalletForm().getWalletId();
-
-            TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Password");
-            builder.setDescription("Enter the wallet password:");
-            builder.setPasswordInput(true);
-
-            String password = builder.build().showDialog(SparrowTerminal.get().getGui());
-            if(password != null) {
-                Platform.runLater(() -> {
-                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(getWalletForm().getStorage(), new SecureString(password), true);
-                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
-                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                        ECKey encryptionFullKey = keyDerivationService.getValue();
-                        Key key = new Key(encryptionFullKey.getPrivKeyBytes(), getWalletForm().getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                        encryptionFullKey.clear();
-                        masterWallet.decrypt(key);
-                        addAndEncryptAccount(masterWallet, standardAccount, key);
-                    });
-                    keyDerivationService.setOnFailed(workerStateEvent -> {
-                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
-                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
-                            showErrorDialog("Invalid Password", "The wallet password was invalid.");
-                        } else {
-                            log.error("Error deriving wallet key", keyDerivationService.getException());
-                        }
-                    });
-                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
-                    keyDerivationService.start();
-                });
-            }
-        } else {
-            Platform.runLater(() -> addAndSaveAccount(masterWallet, standardAccount, null));
-        }
-    }
-
-    private void addAndEncryptAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
-        try {
-            addAndSaveAccount(masterWallet, standardAccount, key);
-        } finally {
-            masterWallet.encrypt(key);
-            key.clear();
-        }
-    }
-
-    private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
-        List<Wallet> childWallets;
-        if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
-            childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
-            SparrowTerminal.get().getGuiThread().invokeLater(() -> showSuccessDialog("Added Accounts", "Whirlpool Accounts have been successfully added."));
-        } else {
-            Wallet childWallet = masterWallet.addChildWallet(standardAccount);
-            EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
-            childWallets = List.of(childWallet);
-            SparrowTerminal.get().getGuiThread().invokeLater(() -> showSuccessDialog("Added Account", standardAccount.getName() + " has been successfully added."));
-        }
-
-        if(key != null) {
-            for(Wallet childWallet : childWallets) {
-                childWallet.encrypt(key);
-            }
-        }
-
-        saveChildWallets(masterWallet);
-    }
-
-    private void saveChildWallets(Wallet masterWallet) {
-        for(Wallet childWallet : masterWallet.getChildWallets()) {
-            if(!childWallet.isNested()) {
-                Storage storage = getWalletForm().getStorage();
-                if(!storage.isPersisted(childWallet)) {
-                    try {
-                        storage.saveWallet(childWallet);
-                    } catch(Exception e) {
-                        log.error("Error saving wallet", e);
-                        showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
-                    }
-                }
-            }
         }
     }
 

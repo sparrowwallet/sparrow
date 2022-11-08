@@ -2,23 +2,42 @@ package com.sparrowwallet.sparrow.terminal.wallet;
 
 import com.google.common.base.Strings;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptionType;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.event.ChildWalletsAddedEvent;
+import com.sparrowwallet.sparrow.event.StorageEvent;
+import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryClearedEvent;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.wallet.Function;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
+import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Currency;
+import java.util.List;
+
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class WalletDialog extends DialogWindow {
+    private static final Logger log = LoggerFactory.getLogger(WalletDialog.class);
+
     private final WalletForm walletForm;
 
     public WalletDialog(String title, WalletForm walletForm) {
@@ -49,6 +68,95 @@ public class WalletDialog extends DialogWindow {
     public void close() {
         if(getTextGUI() != null) {
             getTextGUI().removeWindow(this);
+        }
+    }
+
+    protected void addAccount(Wallet masterWallet, StandardAccount standardAccount, Runnable postAddition) {
+        if(masterWallet.isEncrypted()) {
+            String walletId = getWalletForm().getWalletId();
+
+            TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Password");
+            builder.setDescription("Enter the wallet password:");
+            builder.setPasswordInput(true);
+
+            String password = builder.build().showDialog(SparrowTerminal.get().getGui());
+            if(password != null) {
+                Platform.runLater(() -> {
+                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(getWalletForm().getStorage(), new SecureString(password), true);
+                    keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+                        ECKey encryptionFullKey = keyDerivationService.getValue();
+                        Key key = new Key(encryptionFullKey.getPrivKeyBytes(), getWalletForm().getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                        encryptionFullKey.clear();
+                        masterWallet.decrypt(key);
+                        addAndEncryptAccount(masterWallet, standardAccount, key);
+                        if(postAddition != null) {
+                            postAddition.run();
+                        }
+                    });
+                    keyDerivationService.setOnFailed(workerStateEvent -> {
+                        EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
+                        if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                            showErrorDialog("Invalid Password", "The wallet password was invalid.");
+                        } else {
+                            log.error("Error deriving wallet key", keyDerivationService.getException());
+                        }
+                    });
+                    EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.START, "Decrypting wallet..."));
+                    keyDerivationService.start();
+                });
+            }
+        } else {
+            Platform.runLater(() -> {
+                addAndSaveAccount(masterWallet, standardAccount, null);
+                if(postAddition != null) {
+                    postAddition.run();
+                }
+            });
+        }
+    }
+
+    private void addAndEncryptAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
+        try {
+            addAndSaveAccount(masterWallet, standardAccount, key);
+        } finally {
+            masterWallet.encrypt(key);
+            key.clear();
+        }
+    }
+
+    private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
+        List<Wallet> childWallets;
+        if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+            childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
+        } else {
+            Wallet childWallet = masterWallet.addChildWallet(standardAccount);
+            EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+            childWallets = List.of(childWallet);
+        }
+
+        if(key != null) {
+            for(Wallet childWallet : childWallets) {
+                childWallet.encrypt(key);
+            }
+        }
+
+        saveChildWallets(masterWallet);
+    }
+
+    private void saveChildWallets(Wallet masterWallet) {
+        for(Wallet childWallet : masterWallet.getChildWallets()) {
+            if(!childWallet.isNested()) {
+                Storage storage = getWalletForm().getStorage();
+                if(!storage.isPersisted(childWallet)) {
+                    try {
+                        storage.saveWallet(childWallet);
+                    } catch(Exception e) {
+                        log.error("Error saving wallet", e);
+                        showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
+                    }
+                }
+            }
         }
     }
 

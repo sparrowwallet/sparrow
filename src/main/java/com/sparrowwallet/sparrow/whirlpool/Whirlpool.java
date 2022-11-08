@@ -480,6 +480,10 @@ public class Whirlpool {
         config.setScode(scode);
     }
 
+    public Tx0FeeTarget getTx0FeeTarget() {
+        return tx0FeeTarget;
+    }
+
     public void setTx0FeeTarget(Tx0FeeTarget tx0FeeTarget) {
         this.tx0FeeTarget = tx0FeeTarget;
     }
