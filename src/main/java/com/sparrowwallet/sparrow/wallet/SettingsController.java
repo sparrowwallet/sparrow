@@ -458,18 +458,10 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         Optional<Wallet> optWallet = AppServices.get().getOpenWallets().entrySet().stream()
-                .filter(entry -> walletForm.getWalletFile().equals(entry.getValue().getWalletFile()) && entry.getKey().isMasterWallet()).map(Map.Entry::getKey).findFirst();
+                .filter(entry -> walletForm.getWalletFile().equals(entry.getValue().getWalletFile())
+                        && entry.getKey().getName().equals(walletForm.getWallet().getName())).map(Map.Entry::getKey).findFirst();
         if(optWallet.isPresent()) {
-            Wallet wallet = optWallet.get();
-            if(!walletForm.getWallet().getName().equals(wallet.getName())) {
-                wallet = wallet.getChildWallet(walletForm.getWallet().getName());
-            }
-
-            if(wallet == null) {
-                throw new IllegalStateException("Cannot find child wallet " + walletForm.getWallet().getFullDisplayName() + " to export");
-            }
-
-            WalletExportDialog dlg = new WalletExportDialog(wallet);
+            WalletExportDialog dlg = new WalletExportDialog(optWallet.get());
             dlg.showAndWait();
         } else {
             AppServices.showErrorDialog("Cannot export wallet", "Wallet cannot be exported, please save it first.");

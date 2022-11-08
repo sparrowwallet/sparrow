@@ -60,15 +60,21 @@ public class SettingsWalletForm extends WalletForm {
             //Clear node tree, detaching and saving any labels from the existing wallet
             walletCopy.clearNodes(wallet);
 
+            //Retrieve master or child wallets from current active wallet before overwriting
+            Wallet masterWallet = wallet.isMasterWallet() ? null : wallet.getMasterWallet();
             Integer childIndex = wallet.isMasterWallet() ? null : wallet.getMasterWallet().getChildWallets().indexOf(wallet);
+            List<Wallet> childWallets = wallet.getChildWallets();
 
             //Replace the SettingsWalletForm wallet reference - note that this reference is only shared with the WalletForm wallet with WalletAddressesChangedEvent below
             wallet = walletCopy.copy();
 
+            //Restore bidirectional links between original master or child wallets
             if(wallet.isMasterWallet()) {
+                wallet.setChildWallets(childWallets);
                 wallet.getChildWallets().forEach(childWallet -> childWallet.setMasterWallet(wallet));
-            } else if(childIndex != null) {
-                wallet.getMasterWallet().getChildWallets().set(childIndex, wallet);
+            } else if(masterWallet != null && childIndex != null) {
+                wallet.setMasterWallet(masterWallet);
+                masterWallet.getChildWallets().set(childIndex, wallet);
             }
 
             save();
