@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
@@ -360,6 +361,10 @@ public class Bwt {
                     if(!useWallets) {
                         Bwt.this.start(notifier);
                     } else {
+                        if(AppServices.get().getOpenWallets().keySet().stream().anyMatch(wallet -> wallet.getScriptType() == ScriptType.P2TR)) {
+                            throw new IllegalStateException("Taproot wallets are not yet supported when connecting to Bitcoin Core");
+                        }
+
                         Bwt.this.start(AppServices.get().getOpenWallets().keySet(), notifier);
                     }
 
