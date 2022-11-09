@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.terminal.wallet;
 
 import com.google.common.eventbus.Subscribe;
-import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -14,6 +13,8 @@ import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.wallet.Function;
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 public class ReceiveDialog extends WalletDialog {
+    private static final Logger log = LoggerFactory.getLogger(ReceiveDialog.class);
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     private final Label address;
@@ -50,12 +52,26 @@ public class ReceiveDialog extends WalletDialog {
         buttonPanel.addComponent(new Button("Back", () -> onBack(Function.RECEIVE)));
         buttonPanel.addComponent(new Button("Get Fresh Address", this::refreshAddress).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
 
-        mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
+        mainPanel.addComponent(new Button("Show QR", this::showQR));
 
         buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER,false,false)).addTo(mainPanel);
         setComponent(mainPanel);
 
         refreshAddress();
+    }
+
+    public void showQR() {
+        if(currentEntry == null) {
+            return;
+        }
+
+        try {
+            QRCodeDialog qrCodeDialog = new QRCodeDialog(currentEntry.getAddress().toString());
+            qrCodeDialog.showDialog(SparrowTerminal.get().getGui());
+        } catch(Exception e) {
+            log.error("Error creating QR", e);
+            AppServices.showErrorDialog("Error creating QR", e.getMessage());
+        }
     }
 
     public void refreshAddress() {
