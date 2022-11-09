@@ -63,6 +63,8 @@ public class TrayManager {
             miStage.setFont(Font.decode(null).deriveFont(Font.BOLD));
             miStage.addActionListener(e -> Platform.runLater(() -> {
                 stage.show();
+                stage.setAlwaysOnTop(true);
+                stage.setAlwaysOnTop(false);
                 EventQueue.invokeLater(() -> {
                     popupMenu.remove(miStage);
 
