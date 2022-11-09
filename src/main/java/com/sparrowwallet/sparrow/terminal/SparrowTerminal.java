@@ -57,6 +57,10 @@ public class SparrowTerminal extends Application {
         this.gui = new SparrowTextGui(this, screen, new DefaultWindowManager(), new EmptySpace(TextColor.ANSI.BLUE));
         EventManager.get().register(gui);
 
+        terminal.addResizeListener((terminal1, newSize) -> {
+            gui.handleResize();
+        });
+
         sparrowTerminal = this;
 
         try {

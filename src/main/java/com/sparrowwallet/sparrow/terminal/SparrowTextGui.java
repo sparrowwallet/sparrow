@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.terminal;
 
 import com.google.common.eventbus.Subscribe;
-import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.screen.Screen;
@@ -15,10 +14,11 @@ import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.util.Duration;
 
-import java.util.Objects;
-
 public class SparrowTextGui extends MultiWindowTextGUI {
     private final BasicWindow mainWindow;
+
+    private final Panel titleBar;
+    private final Panel statusBar;
 
     private final Label connectedLabel;
     private final Label statusLabel;
@@ -36,7 +36,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
         Panel panel = new Panel(new BorderLayout());
 
-        Panel titleBar = new Panel(new GridLayout(2));
+        titleBar = new Panel(new GridLayout(2));
         new Label("Sparrow Terminal").addTo(titleBar);
         this.connectedLabel = new Label("Disconnected");
         titleBar.addComponent(connectedLabel, GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, true, false));
@@ -44,7 +44,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
         panel.addComponent(new EmptySpace(TextColor.ANSI.BLUE));
 
-        Panel statusBar = new Panel(new GridLayout(2));
+        statusBar = new Panel(new GridLayout(2));
         this.statusLabel = new Label("").addTo(statusBar);
         this.statusProgress = new ProgressBar(0, 100, 10);
         statusBar.addComponent(statusProgress, GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, true, false));
@@ -55,17 +55,12 @@ public class SparrowTextGui extends MultiWindowTextGUI {
         panel.addComponent(statusBar, BorderLayout.Location.BOTTOM);
         getBackgroundPane().setComponent(panel);
 
-        getMainWindow().addWindowListener(new WindowListenerAdapter() {
-            @Override
-            public void onResized(Window window, TerminalSize oldSize, TerminalSize newSize) {
-                if(!Objects.equals(oldSize, newSize)) {
-                    titleBar.invalidate();
-                    statusBar.invalidate();
-                }
-            }
-        });
-
         AppServices.get().start();
+    }
+
+    public void handleResize() {
+        titleBar.invalidate();
+        statusBar.invalidate();
     }
 
     public BasicWindow getMainWindow() {
