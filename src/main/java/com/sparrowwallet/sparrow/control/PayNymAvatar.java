@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.PayNymImageLoadedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
+import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Service;
@@ -49,7 +50,6 @@ public class PayNymAvatar extends StackPane {
                     });
                     payNymAvatarService.setOnSucceeded(successEvent -> {
                         setImage(payNymAvatarService.getValue());
-                        EventManager.get().post(new PayNymImageLoadedEvent(paymentCode, payNymAvatarService.getValue()));
                     });
                     payNymAvatarService.setOnFailed(failedEvent -> {
                         log.debug("Error loading PayNym avatar", failedEvent.getSource().getException());
@@ -131,6 +131,7 @@ public class PayNymAvatar extends StackPane {
                         try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
                             Image image = new Image(is, 150, 150, true, false);
                             paymentCodeCache.put(cacheId, image);
+                            Platform.runLater(() -> EventManager.get().post(new PayNymImageLoadedEvent(paymentCode, image)));
                             return image;
                         } catch(Exception e) {
                             log.debug("Error loading PayNym avatar", e);
