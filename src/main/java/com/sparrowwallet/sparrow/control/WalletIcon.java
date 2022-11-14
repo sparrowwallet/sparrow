@@ -2,7 +2,9 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ImageUtils;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
@@ -60,18 +62,16 @@ public class WalletIcon extends StackPane {
                 WalletModel walletModel = keystore.getWalletModel();
 
                 Image image = null;
-                try {
-                    image = new Image("image/" + walletModel.getType() + "-icon.png", 15, 15, true, true);
-                } catch(Exception e) {
-                    //ignore
+                if(Config.get().getTheme() == Theme.DARK) {
+                    image = loadImage("image/" + walletModel.getType() + "-icon-invert.png");
                 }
 
                 if(image == null) {
-                    try {
-                        image = new Image("image/" + walletModel.getType() + ".png", 15, 15, true, true);
-                    } catch(Exception e) {
-                        //ignore
-                    }
+                    image = loadImage("image/" + walletModel.getType() + "-icon.png");
+                }
+
+                if(image == null) {
+                    image = loadImage("image/" + walletModel.getType() + ".png");
                 }
 
                 if(image != null && !image.isError()) {
@@ -86,6 +86,16 @@ public class WalletIcon extends StackPane {
             glyph.setFontSize(10.0);
             getChildren().add(glyph);
         }
+    }
+
+    private Image loadImage(String imageName) {
+        try {
+            return new Image(imageName, 15, 15, true, true);
+        } catch(Exception e) {
+            //ignore
+        }
+
+        return null;
     }
 
     private void addWalletIcon(String walletId) {

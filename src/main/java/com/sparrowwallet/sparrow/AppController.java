@@ -2186,6 +2186,14 @@ public class AppController implements Initializable {
         } else {
             tabs.getScene().getStylesheets().remove(darkCss);
         }
+
+        for(Tab tab : tabs.getTabs()) {
+            if(tab.getUserData() instanceof WalletTabData) {
+                Label tabLabel = (Label)tab.getGraphic();
+                WalletIcon walletIcon = (WalletIcon)tabLabel.getGraphic();
+                walletIcon.refresh();
+            }
+        }
     }
 
     @Subscribe
