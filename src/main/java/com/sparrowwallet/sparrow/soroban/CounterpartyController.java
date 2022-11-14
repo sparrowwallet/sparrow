@@ -174,7 +174,7 @@ public class CounterpartyController extends SorobanController {
         payNymAvatar.visibleProperty().bind(payNym.visibleProperty());
         payNymButton.managedProperty().bind(payNymButton.visibleProperty());
         payNymButton.visibleProperty().bind(payNym.visibleProperty().not());
-        if(Config.get().isUsePayNym()) {
+        if(isUsePayNym(wallet)) {
             retrievePayNym(null);
         } else {
             payNym.setVisible(false);
@@ -270,7 +270,7 @@ public class CounterpartyController extends SorobanController {
     private void updateMixPartner(PaymentCode paymentCodeInitiator, CahootsType cahootsType) {
         String code = paymentCodeInitiator.toString();
         mixingPartner.setText(code.substring(0, 12) + "..." + code.substring(code.length() - 5));
-        if(Config.get().isUsePayNym()) {
+        if(isUsePayNym(wallet)) {
             mixPartnerAvatar.setPaymentCode(paymentCodeInitiator);
             AppServices.getPayNymService().getPayNym(paymentCodeInitiator.toString()).subscribe(payNym -> {
                 mixingPartner.setText(payNym.nymName());
@@ -351,7 +351,7 @@ public class CounterpartyController extends SorobanController {
     }
 
     private void followPaymentCode(PaymentCode paymentCodeInitiator) {
-        if(Config.get().isUsePayNym()) {
+        if(isUsePayNym(wallet)) {
             PayNymService payNymService = AppServices.getPayNymService();
             payNymService.getAuthToken(wallet, new HashMap<>()).subscribe(authToken -> {
                 String signature = payNymService.getSignature(wallet, authToken);
@@ -393,7 +393,7 @@ public class CounterpartyController extends SorobanController {
     }
 
     public void retrievePayNym(ActionEvent event) {
-        Config.get().setUsePayNym(true);
+        setUsePayNym(wallet, true);
 
         PayNymService payNymService = AppServices.getPayNymService();
         payNymService.createPayNym(wallet).subscribe(createMap -> {

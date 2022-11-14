@@ -1,10 +1,7 @@
 package com.sparrowwallet.sparrow.io.db;
 
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.UtxoMixData;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.*;
 import org.jdbi.v3.sqlobject.CreateSqlObject;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.customizer.Bind;
@@ -32,6 +29,9 @@ public interface WalletDao {
 
     @CreateSqlObject
     DetachedLabelDao createDetachedLabelDao();
+
+    @CreateSqlObject
+    WalletConfigDao createWalletConfigDao();
 
     @CreateSqlObject
     MixConfigDao createMixConfigDao();
@@ -118,6 +118,7 @@ public interface WalletDao {
         Map<String, String> detachedLabels = createDetachedLabelDao().getAll();
         wallet.getDetachedLabels().putAll(detachedLabels);
 
+        wallet.setWalletConfig(createWalletConfigDao().getForWalletId(wallet.getId()));
         wallet.setMixConfig(createMixConfigDao().getForWalletId(wallet.getId()));
 
         Map<Sha256Hash, UtxoMixData> utxoMixes = createUtxoMixDataDao().getForWalletId(wallet.getId());
@@ -136,6 +137,7 @@ public interface WalletDao {
             createWalletNodeDao().addWalletNodes(wallet);
             createBlockTransactionDao().addBlockTransactions(wallet);
             createDetachedLabelDao().clearAndAddAll(wallet);
+            createWalletConfigDao().addWalletConfig(wallet);
             createMixConfigDao().addMixConfig(wallet);
             createUtxoMixDataDao().addUtxoMixData(wallet);
         } finally {

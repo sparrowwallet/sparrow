@@ -315,6 +315,11 @@ public class DbPersistence implements Persistence {
                     }
                 }
 
+                if(dirtyPersistables.walletConfig) {
+                    WalletConfigDao walletConfigDao = handle.attach(WalletConfigDao.class);
+                    walletConfigDao.addOrUpdate(wallet, wallet.getWalletConfig());
+                }
+
                 if(dirtyPersistables.mixConfig) {
                     MixConfigDao mixConfigDao = handle.attach(MixConfigDao.class);
                     mixConfigDao.addOrUpdate(wallet, wallet.getMixConfig());
@@ -746,6 +751,13 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
+    public void walletConfigChanged(WalletConfigChangedEvent event) {
+        if(persistsFor(event.getWallet()) && event.getWallet().getWalletConfig() != null) {
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).walletConfig = true);
+        }
+    }
+
+    @Subscribe
     public void walletMixConfigChanged(WalletMixConfigChangedEvent event) {
         if(persistsFor(event.getWallet()) && event.getWallet().getMixConfig() != null) {
             updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).mixConfig = true);
@@ -793,6 +805,7 @@ public class DbPersistence implements Persistence {
         public Integer watchLast = null;
         public final List<Entry> labelEntries = new ArrayList<>();
         public final List<BlockTransactionHashIndex> utxoStatuses = new ArrayList<>();
+        public boolean walletConfig;
         public boolean mixConfig;
         public final Map<Sha256Hash, UtxoMixData> changedUtxoMixes = new HashMap<>();
         public final Map<Sha256Hash, UtxoMixData> removedUtxoMixes = new HashMap<>();
@@ -812,6 +825,7 @@ public class DbPersistence implements Persistence {
                     "\nAddress labels:" + labelEntries.stream().filter(entry -> entry instanceof NodeEntry).map(entry -> ((NodeEntry)entry).getNode().toString() + " " + entry.getLabel()).collect(Collectors.toList()) +
                     "\nUTXO labels:" + labelEntries.stream().filter(entry -> entry instanceof HashIndexEntry).map(entry -> ((HashIndexEntry)entry).getHashIndex().toString()).collect(Collectors.toList()) +
                     "\nUTXO statuses:" + utxoStatuses +
+                    "\nWallet config:" + walletConfig +
                     "\nMix config:" + mixConfig +
                     "\nUTXO mixes changed:" + changedUtxoMixes +
                     "\nUTXO mixes removed:" + removedUtxoMixes +

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow;
 
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.control.WalletIcon;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Config;
@@ -18,6 +19,7 @@ import org.controlsfx.tools.Platform;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,6 +45,7 @@ public class SparrowDesktop extends Application {
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
         Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
+        URL.setURLStreamHandlerFactory(protocol -> WalletIcon.PROTOCOL.equals(protocol) ? new WalletIcon.WalletIconStreamHandler() : null);
 
         AppServices.initialize(this);
 

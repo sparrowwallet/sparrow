@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.PayNymImageLoadedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
 import javafx.beans.property.ObjectProperty;
@@ -47,6 +49,7 @@ public class PayNymAvatar extends StackPane {
                     });
                     payNymAvatarService.setOnSucceeded(successEvent -> {
                         setImage(payNymAvatarService.getValue());
+                        EventManager.get().post(new PayNymImageLoadedEvent(paymentCode, payNymAvatarService.getValue()));
                     });
                     payNymAvatarService.setOnFailed(failedEvent -> {
                         log.debug("Error loading PayNym avatar", failedEvent.getSource().getException());

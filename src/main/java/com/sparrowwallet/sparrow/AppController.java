@@ -1463,11 +1463,10 @@ public class AppController implements Initializable {
                 wallet.setName(name);
             }
             Tab tab = new Tab("");
-            Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
-            glyph.setFontSize(10.0);
-            glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
+            WalletIcon walletIcon = new WalletIcon(storage, wallet);
+            walletIcon.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
             Label tabLabel = new Label(name);
-            tabLabel.setGraphic(glyph);
+            tabLabel.setGraphic(walletIcon);
             tabLabel.setGraphicTextGap(5.0);
             tab.setGraphic(tabLabel);
             tab.setClosable(true);
@@ -1856,15 +1855,59 @@ public class AppController implements Initializable {
 
         contextMenu.getItems().addAll(new SeparatorMenuItem(), close, closeOthers, closeAll);
 
-        if(tab.getUserData() instanceof WalletTabData) {
+        if(tab.getUserData() instanceof WalletTabData walletTabData) {
+            Menu walletIcon = new Menu("Wallet Icon");
+            MenuItem custom = new MenuItem("Custom...");
+            custom.setOnAction(event -> {
+                setCustomIcon(walletTabData.getWallet());
+            });
+            MenuItem reset = new MenuItem("Reset");
+            reset.setOnAction(event -> {
+                resetIcon(walletTabData.getWalletForm());
+            });
+            walletIcon.getItems().addAll(custom, reset);
+
             MenuItem delete = new MenuItem("Delete...");
             delete.setOnAction(event -> {
-                deleteWallet(getSelectedWalletForm());
+                deleteWallet(walletTabData.getWalletForm());
             });
-            contextMenu.getItems().addAll(new SeparatorMenuItem(), delete);
+            contextMenu.getItems().addAll(new SeparatorMenuItem(), walletIcon, delete);
         }
 
         return contextMenu;
+    }
+
+    private void setCustomIcon(Wallet wallet) {
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Image");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif")
+        );
+
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
+        File file = fileChooser.showOpenDialog(window);
+        if(file != null) {
+            try {
+                byte[] iconData = ImageUtils.resize(file, WalletIcon.SAVE_WIDTH, WalletIcon.SAVE_HEIGHT);
+                WalletConfig walletConfig = wallet.getMasterWalletConfig();
+                walletConfig.setIconData(iconData, true);
+                EventManager.get().post(new WalletConfigChangedEvent(wallet));
+            } catch(Exception e) {
+                log.error("Error creating custom wallet icon", e);
+                showErrorDialog("Error creating custom wallet icon", e.getMessage());
+            }
+        }
+    }
+
+    private void resetIcon(WalletForm walletForm) {
+        Wallet masterWallet = walletForm.getMasterWallet();
+        if(masterWallet.getWalletConfig() != null && masterWallet.getWalletConfig().isUserIcon()) {
+            masterWallet.getWalletConfig().setIconData(null, false);
+            EventManager.get().post(new WalletConfigChangedEvent(masterWallet));
+        }
     }
 
     private void deleteWallet(WalletForm selectedWalletForm) {
@@ -2071,8 +2114,8 @@ public class AppController implements Initializable {
 
     private void tabLabelAddFailure(Tab tab) {
         Label tabLabel = (Label)tab.getGraphic();
-        if(!tabLabel.getStyleClass().contains("failure")) {
-            tabLabel.getGraphic().getStyleClass().add("failure");
+        WalletIcon walletIcon = (WalletIcon)tabLabel.getGraphic();
+        if(walletIcon.addFailure()) {
             tabLabel.setTooltip(new Tooltip("Error loading transaction history from server"));
         }
     }
@@ -2105,7 +2148,8 @@ public class AppController implements Initializable {
 
     private void tabLabelRemoveFailure(Tab tab) {
         Label tabLabel = (Label)tab.getGraphic();
-        tabLabel.getGraphic().getStyleClass().remove("failure");
+        WalletIcon walletIcon = (WalletIcon)tabLabel.getGraphic();
+        walletIcon.removeFailure();
         tabLabel.setTooltip(null);
     }
 
@@ -2222,6 +2266,9 @@ public class AppController implements Initializable {
                     Tab masterTab = subTabs.getTabs().stream().filter(tab -> ((WalletTabData)tab.getUserData()).getWallet().isMasterWallet()).findFirst().orElse(subTabs.getTabs().get(0));
                     Label masterLabel = (Label)masterTab.getGraphic();
                     masterLabel.setText(event.getWallet().getLabel() != null ? event.getWallet().getLabel() : event.getWallet().getAutomaticName());
+                    Label tabLabel = (Label)walletTab.getGraphic();
+                    WalletIcon walletIcon = (WalletIcon)tabLabel.getGraphic();
+                    walletIcon.setWallet(event.getWallet());
                 }
             }
         }
@@ -2747,6 +2794,19 @@ public class AppController implements Initializable {
             lockWallet.setDisable(false);
             exportWallet.setDisable(!event.getWallet().isValid());
             lockAllWallets.setDisable(false);
+        }
+    }
+
+    @Subscribe
+    public void walletConfigChanged(WalletConfigChangedEvent event) {
+        for(Tab tab : tabs.getTabs()) {
+            if(tab.getUserData() instanceof WalletTabData walletTabData) {
+                if(walletTabData.getWallet() == event.getWallet()) {
+                    Label tabLabel = (Label)tab.getGraphic();
+                    WalletIcon walletIcon = (WalletIcon)tabLabel.getGraphic();
+                    walletIcon.refresh();
+                }
+            }
         }
     }
 }

@@ -158,7 +158,7 @@ public class InitiatorController extends SorobanController {
         if(newValue != null) {
             if(newValue.startsWith("P") && newValue.contains("...") && newValue.length() == 20 && counterpartyPaymentCode.get() != null) {
                 //Assumed valid payment code
-            } else if(Config.get().isUsePayNym() && PAYNYM_REGEX.matcher(newValue).matches()) {
+            } else if(isUsePayNym(wallet) && PAYNYM_REGEX.matcher(newValue).matches()) {
                 if(!newValue.equals(counterpartyPayNymName.get())) {
                     searchPayNyms(newValue);
                 }
@@ -233,7 +233,7 @@ public class InitiatorController extends SorobanController {
         payNymFollowers.prefWidthProperty().bind(counterparty.widthProperty());
         payNymFollowers.valueProperty().addListener((observable, oldValue, payNym) -> {
             if(payNym == FIND_FOLLOWERS) {
-                Config.get().setUsePayNym(true);
+                setUsePayNym(wallet, true);
                 setPayNymFollowers();
             } else if(payNym != null) {
                 counterpartyPayNymName.set(payNym.nymName());
@@ -349,7 +349,7 @@ public class InitiatorController extends SorobanController {
             payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
         }, error -> {
             if(error.getMessage().endsWith("404")) {
-                Config.get().setUsePayNym(false);
+                setUsePayNym(masterWallet, false);
                 AppServices.showErrorDialog("Could not retrieve PayNym", "This wallet does not have an associated PayNym or any followers yet. You can retrieve the PayNym using the Find PayNym button.");
             } else {
                 log.warn("Could not retrieve followers: ", error);

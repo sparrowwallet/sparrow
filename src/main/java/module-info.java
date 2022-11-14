@@ -46,4 +46,5 @@ open module com.sparrowwallet.sparrow {
     requires co.nstant.in.cbor;
     requires com.github.librepdf.openpdf;
     requires com.googlecode.lanterna;
+    requires net.coobird.thumbnailator;
 }

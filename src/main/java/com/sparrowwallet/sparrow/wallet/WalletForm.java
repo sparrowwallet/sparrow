@@ -7,7 +7,9 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
+import com.sparrowwallet.sparrow.control.WalletIcon;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.ImageUtils;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.AllHistoryChangedException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -562,6 +564,13 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void walletConfigChanged(WalletConfigChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
     public void walletMixConfigChanged(WalletMixConfigChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
@@ -657,6 +666,20 @@ public class WalletForm {
             List<Wallet> nestedWallets = event.getChildWallets().stream().filter(Wallet::isNested).collect(Collectors.toList());
             if(!nestedWallets.isEmpty()) {
                 Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight(), nestedWallets, null));
+            }
+        }
+    }
+
+    @Subscribe
+    public void payNymImageLoaded(PayNymImageLoadedEvent event) {
+        if(wallet.isMasterWallet() && wallet.hasPaymentCode() && event.getPaymentCode().equals(wallet.getPaymentCode())) {
+            WalletConfig walletConfig = wallet.getMasterWalletConfig();
+            if(!walletConfig.isUserIcon()) {
+                byte[] iconData = ImageUtils.resize(event.getImage(), WalletIcon.SAVE_WIDTH, WalletIcon.SAVE_HEIGHT);
+                if(walletConfig.getIconData() == null || !Arrays.equals(walletConfig.getIconData(), iconData)) {
+                    walletConfig.setIconData(iconData, false);
+                    EventManager.get().post(new WalletConfigChangedEvent(wallet));
+                }
             }
         }
     }

@@ -22,6 +22,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymAddress;
@@ -39,6 +40,7 @@ import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -176,7 +178,7 @@ public class PaymentController extends WalletFormController implements Initializ
                     setGraphic(null);
                 } else {
                     setText(wallet.getFullDisplayName() + (wallet == sendController.getWalletForm().getWallet() ? " (Consolidation)" : ""));
-                    setGraphic(wallet == payNymWallet ? getPayNymGlyph() : null);
+                    setGraphic(getOpenWalletIcon(wallet));
                 }
             }
         });
@@ -323,6 +325,20 @@ public class PaymentController extends WalletFormController implements Initializ
         }
 
         openWallets.setItems(FXCollections.observableList(openWalletList));
+    }
+
+    private Node getOpenWalletIcon(Wallet wallet) {
+        if(wallet == payNymWallet) {
+            return getPayNymGlyph();
+        }
+
+        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+        Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
+        if(storage != null) {
+            return new WalletIcon(storage, masterWallet);
+        }
+
+        return null;
     }
 
     private void addValidation(ValidationSupport validationSupport) {

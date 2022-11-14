@@ -10,7 +10,10 @@ import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.TransactionDiagram;
+import com.sparrowwallet.sparrow.event.WalletConfigChangedEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +127,31 @@ public class SorobanController {
     protected void requestUserAttention() {
         if(Taskbar.isTaskbarSupported() && Taskbar.getTaskbar().isSupported(Taskbar.Feature.USER_ATTENTION)) {
             Taskbar.getTaskbar().requestUserAttention(true, false);
+        }
+    }
+
+    protected boolean isUsePayNym(Wallet wallet) {
+        //TODO: Remove config setting
+        boolean usePayNym = Config.get().isUsePayNym();
+        if(usePayNym && wallet != null) {
+            setUsePayNym(wallet, true);
+        }
+
+        return usePayNym;
+    }
+
+    protected void setUsePayNym(Wallet wallet, boolean usePayNym) {
+        //TODO: Remove config setting
+        if(Config.get().isUsePayNym() != usePayNym) {
+            Config.get().setUsePayNym(usePayNym);
+        }
+
+        if(wallet != null) {
+            WalletConfig walletConfig = wallet.getMasterWalletConfig();
+            if(walletConfig.isUsePayNym() != usePayNym) {
+                walletConfig.setUsePayNym(usePayNym);
+                EventManager.get().post(new WalletConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
+            }
         }
     }
 }

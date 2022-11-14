@@ -165,7 +165,7 @@ public class PayNymController {
         followersList.setSelectionModel(new NoSelectionModel<>());
         followersList.setFocusTraversable(false);
 
-        if(Config.get().isUsePayNym() && AppServices.isConnected() && masterWallet.hasPaymentCode()) {
+        if(isUsePayNym(masterWallet) && AppServices.isConnected() && masterWallet.hasPaymentCode()) {
             refresh();
         } else {
             payNymName.setVisible(false);
@@ -260,9 +260,9 @@ public class PayNymController {
     }
 
     public void retrievePayNym(ActionEvent event) {
-        Config.get().setUsePayNym(true);
         PayNymService payNymService = AppServices.getPayNymService();
         Wallet masterWallet = getMasterWallet();
+        setUsePayNym(masterWallet, true);
         payNymService.createPayNym(masterWallet).subscribe(createMap -> {
             payNymName.setText((String)createMap.get("nymName"));
             payNymAvatar.setPaymentCode(masterWallet.getPaymentCode());
@@ -628,6 +628,31 @@ public class PayNymController {
     public Wallet getMasterWallet() {
         Wallet wallet = AppServices.get().getWallet(walletId);
         return wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+    }
+
+    protected boolean isUsePayNym(Wallet wallet) {
+        //TODO: Remove config setting
+        boolean usePayNym = Config.get().isUsePayNym();
+        if(usePayNym && wallet != null) {
+            setUsePayNym(wallet, true);
+        }
+
+        return usePayNym;
+    }
+
+    protected void setUsePayNym(Wallet wallet, boolean usePayNym) {
+        //TODO: Remove config setting
+        if(Config.get().isUsePayNym() != usePayNym) {
+            Config.get().setUsePayNym(usePayNym);
+        }
+
+        if(wallet != null) {
+            WalletConfig walletConfig = wallet.getMasterWalletConfig();
+            if(walletConfig.isUsePayNym() != usePayNym) {
+                walletConfig.setUsePayNym(usePayNym);
+                EventManager.get().post(new WalletConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
+            }
+        }
     }
 
     public boolean isSelectLinkedOnly() {
