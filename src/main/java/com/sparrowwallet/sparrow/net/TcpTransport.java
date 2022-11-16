@@ -195,7 +195,9 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
                 }
             }
         } catch(IOException e) {
-            log.error("Error opening socket inputstream", e);
+            if(!closed) {
+                log.error("Error opening socket inputstream", e);
+            }
             if(running) {
                 lastException = e;
                 reading = false;
