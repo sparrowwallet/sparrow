@@ -175,6 +175,9 @@ public class ServerPreferencesController extends PreferencesDetailController {
         EventManager.get().register(this);
         getMasterController().closingProperty().addListener((observable, oldValue, newValue) -> {
             EventManager.get().unregister(this);
+            if(connectionService != null && connectionService.isRunning()) {
+                connectionService.cancel();
+            }
         });
 
         Platform.runLater(this::setupValidation);
@@ -360,7 +363,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         boolean isConnected = AppServices.isConnecting() || AppServices.isConnected();
 
-        if(AppServices.isConnecting()) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && AppServices.isConnecting()) {
             testResults.appendText("Connecting to server, please wait...");
         }
 
@@ -380,7 +383,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         editConnection.managedProperty().bind(editConnection.visibleProperty());
         editConnection.setVisible(isConnected);
-        editConnection.setDisable(AppServices.isConnecting());
+        editConnection.setDisable(Config.get().getServerType() == ServerType.BITCOIN_CORE && AppServices.isConnecting());
         editConnection.setOnAction(event -> {
             EventManager.get().post(new RequestDisconnectEvent());
             setFieldsEditable(true);
@@ -536,6 +539,11 @@ public class ServerPreferencesController extends PreferencesDetailController {
         });
         connectionService.setOnFailed(workerStateEvent -> {
             EventManager.get().unregister(connectionService);
+            if(connectionService.isShutdown()) {
+                connectionService.cancel();
+                return;
+            }
+
             showConnectionFailure(workerStateEvent.getSource().getException());
             connectionService.cancel();
 

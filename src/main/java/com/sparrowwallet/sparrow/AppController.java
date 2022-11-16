@@ -944,6 +944,8 @@ public class AppController implements Initializable {
         if(AppServices.isConnected()) {
             return "Connected to " + Config.get().getServerDisplayName() + (currentBlockHeight != null ? " at height " + currentBlockHeight : "") +
                     (Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER ? "\nWarning! You are connected to a public server and sharing your transaction data with it.\nFor better privacy, consider using your own Bitcoin Core node or private Electrum server." : "");
+        } else if(AppServices.isConnecting()) {
+            return "Connecting...";
         }
 
         return "Disconnected";

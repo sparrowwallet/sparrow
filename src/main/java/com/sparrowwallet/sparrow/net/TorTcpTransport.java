@@ -19,11 +19,11 @@ public class TorTcpTransport extends TcpTransport {
     }
 
     @Override
-    protected Socket createSocket() throws IOException {
+    protected void createSocket() throws IOException {
         if(!AppServices.isTorRunning()) {
             throw new IllegalStateException("Can't create Tor socket, Tor is not running");
         }
 
-        return new TorSocket(server.getHost(), server.getPort(), "sparrow");
+        socket = new TorSocket(server.getHost(), server.getPort(), "sparrow");
     }
 }

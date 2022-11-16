@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.SocketFactory;
 import javax.net.ssl.SSLHandshakeException;
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +37,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     protected final SocketFactory socketFactory;
     protected final int[] readTimeouts;
 
-    private Socket socket;
+    protected Socket socket;
 
     private String response;
 
@@ -231,7 +232,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     public void connect() throws ServerException {
         try {
-            socket = createSocket();
+            createSocket();
             log.debug("Created " + socket);
             socket.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
             running = true;
@@ -250,8 +251,9 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         return socket != null && running && !closed;
     }
 
-    protected Socket createSocket() throws IOException {
-        return socketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
+    protected void createSocket() throws IOException {
+        socket = socketFactory.createSocket();
+        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
     }
 
     public boolean isClosed() {

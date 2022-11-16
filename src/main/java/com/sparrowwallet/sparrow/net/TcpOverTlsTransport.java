@@ -9,7 +9,7 @@ import javax.net.ssl.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.security.*;
 import java.security.cert.*;
 import java.security.cert.Certificate;
@@ -86,10 +86,10 @@ public class TcpOverTlsTransport extends TcpTransport {
         return trustManagerFactory.getTrustManagers();
     }
 
-    protected Socket createSocket() throws IOException {
-        SSLSocket sslSocket = (SSLSocket) sslSocketFactory.createSocket(server.getHost(), server.getPortOrDefault(DEFAULT_PORT));
-        startHandshake(sslSocket);
-        return sslSocket;
+    protected void createSocket() throws IOException {
+        socket = sslSocketFactory.createSocket();
+        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
+        startHandshake((SSLSocket)socket);
     }
 
     protected void startHandshake(SSLSocket sslSocket) throws IOException {

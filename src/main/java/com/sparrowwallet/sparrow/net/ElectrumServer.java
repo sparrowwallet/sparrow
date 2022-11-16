@@ -1063,6 +1063,7 @@ public class ElectrumServer {
         private final ReentrantLock bwtStartLock = new ReentrantLock();
         private final Condition bwtStartCondition = bwtStartLock.newCondition();
         private Throwable bwtStartException;
+        private boolean shutdown;
 
         public ConnectionService() {
             this(true);
@@ -1195,7 +1196,7 @@ public class ElectrumServer {
         }
 
         public boolean isConnecting() {
-            return isRunning() && Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning() && !bwt.isReady();
+            return isRunning() && firstCall && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && !bwt.isReady()));
         }
 
         public boolean isConnectionRunning() {
@@ -1203,7 +1204,11 @@ public class ElectrumServer {
         }
 
         public boolean isConnected() {
-            return isRunning() && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && bwt.isReady()));
+            return isRunning() && !firstCall && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && bwt.isReady()));
+        }
+
+        public boolean isShutdown() {
+            return shutdown;
         }
 
         @Override
@@ -1219,6 +1224,11 @@ public class ElectrumServer {
         }
 
         private void shutdown() {
+            shutdown = true;
+            if(reader != null && reader.isAlive()) {
+                reader.interrupt();
+            }
+
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning()) {
                 Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
                 disconnectionService.setOnSucceeded(workerStateEvent -> {

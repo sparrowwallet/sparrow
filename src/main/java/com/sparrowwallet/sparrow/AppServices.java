@@ -1139,10 +1139,12 @@ public class AppServices {
     @Subscribe
     public void requestDisconnect(RequestDisconnectEvent event) {
         onlineProperty.set(false);
-        //Ensure services don't try to reconnect
-        connectionService.cancel();
-        ratesService.cancel();
-        versionCheckService.cancel();
+        //Ensure services don't try to reconnect later
+        Platform.runLater(() -> {
+            connectionService.cancel();
+            ratesService.cancel();
+            versionCheckService.cancel();
+        });
     }
 
     @Subscribe

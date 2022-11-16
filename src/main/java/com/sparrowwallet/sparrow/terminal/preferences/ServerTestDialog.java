@@ -95,6 +95,9 @@ public class ServerTestDialog extends DialogWindow {
         close();
 
         Platform.runLater(() -> {
+            if(connectionService != null && connectionService.isRunning()) {
+                connectionService.cancel();
+            }
             if(Config.get().getMode() == Mode.ONLINE && !(AppServices.isConnecting() || AppServices.isConnected())) {
                 EventManager.get().post(new RequestConnectEvent());
             }
@@ -145,6 +148,11 @@ public class ServerTestDialog extends DialogWindow {
         });
         connectionService.setOnFailed(workerStateEvent -> {
             EventManager.get().unregister(connectionService);
+            if(connectionService.isShutdown()) {
+                connectionService.cancel();
+                return;
+            }
+
             showConnectionFailure(workerStateEvent.getSource().getException());
             connectionService.cancel();
         });
