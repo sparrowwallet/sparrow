@@ -120,7 +120,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 NodeEntry nodeEntry = (NodeEntry)entry;
                 Address address = nodeEntry.getAddress();
                 setText(address.toString());
-                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry));
+                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry, true));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(nodeEntry.getNode().toString());
@@ -568,7 +568,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
     }
 
     public static class AddressContextMenu extends ContextMenu {
-        public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry) {
+        public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry, boolean addUtxoItems) {
             if(nodeEntry == null || !nodeEntry.getWallet().isBip47()) {
                 MenuItem receiveToAddress = new MenuItem("Receive To");
                 receiveToAddress.setGraphic(getReceiveGlyph());
@@ -591,7 +591,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 getItems().add(signVerifyMessage);
             }
 
-            if(nodeEntry != null && !nodeEntry.getNode().getUnspentTransactionOutputs().isEmpty()) {
+            if(addUtxoItems && nodeEntry != null && !nodeEntry.getNode().getUnspentTransactionOutputs().isEmpty()) {
                 List<BlockTransactionHashIndex> utxos = nodeEntry.getNode().getUnspentTransactionOutputs().stream().collect(Collectors.toList());
                 MenuItem spendUtxos = new MenuItem("Spend UTXOs");
                 spendUtxos.setGraphic(getSendGlyph());

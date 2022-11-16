@@ -40,7 +40,7 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
             if(utxoEntry != null) {
                 Address address = addressStatus.getAddress();
                 setText(address.toString());
-                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode())));
+                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode()), false));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate(), addressStatus.isDustAttack()));
