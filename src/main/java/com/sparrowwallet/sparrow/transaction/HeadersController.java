@@ -841,7 +841,7 @@ public class HeadersController extends TransactionFormController implements Init
         toggleButton.setSelected(false);
 
         //TODO: Remove once Cobo Vault has upgraded to UR2.0
-        boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COBO_VAULT) || keystore.getWalletModel().equals(WalletModel.SPARROW));
+        boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COBO_VAULT));
 
         CryptoPSBT cryptoPSBT = new CryptoPSBT(headersForm.getPsbt().serialize());
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), addLegacyEncodingOption);

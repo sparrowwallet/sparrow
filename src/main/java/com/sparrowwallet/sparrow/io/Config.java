@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
+import com.sparrowwallet.sparrow.control.QRDensity;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
@@ -53,6 +54,7 @@ public class Config {
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
     private File hwi;
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
+    private QRDensity qrDensity;
     private Boolean hdCapture;
     private String webcamDevice;
     private ServerType serverType;
@@ -352,6 +354,15 @@ public class Config {
 
     public int getEnumerateHwPeriod() {
         return enumerateHwPeriod;
+    }
+
+    public QRDensity getQrDensity() {
+        return qrDensity == null ? QRDensity.NORMAL : qrDensity;
+    }
+
+    public void setQrDensity(QRDensity qrDensity) {
+        this.qrDensity = qrDensity;
+        flush();
     }
 
     public Boolean getHdCapture() {

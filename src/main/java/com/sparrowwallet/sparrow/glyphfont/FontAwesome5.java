@@ -49,6 +49,8 @@ public class FontAwesome5 extends GlyphFont {
         LINK('\uf0c1'),
         LOCK('\uf023'),
         LOCK_OPEN('\uf3c1'),
+        MAGNIFYING_GLASS_PLUS('\uf00e'),
+        MAGNIFYING_GLASS_MINUS('\uf010'),
         MINUS_CIRCLE('\uf056'),
         PEN_FANCY('\uf5ac'),
         PLUS('\uf067'),
