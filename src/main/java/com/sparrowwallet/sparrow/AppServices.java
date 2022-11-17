@@ -284,7 +284,7 @@ public class AppServices {
         });
         connectionService.setOnFailed(failEvent -> {
             //Close connection here to create a new transport next time we try
-            connectionService.resetConnection();
+            connectionService.closeConnection();
 
             if(failEvent.getSource().getException() instanceof ServerConfigException) {
                 connectionService.setRestartOnFailure(false);

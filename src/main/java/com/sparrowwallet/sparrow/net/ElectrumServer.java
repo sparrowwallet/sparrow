@@ -1176,7 +1176,7 @@ public class ElectrumServer {
                                 return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
                             }
                         } else {
-                            resetConnection();
+                            closeConnection();
                         }
                     }
 
@@ -1185,18 +1185,18 @@ public class ElectrumServer {
             };
         }
 
-        public void resetConnection() {
+        public void closeConnection() {
             try {
                 closeActiveConnection();
                 shutdown();
                 firstCall = true;
             } catch (ServerException e) {
-                log.error("Error closing connection during connection reset", e);
+                log.error("Error closing connection", e);
             }
         }
 
         public boolean isConnecting() {
-            return isRunning() && firstCall && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && !bwt.isReady()));
+            return isRunning() && firstCall && !shutdown && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && !bwt.isReady()));
         }
 
         public boolean isConnectionRunning() {
@@ -1250,6 +1250,7 @@ public class ElectrumServer {
         public void reset() {
             super.reset();
             firstCall = true;
+            shutdown = false;
         }
 
         @Override
