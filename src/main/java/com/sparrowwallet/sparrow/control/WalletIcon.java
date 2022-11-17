@@ -17,6 +17,8 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
 import org.controlsfx.glyphfont.Glyph;
+import org.girod.javafx.svgimage.SVGImage;
+import org.girod.javafx.svgimage.SVGLoader;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -61,6 +63,18 @@ public class WalletIcon extends StackPane {
             if(keystore.getSource() == KeystoreSource.HW_USB || keystore.getSource() == KeystoreSource.HW_AIRGAPPED) {
                 WalletModel walletModel = keystore.getWalletModel();
 
+                SVGImage svgImage;
+                if(Config.get().getTheme() == Theme.DARK) {
+                    svgImage = loadSVGImage("/image/" + walletModel.getType() + "-icon-invert.svg");
+                } else {
+                    svgImage = loadSVGImage("/image/" + walletModel.getType() + "-icon.svg");
+                }
+
+                if(svgImage != null) {
+                    getChildren().add(svgImage);
+                    return;
+                }
+
                 Image image = null;
                 if(Config.get().getTheme() == Theme.DARK) {
                     image = loadImage("image/" + walletModel.getType() + "-icon-invert.png");
@@ -86,6 +100,19 @@ public class WalletIcon extends StackPane {
             glyph.setFontSize(10.0);
             getChildren().add(glyph);
         }
+    }
+
+    private SVGImage loadSVGImage(String imageName) {
+        try {
+            URL url = AppServices.class.getResource(imageName);
+            if(url != null) {
+                return SVGLoader.load(url);
+            }
+        } catch(Exception e) {
+            //ignore
+        }
+
+        return null;
     }
 
     private Image loadImage(String imageName) {
