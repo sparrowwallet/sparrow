@@ -28,7 +28,7 @@ public class PassportMultisig extends ColdcardMultisig {
 
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import file or QR created from New Account > Sparrow > Multisig > QR Code/microSD on your Passport. For existing accounts, use Manage Account > Export by QR/microSD.";
+        return "Import file or QR created from Manage Account > Connect Wallet > Sparrow > Multisig > QR Code/microSD on your Passport.";
     }
 
     @Override
@@ -38,7 +38,7 @@ public class PassportMultisig extends ColdcardMultisig {
 
     @Override
     public String getWalletExportDescription() {
-        return "As part of the New Account > Sparrow > Multisig flow, Passport will ask you to scan or import the multisig configuration from Sparrow.";
+        return "As part of the Multisig connection flow, Passport will ask you to scan or import the multisig configuration from Sparrow. To import this configuration manually, go to Settings > Bitcoin > Multisig > Import from QR Code/microSD.";
     }
 
     @Override
