@@ -295,7 +295,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private boolean isValidAddress() {
         try {
             Address address = getAddress();
-            return address.getScriptType() != ScriptType.P2TR && address.getScriptType().isAllowed(PolicyType.SINGLE);
+            return address.getScriptType() != ScriptType.P2TR && (address.getScriptType().isAllowed(PolicyType.SINGLE) || address.getScriptType() == ScriptType.P2SH);
         } catch (InvalidAddressException e) {
             return false;
         }
