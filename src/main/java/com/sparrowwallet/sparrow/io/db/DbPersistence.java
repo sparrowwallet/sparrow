@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.io.db;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.common.io.Files;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
@@ -31,6 +30,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.*;
@@ -625,25 +625,26 @@ public class DbPersistence implements Persistence {
     }
 
     //Flyway does not support JPMS yet, so the migration files are extracted to a temp dir in order to avoid classloader encapsulation issues
-    private File getMigrationDir() {
-        File migrationDir = Files.createTempDir();
+    private File getMigrationDir() throws StorageException {
         try {
+            File migrationDir = Files.createTempDirectory("sparrowfly").toFile();
             String[] files = IOUtils.getResourceListing(DbPersistence.class, MIGRATION_RESOURCES_DIR);
             for(String name : files) {
                 File targetFile = new File(migrationDir, name);
                 try(InputStream inputStream = DbPersistence.class.getResourceAsStream("/" + MIGRATION_RESOURCES_DIR + name)) {
                     if(inputStream != null) {
-                        java.nio.file.Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(inputStream, targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     } else {
                         log.error("Could not load resource at /" + MIGRATION_RESOURCES_DIR + name);
                     }
                 }
             }
+
+            return migrationDir;
         } catch(Exception e) {
             log.error("Could not extract migration resources", e);
+            throw new StorageException("Could not extract migration resources", e);
         }
-
-        return migrationDir;
     }
 
     private HikariDataSource getDataSource(Storage storage, String password) throws StorageException {
