@@ -51,7 +51,9 @@ public class ServerTestDialog extends DialogWindow {
         buttonPanel.setLayoutManager(new GridLayout(3).setHorizontalSpacing(1));
         buttonPanel.addComponent(new Button("Back", this::onBack).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, false, false)));
         buttonPanel.addComponent(new Button("Test", this::onTest).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
-        buttonPanel.addComponent(new Button("Done", this::onDone));
+        Button doneButton = new Button("Done", this::onDone);
+        buttonPanel.addComponent(doneButton);
+        SparrowTerminal.get().getGuiThread().invokeLater(doneButton::takeFocus);
 
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
 
