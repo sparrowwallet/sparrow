@@ -147,17 +147,19 @@ public class MasterActionListBox extends ActionListBox {
         newWalletNameBuilder.setValidator(content -> content.isEmpty() ? "Please enter a name" : (Storage.walletExists(content) ? "Wallet already exists" : null));
         String walletName = newWalletNameBuilder.build().showDialog(SparrowTerminal.get().getGui());
 
-        ActionListDialogBuilder newBuilder = new ActionListDialogBuilder();
-        newBuilder.setTitle("Create Wallet");
-        newBuilder.setDescription("Choose the type of wallet");
-        newBuilder.addAction("Software (BIP39)", () -> {
-            Bip39Dialog bip39Dialog = new Bip39Dialog(walletName);
-            bip39Dialog.showDialog(SparrowTerminal.get().getGui());
-        });
-        newBuilder.addAction("Watch Only", () -> {
-            WatchOnlyDialog watchOnlyDialog = new WatchOnlyDialog(walletName);
-            watchOnlyDialog.showDialog(SparrowTerminal.get().getGui());
-        });
-        newBuilder.build().showDialog(SparrowTerminal.get().getGui());
+        if(walletName != null) {
+            ActionListDialogBuilder newBuilder = new ActionListDialogBuilder();
+            newBuilder.setTitle("Create Wallet");
+            newBuilder.setDescription("Choose the type of wallet");
+            newBuilder.addAction("Software (BIP39)", () -> {
+                Bip39Dialog bip39Dialog = new Bip39Dialog(walletName);
+                bip39Dialog.showDialog(SparrowTerminal.get().getGui());
+            });
+            newBuilder.addAction("Watch Only", () -> {
+                WatchOnlyDialog watchOnlyDialog = new WatchOnlyDialog(walletName);
+                watchOnlyDialog.showDialog(SparrowTerminal.get().getGui());
+            });
+            newBuilder.build().showDialog(SparrowTerminal.get().getGui());
+        }
     }
 }
