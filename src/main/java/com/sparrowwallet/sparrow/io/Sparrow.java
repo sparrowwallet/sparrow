@@ -60,15 +60,7 @@ public class Sparrow implements WalletImport, WalletExport {
 
     @Override
     public String getExportFileExtension(Wallet wallet) {
-        try {
-            Storage storage = AppServices.get().getOpenWallets().get(wallet);
-            Wallet exportedWallet = !wallet.isMasterWallet() ? wallet.getMasterWallet() : wallet;
-            return !exportedWallet.getChildWallets().isEmpty() ? PersistenceType.DB.getExtension() : (storage.isEncrypted() ? "" : PersistenceType.JSON.getExtension());
-        } catch(IOException e) {
-            //ignore
-        }
-
-        return "";
+        return PersistenceType.DB.getExtension();
     }
 
     @Override
