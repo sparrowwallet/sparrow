@@ -67,9 +67,13 @@ public class SparrowTextGui extends MultiWindowTextGUI {
         return mainWindow;
     }
 
-    private void setConnectedLabel(boolean connected) {
+    private void setDisconnectedLabel() {
+        setConnectedLabel(null);
+    }
+
+    private void setConnectedLabel(Integer height) {
         getGUIThread().invokeLater(() -> {
-            connectedLabel.setText(connected ? "Connected" : "Disconnected");
+            connectedLabel.setText(height == null ? "Disconnected" : "Connected at " + height);
         });
     }
 
@@ -80,22 +84,27 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
-        setConnectedLabel(false);
+        setDisconnectedLabel();
         statusUpdated(new StatusEvent("Connection failed: " + event.getMessage()));
     }
 
     @Subscribe
     public void connection(ConnectionEvent event) {
-        setConnectedLabel(true);
+        setConnectedLabel(event.getBlockHeight());
         statusUpdated(new StatusEvent("Connected to " + Config.get().getServerDisplayName() + " at height " + event.getBlockHeight()));
     }
 
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
         if(!AppServices.isConnecting() && !AppServices.isConnected()) {
-            setConnectedLabel(false);
+            setDisconnectedLabel();
             statusUpdated(new StatusEvent("Disconnected"));
         }
+    }
+
+    @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        setConnectedLabel(event.getHeight());
     }
 
     @Subscribe
