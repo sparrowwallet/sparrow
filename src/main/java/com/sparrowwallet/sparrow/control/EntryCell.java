@@ -12,6 +12,8 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.application.Platform;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
@@ -30,13 +32,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class EntryCell extends TreeTableCell<Entry, Entry> {
+public class EntryCell extends TreeTableCell<Entry, Entry> implements ConfirmationsListener {
     private static final Logger log = LoggerFactory.getLogger(EntryCell.class);
 
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private static final Pattern REPLACED_BY_FEE_SUFFIX = Pattern.compile("(.*)\\(Replaced By Fee( #)?(\\d+)?\\).*");
 
     private static EntryCell lastCell;
+
+    private IntegerProperty confirmationsProperty;
 
     public EntryCell() {
         super();
@@ -187,6 +191,21 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
                 setGraphic(getTreeTableView().getStyleClass().contains("bip47") ? null : actionBox);
             }
         }
+    }
+
+    @Override
+    public IntegerProperty getConfirmationsProperty() {
+        if(confirmationsProperty == null) {
+            confirmationsProperty = new SimpleIntegerProperty();
+            confirmationsProperty.addListener((observable, oldValue, newValue) -> {
+                if(newValue.intValue() >= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+                    getStyleClass().remove("confirming");
+                    confirmationsProperty.unbind();
+                }
+            });
+        }
+
+        return confirmationsProperty;
     }
 
     private static void increaseFee(TransactionEntry transactionEntry, boolean cancelTransaction) {
@@ -722,13 +741,14 @@ public class EntryCell extends TreeTableCell<Entry, Entry> {
             if(entry instanceof TransactionEntry) {
                 cell.getStyleClass().add("transaction-row");
                 TransactionEntry transactionEntry = (TransactionEntry)entry;
-                if(transactionEntry.isConfirming()) {
-                    cell.getStyleClass().add("confirming");
-                    transactionEntry.confirmationsProperty().addListener((observable, oldValue, newValue) -> {
-                        if(!transactionEntry.isConfirming()) {
-                            cell.getStyleClass().remove("confirming");
-                        }
-                    });
+
+                if(cell instanceof ConfirmationsListener confirmationsListener) {
+                    if(transactionEntry.isConfirming()) {
+                        cell.getStyleClass().add("confirming");
+                        confirmationsListener.getConfirmationsProperty().bind(transactionEntry.confirmationsProperty());
+                    } else {
+                        confirmationsListener.getConfirmationsProperty().unbind();
+                    }
                 }
             } else if(entry instanceof NodeEntry) {
                 cell.getStyleClass().add("node-row");

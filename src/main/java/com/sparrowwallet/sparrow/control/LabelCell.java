@@ -1,6 +1,9 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.Event;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
@@ -13,8 +16,10 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 
-class LabelCell extends TextFieldTreeTableCell<Entry, String> {
+class LabelCell extends TextFieldTreeTableCell<Entry, String> implements ConfirmationsListener {
     private static final Logger log = LoggerFactory.getLogger(LabelCell.class);
+
+    private IntegerProperty confirmationsProperty;
 
     public LabelCell() {
         super(new DefaultStringConverter());
@@ -79,6 +84,21 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> {
         } catch (Exception e) {
             log.error("Error starting edit", e);
         }
+    }
+
+    @Override
+    public IntegerProperty getConfirmationsProperty() {
+        if(confirmationsProperty == null) {
+            confirmationsProperty = new SimpleIntegerProperty();
+            confirmationsProperty.addListener((observable, oldValue, newValue) -> {
+                if(newValue.intValue() >= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+                    getStyleClass().remove("confirming");
+                    confirmationsProperty.unbind();
+                }
+            });
+        }
+
+        return confirmationsProperty;
     }
 
     private static class LabelContextMenu extends ContextMenu {

@@ -97,17 +97,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         return blockTransaction.getConfirmations(AppServices.getCurrentBlockHeight() == null ? getWallet().getStoredBlockHeight() : AppServices.getCurrentBlockHeight());
     }
 
-    public String getConfirmationsDescription() {
-        int confirmations = getConfirmations();
-        if(confirmations == 0) {
-            return "Unconfirmed in mempool";
-        } else if(confirmations < BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM) {
-            return confirmations + " confirmation" + (confirmations == 1 ? "" : "s");
-        } else {
-            return BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
-        }
-    }
-
     public boolean isComplete(Map<HashIndex, BlockTransactionHashIndex> walletTxos) {
         int validEntries = 0;
         for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
