@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.event;
 
+import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.sparrowwallet.sparrow.net.TlsServerException;
 
 public class ConnectionFailedEvent {
@@ -20,6 +21,12 @@ public class ConnectionFailedEvent {
 
         Throwable cause = (exception.getCause() != null ? exception.getCause() : exception);
         cause = (cause.getCause() != null ? cause.getCause() : cause);
+
+        if(cause instanceof JsonRpcException jsonRpcException && jsonRpcException.getErrorMessage() != null) {
+            return jsonRpcException.getErrorMessage().getMessage() +
+                    (jsonRpcException.getErrorMessage().getData() != null ? " (" + jsonRpcException.getErrorMessage().getData().asText() + ")" : "");
+        }
+
         String message = splitCamelCase(cause.getClass().getSimpleName().replace("Exception", "Error"));
         return message + " (" + cause.getMessage() + ")";
     }

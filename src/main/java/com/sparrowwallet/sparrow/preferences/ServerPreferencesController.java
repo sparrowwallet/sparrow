@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.preferences;
 
+import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
@@ -623,7 +625,14 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
     private void showConnectionFailure(Throwable exception) {
         log.error("Connection error", exception);
-        String reason = exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
+
+        String reason;
+        if(Throwables.getRootCause(exception) instanceof JsonRpcException jsonRpcException && jsonRpcException.getErrorMessage() != null) {
+            reason = jsonRpcException.getErrorMessage().getMessage() + (jsonRpcException.getErrorMessage().getData() != null ? " (" + jsonRpcException.getErrorMessage().getData().asText() + ")" : "");
+        } else {
+            reason = exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
+        }
+
         if(exception instanceof TlsServerException && exception.getCause() != null) {
             TlsServerException tlsServerException = (TlsServerException)exception;
             if(exception.getCause().getMessage().contains("PKIX path building failed")) {
@@ -649,7 +658,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             reason += ". Check if the proxy server is running.";
         } else if(exception instanceof TorServerAlreadyBoundException) {
             reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
-        } else if(reason != null && reason.contains("Check if Bitcoin Core is running")) {
+        } else if(reason != null && (reason.contains("Check if Bitcoin Core is running") || reason.contains("Could not connect to Bitcoin Core RPC"))) {
             reason += "\n\nSee https://sparrowwallet.com/docs/connect-node.html";
         }
 
