@@ -1109,11 +1109,18 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastTransactionService.setOnFailed(workerStateEvent -> {
             broadcastProgressBar.setProgress(0);
             log.error("Error broadcasting transaction", workerStateEvent.getSource().getException());
-            if(workerStateEvent.getSource().getException() != null && workerStateEvent.getSource().getException().getMessage() != null
-                    && workerStateEvent.getSource().getException().getMessage().startsWith("min relay fee not met")) {
+
+            String failMessage = "";
+            if(workerStateEvent.getSource().getException() != null && workerStateEvent.getSource().getException().getMessage() != null) {
+                failMessage = workerStateEvent.getSource().getException().getMessage();
+            }
+
+            if(failMessage.startsWith("min relay fee not met")) {
                 AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the signed transaction is below the minimum " + AppServices.getMinimumRelayFeeRate() + " sats/vB. " +
                         "This usually happens because a keystore has created a signature that is larger than necessary.\n\n" +
                         "You can solve this by recreating the transaction with a slightly increased fee rate.");
+            } else if(failMessage.startsWith("bad-txns-inputs-missingorspent")) {
+                AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error indicating some or all of the UTXOs this transaction is spending are missing or have already been spent.");
             } else {
                 AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error when broadcasting the transaction. The server response is contained in the log (See Help > Show Log File).");
             }

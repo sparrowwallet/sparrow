@@ -150,7 +150,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 //If there is an error with the server connection, don't keep trying - this may take too long given many blocks
                 throw new ElectrumServerRpcException("Failed to retrieve block header for block height: " + blockHeight, e);
             } catch(JsonRpcException e) {
-                log.warn("Failed to retrieve block header for block height: " + blockHeight + " (" + e.getErrorMessage() + ")");
+                log.warn("Failed to retrieve block header for block height: " + blockHeight + (e.getErrorMessage() != null ? " (" + e.getErrorMessage().getMessage() + ")" : ""));
             } catch(Exception e) {
                 log.warn("Failed to retrieve block header for block height: " + blockHeight + " (" + e.getMessage() + ")");
             }
@@ -193,6 +193,11 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                         client.createRequest().returnAs(VerboseTransaction.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid, true).execute());
                 result.put(txid, verboseTransaction);
             } catch(Exception e) {
+                if(e instanceof JsonRpcException jsonRpcException && jsonRpcException.getErrorMessage() != null
+                        && jsonRpcException.getErrorMessage().getMessage().startsWith("No such mempool or blockchain transaction")) {
+                    continue;
+                }
+
                 //electrs-esplora does not currently support the verbose parameter, so try to fetch an incomplete VerboseTransaction without it
                 //Note that without the script hash associated with the transaction, we can't get a block height as there is no way in the Electrum RPC protocol to do this
                 //We mark this VerboseTransaction as incomplete by assigning it a Sha256Hash.ZERO_HASH blockhash
