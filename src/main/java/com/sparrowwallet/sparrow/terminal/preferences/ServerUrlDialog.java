@@ -103,6 +103,10 @@ public abstract class ServerUrlDialog extends ServerProxyDialog {
         return null;
     }
 
+    protected Integer getServerPort() {
+        return getPort(port.getText());
+    }
+
     private String getAlias() {
         return alias.getText().isEmpty() ? null : alias.getText();
     }

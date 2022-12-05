@@ -23,7 +23,7 @@ public class PrivateElectrumDialog extends ServerUrlDialog {
         Panel mainPanel = new Panel(new GridLayout(3).setHorizontalSpacing(2).setVerticalSpacing(0));
 
         if(Config.get().getElectrumServer() == null) {
-            Config.get().setElectrumServer(new Server("tcp://127.0.0.1:50001"));
+            Config.get().setElectrumServer(new Server(Protocol.TCP.toUrlString("127.0.0.1", Protocol.TCP.getDefaultPort())));
         }
         addUrlComponents(mainPanel, Config.get().getRecentElectrumServers(), Config.get().getElectrumServer());
         addLine(mainPanel);

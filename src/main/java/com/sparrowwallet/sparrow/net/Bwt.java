@@ -149,10 +149,11 @@ public class Bwt {
         if(config.getCoreServer() != null) {
             bwtConfig.bitcoindUrl = config.getCoreServer().getUrl();
             try {
-                HostAndPort hostAndPort = Protocol.HTTP.getServerHostAndPort(bwtConfig.bitcoindUrl);
+                Protocol protocol = config.getCoreServer().getProtocol();
+                HostAndPort hostAndPort = protocol.getServerHostAndPort(bwtConfig.bitcoindUrl);
                 if(hostAndPort.getHost().endsWith(".local")) {
                     InetAddress inetAddress = InetAddress.getByName(hostAndPort.getHost());
-                    bwtConfig.bitcoindUrl = Protocol.HTTP.toUrlString(inetAddress.getHostAddress(), hostAndPort.getPort());
+                    bwtConfig.bitcoindUrl = protocol.toUrlString(inetAddress.getHostAddress(), hostAndPort.getPort());
                 }
             } catch(Exception e) {
                 //ignore

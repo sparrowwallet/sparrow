@@ -12,7 +12,7 @@ import java.security.cert.CertificateException;
 import java.util.Locale;
 
 public enum Protocol {
-    TCP {
+    TCP(50001) {
         @Override
         public CloseableTransport getTransport(HostAndPort server) {
             if(isOnionAddress(server)) {
@@ -38,7 +38,7 @@ public enum Protocol {
             return getTransport(server, proxy);
         }
     },
-    SSL {
+    SSL(50002) {
         @Override
         public CloseableTransport getTransport(HostAndPort server) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
             if(isOnionAddress(server)) {
@@ -67,7 +67,7 @@ public enum Protocol {
             return new ProxyTcpOverTlsTransport(server, serverCert, proxy);
         }
     },
-    HTTP {
+    HTTP(80) {
         @Override
         public CloseableTransport getTransport(HostAndPort server) {
             throw new UnsupportedOperationException("No transport supported for HTTP");
@@ -87,7 +87,38 @@ public enum Protocol {
         public CloseableTransport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
             throw new UnsupportedOperationException("No transport supported for HTTP");
         }
+    },
+    HTTPS(443) {
+        @Override
+        public CloseableTransport getTransport(HostAndPort server) {
+            throw new UnsupportedOperationException("No transport supported for HTTPS");
+        }
+
+        @Override
+        public CloseableTransport getTransport(HostAndPort server, File serverCert) {
+            throw new UnsupportedOperationException("No transport supported for HTTPS");
+        }
+
+        @Override
+        public CloseableTransport getTransport(HostAndPort server, HostAndPort proxy) {
+            throw new UnsupportedOperationException("No transport supported for HTTPS");
+        }
+
+        @Override
+        public CloseableTransport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
+            throw new UnsupportedOperationException("No transport supported for HTTPS");
+        }
     };
+
+    private final int defaultPort;
+
+    Protocol(int defaultPort) {
+        this.defaultPort = defaultPort;
+    }
+
+    public int getDefaultPort() {
+        return defaultPort;
+    }
 
     public abstract CloseableTransport getTransport(HostAndPort server) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
 
@@ -153,6 +184,9 @@ public enum Protocol {
         }
         if(url.startsWith("http://")) {
             return HTTP;
+        }
+        if(url.startsWith("https://")) {
+            return HTTPS;
         }
 
         return null;

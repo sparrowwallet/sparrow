@@ -126,7 +126,8 @@ public class BitcoinCoreDialog extends ServerUrlDialog {
     }
 
     protected Protocol getProtocol() {
-        return Protocol.HTTP;
+        Integer portAsInteger = getServerPort();
+        return portAsInteger != null && portAsInteger == Protocol.HTTPS.getDefaultPort() ? Protocol.HTTPS : Protocol.HTTP;
     }
 
     protected void setProtocol(Protocol protocol) {

@@ -26,7 +26,6 @@ import java.util.concurrent.locks.ReentrantLock;
 public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
 
-    public static final int DEFAULT_PORT = 50001;
     public static final int DEFAULT_MAX_TIMEOUT = 34;
     private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, DEFAULT_MAX_TIMEOUT};
     private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
@@ -255,7 +254,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     protected void createSocket() throws IOException {
         socket = socketFactory.createSocket();
-        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
+        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(Protocol.TCP.getDefaultPort())));
     }
 
     public boolean isClosed() {

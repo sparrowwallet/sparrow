@@ -42,7 +42,7 @@ public class TorTcpOverTlsTransport extends TcpOverTlsTransport {
             log.error("Could not set socket connected status", e);
         }
 
-        socket = sslSocketFactory.createSocket(socket, server.getHost(), server.getPortOrDefault(DEFAULT_PORT), true);
+        socket = sslSocketFactory.createSocket(socket, server.getHost(), server.getPortOrDefault(Protocol.SSL.getDefaultPort()), true);
         startHandshake((SSLSocket)socket);
     }
 }

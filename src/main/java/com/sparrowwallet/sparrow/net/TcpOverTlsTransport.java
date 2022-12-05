@@ -17,8 +17,6 @@ import java.security.cert.Certificate;
 public class TcpOverTlsTransport extends TcpTransport {
     private static final Logger log = LoggerFactory.getLogger(TcpOverTlsTransport.class);
 
-    public static final int DEFAULT_PORT = 50002;
-
     protected final SSLSocketFactory sslSocketFactory;
 
     public TcpOverTlsTransport(HostAndPort server) throws NoSuchAlgorithmException, KeyManagementException, CertificateException, KeyStoreException, IOException {
@@ -88,7 +86,7 @@ public class TcpOverTlsTransport extends TcpTransport {
 
     protected void createSocket() throws IOException {
         socket = sslSocketFactory.createSocket();
-        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(DEFAULT_PORT)));
+        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(Protocol.SSL.getDefaultPort())));
         startHandshake((SSLSocket)socket);
     }
 

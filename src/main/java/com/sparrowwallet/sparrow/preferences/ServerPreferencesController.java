@@ -552,10 +552,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
             if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
                 if(useSslOriginal == null) {
                     Integer portAsInteger = getPort(electrumPort.getText());
-                    if(!electrumUseSsl.isSelected() && portAsInteger != null && portAsInteger == TcpOverTlsTransport.DEFAULT_PORT) {
+                    if(!electrumUseSsl.isSelected() && portAsInteger != null && portAsInteger == Protocol.SSL.getDefaultPort()) {
                         useSslOriginal = false;
                         electrumUseSsl.setSelected(true);
-                    } else if(electrumUseSsl.isSelected() && portAsInteger != null && portAsInteger == TcpTransport.DEFAULT_PORT) {
+                    } else if(electrumUseSsl.isSelected() && portAsInteger != null && portAsInteger == Protocol.TCP.getDefaultPort()) {
                         useSslOriginal = true;
                         electrumUseSsl.setSelected(false);
                     }
@@ -746,7 +746,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         String hostAsString = getHost(coreHost.getText());
         Integer portAsInteger = getPort(corePort.getText());
         if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
-            config.setCoreServer(new Server(Protocol.HTTP.toUrlString(hostAsString, portAsInteger)));
+            Protocol protocol = portAsInteger == Protocol.HTTPS.getDefaultPort() ? Protocol.HTTPS : Protocol.HTTP;
+            config.setCoreServer(new Server(protocol.toUrlString(hostAsString, portAsInteger)));
         } else if(hostAsString != null) {
             config.setCoreServer(new Server(Protocol.HTTP.toUrlString(hostAsString)));
         }
