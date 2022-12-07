@@ -245,7 +245,7 @@ public class DbPersistence implements Persistence {
                             walletNodeDao.updateNodeAddressData(addressNode.getId(), addressNode.getAddressData());
                         }
 
-                        Set<BlockTransactionHashIndex> txos = addressNode.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo, txo.getSpentBy()) : Stream.of(txo)).collect(Collectors.toSet());
+                        List<BlockTransactionHashIndex> txos = addressNode.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo, txo.getSpentBy()) : Stream.of(txo)).collect(Collectors.toList());
                         List<Long> existingIds = txos.stream().map(Persistable::getId).filter(Objects::nonNull).collect(Collectors.toList());
                         referencedTxIds.addAll(txos.stream().map(BlockTransactionHash::getHash).collect(Collectors.toSet()));
 
