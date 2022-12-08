@@ -243,6 +243,11 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     @Subscribe
+    public void cormorantStatus(CormorantStatusEvent event) {
+        walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), true, event.getStatus()));
+    }
+
+    @Subscribe
     public void bwtSyncStatus(BwtSyncStatusEvent event) {
         walletHistoryStatus(new WalletHistoryStatusEvent(walletForm.getWallet(), true, event.getStatus()));
     }

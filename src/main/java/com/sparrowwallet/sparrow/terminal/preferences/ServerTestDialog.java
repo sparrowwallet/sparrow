@@ -214,6 +214,16 @@ public class ServerTestDialog extends DialogWindow {
     }
 
     @Subscribe
+    public void cormorantSyncStatus(CormorantSyncStatusEvent event) {
+        if(connectionService != null && connectionService.isRunning() && event.getProgress() < 100) {
+            DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm");
+            appendText("\nThe connection to the Bitcoin Core node was successful, but it is still syncing and cannot be used yet.");
+            appendText("\nCurrently " + event.getProgress() + "% completed to date " + dateFormat.format(event.getTip()));
+            connectionService.cancel();
+        }
+    }
+
+    @Subscribe
     public void bwtStatus(BwtStatusEvent event) {
         if(!(event instanceof BwtSyncStatusEvent)) {
             appendText("\n" + event.getStatus());

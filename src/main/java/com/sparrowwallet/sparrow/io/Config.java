@@ -64,6 +64,7 @@ public class Config {
     private CoreAuthType coreAuthType;
     private File coreDataDir;
     private String coreAuth;
+    private boolean useLegacyCoreWallet;
     private Server electrumServer;
     private List<Server> recentElectrumServers;
     private File electrumServerCert;
@@ -509,6 +510,15 @@ public class Config {
 
     public void setCoreAuth(String coreAuth) {
         this.coreAuth = coreAuth;
+        flush();
+    }
+
+    public boolean isUseLegacyCoreWallet() {
+        return useLegacyCoreWallet;
+    }
+
+    public void setUseLegacyCoreWallet(boolean useLegacyCoreWallet) {
+        this.useLegacyCoreWallet = useLegacyCoreWallet;
         flush();
     }
 

@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -33,7 +32,6 @@ public class Bwt {
     private static final Logger log = LoggerFactory.getLogger(Bwt.class);
 
     public static final String DEFAULT_CORE_WALLET = "sparrow";
-    public static final String ELECTRUM_HOST = "127.0.0.1";
     public static final String ELECTRUM_PORT = "0";
     private static final int IMPORT_BATCH_SIZE = 350;
     private static boolean initialized;
@@ -142,7 +140,7 @@ public class Bwt {
             bwtConfig.setupLogger = false;
         }
 
-        bwtConfig.electrumAddr = ELECTRUM_HOST + ":" + ELECTRUM_PORT;
+        bwtConfig.electrumAddr = ElectrumServer.CORE_ELECTRUM_HOST + ":" + ELECTRUM_PORT;
         bwtConfig.electrumSkipMerkle = true;
 
         Config config = Config.get();

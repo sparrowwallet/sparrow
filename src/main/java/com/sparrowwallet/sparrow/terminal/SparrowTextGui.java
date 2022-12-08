@@ -179,4 +179,19 @@ public class SparrowTextGui extends MultiWindowTextGUI {
             }
         }
     }
+
+    @Subscribe
+    public void cormorantSyncStatusEvent(CormorantSyncStatusEvent event) {
+        statusUpdated(new StatusEvent("Syncing... (" + event.getProgress() + "% complete, synced to " + event.getTipAsString() + ")"));
+    }
+
+    @Subscribe
+    public void cormorantScanStatusEvent(CormorantScanStatusEvent event) {
+        statusUpdated(new StatusEvent(event.isCompleted() ? "" : "Scanning... (" + event.getProgress() + "% complete, " + event.getRemainingAsString() + " remaining)"));
+    }
+
+    @Subscribe
+    public void cormorantPruneStatus(CormorantPruneStatusEvent event) {
+        statusUpdated(new StatusEvent("Error importing wallet, pruned date after wallet birthday"));
+    }
 }

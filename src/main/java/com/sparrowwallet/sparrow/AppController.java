@@ -2590,6 +2590,50 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void cormorantSyncStatus(CormorantSyncStatusEvent event) {
+        serverToggle.setDisable(false);
+        if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
+            statusUpdated(new StatusEvent("Syncing... (" + event.getProgress() + "% complete, synced to " + event.getTipAsString() + ")"));
+            if(event.getProgress() > 0 && (statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING)) {
+                statusBar.setProgress((double)event.getProgress() / 100);
+            }
+        }
+    }
+
+    @Subscribe
+    public void cormorantScanStatus(CormorantScanStatusEvent event) {
+        serverToggle.setDisable(true);
+        if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
+            statusUpdated(new StatusEvent("Scanning... (" + event.getProgress() + "% complete, " + event.getRemainingAsString() + " remaining)"));
+            if(event.getProgress() > 0 && (statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING)) {
+                statusBar.setProgress((double)event.getProgress() / 100);
+            }
+        } else if(event.isCompleted()) {
+            serverToggle.setDisable(false);
+            if(statusBar.getText().startsWith("Scanning...")) {
+                statusBar.setText("");
+            }
+        }
+    }
+
+    @Subscribe
+    public void cormorantPruneStatus(CormorantPruneStatusEvent event) {
+        if(event.legacyWalletExists()) {
+            Optional<ButtonType> optButtonType = AppServices.showErrorDialog("Error importing Bitcoin Core descriptor wallet",
+                    "The connected node is pruned at " + event.getPruneDateAsString() + ", but the wallet birthday for " + event.getWallet().getFullDisplayName() + " is set to " + event.getScanDateAsString() + ".\n\n" +
+                            "Do you want to try using the existing legacy Bitcoin Core wallet?", ButtonType.YES, ButtonType.NO);
+            if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
+                Config.get().setUseLegacyCoreWallet(true);
+                onlineProperty().set(false);
+                Platform.runLater(() -> onlineProperty().set(true));
+            }
+        } else {
+            AppServices.showErrorDialog("Error importing Bitcoin Core descriptor wallet",
+                    "The connected node is pruned at " + event.getPruneDateAsString() + ", but the wallet birthday for " + event.getWallet().getFullDisplayName() + " is set to " + event.getScanDateAsString() + ".");
+        }
+    }
+
+    @Subscribe
     public void bwtBootStatus(BwtBootStatusEvent event) {
         serverToggle.setDisable(true);
         if(AppServices.isConnecting()) {

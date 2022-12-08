@@ -15,6 +15,8 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Server;
+import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
+import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindException;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
@@ -43,6 +45,8 @@ public class ElectrumServer {
 
     private static final Version FULCRUM_MIN_BATCHING_VERSION = new Version("1.6.0");
 
+    public static final String CORE_ELECTRUM_HOST = "127.0.0.1";
+
     private static final int MINIMUM_BROADCASTS = 2;
 
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
@@ -59,7 +63,9 @@ public class ElectrumServer {
 
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
-    private static Server bwtElectrumServer;
+    private static Cormorant cormorant;
+
+    private static Server coreElectrumServer;
 
     private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed:[^\"]*)\".*");
 
@@ -74,12 +80,12 @@ public class ElectrumServer {
                     electrumServer = Config.get().getPublicElectrumServer();
                     proxyServer = Config.get().getProxyServer();
                 } else if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                    if(bwtElectrumServer == null) {
+                    if(coreElectrumServer == null) {
                         throw new ServerConfigException("Could not connect to Bitcoin Core RPC");
                     }
-                    electrumServer = bwtElectrumServer;
-                    if(previousServer != null && previousServer.getUrl().contains(Bwt.ELECTRUM_HOST)) {
-                        previousServer = bwtElectrumServer;
+                    electrumServer = coreElectrumServer;
+                    if(previousServer != null && previousServer.getUrl().contains(CORE_ELECTRUM_HOST)) {
+                        previousServer = coreElectrumServer;
                     }
                 } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
                     electrumServer = Config.get().getElectrumServer();
@@ -1080,46 +1086,59 @@ public class ElectrumServer {
                     ElectrumServer electrumServer = new ElectrumServer();
 
                     if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                        Bwt.initialize();
+                        try {
+                            if(Config.get().isUseLegacyCoreWallet()) {
+                                throw new CormorantBitcoindException("Legacy wallet configured");
+                            }
+                            if(ElectrumServer.cormorant == null) {
+                                ElectrumServer.cormorant = new Cormorant();
+                                ElectrumServer.coreElectrumServer = cormorant.start();
+                            }
+                        } catch(CormorantBitcoindException e) {
+                            ElectrumServer.cormorant = null;
+                            log.debug("Cannot start cormorant: " + e.getMessage() + ". Starting BWT...");
 
-                        if(!bwt.isRunning()) {
-                            Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe);
-                            bwtStartException = null;
-                            bwtConnectionService.setOnFailed(workerStateEvent -> {
-                                log.error("Failed to start BWT", workerStateEvent.getSource().getException());
-                                bwtStartException = workerStateEvent.getSource().getException();
+                            Bwt.initialize();
+
+                            if(!bwt.isRunning()) {
+                                Bwt.ConnectionService bwtConnectionService = bwt.getConnectionService(subscribe);
+                                bwtStartException = null;
+                                bwtConnectionService.setOnFailed(workerStateEvent -> {
+                                    log.error("Failed to start BWT", workerStateEvent.getSource().getException());
+                                    bwtStartException = workerStateEvent.getSource().getException();
+                                    try {
+                                        bwtStartLock.lock();
+                                        bwtStartCondition.signal();
+                                    } finally {
+                                        bwtStartLock.unlock();
+                                    }
+                                });
+                                Platform.runLater(bwtConnectionService::start);
+
                                 try {
                                     bwtStartLock.lock();
-                                    bwtStartCondition.signal();
+                                    bwtStartCondition.await();
+
+                                    if(!bwt.isReady()) {
+                                        if(bwtStartException != null) {
+                                            Matcher walletLoadingMatcher = RPC_WALLET_LOADING_PATTERN.matcher(bwtStartException.getMessage());
+                                            if(bwtStartException.getMessage().contains("Wallet file not specified")) {
+                                                throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
+                                            } else if(bwtStartException.getMessage().contains("Taproot wallets are not supported")) {
+                                                throw new ServerException(bwtStartException.getMessage());
+                                            } else if(walletLoadingMatcher.matches() && walletLoadingMatcher.group(1) != null) {
+                                                throw new ServerException(walletLoadingMatcher.group(1));
+                                            }
+                                        }
+
+                                        throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
+                                    }
+                                } catch(InterruptedException ex) {
+                                    Thread.currentThread().interrupt();
+                                    return null;
                                 } finally {
                                     bwtStartLock.unlock();
                                 }
-                            });
-                            Platform.runLater(bwtConnectionService::start);
-
-                            try {
-                                bwtStartLock.lock();
-                                bwtStartCondition.await();
-
-                                if(!bwt.isReady()) {
-                                    if(bwtStartException != null) {
-                                        Matcher walletLoadingMatcher = RPC_WALLET_LOADING_PATTERN.matcher(bwtStartException.getMessage());
-                                        if(bwtStartException.getMessage().contains("Wallet file not specified")) {
-                                            throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
-                                        } else if(bwtStartException.getMessage().contains("Taproot wallets are not supported")) {
-                                            throw new ServerException(bwtStartException.getMessage());
-                                        } else if(walletLoadingMatcher.matches() && walletLoadingMatcher.group(1) != null) {
-                                            throw new ServerException(walletLoadingMatcher.group(1));
-                                        }
-                                    }
-
-                                    throw new ServerException("Check if Bitcoin Core is running, and the authentication details are correct.");
-                                }
-                            } catch(InterruptedException e) {
-                                Thread.currentThread().interrupt();
-                                return null;
-                            } finally {
-                                bwtStartLock.unlock();
                             }
                         }
                     }
@@ -1196,7 +1215,7 @@ public class ElectrumServer {
         }
 
         public boolean isConnecting() {
-            return isRunning() && firstCall && !shutdown && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && !bwt.isReady()));
+            return isRunning() && firstCall && !shutdown && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (cormorant != null && !cormorant.isRunning()) || (bwt.isRunning() && !bwt.isReady()));
         }
 
         public boolean isConnectionRunning() {
@@ -1204,7 +1223,7 @@ public class ElectrumServer {
         }
 
         public boolean isConnected() {
-            return isRunning() && !firstCall && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (bwt.isRunning() && bwt.isReady()));
+            return isRunning() && !firstCall && (Config.get().getServerType() != ServerType.BITCOIN_CORE || (cormorant != null && cormorant.isRunning()) || (bwt.isRunning() && bwt.isReady()));
         }
 
         public boolean isShutdown() {
@@ -1229,10 +1248,16 @@ public class ElectrumServer {
                 reader.interrupt();
             }
 
+            if(ElectrumServer.cormorant != null) {
+                ElectrumServer.cormorant.stop();
+                ElectrumServer.cormorant = null;
+                ElectrumServer.coreElectrumServer = null;
+            }
+
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE && bwt.isRunning()) {
                 Bwt.DisconnectionService disconnectionService = bwt.getDisconnectionService();
                 disconnectionService.setOnSucceeded(workerStateEvent -> {
-                    ElectrumServer.bwtElectrumServer = null;
+                    ElectrumServer.coreElectrumServer = null;
                     if(subscribe) {
                         EventManager.get().post(new BwtShutdownEvent());
                     }
@@ -1261,7 +1286,7 @@ public class ElectrumServer {
         @Subscribe
         public void bwtElectrumReadyStatus(BwtElectrumReadyStatusEvent event) {
             if(this.isRunning()) {
-                ElectrumServer.bwtElectrumServer = new Server(Protocol.TCP.toUrlString(HostAndPort.fromString(event.getElectrumAddr())));
+                ElectrumServer.coreElectrumServer = new Server(Protocol.TCP.toUrlString(HostAndPort.fromString(event.getElectrumAddr())));
             }
         }
 
@@ -1323,6 +1348,12 @@ public class ElectrumServer {
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() throws ServerException {
+                    if(ElectrumServer.cormorant != null) {
+                        if(!ElectrumServer.cormorant.checkWalletImport(mainWallet)) {
+                            return true;
+                        }
+                    }
+
                     boolean historyFetched = getTransactionHistory(mainWallet);
                     for(Wallet childWallet : new ArrayList<>(mainWallet.getChildWallets())) {
                         if(childWallet.isNested()) {
@@ -1423,6 +1454,12 @@ public class ElectrumServer {
         protected Task<Set<String>> createTask() {
             return new Task<>() {
                 protected Set<String> call() throws ServerException {
+                    if(ElectrumServer.cormorant != null) {
+                        if(!ElectrumServer.cormorant.checkWalletImport(wallet)) {
+                            return Collections.emptySet();
+                        }
+                    }
+
                     iterationCount.set(iterationCount.get() + 1);
                     ElectrumServer electrumServer = new ElectrumServer();
                     return electrumServer.getMempoolScriptHashes(wallet, txId, nodes);
@@ -1737,6 +1774,12 @@ public class ElectrumServer {
         protected Task<List<Wallet>> createTask() {
             return new Task<>() {
                 protected List<Wallet> call() throws ServerException {
+                    if(ElectrumServer.cormorant != null) {
+                        if(!ElectrumServer.cormorant.checkWalletImport(wallet)) {
+                            return Collections.emptyList();
+                        }
+                    }
+
                     Wallet notificationWallet = wallet.getNotificationWallet();
                     WalletNode notificationNode = notificationWallet.getNode(KeyPurpose.NOTIFICATION);
 
