@@ -37,7 +37,7 @@ public class WalletNodeHistoryChangedEvent {
         Wallet notificationWallet = wallet.getNotificationWallet();
         if(notificationWallet != null) {
             WalletNode notificationNode = notificationWallet.getNode(KeyPurpose.NOTIFICATION);
-            if(ElectrumServer.getScriptHash(notificationWallet, notificationNode).equals(scriptHash)) {
+            if(ElectrumServer.getScriptHash(notificationNode).equals(scriptHash)) {
                 return notificationNode;
             }
         }
@@ -59,7 +59,7 @@ public class WalletNodeHistoryChangedEvent {
     private WalletNode getWalletNode(Wallet wallet, KeyPurpose keyPurpose) {
         WalletNode purposeNode = wallet.getNode(keyPurpose);
         for(WalletNode addressNode : new ArrayList<>(purposeNode.getChildren())) {
-            if(ElectrumServer.getScriptHash(wallet, addressNode).equals(scriptHash)) {
+            if(ElectrumServer.getScriptHash(addressNode).equals(scriptHash)) {
                 return addressNode;
             }
         }

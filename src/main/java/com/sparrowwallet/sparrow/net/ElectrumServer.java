@@ -184,9 +184,9 @@ public class ElectrumServer {
         getCalculatedScriptHashes(wallet).forEach(retrievedScriptHashes::putIfAbsent);
     }
 
-    private static void addCalculatedScriptHashes(Wallet wallet, WalletNode walletNode) {
+    private static void addCalculatedScriptHashes(WalletNode walletNode) {
         Map<String, String> calculatedScriptHashStatuses = new HashMap<>();
-        addScriptHashStatus(calculatedScriptHashStatuses, wallet, walletNode);
+        addScriptHashStatus(calculatedScriptHashStatuses, walletNode);
         calculatedScriptHashStatuses.forEach(retrievedScriptHashes::putIfAbsent);
     }
 
@@ -200,14 +200,14 @@ public class ElectrumServer {
     private static Map<String, String> calculateScriptHashes(Wallet wallet, KeyPurpose keyPurpose) {
         Map<String, String> calculatedScriptHashes = new LinkedHashMap<>();
         for(WalletNode walletNode : wallet.getNode(keyPurpose).getChildren()) {
-            addScriptHashStatus(calculatedScriptHashes, wallet, walletNode);
+            addScriptHashStatus(calculatedScriptHashes, walletNode);
         }
 
         return calculatedScriptHashes;
     }
 
-    private static void addScriptHashStatus(Map<String, String> calculatedScriptHashes, Wallet wallet, WalletNode walletNode) {
-        String scriptHash = getScriptHash(wallet, walletNode);
+    private static void addScriptHashStatus(Map<String, String> calculatedScriptHashes, WalletNode walletNode) {
+        String scriptHash = getScriptHash(walletNode);
         String scriptHashStatus = getScriptHashStatus(walletNode);
         calculatedScriptHashes.put(scriptHash, scriptHashStatus);
     }
@@ -246,8 +246,8 @@ public class ElectrumServer {
     }
 
     public static void clearRetrievedScriptHashes(Wallet wallet) {
-        wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().map(node -> getScriptHash(wallet, node)).forEach(scriptHash -> retrievedScriptHashes.remove(scriptHash));
-        wallet.getNode(KeyPurpose.CHANGE).getChildren().stream().map(node -> getScriptHash(wallet, node)).forEach(scriptHash -> retrievedScriptHashes.remove(scriptHash));
+        wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(scriptHash -> retrievedScriptHashes.remove(scriptHash));
+        wallet.getNode(KeyPurpose.CHANGE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(scriptHash -> retrievedScriptHashes.remove(scriptHash));
     }
 
     public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet) throws ServerException {
@@ -337,7 +337,7 @@ public class ElectrumServer {
         log.debug("Fetched history for: " + nodeTransactionMap.keySet());
 
         //Set the remaining WalletNode keys in nodeTransactionMap to empty sets to indicate no history (if no script hash history has already been retrieved in a previous call)
-        getAddressNodes(wallet, purposeNode).stream().filter(node -> !nodeTransactionMap.containsKey(node) && retrievedScriptHashes.get(getScriptHash(wallet, node)) == null).forEach(node -> nodeTransactionMap.put(node, Collections.emptySet()));
+        getAddressNodes(wallet, purposeNode).stream().filter(node -> !nodeTransactionMap.containsKey(node) && retrievedScriptHashes.get(getScriptHash(node)) == null).forEach(node -> nodeTransactionMap.put(node, Collections.emptySet()));
     }
 
     private void getHistoryToGapLimit(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, WalletNode purposeNode) throws ServerException {
@@ -376,7 +376,7 @@ public class ElectrumServer {
             Map<String, String> pathScriptHashes = new LinkedHashMap<>(nodes.size());
             for(WalletNode node : nodes) {
                 if(node.getIndex() >= startIndex) {
-                    pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
+                    pathScriptHashes.put(node.getDerivationPath(), getScriptHash(node));
                 }
             }
 
@@ -445,7 +445,7 @@ public class ElectrumServer {
                 }
 
                 if(node != null && node.getIndex() >= startIndex) {
-                    String scriptHash = getScriptHash(wallet, node);
+                    String scriptHash = getScriptHash(node);
                     String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
                     if(subscribedStatus != null) {
                         //Already subscribed, but still need to fetch history from a used node if not previously fetched or present
@@ -473,7 +473,7 @@ public class ElectrumServer {
 
                 WalletNode node = pathNodes.computeIfAbsent(path, p -> nodes.stream().filter(n -> n.getDerivationPath().equals(p)).findFirst().orElse(null));
                 if(node != null) {
-                    String scriptHash = getScriptHash(wallet, node);
+                    String scriptHash = getScriptHash(node);
 
                     //Check if there is history for this script hash, and if the history has changed since last fetched
                     if(status != null && !status.equals(retrievedScriptHashes.get(scriptHash))) {
@@ -888,7 +888,7 @@ public class ElectrumServer {
     public Set<String> getMempoolScriptHashes(Wallet wallet, Sha256Hash txId, Set<WalletNode> transactionNodes) throws ServerException {
         Map<String, String> pathScriptHashes = new LinkedHashMap<>(transactionNodes.size());
         for(WalletNode node : transactionNodes) {
-            pathScriptHashes.put(node.getDerivationPath(), getScriptHash(wallet, node));
+            pathScriptHashes.put(node.getDerivationPath(), getScriptHash(node));
         }
 
         Set<String> mempoolScriptHashes = new LinkedHashSet<>();
@@ -948,14 +948,14 @@ public class ElectrumServer {
         Map<String, WalletNode> scriptHashes = new HashMap<>();
         for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
             for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
-                scriptHashes.put(getScriptHash(wallet, childNode), childNode);
+                scriptHashes.put(getScriptHash(childNode), childNode);
             }
         }
 
         return scriptHashes;
     }
 
-    public static String getScriptHash(Wallet wallet, WalletNode node) {
+    public static String getScriptHash(WalletNode node) {
         byte[] hash = Sha256Hash.hash(node.getOutputScript().getProgram());
         byte[] reversed = Utils.reverseBytes(hash);
         return Utils.bytesToHex(reversed);
@@ -1394,7 +1394,7 @@ public class ElectrumServer {
                     Set<WalletNode> updatedNodes = new HashSet<>();
                     Map<WalletNode, Set<BlockTransactionHashIndex>> walletNodes = wallet.getWalletNodes();
                     for(WalletNode node : (nodes == null ? walletNodes.keySet() : nodes)) {
-                        String scriptHash = getScriptHash(wallet, node);
+                        String scriptHash = getScriptHash(node);
                         String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
                         if(!Objects.equals(subscribedStatus, retrievedScriptHashes.get(scriptHash))) {
                             updatedNodes.add(node);
@@ -1414,7 +1414,7 @@ public class ElectrumServer {
                     //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool
                     if(nodes != null) {
                         for(WalletNode node : nodes) {
-                            String scriptHash = getScriptHash(wallet, node);
+                            String scriptHash = getScriptHash(node);
                             if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()) {
                                 log.debug("Clearing transaction history for " + node);
                                 node.getTransactionOutputs().clear();
@@ -1791,7 +1791,7 @@ public class ElectrumServer {
                         }
                     }
 
-                    addCalculatedScriptHashes(notificationWallet, notificationNode);
+                    addCalculatedScriptHashes(notificationNode);
 
                     ElectrumServer electrumServer = new ElectrumServer();
                     Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = electrumServer.getHistory(notificationWallet, List.of(notificationNode));

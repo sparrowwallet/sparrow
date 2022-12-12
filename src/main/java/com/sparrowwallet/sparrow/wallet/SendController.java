@@ -1161,11 +1161,11 @@ public class SendController extends WalletFormController implements Initializabl
             Map<WalletNode, List<String>> inputHashes = new LinkedHashMap<>();
             for(WalletNode node : walletTransaction.getSelectedUtxos().values()) {
                 List<String> nodeHashes = inputHashes.computeIfAbsent(node, k -> new ArrayList<>());
-                nodeHashes.add(ElectrumServer.getScriptHash(walletForm.getWallet(), node));
+                nodeHashes.add(ElectrumServer.getScriptHash(node));
             }
             Map<WalletNode, List<String>> changeHash = new LinkedHashMap<>();
             for(WalletNode changeNode : walletTransaction.getChangeMap().keySet()) {
-                changeHash.put(changeNode, List.of(ElectrumServer.getScriptHash(walletForm.getWallet(), changeNode)));
+                changeHash.put(changeNode, List.of(ElectrumServer.getScriptHash(changeNode)));
             }
             log.debug("Creating tx " + walletTransaction.getTransaction().getTxId() + ", expecting notifications for \ninputs \n" + inputHashes + " and \nchange \n" + changeHash);
         }
