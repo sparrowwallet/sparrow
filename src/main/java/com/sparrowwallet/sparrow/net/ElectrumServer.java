@@ -1007,6 +1007,10 @@ public class ElectrumServer {
                 return true;
             }
 
+            if(server.startsWith("cormorant")) {
+                return true;
+            }
+
             if(server.startsWith("electrs/")) {
                 String electrsVersion = server.substring("electrs/".length());
                 int dashIndex = electrsVersion.indexOf('-');
