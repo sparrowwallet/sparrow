@@ -383,10 +383,10 @@ public class BitcoindClient {
 
         for(String txid : new HashSet<>(mempoolEntries.keySet())) {
             if(forceRefresh || mempoolEntries.get(txid) == null) {
-                MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid);
-                if(mempoolEntry != null) {
+                try {
+                    MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid);
                     mempoolEntries.put(txid, mempoolEntry);
-                } else {
+                } catch(JsonRpcException e) {
                     mempoolEntries.remove(txid);
                 }
             }
@@ -395,7 +395,14 @@ public class BitcoindClient {
 
     private boolean isConflicted(ListTransaction listTransaction, Map<String, Boolean> conflictCache) {
         if(listTransaction.confirmations() == 0 && !listTransaction.walletconflicts().isEmpty()) {
-            Boolean active = conflictCache.computeIfAbsent(listTransaction.txid(), txid -> getBitcoindService().getMempoolEntry(txid) != null);
+            Boolean active = conflictCache.computeIfAbsent(listTransaction.txid(), txid -> {
+                try {
+                    getBitcoindService().getMempoolEntry(txid);
+                    return true;
+                } catch(JsonRpcException e) {
+                    return false;
+                }
+            });
 
             if(active) {
                 for(String conflictedTxid : listTransaction.walletconflicts()) {

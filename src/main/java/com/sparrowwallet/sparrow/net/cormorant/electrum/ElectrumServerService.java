@@ -146,9 +146,9 @@ public class ElectrumServerService {
     }
 
     @JsonRpcMethod("blockchain.transaction.get")
-    public String getTransaction(@JsonRpcParam("tx_hash") String tx_hash, @JsonRpcParam("verbose") @JsonRpcOptional boolean verbose) throws BitcoindIOException, TransactionNotFoundException {
+    public Object getTransaction(@JsonRpcParam("tx_hash") String tx_hash, @JsonRpcParam("verbose") @JsonRpcOptional boolean verbose) throws BitcoindIOException, TransactionNotFoundException {
         try {
-            return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, verbose).toString();
+            return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, verbose);
         } catch(JsonRpcException e) {
             throw new TransactionNotFoundException(e.getErrorMessage());
         } catch(IllegalStateException e) {
