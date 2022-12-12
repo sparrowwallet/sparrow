@@ -169,7 +169,7 @@ public class BitcoindClient {
                     if(childWallet.isNested()) {
                         for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
                             for(WalletNode addressNode : childWallet.getNode(keyPurpose).getChildren()) {
-                                outputDescriptors.put(OutputDescriptor.normalize(OutputDescriptor.toDescriptorString(addressNode.getAddress())), getScanDate(wallet, null));
+                                outputDescriptors.put(OutputDescriptor.normalize(OutputDescriptor.toDescriptorString(addressNode.getAddress())), getScanDate(childWallet, null));
                             }
                         }
                     }
@@ -200,7 +200,7 @@ public class BitcoindClient {
             forceRescan = true;
         }
 
-        return new ScanDate(wallet.getBirthDate(), range, forceRescan);
+        return new ScanDate(wallet.getBirthDate() == null && !wallet.isMasterWallet() ? wallet.getMasterWallet().getBirthDate() : wallet.getBirthDate(), range, forceRescan);
     }
 
     private void importDescriptors(Map<String, ScanDate> descriptors) {
