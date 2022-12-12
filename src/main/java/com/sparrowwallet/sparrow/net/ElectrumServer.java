@@ -61,6 +61,8 @@ public class ElectrumServer {
 
     private static Map<Sha256Hash, BlockTransaction> retrievedTransactions = Collections.synchronizedMap(new HashMap<>());
 
+    private static Set<String> sameHeightTxioScriptHashes = Collections.synchronizedSet(new HashSet<>());
+
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static Cormorant cormorant;
@@ -208,11 +210,11 @@ public class ElectrumServer {
 
     private static void addScriptHashStatus(Map<String, String> calculatedScriptHashes, WalletNode walletNode) {
         String scriptHash = getScriptHash(walletNode);
-        String scriptHashStatus = getScriptHashStatus(walletNode);
+        String scriptHashStatus = getScriptHashStatus(scriptHash, walletNode);
         calculatedScriptHashes.put(scriptHash, scriptHashStatus);
     }
 
-    private static String getScriptHashStatus(WalletNode walletNode) {
+    private static String getScriptHashStatus(String scriptHash, WalletNode walletNode) {
         List<BlockTransactionHashIndex> txos  = new ArrayList<>(walletNode.getTransactionOutputs());
         txos.addAll(walletNode.getTransactionOutputs().stream().filter(BlockTransactionHashIndex::isSpent).map(BlockTransactionHashIndex::getSpentBy).collect(Collectors.toList()));
         Set<Sha256Hash> unique = new HashSet<>(txos.size());
@@ -231,6 +233,8 @@ public class ElectrumServer {
             }
 
             //We cannot further sort by order within a block, so sometimes multiple txos to an address will mean an incorrect status
+            //Save a record of these to avoid triggering an AllHistoryChangedEvent based on potentially incorrect calculated statuses
+            sameHeightTxioScriptHashes.add(scriptHash);
             return 0;
         });
         if(!txos.isEmpty()) {
@@ -246,8 +250,13 @@ public class ElectrumServer {
     }
 
     public static void clearRetrievedScriptHashes(Wallet wallet) {
-        wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(scriptHash -> retrievedScriptHashes.remove(scriptHash));
-        wallet.getNode(KeyPurpose.CHANGE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(scriptHash -> retrievedScriptHashes.remove(scriptHash));
+        wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(ElectrumServer::clearRetrievedScriptHash);
+        wallet.getNode(KeyPurpose.CHANGE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(ElectrumServer::clearRetrievedScriptHash);
+    }
+
+    private static void clearRetrievedScriptHash(String scriptHash) {
+        retrievedScriptHashes.remove(scriptHash);
+        sameHeightTxioScriptHashes.remove(scriptHash);
     }
 
     public Map<WalletNode, Set<BlockTransactionHash>> getHistory(Wallet wallet) throws ServerException {
@@ -449,7 +458,7 @@ public class ElectrumServer {
                     String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
                     if(subscribedStatus != null) {
                         //Already subscribed, but still need to fetch history from a used node if not previously fetched or present
-                        if(!subscribedStatus.equals(retrievedScriptHashes.get(scriptHash)) || !subscribedStatus.equals(getScriptHashStatus(node))) {
+                        if(!subscribedStatus.equals(retrievedScriptHashes.get(scriptHash)) || !subscribedStatus.equals(getScriptHashStatus(scriptHash, node))) {
                             nodeTransactionMap.put(node, new TreeSet<>());
                         }
                     } else if(!subscribedScriptHashes.containsKey(scriptHash) && scriptHashes.add(scriptHash)) {
@@ -1404,7 +1413,9 @@ public class ElectrumServer {
 
                     //If wallet was not empty, check if all used updated nodes have changed history
                     if(nodes == null && previousScriptHashes.values().stream().anyMatch(Objects::nonNull)) {
-                        if(!updatedNodes.isEmpty() && updatedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))) {
+                        if(!updatedNodes.isEmpty()
+                                && updatedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))
+                                && !sameHeightTxioScriptHashes.containsAll(updatedNodes.stream().map(ElectrumServer::getScriptHash).collect(Collectors.toSet()))) {
                             //All used nodes on a non-empty wallet have changed history. Abort and trigger a full refresh.
                             log.info("All used nodes on a non-empty wallet have changed history. Triggering a full wallet refresh.");
                             throw new AllHistoryChangedException();
