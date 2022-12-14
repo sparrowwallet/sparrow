@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.event;
 
+import com.sparrowwallet.drongo.wallet.Wallet;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -14,6 +16,11 @@ public class CormorantSyncStatusEvent extends CormorantStatusEvent {
         super(status);
         this.progress = progress;
         this.tip = tip;
+    }
+
+    @Override
+    public boolean isFor(Wallet wallet) {
+        return true;
     }
 
     public int getProgress() {

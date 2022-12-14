@@ -54,10 +54,6 @@ public class WalletForm {
     private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
 
     public WalletForm(Storage storage, Wallet currentWallet) {
-        this(storage, currentWallet, true);
-    }
-
-    public WalletForm(Storage storage, Wallet currentWallet, boolean refreshHistory) {
         this.storage = storage;
         this.wallet = currentWallet;
 
@@ -70,10 +66,6 @@ public class WalletForm {
                 }, exception -> {
                     log.error("Error refreshing nodes", exception);
                 });
-
-        if(refreshHistory && wallet.isValid()) {
-            refreshHistory(AppServices.getCurrentBlockHeight());
-        }
     }
 
     public Wallet getWallet() {

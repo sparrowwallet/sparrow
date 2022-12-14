@@ -22,6 +22,11 @@ public class CormorantPruneStatusEvent extends CormorantStatusEvent {
         this.legacyWalletExists = legacyWalletExists;
     }
 
+    @Override
+    public boolean isFor(Wallet wallet) {
+        return this.wallet == wallet;
+    }
+
     public Wallet getWallet() {
         return wallet;
     }

@@ -67,7 +67,7 @@ public class BitcoindTransport implements Transport {
 
         connection.setDoOutput(true);
 
-        log.debug("> " + request);
+        log.trace("> " + request);
 
         try(OutputStream os = connection.getOutputStream()) {
             byte[] jsonBytes = request.getBytes(StandardCharsets.UTF_8);
@@ -93,7 +93,7 @@ public class BitcoindTransport implements Transport {
         }
 
         String response = res.toString();
-        log.debug("< " + response);
+        log.trace("< " + response);
 
         return response;
     }

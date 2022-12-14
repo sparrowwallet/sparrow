@@ -142,6 +142,10 @@ public class SparrowTerminal extends Application {
                     .map(data -> new WalletTabData(TabData.TabType.WALLET, data.getWalletForm())).collect(Collectors.toList());
             EventManager.get().post(new OpenWalletsEvent(DEFAULT_WINDOW, walletTabDataList));
 
+            if(wallet.isValid()) {
+                Platform.runLater(() -> walletForm.refreshHistory(AppServices.getCurrentBlockHeight()));
+            }
+
             Set<File> walletFiles = new LinkedHashSet<>();
             walletFiles.add(storage.getWalletFile());
             if(Config.get().getRecentWalletFiles() != null) {

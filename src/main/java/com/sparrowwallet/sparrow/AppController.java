@@ -1611,6 +1611,10 @@ public class AppController implements Initializable {
             });
             subTabs.getSelectionModel().select(subTab);
 
+            if(wallet.isValid()) {
+                Platform.runLater(() -> walletForm.refreshHistory(AppServices.getCurrentBlockHeight()));
+            }
+
             return walletForm;
         } catch(IOException e) {
             throw new RuntimeException(e);

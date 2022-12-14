@@ -109,6 +109,7 @@ public class ElectrumServer {
                 if(previousServer != null && !electrumServer.equals(previousServer)) {
                     retrievedScriptHashes.clear();
                     retrievedTransactions.clear();
+                    TransactionHistoryService.walletLocks.values().forEach(walletLock -> walletLock.initialized = false);
                 }
                 previousServer = electrumServer;
 
@@ -252,6 +253,7 @@ public class ElectrumServer {
     public static void clearRetrievedScriptHashes(Wallet wallet) {
         wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(ElectrumServer::clearRetrievedScriptHash);
         wallet.getNode(KeyPurpose.CHANGE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(ElectrumServer::clearRetrievedScriptHash);
+        TransactionHistoryService.walletLocks.computeIfAbsent(wallet.hashCode(), w -> new WalletLock()).initialized = false;
     }
 
     private static void clearRetrievedScriptHash(String scriptHash) {
@@ -1339,11 +1341,15 @@ public class ElectrumServer {
         }
     }
 
+    private static class WalletLock {
+        public boolean initialized;
+    }
+
     public static class TransactionHistoryService extends Service<Boolean> {
         private final Wallet mainWallet;
         private final List<Wallet> filterToWallets;
         private final Set<WalletNode> filterToNodes;
-        private final static Map<Wallet, Object> walletSynchronizeLocks = new HashMap<>();
+        private final static Map<Integer, WalletLock> walletLocks = Collections.synchronizedMap(new HashMap<>());
 
         public TransactionHistoryService(Wallet wallet) {
             this.mainWallet = wallet;
@@ -1389,10 +1395,11 @@ public class ElectrumServer {
                 return false;
             }
 
-            boolean initial = (walletSynchronizeLocks.putIfAbsent(wallet, new Object()) == null);
-            synchronized(walletSynchronizeLocks.get(wallet)) {
-                if(initial) {
+            WalletLock walletLock = walletLocks.computeIfAbsent(wallet.hashCode(), w -> new WalletLock());
+            synchronized(walletLock) {
+                if(!walletLock.initialized) {
                     addCalculatedScriptHashes(wallet);
+                    walletLock.initialized = true;
                 }
 
                 if(isConnected()) {

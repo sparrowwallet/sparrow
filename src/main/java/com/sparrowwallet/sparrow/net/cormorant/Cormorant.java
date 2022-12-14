@@ -43,6 +43,8 @@ public class Cormorant {
         electrumServerThread.setDaemon(true);
         electrumServerThread.start();
 
+        bitcoindClient.waitUntilInitialImportStarted();
+
         running = true;
         return new Server(Protocol.TCP.toUrlString(com.sparrowwallet.sparrow.net.ElectrumServer.CORE_ELECTRUM_HOST, electrumServer.getPort()));
     }

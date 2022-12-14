@@ -24,7 +24,7 @@ public class SettingsWalletForm extends WalletForm {
     private Wallet walletCopy;
 
     public SettingsWalletForm(Storage storage, Wallet currentWallet) {
-        super(storage, currentWallet, false);
+        super(storage, currentWallet);
         this.walletCopy = currentWallet.copy();
         this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
     }
