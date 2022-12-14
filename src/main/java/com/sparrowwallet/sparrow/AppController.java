@@ -2608,7 +2608,7 @@ public class AppController implements Initializable {
     public void cormorantScanStatus(CormorantScanStatusEvent event) {
         serverToggle.setDisable(true);
         if((AppServices.isConnecting() || AppServices.isConnected()) && !event.isCompleted()) {
-            statusUpdated(new StatusEvent("Scanning... (" + event.getProgress() + "% complete, " + event.getRemainingAsString() + " remaining)"));
+            statusUpdated(new StatusEvent("Scanning... (" + event.getProgress() + "% complete" + (event.getRemainingAsString().isEmpty() ? ")" : ", " + event.getRemainingAsString() + " remaining)")));
             if(event.getProgress() > 0 && (statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING)) {
                 statusBar.setProgress((double)event.getProgress() / 100);
             }

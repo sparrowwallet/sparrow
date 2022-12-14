@@ -292,12 +292,13 @@ public class BitcoindClient {
             scanningLock.lock();
             try {
                 scanningDescriptors.addAll(importingDescriptors.keySet());
+                Platform.runLater(() -> EventManager.get().post(new CormorantScanStatusEvent("Scanning (0%)", getScanningWallets(), 0, null)));
                 results = getBitcoindService().importDescriptors(importDescriptors);
             } finally {
                 scanningLock.unlock();
                 Set<Wallet> scanningWallets = getScanningWallets();
-                scanningDescriptors.clear();
                 Platform.runLater(() -> EventManager.get().post(new CormorantScanStatusEvent("Scanning completed", scanningWallets, 100, Duration.ZERO)));
+                scanningDescriptors.clear();
             }
 
             for(int i = 0; i < importDescriptors.size(); i++) {
@@ -535,7 +536,9 @@ public class BitcoindClient {
                         Set<Wallet> scanningWallets = getScanningWallets();
                         int percent = walletInfo.scanning().getPercent();
                         Duration remainingDuration = walletInfo.scanning().getRemaining();
-                        Platform.runLater(() -> EventManager.get().post(new CormorantScanStatusEvent("Scanning" + (percent < 100 ? " (" + percent + "%)" : ""), scanningWallets, percent, remainingDuration)));
+                        if(percent > 0) {
+                            Platform.runLater(() -> EventManager.get().post(new CormorantScanStatusEvent("Scanning" + (percent < 100 ? " (" + percent + "%)" : ""), scanningWallets, percent, remainingDuration)));
+                        }
                     }
                 }
             } catch(Exception e) {

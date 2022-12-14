@@ -187,7 +187,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
     @Subscribe
     public void cormorantScanStatusEvent(CormorantScanStatusEvent event) {
-        statusUpdated(new StatusEvent(event.isCompleted() ? "" : "Scanning... (" + event.getProgress() + "% complete, " + event.getRemainingAsString() + " remaining)"));
+        statusUpdated(new StatusEvent(event.isCompleted() ? "" : "Scanning... (" + event.getProgress() + "% complete" + (event.getRemainingAsString().isEmpty() ? ")" : ", " + event.getRemainingAsString() + " remaining)")));
     }
 
     @Subscribe
