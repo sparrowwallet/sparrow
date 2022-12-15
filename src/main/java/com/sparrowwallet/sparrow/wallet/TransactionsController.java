@@ -3,6 +3,9 @@ package com.sparrowwallet.sparrow.wallet;
 import com.csvreader.CsvWriter;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -122,13 +125,15 @@ public class TransactionsController extends WalletFormController implements Init
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
                 CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                writer.writeRecord(new String[] {"Date", "Label", "Value", "Balance", "Txid"});
+                writer.writeRecord(new String[] {"Date", "Label", "Value", "Balance", "Fee", "Txid"});
                 for(Entry entry : walletTransactionsEntry.getChildren()) {
                     TransactionEntry txEntry = (TransactionEntry)entry;
                     writer.write(txEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
                     writer.write(txEntry.getLabel());
                     writer.write(getCoinValue(txEntry.getValue()));
                     writer.write(getCoinValue(txEntry.getBalance()));
+                    Long fee = txEntry.getValue() < 0 ? getFee(txEntry.getBlockTransaction()) : null;
+                    writer.write(fee == null ? "" : getCoinValue(fee));
                     writer.write(txEntry.getBlockTransaction().getHash().toString());
                     writer.endRecord();
                 }
@@ -138,6 +143,28 @@ public class TransactionsController extends WalletFormController implements Init
                 AppServices.showErrorDialog("Error exporting transactions as CSV", e.getMessage());
             }
         }
+    }
+
+    private Long getFee(BlockTransaction blockTransaction) {
+        long fee = 0L;
+        for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
+            if(txInput.isCoinBase()) {
+                return 0L;
+            }
+
+            BlockTransaction inputTx = getWalletForm().getWallet().getWalletTransaction(txInput.getOutpoint().getHash());
+            if(inputTx == null || inputTx.getTransaction().getOutputs().size() <= txInput.getOutpoint().getIndex()) {
+                return null;
+            }
+            TransactionOutput spentOutput = inputTx.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+            fee += spentOutput.getValue();
+        }
+
+        for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
+            fee -= txOutput.getValue();
+        }
+
+        return fee;
     }
 
     private String getCoinValue(Long value) {
