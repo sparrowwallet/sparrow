@@ -11,6 +11,6 @@ public record BlockchainInfo(int blocks, int headers, String bestblockhash, bool
     }
 
     public int getProgressPercent() {
-        return (int) Math.round(verificationprogress * 100);
+        return (int) Math.floor(verificationprogress * 100);
     }
 }

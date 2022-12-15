@@ -33,6 +33,8 @@ public class Cormorant {
                 bitcoindClient.importWallets(AppServices.get().getOpenWallets().keySet());
             } catch(ImportFailedException e) {
                 log.debug("Failed to import wallets", e);
+            } finally {
+                bitcoindClient.signalInitialImportStarted();
             }
         }, "Cormorant Initial Wallet Importer");
         importThread.setDaemon(true);

@@ -56,6 +56,8 @@ public class BitcoindClient {
     private boolean initialized;
     private boolean stopped;
 
+    private Exception lastPollException;
+
     private boolean pruned;
     private boolean prunedWarningShown = false;
     private boolean legacyWalletExists;
@@ -101,8 +103,15 @@ public class BitcoindClient {
             try {
                 syncing = true;
                 syncingCondition.await();
+
+                if(syncing) {
+                    if(lastPollException instanceof RuntimeException runtimeException) {
+                        throw runtimeException;
+                    }
+                    throw new RuntimeException("Error while waiting for sync to complete", lastPollException);
+                }
             } catch(InterruptedException e) {
-                throw new CormorantBitcoindException("Interrupted while waiting for sync to complete");
+                throw new RuntimeException("Interrupted while waiting for sync to complete");
             } finally {
                 syncingLock.unlock();
             }
@@ -456,7 +465,7 @@ public class BitcoindClient {
         }
     }
 
-    private void signalInitialImportStarted() {
+    public void signalInitialImportStarted() {
         if(!initialImportStarted) {
             initialImportLock.lock();
             try {
@@ -542,7 +551,17 @@ public class BitcoindClient {
                     }
                 }
             } catch(Exception e) {
+                lastPollException = e;
                 log.warn("Error polling Bitcoin Core: " + e.getMessage());
+
+                if(syncing) {
+                    syncingLock.lock();
+                    try {
+                        syncingCondition.signal();
+                    } finally {
+                        syncingLock.unlock();
+                    }
+                }
             }
         }
     }
