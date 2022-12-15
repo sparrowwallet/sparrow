@@ -82,6 +82,10 @@ public enum UnitFormat {
         return getBtcFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
     }
 
+    public String tableFormatBtcValue(Long amount) {
+        return getTableBtcFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
+    }
+
     public String formatSatsValue(Long amount) {
         return getSatsFormat().format(amount);
     }

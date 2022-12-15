@@ -142,7 +142,7 @@ public class TransactionsController extends WalletFormController implements Init
 
     private String getCoinValue(Long value) {
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-        return BitcoinUnit.BTC.equals(transactionsTable.getBitcoinUnit()) ? format.formatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
+        return BitcoinUnit.BTC.equals(transactionsTable.getBitcoinUnit()) ? format.tableFormatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
     }
 
     private void logMessage(String logMessage) {

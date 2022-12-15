@@ -491,7 +491,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     private String getCoinValue(Long value) {
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-        return BitcoinUnit.BTC.equals(utxosTable.getBitcoinUnit()) ? format.formatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
+        return BitcoinUnit.BTC.equals(utxosTable.getBitcoinUnit()) ? format.tableFormatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
     }
 
     private static Glyph getExternalGlyph() {
