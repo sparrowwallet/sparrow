@@ -145,7 +145,7 @@ public class Storage {
 
         if(wallet.containsMasterPrivateKeys()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
-            Wallet copy = wallet.copy();
+            Wallet copy = wallet.copy(false);
             for(int i = 0; i < copy.getKeystores().size(); i++) {
                 Keystore copyKeystore = copy.getKeystores().get(i);
                 if(copyKeystore.hasSeed() && copyKeystore.getSeed().getPassphrase() == null) {

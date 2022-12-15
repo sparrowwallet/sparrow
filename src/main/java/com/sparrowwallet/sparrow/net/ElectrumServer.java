@@ -1139,7 +1139,7 @@ public class ElectrumServer {
                                             Matcher walletLoadingMatcher = RPC_WALLET_LOADING_PATTERN.matcher(bwtStartException.getMessage());
                                             if(bwtStartException.getMessage().contains("Wallet file not specified")) {
                                                 throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
-                                            } else if(bwtStartException.getMessage().contains("Taproot wallets are not supported")) {
+                                            } else if(bwtStartException.getMessage().contains("Upgrade Bitcoin Core to v24 or later for Taproot wallet support")) {
                                                 throw new ServerException(bwtStartException.getMessage());
                                             } else if(walletLoadingMatcher.matches() && walletLoadingMatcher.group(1) != null) {
                                                 throw new ServerException(walletLoadingMatcher.group(1));
