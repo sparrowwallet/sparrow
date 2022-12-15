@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
@@ -38,7 +39,8 @@ public class BitcoindClient {
     private static final Logger log = LoggerFactory.getLogger(BitcoindClient.class);
 
     public static final String CORE_WALLET_NAME = "cormorant";
-    private static final int GAP_LIMIT = 1000;
+    private static final int DEFAULT_GAP_LIMIT = 1000;
+    private static final int POSTMIX_GAP_LIMIT = 4000;
 
     private final JsonRpcClient jsonRpcClient;
     private final Timer timer = new Timer(true);
@@ -218,7 +220,7 @@ public class BitcoindClient {
     }
 
     private ScanDate getScanDate(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose, Date earliestBirthDate) {
-        Integer range = (keyPurpose == null ? null : wallet.getFreshNode(keyPurpose).getIndex() + GAP_LIMIT);
+        Integer range = (keyPurpose == null ? null : wallet.getFreshNode(keyPurpose).getIndex() + getGapLimit(wallet, keyPurpose));
 
         //Force a rescan if loading a wallet with a birthday later than existing transactions, or if the wallet birthdate has been set or changed to an earlier date from the last check
         boolean forceRescan = false;
@@ -230,6 +232,10 @@ public class BitcoindClient {
         }
 
         return new ScanDate(earliestBirthDate, range, forceRescan);
+    }
+
+    private int getGapLimit(Wallet wallet, KeyPurpose keyPurpose) {
+        return wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && keyPurpose == KeyPurpose.RECEIVE ? POSTMIX_GAP_LIMIT : DEFAULT_GAP_LIMIT;
     }
 
     private void importDescriptors(Map<String, ScanDate> descriptors) {
