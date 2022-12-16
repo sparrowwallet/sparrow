@@ -57,7 +57,13 @@ public class TcpOverTlsTransport extends TcpTransport {
                                 throw new CertificateException("No server certificate provided");
                             }
 
-                            certs[0].checkValidity();
+                            try {
+                                certs[0].checkValidity();
+                            } catch(CertificateExpiredException e) {
+                                if(Storage.getCertificateFile(server.getHost()) == null) {
+                                    throw new UnknownCertificateExpiredException(e.getMessage(), certs[0]);
+                                }
+                            }
                         }
                     }
             };
@@ -68,6 +74,9 @@ public class TcpOverTlsTransport extends TcpTransport {
             try {
                 X509Certificate x509Certificate = (X509Certificate)certificate;
                 x509Certificate.checkValidity();
+            } catch(CertificateExpiredException e) {
+                //Allow expired certificates so long as they have been previously used or explicitly approved
+                //These will usually be self-signed certificates that users may not have the expertise to renew
             } catch(CertificateException e) {
                 crtFile.delete();
                 return getTrustManagers(null);

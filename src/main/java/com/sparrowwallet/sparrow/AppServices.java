@@ -290,8 +290,7 @@ public class AppServices {
                 connectionService.setRestartOnFailure(false);
             }
 
-            if(failEvent.getSource().getException() instanceof TlsServerException && failEvent.getSource().getException().getCause() != null) {
-                TlsServerException tlsServerException = (TlsServerException)failEvent.getSource().getException();
+            if(failEvent.getSource().getException() instanceof TlsServerException tlsServerException && failEvent.getSource().getException().getCause() != null) {
                 connectionService.setRestartOnFailure(false);
                 if(tlsServerException.getCause().getMessage().contains("PKIX path building failed")) {
                     File crtFile = Config.get().getElectrumServerCert();
@@ -314,6 +313,15 @@ public class AppServices {
                                 }
                             }
                         }
+                    }
+                } else if(tlsServerException.getCause().getCause() instanceof UnknownCertificateExpiredException expiredException) {
+                    Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " has expired. "
+                            + tlsServerException.getMessage() + "." +
+                            "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
+                    if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
+                        Storage.saveCertificate(tlsServerException.getServer().getHost(), expiredException.getCertificate());
+                        Platform.runLater(() -> restartService(connectionService));
+                        return;
                     }
                 }
             }
