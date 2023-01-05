@@ -112,7 +112,8 @@ dependencies {
     implementation('com.googlecode.lanterna:lanterna:3.1.1')
     implementation('net.coobird:thumbnailator:0.4.18')
     implementation('com.github.hervegirod:fxsvgimage:1.0b2')
-    testImplementation('junit:junit:4.12')
+    implementation('com.sparrowwallet:toucan:0.9.0')
+    testImplementation('junit:junit:4.13.1')
 }
 
 application {
