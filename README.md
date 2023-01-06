@@ -16,7 +16,7 @@ or for those without SSH credentials:
 
 `git clone --recursive https://github.com/sparrowwallet/sparrow.git`
 
-In order to build, Sparrow requires Java 17 or higher to be installed. 
+In order to build, Sparrow requires Java 17 or 18 to be installed. 
 The release binaries are built with [Eclipse Temurin 18.0.1+10](https://github.com/adoptium/temurin18-binaries/releases/tag/jdk-18.0.1%2B10).
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
@@ -29,6 +29,9 @@ The Sparrow binaries can be built from source using
 `./gradlew jpackage`
 
 Note that to build the Windows installer, you will need to install [WiX](https://github.com/wixtoolset/wix3/releases).
+
+If you get the error message `Unsupported class file major version 63`, then you are using Java 19, which won't work.
+Downgrade to Java 17 or 18.
 
 When updating to the latest HEAD
 
@@ -44,7 +47,7 @@ If you prefer to run Sparrow directly from source, it can be launched from withi
 
 `./sparrow`
 
-Java 17 or higher must be installed. 
+Java 17 or 18 must be installed. Java 19 won't work; see above.
 
 ## Configuration
 
