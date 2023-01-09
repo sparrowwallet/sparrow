@@ -1600,7 +1600,7 @@ public class AppController implements Initializable {
             TabData tabData = new WalletTabData(TabData.TabType.WALLET, walletForm);
             subTab.setUserData(tabData);
             if(!wallet.isWhirlpoolChildWallet()) {
-                subTab.setContextMenu(getSubTabContextMenu(wallet, subTabs, subTab));
+                subTab.setContextMenu(getSubTabContextMenu(storage, wallet, subTabs, subTab));
             }
 
             subTabs.getTabs().add(subTab);
@@ -1981,7 +1981,9 @@ public class AppController implements Initializable {
         }
     }
 
-    private ContextMenu getSubTabContextMenu(Wallet wallet, TabPane subTabs, Tab subTab) {
+    private ContextMenu getSubTabContextMenu(Storage storage, Wallet wallet, TabPane subTabs, Tab subTab) {
+        String walletId = storage.getWalletId(wallet);
+
         ContextMenu contextMenu = new ContextMenu();
         MenuItem rename = new MenuItem("Rename Account");
         rename.setOnAction(event -> {
@@ -1992,8 +1994,9 @@ public class AppController implements Initializable {
                 String label = optLabel.get();
                 subTabLabel.setText(label);
 
-                wallet.setLabel(label);
-                EventManager.get().post(new WalletLabelChangedEvent(wallet));
+                Wallet renamedWallet = AppServices.get().getWallet(walletId);
+                renamedWallet.setLabel(label);
+                EventManager.get().post(new WalletLabelChangedEvent(renamedWallet));
             }
         });
         contextMenu.getItems().add(rename);
@@ -2003,11 +2006,12 @@ public class AppController implements Initializable {
             delete.setOnAction(event -> {
                 Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete Wallet Account?", "Labels applied in this wallet account will be lost. Are you sure?", ButtonType.CANCEL, ButtonType.OK);
                 if(optButtonType.isPresent() && optButtonType.get() == ButtonType.OK) {
+                    Wallet deletedWallet = AppServices.get().getWallet(walletId);
+                    EventManager.get().post(new WalletDeletedEvent(deletedWallet));
                     subTabs.getTabs().remove(subTab);
                     if(subTabs.getTabs().size() == 1) {
                         setSubTabsVisible(subTabs, areSubTabsVisible());
                     }
-                    EventManager.get().post(new WalletDeletedEvent(wallet));
                 }
             });
             contextMenu.getItems().add(delete);
