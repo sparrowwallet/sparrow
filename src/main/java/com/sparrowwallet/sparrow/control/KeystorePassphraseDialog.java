@@ -57,7 +57,7 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         Label fingerprintLabel = new Label("Master fingerprint:");
         TextField fingerprintHex = new TextField();
         fingerprintHex.setDisable(true);
-        fingerprintHex.setPrefWidth(90);
+        fingerprintHex.setMaxWidth(80);
         fingerprintHex.getStyleClass().addAll("fixed-width");
         fingerprintHex.setStyle("-fx-opacity: 0.6");
         masterFingerprint.addListener((observable, oldValue, newValue) -> {
