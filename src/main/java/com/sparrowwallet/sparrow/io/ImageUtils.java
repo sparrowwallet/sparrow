@@ -26,6 +26,14 @@ public class ImageUtils {
         resize(Thumbnails.of(image), outputStream, width, height);
     }
 
+    public static BufferedImage resizeToImage(BufferedImage image, int width, int height) {
+        try {
+            return Thumbnails.of(image).size(width, height).outputQuality(1).asBufferedImage();
+        } catch(IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static byte[] resize(File file, int width, int height) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         resize(file, baos, width, height);

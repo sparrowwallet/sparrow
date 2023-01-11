@@ -48,4 +48,5 @@ open module com.sparrowwallet.sparrow {
     requires com.googlecode.lanterna;
     requires net.coobird.thumbnailator;
     requires com.github.hervegirod;
+    requires com.sparrowwallet.toucan;
 }

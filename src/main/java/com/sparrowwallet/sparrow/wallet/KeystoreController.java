@@ -74,6 +74,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     private TextField fingerprint;
 
     @FXML
+    private LifeHashIcon fingerprintIcon;
+
+    @FXML
     private Button scanXpubQR;
 
     @FXML
@@ -134,6 +137,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(keystore.getKeyDerivation() != null) {
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
             fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
+            fingerprintIcon.setHex(fingerprint.getText());
         } else {
             keystore.setKeyDerivation(new KeyDerivation("",""));
         }
@@ -144,8 +148,16 @@ public class KeystoreController extends WalletFormController implements Initiali
         });
         fingerprint.textProperty().addListener((observable, oldValue, newValue) -> {
             keystore.setKeyDerivation(new KeyDerivation(newValue, keystore.getKeyDerivation().getDerivationPath()));
+            fingerprintIcon.setHex(newValue.length() == 8 ? newValue : null);
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_FINGERPRINT));
         });
+        fingerprint.setTextFormatter(new TextFormatter<>(change -> {
+            String input = change.getText();
+            if(input.matches("[0-9a-fA-F]*")) {
+                return change;
+            }
+            return null;
+        }));
         derivation.textProperty().addListener((observable, oldValue, newValue) -> {
             if(KeyDerivation.isValid(newValue) && !walletForm.getWallet().derivationMatchesAnotherScriptType(newValue)) {
                 keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue));

@@ -1,20 +1,23 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.application.Platform;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogPane;
-import javafx.scene.control.Label;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.geometry.Pos;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.textfield.CustomPasswordField;
-import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
 
 public class KeystorePassphraseDialog extends Dialog<String> {
     private final CustomPasswordField passphrase;
+    private final ObjectProperty<byte[]> masterFingerprint = new SimpleObjectProperty<>();
 
     public KeystorePassphraseDialog(Keystore keystore) {
         this(null, keystore);
@@ -45,10 +48,38 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         content.setPrefHeight(50);
         content.getChildren().add(passphrase);
 
+        passphrase.textProperty().addListener((observable, oldValue, passphrase) -> {
+            masterFingerprint.set(getMasterFingerprint(keystore, passphrase));
+        });
+
+        HBox fingerprintBox = new HBox(10);
+        fingerprintBox.setAlignment(Pos.CENTER_LEFT);
+        Label fingerprintLabel = new Label("Master fingerprint:");
+        TextField fingerprintHex = new TextField();
+        fingerprintHex.setDisable(true);
+        fingerprintHex.setPrefWidth(90);
+        fingerprintHex.getStyleClass().addAll("fixed-width");
+        fingerprintHex.setStyle("-fx-opacity: 0.6");
+        masterFingerprint.addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                fingerprintHex.setText(Utils.bytesToHex(newValue));
+            }
+        });
+        LifeHashIcon lifeHashIcon = new LifeHashIcon();
+        lifeHashIcon.dataProperty().bind(masterFingerprint);
+        HelpLabel helpLabel = new HelpLabel();
+        helpLabel.setHelpText("All passphrases create valid wallets." +
+                "\nThe master fingerprint identifies the keystore and changes as the passphrase changes." +
+                "\n" + (confirm ? "Take a moment to identify it before proceeding." : "Make sure you recognise it before proceeding."));
+        fingerprintBox.getChildren().addAll(fingerprintLabel, fingerprintHex, lifeHashIcon, helpLabel);
+        content.getChildren().add(fingerprintBox);
+
+        masterFingerprint.set(getMasterFingerprint(keystore, ""));
+
         Glyph warnGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
         warnGlyph.getStyleClass().add("warn-icon");
         warnGlyph.setFontSize(12);
-        Label warnLabel = new Label("A BIP39 passphrase is not a wallet password!", warnGlyph);
+        Label warnLabel = new Label((confirm ? "Note" : "Check") + " the master fingerprint before proceeding!", warnGlyph);
         warnLabel.setGraphicTextGap(5);
         content.getChildren().add(warnLabel);
 
@@ -56,5 +87,15 @@ public class KeystorePassphraseDialog extends Dialog<String> {
         Platform.runLater(passphrase::requestFocus);
 
         setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? passphrase.getText() : null);
+    }
+
+    private byte[] getMasterFingerprint(Keystore keystore, String passphrase) {
+        try {
+            Keystore copyKeystore = keystore.copy();
+            copyKeystore.getSeed().setPassphrase(passphrase);
+            return copyKeystore.getExtendedMasterPrivateKey().getKey().getFingerprint();
+        } catch(MnemonicException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
