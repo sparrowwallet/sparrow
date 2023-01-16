@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.Event;
@@ -65,6 +66,7 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> implements Confirm
         }
 
         super.commitEdit(label);
+        Platform.runLater(() -> getTreeTableView().requestFocus());
     }
 
     @Override
