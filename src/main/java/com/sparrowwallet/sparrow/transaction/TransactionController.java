@@ -59,6 +59,7 @@ public class TransactionController implements Initializable {
     private int selectedInputIndex = -1;
     private int selectedOutputIndex = -1;
 
+    private boolean allInputsFetchedFromWallet;
     private boolean transactionsFetched;
 
     @Override
@@ -67,12 +68,12 @@ public class TransactionController implements Initializable {
     }
 
     public void initializeView() {
+        fetchTransactions();
         initializeTxTree();
         transactionMasterDetail.setDividerPosition(0.82);
         transactionMasterDetail.setShowDetailNode(Config.get().isShowTransactionHex());
         txhex.setTransaction(getTransaction());
         highlightTxHex();
-        fetchTransactions();
 
         transactionMasterDetail.sceneProperty().addListener((observable, oldScene, newScene) -> {
             if(oldScene == null && newScene != null) {
@@ -102,7 +103,7 @@ public class TransactionController implements Initializable {
         inputsItem.setExpanded(true);
         boolean inputPagingAdded = false;
         for(int i = 0; i < getTransaction().getInputs().size(); i++) {
-            if(i < PageForm.PAGE_SIZE) {
+            if(allInputsFetchedFromWallet || i < PageForm.PAGE_SIZE) {
                 TreeItem<TransactionForm> inputItem = createInputTreeItem(i);
                 inputsItem.getChildren().add(inputItem);
             } else if(TransactionView.INPUT.equals(initialView) && i == initialIndex) {
@@ -122,7 +123,7 @@ public class TransactionController implements Initializable {
         outputsItem.setExpanded(true);
         boolean outputPagingAdded = false;
         for(int i = 0; i < getTransaction().getOutputs().size(); i++) {
-            if(i < PageForm.PAGE_SIZE) {
+            if(getPSBT() != null || i < PageForm.PAGE_SIZE) {
                 TreeItem<TransactionForm> outputItem = createOutputTreeItem(i);
                 outputsItem.getChildren().add(outputItem);
             } else if(TransactionView.OUTPUT.equals(initialView) && i == initialIndex) {
@@ -341,7 +342,30 @@ public class TransactionController implements Initializable {
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
-        if(AppServices.isConnected() && indexStart < getTransaction().getInputs().size()) {
+        BlockTransaction blockTx = null;
+        Set<Sha256Hash> inputReferences = getTransaction().getInputs().stream().map(input -> input.getOutpoint().getHash()).collect(Collectors.toSet());
+        Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
+
+        for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+            if(blockTx == null && wallet.getWalletTransaction(getTransaction().getTxId()) != null) {
+                blockTx = wallet.getWalletTransaction(getTransaction().getTxId());
+            }
+            for(Iterator<Sha256Hash> iter = inputReferences.iterator(); iter.hasNext(); ) {
+                Sha256Hash inputReference = iter.next();
+                if(inputTransactions.get(inputReference) == null && wallet.getWalletTransaction(inputReference) != null) {
+                    inputTransactions.put(inputReference, wallet.getWalletTransaction(inputReference));
+                    iter.remove();
+                }
+            }
+        }
+
+        if(inputReferences.isEmpty() && (getPSBT() != null || blockTx != null)) {
+            allInputsFetchedFromWallet = true;
+            transactionsFetched = true;
+            EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, inputTransactions, 0, getTransaction().getInputs().size()));
+        } else if(!AppServices.isConnected()) {
+            EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, Collections.emptyMap(), 0, getTransaction().getInputs().size()));
+        } else if(AppServices.isConnected() && indexStart < getTransaction().getInputs().size()) {
             Set<Sha256Hash> references = new HashSet<>();
             if(getPSBT() == null) {
                 references.add(getTransaction().getTxId());
@@ -364,13 +388,13 @@ public class TransactionController implements Initializable {
                 transactionsFetched = true;
                 Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
                 BlockTransaction thisBlockTx = null;
-                Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
+                Map<Sha256Hash, BlockTransaction> retrievedInputTransactions = new HashMap<>();
                 for(Sha256Hash txid : transactionMap.keySet()) {
-                    BlockTransaction blockTx = transactionMap.get(txid);
+                    BlockTransaction retrievedBlockTx = transactionMap.get(txid);
                     if(txid.equals(getTransaction().getTxId())) {
-                        thisBlockTx = blockTx;
+                        thisBlockTx = retrievedBlockTx;
                     } else {
-                        inputTransactions.put(txid, blockTx);
+                        retrievedInputTransactions.put(txid, retrievedBlockTx);
                         references.remove(txid);
                     }
                 }
@@ -381,9 +405,9 @@ public class TransactionController implements Initializable {
                     return;
                 }
 
-                final BlockTransaction blockTx = thisBlockTx;
+                final BlockTransaction finalBlockTx = thisBlockTx;
                 Platform.runLater(() -> {
-                    EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, inputTransactions, indexStart, maxIndex));
+                    EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), finalBlockTx, retrievedInputTransactions, indexStart, maxIndex));
                 });
             });
             transactionReferenceService.setOnFailed(failedEvent -> {
@@ -396,28 +420,6 @@ public class TransactionController implements Initializable {
             });
             EventManager.get().post(new TransactionReferencesStartedEvent(getTransaction(), indexStart, maxIndex));
             transactionReferenceService.start();
-        } else if(!AppServices.isConnected()) {
-            BlockTransaction blockTx = null;
-            Set<Sha256Hash> inputReferences = getTransaction().getInputs().stream().map(input -> input.getOutpoint().getHash()).collect(Collectors.toSet());
-            Map<Sha256Hash, BlockTransaction> inputTransactions = new HashMap<>();
-
-            for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
-                Map<Sha256Hash, BlockTransaction> walletTransactions = wallet.getWalletTransactions();
-                if(blockTx == null && walletTransactions.get(getTransaction().getTxId()) != null) {
-                    blockTx = walletTransactions.get(getTransaction().getTxId());
-                }
-                for(Sha256Hash inputReference : inputReferences) {
-                    if(inputTransactions.get(inputReference) == null && walletTransactions.get(inputReference) != null) {
-                        inputTransactions.put(inputReference, walletTransactions.get(inputReference));
-                    }
-                }
-            }
-
-            if(inputTransactions.size() == inputReferences.size()) {
-                EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, inputTransactions, 0, getTransaction().getInputs().size()));
-            } else {
-                EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, Collections.emptyMap(), 0, getTransaction().getInputs().size()));
-            }
         }
     }
 
