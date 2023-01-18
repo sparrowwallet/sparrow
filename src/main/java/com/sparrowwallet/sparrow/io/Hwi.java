@@ -34,7 +34,7 @@ public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
     private static final String HWI_HOME_DIR = "hwi";
     private static final String HWI_VERSION_PREFIX = "hwi-";
-    private static final String HWI_VERSION = "2.1.1";
+    private static final String HWI_VERSION = "2.2.0";
     private static final String HWI_VERSION_DIR = HWI_VERSION_PREFIX + HWI_VERSION;
 
     private static boolean isPromptActive = false;
@@ -43,11 +43,13 @@ public class Hwi {
         String output = null;
         try {
             List<String> command;
-            if(passphrase != null && !passphrase.isEmpty()) {
-                command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), "--password", escape(passphrase), Command.ENUMERATE.toString());
+            if(passphrase != null) {
+                command = new ArrayList<>(List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), "--password", escape(passphrase), Command.ENUMERATE.toString()));
             } else {
-                command = List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), Command.ENUMERATE.toString());
+                command = new ArrayList<>(List.of(getHwiExecutable(Command.ENUMERATE).getAbsolutePath(), Command.ENUMERATE.toString()));
             }
+
+            addChainType(command, true);
 
             isPromptActive = true;
             output = execute(command);
@@ -55,6 +57,12 @@ public class Hwi {
             if(devices == null) {
                 throw new ImportException("Error scanning, check devices are ready");
             }
+            //Restore previous (pre v2.2.0) behaviour for Trezor One - don't default to an empty passphrase if one is not supplied
+            Arrays.stream(devices).filter(device -> device.containsWarning("Using default passphrase of the empty string")).forEach(device -> {
+                device.setFingerprint(null);
+                device.setNeedsPassphraseSent(true);
+                device.setError("Passphrase needs to be specified before the fingerprint information can be retrieved");
+            });
             return Arrays.stream(devices).filter(device -> device != null && device.getModel() != null).collect(Collectors.toList());
         } catch(IOException e) {
             log.error("Error executing " + HWI_VERSION_DIR, e);
@@ -67,7 +75,7 @@ public class Hwi {
                     throw new ImportException(error.getAsString());
                 } catch(Exception ex) {
                     log.error("Error parsing JSON: " + output, e);
-                    throw new ImportException("Error parsing JSON: " + output, e);
+                    throw new ImportException("Error scanning" + (output.isEmpty() ? ", check devices are ready" : ": " + output), e);
                 }
             }
             throw e;
@@ -118,7 +126,7 @@ public class Hwi {
     public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
         try {
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
+            if(passphrase != null && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.GET_XPUB, derivationPath));
             } else {
                 output = execute(getDeviceCommand(device, Command.GET_XPUB, derivationPath));
@@ -151,7 +159,7 @@ public class Hwi {
 
             isPromptActive = true;
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
+            if(passphrase != null && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceCommand(device, passphrase, Command.DISPLAY_ADDRESS, "--desc", descriptor));
             } else {
                 output = execute(getDeviceCommand(device, Command.DISPLAY_ADDRESS, "--desc", descriptor));
@@ -179,7 +187,7 @@ public class Hwi {
         try {
             isPromptActive = true;
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
+            if(passphrase != null && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceArguments(device, passphrase, Command.SIGN_MESSAGE), Command.SIGN_MESSAGE, message, derivationPath);
             } else {
                 output = execute(getDeviceArguments(device, Command.SIGN_MESSAGE), Command.SIGN_MESSAGE, message, derivationPath);
@@ -209,7 +217,7 @@ public class Hwi {
 
             isPromptActive = true;
             String output;
-            if(passphrase != null && !passphrase.isEmpty() && device.getModel().externalPassphraseEntry()) {
+            if(passphrase != null && device.getModel().externalPassphraseEntry()) {
                 output = execute(getDeviceArguments(device, passphrase, Command.SIGN_TX), Command.SIGN_TX, psbtBase64);
             } else {
                 output = execute(getDeviceArguments(device, Command.SIGN_TX), Command.SIGN_TX, psbtBase64);
