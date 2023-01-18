@@ -28,12 +28,14 @@ public class FileWalletExportPane extends TitledDescriptionPane {
     private final Wallet wallet;
     private final WalletExport exporter;
     private final boolean scannable;
+    private final boolean file;
 
     public FileWalletExportPane(Wallet wallet, WalletExport exporter) {
-        super(exporter.getName(), "Wallet file export", exporter.getWalletExportDescription(), "image/" + exporter.getWalletModel().getType() + ".png");
+        super(exporter.getName(), "Wallet export", exporter.getWalletExportDescription(), "image/" + exporter.getWalletModel().getType() + ".png");
         this.wallet = wallet;
         this.exporter = exporter;
         this.scannable = exporter.isWalletExportScannable();
+        this.file = exporter.isWalletExportFile();
 
         buttonBox.getChildren().clear();
         buttonBox.getChildren().add(createButton());
@@ -41,7 +43,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
 
     @Override
     protected Control createButton() {
-        if(scannable) {
+        if(scannable && file) {
             ToggleButton showButton = new ToggleButton("Show...");
             Glyph cameraGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CAMERA);
             cameraGlyph.setFontSize(12);
@@ -61,6 +63,15 @@ public class FileWalletExportPane extends TitledDescriptionPane {
             SegmentedButton segmentedButton = new SegmentedButton();
             segmentedButton.getButtons().addAll(showButton, fileButton);
             return segmentedButton;
+        } else if(scannable) {
+            Button showButton = new Button("Show...");
+            Glyph cameraGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CAMERA);
+            cameraGlyph.setFontSize(12);
+            showButton.setGraphic(cameraGlyph);
+            showButton.setOnAction(event -> {
+                exportQR();
+            });
+            return showButton;
         } else {
             Button exportButton = new Button("Export File...");
             exportButton.setAlignment(Pos.CENTER_RIGHT);
@@ -137,7 +148,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
-                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig) {
+                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));

@@ -10,6 +10,9 @@ public interface WalletExport extends ImportExport {
     String getExportFileExtension(Wallet wallet);
     boolean isWalletExportScannable();
     boolean walletExportRequiresDecryption();
+    default boolean isWalletExportFile() {
+        return true;
+    }
     default boolean exportsAllWallets() {
         return false;
     }
