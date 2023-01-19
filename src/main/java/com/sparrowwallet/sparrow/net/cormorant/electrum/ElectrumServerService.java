@@ -13,10 +13,7 @@ import com.sparrowwallet.sparrow.net.cormorant.index.TxEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @JsonRpcService
 public class ElectrumServerService {
@@ -146,13 +143,47 @@ public class ElectrumServerService {
     }
 
     @JsonRpcMethod("blockchain.transaction.get")
+    @SuppressWarnings("unchecked")
     public Object getTransaction(@JsonRpcParam("tx_hash") String tx_hash, @JsonRpcParam("verbose") @JsonRpcOptional boolean verbose) throws BitcoindIOException, TransactionNotFoundException {
-        try {
-            return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, verbose);
-        } catch(JsonRpcException e) {
-            throw new TransactionNotFoundException(e.getErrorMessage());
-        } catch(IllegalStateException e) {
-            throw new BitcoindIOException(e);
+        if(verbose) {
+            try {
+                return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, true);
+            } catch(JsonRpcException e) {
+                try {
+                    Map<String, Object> txInfo = bitcoindClient.getBitcoindService().getTransaction(tx_hash, true);
+                    Object decoded = txInfo.get("decoded");
+                    if(decoded instanceof Map<?, ?>) {
+                        Map<String, Object> decodedMap = (Map<String, Object>)decoded;
+                        decodedMap.put("hex", txInfo.get("hex"));
+                        decodedMap.put("confirmations", txInfo.get("confirmations"));
+                        decodedMap.put("blockhash", txInfo.get("blockhash"));
+                        decodedMap.put("time", txInfo.get("time"));
+                        decodedMap.put("blocktime", txInfo.get("blocktime"));
+                        return decoded;
+                    }
+                    throw new TransactionNotFoundException(e.getErrorMessage());
+                } catch(JsonRpcException ex) {
+                    throw new TransactionNotFoundException(ex.getErrorMessage());
+                } catch(IllegalStateException ex) {
+                    throw new BitcoindIOException(ex);
+                }
+            } catch(IllegalStateException e) {
+                throw new BitcoindIOException(e);
+            }
+        } else {
+            try {
+                return bitcoindClient.getBitcoindService().getTransaction(tx_hash, false).get("hex");
+            } catch(JsonRpcException e) {
+                try {
+                    return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, false);
+                } catch(JsonRpcException ex) {
+                    throw new TransactionNotFoundException(ex.getErrorMessage());
+                } catch(IllegalStateException ex) {
+                    throw new BitcoindIOException(e);
+                }
+            } catch(IllegalStateException e) {
+                throw new BitcoindIOException(e);
+            }
         }
     }
 

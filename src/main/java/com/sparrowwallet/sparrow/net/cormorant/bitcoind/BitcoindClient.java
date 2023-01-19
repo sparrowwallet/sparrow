@@ -133,7 +133,12 @@ public class BitcoindClient {
             try {
                 getBitcoindService().loadWallet(CORE_WALLET_NAME, false);
             } catch(JsonRpcException e) {
-                getBitcoindService().unloadWallet(CORE_WALLET_NAME, false);
+                try {
+                    getBitcoindService().unloadWallet(CORE_WALLET_NAME, false);
+                } catch(JsonRpcException ex) {
+                    //ignore
+                }
+
                 getBitcoindService().loadWallet(CORE_WALLET_NAME, false);
             }
         }
@@ -188,10 +193,15 @@ public class BitcoindClient {
 
                 for(Wallet childWallet : wallet.getChildWallets()) {
                     if(childWallet.isNested()) {
+                        Wallet copyChildWallet = childWallet.copy();
                         for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
-                            for(WalletNode addressNode : childWallet.getNode(keyPurpose).getChildren()) {
+                            WalletNode purposeNode = copyChildWallet.getNode(keyPurpose);
+                            int addressCount = purposeNode.getChildren().size();
+                            int gapLimit = ((int)Math.floor(addressCount / 10.0) * 10) + 10;
+                            purposeNode.fillToIndex(gapLimit - 1);
+                            for(WalletNode addressNode : purposeNode.getChildren()) {
                                 String addressOutputDescriptor = OutputDescriptor.toDescriptorString(addressNode.getAddress());
-                                addOutputDescriptor(outputDescriptors, addressOutputDescriptor, childWallet, null, earliestBirthDate);
+                                addOutputDescriptor(outputDescriptors, addressOutputDescriptor, copyChildWallet, null, earliestBirthDate);
                             }
                         }
                     }

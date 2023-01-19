@@ -43,6 +43,9 @@ public interface BitcoindClientService {
     @JsonRpcMethod("getrawtransaction")
     Object getRawTransaction(@JsonRpcParam("txid") String txid, @JsonRpcParam("verbose") boolean verbose);
 
+    @JsonRpcMethod("gettransaction")
+    Map<String, Object> getTransaction(@JsonRpcParam("txid") String txid, @JsonRpcParam("verbose") boolean verbose);
+
     @JsonRpcMethod("getmempoolentry")
     MempoolEntry getMempoolEntry(@JsonRpcParam("txid") String txid);
 
