@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 public class WalletTransactionsEntry extends Entry {
@@ -68,7 +69,8 @@ public class WalletTransactionsEntry extends Entry {
 
     public void updateTransactions() {
         Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWallet().getWalletTxos().entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey));
+                .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey,
+                        BinaryOperator.maxBy(BlockTransactionHashIndex::compareTo)));
 
         List<Entry> current = getWalletTransactions(getWallet()).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
