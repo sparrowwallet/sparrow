@@ -249,7 +249,9 @@ public class BitcoindClient {
     }
 
     private void importDescriptors(Map<String, ScanDate> descriptors) {
-        for(String descriptor : descriptors.keySet()) {
+        //Sort descriptors in alphanumeric order to avoid deadlocks, particularly with BIP47 wallets
+        Set<String> sortedDescriptors = new TreeSet<>(descriptors.keySet());
+        for(String descriptor : sortedDescriptors) {
             Lock lock = descriptorLocks.computeIfAbsent(descriptor, desc -> new ReentrantLock());
             lock.lock();
             descriptorBirthDates.put(descriptor, descriptors.get(descriptor).rescanSince);
@@ -278,8 +280,10 @@ public class BitcoindClient {
             for(ListDescriptorResult result : listDescriptorsResult.descriptors()) {
                 String descriptor = OutputDescriptor.normalize(result.desc());
                 ScanDate previousScanDate = importedDescriptors.get(descriptor);
+                Date scanDate = result.getScanDate();
+                Date rescanSince = scanDate != null ? scanDate : (previousScanDate != null ? previousScanDate.rescanSince : null);
                 Integer range = result.range() == null ? null : result.range().get(result.range().size() - 1);
-                importedDescriptors.put(descriptor, new ScanDate(previousScanDate == null ? null : previousScanDate.rescanSince, range, false));
+                importedDescriptors.put(descriptor, new ScanDate(rescanSince, range, false));
             }
         }
 
