@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -158,5 +160,18 @@ public class TitledDescriptionPane extends TitledPane {
                 removeArrow(count+1);
             }
         });
+    }
+
+    protected static int getAccount(Wallet wallet, KeyDerivation requiredDerivation) {
+        if(wallet == null || requiredDerivation == null) {
+            return 0;
+        }
+
+        int account = wallet.getScriptType().getAccount(requiredDerivation.getDerivationPath());
+        if(account < 0) {
+            account = 0;
+        }
+
+        return account;
     }
 }

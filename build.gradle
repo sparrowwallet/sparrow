@@ -493,6 +493,8 @@ extraJavaModuleInfo {
     }
     module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
         exports('co.nstant.in.cbor')
+        exports('co.nstant.in.cbor.model')
+        exports('co.nstant.in.cbor.builder')
     }
     module('nightjar-0.2.34.jar', 'com.sparrowwallet.nightjar', '0.2.34') {
         requires('com.google.common')

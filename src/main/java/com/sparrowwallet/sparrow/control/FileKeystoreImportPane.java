@@ -34,17 +34,4 @@ public class FileKeystoreImportPane extends FileImportPane {
             EventManager.get().post(new KeystoreImportEvent(keystore));
         }
     }
-
-    private static int getAccount(Wallet wallet, KeyDerivation requiredDerivation) {
-        if(wallet == null || requiredDerivation == null) {
-            return 0;
-        }
-
-        int account = wallet.getScriptType().getAccount(requiredDerivation.getDerivationPath());
-        if(account < 0) {
-            account = 0;
-        }
-
-        return account;
-    }
 }

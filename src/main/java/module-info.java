@@ -49,4 +49,5 @@ open module com.sparrowwallet.sparrow {
     requires net.coobird.thumbnailator;
     requires com.github.hervegirod;
     requires com.sparrowwallet.toucan;
+    requires java.smartcardio;
 }

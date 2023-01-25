@@ -15,6 +15,7 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -306,7 +307,11 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
     }
 
-    private Glyph getTypeIcon(Keystore keystore) {
+    private Node getTypeIcon(Keystore keystore) {
+        return new WalletIcon(getWalletForm().getStorage(), getWalletForm().getWallet(), keystore, getDefaultTypeIcon(keystore));
+    }
+
+    private Glyph getDefaultTypeIcon(Keystore keystore) {
         switch (keystore.getSource()) {
             case HW_USB:
                 return new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);

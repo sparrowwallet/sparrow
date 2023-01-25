@@ -36,10 +36,18 @@ public class WalletIcon extends StackPane {
 
     private final Storage storage;
     private final ObjectProperty<Wallet> walletProperty = new SimpleObjectProperty<>();
+    private final Keystore keystore;
+    private final Glyph fallbackIcon;
 
     public WalletIcon(Storage storage, Wallet wallet) {
+        this(storage, wallet, null, null);
+    }
+
+    public WalletIcon(Storage storage, Wallet wallet, Keystore keystore, Glyph fallbackIcon) {
         super();
         this.storage = storage;
+        this.keystore = keystore;
+        this.fallbackIcon = fallbackIcon;
         setPrefSize(WIDTH, HEIGHT);
         walletProperty.addListener((observable, oldValue, newValue) -> {
             refresh();
@@ -58,8 +66,8 @@ public class WalletIcon extends StackPane {
             } else {
                 Platform.runLater(() -> addWalletIcon(walletId));
             }
-        } else if(wallet.getKeystores().size() == 1) {
-            Keystore keystore = wallet.getKeystores().get(0);
+        } else if(this.keystore != null || wallet.getKeystores().size() == 1) {
+            Keystore keystore = this.keystore == null ? wallet.getKeystores().get(0) : this.keystore;
             if(keystore.getSource() == KeystoreSource.HW_USB || keystore.getSource() == KeystoreSource.HW_AIRGAPPED) {
                 WalletModel walletModel = keystore.getWalletModel();
 
@@ -96,7 +104,10 @@ public class WalletIcon extends StackPane {
         }
 
         if(getChildren().isEmpty()) {
-            Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
+            Glyph glyph = fallbackIcon;
+            if(glyph == null) {
+                glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
+            }
             glyph.setFontSize(10.0);
             getChildren().add(glyph);
         }

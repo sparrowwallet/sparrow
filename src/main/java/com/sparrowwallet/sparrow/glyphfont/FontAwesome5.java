@@ -82,7 +82,8 @@ public class FontAwesome5 extends GlyphFont {
         USER_PLUS('\uf234'),
         USER_SLASH('\uf506'),
         WALLET('\uf555'),
-        WEIGHT('\uf496');
+        WEIGHT('\uf496'),
+        WIFI('\uf1eb');
 
         private final char ch;
 
