@@ -11,10 +11,11 @@ import javafx.scene.control.Accordion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.smartcardio.TerminalFactory;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import static com.sparrowwallet.sparrow.io.ckcard.CardApi.isReaderAvailable;
 
 public class HwAirgappedController extends KeystoreImportDetailController {
     private static final Logger log = LoggerFactory.getLogger(HwAirgappedController.class);
@@ -53,16 +54,5 @@ public class HwAirgappedController extends KeystoreImportDetailController {
         }
 
         importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));
-    }
-
-    public static boolean isReaderAvailable() {
-        try {
-            TerminalFactory tf = TerminalFactory.getDefault();
-            return !tf.terminals().list().isEmpty();
-        } catch(Exception e) {
-            log.error("Error detecting card terminals", e);
-        }
-
-        return false;
     }
 }

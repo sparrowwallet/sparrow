@@ -8,7 +8,12 @@ import com.sparrowwallet.drongo.protocol.Base58;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,10 +40,11 @@ public class CardApi {
         return cardProtocol.getStatus();
     }
 
-    void checkWait(CardStatus cardStatus, StringProperty messageProperty) throws CardException {
+    void checkWait(CardStatus cardStatus, IntegerProperty delayProperty, StringProperty messageProperty) throws CardException {
         if(cardStatus.auth_delay != null) {
             int delay = cardStatus.auth_delay.intValue();
             while(delay > 0) {
+                delayProperty.set(delay);
                 messageProperty.set("Auth delay, waiting " + delay + "s...");
                 CardWait cardWait = cardProtocol.authWait();
                 if(cardWait.success) {
@@ -46,6 +52,38 @@ public class CardApi {
                 }
             }
         }
+    }
+
+    public Service<Void> getAuthDelayService() throws CardException {
+        CardStatus cardStatus = getStatus();
+        if(cardStatus.auth_delay != null) {
+            return new AuthDelayService(cardStatus);
+        }
+
+        return null;
+    }
+
+    public boolean requiresBackup() throws CardException {
+        CardStatus cardStatus = getStatus();
+        return cardStatus.requiresBackup();
+    }
+
+    public Service<String> getBackupService() {
+        return new BackupService();
+    }
+
+    String getBackup() throws CardException {
+        CardBackup cardBackup = cardProtocol.backup(cvc);
+        return Utils.bytesToHex(cardBackup.data);
+    }
+
+    public boolean changePin(String newCvc) throws CardException {
+        CardChange cardChange = cardProtocol.change(cvc, newCvc);
+        if(cardChange.success) {
+            cvc = newCvc;
+        }
+
+        return cardChange.success;
     }
 
     public void setDerivation(List<ChildNumber> derivation) throws CardException {
@@ -79,6 +117,47 @@ public class CardApi {
             cardProtocol.disconnect();
         } catch(CardException e) {
             log.warn("Error disconnecting from card reader", e);
+        }
+    }
+
+    public static boolean isReaderAvailable() {
+        return CardTransport.isReaderAvailable();
+    }
+
+    public class AuthDelayService extends Service<Void> {
+        private final CardStatus cardStatus;
+        private final IntegerProperty delayProperty;
+        private final StringProperty messageProperty;
+
+        AuthDelayService(CardStatus cardStatus) {
+            this.cardStatus = cardStatus;
+            this.delayProperty = new SimpleIntegerProperty();
+            this.messageProperty = new SimpleStringProperty();
+        }
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    delayProperty.addListener((observable, oldValue, newValue) -> updateProgress(cardStatus.auth_delay.intValue() - newValue.intValue(), cardStatus.auth_delay.intValue()));
+                    messageProperty.addListener((observable, oldValue, newValue) -> updateMessage(newValue));
+                    checkWait(cardStatus, delayProperty, messageProperty);
+                    return null;
+                }
+            };
+        }
+    }
+
+    public class BackupService extends Service<String> {
+        @Override
+        protected Task<String> createTask() {
+            return new Task<>() {
+                @Override
+                protected String call() throws Exception {
+                    return getBackup();
+                }
+            };
         }
     }
 }

@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.KeystoreCardImport;
 import com.sparrowwallet.sparrow.io.ImportException;
+import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
@@ -32,7 +33,7 @@ public class CkCard implements KeystoreCardImport {
                 cardApi.initialize();
                 cardStatus = cardApi.getStatus();
             }
-            cardApi.checkWait(cardStatus, messageProperty);
+            cardApi.checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
             if(!derivation.equals(cardStatus.getDerivation())) {
                 cardApi.setDerivation(derivation);

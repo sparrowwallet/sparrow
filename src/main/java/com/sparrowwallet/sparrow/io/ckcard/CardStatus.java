@@ -38,6 +38,10 @@ public class CardStatus extends CardResponse {
         return null;
     }
 
+    public boolean requiresBackup() {
+        return num_backups == null || num_backups.intValue() == 0;
+    }
+
     @Override
     public String toString() {
         return "CardStatus{" +

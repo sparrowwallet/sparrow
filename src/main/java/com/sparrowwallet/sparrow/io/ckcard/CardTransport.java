@@ -32,7 +32,7 @@ public class CardTransport {
 
     private final Card connection;
 
-    public CardTransport() throws CardException {
+    CardTransport() throws CardException {
         TerminalFactory tf = TerminalFactory.getDefault();
         List<CardTerminal> terminals = tf.terminals().list();
         if(terminals.isEmpty()) {
@@ -49,7 +49,7 @@ public class CardTransport {
         }
     }
 
-    public JsonObject send(String cmd, Map<String, Object> args) throws CardException {
+    JsonObject send(String cmd, Map<String, Object> args) throws CardException {
         Map<String, Object> sendMap = new LinkedHashMap<>();
         sendMap.put("cmd", cmd);
         sendMap.putAll(args);
@@ -106,11 +106,10 @@ public class CardTransport {
                     if(result.get("error") != null) {
                         String msg = result.get("error").getAsString();
                         int code = result.get("code") == null ? 500 : result.get("code").getAsInt();
-                        String message = code + " on " + cmd + ": " + msg;
                         if(code == 205) {
-                            throw new CardUnluckyNumberException(message);
+                            throw new CardUnluckyNumberException("Card chose unlucky number, please retry.");
                         } else if(code == 401) {
-                            throw new CardAuthorizationException(message);
+                            throw new CardAuthorizationException("Incorrect PIN provided.");
                         }
 
                         throw new CardException(code + " on " + cmd + ": " + msg);
@@ -146,11 +145,11 @@ public class CardTransport {
         throw new IllegalArgumentException("Cannot convert dataItem of type " + dataItem.getClass() + "to JsonElement");
     }
 
-    public void disconnect() throws CardException {
+    void disconnect() throws CardException {
         connection.disconnect(true);
     }
 
-    public static boolean isReaderAvailable() {
+    static boolean isReaderAvailable() {
         try {
             TerminalFactory tf = TerminalFactory.getDefault();
             return !tf.terminals().list().isEmpty();
