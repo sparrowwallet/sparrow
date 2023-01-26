@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io.ckcard;
 import com.google.common.io.BaseEncoding;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -13,7 +14,7 @@ public class CardStatus extends CardResponse {
     int proto;
     String ver;
     BigInteger birth;
-    Boolean tapsigner;
+    boolean tapsigner;
     List<BigInteger> path;
     BigInteger num_backups;
     byte[] pubkey;
@@ -40,6 +41,10 @@ public class CardStatus extends CardResponse {
 
     public boolean requiresBackup() {
         return num_backups == null || num_backups.intValue() == 0;
+    }
+
+    public WalletModel getCardType() {
+        return tapsigner ? WalletModel.TAPSIGNER : WalletModel.SATSCARD;
     }
 
     @Override

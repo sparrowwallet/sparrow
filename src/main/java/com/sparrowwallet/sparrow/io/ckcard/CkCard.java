@@ -16,13 +16,39 @@ public class CkCard implements KeystoreCardImport {
     private final StringProperty messageProperty = new SimpleStringProperty("");
 
     @Override
+    public boolean isInitialized() throws CardException {
+        CardApi cardApi = null;
+        try {
+            cardApi = new CardApi(null);
+            return cardApi.isInitialized();
+        } finally {
+            if(cardApi != null) {
+                cardApi.disconnect();
+            }
+        }
+    }
+
+    @Override
+    public void initialize(byte[] chainCode) throws CardException {
+        CardApi cardApi = null;
+        try {
+            cardApi = new CardApi(null);
+            cardApi.initialize(chainCode);
+        } finally {
+            if(cardApi != null) {
+                cardApi.disconnect();
+            }
+        }
+    }
+
+    @Override
     public Keystore getKeystore(String pin, List<ChildNumber> derivation) throws ImportException {
         if(pin.length() < 6) {
-            throw new ImportException("PIN too short");
+            throw new ImportException("PIN too short.");
         }
 
         if(pin.length() > 32) {
-            throw new ImportException("PIN too long");
+            throw new ImportException("PIN too long.");
         }
 
         CardApi cardApi = null;
@@ -30,8 +56,7 @@ public class CkCard implements KeystoreCardImport {
             cardApi = new CardApi(pin);
             CardStatus cardStatus = cardApi.getStatus();
             if(!cardStatus.isInitialized()) {
-                cardApi.initialize();
-                cardStatus = cardApi.getStatus();
+                throw new IllegalStateException("Card is not initialized.");
             }
             cardApi.checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
@@ -39,7 +64,7 @@ public class CkCard implements KeystoreCardImport {
                 cardApi.setDerivation(derivation);
             }
             return cardApi.getKeystore();
-        } catch(CardException e) {
+        } catch(Exception e) {
             throw new ImportException(e);
         } finally {
             if(cardApi != null) {

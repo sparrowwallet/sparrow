@@ -45,7 +45,8 @@ public class CardTransport {
         CardChannel cardChannel = connection.getBasicChannel();
         ResponseAPDU resp = cardChannel.transmit(new CommandAPDU(0, 0xA4, 4, 0, Utils.hexToBytes(APPID.toUpperCase())));
         if(resp.getSW() != SW_OKAY) {
-            throw new CardException("Card returned response of " + resp.getSW());
+            log.error("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()));
+            throw new CardException("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()) + ". Note that only the Tapsigner is currently supported.");
         }
     }
 
@@ -119,7 +120,7 @@ public class CardTransport {
                 }
             }
         } catch(CborException e) {
-            e.printStackTrace();
+            log.error("CBOR encoding error", e);
         }
 
         return new JsonObject();

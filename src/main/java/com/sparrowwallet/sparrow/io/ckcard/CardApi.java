@@ -23,21 +23,36 @@ import java.util.List;
 public class CardApi {
     private static final Logger log = LoggerFactory.getLogger(CardApi.class);
 
+    private final WalletModel cardType;
     private final CardProtocol cardProtocol;
     private String cvc;
 
     public CardApi(String cvc) throws CardException {
+        this(WalletModel.TAPSIGNER, cvc);
+    }
+
+    public CardApi(WalletModel cardType, String cvc) throws CardException {
+        this.cardType = cardType;
         this.cardProtocol = new CardProtocol();
         this.cvc = cvc;
     }
 
-    public void initialize() throws CardException {
+    public boolean isInitialized() throws CardException {
+        CardStatus cardStatus = getStatus();
+        return cardStatus.isInitialized();
+    }
+
+    public void initialize(byte[] chainCode) throws CardException {
         cardProtocol.verify();
-        cardProtocol.setup(cvc, null);
+        cardProtocol.setup(cvc, chainCode);
     }
 
     CardStatus getStatus() throws CardException {
-        return cardProtocol.getStatus();
+        CardStatus cardStatus = cardProtocol.getStatus();
+        if(cardStatus.getCardType() != cardType) {
+            throw new CardException("Please use a " + cardType.toDisplayString() + " card.");
+        }
+        return cardStatus;
     }
 
     void checkWait(CardStatus cardStatus, IntegerProperty delayProperty, StringProperty messageProperty) throws CardException {
@@ -91,7 +106,7 @@ public class CardApi {
     }
 
     public Keystore getKeystore() throws CardException {
-        CardStatus cardStatus = cardProtocol.getStatus();
+        CardStatus cardStatus = getStatus();
 
         CardXpub masterXpub = cardProtocol.xpub(cvc, true);
         ExtendedKey masterXpubkey = ExtendedKey.fromDescriptor(Base58.encodeChecked(masterXpub.xpub));

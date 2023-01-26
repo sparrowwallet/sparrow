@@ -3,8 +3,10 @@ package com.sparrowwallet.sparrow.control;
 import com.google.common.base.Throwables;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -16,8 +18,7 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Control;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -26,6 +27,8 @@ import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.smartcardio.CardException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class CardImportPane extends TitledDescriptionPane {
@@ -36,6 +39,7 @@ public class CardImportPane extends TitledDescriptionPane {
     protected Button importButton;
     private final SimpleStringProperty pin = new SimpleStringProperty("");
     private final SimpleStringProperty errorText = new SimpleStringProperty("");
+    private boolean initialized;
 
     public CardImportPane(Wallet wallet, KeystoreCardImport importer, KeyDerivation requiredDerivation) {
         super(importer.getName(), "Keystore import", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), "image/" + importer.getWalletModel().getType() + ".png");
@@ -57,6 +61,22 @@ public class CardImportPane extends TitledDescriptionPane {
     }
 
     private void importCard() {
+        errorText.set("");
+
+        try {
+            if(!importer.isInitialized()) {
+                setDescription("Card not initialized");
+                setContent(getInitializationPanel());
+                setExpanded(true);
+                return;
+            } else {
+                initialized = true;
+            }
+        } catch(CardException e) {
+            setError("Card Error", e.getMessage());
+            return;
+        }
+
         if(pin.get().isEmpty()) {
             setDescription("Enter PIN code");
             setContent(getPinEntry());
@@ -85,21 +105,71 @@ public class CardImportPane extends TitledDescriptionPane {
 
     @Override
     protected void setError(String title, String detail) {
-        super.setError(title, null);
-        errorText.set(detail);
-        setContent(getPinEntry());
-        setExpanded(true);
+        if(!initialized) {
+            super.setError(title, detail);
+        } else {
+            super.setError(title, null);
+            errorText.set(detail);
+            setContent(getPinEntry());
+            setExpanded(true);
+        }
+    }
+
+    private Node getInitializationPanel() {
+        VBox initTypeBox = new VBox(5);
+        RadioButton automatic = new RadioButton("Automatic (Recommended)");
+        RadioButton advanced = new RadioButton("Advanced");
+        TextField entropy = new TextField();
+        entropy.setPromptText("Enter input for chain code");
+        entropy.setDisable(true);
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        automatic.setToggleGroup(toggleGroup);
+        advanced.setToggleGroup(toggleGroup);
+        automatic.setSelected(true);
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            entropy.setDisable(newValue == automatic);
+        });
+
+        initTypeBox.getChildren().addAll(automatic, advanced, entropy);
+
+        Button initializeButton = new Button("Initialize");
+        initializeButton.setDefaultButton(true);
+        initializeButton.setOnAction(event -> {
+            byte[] chainCode = toggleGroup.getSelectedToggle() == automatic ? null : Sha256Hash.hashTwice(entropy.getText().getBytes(StandardCharsets.UTF_8));
+            CardInitializationService cardInitializationService = new CardInitializationService(importer, chainCode);
+            cardInitializationService.setOnSucceeded(event1 -> {
+                initialized = true;
+                AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou will now need to enter the PIN code found on the back. You can change the PIN code once it has been imported.");
+                setDescription("Enter PIN code");
+                setContent(getPinEntry());
+                setExpanded(true);
+            });
+            cardInitializationService.setOnFailed(event1 -> {
+                Throwable e = event1.getSource().getException();
+                log.error("Error initializing card", e);
+                AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + e.getMessage());
+            });
+            cardInitializationService.start();
+        });
+
+        HBox contentBox = new HBox(20);
+        contentBox.getChildren().addAll(initTypeBox, initializeButton);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        HBox.setHgrow(initTypeBox, Priority.ALWAYS);
+
+        return contentBox;
     }
 
     private Node getPinEntry() {
         VBox vBox = new VBox();
 
         if(!errorText.get().isEmpty()) {
-            Node contextBox = getContentBox(errorText.get());
-            if(contextBox instanceof HBox hBox && hBox.getPrefHeight() == 60) {
+            Node errorBox = getContentBox(errorText.get());
+            if(errorBox instanceof HBox hBox && hBox.getPrefHeight() == 60) {
                 hBox.setPrefHeight(50);
             }
-            vBox.getChildren().add(contextBox);
+            vBox.getChildren().add(errorBox);
         }
 
         CustomPasswordField pinField = new ViewPasswordField();
@@ -119,6 +189,27 @@ public class CardImportPane extends TitledDescriptionPane {
         vBox.getChildren().add(contentBox);
 
         return vBox;
+    }
+
+    public static class CardInitializationService extends Service<Void> {
+        private final KeystoreCardImport cardImport;
+        private final byte[] chainCode;
+
+        public CardInitializationService(KeystoreCardImport cardImport, byte[] chainCode) {
+            this.cardImport = cardImport;
+            this.chainCode = chainCode;
+        }
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    cardImport.initialize(chainCode);
+                    return null;
+                }
+            };
+        }
     }
 
     public static class CardImportService extends Service<Keystore> {

@@ -108,13 +108,17 @@ public class TitledDescriptionPane extends TitledPane {
 
     protected void setDescription(String text) {
         descriptionLabel.getStyleClass().remove("description-error");
-        descriptionLabel.getStyleClass().add("description-label");
+        if(!descriptionLabel.getStyleClass().contains("description-label")) {
+            descriptionLabel.getStyleClass().add("description-label");
+        }
         descriptionLabel.setText(text);
     }
 
     protected void setError(String title, String detail) {
         descriptionLabel.getStyleClass().remove("description-label");
-        descriptionLabel.getStyleClass().add("description-error");
+        if(!descriptionLabel.getStyleClass().contains("description-error")) {
+            descriptionLabel.getStyleClass().add("description-error");
+        }
         descriptionLabel.setText(title);
         if(detail != null && !detail.isEmpty()) {
             setContent(getContentBox(detail));

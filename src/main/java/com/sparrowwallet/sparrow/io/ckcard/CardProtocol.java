@@ -94,17 +94,17 @@ public class CardProtocol {
         return gson.fromJson(read, CardRead.class);
     }
 
-    public CardSetup setup(String cvc, byte[] entropy) throws CardException {
-        if(entropy == null) {
-            entropy = Sha256Hash.hashTwice(secureRandom.generateSeed(128));
+    public CardSetup setup(String cvc, byte[] chainCode) throws CardException {
+        if(chainCode == null) {
+            chainCode = Sha256Hash.hashTwice(secureRandom.generateSeed(128));
         }
 
-        if(entropy.length != 32) {
-            throw new IllegalArgumentException("Invalid entropy length of " + entropy.length);
+        if(chainCode.length != 32) {
+            throw new IllegalArgumentException("Invalid chain code length of " + chainCode.length);
         }
 
         Map<String, Object> args = new HashMap<>();
-        args.put("chain_code", entropy);
+        args.put("chain_code", chainCode);
         JsonObject setup = sendAuth("new", args, cvc);
         return gson.fromJson(setup, CardSetup.class);
     }
