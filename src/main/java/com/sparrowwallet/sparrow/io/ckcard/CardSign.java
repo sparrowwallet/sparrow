@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io.ckcard;
 
 import com.sparrowwallet.drongo.crypto.ECDSASignature;
+import com.sparrowwallet.drongo.crypto.ECKey;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -18,5 +19,9 @@ public class CardSign extends CardResponse {
         }
 
         return null;
+    }
+
+    public ECKey getPubKey() {
+        return ECKey.fromPublicOnly(pubkey);
     }
 }

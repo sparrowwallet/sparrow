@@ -108,9 +108,9 @@ public class CardTransport {
                         String msg = result.get("error").getAsString();
                         int code = result.get("code") == null ? 500 : result.get("code").getAsInt();
                         if(code == 205) {
-                            throw new CardUnluckyNumberException("Card chose unlucky number, please retry.");
+                            throw new CardUnluckyNumberException("Card chose unlucky number, please retry");
                         } else if(code == 401) {
-                            throw new CardAuthorizationException("Incorrect PIN provided.");
+                            throw new CardAuthorizationException("Incorrect PIN provided");
                         }
 
                         throw new CardException(code + " on " + cmd + ": " + msg);

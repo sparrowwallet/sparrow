@@ -68,7 +68,7 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
 
         stackPane.getChildren().addAll(anchorPane, scanBox);
 
-        List<Device> devices = AppServices.getDevices();
+        List<Device> devices = getDevices();
         if(devices == null || devices.isEmpty()) {
             scanButton.setDefaultButton(true);
             scanBox.setVisible(true);
@@ -94,6 +94,10 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton == cancelButtonType ? null : getResult());
+    }
+
+    protected List<Device> getDevices() {
+        return AppServices.getDevices();
     }
 
     private void scan() {

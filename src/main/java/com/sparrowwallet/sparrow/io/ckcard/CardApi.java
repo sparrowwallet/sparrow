@@ -4,10 +4,15 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.Base58;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.SigHash;
+import com.sparrowwallet.drongo.protocol.TransactionSignature;
+import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.psbt.PSBTInputSigner;
+import com.sparrowwallet.drongo.wallet.*;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -19,6 +24,8 @@ import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class CardApi {
     private static final Logger log = LoggerFactory.getLogger(CardApi.class);
@@ -106,13 +113,7 @@ public class CardApi {
     }
 
     public Keystore getKeystore() throws CardException {
-        CardStatus cardStatus = getStatus();
-
-        CardXpub masterXpub = cardProtocol.xpub(cvc, true);
-        ExtendedKey masterXpubkey = ExtendedKey.fromDescriptor(Base58.encodeChecked(masterXpub.xpub));
-        String masterFingerprint = Utils.bytesToHex(masterXpubkey.getKey().getFingerprint());
-
-        KeyDerivation keyDerivation = new KeyDerivation(masterFingerprint, cardStatus.getDerivation());
+        KeyDerivation keyDerivation = getKeyDerivation();
 
         CardXpub derivedXpub = cardProtocol.xpub(cvc, false);
         ExtendedKey derivedXpubkey = ExtendedKey.fromDescriptor(Base58.encodeChecked(derivedXpub.xpub));
@@ -125,6 +126,59 @@ public class CardApi {
         keystore.setWalletModel(WalletModel.TAPSIGNER);
 
         return keystore;
+    }
+
+    private KeyDerivation getKeyDerivation() throws CardException {
+        String masterFingerprint = getMasterFingerprint();
+        return new KeyDerivation(masterFingerprint, getStatus().getDerivation());
+    }
+
+    private String getMasterFingerprint() throws CardException {
+        CardXpub masterXpub = cardProtocol.xpub(cvc, true);
+        ExtendedKey masterXpubkey = ExtendedKey.fromDescriptor(Base58.encodeChecked(masterXpub.xpub));
+        return Utils.bytesToHex(masterXpubkey.getKey().getFingerprint());
+    }
+
+    public Service<Void> getSignService(Wallet wallet, PSBT psbt, StringProperty messageProperty) {
+        return new SignService(wallet, psbt, messageProperty);
+    }
+
+    void sign(Wallet wallet, PSBT psbt) throws CardException {
+        Keystore cardKeystore = getKeystore();
+        KeyDerivation cardKeyDerivation = cardKeystore.getKeyDerivation();
+
+        Map<PSBTInput, WalletNode> signingNodes = wallet.getSigningNodes(psbt);
+        for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
+            if(!psbtInput.isSigned()) {
+                WalletNode signingNode = signingNodes.get(psbtInput);
+                KeyDerivation changedDerivation = null;
+                try {
+                    ECKey cardSigningPubKey = cardKeystore.getPubKey(signingNode);
+                    if(wallet.getKeystores().stream().noneMatch(keystore -> keystore.getPubKey(signingNode).equals(cardSigningPubKey))) {
+                        Optional<KeyDerivation> optKeyDerivation = wallet.getKeystores().stream().map(Keystore::getKeyDerivation)
+                                .filter(kd -> kd.getMasterFingerprint().equals(cardKeyDerivation.getMasterFingerprint()) && !kd.getDerivation().equals(cardKeyDerivation.getDerivation())).findFirst();
+                        if(optKeyDerivation.isPresent()) {
+                            changedDerivation = optKeyDerivation.get();
+                            setDerivation(changedDerivation.getDerivation());
+
+                            Keystore changedKeystore = getKeystore();
+                            ECKey changedSigningPubKey = changedKeystore.getPubKey(signingNode);
+                            if(wallet.getKeystores().stream().noneMatch(keystore -> keystore.getPubKey(signingNode).equals(changedSigningPubKey))) {
+                                throw new CardException("Card cannot recognise public key for signing address.");
+                            }
+                        } else {
+                            throw new CardException("Card cannot recognise public key for signing address.");
+                        }
+                    }
+
+                    psbtInput.sign(new CardPSBTInputSigner(signingNode));
+                } finally {
+                    if(changedDerivation != null) {
+                        setDerivation(cardKeyDerivation.getDerivation());
+                    }
+                }
+            }
+        }
     }
 
     public void disconnect() {
@@ -173,6 +227,61 @@ public class CardApi {
                     return getBackup();
                 }
             };
+        }
+    }
+
+    public class SignService extends Service<Void> {
+        private final Wallet wallet;
+        private final PSBT psbt;
+        private final StringProperty messageProperty;
+
+        public SignService(Wallet wallet, PSBT psbt, StringProperty messageProperty) {
+            this.wallet = wallet;
+            this.psbt = psbt;
+            this.messageProperty = messageProperty;
+        }
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    CardStatus cardStatus = getStatus();
+                    checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
+
+                    sign(wallet, psbt);
+                    return null;
+                }
+            };
+        }
+    }
+
+    private class CardPSBTInputSigner implements PSBTInputSigner {
+        private final WalletNode signingNode;
+        private ECKey pubkey;
+
+        public CardPSBTInputSigner(WalletNode signingNode) {
+            this.signingNode = signingNode;
+        }
+
+        @Override
+        public TransactionSignature sign(Sha256Hash hash, SigHash sigHash, TransactionSignature.Type signatureType) {
+            if(signatureType != TransactionSignature.Type.ECDSA) {
+                throw new IllegalStateException(cardType.toDisplayString() + " cannot sign " + signatureType + " transactions.");
+            }
+
+            try {
+                CardSign cardSign = cardProtocol.sign(cvc, signingNode.getDerivation(), hash);
+                pubkey = cardSign.getPubKey();
+                return new TransactionSignature(cardSign.getSignature(), sigHash);
+            } catch(CardException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
+        public ECKey getPubKey() {
+            return pubkey;
         }
     }
 }

@@ -754,8 +754,13 @@ public class HeadersController extends TransactionFormController implements Init
         Optional<Keystore> softwareKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.SW_SEED)).findAny();
         Optional<Keystore> usbKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB) || keystore.getSource().equals(KeystoreSource.SW_WATCH)).findAny();
         Optional<Keystore> bip47Keystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getSource().equals(KeystoreSource.SW_PAYMENT_CODE)).findAny();
-        if(softwareKeystore.isEmpty() && usbKeystore.isEmpty() && bip47Keystore.isEmpty()) {
+        Optional<Keystore> cardKeystore = signingWallet.getKeystores().stream().filter(keystore -> keystore.getWalletModel().equals(WalletModel.TAPSIGNER)).findAny();
+        if(softwareKeystore.isEmpty() && usbKeystore.isEmpty() && bip47Keystore.isEmpty() && cardKeystore.isEmpty()) {
             signButton.setDisable(true);
+        } else if(softwareKeystore.isEmpty() && bip47Keystore.isEmpty() && usbKeystore.isEmpty()) {
+            Glyph tapGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WIFI);
+            tapGlyph.setFontSize(20);
+            signButton.setGraphic(tapGlyph);
         } else if(softwareKeystore.isEmpty() && bip47Keystore.isEmpty()) {
             Glyph usbGlyph = new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
             usbGlyph.setFontSize(20);
@@ -935,7 +940,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     public void signPSBT(ActionEvent event) {
         signSoftwareKeystores();
-        signUsbKeystores();
+        signDeviceKeystores();
     }
 
     private void signSoftwareKeystores() {
@@ -982,7 +987,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
-    private void signUsbKeystores() {
+    private void signDeviceKeystores() {
         if(headersForm.getPsbt().isSigned()) {
             return;
         }
@@ -990,12 +995,12 @@ public class HeadersController extends TransactionFormController implements Init
         List<String> fingerprints = headersForm.getSigningWallet().getKeystores().stream().map(keystore -> keystore.getKeyDerivation().getMasterFingerprint()).collect(Collectors.toList());
         List<Device> signingDevices = AppServices.getDevices().stream().filter(device -> fingerprints.contains(device.getFingerprint())).collect(Collectors.toList());
         if(signingDevices.isEmpty() &&
-                (headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB) || keystore.getSource().equals(KeystoreSource.SW_WATCH)) ||
+                (headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB) || keystore.getSource().equals(KeystoreSource.SW_WATCH) || keystore.getWalletModel().equals(WalletModel.TAPSIGNER)) ||
                         (headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_SEED)) && headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_WATCH))))) {
             return;
         }
 
-        DeviceSignDialog dlg = new DeviceSignDialog(fingerprints, headersForm.getPsbt());
+        DeviceSignDialog dlg = new DeviceSignDialog(headersForm.getSigningWallet(), fingerprints, headersForm.getPsbt());
         dlg.initModality(Modality.NONE);
         Stage stage = (Stage)dlg.getDialogPane().getScene().getWindow();
         stage.setAlwaysOnTop(true);

@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.google.common.base.Throwables;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
@@ -8,18 +9,19 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.StandardAccount;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.ckcard.CardApi;
+import com.sparrowwallet.sparrow.io.ckcard.CardAuthorizationException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+import javafx.concurrent.Service;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -60,6 +62,8 @@ public class DevicePane extends TitledDescriptionPane {
     private Button discoverKeystoresButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
+    private final SimpleStringProperty pin = new SimpleStringProperty("");
+    private final StringProperty messageProperty = new SimpleStringProperty("");
 
     private boolean defaultDevice;
 
@@ -86,10 +90,10 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, importButton);
     }
 
-    public DevicePane(PSBT psbt, Device device, boolean defaultDevice) {
+    public DevicePane(Wallet wallet, PSBT psbt, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
         this.deviceOperation = DeviceOperation.SIGN;
-        this.wallet = null;
+        this.wallet = wallet;
         this.psbt = psbt;
         this.outputDescriptor = null;
         this.keyDerivation = null;
@@ -105,6 +109,10 @@ public class DevicePane extends TitledDescriptionPane {
         createSignButton();
 
         initialise(device);
+
+        messageProperty.addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> setDescription(newValue));
+        });
 
         buttonBox.getChildren().addAll(setPassphraseButton, signButton);
     }
@@ -201,7 +209,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void setDefaultStatus() {
-        setDescription(device.isNeedsPinSent() ? "Locked" : device.isNeedsPassphraseSent() ? "Passphrase Required" : "Unlocked");
+        setDescription(device.isNeedsPinSent() ? "Locked" : device.isNeedsPassphraseSent() ? "Passphrase Required" : device.isCard() ? "Place card on reader" : "Unlocked");
     }
 
     private void createUnlockButton() {
@@ -617,19 +625,54 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void sign() {
-        Hwi.SignPSBTService signPSBTService = new Hwi.SignPSBTService(device, passphrase.get(), psbt);
-        signPSBTService.setOnSucceeded(workerStateEvent -> {
-            PSBT signedPsbt = signPSBTService.getValue();
-            EventManager.get().post(new PSBTSignedEvent(psbt, signedPsbt));
-        });
-        signPSBTService.setOnFailed(workerStateEvent -> {
-            setError("Signing Error", signPSBTService.getException().getMessage());
-            log.error("Signing Error: " + signPSBTService.getException().getMessage(), signPSBTService.getException());
-            signButton.setDisable(false);
-        });
-        setDescription("Signing...");
-        showHideLink.setVisible(false);
-        signPSBTService.start();
+        if(device.isCard()) {
+            if(pin.get().length() < 6) {
+                setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
+                setContent(getCardPinEntry());
+                setExpanded(true);
+                signButton.setDisable(false);
+                return;
+            }
+
+            try {
+                CardApi cardApi = new CardApi(pin.get());
+
+                Service<Void> signService = cardApi.getSignService(wallet, psbt, messageProperty);
+                signService.setOnSucceeded(event -> {
+                    EventManager.get().post(new PSBTSignedEvent(psbt, psbt));
+                });
+                signService.setOnFailed(event -> {
+                    Throwable rootCause = Throwables.getRootCause(event.getSource().getException());
+                    if(rootCause instanceof CardAuthorizationException) {
+                        setError(rootCause.getMessage(), null);
+                        setContent(getCardPinEntry());
+                    } else {
+                        log.error("Signing Error: " + rootCause.getMessage(), event.getSource().getException());
+                        setError("Signing Error", rootCause.getMessage());
+                    }
+                    signButton.setDisable(false);
+                });
+                signService.start();
+            } catch(Exception e) {
+                log.error("Signing Error: " + e.getMessage(), e);
+                setError("Signing Error", e.getMessage());
+                signButton.setDisable(false);
+            }
+        } else {
+            Hwi.SignPSBTService signPSBTService = new Hwi.SignPSBTService(device, passphrase.get(), psbt);
+            signPSBTService.setOnSucceeded(workerStateEvent -> {
+                PSBT signedPsbt = signPSBTService.getValue();
+                EventManager.get().post(new PSBTSignedEvent(psbt, signedPsbt));
+            });
+            signPSBTService.setOnFailed(workerStateEvent -> {
+                setError("Signing Error", signPSBTService.getException().getMessage());
+                log.error("Signing Error: " + signPSBTService.getException().getMessage(), signPSBTService.getException());
+                signButton.setDisable(false);
+            });
+            setDescription("Signing...");
+            showHideLink.setVisible(false);
+            signPSBTService.start();
+        }
     }
 
     private void displayAddress() {
@@ -783,6 +826,27 @@ public class DevicePane extends TitledDescriptionPane {
         contentBox.setPrefHeight(60);
 
         return contentBox;
+    }
+
+    private Node getCardPinEntry() {
+        VBox vBox = new VBox();
+
+        CustomPasswordField pinField = new ViewPasswordField();
+        pinField.setPromptText("PIN Code");
+        signButton.setDefaultButton(true);
+        pin.bind(pinField.textProperty());
+        HBox.setHgrow(pinField, Priority.ALWAYS);
+
+        HBox contentBox = new HBox();
+        contentBox.setAlignment(Pos.TOP_RIGHT);
+        contentBox.setSpacing(20);
+        contentBox.getChildren().add(pinField);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        contentBox.setPrefHeight(50);
+
+        vBox.getChildren().add(contentBox);
+
+        return vBox;
     }
 
     public Device getDevice() {

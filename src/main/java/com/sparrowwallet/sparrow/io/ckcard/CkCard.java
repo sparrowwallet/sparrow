@@ -88,6 +88,7 @@ public class CkCard implements KeystoreCardImport {
         return WalletModel.TAPSIGNER;
     }
 
+    @Override
     public StringProperty messageProperty() {
         return messageProperty;
     }

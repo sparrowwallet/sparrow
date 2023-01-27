@@ -38,18 +38,16 @@ public class CardImportPane extends TitledDescriptionPane {
     private final List<ChildNumber> derivation;
     protected Button importButton;
     private final SimpleStringProperty pin = new SimpleStringProperty("");
-    private final SimpleStringProperty errorText = new SimpleStringProperty("");
-    private boolean initialized;
 
     public CardImportPane(Wallet wallet, KeystoreCardImport importer, KeyDerivation requiredDerivation) {
-        super(importer.getName(), "Keystore import", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Place card on reader", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), "image/" + importer.getWalletModel().getType() + ".png");
         this.importer = importer;
         this.derivation = requiredDerivation == null ? wallet.getScriptType().getDefaultDerivation() : requiredDerivation.getDerivation();
     }
 
     @Override
     protected Control createButton() {
-        importButton = new Button("Tap");
+        importButton = new Button("Import");
         Glyph tapGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WIFI);
         tapGlyph.setFontSize(12);
         importButton.setGraphic(tapGlyph);
@@ -61,25 +59,23 @@ public class CardImportPane extends TitledDescriptionPane {
     }
 
     private void importCard() {
-        errorText.set("");
-
         try {
             if(!importer.isInitialized()) {
                 setDescription("Card not initialized");
                 setContent(getInitializationPanel());
+                showHideLink.setVisible(false);
                 setExpanded(true);
                 return;
-            } else {
-                initialized = true;
             }
         } catch(CardException e) {
             setError("Card Error", e.getMessage());
             return;
         }
 
-        if(pin.get().isEmpty()) {
-            setDescription("Enter PIN code");
+        if(pin.get().length() < 6) {
+            setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
             setContent(getPinEntry());
+            showHideLink.setVisible(false);
             setExpanded(true);
             return;
         }
@@ -92,27 +88,16 @@ public class CardImportPane extends TitledDescriptionPane {
             EventManager.get().post(new KeystoreImportEvent(cardImportService.getValue()));
         });
         cardImportService.setOnFailed(event -> {
-            log.error("Error importing keystore from card", event.getSource().getException());
             Throwable rootCause = Throwables.getRootCause(event.getSource().getException());
             if(rootCause instanceof CardAuthorizationException) {
-                setError("Import Error", "Incorrect PIN code, try again:");
+                setError(rootCause.getMessage(), null);
+                setContent(getPinEntry());
             } else {
+                log.error("Error importing keystore from card", event.getSource().getException());
                 setError("Import Error", rootCause.getMessage());
             }
         });
         cardImportService.start();
-    }
-
-    @Override
-    protected void setError(String title, String detail) {
-        if(!initialized) {
-            super.setError(title, detail);
-        } else {
-            super.setError(title, null);
-            errorText.set(detail);
-            setContent(getPinEntry());
-            setExpanded(true);
-        }
     }
 
     private Node getInitializationPanel() {
@@ -139,7 +124,6 @@ public class CardImportPane extends TitledDescriptionPane {
             byte[] chainCode = toggleGroup.getSelectedToggle() == automatic ? null : Sha256Hash.hashTwice(entropy.getText().getBytes(StandardCharsets.UTF_8));
             CardInitializationService cardInitializationService = new CardInitializationService(importer, chainCode);
             cardInitializationService.setOnSucceeded(event1 -> {
-                initialized = true;
                 AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou will now need to enter the PIN code found on the back. You can change the PIN code once it has been imported.");
                 setDescription("Enter PIN code");
                 setContent(getPinEntry());
@@ -164,17 +148,8 @@ public class CardImportPane extends TitledDescriptionPane {
     private Node getPinEntry() {
         VBox vBox = new VBox();
 
-        if(!errorText.get().isEmpty()) {
-            Node errorBox = getContentBox(errorText.get());
-            if(errorBox instanceof HBox hBox && hBox.getPrefHeight() == 60) {
-                hBox.setPrefHeight(50);
-            }
-            vBox.getChildren().add(errorBox);
-        }
-
         CustomPasswordField pinField = new ViewPasswordField();
         pinField.setPromptText("PIN Code");
-        pinField.setText(pin.get());
         importButton.setDefaultButton(true);
         pin.bind(pinField.textProperty());
         HBox.setHgrow(pinField, Priority.ALWAYS);
@@ -183,7 +158,7 @@ public class CardImportPane extends TitledDescriptionPane {
         contentBox.setAlignment(Pos.TOP_RIGHT);
         contentBox.setSpacing(20);
         contentBox.getChildren().add(pinField);
-        contentBox.setPadding(new Insets(errorText.get().isEmpty() ? 10 : 0, 30, 10, 30));
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
         contentBox.setPrefHeight(50);
 
         vBox.getChildren().add(contentBox);

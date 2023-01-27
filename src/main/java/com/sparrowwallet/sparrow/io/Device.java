@@ -11,6 +11,7 @@ public class Device {
     private Boolean needsPinSent;
     private Boolean needsPassphraseSent;
     private String fingerprint;
+    private boolean card;
     private String[][] warnings;
     private String error;
 
@@ -68,6 +69,14 @@ public class Device {
 
     public void setFingerprint(String fingerprint) {
         this.fingerprint = fingerprint;
+    }
+
+    public boolean isCard() {
+        return card;
+    }
+
+    public void setCard(boolean card) {
+        this.card = card;
     }
 
     public boolean containsWarning(String warning) {
