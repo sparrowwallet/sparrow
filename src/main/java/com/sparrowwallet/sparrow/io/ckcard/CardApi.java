@@ -54,6 +54,11 @@ public class CardApi {
         cardProtocol.setup(cvc, chainCode);
     }
 
+    public WalletModel getCardType() throws CardException {
+        CardStatus cardStatus = getStatus();
+        return cardStatus.getCardType();
+    }
+
     CardStatus getStatus() throws CardException {
         CardStatus cardStatus = cardProtocol.getStatus();
         if(cardStatus.getCardType() != cardType) {
@@ -139,7 +144,7 @@ public class CardApi {
         return Utils.bytesToHex(masterXpubkey.getKey().getFingerprint());
     }
 
-    public Service<Void> getSignService(Wallet wallet, PSBT psbt, StringProperty messageProperty) {
+    public Service<PSBT> getSignService(Wallet wallet, PSBT psbt, StringProperty messageProperty) {
         return new SignService(wallet, psbt, messageProperty);
     }
 
@@ -230,7 +235,7 @@ public class CardApi {
         }
     }
 
-    public class SignService extends Service<Void> {
+    public class SignService extends Service<PSBT> {
         private final Wallet wallet;
         private final PSBT psbt;
         private final StringProperty messageProperty;
@@ -242,15 +247,15 @@ public class CardApi {
         }
 
         @Override
-        protected Task<Void> createTask() {
+        protected Task<PSBT> createTask() {
             return new Task<>() {
                 @Override
-                protected Void call() throws Exception {
+                protected PSBT call() throws Exception {
                     CardStatus cardStatus = getStatus();
                     checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
                     sign(wallet, psbt);
-                    return null;
+                    return psbt;
                 }
             };
         }

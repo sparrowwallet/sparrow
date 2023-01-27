@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.KeystoreCardImport;
 import com.sparrowwallet.sparrow.io.ckcard.CardAuthorizationException;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -153,6 +154,7 @@ public class CardImportPane extends TitledDescriptionPane {
         importButton.setDefaultButton(true);
         pin.bind(pinField.textProperty());
         HBox.setHgrow(pinField, Priority.ALWAYS);
+        Platform.runLater(pinField::requestFocus);
 
         HBox contentBox = new HBox();
         contentBox.setAlignment(Pos.TOP_RIGHT);

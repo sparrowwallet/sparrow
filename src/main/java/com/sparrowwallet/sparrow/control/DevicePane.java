@@ -8,20 +8,26 @@ import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.KeystoreCardImport;
 import com.sparrowwallet.sparrow.io.ckcard.CardApi;
 import com.sparrowwallet.sparrow.io.ckcard.CardAuthorizationException;
+import com.sparrowwallet.sparrow.io.ckcard.CkCard;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -36,6 +42,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -562,7 +569,27 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void importKeystore(List<ChildNumber> derivation) {
-        if(device.getFingerprint() == null) {
+        if(device.isCard()) {
+            try {
+                CkCard importer = new CkCard();
+                if(!importer.isInitialized()) {
+                    setDescription("Card not initialized");
+                    setContent(getCardInitializationPanel(importer));
+                    showHideLink.setVisible(false);
+                    setExpanded(true);
+                    return;
+                }
+
+                Service<Keystore> importService = new CardImportPane.CardImportService(importer, pin.get(), derivation);
+                handleCardOperation(importService, importButton, "Import", event -> {
+                    importKeystore(derivation, importService.getValue());
+                });
+            } catch(Exception e) {
+                log.error("Import Error: " + e.getMessage(), e);
+                setError("Import Error", e.getMessage());
+                importButton.setDisable(false);
+            }
+        } else if(device.getFingerprint() == null) {
             Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(passphrase.get());
             enumerateService.setOnSucceeded(workerStateEvent -> {
                 List<Device> devices = enumerateService.getValue();
@@ -599,18 +626,7 @@ public class DevicePane extends TitledDescriptionPane {
                 keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
 
-                if(wallet.getScriptType() == null) {
-                    ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
-                    wallet.setName(device.getModel().toDisplayString());
-                    wallet.setPolicyType(PolicyType.SINGLE);
-                    wallet.setScriptType(scriptType);
-                    wallet.getKeystores().add(keystore);
-                    wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), null));
-
-                    EventManager.get().post(new WalletImportEvent(wallet));
-                } else {
-                    EventManager.get().post(new KeystoreImportEvent(keystore));
-                }
+                importKeystore(derivation, keystore);
             } catch(Exception e) {
                 setError("Could not retrieve xpub", e.getMessage());
             }
@@ -624,35 +640,29 @@ public class DevicePane extends TitledDescriptionPane {
         getXpubService.start();
     }
 
+    private void importKeystore(List<ChildNumber> derivation, Keystore keystore) {
+        if(wallet.getScriptType() == null) {
+            ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
+            wallet.setName(device.getModel().toDisplayString());
+            wallet.setPolicyType(PolicyType.SINGLE);
+            wallet.setScriptType(scriptType);
+            wallet.getKeystores().add(keystore);
+            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), null));
+
+            EventManager.get().post(new WalletImportEvent(wallet));
+        } else {
+            EventManager.get().post(new KeystoreImportEvent(keystore));
+        }
+    }
+
     private void sign() {
         if(device.isCard()) {
-            if(pin.get().length() < 6) {
-                setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
-                setContent(getCardPinEntry());
-                setExpanded(true);
-                signButton.setDisable(false);
-                return;
-            }
-
             try {
                 CardApi cardApi = new CardApi(pin.get());
-
-                Service<Void> signService = cardApi.getSignService(wallet, psbt, messageProperty);
-                signService.setOnSucceeded(event -> {
-                    EventManager.get().post(new PSBTSignedEvent(psbt, psbt));
+                Service<PSBT> signService = cardApi.getSignService(wallet, psbt, messageProperty);
+                handleCardOperation(signService, signButton, "Signing", event -> {
+                    EventManager.get().post(new PSBTSignedEvent(psbt, signService.getValue()));
                 });
-                signService.setOnFailed(event -> {
-                    Throwable rootCause = Throwables.getRootCause(event.getSource().getException());
-                    if(rootCause instanceof CardAuthorizationException) {
-                        setError(rootCause.getMessage(), null);
-                        setContent(getCardPinEntry());
-                    } else {
-                        log.error("Signing Error: " + rootCause.getMessage(), event.getSource().getException());
-                        setError("Signing Error", rootCause.getMessage());
-                    }
-                    signButton.setDisable(false);
-                });
-                signService.start();
             } catch(Exception e) {
                 log.error("Signing Error: " + e.getMessage(), e);
                 setError("Signing Error", e.getMessage());
@@ -673,6 +683,31 @@ public class DevicePane extends TitledDescriptionPane {
             showHideLink.setVisible(false);
             signPSBTService.start();
         }
+    }
+
+    private void handleCardOperation(Service<?> service, ButtonBase operationButton, String operationDescription, EventHandler<WorkerStateEvent> successHandler) {
+        if(pin.get().length() < 6) {
+            setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
+            setContent(getCardPinEntry(operationButton));
+            showHideLink.setVisible(false);
+            setExpanded(true);
+            operationButton.setDisable(false);
+            return;
+        }
+
+        service.setOnSucceeded(successHandler);
+        service.setOnFailed(event -> {
+            Throwable rootCause = Throwables.getRootCause(event.getSource().getException());
+            if(rootCause instanceof CardAuthorizationException) {
+                setError(rootCause.getMessage(), null);
+                setContent(getCardPinEntry(operationButton));
+            } else {
+                log.error(operationDescription + " Error: " + rootCause.getMessage(), event.getSource().getException());
+                setError(operationDescription + " Error", rootCause.getMessage());
+            }
+            operationButton.setDisable(false);
+        });
+        service.start();
     }
 
     private void displayAddress() {
@@ -793,7 +828,7 @@ public class DevicePane extends TitledDescriptionPane {
         TextField derivationField = new TextField();
         derivationField.setPromptText("Derivation path");
         derivationField.setText(KeyDerivation.writePath(derivation));
-        derivationField.setDisable(keyDerivation != null);
+        derivationField.setDisable(device.isCard() || keyDerivation != null);
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
         ValidationSupport validationSupport = new ValidationSupport();
@@ -828,14 +863,63 @@ public class DevicePane extends TitledDescriptionPane {
         return contentBox;
     }
 
-    private Node getCardPinEntry() {
+    private Node getCardInitializationPanel(KeystoreCardImport importer) {
+        VBox initTypeBox = new VBox(5);
+        RadioButton automatic = new RadioButton("Automatic (Recommended)");
+        RadioButton advanced = new RadioButton("Advanced");
+        TextField entropy = new TextField();
+        entropy.setPromptText("Enter input for chain code");
+        entropy.setDisable(true);
+
+        ToggleGroup toggleGroup = new ToggleGroup();
+        automatic.setToggleGroup(toggleGroup);
+        advanced.setToggleGroup(toggleGroup);
+        automatic.setSelected(true);
+        toggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            entropy.setDisable(newValue == automatic);
+        });
+
+        initTypeBox.getChildren().addAll(automatic, advanced, entropy);
+
+        Button initializeButton = new Button("Initialize");
+        initializeButton.setDefaultButton(true);
+        initializeButton.setOnAction(event -> {
+            byte[] chainCode = toggleGroup.getSelectedToggle() == automatic ? null : Sha256Hash.hashTwice(entropy.getText().getBytes(StandardCharsets.UTF_8));
+            CardImportPane.CardInitializationService cardInitializationService = new CardImportPane.CardInitializationService(importer, chainCode);
+            cardInitializationService.setOnSucceeded(event1 -> {
+                AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou will now need to enter the PIN code found on the back. You can change the PIN code once it has been imported.");
+                setDescription("Enter PIN code");
+                setContent(getCardPinEntry(importButton));
+                importButton.setDisable(false);
+                setExpanded(true);
+            });
+            cardInitializationService.setOnFailed(event1 -> {
+                Throwable e = event1.getSource().getException();
+                log.error("Error initializing card", e);
+                AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + e.getMessage());
+            });
+            cardInitializationService.start();
+        });
+
+        HBox contentBox = new HBox(20);
+        contentBox.getChildren().addAll(initTypeBox, initializeButton);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        HBox.setHgrow(initTypeBox, Priority.ALWAYS);
+
+        return contentBox;
+    }
+
+    private Node getCardPinEntry(ButtonBase operationButton) {
         VBox vBox = new VBox();
 
         CustomPasswordField pinField = new ViewPasswordField();
         pinField.setPromptText("PIN Code");
-        signButton.setDefaultButton(true);
+        if(operationButton instanceof Button defaultButton) {
+            defaultButton.setDefaultButton(true);
+        }
         pin.bind(pinField.textProperty());
         HBox.setHgrow(pinField, Priority.ALWAYS);
+        Platform.runLater(pinField::requestFocus);
 
         HBox contentBox = new HBox();
         contentBox.setAlignment(Pos.TOP_RIGHT);

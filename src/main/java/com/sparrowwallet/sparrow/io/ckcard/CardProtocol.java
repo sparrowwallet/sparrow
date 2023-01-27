@@ -167,7 +167,7 @@ public class CardProtocol {
             }
         }
 
-        throw new CardSignFailedException("Failed to sign digest after 5 tries.");
+        throw new CardSignFailedException("Failed to sign digest after 5 tries. It's safe to try again.");
     }
 
     public CardChange change(String currentCvc, String newCvc) throws CardException {

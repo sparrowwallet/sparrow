@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.sparrow.io.ckcard.CardApi;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -17,6 +18,8 @@ import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.smartcardio.CardException;
+import javax.smartcardio.CardNotPresentException;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +43,13 @@ public class Hwi {
     private static boolean isPromptActive = false;
 
     public List<Device> enumerate(String passphrase) throws ImportException {
+        List<Device> devices = new ArrayList<>();
+        devices.addAll(enumerateUsb(passphrase));
+        devices.addAll(enumerateCard());
+        return devices;
+    }
+
+    private List<Device> enumerateUsb(String passphrase) throws ImportException {
         String output = null;
         try {
             List<String> command;
@@ -82,6 +92,30 @@ public class Hwi {
         } finally {
             isPromptActive = false;
         }
+    }
+
+    private List<Device> enumerateCard() {
+        List<Device> devices = new ArrayList<>();
+        if(CardApi.isReaderAvailable()) {
+            try {
+                CardApi cardApi = new CardApi(null);
+                WalletModel walletModel = cardApi.getCardType();
+
+                Device cardDevice = new Device();
+                cardDevice.setType(walletModel.getType());
+                cardDevice.setModel(walletModel);
+                cardDevice.setNeedsPassphraseSent(Boolean.FALSE);
+                cardDevice.setNeedsPinSent(Boolean.FALSE);
+                cardDevice.setCard(true);
+                devices.add(cardDevice);
+            } catch(CardNotPresentException e) {
+                //ignore
+            } catch(CardException e) {
+                log.error("Error reading card", e);
+            }
+        }
+
+        return devices;
     }
 
     public boolean promptPin(Device device) throws ImportException {

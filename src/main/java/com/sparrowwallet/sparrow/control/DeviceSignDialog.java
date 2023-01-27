@@ -33,31 +33,6 @@ public class DeviceSignDialog extends DeviceDialog<PSBT> {
     }
 
     @Override
-    protected List<Device> getDevices() {
-        List<Device> devices = super.getDevices();
-
-        if(CardApi.isReaderAvailable()) {
-            devices = new ArrayList<>(devices);
-            try {
-                CardApi cardApi = new CardApi(null);
-                if(cardApi.isInitialized()) {
-                    Device cardDevice = new Device();
-                    cardDevice.setType(WalletModel.TAPSIGNER.getType());
-                    cardDevice.setModel(WalletModel.TAPSIGNER);
-                    cardDevice.setNeedsPassphraseSent(Boolean.FALSE);
-                    cardDevice.setNeedsPinSent(Boolean.FALSE);
-                    cardDevice.setCard(true);
-                    devices.add(cardDevice);
-                }
-            } catch(CardException e) {
-                log.error("Error reading card", e);
-            }
-        }
-
-        return devices;
-    }
-
-    @Override
     protected DevicePane getDevicePane(Device device, boolean defaultDevice) {
         return new DevicePane(wallet, psbt, device, defaultDevice);
     }
