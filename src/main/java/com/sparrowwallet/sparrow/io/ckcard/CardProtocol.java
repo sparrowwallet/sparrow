@@ -6,6 +6,8 @@ import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECDSASignature;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.sparrow.io.CardSignFailedException;
+import com.sparrowwallet.sparrow.io.CardUnluckyNumberException;
 import org.bitcoin.NativeSecp256k1;
 import org.bitcoin.NativeSecp256k1Util;
 import org.bitcoin.Secp256k1Context;

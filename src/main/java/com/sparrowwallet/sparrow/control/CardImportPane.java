@@ -11,9 +11,10 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.KeystoreCardImport;
-import com.sparrowwallet.sparrow.io.ckcard.CardAuthorizationException;
+import com.sparrowwallet.sparrow.io.CardAuthorizationException;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
@@ -81,10 +82,11 @@ public class CardImportPane extends TitledDescriptionPane {
             return;
         }
 
-        CardImportService cardImportService = new CardImportService(importer, pin.get(), derivation);
-        cardImportService.messageProperty().addListener((observable, oldValue, newValue) -> {
-            setDescription(newValue);
+        StringProperty messageProperty = new SimpleStringProperty();
+        messageProperty.addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> setDescription(newValue));
         });
+        CardImportService cardImportService = new CardImportService(importer, pin.get(), derivation, messageProperty);
         cardImportService.setOnSucceeded(event -> {
             EventManager.get().post(new KeystoreImportEvent(cardImportService.getValue()));
         });
@@ -193,11 +195,13 @@ public class CardImportPane extends TitledDescriptionPane {
         private final KeystoreCardImport cardImport;
         private final String pin;
         private final List<ChildNumber> derivation;
+        private final StringProperty messageProperty;
 
-        public CardImportService(KeystoreCardImport cardImport, String pin, List<ChildNumber> derivation) {
+        public CardImportService(KeystoreCardImport cardImport, String pin, List<ChildNumber> derivation, StringProperty messageProperty) {
             this.cardImport = cardImport;
             this.pin = pin;
             this.derivation = derivation;
+            this.messageProperty = messageProperty;
         }
 
         @Override
@@ -205,10 +209,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return new Task<>() {
                 @Override
                 protected Keystore call() throws Exception {
-                    cardImport.messageProperty().addListener((observable, oldValue, newValue) -> {
-                        updateMessage(newValue);
-                    });
-                    return cardImport.getKeystore(pin, derivation);
+                    return cardImport.getKeystore(pin, derivation, messageProperty);
                 }
             };
         }

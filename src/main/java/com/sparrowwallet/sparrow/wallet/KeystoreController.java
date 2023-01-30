@@ -9,8 +9,8 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
+import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.io.ckcard.CardApi;
 import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import javafx.application.Platform;
 import javafx.concurrent.Service;
@@ -37,7 +37,7 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
 
-import static com.sparrowwallet.sparrow.io.ckcard.CardApi.isReaderAvailable;
+import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
 
 public class KeystoreController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(KeystoreController.class);
@@ -427,7 +427,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             String newPin = optPinChange.get().newPin();
             boolean backupFirst = optPinChange.get().backupFirst();
             try {
-                CardApi cardApi = new CardApi(currentPin);
+                CardApi cardApi = CardApi.getCardApi(keystore.getWalletModel(), currentPin);
                 Service<Void> authDelayService = cardApi.getAuthDelayService();
                 if(authDelayService != null) {
                     authDelayService.setOnSucceeded(event1 -> {

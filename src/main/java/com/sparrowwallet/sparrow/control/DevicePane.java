@@ -14,13 +14,11 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.io.KeystoreCardImport;
-import com.sparrowwallet.sparrow.io.ckcard.CardApi;
-import com.sparrowwallet.sparrow.io.ckcard.CardAuthorizationException;
-import com.sparrowwallet.sparrow.io.ckcard.CkCard;
+import com.sparrowwallet.sparrow.io.CardAuthorizationException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -579,19 +577,16 @@ public class DevicePane extends TitledDescriptionPane {
     private void importKeystore(List<ChildNumber> derivation) {
         if(device.isCard()) {
             try {
-                CkCard importer = new CkCard();
-                if(!importer.isInitialized()) {
+                CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
+                if(!cardApi.isInitialized()) {
                     setDescription("Card not initialized");
-                    setContent(getCardInitializationPanel(importer));
+                    setContent(getCardInitializationPanel(cardApi));
                     showHideLink.setVisible(false);
                     setExpanded(true);
                     return;
                 }
 
-                Service<Keystore> importService = new CardImportPane.CardImportService(importer, pin.get(), derivation);
-                importService.messageProperty().addListener((observable, oldValue, newValue) -> {
-                    messageProperty.set(newValue);
-                });
+                Service<Keystore> importService = cardApi.getImportService(derivation, messageProperty);
                 handleCardOperation(importService, importButton, "Import", event -> {
                     importKeystore(derivation, importService.getValue());
                 });
@@ -669,7 +664,7 @@ public class DevicePane extends TitledDescriptionPane {
     private void sign() {
         if(device.isCard()) {
             try {
-                CardApi cardApi = new CardApi(pin.get());
+                CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 Service<PSBT> signService = cardApi.getSignService(wallet, psbt, messageProperty);
                 handleCardOperation(signService, signButton, "Signing", event -> {
                     EventManager.get().post(new PSBTSignedEvent(psbt, signService.getValue()));
@@ -738,7 +733,7 @@ public class DevicePane extends TitledDescriptionPane {
     private void signMessage() {
         if(device.isCard()) {
             try {
-                CardApi cardApi = new CardApi(pin.get());
+                CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 Service<String> signMessageService = cardApi.getSignMessageService(message, wallet.getScriptType(), keyDerivation.getDerivation(), messageProperty);
                 handleCardOperation(signMessageService, signMessageButton, "Signing", event -> {
                     String signature = signMessageService.getValue();
@@ -889,7 +884,7 @@ public class DevicePane extends TitledDescriptionPane {
         return contentBox;
     }
 
-    private Node getCardInitializationPanel(KeystoreCardImport importer) {
+    private Node getCardInitializationPanel(CardApi cardApi) {
         VBox initTypeBox = new VBox(5);
         RadioButton automatic = new RadioButton("Automatic (Recommended)");
         RadioButton advanced = new RadioButton("Advanced");
@@ -911,7 +906,7 @@ public class DevicePane extends TitledDescriptionPane {
         initializeButton.setDefaultButton(true);
         initializeButton.setOnAction(event -> {
             byte[] chainCode = toggleGroup.getSelectedToggle() == automatic ? null : Sha256Hash.hashTwice(entropy.getText().getBytes(StandardCharsets.UTF_8));
-            CardImportPane.CardInitializationService cardInitializationService = new CardImportPane.CardInitializationService(importer, chainCode);
+            Service<Void> cardInitializationService = cardApi.getInitializationService(chainCode);
             cardInitializationService.setOnSucceeded(event1 -> {
                 AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou will now need to enter the PIN code found on the back. You can change the PIN code once it has been imported.");
                 setDescription("Enter PIN code");

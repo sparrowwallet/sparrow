@@ -10,6 +10,8 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTInputSigner;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.control.CardImportPane;
+import com.sparrowwallet.sparrow.io.CardApi;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -24,33 +26,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class CardApi {
-    private static final Logger log = LoggerFactory.getLogger(CardApi.class);
+public class CkCardApi extends CardApi {
+    private static final Logger log = LoggerFactory.getLogger(CkCardApi.class);
 
     private final WalletModel cardType;
     private final CardProtocol cardProtocol;
     private String cvc;
 
-    public CardApi(String cvc) throws CardException {
+    public CkCardApi(String cvc) throws CardException {
         this(WalletModel.TAPSIGNER, cvc);
     }
 
-    public CardApi(WalletModel cardType, String cvc) throws CardException {
+    public CkCardApi(WalletModel cardType, String cvc) throws CardException {
         this.cardType = cardType;
         this.cardProtocol = new CardProtocol();
         this.cvc = cvc;
     }
 
+    @Override
     public boolean isInitialized() throws CardException {
         CardStatus cardStatus = getStatus();
         return cardStatus.isInitialized();
     }
 
+    @Override
     public void initialize(byte[] chainCode) throws CardException {
         cardProtocol.verify();
         cardProtocol.setup(cvc, chainCode);
     }
 
+    @Override
     public WalletModel getCardType() throws CardException {
         CardStatus cardStatus = getStatus();
         return cardStatus.getCardType();
@@ -58,7 +63,7 @@ public class CardApi {
 
     CardStatus getStatus() throws CardException {
         CardStatus cardStatus = cardProtocol.getStatus();
-        if(cardStatus.getCardType() != cardType) {
+        if(cardType != null && cardStatus.getCardType() != cardType) {
             throw new CardException("Please use a " + cardType.toDisplayString() + " card.");
         }
         return cardStatus;
@@ -78,6 +83,7 @@ public class CardApi {
         }
     }
 
+    @Override
     public Service<Void> getAuthDelayService() throws CardException {
         CardStatus cardStatus = getStatus();
         if(cardStatus.auth_delay != null) {
@@ -87,11 +93,13 @@ public class CardApi {
         return null;
     }
 
+    @Override
     public boolean requiresBackup() throws CardException {
         CardStatus cardStatus = getStatus();
         return cardStatus.requiresBackup();
     }
 
+    @Override
     public Service<String> getBackupService() {
         return new BackupService();
     }
@@ -101,6 +109,7 @@ public class CardApi {
         return Utils.bytesToHex(cardBackup.data);
     }
 
+    @Override
     public boolean changePin(String newCvc) throws CardException {
         CardChange cardChange = cardProtocol.change(cvc, newCvc);
         if(cardChange.success) {
@@ -110,10 +119,21 @@ public class CardApi {
         return cardChange.success;
     }
 
-    public void setDerivation(List<ChildNumber> derivation) throws CardException {
+    void setDerivation(List<ChildNumber> derivation) throws CardException {
         cardProtocol.derive(cvc, derivation);
     }
 
+    @Override
+    public Service<Void> getInitializationService(byte[] entropy) {
+        return new CardImportPane.CardInitializationService(new Tapsigner(), entropy);
+    }
+
+    @Override
+    public Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty) {
+        return new CardImportPane.CardImportService(new Tapsigner(), cvc, derivation, messageProperty);
+    }
+
+    @Override
     public Keystore getKeystore() throws CardException {
         KeyDerivation keyDerivation = getKeyDerivation();
 
@@ -141,6 +161,7 @@ public class CardApi {
         return Utils.bytesToHex(masterXpubkey.getKey().getFingerprint());
     }
 
+    @Override
     public Service<PSBT> getSignService(Wallet wallet, PSBT psbt, StringProperty messageProperty) {
         return new SignService(wallet, psbt, messageProperty);
     }
@@ -183,6 +204,7 @@ public class CardApi {
         }
     }
 
+    @Override
     public Service<String> getSignMessageService(String message, ScriptType scriptType, List<ChildNumber> derivation, StringProperty messageProperty) {
         return new SignMessageService(message, scriptType, derivation, messageProperty);
     }
@@ -217,16 +239,13 @@ public class CardApi {
         }
     }
 
+    @Override
     public void disconnect() {
         try {
             cardProtocol.disconnect();
         } catch(CardException e) {
             log.warn("Error disconnecting from card reader", e);
         }
-    }
-
-    public static boolean isReaderAvailable() {
-        return CardTransport.isReaderAvailable();
     }
 
     public class AuthDelayService extends Service<Void> {
@@ -303,7 +322,7 @@ public class CardApi {
         @Override
         public TransactionSignature sign(Sha256Hash hash, SigHash sigHash, TransactionSignature.Type signatureType) {
             if(signatureType != TransactionSignature.Type.ECDSA) {
-                throw new IllegalStateException(cardType.toDisplayString() + " cannot sign " + signatureType + " transactions.");
+                throw new IllegalStateException(WalletModel.TAPSIGNER.toDisplayString() + " cannot sign " + signatureType + " transactions.");
             }
 
             try {

@@ -12,6 +12,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.sparrow.io.CardAuthorizationException;
+import com.sparrowwallet.sparrow.io.CardUnluckyNumberException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

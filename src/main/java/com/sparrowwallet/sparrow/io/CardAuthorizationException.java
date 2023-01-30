@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.io.ckcard;
+package com.sparrowwallet.sparrow.io;
 
 import javax.smartcardio.CardException;
 

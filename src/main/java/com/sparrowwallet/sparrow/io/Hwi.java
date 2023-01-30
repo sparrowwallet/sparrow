@@ -10,7 +10,6 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.WalletModel;
-import com.sparrowwallet.sparrow.io.ckcard.CardApi;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -98,16 +97,19 @@ public class Hwi {
         List<Device> devices = new ArrayList<>();
         if(CardApi.isReaderAvailable()) {
             try {
-                CardApi cardApi = new CardApi(null);
-                WalletModel walletModel = cardApi.getCardType();
+                List<WalletModel> connectedCards = CardApi.getConnectedCards();
+                for(WalletModel card : connectedCards) {
+                    CardApi cardApi = CardApi.getCardApi(card, null);
+                    WalletModel walletModel = cardApi.getCardType();
 
-                Device cardDevice = new Device();
-                cardDevice.setType(walletModel.getType());
-                cardDevice.setModel(walletModel);
-                cardDevice.setNeedsPassphraseSent(Boolean.FALSE);
-                cardDevice.setNeedsPinSent(Boolean.FALSE);
-                cardDevice.setCard(true);
-                devices.add(cardDevice);
+                    Device cardDevice = new Device();
+                    cardDevice.setType(walletModel.getType());
+                    cardDevice.setModel(walletModel);
+                    cardDevice.setNeedsPassphraseSent(Boolean.FALSE);
+                    cardDevice.setNeedsPinSent(Boolean.FALSE);
+                    cardDevice.setCard(true);
+                    devices.add(cardDevice);
+                }
             } catch(CardNotPresentException e) {
                 //ignore
             } catch(CardException e) {

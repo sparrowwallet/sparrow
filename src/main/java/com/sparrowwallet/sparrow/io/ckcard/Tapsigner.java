@@ -6,20 +6,17 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.KeystoreCardImport;
 import com.sparrowwallet.sparrow.io.ImportException;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
 import javax.smartcardio.CardException;
 import java.util.List;
 
-public class CkCard implements KeystoreCardImport {
-    private final StringProperty messageProperty = new SimpleStringProperty("");
-
+public class Tapsigner implements KeystoreCardImport {
     @Override
     public boolean isInitialized() throws CardException {
-        CardApi cardApi = null;
+        CkCardApi cardApi = null;
         try {
-            cardApi = new CardApi(null);
+            cardApi = new CkCardApi(null);
             return cardApi.isInitialized();
         } finally {
             if(cardApi != null) {
@@ -30,9 +27,9 @@ public class CkCard implements KeystoreCardImport {
 
     @Override
     public void initialize(byte[] chainCode) throws CardException {
-        CardApi cardApi = null;
+        CkCardApi cardApi = null;
         try {
-            cardApi = new CardApi(null);
+            cardApi = new CkCardApi(null);
             cardApi.initialize(chainCode);
         } finally {
             if(cardApi != null) {
@@ -42,7 +39,7 @@ public class CkCard implements KeystoreCardImport {
     }
 
     @Override
-    public Keystore getKeystore(String pin, List<ChildNumber> derivation) throws ImportException {
+    public Keystore getKeystore(String pin, List<ChildNumber> derivation, StringProperty messageProperty) throws ImportException {
         if(pin.length() < 6) {
             throw new ImportException("PIN too short.");
         }
@@ -51,9 +48,9 @@ public class CkCard implements KeystoreCardImport {
             throw new ImportException("PIN too long.");
         }
 
-        CardApi cardApi = null;
+        CkCardApi cardApi = null;
         try {
-            cardApi = new CardApi(pin);
+            cardApi = new CkCardApi(pin);
             CardStatus cardStatus = cardApi.getStatus();
             if(!cardStatus.isInitialized()) {
                 throw new IllegalStateException("Card is not initialized.");
@@ -86,10 +83,5 @@ public class CkCard implements KeystoreCardImport {
     @Override
     public WalletModel getWalletModel() {
         return WalletModel.TAPSIGNER;
-    }
-
-    @Override
-    public StringProperty messageProperty() {
-        return messageProperty;
     }
 }

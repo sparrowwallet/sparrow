@@ -5,7 +5,7 @@ import com.sparrowwallet.sparrow.control.CardImportPane;
 import com.sparrowwallet.sparrow.control.FileKeystoreImportPane;
 import com.sparrowwallet.sparrow.control.TitledDescriptionPane;
 import com.sparrowwallet.sparrow.io.*;
-import com.sparrowwallet.sparrow.io.ckcard.CkCard;
+import com.sparrowwallet.sparrow.io.ckcard.Tapsigner;
 import javafx.fxml.FXML;
 import javafx.scene.control.Accordion;
 import org.slf4j.Logger;
@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.sparrowwallet.sparrow.io.ckcard.CardApi.isReaderAvailable;
+import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
 
 public class HwAirgappedController extends KeystoreImportDetailController {
     private static final Logger log = LoggerFactory.getLogger(HwAirgappedController.class);
@@ -42,7 +42,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
 
         List<KeystoreCardImport> cardImporters = Collections.emptyList();
         if(isReaderAvailable()) {
-            cardImporters = List.of(new CkCard());
+            cardImporters = List.of(new Tapsigner());
         }
         for(KeystoreCardImport importer : cardImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
