@@ -387,7 +387,7 @@ public class BitcoindClient {
 
         for(ListTransaction sentTransaction : sentTransactions) {
             Set<HashIndex> spentOutputs = store.getSpentOutputs().computeIfAbsent(sentTransaction.txid(), txid -> {
-                String txhex = getBitcoindService().getRawTransaction(txid, false).toString();
+                String txhex = getTransaction(txid);
                 Transaction tx = new Transaction(Utils.hexToBytes(txhex));
                 return tx.getInputs().stream().map(txInput -> new HashIndex(txInput.getOutpoint().getHash(), txInput.getOutpoint().getIndex())).collect(Collectors.toSet());
             });
@@ -416,6 +416,14 @@ public class BitcoindClient {
 
         for(String updatedScriptHash : updatedScriptHashes) {
             Cormorant.getEventBus().post(new ScriptHashStatus(updatedScriptHash, store.getStatus(updatedScriptHash)));
+        }
+    }
+
+    private String getTransaction(String txid) {
+        try {
+            return getBitcoindService().getTransaction(txid, false).get("hex").toString();
+        } catch(JsonRpcException e) {
+            return getBitcoindService().getRawTransaction(txid, false).toString();
         }
     }
 
