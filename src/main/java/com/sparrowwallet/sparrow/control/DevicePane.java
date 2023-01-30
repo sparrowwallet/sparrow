@@ -94,6 +94,10 @@ public class DevicePane extends TitledDescriptionPane {
 
         initialise(device);
 
+        messageProperty.addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> setDescription(newValue));
+        });
+
         buttonBox.getChildren().addAll(setPassphraseButton, importButton);
     }
 
@@ -166,6 +170,10 @@ public class DevicePane extends TitledDescriptionPane {
         createSignMessageButton();
 
         initialise(device);
+
+        messageProperty.addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> setDescription(newValue));
+        });
 
         buttonBox.getChildren().addAll(setPassphraseButton, signMessageButton);
     }
@@ -581,6 +589,9 @@ public class DevicePane extends TitledDescriptionPane {
                 }
 
                 Service<Keystore> importService = new CardImportPane.CardImportService(importer, pin.get(), derivation);
+                importService.messageProperty().addListener((observable, oldValue, newValue) -> {
+                    messageProperty.set(newValue);
+                });
                 handleCardOperation(importService, importButton, "Import", event -> {
                     importKeystore(derivation, importService.getValue());
                 });
@@ -725,17 +736,32 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void signMessage() {
-        Hwi.SignMessageService signMessageService = new Hwi.SignMessageService(device, passphrase.get(), message, keyDerivation.getDerivationPath());
-        signMessageService.setOnSucceeded(successEvent -> {
-            String signature = signMessageService.getValue();
-            EventManager.get().post(new MessageSignedEvent(wallet, signature));
-        });
-        signMessageService.setOnFailed(failedEvent -> {
-            setError("Could not sign message", signMessageService.getException().getMessage());
-            signMessageButton.setDisable(false);
-        });
-        setDescription("Signing message...");
-        signMessageService.start();
+        if(device.isCard()) {
+            try {
+                CardApi cardApi = new CardApi(pin.get());
+                Service<String> signMessageService = cardApi.getSignMessageService(message, wallet.getScriptType(), keyDerivation.getDerivation(), messageProperty);
+                handleCardOperation(signMessageService, signMessageButton, "Signing", event -> {
+                    String signature = signMessageService.getValue();
+                    EventManager.get().post(new MessageSignedEvent(wallet, signature));
+                });
+            } catch(Exception e) {
+                log.error("Signing Error: " + e.getMessage(), e);
+                setError("Signing Error", e.getMessage());
+                signButton.setDisable(false);
+            }
+        } else {
+            Hwi.SignMessageService signMessageService = new Hwi.SignMessageService(device, passphrase.get(), message, keyDerivation.getDerivationPath());
+            signMessageService.setOnSucceeded(successEvent -> {
+                String signature = signMessageService.getValue();
+                EventManager.get().post(new MessageSignedEvent(wallet, signature));
+            });
+            signMessageService.setOnFailed(failedEvent -> {
+                setError("Could not sign message", signMessageService.getException().getMessage());
+                signMessageButton.setDisable(false);
+            });
+            setDescription("Signing message...");
+            signMessageService.start();
+        }
     }
 
     private void discoverKeystores() {

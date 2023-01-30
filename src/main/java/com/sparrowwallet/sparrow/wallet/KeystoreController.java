@@ -282,7 +282,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         type.setGraphic(getTypeIcon(keystore));
         viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasSeed());
         viewKeyButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasMasterPrivateExtendedKey());
-        changePinButton.setVisible(keystore.getWalletModel() == WalletModel.TAPSIGNER);
+        changePinButton.setVisible(keystore.getWalletModel().isCard());
 
         importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Replace...");
         importButton.setTooltip(new Tooltip(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import a keystore from an external source" : "Replace this keystore with another source"));

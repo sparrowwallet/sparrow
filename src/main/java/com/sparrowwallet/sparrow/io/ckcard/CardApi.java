@@ -5,10 +5,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.protocol.Base58;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.SigHash;
-import com.sparrowwallet.drongo.protocol.TransactionSignature;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTInputSigner;
@@ -186,6 +183,40 @@ public class CardApi {
         }
     }
 
+    public Service<String> getSignMessageService(String message, ScriptType scriptType, List<ChildNumber> derivation, StringProperty messageProperty) {
+        return new SignMessageService(message, scriptType, derivation, messageProperty);
+    }
+
+    String signMessage(String message, ScriptType scriptType, List<ChildNumber> derivation) throws CardException {
+        List<ChildNumber> keystoreDerivation = derivation.subList(0, derivation.size() - 2);
+        List<ChildNumber> subPathDerivation = derivation.subList(derivation.size() - 2, derivation.size());
+
+        Keystore cardKeystore = getKeystore();
+        KeyDerivation cardKeyDerivation = cardKeystore.getKeyDerivation();
+        Keystore signingKeystore = cardKeystore;
+        try {
+            if(!cardKeyDerivation.getDerivation().equals(keystoreDerivation)) {
+                setDerivation(keystoreDerivation);
+                signingKeystore = getKeystore();
+            }
+
+            WalletNode addressNode = new WalletNode(KeyDerivation.writePath(subPathDerivation));
+            ECKey addressPubKey = signingKeystore.getPubKey(addressNode);
+            return addressPubKey.signMessage(message, scriptType, hash -> {
+                try {
+                    CardSign cardSign = cardProtocol.sign(cvc, subPathDerivation, hash);
+                    return cardSign.getSignature();
+                } catch(CardException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } finally {
+            if(signingKeystore != cardKeystore) {
+                setDerivation(cardKeystore.getKeyDerivation().getDerivation());
+            }
+        }
+    }
+
     public void disconnect() {
         try {
             cardProtocol.disconnect();
@@ -287,6 +318,33 @@ public class CardApi {
         @Override
         public ECKey getPubKey() {
             return pubkey;
+        }
+    }
+
+    public class SignMessageService extends Service<String> {
+        private final String message;
+        private final ScriptType scriptType;
+        private final List<ChildNumber> derivation;
+        private final StringProperty messageProperty;
+
+        public SignMessageService(String message, ScriptType scriptType, List<ChildNumber> derivation, StringProperty messageProperty) {
+            this.message = message;
+            this.scriptType = scriptType;
+            this.derivation = derivation;
+            this.messageProperty = messageProperty;
+        }
+
+        @Override
+        protected Task<String> createTask() {
+            return new Task<>() {
+                @Override
+                protected String call() throws Exception {
+                    CardStatus cardStatus = getStatus();
+                    checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
+
+                    return signMessage(message, scriptType, derivation);
+                }
+            };
         }
     }
 }

@@ -8,10 +8,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
@@ -269,8 +266,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         if(wallet.getKeystores().size() != 1) {
             throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
         }
-        if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB) {
-            throw new IllegalArgumentException("Cannot sign messages using a wallet without private keys or a USB keystore");
+        if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB && !wallet.getKeystores().get(0).getWalletModel().isCard()) {
+            throw new IllegalArgumentException("Cannot sign messages using a wallet without private keys or a connected keystore");
         }
     }
 
@@ -319,8 +316,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             } else {
                 signUnencryptedKeystore(signingWallet);
             }
-        } else if(signingWallet.containsSource(KeystoreSource.HW_USB)) {
-            signUsbKeystore(signingWallet);
+        } else if(signingWallet.containsSource(KeystoreSource.HW_USB) || wallet.getKeystores().get(0).getWalletModel().isCard()) {
+            signDeviceKeystore(signingWallet);
         }
     }
 
@@ -339,10 +336,10 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         }
     }
 
-    private void signUsbKeystore(Wallet usbWallet) {
-        List<String> fingerprints = List.of(usbWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
-        KeyDerivation fullDerivation = usbWallet.getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
-        DeviceSignMessageDialog deviceSignMessageDialog = new DeviceSignMessageDialog(fingerprints, usbWallet, message.getText().trim(), fullDerivation);
+    private void signDeviceKeystore(Wallet deviceWallet) {
+        List<String> fingerprints = List.of(deviceWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
+        KeyDerivation fullDerivation = deviceWallet.getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
+        DeviceSignMessageDialog deviceSignMessageDialog = new DeviceSignMessageDialog(fingerprints, deviceWallet, message.getText().trim(), fullDerivation);
         Optional<String> optSignature = deviceSignMessageDialog.showAndWait();
         if(optSignature.isPresent()) {
             signature.clear();
