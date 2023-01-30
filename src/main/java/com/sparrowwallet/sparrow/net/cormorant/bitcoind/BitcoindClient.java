@@ -128,18 +128,11 @@ public class BitcoindClient {
         legacyWalletExists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(Bwt.DEFAULT_CORE_WALLET));
 
         if(!exists) {
-            getBitcoindService().createWallet(CORE_WALLET_NAME, true, true, "", true, true, false, false);
+            getBitcoindService().createWallet(CORE_WALLET_NAME, true, true, "", true, true, true, false);
         } else {
-            try {
-                getBitcoindService().loadWallet(CORE_WALLET_NAME, false);
-            } catch(JsonRpcException e) {
-                try {
-                    getBitcoindService().unloadWallet(CORE_WALLET_NAME, false);
-                } catch(JsonRpcException ex) {
-                    //ignore
-                }
-
-                getBitcoindService().loadWallet(CORE_WALLET_NAME, false);
+            List<String> wallets = getBitcoindService().listWallets();
+            if(!wallets.contains(CORE_WALLET_NAME)) {
+                getBitcoindService().loadWallet(CORE_WALLET_NAME, true);
             }
         }
 
@@ -346,14 +339,6 @@ public class BitcoindClient {
     }
 
     public void stop() {
-        if(initialized) {
-            try {
-                getBitcoindService().unloadWallet(CORE_WALLET_NAME, false);
-            } catch(Exception e) {
-                log.info("Error unloading Core wallet " + CORE_WALLET_NAME, e);
-            }
-        }
-
         timer.cancel();
         stopped = true;
     }

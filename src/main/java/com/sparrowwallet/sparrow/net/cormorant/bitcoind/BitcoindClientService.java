@@ -57,6 +57,9 @@ public interface BitcoindClientService {
     @JsonRpcMethod("listwalletdir")
     ListWalletDirResult listWalletDir();
 
+    @JsonRpcMethod("listwallets")
+    List<String> listWallets();
+
     @JsonRpcMethod("createwallet")
     CreateLoadWalletResult createWallet(@JsonRpcParam("wallet_name") String name, @JsonRpcParam("disable_private_keys") boolean disablePrivateKeys, @JsonRpcParam("blank") boolean blank,
                                         @JsonRpcParam("passphrase") String passphrase, @JsonRpcParam("avoid_reuse") boolean avoidReuse, @JsonRpcParam("descriptors") boolean descriptors,
