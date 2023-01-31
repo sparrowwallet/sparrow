@@ -61,6 +61,11 @@ public class CkCardApi extends CardApi {
         return cardStatus.getCardType();
     }
 
+    @Override
+    public ScriptType getDefaultScriptType() {
+        return ScriptType.P2WPKH;
+    }
+
     CardStatus getStatus() throws CardException {
         CardStatus cardStatus = cardProtocol.getStatus();
         if(cardType != null && cardStatus.getCardType() != cardType) {
@@ -240,6 +245,16 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
+    public Service<ECKey> getUnsealService(StringProperty messageProperty) {
+        return new UnsealService(messageProperty);
+    }
+
+    ECKey unseal() throws CardException {
+        CardUnseal cardUnseal = cardProtocol.unseal(cvc);
+        return cardUnseal.getPrivateKey();
+    }
+
+    @Override
     public void disconnect() {
         try {
             cardProtocol.disconnect();
@@ -302,6 +317,10 @@ public class CkCardApi extends CardApi {
                 @Override
                 protected PSBT call() throws Exception {
                     CardStatus cardStatus = getStatus();
+                    if(cardStatus.getCardType() != WalletModel.TAPSIGNER) {
+                        throw new IllegalStateException("Please use a " + WalletModel.TAPSIGNER.toDisplayString() + " to sign transactions.");
+                    }
+
                     checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
                     sign(wallet, psbt);
@@ -359,9 +378,38 @@ public class CkCardApi extends CardApi {
                 @Override
                 protected String call() throws Exception {
                     CardStatus cardStatus = getStatus();
+                    if(cardStatus.getCardType() != WalletModel.TAPSIGNER) {
+                        throw new IllegalStateException("Please use a " + WalletModel.TAPSIGNER.toDisplayString() + " to sign messages.");
+                    }
+
                     checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
                     return signMessage(message, scriptType, derivation);
+                }
+            };
+        }
+    }
+
+    public class UnsealService extends Service<ECKey> {
+        private final StringProperty messageProperty;
+
+        public UnsealService(StringProperty messageProperty) {
+            this.messageProperty = messageProperty;
+        }
+
+        @Override
+        protected Task<ECKey> createTask() {
+            return new Task<>() {
+                @Override
+                protected ECKey call() throws Exception {
+                    CardStatus cardStatus = getStatus();
+                    if(cardStatus.getCardType() != WalletModel.SATSCARD) {
+                        throw new IllegalStateException("Please use a " + WalletModel.SATSCARD.toDisplayString() + " to unseal private keys.");
+                    }
+
+                    checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
+
+                    return unseal();
                 }
             };
         }

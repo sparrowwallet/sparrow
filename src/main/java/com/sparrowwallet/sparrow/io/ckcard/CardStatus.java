@@ -17,12 +17,14 @@ public class CardStatus extends CardResponse {
     boolean tapsigner;
     List<BigInteger> path;
     BigInteger num_backups;
+    List<BigInteger> slots;
+    String addr;
     byte[] pubkey;
     BigInteger auth_delay;
     boolean testnet;
 
     public boolean isInitialized() {
-        return path != null;
+        return getCardType() != WalletModel.TAPSIGNER || path != null;
     }
 
     public String getIdentifier() {
@@ -47,6 +49,14 @@ public class CardStatus extends CardResponse {
         return tapsigner ? WalletModel.TAPSIGNER : WalletModel.SATSCARD;
     }
 
+    public int getSlot() {
+        if(slots == null || slots.isEmpty()) {
+            return 0;
+        }
+
+        return slots.get(0).intValue();
+    }
+
     @Override
     public String toString() {
         return "CardStatus{" +
@@ -56,6 +66,8 @@ public class CardStatus extends CardResponse {
                 ", tapsigner=" + tapsigner +
                 ", path=" + path +
                 ", num_backups=" + num_backups +
+                ", slots=" + slots +
+                ", addr='" + addr + '\'' +
                 ", pubkey=" + Arrays.toString(pubkey) +
                 ", auth_delay=" + auth_delay +
                 ", testnet=" + testnet +

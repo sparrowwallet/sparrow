@@ -14,6 +14,7 @@ import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -42,7 +43,7 @@ import tornadofx.control.Form;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -95,6 +96,14 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         keyBox.getChildren().addAll(key, keyButtonBox);
         HBox.setHgrow(key, Priority.ALWAYS);
         keyField.getInputs().add(keyBox);
+
+        if(CardApi.isReaderAvailable()) {
+            VBox cardButtonBox = new VBox(5);
+            Button cardKey = new Button("", getGlyph(FontAwesome5.Glyph.WIFI));
+            cardKey.setOnAction(event -> unsealPrivateKey());
+            cardButtonBox.getChildren().add(cardKey);
+            keyBox.getChildren().add(cardButtonBox);
+        }
 
         Field keyScriptTypeField = new Field();
         keyScriptTypeField.setText("Script Type:");
@@ -276,6 +285,16 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             } catch(IOException e) {
                 AppServices.showErrorDialog("Error reading private key file", e.getMessage());
             }
+        }
+    }
+
+    private void unsealPrivateKey() {
+        DeviceUnsealDialog deviceUnsealDialog = new DeviceUnsealDialog(Collections.emptyList());
+        Optional<DeviceUnsealDialog.UnsealedKey> optPrivateKey = deviceUnsealDialog.showAndWait();
+        if(optPrivateKey.isPresent()) {
+            DeviceUnsealDialog.UnsealedKey unsealedKey = optPrivateKey.get();
+            key.setText(unsealedKey.privateKey().getPrivateKeyEncoded().toBase58());
+            keyScriptType.setValue(unsealedKey.scriptType());
         }
     }
 

@@ -188,6 +188,16 @@ public class CardProtocol {
         return gson.fromJson(backup, CardBackup.class);
     }
 
+    public CardUnseal unseal(String cvc) throws CardException {
+        CardStatus status = getStatus();
+
+        Map<String, Object> args = new HashMap<>();
+        args.put("slot", status.getSlot());
+
+        JsonObject unseal = sendAuth("unseal", args, cvc);
+        return gson.fromJson(unseal, CardUnseal.class);
+    }
+
     public void disconnect() throws CardException {
         cardTransport.disconnect();
     }
@@ -206,11 +216,18 @@ public class CardProtocol {
     }
 
     private JsonObject sendAuth(String cmd, Map<String, Object> args, String cvc) throws CardException {
-        addAuth(cmd, args, cvc);
-        return send(cmd, args);
+        byte[] sessionKey = addAuth(cmd, args, cvc);
+        JsonObject jsonObject = send(cmd, args);
+
+        if(jsonObject.get("privkey") != null) {
+            byte[] privKeyBytes = Utils.hexToBytes(jsonObject.get("privkey").getAsString());
+            jsonObject.add("privkey", new JsonPrimitive(Utils.bytesToHex(Utils.xor(sessionKey, privKeyBytes))));
+        }
+
+        return jsonObject;
     }
 
-    public void addAuth(String cmd, Map<String, Object> args, String cvc) throws CardException {
+    public byte[] addAuth(String cmd, Map<String, Object> args, String cvc) throws CardException {
         if(cvc.length() < 6 || cvc.length() > 32) {
             throw new IllegalArgumentException("CVC cannot be of length " + cvc.length());
         }
@@ -235,6 +252,10 @@ public class CardProtocol {
                 } else if(cmd.equals("change") && args.get("data") instanceof byte[] dataBytes) {
                     args.put("data", Utils.xor(dataBytes, Arrays.copyOf(sessionKey, dataBytes.length)));
                 }
+
+                return sessionKey;
+            } else {
+                throw new IllegalStateException("Native library libsecp256k1 required but not enabled");
             }
         } catch(NativeSecp256k1Util.AssertFailException e) {
             throw new RuntimeException(e);

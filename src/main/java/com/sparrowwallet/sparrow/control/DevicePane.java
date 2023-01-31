@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -65,6 +66,7 @@ public class DevicePane extends TitledDescriptionPane {
     private Button displayAddressButton;
     private Button signMessageButton;
     private Button discoverKeystoresButton;
+    private Button unsealButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
     private final SimpleStringProperty pin = new SimpleStringProperty("");
@@ -197,6 +199,32 @@ public class DevicePane extends TitledDescriptionPane {
         initialise(device);
 
         buttonBox.getChildren().addAll(setPassphraseButton, discoverKeystoresButton);
+    }
+
+    public DevicePane(Device device, boolean defaultDevice) {
+        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        this.deviceOperation = DeviceOperation.UNSEAL;
+        this.wallet = null;
+        this.psbt = null;
+        this.outputDescriptor = null;
+        this.keyDerivation = null;
+        this.message = null;
+        this.device = device;
+        this.defaultDevice = defaultDevice;
+        this.availableAccounts = null;
+
+        setDefaultStatus();
+        showHideLink.setVisible(false);
+
+        createUnsealButton();
+
+        initialise(device);
+
+        messageProperty.addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> setDescription(newValue));
+        });
+
+        buttonBox.getChildren().add(unsealButton);
     }
 
     private void initialise(Device device) {
@@ -340,6 +368,17 @@ public class DevicePane extends TitledDescriptionPane {
         });
         discoverKeystoresButton.managedProperty().bind(discoverKeystoresButton.visibleProperty());
         discoverKeystoresButton.setVisible(false);
+    }
+
+    private void createUnsealButton() {
+        unsealButton = new Button("Unseal");
+        unsealButton.setAlignment(Pos.CENTER_RIGHT);
+        unsealButton.setOnAction(event -> {
+            unsealButton.setDisable(true);
+            unseal();
+        });
+        unsealButton.managedProperty().bind(unsealButton.visibleProperty());
+        unsealButton.setVisible(false);
     }
 
     private void unlock(Device device) {
@@ -816,6 +855,22 @@ public class DevicePane extends TitledDescriptionPane {
         getXpubsService.start();
     }
 
+    private void unseal() {
+        if(device.isCard()) {
+            try {
+                CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
+                Service<ECKey> unsealService = cardApi.getUnsealService(messageProperty);
+                handleCardOperation(unsealService, unsealButton, "Unseal", event -> {
+                    EventManager.get().post(new DeviceUnsealedEvent(unsealService.getValue(), cardApi.getDefaultScriptType()));
+                });
+            } catch(Exception e) {
+                log.error("Unseal Error: " + e.getMessage(), e);
+                setError("Unseal Error", e.getMessage());
+                unsealButton.setDisable(false);
+            }
+        }
+    }
+
     private void showOperationButton() {
         if(deviceOperation.equals(DeviceOperation.IMPORT)) {
             if(defaultDevice) {
@@ -841,6 +896,10 @@ public class DevicePane extends TitledDescriptionPane {
         } else if(deviceOperation.equals(DeviceOperation.DISCOVER_KEYSTORES)) {
             discoverKeystoresButton.setDefaultButton(defaultDevice);
             discoverKeystoresButton.setVisible(true);
+            showHideLink.setVisible(false);
+        } else if(deviceOperation.equals(DeviceOperation.UNSEAL)) {
+            unsealButton.setDefaultButton(defaultDevice);
+            unsealButton.setVisible(true);
             showHideLink.setVisible(false);
         }
     }
@@ -959,6 +1018,6 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public enum DeviceOperation {
-        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE, DISCOVER_KEYSTORES;
+        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE, DISCOVER_KEYSTORES, UNSEAL;
     }
 }
