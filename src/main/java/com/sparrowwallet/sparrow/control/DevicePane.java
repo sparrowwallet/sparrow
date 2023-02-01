@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DevicePane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(DevicePane.class);
@@ -67,7 +68,7 @@ public class DevicePane extends TitledDescriptionPane {
     private Button displayAddressButton;
     private Button signMessageButton;
     private Button discoverKeystoresButton;
-    private Button getPrivateKeyButton;
+    private ButtonBase getPrivateKeyButton;
     private Button getAddressButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
@@ -218,7 +219,7 @@ public class DevicePane extends TitledDescriptionPane {
         setDefaultStatus();
         showHideLink.setVisible(false);
 
-        Button button;
+        ButtonBase button;
         if(deviceOperation == DeviceOperation.GET_PRIVATE_KEY) {
             createGetPrivateKeyButton();
             button = getPrivateKeyButton;
@@ -382,12 +383,44 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void createGetPrivateKeyButton() {
-        getPrivateKeyButton = new Button("Get Private Key");
+        int currentSlot = 0;
+        boolean initialized = true;
+        try {
+            CardApi cardApi = CardApi.getCardApi(device.getModel(), null);
+            currentSlot = cardApi.getCurrentSlot();
+            initialized = cardApi.isInitialized();
+        } catch(Exception e) {
+            //ignore
+        }
+
+        getPrivateKeyButton = currentSlot > 0 ? new SplitMenuButton() : new Button();
         getPrivateKeyButton.setAlignment(Pos.CENTER_RIGHT);
+        getPrivateKeyButton.setText("Get Private Key");
         getPrivateKeyButton.setOnAction(event -> {
             getPrivateKeyButton.setDisable(true);
-            getPrivateKey();
+            getPrivateKey(null);
         });
+
+        if(getPrivateKeyButton instanceof SplitMenuButton getPrivateKeyMenuButton) {
+            int[] previousSlots = IntStream.range(0, currentSlot).toArray();
+            for(int previousSlot : previousSlots) {
+                MenuItem previousSlotItem = new MenuItem("Slot #" + previousSlot);
+                previousSlotItem.setOnAction(event -> {
+                    getPrivateKeyButton.setDisable(true);
+                    getPrivateKey(previousSlot);
+                });
+                getPrivateKeyMenuButton.getItems().add(previousSlotItem);
+            }
+            if(initialized) {
+                int finalSlot = currentSlot;
+                MenuItem currentSlotItem = new MenuItem("Current Slot");
+                currentSlotItem.setOnAction(event -> {
+                    getPrivateKeyButton.setDisable(true);
+                    getPrivateKey(finalSlot);
+                });
+                getPrivateKeyMenuButton.getItems().add(currentSlotItem);
+            }
+        }
         getPrivateKeyButton.managedProperty().bind(getPrivateKeyButton.visibleProperty());
         getPrivateKeyButton.setVisible(false);
     }
@@ -886,11 +919,11 @@ public class DevicePane extends TitledDescriptionPane {
         getXpubsService.start();
     }
 
-    private void getPrivateKey() {
+    private void getPrivateKey(Integer slot) {
         if(device.isCard()) {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
-                Service<ECKey> privateKeyService = cardApi.getPrivateKeyService(messageProperty);
+                Service<ECKey> privateKeyService = cardApi.getPrivateKeyService(slot, messageProperty);
                 handleCardOperation(privateKeyService, getPrivateKeyButton, "Private Key", true, event -> {
                     EventManager.get().post(new DeviceGetPrivateKeyEvent(privateKeyService.getValue(), cardApi.getDefaultScriptType()));
                 });
@@ -962,7 +995,9 @@ public class DevicePane extends TitledDescriptionPane {
             discoverKeystoresButton.setVisible(true);
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.GET_PRIVATE_KEY)) {
-            getPrivateKeyButton.setDefaultButton(defaultDevice);
+            if(defaultDevice) {
+                getPrivateKeyButton.getStyleClass().add("default-button");
+            }
             getPrivateKeyButton.setVisible(true);
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.GET_ADDRESS)) {

@@ -63,6 +63,12 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
+    public int getCurrentSlot() throws CardException {
+        CardStatus cardStatus = getStatus();
+        return cardStatus.getCurrentSlot();
+    }
+
+    @Override
     public ScriptType getDefaultScriptType() {
         return ScriptType.P2WPKH;
     }
@@ -250,12 +256,12 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
-    public Service<ECKey> getPrivateKeyService(StringProperty messageProperty) {
-        return new PrivateKeyService(messageProperty);
+    public Service<ECKey> getPrivateKeyService(Integer slot, StringProperty messageProperty) {
+        return new PrivateKeyService(slot, messageProperty);
     }
 
-    ECKey getPrivateKey(int slot, boolean unsealed) throws CardException {
-        if(unsealed) {
+    ECKey getPrivateKey(int slot, int currentSlot) throws CardException {
+        if(slot != currentSlot) {
             CardAuthDump cardAuthDump = cardProtocol.dump(cvc, slot);
             return cardAuthDump.getPrivateKey();
         }
@@ -458,9 +464,11 @@ public class CkCardApi extends CardApi {
     }
 
     public class PrivateKeyService extends Service<ECKey> {
+        private Integer slot;
         private final StringProperty messageProperty;
 
-        public PrivateKeyService(StringProperty messageProperty) {
+        public PrivateKeyService(Integer slot, StringProperty messageProperty) {
+            this.slot = slot;
             this.messageProperty = messageProperty;
         }
 
@@ -474,17 +482,19 @@ public class CkCardApi extends CardApi {
                         throw new IllegalStateException("Please use a " + WalletModel.SATSCARD.toDisplayString() + " to retrieve a private key.");
                     }
 
-                    int slot = cardStatus.getCurrentSlot();
-                    boolean unsealed = false;
-                    if(!cardStatus.isInitialized()) {
+                    int currentSlot = cardStatus.getCurrentSlot();
+                    if(slot == null) {
+                        slot = currentSlot;
+                    }
+
+                    if(slot == currentSlot && !cardStatus.isInitialized()) {
                         //If card has been unsealed, but a new slot is not initialized, retrieve private key for previous slot
                         slot = slot - 1;
-                        unsealed = true;
                     }
 
                     checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
-                    return getPrivateKey(slot, unsealed);
+                    return getPrivateKey(slot, currentSlot);
                 }
             };
         }

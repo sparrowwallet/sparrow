@@ -53,6 +53,8 @@ public abstract class CardApi {
 
     public abstract ScriptType getDefaultScriptType();
 
+    public abstract int getCurrentSlot() throws CardException;
+
     public abstract Service<Void> getAuthDelayService() throws CardException;
 
     public abstract boolean requiresBackup() throws CardException;
@@ -71,7 +73,7 @@ public abstract class CardApi {
 
     public abstract Service<String> getSignMessageService(String message, ScriptType scriptType, List<ChildNumber> derivation, StringProperty messageProperty);
 
-    public abstract Service<ECKey> getPrivateKeyService(StringProperty messageProperty);
+    public abstract Service<ECKey> getPrivateKeyService(Integer slot, StringProperty messageProperty);
 
     public abstract Service<Address> getAddressService(StringProperty messageProperty);
 
