@@ -61,7 +61,6 @@ public class BitcoindClient {
     private Exception lastPollException;
 
     private boolean pruned;
-    private boolean prunedWarningShown = false;
     private boolean legacyWalletExists;
 
     private final Lock syncingLock = new ReentrantLock();
@@ -148,7 +147,10 @@ public class BitcoindClient {
         try {
             importDescriptors(getWalletDescriptors(wallets));
         } catch(ScanDateBeforePruneException e) {
-            List<Wallet> prePruneWallets = wallets.stream().filter(wallet -> wallet.getBirthDate() != null && wallet.getBirthDate().before(e.getPrunedDate()) && wallet.isValid()).sorted(Comparator.comparingLong(o -> o.getBirthDate().getTime())).collect(Collectors.toList());
+            List<Wallet> prePruneWallets = wallets.stream()
+                    .filter(wallet -> wallet.getBirthDate() != null && wallet.getBirthDate().before(e.getPrunedDate()) && wallet.isValid()
+                            && OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE).toString(false, true).equals(e.getDescriptor()))
+                    .sorted(Comparator.comparingLong(o -> o.getBirthDate().getTime())).collect(Collectors.toList());
             if(!prePruneWallets.isEmpty()) {
                 Platform.runLater(() -> EventManager.get().post(new CormorantPruneStatusEvent("Error: Wallet birthday earlier than Bitcoin Core prune date", prePruneWallets.get(0), e.getRescanSince(), e.getPrunedDate(), legacyWalletExists)));
             }
@@ -175,19 +177,18 @@ public class BitcoindClient {
     private Map<String, ScanDate> getWalletDescriptors(Collection<Wallet> wallets) throws ImportFailedException {
         List<Wallet> validWallets = wallets.stream().filter(Wallet::isValid).collect(Collectors.toList());
 
-        Date earliestBirthDate = validWallets.stream().map(Wallet::getBirthDate).filter(Objects::nonNull).sorted().findFirst().orElse(null);
         Map<String, ScanDate> outputDescriptors = new LinkedHashMap<>();
         for(Wallet wallet : validWallets) {
             String receiveOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE).toString(false, false);
-            addOutputDescriptor(outputDescriptors, receiveOutputDescriptor, wallet, KeyPurpose.RECEIVE, earliestBirthDate);
+            addOutputDescriptor(outputDescriptors, receiveOutputDescriptor, wallet, KeyPurpose.RECEIVE, wallet.getBirthDate());
             String changeOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE).toString(false, false);
-            addOutputDescriptor(outputDescriptors, changeOutputDescriptor, wallet, KeyPurpose.CHANGE, earliestBirthDate);
+            addOutputDescriptor(outputDescriptors, changeOutputDescriptor, wallet, KeyPurpose.CHANGE, wallet.getBirthDate());
 
             if(wallet.isMasterWallet() && wallet.hasPaymentCode()) {
                 Wallet notificationWallet = wallet.getNotificationWallet();
                 WalletNode notificationNode = notificationWallet.getNode(KeyPurpose.NOTIFICATION);
                 String notificationOutputDescriptor = OutputDescriptor.toDescriptorString(notificationNode.getAddress());
-                addOutputDescriptor(outputDescriptors, notificationOutputDescriptor, wallet, null, earliestBirthDate);
+                addOutputDescriptor(outputDescriptors, notificationOutputDescriptor, wallet, null, wallet.getBirthDate());
 
                 for(Wallet childWallet : wallet.getChildWallets()) {
                     if(childWallet.isNested()) {
@@ -199,7 +200,7 @@ public class BitcoindClient {
                             purposeNode.fillToIndex(gapLimit - 1);
                             for(WalletNode addressNode : purposeNode.getChildren()) {
                                 String addressOutputDescriptor = OutputDescriptor.toDescriptorString(addressNode.getAddress());
-                                addOutputDescriptor(outputDescriptors, addressOutputDescriptor, copyChildWallet, null, earliestBirthDate);
+                                addOutputDescriptor(outputDescriptors, addressOutputDescriptor, copyChildWallet, null, wallet.getBirthDate());
                             }
                         }
                     }
@@ -305,10 +306,10 @@ public class BitcoindClient {
             Optional<Date> optPrunedDate = getPrunedDate();
             if(optPrunedDate.isPresent()) {
                 Date prunedDate = optPrunedDate.get();
-                Optional<ScanDate> prePruneImport = importingDescriptors.values().stream().filter(scanDate -> scanDate.rescanSince != null && scanDate.rescanSince.before(prunedDate)).findFirst();
-                if(prePruneImport.isPresent()) {
-                    ScanDate scanDate = prePruneImport.get();
-                    throw new ScanDateBeforePruneException(scanDate.rescanSince, prunedDate);
+                Optional<Map.Entry<String, ScanDate>> optPrePruneImport = importingDescriptors.entrySet().stream().filter(entry -> entry.getValue().rescanSince != null && entry.getValue().rescanSince.before(prunedDate)).findFirst();
+                if(optPrePruneImport.isPresent()) {
+                    Map.Entry<String, ScanDate> prePruneImport = optPrePruneImport.get();
+                    throw new ScanDateBeforePruneException(prePruneImport.getKey(), prePruneImport.getValue().rescanSince, prunedDate);
                 }
             }
         }
