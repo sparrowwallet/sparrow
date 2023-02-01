@@ -197,6 +197,13 @@ public class PaymentController extends WalletFormController implements Initializ
                 }
             }
         });
+        openWallets.setOnShowing(event -> {
+            if(!openWallets.getItems().contains(nfcCardWallet) && CardApi.isReaderAvailable()) {
+                openWallets.getItems().add(nfcCardWallet);
+            } else if(openWallets.getItems().contains(nfcCardWallet) && !CardApi.isReaderAvailable()) {
+                openWallets.getItems().remove(nfcCardWallet);
+            }
+        });
 
         payNymProperty.addListener((observable, oldValue, payNym) -> {
             updateMixOnlyStatus(payNym);
