@@ -1767,15 +1767,22 @@ public class ElectrumServer {
 
     public static class AddressUtxosService extends Service<List<TransactionOutput>> {
         private final Address address;
+        private final Date since;
 
-        public AddressUtxosService(Address address) {
+        public AddressUtxosService(Address address, Date since) {
             this.address = address;
+            this.since = since;
         }
 
         @Override
         protected Task<List<TransactionOutput>> createTask() {
             return new Task<>() {
                 protected List<TransactionOutput> call() throws ServerException {
+                    if(ElectrumServer.cormorant != null) {
+                        updateProgress(-1, 0);
+                        ElectrumServer.cormorant.checkAddressImport(address, since);
+                    }
+
                     ElectrumServer electrumServer = new ElectrumServer();
                     return electrumServer.getUtxos(address);
                 }

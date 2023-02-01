@@ -153,6 +153,13 @@ public class BitcoindClient {
         importWallets(wallet.isMasterWallet() ? wallet.getAllWallets() : wallet.getMasterWallet().getAllWallets());
     }
 
+    public void importAddress(Address address, Date since) {
+        Map<String, ScanDate> outputDescriptors = new HashMap<>();
+        String addressOutputDescriptor = OutputDescriptor.toDescriptorString(address);
+        outputDescriptors.put(OutputDescriptor.normalize(addressOutputDescriptor), new ScanDate(since, null, false));
+        importDescriptors(outputDescriptors);
+    }
+
     private Map<String, ScanDate> getWalletDescriptors(Collection<Wallet> wallets) throws ImportFailedException {
         List<Wallet> validWallets = wallets.stream().filter(Wallet::isValid).collect(Collectors.toList());
 
@@ -297,7 +304,7 @@ public class BitcoindClient {
         }
 
         if(!importingDescriptors.isEmpty()) {
-            log.warn("Importing descriptors " + importingDescriptors);
+            log.debug("Importing descriptors " + importingDescriptors);
 
             List<ImportDescriptor> importDescriptors = importingDescriptors.entrySet().stream()
                     .map(entry -> {

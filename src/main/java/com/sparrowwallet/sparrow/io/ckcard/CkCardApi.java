@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io.ckcard;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
@@ -50,9 +51,9 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
-    public void initialize(byte[] chainCode) throws CardException {
+    public void initialize(int slot, byte[] chainCode) throws CardException {
         cardProtocol.verify();
-        cardProtocol.setup(cvc, chainCode);
+        cardProtocol.setup(cvc, slot, chainCode);
     }
 
     @Override
@@ -129,8 +130,12 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
-    public Service<Void> getInitializationService(byte[] entropy) {
-        return new CardImportPane.CardInitializationService(new Tapsigner(), entropy);
+    public Service<Void> getInitializationService(byte[] entropy, StringProperty messageProperty) {
+        if(cardType == WalletModel.TAPSIGNER) {
+            return new CardImportPane.CardInitializationService(new Tapsigner(), cvc, entropy, messageProperty);
+        }
+
+        return new CardInitializationService(entropy, messageProperty);
     }
 
     @Override
@@ -245,13 +250,44 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
-    public Service<ECKey> getUnsealService(StringProperty messageProperty) {
-        return new UnsealService(messageProperty);
+    public Service<ECKey> getPrivateKeyService(StringProperty messageProperty) {
+        return new PrivateKeyService(messageProperty);
     }
 
-    ECKey unseal() throws CardException {
-        CardUnseal cardUnseal = cardProtocol.unseal(cvc);
+    ECKey getPrivateKey(int slot, boolean unsealed) throws CardException {
+        if(unsealed) {
+            CardAuthDump cardAuthDump = cardProtocol.dump(cvc, slot);
+            return cardAuthDump.getPrivateKey();
+        }
+
+        CardUnseal cardUnseal = cardProtocol.unseal(cvc, slot);
         return cardUnseal.getPrivateKey();
+    }
+
+    @Override
+    public Service<Address> getAddressService(StringProperty messageProperty) {
+        return new AddressService(messageProperty);
+    }
+
+    Address getAddress(int currentSlot, int lastSlot, String addr) throws CardException {
+        if(currentSlot == lastSlot) {
+            CardDump cardDump = cardProtocol.dump(currentSlot);
+            if(!cardDump.sealed) {
+                return cardDump.getAddress();
+            }
+        }
+
+        CardRead cardRead = cardProtocol.read(null, currentSlot);
+        Address address = getDefaultScriptType().getAddress(cardRead.getPubKey());
+
+        String left = addr.substring(0, addr.indexOf('_'));
+        String right = addr.substring(addr.lastIndexOf('_') + 1);
+
+        if(!address.toString().startsWith(left) || !address.toString().endsWith(right)) {
+            throw new CardException("Card authentication failed: Provided pubkey does not match given address");
+        }
+
+        return address;
     }
 
     @Override
@@ -260,6 +296,37 @@ public class CkCardApi extends CardApi {
             cardProtocol.disconnect();
         } catch(CardException e) {
             log.warn("Error disconnecting from card reader", e);
+        }
+    }
+
+    public class CardInitializationService extends Service<Void> {
+        private final byte[] chainCode;
+        private final StringProperty messageProperty;
+
+        public CardInitializationService(byte[] chainCode, StringProperty messageProperty) {
+            this.chainCode = chainCode;
+            this.messageProperty = messageProperty;
+        }
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    CardStatus cardStatus = getStatus();
+                    if(cardStatus.getCardType() != WalletModel.SATSCARD) {
+                        throw new IllegalStateException("Please use a " + WalletModel.SATSCARD.toDisplayString() + ".");
+                    }
+                    if(cardStatus.isInitialized()) {
+                        throw new IllegalStateException("Card already initialized.");
+                    }
+
+                    checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
+
+                    initialize(cardStatus.getCurrentSlot(), chainCode);
+                    return null;
+                }
+            };
         }
     }
 
@@ -390,10 +457,10 @@ public class CkCardApi extends CardApi {
         }
     }
 
-    public class UnsealService extends Service<ECKey> {
+    public class PrivateKeyService extends Service<ECKey> {
         private final StringProperty messageProperty;
 
-        public UnsealService(StringProperty messageProperty) {
+        public PrivateKeyService(StringProperty messageProperty) {
             this.messageProperty = messageProperty;
         }
 
@@ -404,12 +471,48 @@ public class CkCardApi extends CardApi {
                 protected ECKey call() throws Exception {
                     CardStatus cardStatus = getStatus();
                     if(cardStatus.getCardType() != WalletModel.SATSCARD) {
-                        throw new IllegalStateException("Please use a " + WalletModel.SATSCARD.toDisplayString() + " to unseal private keys.");
+                        throw new IllegalStateException("Please use a " + WalletModel.SATSCARD.toDisplayString() + " to retrieve a private key.");
+                    }
+
+                    int slot = cardStatus.getCurrentSlot();
+                    boolean unsealed = false;
+                    if(!cardStatus.isInitialized()) {
+                        //If card has been unsealed, but a new slot is not initialized, retrieve private key for previous slot
+                        slot = slot - 1;
+                        unsealed = true;
                     }
 
                     checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
-                    return unseal();
+                    return getPrivateKey(slot, unsealed);
+                }
+            };
+        }
+    }
+
+    public class AddressService extends Service<Address> {
+        private final StringProperty messageProperty;
+
+        public AddressService(StringProperty messageProperty) {
+            this.messageProperty = messageProperty;
+        }
+
+        @Override
+        protected Task<Address> createTask() {
+            return new Task<>() {
+                @Override
+                protected Address call() throws Exception {
+                    CardStatus cardStatus = getStatus();
+                    if(cardStatus.getCardType() != WalletModel.SATSCARD) {
+                        throw new IllegalStateException("Please use a " + WalletModel.SATSCARD.toDisplayString() + " to retrieve an address.");
+                    }
+                    if(!cardStatus.isInitialized()) {
+                        throw new IllegalStateException("Please re-initialize card before attempting to get the address.");
+                    }
+
+                    checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
+
+                    return getAddress(cardStatus.getCurrentSlot(), cardStatus.getLastSlot(), cardStatus.addr);
                 }
             };
         }

@@ -9,11 +9,11 @@ import com.sparrowwallet.sparrow.io.Device;
 
 import java.util.stream.Collectors;
 
-public class DeviceAddressDialog extends DeviceDialog<String> {
+public class DeviceDisplayAddressDialog extends DeviceDialog<String> {
     private final Wallet wallet;
     private final OutputDescriptor outputDescriptor;
 
-    public DeviceAddressDialog(Wallet wallet, OutputDescriptor outputDescriptor) {
+    public DeviceDisplayAddressDialog(Wallet wallet, OutputDescriptor outputDescriptor) {
         super(outputDescriptor.getExtendedPublicKeys().stream().map(extKey -> outputDescriptor.getKeyDerivation(extKey).getMasterFingerprint()).collect(Collectors.toList()));
         this.wallet = wallet;
         this.outputDescriptor = outputDescriptor;

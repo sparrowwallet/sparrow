@@ -21,12 +21,12 @@ import java.util.Date;
 public class WalletBirthDateDialog extends Dialog<Date> {
     private final DatePicker birthDatePicker;
 
-    public WalletBirthDateDialog(Date birthDate) {
+    public WalletBirthDateDialog(Date birthDate, boolean singleAddress) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
-        setTitle("Wallet Birth Date");
-        dialogPane.setHeaderText("Select an approximate date earlier than the first wallet transaction:");
+        setTitle(singleAddress ? "Address Scan Start Date" : "Wallet Birth Date");
+        dialogPane.setHeaderText("Select an approximate date earlier than the first " + (singleAddress ? "" : "wallet") + " transaction:");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(420);
@@ -58,7 +58,7 @@ public class WalletBirthDateDialog extends Dialog<Date> {
             ));
         });
 
-        final ButtonType okButtonType = new javafx.scene.control.ButtonType("Rescan Wallet", ButtonBar.ButtonData.OK_DONE);
+        final ButtonType okButtonType = new javafx.scene.control.ButtonType(singleAddress ? "Scan Address" : "Rescan Wallet", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> birthDatePicker.getValue() == null, birthDatePicker.valueProperty());

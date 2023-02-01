@@ -55,30 +55,19 @@ public class CardImportPane extends TitledDescriptionPane {
         importButton.setGraphic(tapGlyph);
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setOnAction(event -> {
+            importButton.setDisable(true);
             importCard();
         });
         return importButton;
     }
 
     private void importCard() {
-        try {
-            if(!importer.isInitialized()) {
-                setDescription("Card not initialized");
-                setContent(getInitializationPanel());
-                showHideLink.setVisible(false);
-                setExpanded(true);
-                return;
-            }
-        } catch(CardException e) {
-            setError("Card Error", e.getMessage());
-            return;
-        }
-
         if(pin.get().length() < 6) {
             setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
             setContent(getPinEntry());
             showHideLink.setVisible(false);
             setExpanded(true);
+            importButton.setDisable(false);
             return;
         }
 
@@ -86,6 +75,21 @@ public class CardImportPane extends TitledDescriptionPane {
         messageProperty.addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> setDescription(newValue));
         });
+
+        try {
+            if(!importer.isInitialized()) {
+                setDescription("Card not initialized");
+                setContent(getInitializationPanel(messageProperty));
+                showHideLink.setVisible(false);
+                setExpanded(true);
+                return;
+            }
+        } catch(CardException e) {
+            setError("Card Error", e.getMessage());
+            importButton.setDisable(false);
+            return;
+        }
+
         CardImportService cardImportService = new CardImportService(importer, pin.get(), derivation, messageProperty);
         cardImportService.setOnSucceeded(event -> {
             EventManager.get().post(new KeystoreImportEvent(cardImportService.getValue()));
@@ -99,16 +103,17 @@ public class CardImportPane extends TitledDescriptionPane {
                 log.error("Error importing keystore from card", event.getSource().getException());
                 setError("Import Error", rootCause.getMessage());
             }
+            importButton.setDisable(false);
         });
         cardImportService.start();
     }
 
-    private Node getInitializationPanel() {
+    private Node getInitializationPanel(StringProperty messageProperty) {
         VBox initTypeBox = new VBox(5);
         RadioButton automatic = new RadioButton("Automatic (Recommended)");
         RadioButton advanced = new RadioButton("Advanced");
         TextField entropy = new TextField();
-        entropy.setPromptText("Enter input for chain code");
+        entropy.setPromptText("Enter input for user entropy");
         entropy.setDisable(true);
 
         ToggleGroup toggleGroup = new ToggleGroup();
@@ -124,18 +129,26 @@ public class CardImportPane extends TitledDescriptionPane {
         Button initializeButton = new Button("Initialize");
         initializeButton.setDefaultButton(true);
         initializeButton.setOnAction(event -> {
+            initializeButton.setDisable(true);
             byte[] chainCode = toggleGroup.getSelectedToggle() == automatic ? null : Sha256Hash.hashTwice(entropy.getText().getBytes(StandardCharsets.UTF_8));
-            CardInitializationService cardInitializationService = new CardInitializationService(importer, chainCode);
-            cardInitializationService.setOnSucceeded(event1 -> {
-                AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou will now need to enter the PIN code found on the back. You can change the PIN code once it has been imported.");
-                setDescription("Enter PIN code");
-                setContent(getPinEntry());
-                setExpanded(true);
+            CardInitializationService cardInitializationService = new CardInitializationService(importer, pin.get(), chainCode, messageProperty);
+            cardInitializationService.setOnSucceeded(successEvent -> {
+                AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou can now import the keystore.");
+                setDescription("Leave card on reader");
+                setExpanded(false);
+                importButton.setDisable(false);
             });
-            cardInitializationService.setOnFailed(event1 -> {
-                Throwable e = event1.getSource().getException();
-                log.error("Error initializing card", e);
-                AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + e.getMessage());
+            cardInitializationService.setOnFailed(failEvent -> {
+                Throwable rootCause = Throwables.getRootCause(failEvent.getSource().getException());
+                if(rootCause instanceof CardAuthorizationException) {
+                    setError(rootCause.getMessage(), null);
+                    setContent(getPinEntry());
+                    importButton.setDisable(false);
+                } else {
+                    log.error("Error initializing card", failEvent.getSource().getException());
+                    AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + failEvent.getSource().getException().getMessage());
+                    initializeButton.setDisable(false);
+                }
             });
             cardInitializationService.start();
         });
@@ -172,11 +185,15 @@ public class CardImportPane extends TitledDescriptionPane {
 
     public static class CardInitializationService extends Service<Void> {
         private final KeystoreCardImport cardImport;
+        private final String pin;
         private final byte[] chainCode;
+        private final StringProperty messageProperty;
 
-        public CardInitializationService(KeystoreCardImport cardImport, byte[] chainCode) {
+        public CardInitializationService(KeystoreCardImport cardImport, String pin, byte[] chainCode, StringProperty messageProperty) {
             this.cardImport = cardImport;
+            this.pin = pin;
             this.chainCode = chainCode;
+            this.messageProperty = messageProperty;
         }
 
         @Override
@@ -184,7 +201,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    cardImport.initialize(chainCode);
+                    cardImport.initialize(pin, chainCode, messageProperty);
                     return null;
                 }
             };

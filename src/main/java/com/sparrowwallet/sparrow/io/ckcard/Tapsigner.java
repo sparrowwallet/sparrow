@@ -26,11 +26,24 @@ public class Tapsigner implements KeystoreCardImport {
     }
 
     @Override
-    public void initialize(byte[] chainCode) throws CardException {
+    public void initialize(String pin, byte[] chainCode, StringProperty messageProperty) throws CardException {
+        if(pin.length() < 6) {
+            throw new CardException("PIN too short.");
+        }
+
+        if(pin.length() > 32) {
+            throw new CardException("PIN too long.");
+        }
+
         CkCardApi cardApi = null;
         try {
-            cardApi = new CkCardApi(null);
-            cardApi.initialize(chainCode);
+            cardApi = new CkCardApi(pin);
+            CardStatus cardStatus = cardApi.getStatus();
+            if(cardStatus.isInitialized()) {
+                throw new IllegalStateException("Card is already initialized.");
+            }
+            cardApi.checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
+            cardApi.initialize(0, chainCode);
         } finally {
             if(cardApi != null) {
                 cardApi.disconnect();

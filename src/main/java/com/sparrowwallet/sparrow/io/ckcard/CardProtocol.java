@@ -88,15 +88,32 @@ public class CardProtocol {
         }
     }
 
-    public CardRead read(String cvc) throws CardException {
-        Map<String, Object> args = new HashMap<>();
-        args.put("nonce", getNonce());
+    public CardRead read(String cvc, int currentSlot) throws CardException {
+        byte[] userNonce = getNonce();
+        byte[] cardNonce = lastCardNonce;
 
-        JsonObject read = sendAuth("read", args, cvc);
-        return gson.fromJson(read, CardRead.class);
+        Map<String, Object> args = new HashMap<>();
+        args.put("nonce", userNonce);
+
+        JsonObject read;
+        if(cvc == null) {
+            read = send("read", args);
+        } else {
+            read = sendAuth("read", args, cvc);
+        }
+        CardRead cardRead = gson.fromJson(read, CardRead.class);
+
+        ECDSASignature ecdsaSignature = cardRead.getSignature();
+        Sha256Hash verificationData = getVerificationData(cardNonce, userNonce, new byte[] { (byte)currentSlot });
+
+        if(!ecdsaSignature.verify(verificationData.getBytes(), cardRead.pubkey)) {
+            throw new CardException("Card authentication failure: Provided signature did not match public key");
+        }
+
+        return cardRead;
     }
 
-    public CardSetup setup(String cvc, byte[] chainCode) throws CardException {
+    public CardSetup setup(String cvc, int slot, byte[] chainCode) throws CardException {
         if(chainCode == null) {
             chainCode = Sha256Hash.hashTwice(secureRandom.generateSeed(128));
         }
@@ -106,6 +123,7 @@ public class CardProtocol {
         }
 
         Map<String, Object> args = new HashMap<>();
+        args.put("slot", slot);
         args.put("chain_code", chainCode);
         JsonObject setup = sendAuth("new", args, cvc);
         return gson.fromJson(setup, CardSetup.class);
@@ -188,14 +206,28 @@ public class CardProtocol {
         return gson.fromJson(backup, CardBackup.class);
     }
 
-    public CardUnseal unseal(String cvc) throws CardException {
-        CardStatus status = getStatus();
-
+    public CardUnseal unseal(String cvc, int slot) throws CardException {
         Map<String, Object> args = new HashMap<>();
-        args.put("slot", status.getSlot());
+        args.put("slot", slot);
 
         JsonObject unseal = sendAuth("unseal", args, cvc);
         return gson.fromJson(unseal, CardUnseal.class);
+    }
+
+    public CardDump dump(int slot) throws CardException {
+        Map<String, Object> args = new HashMap<>();
+        args.put("slot", slot);
+
+        JsonObject dump = send("dump", args);
+        return gson.fromJson(dump, CardDump.class);
+    }
+
+    public CardAuthDump dump(String cvc, int slot) throws CardException {
+        Map<String, Object> args = new HashMap<>();
+        args.put("slot", slot);
+
+        JsonObject dump = sendAuth("dump", args, cvc);
+        return gson.fromJson(dump, CardAuthDump.class);
     }
 
     public void disconnect() throws CardException {

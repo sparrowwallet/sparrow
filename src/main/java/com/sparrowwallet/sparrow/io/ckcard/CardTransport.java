@@ -66,6 +66,8 @@ public class CardTransport {
                 cborBuilder.put(entry.getKey(), byteValue);
             } else if(entry.getValue() instanceof Long longValue) {
                 cborBuilder.put(entry.getKey(), longValue);
+            } else if(entry.getValue() instanceof Integer integerValue) {
+                cborBuilder.put(entry.getKey(), integerValue);
             } else if(entry.getValue() instanceof Boolean booleanValue) {
                 cborBuilder.put(entry.getKey(), booleanValue);
             } else if(entry.getValue() instanceof List<?> listValue) {

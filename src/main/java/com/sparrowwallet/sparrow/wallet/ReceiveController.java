@@ -9,7 +9,6 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
-import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -27,7 +26,6 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
 import org.fxmisc.richtext.CodeArea;
 import org.slf4j.Logger;
@@ -207,21 +205,21 @@ public class ReceiveController extends WalletFormController implements Initializ
             List<Device> possibleDevices = (List<Device>)displayAddress.getUserData();
             if(possibleDevices != null && !possibleDevices.isEmpty()) {
                 if(possibleDevices.size() > 1 || possibleDevices.get(0).isNeedsPinSent() || possibleDevices.get(0).isNeedsPassphraseSent()) {
-                    DeviceAddressDialog dlg = new DeviceAddressDialog(wallet, addressDescriptor);
+                    DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
                     dlg.showAndWait();
                 } else {
                     Device actualDevice = possibleDevices.get(0);
                     Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(actualDevice, "", wallet.getScriptType(), addressDescriptor);
                     displayAddressService.setOnFailed(failedEvent -> {
                         Platform.runLater(() -> {
-                            DeviceAddressDialog dlg = new DeviceAddressDialog(wallet, addressDescriptor);
+                            DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
                             dlg.showAndWait();
                         });
                     });
                     displayAddressService.start();
                 }
             } else {
-                DeviceAddressDialog dlg = new DeviceAddressDialog(wallet, addressDescriptor);
+                DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
                 dlg.showAndWait();
             }
         }

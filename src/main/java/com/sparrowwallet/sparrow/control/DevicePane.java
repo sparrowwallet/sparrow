@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
@@ -66,7 +67,8 @@ public class DevicePane extends TitledDescriptionPane {
     private Button displayAddressButton;
     private Button signMessageButton;
     private Button discoverKeystoresButton;
-    private Button unsealButton;
+    private Button getPrivateKeyButton;
+    private Button getAddressButton;
 
     private final SimpleStringProperty passphrase = new SimpleStringProperty("");
     private final SimpleStringProperty pin = new SimpleStringProperty("");
@@ -201,9 +203,9 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, discoverKeystoresButton);
     }
 
-    public DevicePane(Device device, boolean defaultDevice) {
+    public DevicePane(DeviceOperation deviceOperation, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
-        this.deviceOperation = DeviceOperation.UNSEAL;
+        this.deviceOperation = deviceOperation;
         this.wallet = null;
         this.psbt = null;
         this.outputDescriptor = null;
@@ -216,7 +218,16 @@ public class DevicePane extends TitledDescriptionPane {
         setDefaultStatus();
         showHideLink.setVisible(false);
 
-        createUnsealButton();
+        Button button;
+        if(deviceOperation == DeviceOperation.GET_PRIVATE_KEY) {
+            createGetPrivateKeyButton();
+            button = getPrivateKeyButton;
+        } else if(deviceOperation == DeviceOperation.GET_ADDRESS) {
+            createGetAddressButton();
+            button = getAddressButton;
+        } else {
+            throw new UnsupportedOperationException("Cannot construct device pane for operation " + deviceOperation);
+        }
 
         initialise(device);
 
@@ -224,7 +235,7 @@ public class DevicePane extends TitledDescriptionPane {
             Platform.runLater(() -> setDescription(newValue));
         });
 
-        buttonBox.getChildren().add(unsealButton);
+        buttonBox.getChildren().add(button);
     }
 
     private void initialise(Device device) {
@@ -250,7 +261,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void setDefaultStatus() {
-        setDescription(device.isNeedsPinSent() ? "Locked" : device.isNeedsPassphraseSent() ? "Passphrase Required" : device.isCard() ? "Place card on reader" : "Unlocked");
+        setDescription(device.isNeedsPinSent() ? "Locked" : device.isNeedsPassphraseSent() ? "Passphrase Required" : device.isCard() ? "Leave card on reader" : "Unlocked");
     }
 
     private void createUnlockButton() {
@@ -370,15 +381,26 @@ public class DevicePane extends TitledDescriptionPane {
         discoverKeystoresButton.setVisible(false);
     }
 
-    private void createUnsealButton() {
-        unsealButton = new Button("Unseal");
-        unsealButton.setAlignment(Pos.CENTER_RIGHT);
-        unsealButton.setOnAction(event -> {
-            unsealButton.setDisable(true);
-            unseal();
+    private void createGetPrivateKeyButton() {
+        getPrivateKeyButton = new Button("Get Private Key");
+        getPrivateKeyButton.setAlignment(Pos.CENTER_RIGHT);
+        getPrivateKeyButton.setOnAction(event -> {
+            getPrivateKeyButton.setDisable(true);
+            getPrivateKey();
         });
-        unsealButton.managedProperty().bind(unsealButton.visibleProperty());
-        unsealButton.setVisible(false);
+        getPrivateKeyButton.managedProperty().bind(getPrivateKeyButton.visibleProperty());
+        getPrivateKeyButton.setVisible(false);
+    }
+
+    private void createGetAddressButton() {
+        getAddressButton = new Button("Get Address");
+        getAddressButton.setAlignment(Pos.CENTER_RIGHT);
+        getAddressButton.setOnAction(event -> {
+            getAddressButton.setDisable(true);
+            getAddress();
+        });
+        getAddressButton.managedProperty().bind(getAddressButton.visibleProperty());
+        getAddressButton.setVisible(false);
     }
 
     private void unlock(Device device) {
@@ -618,15 +640,24 @@ public class DevicePane extends TitledDescriptionPane {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 if(!cardApi.isInitialized()) {
+                    if(pin.get().length() < 6) {
+                        setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
+                        setContent(getCardPinEntry(importButton));
+                        showHideLink.setVisible(false);
+                        setExpanded(true);
+                        importButton.setDisable(false);
+                        return;
+                    }
+
                     setDescription("Card not initialized");
-                    setContent(getCardInitializationPanel(cardApi));
+                    setContent(getCardInitializationPanel(cardApi, importButton, DeviceOperation.IMPORT));
                     showHideLink.setVisible(false);
                     setExpanded(true);
                     return;
                 }
 
                 Service<Keystore> importService = cardApi.getImportService(derivation, messageProperty);
-                handleCardOperation(importService, importButton, "Import", event -> {
+                handleCardOperation(importService, importButton, "Import", true, event -> {
                     importKeystore(derivation, importService.getValue());
                 });
             } catch(Exception e) {
@@ -705,7 +736,7 @@ public class DevicePane extends TitledDescriptionPane {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 Service<PSBT> signService = cardApi.getSignService(wallet, psbt, messageProperty);
-                handleCardOperation(signService, signButton, "Signing", event -> {
+                handleCardOperation(signService, signButton, "Signing", true, event -> {
                     EventManager.get().post(new PSBTSignedEvent(psbt, signService.getValue()));
                 });
             } catch(Exception e) {
@@ -730,8 +761,8 @@ public class DevicePane extends TitledDescriptionPane {
         }
     }
 
-    private void handleCardOperation(Service<?> service, ButtonBase operationButton, String operationDescription, EventHandler<WorkerStateEvent> successHandler) {
-        if(pin.get().length() < 6) {
+    private void handleCardOperation(Service<?> service, ButtonBase operationButton, String operationDescription, boolean pinRequired, EventHandler<WorkerStateEvent> successHandler) {
+        if(pinRequired && pin.get().length() < 6) {
             setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
             setContent(getCardPinEntry(operationButton));
             showHideLink.setVisible(false);
@@ -774,7 +805,7 @@ public class DevicePane extends TitledDescriptionPane {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 Service<String> signMessageService = cardApi.getSignMessageService(message, wallet.getScriptType(), keyDerivation.getDerivation(), messageProperty);
-                handleCardOperation(signMessageService, signMessageButton, "Signing", event -> {
+                handleCardOperation(signMessageService, signMessageButton, "Signing", true, event -> {
                     String signature = signMessageService.getValue();
                     EventManager.get().post(new MessageSignedEvent(wallet, signature));
                 });
@@ -855,18 +886,51 @@ public class DevicePane extends TitledDescriptionPane {
         getXpubsService.start();
     }
 
-    private void unseal() {
+    private void getPrivateKey() {
         if(device.isCard()) {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
-                Service<ECKey> unsealService = cardApi.getUnsealService(messageProperty);
-                handleCardOperation(unsealService, unsealButton, "Unseal", event -> {
-                    EventManager.get().post(new DeviceUnsealedEvent(unsealService.getValue(), cardApi.getDefaultScriptType()));
+                Service<ECKey> privateKeyService = cardApi.getPrivateKeyService(messageProperty);
+                handleCardOperation(privateKeyService, getPrivateKeyButton, "Private Key", true, event -> {
+                    EventManager.get().post(new DeviceGetPrivateKeyEvent(privateKeyService.getValue(), cardApi.getDefaultScriptType()));
                 });
             } catch(Exception e) {
-                log.error("Unseal Error: " + e.getMessage(), e);
-                setError("Unseal Error", e.getMessage());
-                unsealButton.setDisable(false);
+                log.error("Private Key Error: " + e.getMessage(), e);
+                setError("Private Key Error", e.getMessage());
+                getPrivateKeyButton.setDisable(false);
+            }
+        }
+    }
+
+    private void getAddress() {
+        if(device.isCard()) {
+            try {
+                CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
+                if(!cardApi.isInitialized()) {
+                    if(pin.get().length() < 6) {
+                        setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
+                        setContent(getCardPinEntry(getAddressButton));
+                        showHideLink.setVisible(false);
+                        setExpanded(true);
+                        getAddressButton.setDisable(false);
+                        return;
+                    }
+
+                    setDescription("Card not initialized");
+                    setContent(getCardInitializationPanel(cardApi, getAddressButton, DeviceOperation.GET_ADDRESS));
+                    showHideLink.setVisible(false);
+                    setExpanded(true);
+                    return;
+                }
+
+                Service<Address> addressService = cardApi.getAddressService(messageProperty);
+                handleCardOperation(addressService, getAddressButton, "Address", false, event -> {
+                    EventManager.get().post(new DeviceAddressEvent(addressService.getValue()));
+                });
+            } catch(Exception e) {
+                log.error("Address Error: " + e.getMessage(), e);
+                setError("Address Error", e.getMessage());
+                getAddressButton.setDisable(false);
             }
         }
     }
@@ -897,9 +961,13 @@ public class DevicePane extends TitledDescriptionPane {
             discoverKeystoresButton.setDefaultButton(defaultDevice);
             discoverKeystoresButton.setVisible(true);
             showHideLink.setVisible(false);
-        } else if(deviceOperation.equals(DeviceOperation.UNSEAL)) {
-            unsealButton.setDefaultButton(defaultDevice);
-            unsealButton.setVisible(true);
+        } else if(deviceOperation.equals(DeviceOperation.GET_PRIVATE_KEY)) {
+            getPrivateKeyButton.setDefaultButton(defaultDevice);
+            getPrivateKeyButton.setVisible(true);
+            showHideLink.setVisible(false);
+        } else if(deviceOperation.equals(DeviceOperation.GET_ADDRESS)) {
+            getAddressButton.setDefaultButton(defaultDevice);
+            getAddressButton.setVisible(true);
             showHideLink.setVisible(false);
         }
     }
@@ -943,12 +1011,12 @@ public class DevicePane extends TitledDescriptionPane {
         return contentBox;
     }
 
-    private Node getCardInitializationPanel(CardApi cardApi) {
+    private Node getCardInitializationPanel(CardApi cardApi, ButtonBase operationButton, DeviceOperation deviceOperation) {
         VBox initTypeBox = new VBox(5);
         RadioButton automatic = new RadioButton("Automatic (Recommended)");
         RadioButton advanced = new RadioButton("Advanced");
         TextField entropy = new TextField();
-        entropy.setPromptText("Enter input for chain code");
+        entropy.setPromptText("Enter input for user entropy");
         entropy.setDisable(true);
 
         ToggleGroup toggleGroup = new ToggleGroup();
@@ -964,19 +1032,30 @@ public class DevicePane extends TitledDescriptionPane {
         Button initializeButton = new Button("Initialize");
         initializeButton.setDefaultButton(true);
         initializeButton.setOnAction(event -> {
+            initializeButton.setDisable(true);
             byte[] chainCode = toggleGroup.getSelectedToggle() == automatic ? null : Sha256Hash.hashTwice(entropy.getText().getBytes(StandardCharsets.UTF_8));
-            Service<Void> cardInitializationService = cardApi.getInitializationService(chainCode);
-            cardInitializationService.setOnSucceeded(event1 -> {
-                AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou will now need to enter the PIN code found on the back. You can change the PIN code once it has been imported.");
-                setDescription("Enter PIN code");
-                setContent(getCardPinEntry(importButton));
-                importButton.setDisable(false);
-                setExpanded(true);
+            Service<Void> cardInitializationService = cardApi.getInitializationService(chainCode, messageProperty);
+            cardInitializationService.setOnSucceeded(successEvent -> {
+                if(deviceOperation == DeviceOperation.IMPORT) {
+                    AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou can now import the keystore.");
+                } else if(deviceOperation == DeviceOperation.GET_ADDRESS) {
+                    AppServices.showSuccessDialog("Card Reinitialized", "The card was successfully reinitialized.\n\nYou can now retrieve the new deposit address.");
+                }
+                operationButton.setDisable(false);
+                setDefaultStatus();
+                setExpanded(false);
             });
-            cardInitializationService.setOnFailed(event1 -> {
-                Throwable e = event1.getSource().getException();
-                log.error("Error initializing card", e);
-                AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + e.getMessage());
+            cardInitializationService.setOnFailed(failEvent -> {
+                Throwable rootCause = Throwables.getRootCause(failEvent.getSource().getException());
+                if(rootCause instanceof CardAuthorizationException) {
+                    setError(rootCause.getMessage(), null);
+                    setContent(getCardPinEntry(operationButton));
+                    operationButton.setDisable(false);
+                } else {
+                    log.error("Error initializing card", failEvent.getSource().getException());
+                    AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + failEvent.getSource().getException().getMessage());
+                    initializeButton.setDisable(false);
+                }
             });
             cardInitializationService.start();
         });
@@ -1018,6 +1097,6 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public enum DeviceOperation {
-        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE, DISCOVER_KEYSTORES, UNSEAL;
+        IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE, DISCOVER_KEYSTORES, GET_PRIVATE_KEY, GET_ADDRESS;
     }
 }

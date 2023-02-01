@@ -24,7 +24,7 @@ public class CardStatus extends CardResponse {
     boolean testnet;
 
     public boolean isInitialized() {
-        return getCardType() != WalletModel.TAPSIGNER || path != null;
+        return (getCardType() == WalletModel.TAPSIGNER && path != null) || (getCardType() == WalletModel.SATSCARD && addr != null);
     }
 
     public String getIdentifier() {
@@ -49,12 +49,20 @@ public class CardStatus extends CardResponse {
         return tapsigner ? WalletModel.TAPSIGNER : WalletModel.SATSCARD;
     }
 
-    public int getSlot() {
+    public int getCurrentSlot() {
         if(slots == null || slots.isEmpty()) {
             return 0;
         }
 
         return slots.get(0).intValue();
+    }
+
+    public int getLastSlot() {
+        if(slots == null || slots.size() < 2) {
+            return 0;
+        }
+
+        return slots.get(1).intValue();
     }
 
     @Override

@@ -21,6 +21,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
@@ -142,6 +143,13 @@ public class PaymentController extends WalletFormController implements Initializ
         }
     };
 
+    private static final Wallet nfcCardWallet = new Wallet() {
+        @Override
+        public String getFullDisplayName() {
+            return "NFC Card...";
+        }
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -162,6 +170,13 @@ public class PaymentController extends WalletFormController implements Initializ
                 PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), PayNymDialog.Operation.SEND, selectLinkedOnly);
                 Optional<PayNym> optPayNym = payNymDialog.showAndWait();
                 optPayNym.ifPresent(this::setPayNym);
+            } else if(newValue == nfcCardWallet) {
+                DeviceGetAddressDialog deviceGetAddressDialog = new DeviceGetAddressDialog(Collections.emptyList());
+                Optional<Address> optAddress = deviceGetAddressDialog.showAndWait();
+                if(optAddress.isPresent()) {
+                    address.setText(optAddress.get().toString());
+                    label.requestFocus();
+                }
             } else if(newValue != null) {
                 WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
                 Address freshAddress = freshNode.getAddress();
@@ -324,12 +339,20 @@ public class PaymentController extends WalletFormController implements Initializ
             openWalletList.add(payNymWallet);
         }
 
+        if(CardApi.isReaderAvailable()) {
+            openWalletList.add(nfcCardWallet);
+        }
+
         openWallets.setItems(FXCollections.observableList(openWalletList));
     }
 
     private Node getOpenWalletIcon(Wallet wallet) {
         if(wallet == payNymWallet) {
             return getPayNymGlyph();
+        }
+
+        if(wallet == nfcCardWallet) {
+            return getNfcCardGlyph();
         }
 
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
@@ -637,6 +660,13 @@ public class PaymentController extends WalletFormController implements Initializ
         payNymGlyph.getStyleClass().add("paynym-icon");
         payNymGlyph.setFontSize(12);
         return payNymGlyph;
+    }
+
+    public static Glyph getNfcCardGlyph() {
+        Glyph nfcCardGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WIFI);
+        nfcCardGlyph.getStyleClass().add("nfccard-icon");
+        nfcCardGlyph.setFontSize(12);
+        return nfcCardGlyph;
     }
 
     @Subscribe

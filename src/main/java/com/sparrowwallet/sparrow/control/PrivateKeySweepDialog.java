@@ -15,7 +15,9 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.CardApi;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -44,6 +46,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -290,11 +293,11 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
     private void unsealPrivateKey() {
         DeviceUnsealDialog deviceUnsealDialog = new DeviceUnsealDialog(Collections.emptyList());
-        Optional<DeviceUnsealDialog.UnsealedKey> optPrivateKey = deviceUnsealDialog.showAndWait();
+        Optional<DeviceUnsealDialog.DevicePrivateKey> optPrivateKey = deviceUnsealDialog.showAndWait();
         if(optPrivateKey.isPresent()) {
-            DeviceUnsealDialog.UnsealedKey unsealedKey = optPrivateKey.get();
-            key.setText(unsealedKey.privateKey().getPrivateKeyEncoded().toBase58());
-            keyScriptType.setValue(unsealedKey.scriptType());
+            DeviceUnsealDialog.DevicePrivateKey devicePrivateKey = optPrivateKey.get();
+            key.setText(devicePrivateKey.privateKey().getPrivateKeyEncoded().toBase58());
+            keyScriptType.setValue(devicePrivateKey.scriptType());
         }
     }
 
@@ -305,7 +308,16 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             Address fromAddress = scriptType.getAddress(privateKey.getKey());
             Address destAddress = getToAddress();
 
-            ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress);
+            Date since = null;
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                WalletBirthDateDialog addressScanDateDialog = new WalletBirthDateDialog(null, true);
+                Optional<Date> optSince = addressScanDateDialog.showAndWait();
+                if(optSince.isPresent()) {
+                    since = optSince.get();
+                }
+            }
+
+            ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress, since);
             addressUtxosService.setOnSucceeded(successEvent -> {
                 createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), destAddress);
             });
@@ -313,6 +325,12 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                 log.error("Error retrieving outputs for address " + fromAddress, failedEvent.getSource().getException());
                 AppServices.showErrorDialog("Error retrieving outputs for address", failedEvent.getSource().getException().getMessage());
             });
+
+            if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Address Scan", "Scanning address for transactions...", "/image/sparrow.png", addressUtxosService);
+                AppServices.moveToActiveWindowScreen(serviceProgressDialog);
+            }
+
             addressUtxosService.start();
         } catch(Exception e) {
             log.error("Error creating sweep transaction", e);
@@ -340,8 +358,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
         long dustThreshold = destAddress.getScriptType().getDustThreshold(sweepOutput, Transaction.DUST_RELAY_TX_FEE);
         if(total - fee <= dustThreshold) {
-            AppServices.showErrorDialog("Insufficient funds", "The unspent outputs for this private key contain insufficient funds to spend (" + total + " sats).");
-            return;
+            feeRate = Transaction.DEFAULT_MIN_RELAY_FEE;
+            fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate) + 1;
+
+            if(total - fee <= dustThreshold) {
+                AppServices.showErrorDialog("Insufficient funds", "The unspent outputs for this private key contain insufficient funds to spend (" + total + " sats).");
+                return;
+            }
         }
 
         Transaction transaction = new Transaction();

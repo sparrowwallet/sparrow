@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.base.Throwables;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -46,7 +47,7 @@ public abstract class CardApi {
 
     public abstract boolean isInitialized() throws CardException;
 
-    public abstract void initialize(byte[] entropy) throws CardException;
+    public abstract void initialize(int slot, byte[] entropy) throws CardException;
 
     public abstract WalletModel getCardType() throws CardException;
 
@@ -62,7 +63,7 @@ public abstract class CardApi {
 
     public abstract Keystore getKeystore() throws CardException;
 
-    public abstract Service<Void> getInitializationService(byte[] entropy);
+    public abstract Service<Void> getInitializationService(byte[] entropy, StringProperty messageProperty);
 
     public abstract Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty);
 
@@ -70,7 +71,9 @@ public abstract class CardApi {
 
     public abstract Service<String> getSignMessageService(String message, ScriptType scriptType, List<ChildNumber> derivation, StringProperty messageProperty);
 
-    public abstract Service<ECKey> getUnsealService(StringProperty messageProperty);
+    public abstract Service<ECKey> getPrivateKeyService(StringProperty messageProperty);
+
+    public abstract Service<Address> getAddressService(StringProperty messageProperty);
 
     public abstract void disconnect();
 

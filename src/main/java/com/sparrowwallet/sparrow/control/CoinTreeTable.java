@@ -93,7 +93,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             Hyperlink hyperlink = new Hyperlink();
             hyperlink.setTranslateY(30);
             hyperlink.setOnAction(event -> {
-                WalletBirthDateDialog dlg = new WalletBirthDateDialog(wallet.getBirthDate());
+                WalletBirthDateDialog dlg = new WalletBirthDateDialog(wallet.getBirthDate(), false);
                 Optional<Date> optDate = dlg.showAndWait();
                 if(optDate.isPresent()) {
                     Storage storage = AppServices.get().getOpenWallets().get(wallet);

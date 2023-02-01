@@ -443,7 +443,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                         log.error("Error communicating with card", e);
                         AppServices.showErrorDialog("Error communicating with card", e.getMessage());
                     });
-                    ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Authentication Delay", "Waiting for authenication delay to clear...", "/image/tapsigner.png", authDelayService);
+                    ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Authentication Delay", "Waiting for authentication delay to clear...", "/image/tapsigner.png", authDelayService);
                     AppServices.moveToActiveWindowScreen(serviceProgressDialog);
                     authDelayService.start();
                 } else {
