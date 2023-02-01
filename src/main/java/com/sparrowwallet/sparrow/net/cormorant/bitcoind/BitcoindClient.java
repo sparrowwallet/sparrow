@@ -145,7 +145,15 @@ public class BitcoindClient {
     }
 
     public void importWallets(Collection<Wallet> wallets) throws ImportFailedException {
-        importDescriptors(getWalletDescriptors(wallets));
+        try {
+            importDescriptors(getWalletDescriptors(wallets));
+        } catch(ScanDateBeforePruneException e) {
+            List<Wallet> prePruneWallets = wallets.stream().filter(wallet -> wallet.getBirthDate() != null && wallet.getBirthDate().before(e.getPrunedDate()) && wallet.isValid()).sorted(Comparator.comparingLong(o -> o.getBirthDate().getTime())).collect(Collectors.toList());
+            if(!prePruneWallets.isEmpty()) {
+                Platform.runLater(() -> EventManager.get().post(new CormorantPruneStatusEvent("Error: Wallet birthday earlier than Bitcoin Core prune date", prePruneWallets.get(0), e.getRescanSince(), e.getPrunedDate(), legacyWalletExists)));
+            }
+            throw new ImportFailedException("Wallet birthday earlier than prune date");
+        }
     }
 
     public void importWallet(Wallet wallet) throws ImportFailedException {
@@ -153,11 +161,15 @@ public class BitcoindClient {
         importWallets(wallet.isMasterWallet() ? wallet.getAllWallets() : wallet.getMasterWallet().getAllWallets());
     }
 
-    public void importAddress(Address address, Date since) {
+    public void importAddress(Address address, Date since) throws ImportFailedException {
         Map<String, ScanDate> outputDescriptors = new HashMap<>();
         String addressOutputDescriptor = OutputDescriptor.toDescriptorString(address);
-        outputDescriptors.put(OutputDescriptor.normalize(addressOutputDescriptor), new ScanDate(since, null, false));
-        importDescriptors(outputDescriptors);
+        outputDescriptors.put(OutputDescriptor.normalize(addressOutputDescriptor), new ScanDate(since, null, true));
+        try {
+            importDescriptors(outputDescriptors);
+        } catch(ScanDateBeforePruneException e) {
+            throw new ImportFailedException("Address birth date earlier than prune date.");
+        }
     }
 
     private Map<String, ScanDate> getWalletDescriptors(Collection<Wallet> wallets) throws ImportFailedException {
@@ -166,20 +178,6 @@ public class BitcoindClient {
         Date earliestBirthDate = validWallets.stream().map(Wallet::getBirthDate).filter(Objects::nonNull).sorted().findFirst().orElse(null);
         Map<String, ScanDate> outputDescriptors = new LinkedHashMap<>();
         for(Wallet wallet : validWallets) {
-            if(pruned) {
-                Optional<Date> optPrunedDate = getPrunedDate();
-                if(optPrunedDate.isPresent() && earliestBirthDate != null) {
-                    Date prunedDate = optPrunedDate.get();
-                    if(earliestBirthDate.before(prunedDate)) {
-                        if(!prunedWarningShown) {
-                            prunedWarningShown = true;
-                            Platform.runLater(() -> EventManager.get().post(new CormorantPruneStatusEvent("Error: Wallet birthday earlier than Bitcoin Core prune date", wallet, earliestBirthDate, prunedDate, legacyWalletExists)));
-                        }
-                        throw new ImportFailedException("Wallet birthday earlier than prune date");
-                    }
-                }
-            }
-
             String receiveOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE).toString(false, false);
             addOutputDescriptor(outputDescriptors, receiveOutputDescriptor, wallet, KeyPurpose.RECEIVE, earliestBirthDate);
             String changeOutputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE).toString(false, false);
@@ -248,7 +246,7 @@ public class BitcoindClient {
         return wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && keyPurpose == KeyPurpose.RECEIVE ? POSTMIX_GAP_LIMIT : DEFAULT_GAP_LIMIT;
     }
 
-    private void importDescriptors(Map<String, ScanDate> descriptors) {
+    private void importDescriptors(Map<String, ScanDate> descriptors) throws ScanDateBeforePruneException {
         //Sort descriptors in alphanumeric order to avoid deadlocks, particularly with BIP47 wallets
         Set<String> sortedDescriptors = new TreeSet<>(descriptors.keySet());
         for(String descriptor : sortedDescriptors) {
@@ -273,7 +271,7 @@ public class BitcoindClient {
         }
     }
 
-    private Set<String> addDescriptors(Map<String, ScanDate> descriptors) {
+    private Set<String> addDescriptors(Map<String, ScanDate> descriptors) throws ScanDateBeforePruneException {
         boolean forceRescan = descriptors.values().stream().anyMatch(scanDate -> scanDate.forceRescan);
         if(!initialized || forceRescan) {
             ListDescriptorsResult listDescriptorsResult = getBitcoindService().listDescriptors(false);
@@ -299,6 +297,18 @@ public class BitcoindClient {
                 ScanDate importedScanDate = importedDescriptors.get(entry.getKey());
                 if(scanDate.rescanSince != null && (importedScanDate == null || importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince))) {
                     importingDescriptors.put(entry.getKey(), new ScanDate(scanDate.rescanSince, importedScanDate != null ? importedScanDate.range : scanDate.range, false));
+                }
+            }
+        }
+
+        if(pruned) {
+            Optional<Date> optPrunedDate = getPrunedDate();
+            if(optPrunedDate.isPresent()) {
+                Date prunedDate = optPrunedDate.get();
+                Optional<ScanDate> prePruneImport = importingDescriptors.values().stream().filter(scanDate -> scanDate.rescanSince != null && scanDate.rescanSince.before(prunedDate)).findFirst();
+                if(prePruneImport.isPresent()) {
+                    ScanDate scanDate = prePruneImport.get();
+                    throw new ScanDateBeforePruneException(scanDate.rescanSince, prunedDate);
                 }
             }
         }

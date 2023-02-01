@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
@@ -322,8 +323,9 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                 createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), destAddress);
             });
             addressUtxosService.setOnFailed(failedEvent -> {
+                Throwable rootCause = Throwables.getRootCause(failedEvent.getSource().getException());
                 log.error("Error retrieving outputs for address " + fromAddress, failedEvent.getSource().getException());
-                AppServices.showErrorDialog("Error retrieving outputs for address", failedEvent.getSource().getException().getMessage());
+                AppServices.showErrorDialog("Error retrieving outputs for address", rootCause.getMessage());
             });
 
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {

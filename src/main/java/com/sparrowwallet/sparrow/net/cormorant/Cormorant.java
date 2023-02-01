@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Server;
 import com.sparrowwallet.sparrow.net.Protocol;
+import com.sparrowwallet.sparrow.net.ServerException;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.BitcoindClient;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindException;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.ImportFailedException;
@@ -60,14 +61,18 @@ public class Cormorant {
             bitcoindClient.importWallet(wallet);
             return true;
         } catch(ImportFailedException e) {
-            log.debug("Failed to import wallets", e);
+            log.warn("Failed to import wallets", e);
             return false;
         }
     }
 
-    public void checkAddressImport(Address address, Date since) {
+    public void checkAddressImport(Address address, Date since) throws ServerException {
         //Will block until address descriptor has been added
-        bitcoindClient.importAddress(address, since);
+        try {
+            bitcoindClient.importAddress(address, since);
+        } catch(ImportFailedException e) {
+            throw new ServerException("Failed to import address", e);
+        }
     }
 
     public boolean isRunning() {
