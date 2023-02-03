@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.SparrowWallet;
+import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.concurrent.ScheduledService;
@@ -146,6 +147,14 @@ public class Storage {
         if(wallet.containsMasterPrivateKeys()) {
             //Derive xpub and master fingerprint from seed, potentially with passphrase
             Wallet copy = wallet.copy(false);
+            if(wallet.isEncrypted()) {
+                if(key == null) {
+                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
+                }
+
+                copy.decrypt(key);
+            }
+
             for(int i = 0; i < copy.getKeystores().size(); i++) {
                 Keystore copyKeystore = copy.getKeystores().get(i);
                 if(copyKeystore.hasSeed() && copyKeystore.getSeed().getPassphrase() == null) {
@@ -164,14 +173,6 @@ public class Storage {
                         copyKeystore.getSeed().setPassphrase("");
                     }
                 }
-            }
-
-            if(wallet.isEncrypted()) {
-                if(key == null) {
-                    throw new IllegalStateException("Wallet was not encrypted, but seed is");
-                }
-
-                copy.decrypt(key);
             }
 
             if(wallet.isWhirlpoolMasterWallet()) {
