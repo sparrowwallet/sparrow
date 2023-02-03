@@ -654,14 +654,6 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
-            MenuItem copyHex = new MenuItem("Copy Script Output Bytes");
-            copyHex.setOnAction(AE -> {
-                hide();
-                ClipboardContent content = new ClipboardContent();
-                content.putString(Utils.bytesToHex(address.getOutputScriptData()));
-                Clipboard.getSystemClipboard().setContent(content);
-            });
-
             MenuItem copyOutputDescriptor = new MenuItem("Copy Output Descriptor");
             copyOutputDescriptor.setOnAction(AE -> {
                 hide();
@@ -670,7 +662,19 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
-            getItems().addAll(copyAddress, copyHex, copyOutputDescriptor);
+            getItems().addAll(copyAddress, copyOutputDescriptor);
+
+            if(nodeEntry != null) {
+                MenuItem copyHex = new MenuItem("Copy Script Output Bytes");
+                copyHex.setOnAction(AE -> {
+                    hide();
+                    Script outputScript = nodeEntry.getWallet().getOutputScript(nodeEntry.getNode());
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(Utils.bytesToHex(outputScript.getProgram()));
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().add(copyHex);
+            }
         }
     }
 
