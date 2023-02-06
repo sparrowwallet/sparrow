@@ -42,7 +42,7 @@ public class ElectrumServerService {
 
     @JsonRpcMethod("server.banner")
     public String getServerBanner() {
-        return SparrowWallet.APP_NAME + " " + SparrowWallet.APP_VERSION + "\n" + bitcoindClient.getNetworkInfo().subversion();
+        return Cormorant.SERVER_NAME + " " + SparrowWallet.APP_VERSION + "\n" + bitcoindClient.getNetworkInfo().subversion();
     }
 
     @JsonRpcMethod("blockchain.estimatefee")

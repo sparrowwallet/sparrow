@@ -12,12 +12,14 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.ckcard.CkCardApi;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
+import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collections;
@@ -25,6 +27,13 @@ import java.util.List;
 
 public abstract class CardApi {
     private static final Logger log = LoggerFactory.getLogger(CardApi.class);
+
+    private static File[] LINUX_PCSC_LIBS = new File[] {
+            new File("/usr/lib/libpcsclite.so.1"),
+            new File("/usr/local/lib/libpcsclite.so.1"),
+            new File("/lib/x86_64-linux-gnu/libpcsclite.so.1") };
+
+    private static boolean initialized;
 
     public static List<WalletModel> getConnectedCards() throws CardException {
         try {
@@ -80,6 +89,8 @@ public abstract class CardApi {
     public abstract void disconnect();
 
     public static boolean isReaderAvailable() {
+        setLibrary();
+
         try {
             TerminalFactory tf = TerminalFactory.getDefault();
             return !tf.terminals().list().isEmpty();
@@ -132,5 +143,18 @@ public abstract class CardApi {
         } catch(Exception e) {
             log.error("Failed to recover card service", e);
         }
+    }
+
+    private static void setLibrary() {
+        if(!initialized && Platform.getCurrent() == Platform.UNIX) {
+            for(File lib : LINUX_PCSC_LIBS) {
+                if(lib.exists()) {
+                    System.setProperty("sun.security.smartcardio.library", lib.getAbsolutePath());
+                    break;
+                }
+            }
+        }
+
+        initialized = true;
     }
 }
