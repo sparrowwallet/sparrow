@@ -326,7 +326,7 @@ public class AppServices {
                 }
             }
 
-            if(failEvent.getSource().getException() instanceof ProxyServerException && Config.get().isUseProxy() && Config.get().requiresTor()) {
+            if(failEvent.getSource().getException() instanceof ProxyServerException && Config.get().isUseProxy() && Config.get().isAutoSwitchProxy() && Config.get().requiresTor()) {
                 Config.get().setUseProxy(false);
                 Platform.runLater(() -> restartService(torService));
                 return;

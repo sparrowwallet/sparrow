@@ -329,6 +329,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             setElectrumServerInConfig(config);
             electrumCertificate.setDisable(!newValue);
             electrumCertificateSelect.setDisable(!newValue);
+            electrumPort.setPromptText(newValue ? "e.g. 50002" : "e.g. 50001");
         });
 
         electrumCertificate.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -660,6 +661,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
             reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
         } else if(reason != null && (reason.contains("Check if Bitcoin Core is running") || reason.contains("Could not connect to Bitcoin Core RPC"))) {
             reason += "\n\nSee https://sparrowwallet.com/docs/connect-node.html";
+        } else if(reason != null && (reason.startsWith("Cannot connect to hidden service"))) {
+            reason += " on the server. Check that the onion address and port are correct, and that both Tor and the Electrum server are running on the node. Usually SSL is not enabled, and the port is 50001.";
         }
 
         testResults.setText("Could not connect:\n\n" + reason);

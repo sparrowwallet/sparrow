@@ -70,6 +70,7 @@ public class Config {
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
+    private boolean autoSwitchProxy = true;
     private int maxServerTimeout = DEFAULT_MAX_TIMEOUT;
     private int maxPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
@@ -602,6 +603,15 @@ public class Config {
 
     public void setProxyServer(String proxyServer) {
         this.proxyServer = proxyServer;
+        flush();
+    }
+
+    public boolean isAutoSwitchProxy() {
+        return autoSwitchProxy;
+    }
+
+    public void setAutoSwitchProxy(boolean autoSwitchProxy) {
+        this.autoSwitchProxy = autoSwitchProxy;
         flush();
     }
 

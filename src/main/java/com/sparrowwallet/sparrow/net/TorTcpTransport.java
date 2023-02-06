@@ -24,6 +24,6 @@ public class TorTcpTransport extends TcpTransport {
             throw new IllegalStateException("Can't create Tor socket, Tor is not running");
         }
 
-        socket = new TorSocket(server.getHost(), server.getPort(), "sparrow");
+        socket = new TorSocket(server.getHost(), server.getPortOrDefault(Protocol.TCP.getDefaultPort()), "sparrow");
     }
 }
