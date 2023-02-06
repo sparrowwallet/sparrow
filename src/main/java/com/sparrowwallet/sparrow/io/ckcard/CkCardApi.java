@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -118,7 +119,7 @@ public class CkCardApi extends CardApi {
 
     String getBackup() throws CardException {
         CardBackup cardBackup = cardProtocol.backup(cvc);
-        return Utils.bytesToHex(cardBackup.data);
+        return Base64.getEncoder().encodeToString(cardBackup.data);
     }
 
     @Override
