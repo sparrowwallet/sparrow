@@ -361,7 +361,7 @@ public class Bwt {
                         Bwt.this.start(notifier);
                     } else {
                         if(AppServices.get().getOpenWallets().keySet().stream().anyMatch(wallet -> wallet.getScriptType() == ScriptType.P2TR)) {
-                            throw new IllegalStateException("Taproot wallets are not yet supported when connecting to Bitcoin Core");
+                            throw new IllegalStateException("Upgrade Bitcoin Core to v24 or later for Taproot wallet support");
                         }
 
                         Bwt.this.start(AppServices.get().getOpenWallets().keySet(), notifier);

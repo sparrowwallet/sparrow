@@ -74,6 +74,8 @@ public class BitcoindClient {
     private final Condition initialImportCondition = initialImportLock.newCondition();
     private boolean initialImportStarted;
 
+    private final List<String> pruneWarnedDescriptors = new ArrayList<>();
+
     public BitcoindClient() {
         BitcoindTransport bitcoindTransport;
 
@@ -149,9 +151,11 @@ public class BitcoindClient {
         } catch(ScanDateBeforePruneException e) {
             List<Wallet> prePruneWallets = wallets.stream()
                     .filter(wallet -> wallet.getBirthDate() != null && wallet.getBirthDate().before(e.getPrunedDate()) && wallet.isValid()
+                            && !pruneWarnedDescriptors.contains(e.getDescriptor())
                             && OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE).toString(false, true).equals(e.getDescriptor()))
                     .sorted(Comparator.comparingLong(o -> o.getBirthDate().getTime())).collect(Collectors.toList());
             if(!prePruneWallets.isEmpty()) {
+                pruneWarnedDescriptors.add(e.getDescriptor());
                 Platform.runLater(() -> EventManager.get().post(new CormorantPruneStatusEvent("Error: Wallet birthday earlier than Bitcoin Core prune date", prePruneWallets.get(0), e.getRescanSince(), e.getPrunedDate(), legacyWalletExists)));
             }
             throw new ImportFailedException("Wallet birthday earlier than prune date");
@@ -358,6 +362,7 @@ public class BitcoindClient {
 
     public void stop() {
         timer.cancel();
+        pruneWarnedDescriptors.clear();
         stopped = true;
     }
 

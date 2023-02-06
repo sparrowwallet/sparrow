@@ -14,6 +14,7 @@ import com.sparrowwallet.sparrow.net.cormorant.electrum.ElectrumServerRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Date;
 
 public class Cormorant {
@@ -26,7 +27,12 @@ public class Cormorant {
     private BitcoindClient bitcoindClient;
     private ElectrumServerRunnable electrumServer;
 
+    private final boolean useWallets;
     private boolean running;
+
+    public Cormorant(boolean useWallets) {
+        this.useWallets = useWallets;
+    }
 
     public Server start() throws CormorantBitcoindException {
         bitcoindClient = new BitcoindClient();
@@ -34,7 +40,7 @@ public class Cormorant {
 
         Thread importThread = new Thread(() -> {
             try {
-                bitcoindClient.importWallets(AppServices.get().getOpenWallets().keySet());
+                bitcoindClient.importWallets(useWallets ? AppServices.get().getOpenWallets().keySet() : Collections.emptySet());
             } catch(ImportFailedException e) {
                 log.debug("Failed to import wallets", e);
             } finally {

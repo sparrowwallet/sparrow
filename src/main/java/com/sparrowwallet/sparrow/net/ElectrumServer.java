@@ -1106,7 +1106,7 @@ public class ElectrumServer {
                                 throw new CormorantBitcoindException("Legacy wallet configured");
                             }
                             if(ElectrumServer.cormorant == null) {
-                                ElectrumServer.cormorant = new Cormorant();
+                                ElectrumServer.cormorant = new Cormorant(subscribe);
                                 ElectrumServer.coreElectrumServer = cormorant.start();
                             }
                         } catch(CormorantBitcoindException e) {
