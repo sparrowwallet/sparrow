@@ -31,7 +31,8 @@ public abstract class CardApi {
     private static File[] LINUX_PCSC_LIBS = new File[] {
             new File("/usr/lib/libpcsclite.so.1"),
             new File("/usr/local/lib/libpcsclite.so.1"),
-            new File("/lib/x86_64-linux-gnu/libpcsclite.so.1") };
+            new File("/lib/x86_64-linux-gnu/libpcsclite.so.1"),
+            new File("/lib/aarch64-linux-gnu/libpcsclite.so.1")};
 
     private static boolean initialized;
 
