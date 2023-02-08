@@ -13,6 +13,7 @@ import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.keystoreimport.KeystoreImportDialog;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.concurrent.Service;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -96,6 +97,11 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     private final ValidationSupport validationSupport = new ValidationSupport();
 
+    private final ChangeListener<String> labelChangeListener = (observable, oldValue, newValue) -> {
+        keystore.setLabel(newValue);
+        EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_LABEL));
+    };
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -152,10 +158,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             keystore.setKeyDerivation(new KeyDerivation("",""));
         }
 
-        label.textProperty().addListener((observable, oldValue, newValue) -> {
-            keystore.setLabel(newValue);
-            EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_LABEL));
-        });
+        label.textProperty().addListener(labelChangeListener);
         fingerprint.textProperty().addListener((observable, oldValue, newValue) -> {
             keystore.setKeyDerivation(new KeyDerivation(newValue, keystore.getKeyDerivation().getDerivationPath()));
             fingerprintIcon.setHex(newValue.length() == 8 ? newValue : null);
@@ -594,6 +597,20 @@ public class KeystoreController extends WalletFormController implements Initiali
             }
             if(keystore.getExtendedPublicKey() != null) {
                 setXpubContext(keystore.getExtendedPublicKey());
+            }
+        }
+    }
+
+    @Subscribe
+    public void keystoreLabelsChanged(KeystoreLabelsChangedEvent event) {
+        if(event.getWalletId().equals(walletForm.getWalletId())) {
+            for(Keystore changedKeystore : event.getChangedKeystores()) {
+                if(xpub.getText().trim().equals(changedKeystore.getExtendedPublicKey().toString()) && !label.getText().equals(changedKeystore.getLabel())) {
+                    label.textProperty().removeListener(labelChangeListener);
+                    label.setText(changedKeystore.getLabel());
+                    keystore.setLabel(changedKeystore.getLabel());
+                    label.textProperty().addListener(labelChangeListener);
+                }
             }
         }
     }

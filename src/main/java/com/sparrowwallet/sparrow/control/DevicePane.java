@@ -975,7 +975,7 @@ public class DevicePane extends TitledDescriptionPane {
             }
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
-            showHideLink.setVisible(true);
+            showHideLink.setVisible(!device.isCard());
             List<ChildNumber> defaultDerivation = wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
             setContent(getDerivationEntry(keyDerivation == null ? defaultDerivation : keyDerivation.getDerivation()));
         } else if(deviceOperation.equals(DeviceOperation.SIGN)) {

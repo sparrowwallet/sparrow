@@ -1068,11 +1068,14 @@ public class AppController implements Initializable {
     }
 
     public void importWallet(ActionEvent event) {
-        WalletImportDialog dlg = new WalletImportDialog();
+        List<WalletForm> selectedWalletForms = getSelectedWalletForms();
+        WalletImportDialog dlg = new WalletImportDialog(selectedWalletForms);
         Optional<Wallet> optionalWallet = dlg.showAndWait();
         if(optionalWallet.isPresent()) {
             Wallet wallet = optionalWallet.get();
-            addImportedWallet(wallet);
+            if(selectedWalletForms.isEmpty() || wallet != selectedWalletForms.get(0).getWallet()) {
+                addImportedWallet(wallet);
+            }
         }
     }
 
@@ -1651,6 +1654,19 @@ public class AppController implements Initializable {
         }
 
         return null;
+    }
+
+    public List<WalletForm> getSelectedWalletForms() {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        if(selectedTab != null) {
+            TabData tabData = (TabData) selectedTab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                TabPane subTabs = (TabPane) selectedTab.getContent();
+                return subTabs.getTabs().stream().map(subTab -> ((WalletTabData) subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
+            }
+        }
+
+        return Collections.emptyList();
     }
 
     private void addTransactionTab(String name, File file, String string) throws ParseException, PSBTParseException, TransactionParseException {

@@ -488,7 +488,8 @@ public class WalletForm {
     public void walletLabelsChanged(WalletEntryLabelsChangedEvent event) {
         if(event.toThisOrNested(wallet)) {
             Map<Entry, Entry> labelChangedEntries = new LinkedHashMap<>();
-            for(Entry entry : event.getEntries()) {
+            Collection<Entry> entries = event.propagate() ? event.getEntries() : Collections.emptyList();
+            for(Entry entry : entries) {
                 if(entry.getLabel() != null && !entry.getLabel().isEmpty()) {
                     if(entry instanceof TransactionEntry transactionEntry) {
                         for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {

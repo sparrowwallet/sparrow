@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.event.WalletImportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.wallet.WalletForm;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
@@ -16,6 +17,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.glyphfont.Glyph;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -24,7 +26,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
     private final Accordion importAccordion;
     private final Button scanButton;
 
-    public WalletImportDialog() {
+    public WalletImportDialog(List<WalletForm> selectedWalletForms) {
         EventManager.get().register(this);
         setOnCloseRequest(event -> {
             EventManager.get().unregister(this);
@@ -57,7 +59,10 @@ public class WalletImportDialog extends Dialog<Wallet> {
             }
         }
 
-        List<WalletImport> walletImporters = List.of(new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new KeystoneMultisig(), new Descriptor(), new SpecterDesktop(), new BlueWalletMultisig(), new Sparrow());
+        List<WalletImport> walletImporters = new ArrayList<>(List.of(new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new KeystoneMultisig(), new Descriptor(), new SpecterDesktop(), new BlueWalletMultisig(), new Sparrow()));
+        if(!selectedWalletForms.isEmpty()) {
+            walletImporters.add(new WalletLabels(selectedWalletForms));
+        }
         for(WalletImport importer : walletImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 FileWalletImportPane importPane = new FileWalletImportPane(importer);
