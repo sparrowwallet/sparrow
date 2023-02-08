@@ -418,6 +418,9 @@ public class SettingsController extends WalletFormController implements Initiali
             Wallet editedWallet = editedOutputDescriptor.toWallet();
 
             editedWallet.setName(getWalletForm().getWallet().getName());
+            editedWallet.setBirthDate(getWalletForm().getWallet().getBirthDate());
+            editedWallet.setGapLimit(getWalletForm().getWallet().getGapLimit());
+            editedWallet.setWatchLast(getWalletForm().getWallet().getWatchLast());
             keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
             totalKeystores.unbind();
             totalKeystores.setValue(0);

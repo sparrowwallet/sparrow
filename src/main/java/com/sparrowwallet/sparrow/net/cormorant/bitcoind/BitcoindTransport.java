@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Server;
 import org.slf4j.Logger;
@@ -34,7 +35,7 @@ public class BitcoindTransport implements Transport {
 
     public BitcoindTransport(Server bitcoindServer, String bitcoindWallet, File bitcoindDir) {
         this(bitcoindServer, bitcoindWallet);
-        this.cookieFile = new File(bitcoindDir, COOKIE_FILENAME);
+        this.cookieFile = new File(getCookieDir(bitcoindDir), COOKIE_FILENAME);
     }
 
     private BitcoindTransport(Server bitcoindServer, String bitcoindWallet) {
@@ -116,6 +117,18 @@ public class BitcoindTransport implements Transport {
         }
 
         return bitcoindAuthEncoded;
+    }
+
+    private static File getCookieDir(File bitcoindDir) {
+        if(Network.get() == Network.TESTNET && !bitcoindDir.getName().contains("testnet")) {
+            return new File(bitcoindDir, "testnet3");
+        } else if(Network.get() == Network.REGTEST && !bitcoindDir.getName().contains("regtest")) {
+            return new File(bitcoindDir, "regtest");
+        } else if(Network.get() == Network.SIGNET && !bitcoindDir.getName().contains("signet")) {
+            return new File(bitcoindDir, "signet");
+        }
+
+        return bitcoindDir;
     }
 
     private SSLSocketFactory getTrustAllSocketFactory() {
