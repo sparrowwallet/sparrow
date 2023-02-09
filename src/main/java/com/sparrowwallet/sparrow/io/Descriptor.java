@@ -7,7 +7,8 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Descriptor implements WalletImport, WalletExport {
 
@@ -24,10 +25,29 @@ public class Descriptor implements WalletImport, WalletExport {
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
         try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+            bufferedWriter.write("# Receive and change descriptor (BIP389):");
+            bufferedWriter.newLine();
+
             OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null);
-            String outputDescriptorString = outputDescriptor.toString(true);
-            outputStream.write(outputDescriptorString.getBytes(StandardCharsets.UTF_8));
-            outputStream.flush();
+            bufferedWriter.write(outputDescriptor.toString(true));
+            bufferedWriter.newLine();
+            bufferedWriter.newLine();
+            bufferedWriter.newLine();
+
+            bufferedWriter.write("# Receive descriptor (Bitcoin Core):");
+            bufferedWriter.newLine();
+            OutputDescriptor receiveDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE, null);
+            bufferedWriter.write(receiveDescriptor.toString(true));
+            bufferedWriter.newLine();
+            bufferedWriter.newLine();
+            bufferedWriter.write("# Change descriptor (Bitcoin Core):");
+            bufferedWriter.newLine();
+            OutputDescriptor changeDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE, null);
+            bufferedWriter.write(changeDescriptor.toString(true));
+            bufferedWriter.newLine();
+
+            bufferedWriter.flush();
         } catch(Exception e) {
             throw new ExportException("Error writing output descriptor", e);
         }
@@ -77,12 +97,41 @@ public class Descriptor implements WalletImport, WalletExport {
                 //ignore
             }
 
-            String outputDescriptor = new BufferedReader(new InputStreamReader(secondClone, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
-            OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(outputDescriptor.trim());
-            return descriptor.toWallet();
+            List<String> paragraphs = getParagraphs(secondClone);
+            for(String paragraph : paragraphs) {
+                OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(paragraph);
+                return descriptor.toWallet();
+            }
+
+            throw new ImportException("Could not find an output descriptor in the file");
         } catch(Exception e) {
             throw new ImportException("Error importing output descriptor", e);
         }
+    }
+
+    private static List<String> getParagraphs(InputStream inputStream) {
+        List<String> paragraphs = new ArrayList<>();
+        StringBuilder paragraph = new StringBuilder();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        for(String line : reader.lines().map(String::trim).toArray(String[]::new)) {
+            if(line.isEmpty()) {
+                if(paragraph.length() > 0) {
+                    paragraphs.add(paragraph.toString());
+                    paragraph.setLength(0);
+                }
+            } else if(line.startsWith("#")) {
+                continue;
+            } else {
+                paragraph.append(line);
+            }
+        }
+
+        if(paragraph.length() > 0) {
+            paragraphs.add(paragraph.toString());
+        }
+
+        return paragraphs;
     }
 
     @Override
