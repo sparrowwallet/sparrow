@@ -386,7 +386,7 @@ public class AppController implements Initializable {
         configureSwitchServer();
         setServerType(Config.get().getServerType());
         serverToggle.setSelected(isConnected());
-        serverToggle.setDisable(Config.get().getServerType() == null);
+        serverToggle.setDisable(!Config.get().hasServer());
         onlineProperty().bindBidirectional(serverToggle.selectedProperty());
         onlineProperty().addListener(new WeakChangeListener<>(serverToggleOnlineListener));
         serverToggle.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
@@ -1248,6 +1248,7 @@ public class AppController implements Initializable {
         PreferencesDialog preferencesDialog = new PreferencesDialog(preferenceGroup);
         preferencesDialog.showAndWait();
         configureSwitchServer();
+        serverToggle.setDisable(!Config.get().hasServer());
     }
 
     public void signVerifyMessage(ActionEvent event) {
@@ -2091,7 +2092,7 @@ public class AppController implements Initializable {
             serverToggle.getStyleClass().remove("core-server");
         }
 
-        serverToggle.setDisable(false);
+        serverToggle.setDisable(!Config.get().hasServer());
     }
 
     public void setTheme(ActionEvent event) {

@@ -748,11 +748,13 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         String hostAsString = getHost(coreHost.getText());
         Integer portAsInteger = getPort(corePort.getText());
-        if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
+        if(hostAsString != null && !hostAsString.isEmpty() && portAsInteger != null && isValidPort(portAsInteger)) {
             Protocol protocol = portAsInteger == Protocol.HTTPS.getDefaultPort() ? Protocol.HTTPS : Protocol.HTTP;
             config.setCoreServer(new Server(protocol.toUrlString(hostAsString, portAsInteger)));
-        } else if(hostAsString != null) {
+        } else if(hostAsString != null && !hostAsString.isEmpty()) {
             config.setCoreServer(new Server(Protocol.HTTP.toUrlString(hostAsString)));
+        } else {
+            config.setCoreServer(null);
         }
     }
 
@@ -781,10 +783,12 @@ public class ServerPreferencesController extends PreferencesDetailController {
 
         String hostAsString = getHost(electrumHost.getText());
         Integer portAsInteger = getPort(electrumPort.getText());
-        if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
+        if(hostAsString != null && !hostAsString.isEmpty() && portAsInteger != null && isValidPort(portAsInteger)) {
             config.setElectrumServer(new Server(getProtocol().toUrlString(hostAsString, portAsInteger)));
-        } else if(hostAsString != null) {
+        } else if(hostAsString != null && !hostAsString.isEmpty()) {
             config.setElectrumServer(new Server(getProtocol().toUrlString(hostAsString)));
+        } else {
+            config.setElectrumServer(null);
         }
     }
 

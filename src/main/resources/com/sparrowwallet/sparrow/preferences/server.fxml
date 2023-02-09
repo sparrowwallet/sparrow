@@ -154,7 +154,7 @@
                     <ComboBox fx:id="recentElectrumServers" />
                     <ComboBoxTextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)" comboProperty="$recentElectrumServers" />
                 </StackPane>
-                <TextField fx:id="electrumPort" promptText="e.g. 50002" maxWidth="120" />
+                <TextField fx:id="electrumPort" promptText="e.g. 50001" maxWidth="120" />
             </Field>
             <Field text="Use SSL:">
                 <UnlabeledToggleSwitch fx:id="electrumUseSsl"/>
