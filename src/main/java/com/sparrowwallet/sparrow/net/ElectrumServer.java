@@ -69,7 +69,7 @@ public class ElectrumServer {
 
     private static Server coreElectrumServer;
 
-    private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed:[^\"]*)\".*");
+    private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed[:.][^\"]*)\".*");
 
     private static synchronized CloseableTransport getTransport() throws ServerException {
         if(transport == null) {
@@ -1141,6 +1141,10 @@ public class ElectrumServer {
                                                 throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
                                             } else if(bwtStartException.getMessage().contains("Upgrade Bitcoin Core to v24 or later for Taproot wallet support")) {
                                                 throw new ServerException(bwtStartException.getMessage());
+                                            } else if(bwtStartException.getMessage().contains("Wallet file verification failed. Refusing to load database.")) {
+                                                throw new ServerException("Bitcoin Core wallet file verification failed. Try restarting Bitcoin Core.");
+                                            } else if(bwtStartException.getMessage().contains("This error could be caused by pruning or data corruption")) {
+                                                throw new ServerException("Scanning failed. Bitcoin Core is pruned to a date after the wallet birthday.");
                                             } else if(walletLoadingMatcher.matches() && walletLoadingMatcher.group(1) != null) {
                                                 throw new ServerException(walletLoadingMatcher.group(1));
                                             }
