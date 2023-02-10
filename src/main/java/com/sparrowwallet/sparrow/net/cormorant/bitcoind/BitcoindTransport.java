@@ -4,6 +4,7 @@ import com.github.arteam.simplejsonrpc.client.Transport;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Server;
+import com.sparrowwallet.sparrow.net.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,6 +24,7 @@ public class BitcoindTransport implements Transport {
     private static final Logger log = LoggerFactory.getLogger(BitcoindTransport.class);
     public static final String COOKIE_FILENAME = ".cookie";
 
+    private final Server bitcoindServer;
     private URL bitcoindUrl;
     private File cookieFile;
     private Long cookieFileTimestamp;
@@ -39,6 +41,7 @@ public class BitcoindTransport implements Transport {
     }
 
     private BitcoindTransport(Server bitcoindServer, String bitcoindWallet) {
+        this.bitcoindServer = bitcoindServer;
         try {
             this.bitcoindUrl = new URL(bitcoindServer.getUrl() + "/wallet/" + bitcoindWallet);
         } catch(MalformedURLException e) {
@@ -49,7 +52,7 @@ public class BitcoindTransport implements Transport {
     @Override
     public String pass(String request) throws IOException {
         Proxy proxy = AppServices.getProxy();
-        HttpURLConnection connection = proxy == null ? (HttpURLConnection)bitcoindUrl.openConnection() : (HttpURLConnection)bitcoindUrl.openConnection(proxy);
+        HttpURLConnection connection = proxy != null && Protocol.isOnionAddress(bitcoindServer) ? (HttpURLConnection)bitcoindUrl.openConnection(proxy) : (HttpURLConnection)bitcoindUrl.openConnection();
 
         if(connection instanceof HttpsURLConnection httpsURLConnection) {
             SSLSocketFactory sslSocketFactory = getTrustAllSocketFactory();
