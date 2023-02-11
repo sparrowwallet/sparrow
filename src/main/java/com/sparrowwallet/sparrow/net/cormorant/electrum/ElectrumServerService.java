@@ -150,7 +150,7 @@ public class ElectrumServerService {
                 return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, true);
             } catch(JsonRpcException e) {
                 try {
-                    Map<String, Object> txInfo = bitcoindClient.getBitcoindService().getTransaction(tx_hash, true);
+                    Map<String, Object> txInfo = bitcoindClient.getBitcoindService().getTransaction(tx_hash, true, true);
                     Object decoded = txInfo.get("decoded");
                     if(decoded instanceof Map<?, ?>) {
                         Map<String, Object> decodedMap = (Map<String, Object>)decoded;
@@ -172,7 +172,7 @@ public class ElectrumServerService {
             }
         } else {
             try {
-                return bitcoindClient.getBitcoindService().getTransaction(tx_hash, false).get("hex");
+                return bitcoindClient.getBitcoindService().getTransaction(tx_hash, true, false).get("hex");
             } catch(JsonRpcException e) {
                 try {
                     return bitcoindClient.getBitcoindService().getRawTransaction(tx_hash, false);

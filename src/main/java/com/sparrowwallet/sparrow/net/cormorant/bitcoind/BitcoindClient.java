@@ -444,7 +444,7 @@ public class BitcoindClient {
 
     private String getTransaction(String txid) {
         try {
-            return getBitcoindService().getTransaction(txid, false).get("hex").toString();
+            return getBitcoindService().getTransaction(txid, true, false).get("hex").toString();
         } catch(JsonRpcException e) {
             return getBitcoindService().getRawTransaction(txid, false).toString();
         }

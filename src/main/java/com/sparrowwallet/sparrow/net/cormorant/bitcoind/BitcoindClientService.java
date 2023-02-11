@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 
+import com.github.arteam.simplejsonrpc.client.JsonRpcParams;
+import com.github.arteam.simplejsonrpc.client.ParamsType;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @JsonRpcService
+@JsonRpcParams(ParamsType.ARRAY)
 public interface BitcoindClientService {
     @JsonRpcMethod("uptime")
     long uptime();
@@ -44,7 +47,7 @@ public interface BitcoindClientService {
     Object getRawTransaction(@JsonRpcParam("txid") String txid, @JsonRpcParam("verbose") boolean verbose);
 
     @JsonRpcMethod("gettransaction")
-    Map<String, Object> getTransaction(@JsonRpcParam("txid") String txid, @JsonRpcParam("verbose") boolean verbose);
+    Map<String, Object> getTransaction(@JsonRpcParam("txid") String txid, @JsonRpcParam("include_watchonly") boolean includeWatchOnly, @JsonRpcParam("verbose") boolean verbose);
 
     @JsonRpcMethod("getmempoolentry")
     MempoolEntry getMempoolEntry(@JsonRpcParam("txid") String txid);
