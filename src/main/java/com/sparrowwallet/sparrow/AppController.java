@@ -1117,7 +1117,7 @@ public class AppController implements Initializable {
     }
 
     private void addImportedWallet(Wallet wallet) {
-        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName());
+        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getBirthDate());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
         if(optNameAndBirthDate.isPresent()) {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();

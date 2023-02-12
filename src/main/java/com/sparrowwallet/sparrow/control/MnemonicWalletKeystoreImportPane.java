@@ -10,9 +10,11 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletImportEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.sparrow.io.KeystoreMnemonicImport;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -135,7 +137,10 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
                 EventManager.get().post(new WalletImportEvent(optWallet.get()));
             } else {
                 discoverButton.setDisable(false);
-                Optional<ButtonType> optButtonType = AppServices.showErrorDialog("No existing wallet found", "Could not find a wallet with existing transactions using this mnemonic. Import this wallet anyway?", ButtonType.NO, ButtonType.YES);
+                Optional<ButtonType> optButtonType = AppServices.showErrorDialog("No existing wallet found",
+                        Config.get().getServerType() == ServerType.BITCOIN_CORE ? "The configured server type is Bitcoin Core, which does not support wallet discovery.\n\n" +
+                                "You can however import this wallet and scan the blockchain by supplying a start date. Do you want to import this wallet?" :
+                                "Could not find a wallet with existing transactions using this mnemonic. Import this wallet anyway?", ButtonType.NO, ButtonType.YES);
                 if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
                     setContent(getScriptTypeEntry());
                     setExpanded(true);
@@ -183,7 +188,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         scriptTypeComboBox.setMaxWidth(170);
 
         HelpLabel helpLabel = new HelpLabel();
-        helpLabel.setHelpText("P2WPKH is a Native Segwit type and is usually the best choice for new wallets.\nP2SH-P2WPKH is a Wrapped Segwit type and is a reasonable choice for the widest compatibility.\nP2PKH is a Legacy type and should be avoided for new wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
+        helpLabel.setHelpText("Native Segwit is usually the best choice for new wallets.\nTaproot is a new type useful for specific needs.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
         fieldBox.getChildren().addAll(scriptTypeComboBox, helpLabel);
 
         Region region = new Region();

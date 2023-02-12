@@ -34,6 +34,14 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
     }
 
     public WalletNameDialog(String initialName) {
+        this(initialName, false);
+    }
+
+    public WalletNameDialog(String initialName, boolean hasExistingTransactions) {
+        this(initialName, hasExistingTransactions, null);
+    }
+
+    public WalletNameDialog(String initialName, boolean hasExistingTransactions, Date startDate) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         boolean requestBirthDate = (Config.get().getServerType() == null || Config.get().getServerType() == ServerType.BITCOIN_CORE);
@@ -91,6 +99,12 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
 
         if(requestBirthDate) {
             content.getChildren().add(existingBox);
+            if(hasExistingTransactions) {
+                existingCheck.setSelected(true);
+            }
+            if(startDate != null) {
+                existingPicker.setValue(startDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate());
+            }
         }
 
         dialogPane.setContent(content);
