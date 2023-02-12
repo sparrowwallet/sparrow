@@ -43,7 +43,11 @@ public class BitcoindTransport implements Transport {
     private BitcoindTransport(Server bitcoindServer, String bitcoindWallet) {
         this.bitcoindServer = bitcoindServer;
         try {
-            this.bitcoindUrl = new URL(bitcoindServer.getUrl() + "/wallet/" + bitcoindWallet);
+            String serverUrl = bitcoindServer.getUrl();
+            if(!bitcoindServer.getHostAndPort().hasPort()) {
+                serverUrl += ":" + Network.get().getDefaultPort();
+            }
+            this.bitcoindUrl = new URL(serverUrl + "/wallet/" + bitcoindWallet);
         } catch(MalformedURLException e) {
             log.error("Malformed Bitcoin Core RPC URL", e);
         }

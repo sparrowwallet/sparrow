@@ -70,6 +70,14 @@ public class Server {
         return url + (alias == null ? "" : "|" + alias);
     }
 
+    public boolean portEquals(String port) {
+        if(port == null) {
+            return !getHostAndPort().hasPort();
+        }
+
+        return port.equals(getHostAndPort().hasPort() ? Integer.toString(getHostAndPort().getPort()) : "");
+    }
+
     public static Server fromString(String server) {
         String[] parts = server.split("\\|");
         if(parts.length >= 2) {

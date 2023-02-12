@@ -243,6 +243,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
         proxyHost.textProperty().addListener(getProxyListener(config));
         proxyPort.textProperty().addListener(getProxyListener(config));
 
+        corePort.setPromptText("e.g. " + Network.get().getDefaultPort());
         coreDataDirField.managedProperty().bind(coreDataDirField.visibleProperty());
         coreUserPassField.managedProperty().bind(coreUserPassField.visibleProperty());
         coreUserPassField.visibleProperty().bind(coreDataDirField.visibleProperty().not());
@@ -734,6 +735,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private ChangeListener<String> getBitcoinCoreListener(Config config) {
         return (observable, oldValue, newValue) -> {
             Server existingServer = config.getRecentCoreServers().stream().filter(server -> coreHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+            if(existingServer != null && !existingServer.portEquals(corePort.getText())) {
+                coreHost.setText(existingServer.getHost());
+                existingServer = null;
+            }
             coreHost.setLeft(existingServer == null ? null : getGlyph(FontAwesome5.Glyph.TAG, null));
             setCoreServerInConfig(config);
         };
@@ -769,6 +774,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private ChangeListener<String> getElectrumServerListener(Config config) {
         return (observable, oldValue, newValue) -> {
             Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+            if(existingServer != null && !existingServer.portEquals(electrumPort.getText())) {
+                electrumHost.setText(existingServer.getHost());
+                existingServer = null;
+            }
             electrumHost.setLeft(existingServer == null ? null : getGlyph(FontAwesome5.Glyph.TAG, null));
             setElectrumServerInConfig(config);
         };

@@ -146,6 +146,9 @@ public class Bwt {
         Config config = Config.get();
         if(config.getCoreServer() != null) {
             bwtConfig.bitcoindUrl = config.getCoreServer().getUrl();
+            if(!config.getCoreServer().getHostAndPort().hasPort()) {
+                bwtConfig.bitcoindUrl = config.getCoreServer().getUrl() + ":" + Network.get().getDefaultPort();
+            }
             try {
                 Protocol protocol = config.getCoreServer().getProtocol();
                 HostAndPort hostAndPort = protocol.getServerHostAndPort(bwtConfig.bitcoindUrl);
