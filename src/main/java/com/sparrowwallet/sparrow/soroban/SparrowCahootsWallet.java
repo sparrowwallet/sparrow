@@ -62,6 +62,10 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
         addUtxo(account, cahootsUtxo);
     }
 
+    public Wallet getWallet() {
+        return wallet;
+    }
+
     public int getAccount() {
         return account;
     }
