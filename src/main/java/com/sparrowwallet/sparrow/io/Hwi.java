@@ -278,7 +278,7 @@ public class Hwi {
         } catch(IOException e) {
             throw new SignTransactionException("Could not sign PSBT", e);
         } catch(PSBTParseException e) {
-            throw new SignTransactionException("Could not parse signed PSBT", e);
+            throw new SignTransactionException("Could not parse signed PSBT" + (e.getMessage() != null ? ": " + e.getMessage() : ""), e);
         } finally {
             isPromptActive = false;
         }

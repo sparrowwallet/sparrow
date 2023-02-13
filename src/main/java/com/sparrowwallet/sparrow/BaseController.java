@@ -25,7 +25,7 @@ public abstract class BaseController {
         scriptArea.setMouseOverTextDelay(Duration.ofMillis(150));
         scriptArea.addEventHandler(MouseOverTextEvent.MOUSE_OVER_TEXT_BEGIN, e -> {
             TwoDimensional.Position position = scriptArea.getParagraph(0).getStyleSpans().offsetToPosition(e.getCharacterIndex(), Backward);
-            if(position.getMajor() % 2 == 0) {
+            if(position.getMajor() % 2 == 0 && scriptArea.getScript().getChunks().size() > position.getMajor() / 2) {
                 ScriptChunk hoverChunk = scriptArea.getScript().getChunks().get(position.getMajor()/2);
                 if(!hoverChunk.isOpCode()) {
                     Point2D pos = e.getScreenPosition();

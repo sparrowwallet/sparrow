@@ -58,6 +58,8 @@ public class ScriptArea extends CodeArea {
                     append("<signature" + signatureCount++ + ">", "script-signature");
                 } else if(chunk.isPubKey()) {
                     append("<pubkey" + pubKeyCount++ + ">", "script-pubkey");
+                } else if(chunk.isString()) {
+                    append(chunk.toString(), "script-other");
                 } else if(chunk.isScript()) {
                     Script nestedScript = chunk.getScript();
                     if (nestedScript.equals(redeemScript)) {
