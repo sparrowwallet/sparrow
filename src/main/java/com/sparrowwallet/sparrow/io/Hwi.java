@@ -290,9 +290,7 @@ public class Hwi {
         try {
             ProcessBuilder processBuilder = new ProcessBuilder(command);
             process = processBuilder.start();
-            try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
-                return CharStreams.toString(reader);
-            }
+            return getProcessOutput(process);
         } finally {
             deleteExtractionOnFailure(process, start);
         }
@@ -318,12 +316,28 @@ public class Hwi {
                 writer.flush();
             }
 
-            try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
-                return CharStreams.toString(reader);
-            }
+            return getProcessOutput(process);
         } finally {
             deleteExtractionOnFailure(process, start);
         }
+    }
+
+    private String getProcessOutput(Process process) throws IOException {
+        String output;
+        try(InputStreamReader reader = new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8)) {
+            output = CharStreams.toString(reader);
+        }
+
+        if(output.isEmpty() && process.getErrorStream() != null) {
+            try(InputStreamReader reader = new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8)) {
+                String errorOutput = CharStreams.toString(reader);
+                if(!errorOutput.isEmpty()) {
+                    throw new IOException(errorOutput);
+                }
+            }
+        }
+
+        return output;
     }
 
     private synchronized File getHwiExecutable(Command command) {
