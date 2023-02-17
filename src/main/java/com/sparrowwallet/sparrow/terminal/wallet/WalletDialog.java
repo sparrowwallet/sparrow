@@ -16,10 +16,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.UnitFormat;
-import com.sparrowwallet.sparrow.event.ChildWalletsAddedEvent;
-import com.sparrowwallet.sparrow.event.StorageEvent;
-import com.sparrowwallet.sparrow.event.TimedEvent;
-import com.sparrowwallet.sparrow.event.WalletHistoryClearedEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
@@ -151,6 +148,7 @@ public class WalletDialog extends DialogWindow {
                 if(!storage.isPersisted(childWallet)) {
                     try {
                         storage.saveWallet(childWallet);
+                        EventManager.get().post(new NewChildWalletSavedEvent(storage, masterWallet, childWallet));
                     } catch(Exception e) {
                         log.error("Error saving wallet", e);
                         showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());

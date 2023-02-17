@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.terminal.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
@@ -21,8 +22,8 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.wallet.Function;
+import com.sparrowwallet.sparrow.wallet.SettingsWalletForm;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -274,6 +275,13 @@ public class SettingsDialog extends WalletDialog {
 
         lines.add(text);
         return lines;
+    }
+
+    @Subscribe
+    public void newChildWalletSaved(NewChildWalletSavedEvent event) {
+        if(event.getMasterWalletId().equals(getWalletForm().getMasterWalletId())) {
+            ((SettingsWalletForm)getWalletForm()).childWalletSaved(event.getChildWallet());
+        }
     }
 
     public enum PasswordRequirement {

@@ -631,6 +631,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 if(!storage.isPersisted(childWallet)) {
                     try {
                         storage.saveWallet(childWallet);
+                        EventManager.get().post(new NewChildWalletSavedEvent(storage, masterWallet, childWallet));
                     } catch(Exception e) {
                         log.error("Error saving wallet", e);
                         AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
@@ -715,6 +716,13 @@ public class SettingsController extends WalletFormController implements Initiali
     public void childWalletsAdded(ChildWalletsAddedEvent event) {
         if(event.getMasterWalletId().equals(walletForm.getWalletId())) {
             setInputFieldsDisabled(true);
+        }
+    }
+
+    @Subscribe
+    public void newChildWalletSaved(NewChildWalletSavedEvent event) {
+        if(event.getMasterWalletId().equals(walletForm.getMasterWalletId())) {
+            ((SettingsWalletForm)walletForm).childWalletSaved(event.getChildWallet());
         }
     }
 

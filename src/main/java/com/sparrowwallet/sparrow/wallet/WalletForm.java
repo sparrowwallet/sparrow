@@ -189,6 +189,7 @@ public class WalletForm {
                         if(!storage.isPersisted(addedWallet)) {
                             try {
                                 storage.saveWallet(addedWallet);
+                                EventManager.get().post(new NewChildWalletSavedEvent(storage, wallet, addedWallet));
                             } catch(Exception e) {
                                 log.error("Error saving wallet", e);
                                 AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());

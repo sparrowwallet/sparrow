@@ -1196,6 +1196,7 @@ public class SendController extends WalletFormController implements Initializabl
                 if(!storage.isPersisted(childWallet)) {
                     try {
                         storage.saveWallet(childWallet);
+                        EventManager.get().post(new NewChildWalletSavedEvent(storage, masterWallet, childWallet));
                     } catch(Exception e) {
                         AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
                     }
@@ -1381,6 +1382,7 @@ public class SendController extends WalletFormController implements Initializabl
             if(!storage.isPersisted(addedWallet)) {
                 try {
                     storage.saveWallet(addedWallet);
+                    EventManager.get().post(new NewChildWalletSavedEvent(storage, masterWallet, addedWallet));
                 } catch(Exception e) {
                     log.error("Error saving wallet", e);
                     AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
