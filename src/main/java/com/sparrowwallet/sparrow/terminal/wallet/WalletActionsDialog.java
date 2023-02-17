@@ -4,6 +4,7 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.wallet.Function;
 
@@ -48,7 +49,7 @@ public class WalletActionsDialog extends DialogWindow {
             SettingsDialog settingsDialog = getWalletData().getSettingsDialog();
             settingsDialog.showDialog(SparrowTerminal.get().getGui());
         });
-        if(getWalletData().getWalletForm().getWallet().isEncrypted()) {
+        if(!Storage.NO_PASSWORD_KEY.equals(getWalletData().getWalletForm().getStorage().getEncryptionPubKey())) {
             actions.addItem("Lock", () -> {
                 close();
                 SparrowTerminal.get().lockWallet(getWalletData().getWalletForm().getStorage());
