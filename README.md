@@ -16,7 +16,7 @@ or for those without SSH credentials:
 
 `git clone --recursive https://github.com/sparrowwallet/sparrow.git`
 
-In order to build, Sparrow requires Java 17 or higher to be installed. 
+In order to build, Sparrow requires Java 18 or higher to be installed. 
 The release binaries are built with [Eclipse Temurin 18.0.1+10](https://github.com/adoptium/temurin18-binaries/releases/tag/jdk-18.0.1%2B10).
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
@@ -44,7 +44,7 @@ If you prefer to run Sparrow directly from source, it can be launched from withi
 
 `./sparrow`
 
-Java 17 or higher must be installed. 
+Java 18 or higher must be installed. 
 
 ## Configuration
 
