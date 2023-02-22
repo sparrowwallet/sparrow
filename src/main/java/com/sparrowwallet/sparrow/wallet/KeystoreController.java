@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.*;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -55,6 +56,9 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @FXML
     private Label type;
+
+    @FXML
+    private Button exportButton;
 
     @FXML
     private Button viewSeedButton;
@@ -129,6 +133,7 @@ public class KeystoreController extends WalletFormController implements Initiali
            }
         }
 
+        exportButton.managedProperty().bind(exportButton.visibleProperty());
         viewSeedButton.managedProperty().bind(viewSeedButton.visibleProperty());
         viewKeyButton.managedProperty().bind(viewKeyButton.visibleProperty());
         changePinButton.managedProperty().bind(changePinButton.visibleProperty());
@@ -136,7 +141,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         displayXpubQR.managedProperty().bind(displayXpubQR.visibleProperty());
         displayXpubQR.visibleProperty().bind(scanXpubQR.visibleProperty().not());
 
-        updateType();
+        updateType(false);
 
         label.setText(keystore.getLabel());
 
@@ -280,9 +285,10 @@ public class KeystoreController extends WalletFormController implements Initiali
         ));
     }
 
-    private void updateType() {
+    private void updateType(boolean showExport) {
         type.setText(getTypeLabel(keystore));
         type.setGraphic(getTypeIcon(keystore));
+        exportButton.setVisible(showExport && getWalletForm().getWallet().getPolicyType() == PolicyType.MULTI);
         viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasSeed());
         viewKeyButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasMasterPrivateExtendedKey());
         changePinButton.setVisible(keystore.getWalletModel().isCard());
@@ -309,9 +315,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     private String getTypeLabel(Keystore keystore) {
         switch (keystore.getSource()) {
             case HW_USB:
-                return "Connected Hardware Wallet (" + keystore.getWalletModel().toDisplayString() + ")";
+                return "Connected Wallet (" + keystore.getWalletModel().toDisplayString() + ")";
             case HW_AIRGAPPED:
-                return "Airgapped Hardware Wallet (" + keystore.getWalletModel().toDisplayString() + ")";
+                return "Airgapped Wallet (" + keystore.getWalletModel().toDisplayString() + ")";
             case SW_SEED:
                 return "Software Wallet";
             case SW_WATCH:
@@ -367,7 +373,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             keystore.setSeed(importedKeystore.getSeed());
             keystore.setBip47ExtendedPrivateKey(importedKeystore.getBip47ExtendedPrivateKey());
 
-            updateType();
+            updateType(true);
             label.setText(keystore.getLabel());
             fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
@@ -379,6 +385,11 @@ public class KeystoreController extends WalletFormController implements Initiali
                 xpub.setText("");
             }
         }
+    }
+
+    public void export(ActionEvent event) {
+        KeystoreExportDialog keystoreExportDialog = new KeystoreExportDialog(keystore);
+        keystoreExportDialog.showAndWait();
     }
 
     public void showPrivate(ActionEvent event) {
@@ -612,6 +623,13 @@ public class KeystoreController extends WalletFormController implements Initiali
                     label.textProperty().addListener(labelChangeListener);
                 }
             }
+        }
+    }
+
+    @Subscribe
+    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
+        if(event.getWalletId().equals(walletForm.getWalletId())) {
+            exportButton.setVisible(false);
         }
     }
 }

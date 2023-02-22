@@ -301,19 +301,28 @@ public class Hwi {
         Process process = null;
         try {
             List<String> processArguments = new ArrayList<>(arguments);
-            processArguments.add("--stdin");
+
+            boolean useStdin = Arrays.stream(commandArguments).noneMatch(arg -> arg.contains("\n"));
+            if(useStdin) {
+                processArguments.add("--stdin");
+            } else {
+                processArguments.add(command.toString());
+                processArguments.addAll(Arrays.asList(commandArguments));
+            }
 
             ProcessBuilder processBuilder = new ProcessBuilder(processArguments);
             process = processBuilder.start();
 
-            try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
-                writer.write(command.toString());
-                for(String commandArgument : commandArguments) {
-                    writer.write(" \"");
-                    writer.write(commandArgument.replace("\\", "\\\\").replace("\"", "\\\""));
-                    writer.write("\"");
+            if(useStdin) {
+                try(BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
+                    writer.write(command.toString());
+                    for(String commandArgument : commandArguments) {
+                        writer.write(" \"");
+                        writer.write(commandArgument.replace("\\", "\\\\").replace("\"", "\\\""));
+                        writer.write("\"");
+                    }
+                    writer.flush();
                 }
-                writer.flush();
             }
 
             return getProcessOutput(process);

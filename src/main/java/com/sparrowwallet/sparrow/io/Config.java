@@ -48,6 +48,7 @@ public class Config {
     private boolean showLoadingLog = true;
     private boolean showAddressTransactionCount = false;
     private boolean showDeprecatedImportExport = false;
+    private boolean signBsmsExports = false;
     private boolean preventSleep = false;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -312,6 +313,15 @@ public class Config {
 
     public void setShowDeprecatedImportExport(boolean showDeprecatedImportExport) {
         this.showDeprecatedImportExport = showDeprecatedImportExport;
+        flush();
+    }
+
+    public boolean isSignBsmsExports() {
+        return signBsmsExports;
+    }
+
+    public void setSignBsmsExports(boolean signBsmsExports) {
+        this.signBsmsExports = signBsmsExports;
         flush();
     }
 

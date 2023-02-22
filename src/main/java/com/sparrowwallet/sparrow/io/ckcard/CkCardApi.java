@@ -23,10 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class CkCardApi extends CardApi {
     private static final Logger log = LoggerFactory.getLogger(CkCardApi.class);
@@ -227,8 +224,18 @@ public class CkCardApi extends CardApi {
     }
 
     String signMessage(String message, ScriptType scriptType, List<ChildNumber> derivation) throws CardException {
-        List<ChildNumber> keystoreDerivation = derivation.subList(0, derivation.size() - 2);
-        List<ChildNumber> subPathDerivation = derivation.subList(derivation.size() - 2, derivation.size());
+        List<ChildNumber> keystoreDerivation;
+        List<ChildNumber> subPathDerivation;
+
+        Optional<ChildNumber> firstUnhardened = derivation.stream().filter(cn -> !cn.isHardened()).findFirst();
+        if(firstUnhardened.isPresent()) {
+            int index = derivation.indexOf(firstUnhardened.get());
+            keystoreDerivation = derivation.subList(0, index);
+            subPathDerivation = derivation.subList(index, derivation.size());
+        } else {
+            keystoreDerivation = derivation;
+            subPathDerivation = Collections.emptyList();
+        }
 
         Keystore cardKeystore = getKeystore();
         KeyDerivation cardKeyDerivation = cardKeystore.getKeyDerivation();
@@ -239,9 +246,15 @@ public class CkCardApi extends CardApi {
                 signingKeystore = getKeystore();
             }
 
-            WalletNode addressNode = new WalletNode(KeyDerivation.writePath(subPathDerivation));
-            ECKey addressPubKey = signingKeystore.getPubKey(addressNode);
-            return addressPubKey.signMessage(message, scriptType, hash -> {
+            ECKey signingPubKey;
+            if(subPathDerivation.isEmpty()) {
+                signingPubKey = signingKeystore.getExtendedPublicKey().getKey();
+            } else {
+                WalletNode addressNode = new WalletNode(KeyDerivation.writePath(subPathDerivation));
+                signingPubKey = signingKeystore.getPubKey(addressNode);
+            }
+
+            return signingPubKey.signMessage(message, scriptType, hash -> {
                 try {
                     CardSign cardSign = cardProtocol.sign(cvc, subPathDerivation, hash);
                     return cardSign.getSignature();

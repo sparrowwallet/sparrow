@@ -215,7 +215,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
 
     private Node getPasswordEntry(File file) {
         CustomPasswordField passwordField = new ViewPasswordField();
-        passwordField.setPromptText("Wallet password");
+        passwordField.setPromptText("Password");
         password.bind(passwordField.textProperty());
         HBox.setHgrow(passwordField, Priority.ALWAYS);
 
