@@ -66,7 +66,7 @@ public class Payjoin {
         try {
             String base64Psbt = psbt.getPublicCopy().toBase64String();
 
-            String appendQuery = "v=1";
+            String appendQuery = "v=1&minfeerate=" + AppServices.getMinimumRelayFeeRate();
             int changeOutputIndex = getChangeOutputIndex();
             long maxAdditionalFeeContribution = 0;
             if(changeOutputIndex > -1) {
