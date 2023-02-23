@@ -9,15 +9,13 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
 
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
+import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.security.SignatureException;
+import java.security.*;
 import java.util.Arrays;
 import java.util.List;
 
@@ -97,60 +95,18 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
     @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
-            try(BufferedReader streamReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-                BufferedReader reader = streamReader;
-                if(password != null) {
-                    byte[] token;
-                    if((password.length() == 16 || password.length() == 32) && Utils.isHex(password)) {
-                        token = Utils.hexToBytes(password);
-                    } else if(Utils.isNumber(password)) {
-                        BigInteger bi = new BigInteger(password);
-                        token = Utils.bigIntegerToBytes(bi, bi.toByteArray().length >= 16 ? 16 : 8);
-                    } else if(password.split(" ").length == 6 || password.split(" ").length == 12) {
-                        List<String> mnemonicWords = Arrays.asList(password.split(" "));
-                        token = Bip39MnemonicCode.INSTANCE.toEntropy(mnemonicWords);
-                    } else {
-                        throw new ImportException("Provided password needs to be in hexadecimal, decimal or mnemonic format.");
-                    }
-
-                    String hex = CharStreams.toString(streamReader).trim();
-                    byte[] data = Utils.hexToBytes(hex);
-                    byte[] mac = Arrays.copyOfRange(data, 0, 32);
-                    byte[] iv = Arrays.copyOfRange(mac, 0, 16);
-                    byte[] ciphertext = Arrays.copyOfRange(data, 32, data.length);
-
-                    Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
-
-                    Pbkdf2KeyDeriver pbkdf2KeyDeriver = new Pbkdf2KeyDeriver(token, 2048, 256);
-                    byte[] key = pbkdf2KeyDeriver.deriveKey("No SPOF").getKeyBytes();
-
-                    Key keySpec = new SecretKeySpec(key, "AES");
-                    IvParameterSpec ivSpec = new IvParameterSpec(iv);
-
-                    cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-                    byte[] plaintext = cipher.doFinal(ciphertext);
-                    String plaintextString = new String(plaintext, StandardCharsets.UTF_8);
-
-                    SecretKeySpec secretKeySpec = new SecretKeySpec(Sha256Hash.hash(key), "HmacSHA256");
-                    Mac hmac = Mac.getInstance("HmacSHA256");
-                    hmac.init(secretKeySpec);
-                    String macData = Utils.bytesToHex(token) + plaintextString;
-                    byte[] calculatedMac = hmac.doFinal(macData.getBytes(StandardCharsets.UTF_8));
-                    if(!Arrays.equals(mac, calculatedMac)) {
-                        throw new ImportException("Message digest authentication failed.");
-                    }
-
-                    reader = new BufferedReader(new StringReader(plaintextString));
-                }
-
-                String header = reader.readLine();
-                String token = reader.readLine();
-                String descriptor = reader.readLine();
-                String label = reader.readLine();
-                String signature = reader.readLine();
-
-                return getKeystore(header, token, descriptor, label, signature);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            if(password != null) {
+                reader = decryptImport(password, reader);
             }
+
+            String header = reader.readLine();
+            String token = reader.readLine();
+            String descriptor = reader.readLine();
+            String label = reader.readLine();
+            String signature = reader.readLine();
+
+            return getKeystore(header, token, descriptor, label, signature);
         } catch(MnemonicException.MnemonicWordException e) {
             throw new ImportException("Error importing BSMS: Invalid mnemonic word " + e.badWord, e);
         } catch(MnemonicException.MnemonicChecksumException e) {
@@ -158,6 +114,50 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
         } catch(Exception e) {
             throw new ImportException("Error importing BSMS", e);
         }
+    }
+
+    private BufferedReader decryptImport(String password, BufferedReader streamReader) throws Exception {
+        byte[] token;
+        if((password.length() == 16 || password.length() == 32) && Utils.isHex(password)) {
+            token = Utils.hexToBytes(password);
+        } else if(Utils.isNumber(password)) {
+            BigInteger bi = new BigInteger(password);
+            token = Utils.bigIntegerToBytes(bi, bi.toByteArray().length >= 16 ? 16 : 8);
+        } else if(password.split(" ").length == 6 || password.split(" ").length == 12) {
+            List<String> mnemonicWords = Arrays.asList(password.split(" "));
+            token = Bip39MnemonicCode.INSTANCE.toEntropy(mnemonicWords);
+        } else {
+            throw new ImportException("Provided password needs to be in hexadecimal, decimal or mnemonic format.");
+        }
+
+        String hex = CharStreams.toString(streamReader).trim();
+        byte[] data = Utils.hexToBytes(hex);
+        byte[] mac = Arrays.copyOfRange(data, 0, 32);
+        byte[] iv = Arrays.copyOfRange(mac, 0, 16);
+        byte[] ciphertext = Arrays.copyOfRange(data, 32, data.length);
+
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+
+        Pbkdf2KeyDeriver pbkdf2KeyDeriver = new Pbkdf2KeyDeriver(token, 2048, 256);
+        byte[] key = pbkdf2KeyDeriver.deriveKey("No SPOF").getKeyBytes();
+
+        Key keySpec = new SecretKeySpec(key, "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(iv);
+
+        cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+        byte[] plaintext = cipher.doFinal(ciphertext);
+        String plaintextString = new String(plaintext, StandardCharsets.UTF_8);
+
+        SecretKeySpec secretKeySpec = new SecretKeySpec(Sha256Hash.hash(key), "HmacSHA256");
+        Mac hmac = Mac.getInstance("HmacSHA256");
+        hmac.init(secretKeySpec);
+        String macData = Utils.bytesToHex(token) + plaintextString;
+        byte[] calculatedMac = hmac.doFinal(macData.getBytes(StandardCharsets.UTF_8));
+        if(!Arrays.equals(mac, calculatedMac)) {
+            throw new ImportException("Message digest authentication failed.");
+        }
+
+        return new BufferedReader(new StringReader(plaintextString));
     }
 
     private Keystore getKeystore(String header, String token, String descriptor, String label, String signature) throws ImportException {
@@ -230,6 +230,10 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            if(password != null) {
+                reader = decryptImport(password, reader);
+            }
+
             String header = reader.readLine();
             String descriptor = reader.readLine();
             String paths = reader.readLine();
