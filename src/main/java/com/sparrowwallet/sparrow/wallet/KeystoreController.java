@@ -141,7 +141,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         displayXpubQR.managedProperty().bind(displayXpubQR.visibleProperty());
         displayXpubQR.visibleProperty().bind(scanXpubQR.visibleProperty().not());
 
-        updateType(false);
+        updateType(keystore.isValid() && !getWalletForm().getWallet().isValid());
 
         label.setText(keystore.getLabel());
 
@@ -354,7 +354,7 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     private void launchImportDialog(KeystoreSource initialSource) {
-        boolean restrictSource = keystoreSourceToggleGroup.getToggles().stream().anyMatch(toggle -> ((ToggleButton)toggle).isDisabled());
+        boolean restrictSource = keystore.getSource() != KeystoreSource.SW_WATCH && keystoreSourceToggleGroup.getToggles().stream().anyMatch(toggle -> ((ToggleButton)toggle).isDisabled());
         KeyDerivation requiredDerivation = restrictSource ? keystore.getKeyDerivation() : null;
         WalletModel requiredModel = restrictSource ? keystore.getWalletModel() : null;
         KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, requiredDerivation, requiredModel, restrictSource);

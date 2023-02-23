@@ -44,7 +44,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
         if(wallet.getPolicyType() == PolicyType.SINGLE) {
             exporters = List.of(new Electrum(), new ElectrumPersonalServer(), new Descriptor(), new SpecterDesktop(), new Sparrow(), new WalletLabels());
         } else if(wallet.getPolicyType() == PolicyType.MULTI) {
-            exporters = List.of(new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new ElectrumPersonalServer(), new KeystoneMultisig(), new Descriptor(), new JadeMultisig(), new PassportMultisig(), new SpecterDesktop(), new BlueWalletMultisig(), new SpecterDIY(), new Sparrow(), new WalletLabels());
+            exporters = List.of(new Bip129(), new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new ElectrumPersonalServer(), new KeystoneMultisig(), new Descriptor(), new JadeMultisig(), new PassportMultisig(), new SpecterDesktop(), new BlueWalletMultisig(), new SpecterDIY(), new Sparrow(), new WalletLabels());
         } else {
             throw new UnsupportedOperationException("Cannot export wallet with policy type " + wallet.getPolicyType());
         }

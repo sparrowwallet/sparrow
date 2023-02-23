@@ -416,22 +416,26 @@ public class SettingsController extends WalletFormController implements Initiali
         try {
             OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.trim().replace("\\", ""));
             Wallet editedWallet = editedOutputDescriptor.toWallet();
-
-            editedWallet.setName(getWalletForm().getWallet().getName());
-            editedWallet.setBirthDate(getWalletForm().getWallet().getBirthDate());
-            editedWallet.setGapLimit(getWalletForm().getWallet().getGapLimit());
-            editedWallet.setWatchLast(getWalletForm().getWallet().getWatchLast());
-            keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
-            totalKeystores.unbind();
-            totalKeystores.setValue(0);
-            walletForm.setWallet(editedWallet);
-            initialising = true;
-            setFieldsFromWallet(editedWallet);
-
-            EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
+            replaceWallet(editedWallet);
         } catch(Exception e) {
             AppServices.showErrorDialog("Invalid output descriptor", e.getMessage());
         }
+    }
+
+    private void replaceWallet(Wallet editedWallet) {
+        editedWallet.setName(getWalletForm().getWallet().getName());
+        editedWallet.setBirthDate(getWalletForm().getWallet().getBirthDate());
+        editedWallet.setGapLimit(getWalletForm().getWallet().getGapLimit());
+        editedWallet.setWatchLast(getWalletForm().getWallet().getWatchLast());
+        editedWallet.setMasterWallet(getWalletForm().getWallet().getMasterWallet());
+        keystoreTabs.getTabs().removeAll(keystoreTabs.getTabs());
+        totalKeystores.unbind();
+        totalKeystores.setValue(0);
+        walletForm.setWallet(editedWallet);
+        initialising = true;
+        setFieldsFromWallet(editedWallet);
+
+        EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
     }
 
     public void showDescriptor(ActionEvent event) {
@@ -723,6 +727,24 @@ public class SettingsController extends WalletFormController implements Initiali
     public void newChildWalletSaved(NewChildWalletSavedEvent event) {
         if(event.getMasterWalletId().equals(walletForm.getMasterWalletId())) {
             ((SettingsWalletForm)walletForm).childWalletSaved(event.getChildWallet());
+        }
+    }
+
+    @Subscribe
+    public void existingWalletImported(ExistingWalletImportedEvent event) {
+        if(event.getExistingWalletId().equals(getWalletForm().getWalletId())) {
+            List<Keystore> importedKeystores = event.getImportedWallet().getKeystores();
+            List<Keystore> nonWatchKeystores = walletForm.getWallet().getKeystores().stream().filter(k -> k.isValid() && k.getSource() != KeystoreSource.SW_WATCH).collect(Collectors.toList());
+            for(Keystore nonWatchKeystore : nonWatchKeystores) {
+                Optional<Keystore> optReplacedKeystore = importedKeystores.stream().filter(k -> nonWatchKeystore.getExtendedPublicKey().equals(k.getExtendedPublicKey())).findFirst();
+                if(optReplacedKeystore.isPresent()) {
+                    int index = importedKeystores.indexOf(optReplacedKeystore.get());
+                    importedKeystores.remove(index);
+                    importedKeystores.add(index, nonWatchKeystore);
+                }
+            }
+
+            replaceWallet(event.getImportedWallet());
         }
     }
 

@@ -103,6 +103,7 @@ public class WalletController extends WalletFormController implements Initializa
                     WalletForm walletForm = getWalletForm();
                     if(function.equals(Function.SETTINGS)) {
                         walletForm = new SettingsWalletForm(getWalletForm().getStorage(), getWalletForm().getWallet());
+                        getWalletForm().setSettingsWalletForm(walletForm);
                     }
 
                     controller.setWalletForm(walletForm);

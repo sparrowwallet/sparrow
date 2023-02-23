@@ -41,6 +41,7 @@ public class WalletForm {
 
     private final PublishSubject<WalletNode> refreshNodesSubject;
 
+    private WalletForm settingsWalletForm;
     private final List<WalletForm> nestedWalletForms = new ArrayList<>();
 
     private WalletTransactionsEntry walletTransactionsEntry;
@@ -94,6 +95,14 @@ public class WalletForm {
 
     public void setWallet(Wallet wallet) {
         throw new UnsupportedOperationException("Only SettingsWalletForm supports setWallet");
+    }
+
+    public WalletForm getSettingsWalletForm() {
+        return settingsWalletForm;
+    }
+
+    void setSettingsWalletForm(WalletForm settingsWalletForm) {
+        this.settingsWalletForm = settingsWalletForm;
     }
 
     public List<WalletForm> getNestedWalletForms() {

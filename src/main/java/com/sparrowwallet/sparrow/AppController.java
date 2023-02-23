@@ -1073,7 +1073,18 @@ public class AppController implements Initializable {
         Optional<Wallet> optionalWallet = dlg.showAndWait();
         if(optionalWallet.isPresent()) {
             Wallet wallet = optionalWallet.get();
-            if(selectedWalletForms.isEmpty() || wallet != selectedWalletForms.get(0).getWallet()) {
+
+            List<WalletTabData> walletTabData = getOpenWalletTabData();
+            List<ExtendedKey> xpubs = wallet.getKeystores().stream().map(Keystore::getExtendedPublicKey).collect(Collectors.toList());
+            Optional<WalletForm> optNewWalletForm = walletTabData.stream()
+                    .map(WalletTabData::getWalletForm)
+                    .filter(wf -> wf.getSettingsWalletForm() != null && wf.getSettingsWalletForm().getWallet().getPolicyType() == PolicyType.MULTI &&
+                            wf.getSettingsWalletForm().getWallet().getScriptType() == wallet.getScriptType() && !wf.getSettingsWalletForm().getWallet().isValid() &&
+                            wf.getSettingsWalletForm().getWallet().getKeystores().stream().map(Keystore::getExtendedPublicKey).anyMatch(xpubs::contains)).findFirst();
+            if(optNewWalletForm.isPresent()) {
+                EventManager.get().post(new ExistingWalletImportedEvent(optNewWalletForm.get().getWalletId(), wallet));
+                selectTab(optNewWalletForm.get().getWallet());
+            } else if(selectedWalletForms.isEmpty() || wallet != selectedWalletForms.get(0).getWallet()) {
                 addImportedWallet(wallet);
             }
         }

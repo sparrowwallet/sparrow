@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.Pbkdf2KeyDeriver;
@@ -20,7 +21,7 @@ import java.security.SignatureException;
 import java.util.Arrays;
 import java.util.List;
 
-public class Bip129 implements KeystoreFileExport, KeystoreFileImport {
+public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExport, WalletImport {
     @Override
     public String getName() {
         return "BSMS";
@@ -28,7 +29,7 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport {
 
     @Override
     public WalletModel getWalletModel() {
-        return WalletModel.SEED;
+        return WalletModel.BSMS;
     }
 
     @Override
@@ -184,6 +185,65 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport {
 
     @Override
     public boolean isKeystoreImportScannable() {
+        return true;
+    }
+
+    @Override
+    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+        try {
+            String record = "BSMS 1.0\n" +
+                    OutputDescriptor.getOutputDescriptor(wallet) +
+                    "\n/0/*,/1/*\n" +
+                    wallet.getNode(KeyPurpose.RECEIVE).getChildren().iterator().next().getAddress();
+            outputStream.write(record.getBytes(StandardCharsets.UTF_8));
+        } catch(Exception e) {
+            throw new ExportException("Error exporting BSMS format", e);
+        }
+    }
+
+    @Override
+    public String getWalletExportDescription() {
+        return "Exports a multisig wallet in the Bitcoin Secure Multisig Setup (BSMS) format for import by other signers in the quorum.";
+    }
+
+    @Override
+    public String getExportFileExtension(Wallet wallet) {
+        return "bsms";
+    }
+
+    @Override
+    public boolean isWalletExportScannable() {
+        return true;
+    }
+
+    @Override
+    public boolean walletExportRequiresDecryption() {
+        return false;
+    }
+
+    @Override
+    public String getWalletImportDescription() {
+        return "Imports a multisig wallet in the Bitcoin Secure Multisig Setup (BSMS) format that has been created by another signer in the quorum.";
+    }
+
+    @Override
+    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+            String header = reader.readLine();
+            String descriptor = reader.readLine();
+            String paths = reader.readLine();
+            String address = reader.readLine();
+
+            OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(descriptor);
+            return outputDescriptor.toWallet();
+        } catch(Exception e) {
+            throw new ImportException("Error importing BSMS format", e);
+        }
+    }
+
+    @Override
+    public boolean isWalletImportScannable() {
         return true;
     }
 }

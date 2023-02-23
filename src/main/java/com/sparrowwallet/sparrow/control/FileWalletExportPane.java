@@ -92,9 +92,11 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
         String extension = exporter.getExportFileExtension(wallet);
-        String fileName = wallet.getFullName() + "-" + exporter.getWalletModel().toDisplayString().toLowerCase(Locale.ROOT).replace(" ", "");
+        String walletModel = exporter.getWalletModel().toDisplayString().toLowerCase(Locale.ROOT).replace(" ", "");
+        String postfix = walletModel.equals(extension) ? "" : "-" + walletModel;
+        String fileName = wallet.getFullName() + postfix;
         if(exporter.exportsAllWallets()) {
-            fileName = wallet.getMasterName();
+            fileName = wallet.getMasterName() + postfix;
         }
         fileChooser.setInitialFileName(fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));
 
@@ -148,7 +150,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
-                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig) {
+                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig || exporter instanceof Bip129) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
