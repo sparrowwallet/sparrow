@@ -4,15 +4,16 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
-import javafx.scene.control.ContentDisplay;
-import javafx.scene.control.Tooltip;
-import javafx.scene.control.TreeTableCell;
+import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
 import org.controlsfx.tools.Platform;
@@ -62,6 +63,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 setText(satsValue);
             }
             setTooltip(tooltip);
+            setContextMenu(new CoinContextMenu(amount));
 
             if(entry instanceof TransactionEntry transactionEntry) {
                 tooltip.showConfirmations(transactionEntry.confirmationsProperty());
@@ -153,6 +155,29 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             } else {
                 return BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
             }
+        }
+    }
+
+    private static class CoinContextMenu extends ContextMenu {
+        public CoinContextMenu(Number amount) {
+            MenuItem copySatsValue = new MenuItem("Copy Value in sats");
+            copySatsValue.setOnAction(AE -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(amount.toString());
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+
+            MenuItem copyBtcValue = new MenuItem("Copy Value in BTC");
+            copyBtcValue.setOnAction(AE -> {
+                hide();
+                ClipboardContent content = new ClipboardContent();
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                content.putString(format.formatBtcValue(amount.longValue()));
+                Clipboard.getSystemClipboard().setContent(content);
+            });
+
+            getItems().addAll(copySatsValue, copyBtcValue);
         }
     }
 }
