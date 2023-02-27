@@ -99,6 +99,8 @@ public abstract class CardApi {
             Throwable cause = Throwables.getRootCause(e);
             if(cause.getMessage().equals("SCARD_E_NO_SERVICE")) {
                 recoverNoService();
+            } else if(cause.getMessage().equals("SCARD_E_NO_READERS_AVAILABLE")) {
+                log.info("Error detecting card terminals", e);
             } else {
                 log.error("Error detecting card terminals", e);
             }
