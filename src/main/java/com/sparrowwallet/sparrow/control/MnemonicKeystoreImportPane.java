@@ -223,7 +223,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     private void confirmBackup() {
         setDescription("Confirm backup by re-entering words");
         showHideLink.setVisible(false);
-        setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size()));
+        setContent(getMnemonicWordsEntry(wordEntriesProperty.get().size(), false));
         setExpanded(true);
         backButton.setVisible(true);
         generateButton.setVisible(false);

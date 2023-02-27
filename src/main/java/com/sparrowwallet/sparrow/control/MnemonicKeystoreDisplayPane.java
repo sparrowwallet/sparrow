@@ -24,7 +24,8 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
         showWordList(keystore.getSeed());
     }
 
-    protected Node getMnemonicWordsEntry(int numWords) {
+    @Override
+    protected Node getMnemonicWordsEntry(int numWords, boolean editPassphrase) {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 

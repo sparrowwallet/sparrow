@@ -106,7 +106,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
     protected void showWordList(DeterministicSeed seed) {
         List<String> words = seed.getMnemonicCode();
-        setContent(getMnemonicWordsEntry(words.size()));
+        setContent(getMnemonicWordsEntry(words.size(), true));
         setExpanded(true);
 
         for(int i = 0; i < wordsPane.getChildren().size(); i++) {
@@ -119,11 +119,11 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     protected void enterMnemonic(int numWords) {
         setDescription("Generate new or enter existing");
         showHideLink.setVisible(false);
-        setContent(getMnemonicWordsEntry(numWords));
+        setContent(getMnemonicWordsEntry(numWords, true));
         setExpanded(true);
     }
 
-    protected Node getMnemonicWordsEntry(int numWords) {
+    protected Node getMnemonicWordsEntry(int numWords, boolean editPassphrase) {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 
@@ -152,7 +152,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
         vBox.getChildren().add(wordsPane);
 
-        PassphraseEntry passphraseEntry = new PassphraseEntry();
+        PassphraseEntry passphraseEntry = new PassphraseEntry(editPassphrase);
         wordEntries.get(wordEntries.size() - 1).setNextField(passphraseEntry.getEditor());
         passphraseEntry.setPadding(new Insets(0, 26, 10, 10));
         vBox.getChildren().add(passphraseEntry);
@@ -344,23 +344,50 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     }
 
     protected class PassphraseEntry extends HBox {
-        private final CustomTextField passphraseField;
+        private final TextField passphraseField;
 
-        public PassphraseEntry() {
+        public PassphraseEntry(boolean editable) {
             super();
 
             setAlignment(Pos.CENTER_LEFT);
             setSpacing(10);
+            Label usePassphraseLabel = new Label("Use passphrase?");
+            usePassphraseLabel.managedProperty().bind(usePassphraseLabel.visibleProperty());
+            CheckBox usePassphraseCheckbox = new CheckBox(" ");
+            usePassphraseCheckbox.setDisable(!editable);
+            usePassphraseCheckbox.managedProperty().bind(usePassphraseCheckbox.visibleProperty());
+            usePassphraseLabel.visibleProperty().bind(usePassphraseCheckbox.visibleProperty());
+            usePassphraseCheckbox.setVisible(passphraseProperty.isEmpty().get());
+            usePassphraseCheckbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue) {
+                    Optional<ButtonType> optType = AppServices.showWarningDialog("Add a passphrase?", "A passphrase is not a password! " +
+                            "Any variation entered in future loads a valid wallet, but with different addresses.\n\n" +
+                            "This feature provides optional added security for advanced users only. Are you sure?", ButtonType.NO, ButtonType.YES);
+                    if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                        usePassphraseCheckbox.setVisible(false);
+                    } else {
+                        usePassphraseCheckbox.setSelected(false);
+                    }
+                }
+            });
+
             Label passphraseLabel = new Label("Passphrase:");
-            passphraseField = (CustomTextField) TextFields.createClearableTextField();
+            passphraseLabel.managedProperty().bind(passphraseLabel.visibleProperty());
+            passphraseField = new TextField();
+            passphraseField.setPromptText(passphraseProperty.isEmpty().get() ? "Leave blank for none" : "");
+            passphraseField.setText(passphraseProperty.get());
+            passphraseField.setDisable(!editable);
+            passphraseField.managedProperty().bind(passphraseField.visibleProperty());
+            passphraseLabel.visibleProperty().bind(passphraseField.visibleProperty());
+            passphraseField.visibleProperty().bind(usePassphraseCheckbox.visibleProperty().not());
             passphraseProperty.bind(passphraseField.textProperty());
-            passphraseField.setPromptText("Leave blank for none");
 
             HelpLabel helpLabel = new HelpLabel();
+            helpLabel.setPrefHeight(28);
             helpLabel.setStyle("-fx-padding: 0 0 0 0");
-            helpLabel.setHelpText("A passphrase provides optional added security - it is not stored so it must be remembered!");
+            helpLabel.setHelpText("Advanced feature: a passphrase provides optional added security, but it is not stored so it must be remembered!");
 
-            getChildren().addAll(passphraseLabel, passphraseField, helpLabel);
+            getChildren().addAll(usePassphraseLabel, usePassphraseCheckbox, passphraseLabel, passphraseField, helpLabel);
         }
 
         public TextField getEditor() {
