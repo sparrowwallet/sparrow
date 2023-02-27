@@ -18,7 +18,13 @@ public class FileWalletImportPane extends FileImportPane {
 
     @Override
     protected void importFile(String fileName, InputStream inputStream, String password) throws ImportException {
-        Wallet wallet = importer.importWallet(inputStream, password);
+        Wallet wallet;
+        if(getScannedWallets() != null && !getScannedWallets().isEmpty()) {
+            wallet = getScannedWallets().iterator().next();
+        } else {
+            wallet = importer.importWallet(inputStream, password);
+        }
+
         if(wallet.getName() == null) {
             wallet.setName(fileName);
         }

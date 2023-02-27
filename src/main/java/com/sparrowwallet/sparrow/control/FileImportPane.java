@@ -162,8 +162,8 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                     setError("Import Error", e.getMessage());
                 }
             } else if(result.outputDescriptor != null) {
-                wallets = List.of(result.outputDescriptor.toKeystoreWallet(null));
                 try {
+                    wallets = List.of(result.outputDescriptor.toWallet());
                     importFile(importer.getName(), null, null);
                 } catch(ImportException e) {
                     log.error("Error importing QR", e);
@@ -191,6 +191,10 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 setExpanded(true);
             }
         }
+    }
+
+    protected List<Wallet> getScannedWallets() {
+        return wallets;
     }
 
     protected Keystore getScannedKeystore(ScriptType scriptType) throws ImportException {

@@ -136,6 +136,6 @@ public class Descriptor implements WalletImport, WalletExport {
 
     @Override
     public boolean isWalletImportScannable() {
-        return false;
+        return true;
     }
 }

@@ -53,6 +53,7 @@ import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @SuppressWarnings("deprecation")
@@ -542,7 +543,12 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private KeyDerivation getKeyDerivation(CryptoKeypath cryptoKeypath) {
             if(cryptoKeypath != null) {
-                return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getSourceFingerprint()), cryptoKeypath.getPath());
+                if(cryptoKeypath.getComponents().stream().anyMatch(PathComponent::isWildcard)) {
+                    throw new IllegalArgumentException("Wildcard derivation paths are not supported");
+                }
+
+                List<ChildNumber> path = cryptoKeypath.getComponents().stream().map(comp -> new ChildNumber(comp.getIndex(), comp.isHardened())).collect(Collectors.toList());
+                return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getSourceFingerprint()), KeyDerivation.writePath(path));
             }
 
             return null;
