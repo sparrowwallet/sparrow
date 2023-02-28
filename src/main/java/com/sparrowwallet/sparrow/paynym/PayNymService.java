@@ -33,7 +33,7 @@ public class PayNymService {
     private final JavaHttpClientService httpClientService;
 
     public PayNymService(HostAndPort torProxy) {
-        this.httpClientService = new JavaHttpClientService(torProxy);
+        this.httpClientService = new JavaHttpClientService(torProxy, 120000);
     }
 
     public Observable<Map<String, Object>> createPayNym(Wallet wallet) {
