@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class PdfUtils {
@@ -99,7 +100,7 @@ public class PdfUtils {
 
     private static javafx.scene.image.Image getQrCode(String fragment) throws IOException, WriterException {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT);
+        BitMatrix qrMatrix = qrCodeWriter.encode(fragment.toUpperCase(Locale.ROOT), BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         MatrixToImageWriter.writeToStream(qrMatrix, "PNG", baos, new MatrixToImageConfig());
