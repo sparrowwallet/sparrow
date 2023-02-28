@@ -151,6 +151,10 @@ public class Config {
         flush();
     }
 
+    public boolean isBlockExplorerDisabled() {
+        return BlockExplorer.NONE.getServer().equals(blockExplorer);
+    }
+
     public Server getBlockExplorer() {
         return blockExplorer;
     }

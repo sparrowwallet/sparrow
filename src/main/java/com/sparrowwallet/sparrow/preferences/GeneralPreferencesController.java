@@ -91,8 +91,8 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         blockExplorers.setConverter(new StringConverter<>() {
             @Override
             public String toString(Server server) {
-                if(server == null) {
-                    return "None Available";
+                if(server == null || server == BlockExplorer.NONE.getServer()) {
+                    return "None";
                 }
 
                 if(server == CUSTOM_BLOCK_EXPLORER) {

@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
@@ -818,7 +819,7 @@ public class HeadersController extends TransactionFormController implements Init
             size.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
             virtualSize.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
             feeRate.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
-            openBlockExplorer.setDisable(false);
+            openBlockExplorer.setDisable(Config.get().isBlockExplorerDisabled());
         }
     }
 

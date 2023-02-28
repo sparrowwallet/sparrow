@@ -812,6 +812,10 @@ public class AppServices {
     }
 
     public static void openBlockExplorer(String txid) {
+        if(Config.get().isBlockExplorerDisabled()) {
+            return;
+        }
+
         Server blockExplorer = Config.get().getBlockExplorer() == null ? BlockExplorer.MEMPOOL_SPACE.getServer() : Config.get().getBlockExplorer();
         String url = blockExplorer.getUrl();
         if(url.contains("{0}")) {
