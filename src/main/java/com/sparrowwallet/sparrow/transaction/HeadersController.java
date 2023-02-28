@@ -79,6 +79,12 @@ public class HeadersController extends TransactionFormController implements Init
     private IdLabel id;
 
     @FXML
+    private ToggleButton copyTxid;
+
+    @FXML
+    private ToggleButton openBlockExplorer;
+
+    @FXML
     private TransactionDiagram transactionDiagram;
 
     @FXML
@@ -806,11 +812,13 @@ public class HeadersController extends TransactionFormController implements Init
             addStyleClass(size, UNFINALIZED_TXID_CLASS);
             addStyleClass(virtualSize, UNFINALIZED_TXID_CLASS);
             addStyleClass(feeRate, UNFINALIZED_TXID_CLASS);
+            openBlockExplorer.setDisable(true);
         } else {
             id.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
             size.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
             virtualSize.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
             feeRate.getStyleClass().remove(UNFINALIZED_TXID_CLASS);
+            openBlockExplorer.setDisable(false);
         }
     }
 
@@ -821,9 +829,16 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void copyId(ActionEvent event) {
+        copyTxid.setSelected(false);
         ClipboardContent content = new ClipboardContent();
         content.putString(headersForm.getTransaction().calculateTxId(false).toString());
         Clipboard.getSystemClipboard().setContent(content);
+    }
+
+    public void openInBlockExplorer(ActionEvent event) {
+        openBlockExplorer.setSelected(false);
+        String txid = headersForm.getTransaction().calculateTxId(false).toString();
+        AppServices.openBlockExplorer(txid);
     }
 
     public void setLocktimeToCurrentHeight(ActionEvent event) {

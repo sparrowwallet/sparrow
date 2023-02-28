@@ -11,7 +11,6 @@
 <?import tornadofx.control.Field?>
 <?import javafx.collections.FXCollections?>
 <?import javafx.geometry.Insets?>
-<?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.net.ExchangeSource?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
@@ -30,18 +29,6 @@
 
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin" styleClass="wideLabelFieldSet">
-            <Field text="Display unit:">
-                <ComboBox fx:id="bitcoinUnit">
-                    <items>
-                        <FXCollections fx:factory="observableArrayList">
-                            <BitcoinUnit fx:constant="AUTO" />
-                            <BitcoinUnit fx:constant="BTC" />
-                            <BitcoinUnit fx:constant="SATOSHIS" />
-                        </FXCollections>
-                    </items>
-                </ComboBox>
-                <HelpLabel helpText="Display unit for bitcoin amounts.\nAuto displays amounts over 1 BTC in BTC, and amounts under that in satoshis."/>
-            </Field>
             <Field text="Fee rates source:">
                 <ComboBox fx:id="feeRatesSource">
                     <items>
@@ -53,6 +40,10 @@
                     </items>
                 </ComboBox>
                 <HelpLabel helpText="Recommended fee rates can be sourced from your connected Electrum server, or an external source."/>
+            </Field>
+            <Field text="Block explorer:">
+                <ComboBox fx:id="blockExplorers" />
+                <HelpLabel helpText="An external block explorer can be configured to open a transaction from any transaction tab."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Fiat" styleClass="wideLabelFieldSet">

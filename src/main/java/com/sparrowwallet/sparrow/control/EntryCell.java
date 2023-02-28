@@ -537,6 +537,13 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 getItems().add(createCpfp);
             }
 
+            MenuItem openBlockExplorer = new MenuItem("Open in Block Explorer");
+            openBlockExplorer.setOnAction(AE -> {
+                hide();
+                AppServices.openBlockExplorer(blockTransaction.getHashAsString());
+            });
+            getItems().add(openBlockExplorer);
+
             MenuItem copyTxid = new MenuItem("Copy Transaction ID");
             copyTxid.setOnAction(AE -> {
                 hide();
@@ -556,6 +563,12 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             viewTransaction.setOnAction(AE -> {
                 hide();
                 EventManager.get().post(new ViewTransactionEvent(this.getOwnerWindow(), blockTransaction));
+            });
+
+            MenuItem openBlockExplorer = new MenuItem("Open in Block Explorer");
+            openBlockExplorer.setOnAction(AE -> {
+                hide();
+                AppServices.openBlockExplorer(blockTransaction.getHashAsString());
             });
 
             MenuItem copyDate = new MenuItem("Copy Date");
@@ -582,7 +595,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 Clipboard.getSystemClipboard().setContent(content);
             });
 
-            getItems().addAll(viewTransaction, copyDate, copyTxid, copyHeight);
+            getItems().addAll(viewTransaction, openBlockExplorer, copyDate, copyTxid, copyHeight);
         }
     }
 

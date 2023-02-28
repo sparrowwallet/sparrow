@@ -1,31 +1,43 @@
 package com.sparrowwallet.sparrow.preferences;
 
-import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.Server;
+import com.sparrowwallet.sparrow.net.BlockExplorer;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.net.FeeRatesSource;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.TextInputDialog;
+import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GeneralPreferencesController extends PreferencesDetailController {
     private static final Logger log = LoggerFactory.getLogger(GeneralPreferencesController.class);
 
-    @FXML
-    private ComboBox<BitcoinUnit> bitcoinUnit;
+    private static final Server CUSTOM_BLOCK_EXPLORER = new Server("http://custom.block.explorer");
 
     @FXML
     private ComboBox<FeeRatesSource> feeRatesSource;
+
+    @FXML
+    private ComboBox<Server> blockExplorers;
 
     @FXML
     private ComboBox<Currency> fiatCurrency;
@@ -63,17 +75,6 @@ public class GeneralPreferencesController extends PreferencesDetailController {
 
     @Override
     public void initializeView(Config config) {
-        if(config.getBitcoinUnit() != null) {
-            bitcoinUnit.setValue(config.getBitcoinUnit());
-        } else {
-            bitcoinUnit.setValue(BitcoinUnit.AUTO);
-        }
-
-        bitcoinUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
-            config.setBitcoinUnit(newValue);
-            EventManager.get().post(new BitcoinUnitChangedEvent(newValue));
-        });
-
         if(config.getFeeRatesSource() != null) {
             feeRatesSource.setValue(config.getFeeRatesSource());
         } else {
@@ -85,6 +86,62 @@ public class GeneralPreferencesController extends PreferencesDetailController {
             config.setFeeRatesSource(newValue);
             EventManager.get().post(new FeeRatesSourceChangedEvent(newValue));
         });
+
+        blockExplorers.setItems(getBlockExplorerList());
+        blockExplorers.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Server server) {
+                if(server == null) {
+                    return "None Available";
+                }
+
+                if(server == CUSTOM_BLOCK_EXPLORER) {
+                    return "Custom...";
+                }
+
+                return server.getHost();
+            }
+
+            @Override
+            public Server fromString(String string) {
+                return null;
+            }
+        });
+        blockExplorers.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                if(newValue == CUSTOM_BLOCK_EXPLORER) {
+                    TextInputDialog textInputDialog = new TextInputDialog();
+                    textInputDialog.setTitle("Enter Block Explorer URL");
+                    textInputDialog.setHeaderText("Enter the URL of the block explorer.\n\nIf present, the characters {0} will be replaced with the txid.\nFor example, https://localhost or https://localhost/tx/{0}\n");
+                    textInputDialog.getEditor().setPromptText("https://localhost");
+                    Optional<String> optUrl = textInputDialog.showAndWait();
+                    if(optUrl.isPresent() && !optUrl.get().isEmpty()) {
+                        try {
+                            Server server = getBlockExplorer(optUrl.get());
+                            config.setBlockExplorer(server);
+                            Platform.runLater(() -> {
+                                blockExplorers.getSelectionModel().select(-1);
+                                blockExplorers.setItems(getBlockExplorerList());
+                                blockExplorers.setValue(Config.get().getBlockExplorer());
+                            });
+                        } catch(Exception e) {
+                            AppServices.showErrorDialog("Invalid URL", "The URL " + optUrl.get() + " is not valid.");
+                            blockExplorers.setValue(oldValue);
+                        }
+                    } else {
+                        blockExplorers.setValue(oldValue);
+                    }
+                } else {
+                    Config.get().setBlockExplorer(newValue);
+                }
+            }
+        });
+
+        if(config.getBlockExplorer() != null) {
+            blockExplorers.setValue(config.getBlockExplorer());
+        } else {
+            blockExplorers.getSelectionModel().select(0);
+        }
 
         if(config.getExchangeSource() != null) {
             exchangeSource.setValue(config.getExchangeSource());
@@ -132,6 +189,23 @@ public class GeneralPreferencesController extends PreferencesDetailController {
             config.setCheckNewVersions(newValue);
             EventManager.get().post(new VersionCheckStatusEvent(newValue));
         });
+    }
+
+    private static Server getBlockExplorer(String serverUrl) {
+        String url = serverUrl.trim();
+        if(url.endsWith("/")) {
+            url = url.substring(0, url.length() - 1);
+        }
+        return new Server(url);
+    }
+
+    private ObservableList<Server> getBlockExplorerList() {
+        List<Server> servers = Arrays.stream(BlockExplorer.values()).map(BlockExplorer::getServer).collect(Collectors.toList());
+        if(Config.get().getBlockExplorer() != null && !servers.contains(Config.get().getBlockExplorer())) {
+            servers.add(Config.get().getBlockExplorer());
+        }
+        servers.add(CUSTOM_BLOCK_EXPLORER);
+        return FXCollections.observableList(servers);
     }
 
     private void updateCurrencies(ExchangeSource exchangeSource) {

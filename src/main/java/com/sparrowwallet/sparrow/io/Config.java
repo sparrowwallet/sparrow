@@ -30,6 +30,7 @@ public class Config {
     private Mode mode;
     private BitcoinUnit bitcoinUnit;
     private UnitFormat unitFormat;
+    private Server blockExplorer;
     private FeeRatesSource feeRatesSource;
     private FeeRatesSelection feeRatesSelection;
     private OptimizationStrategy sendOptimizationStrategy;
@@ -147,6 +148,15 @@ public class Config {
 
     public void setUnitFormat(UnitFormat unitFormat) {
         this.unitFormat = unitFormat;
+        flush();
+    }
+
+    public Server getBlockExplorer() {
+        return blockExplorer;
+    }
+
+    public void setBlockExplorer(Server blockExplorer) {
+        this.blockExplorer = blockExplorer;
         flush();
     }
 

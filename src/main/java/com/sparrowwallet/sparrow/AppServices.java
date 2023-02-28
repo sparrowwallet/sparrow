@@ -811,6 +811,20 @@ public class AppServices {
         }
     }
 
+    public static void openBlockExplorer(String txid) {
+        Server blockExplorer = Config.get().getBlockExplorer() == null ? BlockExplorer.MEMPOOL_SPACE.getServer() : Config.get().getBlockExplorer();
+        String url = blockExplorer.getUrl();
+        if(url.contains("{0}")) {
+            url = url.replace("{0}", txid);
+        } else {
+            if(Network.get() != Network.MAINNET) {
+                url += "/" + Network.get().getName();
+            }
+            url += "/tx/" + txid;
+        }
+        AppServices.get().getApplication().getHostServices().showDocument(url);
+    }
+
     static void parseFileUriArguments(List<String> fileUriArguments) {
         for(String fileUri : fileUriArguments) {
             try {
