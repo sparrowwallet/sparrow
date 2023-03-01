@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.preferences;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.control.TextfieldDialog;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -17,7 +18,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.TextInputDialog;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,11 +110,11 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         blockExplorers.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
                 if(newValue == CUSTOM_BLOCK_EXPLORER) {
-                    TextInputDialog textInputDialog = new TextInputDialog();
-                    textInputDialog.setTitle("Enter Block Explorer URL");
-                    textInputDialog.setHeaderText("Enter the URL of the block explorer.\n\nIf present, the characters {0} will be replaced with the txid.\nFor example, https://localhost or https://localhost/tx/{0}\n");
-                    textInputDialog.getEditor().setPromptText("https://localhost");
-                    Optional<String> optUrl = textInputDialog.showAndWait();
+                    TextfieldDialog textfieldDialog = new TextfieldDialog();
+                    textfieldDialog.setTitle("Enter Block Explorer URL");
+                    textfieldDialog.setHeaderText("Enter the URL of the block explorer.\n\nIf present, the characters {0} will be replaced with the txid.\nFor example, https://localhost or https://localhost/tx/{0}\n");
+                    textfieldDialog.getEditor().setPromptText("https://localhost");
+                    Optional<String> optUrl = textfieldDialog.showAndWait();
                     if(optUrl.isPresent() && !optUrl.get().isEmpty()) {
                         try {
                             Server server = getBlockExplorer(optUrl.get());
