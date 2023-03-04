@@ -22,6 +22,7 @@ import java.text.DecimalFormat;
 
 class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsListener {
     private final CoinTooltip tooltip;
+    private final CoinContextMenu contextMenu;
 
     private IntegerProperty confirmationsProperty;
 
@@ -29,6 +30,8 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
         super();
         tooltip = new CoinTooltip();
         tooltip.setShowDelay(Duration.millis(500));
+        contextMenu = new CoinContextMenu();
+        setContextMenu(contextMenu);
         getStyleClass().add("coin-cell");
         if(Platform.getCurrent() == Platform.OSX) {
             getStyleClass().add("number-field");
@@ -43,6 +46,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             setText(null);
             setGraphic(null);
             setTooltip(null);
+            setContextMenu(null);
         } else {
             Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
             EntryCell.applyRowStyles(this, entry);
@@ -63,7 +67,8 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 setText(satsValue);
             }
             setTooltip(tooltip);
-            setContextMenu(new CoinContextMenu(amount));
+            contextMenu.updateAmount(amount);
+            setContextMenu(contextMenu);
 
             if(entry instanceof TransactionEntry transactionEntry) {
                 tooltip.showConfirmations(transactionEntry.confirmationsProperty());
@@ -159,7 +164,17 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
     }
 
     private static class CoinContextMenu extends ContextMenu {
-        public CoinContextMenu(Number amount) {
+        private Number amount;
+        public CoinContextMenu() {
+        }
+
+        public void updateAmount(Number amount) {
+            if (amount.equals(this.amount)) {
+                return;
+            }
+            this.amount = amount;
+            getItems().clear();
+
             MenuItem copySatsValue = new MenuItem("Copy Value in sats");
             copySatsValue.setOnAction(AE -> {
                 hide();
