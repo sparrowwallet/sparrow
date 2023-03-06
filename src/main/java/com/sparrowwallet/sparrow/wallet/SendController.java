@@ -542,6 +542,20 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    int getPayNymSendIndex(PaymentController paymentController) {
+        int index = 0;
+        for(Tab tab : paymentTabs.getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            if(controller == paymentController) {
+                break;
+            } else if(controller.isSentToSamePayNym(paymentController)) {
+                index++;
+            }
+        }
+
+        return index;
+    }
+
     public void updateTransaction() {
         updateTransaction(null);
     }

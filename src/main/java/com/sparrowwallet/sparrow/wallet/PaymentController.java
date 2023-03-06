@@ -413,7 +413,11 @@ public class PaymentController extends WalletFormController implements Initializ
             try {
                 Wallet recipientBip47Wallet = getWalletForPayNym(payNym);
                 if(recipientBip47Wallet != null) {
+                    int index = sendController.getPayNymSendIndex(this);
                     WalletNode sendNode = recipientBip47Wallet.getFreshNode(KeyPurpose.SEND);
+                    for(int i = 0; i < index; i++) {
+                        sendNode = recipientBip47Wallet.getFreshNode(KeyPurpose.SEND, sendNode);
+                    }
                     ECKey pubKey = sendNode.getPubKey();
                     Address address = recipientBip47Wallet.getScriptType().getAddress(pubKey);
                     if(sendController.getPaymentTabs().getTabs().size() > 1 || (getRecipientValueSats() != null && getRecipientValueSats() > getRecipientDustThreshold(address)) || maxButton.isSelected()) {
@@ -431,6 +435,11 @@ public class PaymentController extends WalletFormController implements Initializ
     private Wallet getWalletForPayNym(PayNym payNym) throws InvalidPaymentCodeException {
         Wallet masterWallet = sendController.getWalletForm().getMasterWallet();
         return masterWallet.getChildWallet(new PaymentCode(payNym.paymentCode().toString()), payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH);
+    }
+
+    boolean isSentToSamePayNym(PaymentController paymentController) {
+        return (this != paymentController && payNymProperty.get() != null && !payNymProperty.get().isCollaborativeSend()
+                && payNymProperty.get().paymentCode().equals(paymentController.payNymProperty.get().paymentCode()));
     }
 
     private Long getRecipientValueSats() {
