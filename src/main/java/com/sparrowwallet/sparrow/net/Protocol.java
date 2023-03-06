@@ -129,7 +129,9 @@ public enum Protocol {
     public abstract CloseableTransport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException;
 
     public HostAndPort getServerHostAndPort(String url) {
-        return HostAndPort.fromString(url.substring(this.toUrlString().length()));
+        String lessProtocol = url.substring(this.toUrlString().length());
+        int pathStart = lessProtocol.indexOf('/');
+        return HostAndPort.fromString(pathStart < 0 ? lessProtocol : lessProtocol.substring(0, pathStart));
     }
 
     public String toUrlString() {
