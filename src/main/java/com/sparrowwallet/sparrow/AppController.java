@@ -753,7 +753,7 @@ public class AppController implements Initializable {
                         writer.print(transactionTabData.getPsbt().toBase64String(includeXpubs));
                         writer.flush();
                     } else {
-                        outputStream.write(transactionTabData.getPsbt().serialize(includeXpubs));
+                        outputStream.write(transactionTabData.getPsbt().serialize(includeXpubs, true));
                     }
                 } catch(IOException e) {
                     log.error("Error saving PSBT", e);

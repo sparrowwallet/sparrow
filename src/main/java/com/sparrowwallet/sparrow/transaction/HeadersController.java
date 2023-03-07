@@ -864,7 +864,9 @@ public class HeadersController extends TransactionFormController implements Init
         //TODO: Remove once Cobo Vault has upgraded to UR2.0
         boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COBO_VAULT));
 
-        CryptoPSBT cryptoPSBT = new CryptoPSBT(headersForm.getPsbt().serialize());
+        //Don't include non witness utxo fields for segwit wallets when displaying the PSBT as a QR - it can add greatly to the time required for scanning
+        boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType());
+        CryptoPSBT cryptoPSBT = new CryptoPSBT(headersForm.getPsbt().serialize(true, includeNonWitnessUtxos));
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), addLegacyEncodingOption);
         qrDisplayDialog.show();
     }
