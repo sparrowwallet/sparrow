@@ -11,10 +11,13 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.util.Optional;
 
 public class TextAreaDialog extends Dialog<String> {
@@ -22,6 +25,8 @@ public class TextAreaDialog extends Dialog<String> {
 
     private final TextArea textArea;
     private final String defaultValue;
+    private final String fileName;
+    private final byte[] fileBytes;
 
     public TextAreaDialog() {
         this("");
@@ -31,7 +36,11 @@ public class TextAreaDialog extends Dialog<String> {
         this(defaultValue, true);
     }
 
-    public TextAreaDialog(@NamedArg("defaultValue") String defaultValue, @NamedArg("editable") boolean editable) {
+    public TextAreaDialog(String defaultValue, boolean editable) {
+        this(defaultValue, editable, null, null);
+    }
+
+    public TextAreaDialog(@NamedArg("defaultValue") String defaultValue, @NamedArg("editable") boolean editable, @NamedArg("fileName") String fileName, @NamedArg("fileBytes") byte[] fileBytes) {
         final DialogPane dialogPane = new TextAreaDialogPane();
         setDialogPane(dialogPane);
 
@@ -48,6 +57,8 @@ public class TextAreaDialog extends Dialog<String> {
         HBox.setHgrow(this.textArea, Priority.ALWAYS);
 
         this.defaultValue = defaultValue;
+        this.fileName = fileName;
+        this.fileBytes = fileBytes;
 
         dialogPane.setContent(hbox);
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
@@ -60,6 +71,9 @@ public class TextAreaDialog extends Dialog<String> {
 
             final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.LEFT);
             dialogPane.getButtonTypes().add(scanButtonType);
+        } else if(fileBytes != null) {
+            final ButtonType saveButtonType = new javafx.scene.control.ButtonType("Save File...", ButtonBar.ButtonData.LEFT);
+            dialogPane.getButtonTypes().add(saveButtonType);
         }
 
         Platform.runLater(textArea::requestFocus);
@@ -86,7 +100,7 @@ public class TextAreaDialog extends Dialog<String> {
         @Override
         protected Node createButton(ButtonType buttonType) {
             Node button;
-            if(buttonType.getButtonData() == ButtonBar.ButtonData.LEFT) {
+            if(buttonType.getButtonData() == ButtonBar.ButtonData.LEFT && buttonType.getText().equals("Scan QR")) {
                 Button scanButton = new Button(buttonType.getText());
                 scanButton.setGraphicTextGap(5);
                 scanButton.setGraphic(getGlyph(FontAwesome5.Glyph.CAMERA));
@@ -118,6 +132,38 @@ public class TextAreaDialog extends Dialog<String> {
                 });
 
                 button = scanButton;
+            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.LEFT && buttonType.getText().equals("Save File...")) {
+                Button saveButton = new Button(buttonType.getText());
+
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(saveButton, buttonData);
+
+                saveButton.setOnAction(event -> {
+                    Stage window = new Stage();
+
+                    FileChooser fileChooser = new FileChooser();
+                    fileChooser.setTitle("Save File");
+
+                    if(fileName != null) {
+                        fileChooser.setInitialFileName(fileName);
+                    }
+
+                    AppServices.moveToActiveWindowScreen(window, 800, 450);
+                    File file = fileChooser.showSaveDialog(window);
+                    if(file != null) {
+                        try {
+                            try(OutputStream outputStream = new FileOutputStream(file)) {
+                                outputStream.write(fileBytes);
+                                outputStream.flush();
+                            }
+                        } catch(IOException e) {
+                            log.error("Error saving file", e);
+                            AppServices.showErrorDialog("Error saving file", "Cannot write to " + file.getAbsolutePath());
+                        }
+                    }
+                });
+
+                button = saveButton;
             } else {
                 button = super.createButton(buttonType);
             }

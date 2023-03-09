@@ -35,6 +35,7 @@ import tornadofx.control.Field;
 
 import javax.smartcardio.CardException;
 import java.net.URL;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -476,7 +477,8 @@ public class KeystoreController extends WalletFormController implements Initiali
             Service<String> backupService = cardApi.getBackupService();
             backupService.setOnSucceeded(event -> {
                 String backup = backupService.getValue();
-                TextAreaDialog backupDialog = new TextAreaDialog(backup, false);
+                String filename = fingerprint.getText() + ".aes";
+                TextAreaDialog backupDialog = new TextAreaDialog(backup, false, filename, Base64.getDecoder().decode(backup));
                 backupDialog.setTitle("Backup Private Key");
                 backupDialog.getDialogPane().setHeaderText((requiresBackup ? "Please backup first by saving" : "Save") + " the following text in a safe place. It contains an encrypted copy of the card's private key, and can be decrypted using the backup key written on the back of the card.");
                 backupDialog.showAndWait();
