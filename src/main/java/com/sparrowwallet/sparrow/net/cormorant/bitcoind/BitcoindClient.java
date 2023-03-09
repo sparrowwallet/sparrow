@@ -539,7 +539,7 @@ public class BitcoindClient {
             try {
                 if(syncing) {
                     BlockchainInfo blockchainInfo = getBitcoindService().getBlockchainInfo();
-                    if(blockchainInfo.initialblockdownload()) {
+                    if(blockchainInfo.initialblockdownload() && !isEmptyBlockchain(blockchainInfo)) {
                         int percent = blockchainInfo.getProgressPercent();
                         Date tipDate = blockchainInfo.getTip();
                         Platform.runLater(() -> EventManager.get().post(new CormorantSyncStatusEvent("Syncing" + (percent < 100 ? " (" + percent + "%)" : ""), percent, tipDate)));
@@ -613,6 +613,10 @@ public class BitcoindClient {
         }
 
         return scanningWallets;
+    }
+
+    private boolean isEmptyBlockchain(BlockchainInfo blockchainInfo) {
+        return blockchainInfo.blocks() == 0 && blockchainInfo.getProgressPercent() == 100;
     }
 
     private record ScanDate(Date rescanSince, Integer range, boolean forceRescan) {

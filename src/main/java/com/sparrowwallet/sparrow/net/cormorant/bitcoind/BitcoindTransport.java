@@ -16,6 +16,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
@@ -75,7 +76,7 @@ public class BitcoindTransport implements Transport {
 
         connection.setDoOutput(true);
 
-        log.trace("> " + request);
+        log.debug("> " + request);
 
         try(OutputStream os = connection.getOutputStream()) {
             byte[] jsonBytes = request.getBytes(StandardCharsets.UTF_8);
@@ -101,7 +102,7 @@ public class BitcoindTransport implements Transport {
         }
 
         String response = res.toString();
-        log.trace("< " + response);
+        log.debug("< " + response);
 
         return response;
     }
@@ -127,11 +128,11 @@ public class BitcoindTransport implements Transport {
     }
 
     private static File getCookieDir(File bitcoindDir) {
-        if(Network.get() == Network.TESTNET && !bitcoindDir.getName().contains("testnet")) {
+        if(Network.get() == Network.TESTNET && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "testnet3", COOKIE_FILENAME))) {
             return new File(bitcoindDir, "testnet3");
-        } else if(Network.get() == Network.REGTEST && !bitcoindDir.getName().contains("regtest")) {
+        } else if(Network.get() == Network.REGTEST && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "regtest", COOKIE_FILENAME))) {
             return new File(bitcoindDir, "regtest");
-        } else if(Network.get() == Network.SIGNET && !bitcoindDir.getName().contains("signet")) {
+        } else if(Network.get() == Network.SIGNET && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "signet", COOKIE_FILENAME))) {
             return new File(bitcoindDir, "signet");
         }
 
