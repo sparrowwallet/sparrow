@@ -31,7 +31,6 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
         tooltip = new CoinTooltip();
         tooltip.setShowDelay(Duration.millis(500));
         contextMenu = new CoinContextMenu();
-        setContextMenu(contextMenu);
         getStyleClass().add("coin-cell");
         if(Platform.getCurrent() == Platform.OSX) {
             getStyleClass().add("number-field");
@@ -165,13 +164,12 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
 
     private static class CoinContextMenu extends ContextMenu {
         private Number amount;
-        public CoinContextMenu() {
-        }
 
         public void updateAmount(Number amount) {
-            if (amount.equals(this.amount)) {
+            if(amount.equals(this.amount)) {
                 return;
             }
+
             this.amount = amount;
             getItems().clear();
 
