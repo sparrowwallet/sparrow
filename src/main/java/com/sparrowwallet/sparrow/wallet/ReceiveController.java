@@ -189,11 +189,25 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     public void getNewAddress(ActionEvent event) {
         refreshAddress();
+        if(currentEntry != null) {
+            ensureSufficientGapLimit(currentEntry.getNode().getIndex());
+        }
     }
 
     public void refreshAddress() {
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
         setNodeEntry(freshEntry);
+    }
+
+    private void ensureSufficientGapLimit(int index) {
+        Wallet wallet = getWalletForm().getWallet();
+        Integer highestIndex = wallet.getNode(KeyPurpose.RECEIVE).getHighestUsedIndex();
+        int highestUsedIndex = highestIndex == null ? -1 : highestIndex;
+        int existingGapLimit = wallet.getGapLimit();
+        if(index > highestUsedIndex + existingGapLimit) {
+            wallet.setGapLimit(Math.max(wallet.getGapLimit(), index - highestUsedIndex));
+            EventManager.get().post(new WalletGapLimitChangedEvent(getWalletForm().getWalletId(), wallet, existingGapLimit));
+        }
     }
 
     @SuppressWarnings("unchecked")

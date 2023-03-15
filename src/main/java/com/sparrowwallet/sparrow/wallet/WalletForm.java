@@ -604,7 +604,9 @@ public class WalletForm {
                 Optional<WalletNode> optPurposeNode = wallet.getPurposeNodes().stream().filter(node -> node.getKeyPurpose() == keyPurpose).findFirst();
                 if(optPurposeNode.isPresent()) {
                     WalletNode purposeNode = optPurposeNode.get();
-                    newNodes.addAll(purposeNode.fillToIndex(wallet, wallet.getLookAheadIndex(purposeNode)));
+                    purposeNode.fillToIndex(wallet, wallet.getLookAheadIndex(purposeNode));
+                    int previousLookAheadIndex = event.getPreviousLookAheadIndex(purposeNode);
+                    newNodes.addAll(purposeNode.getChildren().stream().filter(node -> node.getIndex() > previousLookAheadIndex).collect(Collectors.toList()));
                 }
             }
 

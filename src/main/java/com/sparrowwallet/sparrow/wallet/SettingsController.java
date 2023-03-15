@@ -731,6 +731,13 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     @Subscribe
+    public void walletGapLimitChanged(WalletGapLimitChangedEvent event) {
+        if(walletForm.getWalletId().equals(event.getWalletId())) {
+            ((SettingsWalletForm)walletForm).gapLimitChanged(event.getGapLimit());
+        }
+    }
+
+    @Subscribe
     public void existingWalletImported(ExistingWalletImportedEvent event) {
         if(event.getExistingWalletId().equals(getWalletForm().getWalletId())) {
             List<Keystore> importedKeystores = event.getImportedWallet().getKeystores();

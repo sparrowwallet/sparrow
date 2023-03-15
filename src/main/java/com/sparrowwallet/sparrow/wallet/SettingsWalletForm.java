@@ -253,4 +253,8 @@ public class SettingsWalletForm extends WalletForm {
             masterWalletCopy.getChildWallets().add(childWallet.copy());
         }
     }
+
+    public void gapLimitChanged(int gapLimit) {
+        walletCopy.setGapLimit(gapLimit);
+    }
 }
