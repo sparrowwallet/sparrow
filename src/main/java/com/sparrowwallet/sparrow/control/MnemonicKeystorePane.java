@@ -44,7 +44,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     protected Label invalidLabel;
 
     protected SimpleListProperty<String> wordEntriesProperty;
-    protected final SimpleStringProperty passphraseProperty = new SimpleStringProperty();
+    protected final SimpleStringProperty passphraseProperty = new SimpleStringProperty("");
     protected IntegerProperty defaultWordSizeProperty;
 
     public MnemonicKeystorePane(String title, String description, String content, String imageUrl) {

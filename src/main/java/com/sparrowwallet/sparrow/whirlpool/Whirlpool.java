@@ -68,6 +68,7 @@ public class Whirlpool {
     private final ExpirablePoolSupplier poolSupplier;
     private final Tx0Service tx0Service;
     private Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
+    private Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
     private HD_Wallet hdWallet;
     private String walletId;
     private String mixToWalletId;
@@ -149,7 +150,6 @@ public class Whirlpool {
     }
 
     private Tx0Config computeTx0Config() {
-        Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
         return new Tx0Config(tx0ParamService, poolSupplier, tx0FeeTarget, mixFeeTarget, WhirlpoolAccount.BADBANK);
     }
 
@@ -163,7 +163,7 @@ public class Whirlpool {
             ScriptType scriptType = wallet.getScriptType();
             int purpose = scriptType.getDefaultDerivation().get(0).num();
             List<String> words = keystore.getSeed().getMnemonicCode();
-            String passphrase = keystore.getSeed().getPassphrase().asString();
+            String passphrase = keystore.getSeed().getPassphrase() == null ? "" : keystore.getSeed().getPassphrase().asString();
             HD_WalletFactoryGeneric hdWalletFactory = HD_WalletFactoryGeneric.getInstance();
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
             this.walletId = walletId;
@@ -486,6 +486,14 @@ public class Whirlpool {
 
     public void setTx0FeeTarget(Tx0FeeTarget tx0FeeTarget) {
         this.tx0FeeTarget = tx0FeeTarget;
+    }
+
+    public Tx0FeeTarget getMixFeeTarget() {
+        return mixFeeTarget;
+    }
+
+    public void setMixFeeTarget(Tx0FeeTarget mixFeeTarget) {
+        this.mixFeeTarget = mixFeeTarget;
     }
 
     public String getWalletId() {

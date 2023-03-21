@@ -59,7 +59,7 @@ public class Soroban {
             ScriptType scriptType = wallet.getScriptType();
             int purpose = scriptType.getDefaultDerivation().get(0).num();
             List<String> words = keystore.getSeed().getMnemonicCode();
-            String passphrase = keystore.getSeed().getPassphrase().asString();
+            String passphrase = keystore.getSeed().getPassphrase() == null ? "" : keystore.getSeed().getPassphrase().asString();
             byte[] seed = hdWalletFactory.computeSeedFromWords(words);
             hdWallet = new HD_Wallet(purpose, new ArrayList<>(words), sorobanServer.getParams(), seed, passphrase);
             bip47Account = wallet.isMasterWallet() ? wallet.getAccountIndex() : wallet.getMasterWallet().getAccountIndex();
