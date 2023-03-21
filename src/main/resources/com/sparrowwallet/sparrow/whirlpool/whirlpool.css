@@ -44,3 +44,7 @@
 .field-control {
     -fx-pref-width: 180px;
 }
+
+.low-fee-warning {
+    -fx-text-fill: rgb(238, 210, 2);
+}

@@ -56,6 +56,9 @@ public class WhirlpoolController {
     private CopyableLabel premixFeeRate;
 
     @FXML
+    private Label lowPremixFeeRate;
+
+    @FXML
     private ComboBox<Pool> pool;
 
     @FXML
@@ -139,9 +142,12 @@ public class WhirlpoolController {
             tx0Previews = null;
             tx0PreviewProperty.set(null);
             Tx0FeeTarget tx0FeeTarget = FEE_TARGETS.get(newValue.intValue());
-            premixFeeRate.setText(SparrowMinerFeeSupplier.getFee(Integer.parseInt(tx0FeeTarget.getFeeTarget().getValue())) + " sats/vB");
+            premixFeeRate.setText(getFeeRate(tx0FeeTarget) + " sats/vB");
+            lowPremixFeeRate.setVisible(tx0FeeTarget == Tx0FeeTarget.MIN && getFeeRate(tx0FeeTarget) * 2 < getFeeRate(Tx0FeeTarget.BLOCKS_4));
         });
         premixPriority.setValue(1);
+        lowPremixFeeRate.managedProperty().bind(lowPremixFeeRate.visibleProperty());
+        lowPremixFeeRate.setVisible(false);
 
         if(mixConfig.getScode() != null) {
             step1.setVisible(false);
@@ -216,6 +222,10 @@ public class WhirlpoolController {
                 nbOutputs.setVisible(true);
             }
         });
+    }
+
+    private int getFeeRate(Tx0FeeTarget tx0FeeTarget) {
+        return SparrowMinerFeeSupplier.getFee(Integer.parseInt(tx0FeeTarget.getFeeTarget().getValue()));
     }
 
     public boolean next() {
@@ -318,6 +328,7 @@ public class WhirlpoolController {
             tx0Previews = null;
             whirlpool.setScode(mixConfig.getScode());
             whirlpool.setTx0FeeTarget(FEE_TARGETS.get(premixPriority.valueProperty().intValue()));
+            whirlpool.setMixFeeTarget(FEE_TARGETS.get(premixPriority.valueProperty().intValue()));
 
             Whirlpool.Tx0PreviewsService tx0PreviewsService = new Whirlpool.Tx0PreviewsService(whirlpool, utxoEntries);
             tx0PreviewsService.setOnRunning(workerStateEvent -> {

@@ -197,6 +197,7 @@ public class MixPoolDialog extends WalletDialog {
             tx0Previews = null;
             whirlpool.setScode(mixConfig.getScode());
             whirlpool.setTx0FeeTarget(tx0FeeTarget);
+            whirlpool.setMixFeeTarget(tx0FeeTarget);
 
             Whirlpool.Tx0PreviewsService tx0PreviewsService = new Whirlpool.Tx0PreviewsService(whirlpool, utxoEntries);
             tx0PreviewsService.setOnRunning(workerStateEvent -> {

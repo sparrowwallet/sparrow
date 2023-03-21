@@ -107,6 +107,17 @@
                     </padding>
                     <Label text="Premix Fee Rate:" styleClass="field-label" />
                     <CopyableLabel fx:id="premixFeeRate" />
+                    <Label fx:id="lowPremixFeeRate">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="low-fee-warning"/>
+                        </graphic>
+                        <padding>
+                            <Insets left="12" />
+                        </padding>
+                        <tooltip>
+                            <Tooltip text="A low fee rate may delay the first mix."/>
+                        </tooltip>
+                    </Label>
                 </HBox>
             </VBox>
             <VBox fx:id="step4" spacing="15">
