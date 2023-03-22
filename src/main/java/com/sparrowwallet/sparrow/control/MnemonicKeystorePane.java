@@ -21,7 +21,6 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.layout.*;
 import javafx.util.Callback;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
-import org.controlsfx.control.textfield.CustomTextField;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -250,9 +249,14 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                     if(clipboard.hasString() && clipboard.getString().matches("(?m).+[\\n\\s][\\S\\s]*")) {
                         String[] words = clipboard.getString().split("[\\n\\s]");
                         WordEntry entry = WordEntry.this;
-                        for(String word : words) {
+                        for(int i = 0; i < words.length; i++) {
+                            String word = words[i];
                             if(entry.nextField != null) {
-                                entry.nextField.requestFocus();
+                                if(i == words.length - 2 && isValid(word)) {
+                                    label.requestFocus();
+                                } else {
+                                    entry.nextField.requestFocus();
+                                }
                             }
 
                             entry.wordField.setText(word);
@@ -282,7 +286,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             wordField.setTextFormatter(formatter);
 
             wordList = Bip39MnemonicCode.INSTANCE.getWordList();
-            AutoCompletionBinding<String> autoCompletionBinding = TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList));
+            AutoCompletionBinding<String> autoCompletionBinding = TextFields.bindAutoCompletion(wordField, new WordlistSuggestionProvider(wordList, wordNumber, wordEntryList));
             autoCompletionBinding.setDelay(50);
             autoCompletionBinding.setOnAutoCompleted(event -> {
                 if(nextField != null) {
@@ -290,11 +294,20 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                 }
             });
 
+            //Show autocomplete for the last word on focus if empty
+            boolean lastWord = wordNumber == wordEntryList.size() - 1;
+            if(lastWord) {
+                wordField.focusedProperty().addListener((observable, oldValue, focused) -> {
+                    if(focused && wordField.getText().isEmpty()) {
+                        autoCompletionBinding.setUserInput("");
+                    }
+                });
+            }
+
             ValidationSupport validationSupport = new ValidationSupport();
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
             validationSupport.registerValidator(wordField, Validator.combine(
-                    Validator.createEmptyValidator("Word is required"),
-                    (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid word", !wordList.contains(newValue))
+                    (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid word", (newValue.length() > 0 || !lastWord) && !wordList.contains(newValue))
             ));
 
             wordField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -323,13 +336,30 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
     protected static class WordlistSuggestionProvider implements Callback<AutoCompletionBinding.ISuggestionRequest, Collection<String>> {
         private final List<String> wordList;
+        private final int wordNumber;
+        private final ObservableList<String> wordEntryList;
 
-        public WordlistSuggestionProvider(List<String> wordList) {
+        public WordlistSuggestionProvider(List<String> wordList, int wordNumber, ObservableList<String> wordEntryList) {
             this.wordList = wordList;
+            this.wordNumber = wordNumber;
+            this.wordEntryList = wordEntryList;
         }
 
         @Override
         public Collection<String> call(AutoCompletionBinding.ISuggestionRequest request) {
+            if(wordNumber == wordEntryList.size() - 1 && allPreviousWordsValid()) {
+                try {
+                    List<String> possibleLastWords = Bip39MnemonicCode.INSTANCE.getPossibleLastWords(wordEntryList.subList(0, wordEntryList.size() - 1));
+                    if(!request.getUserText().isEmpty()) {
+                        possibleLastWords.removeIf(s -> !s.startsWith(request.getUserText()));
+                    }
+
+                    return possibleLastWords;
+                } catch(Exception e) {
+                    log.warn("Cannot determine possible last words", e);
+                }
+            }
+
             List<String> suggestions = new ArrayList<>();
             if(!request.getUserText().isEmpty()) {
                 for(String word : wordList) {
@@ -340,6 +370,16 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             }
 
             return suggestions;
+        }
+
+        private boolean allPreviousWordsValid() {
+            for(int i = 0; i < wordEntryList.size() - 1; i++) {
+                if(!WordEntry.isValid(wordEntryList.get(i))) {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 
