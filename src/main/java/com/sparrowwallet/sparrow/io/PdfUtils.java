@@ -13,6 +13,7 @@ import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.UREncoder;
@@ -25,8 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.io.*;
-import java.util.Locale;
-import java.util.Scanner;
+import java.util.*;
+import java.util.List;
 
 public class PdfUtils {
     private static final Logger log = LoggerFactory.getLogger(PdfUtils.class);
@@ -107,5 +108,34 @@ public class PdfUtils {
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         return new javafx.scene.image.Image(bais);
+    }
+
+    public static String[][] getWordGrid(InputStream inputStream) {
+        try {
+            PdfReader pdfReader = new PdfReader(inputStream);
+            String allText = "";
+            for(int page = 1; page <= pdfReader.getNumberOfPages(); page++) {
+                PdfTextExtractor textExtractor = new PdfTextExtractor(pdfReader);
+                allText += textExtractor.getTextFromPage(page) + "\n";
+            }
+
+            List<String[]> rows = new ArrayList<>();
+            Scanner scanner = new Scanner(allText);
+            while(scanner.hasNextLine()) {
+                String line = scanner.nextLine().trim();
+                String[] words = line.split(" ");
+                if(words.length > 16 && Utils.isNumber(words[0])) {
+                    rows.add(Arrays.copyOfRange(words, 1, 17));
+                }
+            }
+
+            if(rows.size() < 128) {
+                throw new IllegalArgumentException("Not a valid Border Wallets PDF");
+            }
+
+            return rows.toArray(new String[][]{new String[0]});
+        } catch(Exception e) {
+            throw new IllegalArgumentException("Not a valid Border Wallets PDF");
+        }
     }
 }

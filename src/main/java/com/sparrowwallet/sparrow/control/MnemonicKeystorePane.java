@@ -12,6 +12,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -20,6 +22,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.layout.*;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.TextFields;
 import org.controlsfx.glyphfont.Glyph;
@@ -78,12 +81,54 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             enterMnemonicButton.getItems().add(item);
         }
         enterMnemonicButton.getItems().add(new SeparatorMenuItem());
+        MenuItem gridItem = new MenuItem("Border Wallets...");
+        gridItem.setOnAction(event -> {
+            showGrid();
+        });
+        enterMnemonicButton.getItems().add(gridItem);
+
         MenuItem scanItem = new MenuItem("Scan QR...");
         scanItem.setOnAction(event -> {
             scanQR();
         });
         enterMnemonicButton.getItems().add(scanItem);
         enterMnemonicButton.managedProperty().bind(enterMnemonicButton.visibleProperty());
+    }
+
+    protected void showGrid() {
+        MnemonicGridDialog mnemonicGridDialog = new MnemonicGridDialog();
+        Optional<List<String>> optWords = mnemonicGridDialog.showAndWait();
+        if(optWords.isPresent()) {
+            List<String> words = optWords.get();
+            setContent(getMnemonicWordsEntry(words.size() + 1, true));
+            setExpanded(true);
+
+            for(int i = 0; i < wordsPane.getChildren().size(); i++) {
+                WordEntry wordEntry = (WordEntry)wordsPane.getChildren().get(i);
+                if(i < words.size()) {
+                    wordEntry.getEditor().setText(words.get(i));
+                    wordEntry.getEditor().setEditable(false);
+                } else {
+                    ScheduledService<Void> service = new ScheduledService<>() {
+                        @Override
+                        protected Task<Void> createTask() {
+                            return new Task<>() {
+                                @Override
+                                protected Void call() {
+                                    return null;
+                                }
+                            };
+                        }
+                    };
+                    service.setDelay(Duration.millis(500));
+                    service.setOnSucceeded(event1 -> {
+                        service.cancel();
+                        Platform.runLater(() -> wordEntry.getEditor().requestFocus());
+                    });
+                    service.start();
+                }
+            }
+        }
     }
 
     protected void scanQR() {

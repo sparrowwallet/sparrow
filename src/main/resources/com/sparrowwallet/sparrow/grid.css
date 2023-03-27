@@ -1,0 +1,5 @@
+#grid .spreadsheet-cell:selected,
+#grid .spreadsheet-cell:focused:selected,
+#grid .spreadsheet-cell:focused:selected:hover {
+    -fx-background-color: rgb(238, 210, 2);
+}
