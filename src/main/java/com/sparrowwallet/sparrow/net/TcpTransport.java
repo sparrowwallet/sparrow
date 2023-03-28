@@ -254,7 +254,11 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     protected void createSocket() throws IOException {
         socket = socketFactory.createSocket();
-        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(Protocol.TCP.getDefaultPort())));
+        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(getDefaultPort())));
+    }
+
+    protected int getDefaultPort() {
+        return Protocol.TCP.getDefaultPort();
     }
 
     public boolean isClosed() {

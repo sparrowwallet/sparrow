@@ -2,14 +2,12 @@ package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.sparrow.AppServices;
-import org.berndpruenster.netlayer.tor.*;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 
 public class TorTcpTransport extends TcpTransport {
-    public static final String TOR_DIR_PREFIX = "tor";
-
     public TorTcpTransport(HostAndPort server) {
         super(server);
     }
@@ -24,6 +22,7 @@ public class TorTcpTransport extends TcpTransport {
             throw new IllegalStateException("Can't create Tor socket, Tor is not running");
         }
 
-        socket = new TorSocket(server.getHost(), server.getPortOrDefault(Protocol.TCP.getDefaultPort()), "sparrow");
+        socket = new Socket(Tor.getDefault().getProxy());
+        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(getDefaultPort())));
     }
 }

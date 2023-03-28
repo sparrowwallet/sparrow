@@ -50,7 +50,6 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.Duration;
-import org.berndpruenster.netlayer.tor.Tor;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -252,7 +251,7 @@ public class AppServices {
         }
 
         if(Tor.getDefault() != null) {
-            Tor.getDefault().shutdown();
+            Tor.getDefault().getTorManager().destroy(true, success -> {});
         }
     }
 
@@ -414,23 +413,6 @@ public class AppServices {
             EventManager.get().post(new TorReadyStatusEvent());
         });
         torService.setOnFailed(workerStateEvent -> {
-            Throwable exception = workerStateEvent.getSource().getException();
-            if(exception instanceof TorServerAlreadyBoundException) {
-                String proxyServer = Config.get().getProxyServer();
-                if(proxyServer == null || proxyServer.equals("")) {
-                    proxyServer = "localhost:9050";
-                    Config.get().setProxyServer(proxyServer);
-                }
-
-                if(proxyServer.equals("localhost:9050") || proxyServer.equals("127.0.0.1:9050")) {
-                    Config.get().setUseProxy(true);
-                    torService.cancel();
-                    restartServices();
-                    EventManager.get().post(new TorExternalStatusEvent());
-                    return;
-                }
-            }
-
             EventManager.get().post(new TorFailedStatusEvent(workerStateEvent.getSource().getException()));
         });
 
@@ -490,8 +472,7 @@ public class AppServices {
             InetSocketAddress proxyAddress = new InetSocketAddress(proxyHostAndPort.getHost(), proxyHostAndPort.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
             proxy = new Proxy(Proxy.Type.SOCKS, proxyAddress);
         } else if(AppServices.isTorRunning()) {
-            InetSocketAddress proxyAddress = new InetSocketAddress("localhost", TorService.PROXY_PORT);
-            proxy = new Proxy(Proxy.Type.SOCKS, proxyAddress);
+            proxy = Tor.getDefault().getProxy();
         }
 
         //Setting new proxy authentication credentials will force a new Tor circuit to be created
@@ -546,7 +527,7 @@ public class AppServices {
 
     public static HostAndPort getTorProxy() {
         return AppServices.isTorRunning() ?
-                HostAndPort.fromParts("localhost", TorService.PROXY_PORT) :
+                Tor.getDefault().getProxyHostAndPort() :
                 (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer()));
     }
 

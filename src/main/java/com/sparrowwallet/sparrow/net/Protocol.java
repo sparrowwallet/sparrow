@@ -151,7 +151,7 @@ public enum Protocol {
     }
 
     public static boolean isOnionHost(String host) {
-        return host != null && host.toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX);
+        return host != null && host.toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX);
     }
 
     public static boolean isOnionAddress(Server server) {

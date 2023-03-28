@@ -125,4 +125,9 @@ public class TcpOverTlsTransport extends TcpTransport {
 
         return Storage.getCertificateFile(server.getHost()) == null;
     }
+
+    @Override
+    protected int getDefaultPort() {
+        return Protocol.SSL.getDefaultPort();
+    }
 }

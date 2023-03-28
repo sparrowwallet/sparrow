@@ -5,6 +5,10 @@ public class TorServerException extends ServerException {
         super(cause);
     }
 
+    public TorServerException(String message) {
+        super(message);
+    }
+
     public TorServerException(String message, Throwable cause) {
         super(message, cause);
     }

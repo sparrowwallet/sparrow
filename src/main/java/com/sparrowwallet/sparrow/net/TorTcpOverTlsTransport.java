@@ -27,20 +27,14 @@ public class TorTcpOverTlsTransport extends TcpOverTlsTransport {
 
     @Override
     protected void createSocket() throws IOException {
-        TorTcpTransport torTcpTransport = new TorTcpTransport(server);
+        TorTcpTransport torTcpTransport = new TorTcpTransport(server) {
+            @Override
+            protected int getDefaultPort() {
+                return Protocol.SSL.getDefaultPort();
+            }
+        };
         torTcpTransport.createSocket();
         socket = torTcpTransport.socket;
-
-        try {
-            Field socketField = socket.getClass().getDeclaredField("socket");
-            socketField.setAccessible(true);
-            Socket innerSocket = (Socket)socketField.get(socket);
-            Field connectedField = innerSocket.getClass().getSuperclass().getDeclaredField("connected");
-            connectedField.setAccessible(true);
-            connectedField.set(innerSocket, true);
-        } catch(Exception e) {
-            log.error("Could not set socket connected status", e);
-        }
 
         socket = sslSocketFactory.createSocket(socket, server.getHost(), server.getPortOrDefault(Protocol.SSL.getDefaultPort()), true);
         startHandshake((SSLSocket)socket);

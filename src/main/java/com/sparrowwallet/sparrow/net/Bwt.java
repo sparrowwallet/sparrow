@@ -184,7 +184,7 @@ public class Bwt {
 
     private HostAndPort getTorProxy() {
         return AppServices.isTorRunning() ?
-                HostAndPort.fromParts("127.0.0.1", TorService.PROXY_PORT) :
+                Tor.getDefault().getProxyHostAndPort() :
                 (Config.get().getProxyServer() == null || Config.get().getProxyServer().isEmpty() || !Config.get().isUseProxy() ? null : HostAndPort.fromString(Config.get().getProxyServer().replace("localhost", "127.0.0.1")));
     }
 

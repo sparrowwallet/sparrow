@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
+import javafx.concurrent.Worker;
 import javafx.geometry.Insets;
 import javafx.scene.Group;
 import javafx.scene.Node;
@@ -33,15 +34,15 @@ public class TorStatusLabel extends Label {
     }
 
     public void update() {
-        boolean proxyInUse = AppServices.isUsingProxy();
-        boolean internal = AppServices.isTorRunning();
-
-        if(!proxyInUse || internal) {
+        if(!Config.get().isUseProxy()) {
             torConnectionTest.cancel();
-            if(internal) {
+            if(AppServices.isTorRunning()) {
                 setTooltip(new Tooltip("Internal Tor proxy enabled"));
             }
         } else if(!torConnectionTest.isRunning()) {
+            if(torConnectionTest.getState() == Worker.State.CANCELLED || torConnectionTest.getState() == Worker.State.FAILED) {
+                torConnectionTest.reset();
+            }
             torConnectionTest.setPeriod(Duration.seconds(20.0));
             torConnectionTest.setBackoffStrategy(null);
             torConnectionTest.setOnSucceeded(workerStateEvent -> {

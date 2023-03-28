@@ -23,6 +23,19 @@ if(System.getProperty("os.arch") == "aarch64") {
 }
 def headless = "true".equals(System.getProperty("java.awt.headless"))
 
+def vTor = '4.7.13-4'
+def vKmpTor = '1.4.2'
+def kmpOs = osName
+if(os.macOsX) {
+    kmpOs = "macos"
+} else if(os.windows) {
+    kmpOs = "mingw"
+}
+def kmpArch = "x64"
+if(System.getProperty("os.arch") == "aarch64") {
+    kmpArch = "arm64"
+}
+
 group "com.sparrowwallet"
 version "${sparrowVersion}"
 
@@ -84,10 +97,15 @@ dependencies {
     implementation("com.github.sarxos:webcam-capture${targetName}:0.3.13-SNAPSHOT") {
         exclude group: 'com.nativelibs4java', module: 'bridj'
     }
-    implementation("com.sparrowwallet:netlayer-jpms-${osName}${targetName}:0.6.8") {
-        exclude group: 'org.jetbrains.kotlin'
+    implementation "io.matthewnelson.kotlin-components:kmp-tor:${vTor}-${vKmpTor}"
+    if(kmpOs == "linux" && kmpArch == "arm64") {
+        implementation("com.sparrowwallet.kmp-tor-binary:kmp-tor-binary-${kmpOs}${kmpArch}-jvm:${vTor}")
+    } else {
+        implementation("io.matthewnelson.kotlin-components:kmp-tor-binary-${kmpOs}${kmpArch}:${vTor}")
     }
-    implementation('org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.5.20')
+    implementation("io.matthewnelson.kotlin-components:kmp-tor-binary-extract:${vTor}")
+    implementation("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-manager:${vKmpTor}")
+    implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.6.4')
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.1.0' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'
@@ -163,7 +181,8 @@ run {
                                  "--add-opens=javafx.graphics/javafx.scene.input=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.io=com.google.gson",
-                                 "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow"]
+                                 "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
+                                 "--add-reads=kotlin.stdlib=kotlinx.coroutines.core.jvm"]
 
     if(os.macOsX) {
         applicationDefaultJvmArgs += ["-Dprism.lcdtext=false", "-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow-large.png",
@@ -221,7 +240,8 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.databind",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.annotation",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.core",
-                   "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor"]
+                   "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor",
+                   "--add-reads=kotlin.stdlib=kotlinx.coroutines.core.jvm"]
 
         if(os.windows) {
             jvmArgs += ["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"]
@@ -403,11 +423,6 @@ extraJavaModuleInfo {
         requires('java.xml')
         requires('java.logging')
     }
-    module('kotlin-logging-1.5.4.jar', 'io.github.microutils.kotlin.logging', '1.5.4') {
-        exports('mu')
-        requires('kotlin.stdlib')
-        requires('org.slf4j')
-    }
     module('failureaccess-1.0.1.jar', 'failureaccess', '1.0.1') {
         exports('com.google.common.util.concurrent.internal')
     }
@@ -483,13 +498,6 @@ extraJavaModuleInfo {
         requires('javafx.graphics')
     }
     module('jai-imageio-core-1.4.0.jar', 'com.github.jai.imageio.jai.imageio.core', '1.4.0')
-    module('kotlin-stdlib-jdk8-1.5.20.jar', 'org.jetbrains.kotlin.kotlin.stdlib.jdk8', '1.5.20')
-    module('kotlin-stdlib-jdk7-1.5.20.jar', 'org.jetbrains.kotlin.kotlin.stdlib.jdk7', '1.5.20')
-    module('kotlin-stdlib-1.5.20.jar', 'kotlin.stdlib', '1.5.20') {
-        exports('kotlin')
-        exports('kotlin.jvm')
-        exports('kotlin.collections')
-    }
     module('hummingbird-1.6.3.jar', 'com.sparrowwallet.hummingbird', '1.6.3') {
         exports('com.sparrowwallet.hummingbird')
         exports('com.sparrowwallet.hummingbird.registry')
@@ -597,29 +605,131 @@ extraJavaModuleInfo {
         requires('javafx.graphics')
         requires('java.xml')
     }
-    module("netlayer-jpms-${osName}${targetName}-0.6.8.jar", 'netlayer.jpms', '0.6.8') {
-        exports('org.berndpruenster.netlayer.tor')
-        requires('com.github.ravn.jsocks')
-        requires('com.github.JesusMcCloud.jtorctl')
+    module('kotlinx-coroutines-core-jvm-1.6.4.jar', 'kotlinx.coroutines.core.jvm', '1.6.4') {
+        exports('kotlinx.coroutines')
         requires('kotlin.stdlib')
-        requires('commons.compress')
-        requires('org.tukaani.xz')
+        requires('java.instrument')
+        uses('kotlinx.coroutines.CoroutineExceptionHandler')
+        uses('kotlinx.coroutines.internal.MainDispatcherFactory')
+    }
+    module('kotlinx-coroutines-javafx-1.6.4.jar', 'kotlinx.coroutines.javafx', '1.6.4') {
+        exports('kotlinx.coroutines.javafx')
+        requires('kotlinx.coroutines.core.jvm')
+        requires('kotlin.stdlib')
+        requires('javafx.graphics')
+    }
+    module("kmp-tor-jvm-${vKmpTor}.jar", 'kmp.tor.jvm', "${vTor}-${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor')
+        requires('kmp.tor.binary.extract.jvm')
+        requires('kmp.tor.manager.jvm')
+        requires('kmp.tor.manager.common.jvm')
+        requires('kmp.tor.controller.common.jvm')
+        requires('kotlin.stdlib')
+        requires('kotlinx.coroutines.core.jvm')
         requires('java.management')
-        requires('io.github.microutils.kotlin.logging')
     }
-    module('jtorctl-1.5.jar', 'com.github.JesusMcCloud.jtorctl', '1.5') {
-        exports('net.freehaven.tor.control')
+    if(kmpOs == "linux" && kmpArch == "arm64") {
+        module("kmp-tor-binary-${kmpOs}${kmpArch}-jvm-${vTor}.jar", "kmp.tor.binary.${kmpOs}${kmpArch}", "${vTor}") {
+            exports("io.matthewnelson.kmp.tor.resource.${kmpOs}.${kmpArch}")
+            exports("kmptor.${kmpOs}.${kmpArch}")
+        }
+    } else {
+        module("kmp-tor-binary-${kmpOs}${kmpArch}-jvm-${vTor}.jar", "kmp.tor.binary.${kmpOs}${kmpArch}", "${vTor}") {
+            exports("io.matthewnelson.kmp.tor.binary.${kmpOs}.${kmpArch}")
+            exports("kmptor.${kmpOs}.${kmpArch}")
+        }
     }
-    module('commons-compress-1.18.jar', 'commons.compress', '1.18') {
-        exports('org.apache.commons.compress')
-        requires('org.tukaani.xz')
+    module("kmp-tor-binary-extract-jvm-${vTor}.jar", 'kmp.tor.binary.extract.jvm', "${vTor}") {
+        exports('io.matthewnelson.kmp.tor.binary.extract')
+        exports('io.matthewnelson.kmp.tor.binary.extract.internal')
+        requires('kotlin.stdlib')
+        requires("kmp.tor.binary.${kmpOs}${kmpArch}")
+        requires('kmp.tor.binary.geoip.jvm')
     }
-    module('xz-1.6.jar', 'org.tukaani.xz', '1.6') {
-        exports('org.tukaani.xz')
+    module("kmp-tor-manager-jvm-${vKmpTor}.jar", 'kmp.tor.manager.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.manager')
+        exports('io.matthewnelson.kmp.tor.manager.util')
+        requires('kmp.tor.controller.common.jvm')
+        requires('kmp.tor.manager.common.jvm')
+        requires('kotlin.stdlib')
+        requires('kotlinx.coroutines.core.jvm')
+        requires('kotlinx.atomicfu')
+        requires('kmp.tor.controller.jvm')
+        requires('kmp.tor.common.jvm')
     }
-    module('jsocks-1.0.jar', 'com.github.ravn.jsocks', '1.0') {
-        exports('com.runjva.sourceforge.jsocks.protocol')
-        requires('org.slf4j')
+    module("kmp-tor-manager-common-jvm-${vKmpTor}.jar", 'kmp.tor.manager.common.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.manager.common')
+        exports('io.matthewnelson.kmp.tor.manager.common.event')
+        exports('io.matthewnelson.kmp.tor.manager.common.state')
+        requires('kmp.tor.controller.common.jvm')
+        requires('kmp.tor.common.jvm')
+        requires('kotlin.stdlib')
+    }
+    module("kmp-tor-controller-common-jvm-${vKmpTor}.jar", 'kmp.tor.controller.common.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.controller.common.config')
+        exports('io.matthewnelson.kmp.tor.controller.common.file')
+        exports('io.matthewnelson.kmp.tor.controller.common.control')
+        exports('io.matthewnelson.kmp.tor.controller.common.control.usecase')
+        exports('io.matthewnelson.kmp.tor.controller.common.events')
+        exports('io.matthewnelson.kmp.tor.controller.common.exceptions')
+        requires('kmp.tor.common.jvm')
+        requires('kotlin.stdlib')
+        requires('kotlinx.atomicfu')
+    }
+    module("kmp-tor-common-jvm-${vKmpTor}.jar", 'kmp.tor.common.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.common.address')
+        requires('parcelize.jvm')
+        requires('kotlin.stdlib')
+    }
+    module("kmp-tor-controller-jvm-${vKmpTor}.jar", 'kmp.tor.controller.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.controller.internal.controller')
+        requires('kmp.tor.common.jvm')
+        requires('kmp.tor.controller.common.jvm')
+        requires('kotlinx.coroutines.core.jvm')
+        requires('kotlin.stdlib')
+        requires('kotlinx.atomicfu')
+        requires('encoding.core.jvm')
+        requires('encoding.base16.jvm')
+    }
+    module("kmp-tor-ext-callback-common-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.common.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.ext.callback.common')
+    }
+    module("kmp-tor-ext-callback-manager-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.manager.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.ext.callback.manager')
+        requires('kmp.tor.manager.jvm')
+        requires('kmp.tor.ext.callback.common.jvm')
+        requires('kmp.tor.ext.callback.manager.common.jvm')
+        requires('kmp.tor.ext.callback.controller.common.jvm')
+        requires('kmp.tor.manager.common.jvm')
+        requires('kmp.tor.controller.common.jvm')
+        requires('kotlin.stdlib')
+        requires('kotlinx.coroutines.core.jvm')
+    }
+    module("kmp-tor-ext-callback-manager-common-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.manager.common.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.ext.callback.manager.common')
+        requires('kmp.tor.ext.callback.controller.common.jvm')
+    }
+    module("kmp-tor-ext-callback-controller-common-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.controller.common.jvm', "${vKmpTor}") {
+        exports('io.matthewnelson.kmp.tor.ext.callback.controller.common.control')
+        exports('io.matthewnelson.kmp.tor.ext.callback.controller.common.control.usecase')
+    }
+    module("kmp-tor-binary-geoip-jvm-${vTor}.jar", 'kmp.tor.binary.geoip.jvm', "${vTor}") {
+        exports('io.matthewnelson.kmp.tor.binary.geoip')
+        exports('kmptor')
+    }
+    module("encoding-base16-jvm-1.2.1.jar", 'encoding.base16.jvm', "1.2.1") {
+        exports('io.matthewnelson.encoding.base16')
+        requires('encoding.core.jvm')
+        requires('kotlin.stdlib')
+    }
+    module("encoding-base32-jvm-1.2.1.jar", 'encoding.base32.jvm', "1.2.1")
+    module("encoding-base64-jvm-1.2.1.jar", 'encoding.base64.jvm', "1.2.1")
+    module("encoding-core-jvm-1.2.1.jar", 'encoding.core.jvm', "1.2.1") {
+        exports('io.matthewnelson.encoding.core')
+        requires('kotlin.stdlib')
+    }
+    module("parcelize-jvm-0.1.2.jar", 'parcelize.jvm', "0.1.2") {
+        exports('io.matthewnelson.component.parcelize')
     }
     module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
     module('logback-core-1.2.8.jar', 'logback.core', '1.2.8') {

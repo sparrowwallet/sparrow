@@ -128,7 +128,7 @@ public class Auth47 {
         }
 
         Proxy proxy = AppServices.getProxy();
-        if(proxy == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(TorService.TOR_ADDRESS_SUFFIX)) {
+        if(proxy == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX)) {
             throw new Auth47Exception("A Tor proxy must be configured to authenticate this resource.");
         }
 

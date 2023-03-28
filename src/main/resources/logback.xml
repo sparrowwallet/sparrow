@@ -60,14 +60,6 @@
         </encoder>
     </appender>
 
-    <appender name="APPLICATION_TOR" class="com.sparrowwallet.drongo.ApplicationAppender">
-        <callback>com.sparrowwallet.sparrow.TorLogHandler</callback>
-    </appender>
-
-    <logger name="org.berndpruenster.netlayer.tor" level="debug" additivity="false">
-        <appender-ref ref="APPLICATION_TOR" />
-    </logger>
-
     <root level="warn">
         <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />

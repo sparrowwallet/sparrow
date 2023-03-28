@@ -19,7 +19,19 @@ open module com.sparrowwallet.sparrow {
     requires org.jetbrains.annotations;
     requires com.fasterxml.jackson.databind;
     requires com.fasterxml.jackson.annotation;
-    requires netlayer.jpms;
+    requires kotlin.stdlib;
+    requires kmp.tor.jvm;
+    requires kmp.tor.binary.extract.jvm;
+    requires kmp.tor.common.jvm;
+    requires kmp.tor.controller.common.jvm;
+    requires kmp.tor.manager.jvm;
+    requires kmp.tor.manager.common.jvm;
+    requires kmp.tor.ext.callback.manager.jvm;
+    requires kmp.tor.ext.callback.common.jvm;
+    requires kmp.tor.ext.callback.manager.common.jvm;
+    requires kmp.tor.ext.callback.controller.common.jvm;
+    requires parcelize.jvm;
+    requires kotlinx.coroutines.javafx;
     requires org.slf4j;
     requires com.google.gson;
     requires org.jdbi.v3.core;
@@ -31,7 +43,6 @@ open module com.sparrowwallet.sparrow {
     requires org.fxmisc.flowless;
     requires com.github.sarxos.webcam.capture;
     requires centerdevice.nsmenufx;
-    requires com.github.JesusMcCloud.jtorctl;
     requires com.beust.jcommander;
     requires org.slf4j.jul.to.slf4j;
     requires net.sourceforge.javacsv;

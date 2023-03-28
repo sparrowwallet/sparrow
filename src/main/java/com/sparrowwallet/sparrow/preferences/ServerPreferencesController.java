@@ -28,8 +28,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.util.StringConverter;
-import org.berndpruenster.netlayer.tor.Tor;
 import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -494,20 +492,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
             torService.cancel();
             testResults.appendText("\nTor failed to start");
             showConnectionFailure(workerStateEvent.getSource().getException());
-
-            Throwable exception = workerStateEvent.getSource().getException();
-            if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER &&
-                    exception instanceof TorServerAlreadyBoundException &&
-                    useProxyOriginal == null && !useProxy.isSelected() &&
-                    (proxyHost.getText().isEmpty() || proxyHost.getText().equals("localhost") || proxyHost.getText().equals("127.0.0.1")) &&
-                    (proxyPort.getText().isEmpty() || proxyPort.getText().equals("9050"))) {
-                useProxy.setSelected(true);
-                proxyHost.setText("localhost");
-                proxyPort.setText("9050");
-                useProxyOriginal = false;
-                testResults.appendText("\n\nAssuming Tor proxy is running on port 9050 and trying again...");
-                startElectrumConnection();
-            }
         });
 
         torService.start();
@@ -658,8 +642,6 @@ public class ServerPreferencesController extends PreferencesDetailController {
             reason = tlsServerException.getMessage() + "\n\n" + reason;
         } else if(exception instanceof ProxyServerException) {
             reason += ". Check if the proxy server is running.";
-        } else if(exception instanceof TorServerAlreadyBoundException) {
-            reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
         } else if(reason != null && (reason.contains("Check if Bitcoin Core is running") || reason.contains("Could not connect to Bitcoin Core RPC"))) {
             reason += "\n\nSee https://sparrowwallet.com/docs/connect-node.html";
         } else if(reason != null && (reason.startsWith("Cannot connect to hidden service"))) {

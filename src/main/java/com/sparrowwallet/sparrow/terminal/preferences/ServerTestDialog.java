@@ -15,7 +15,6 @@ import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import javafx.application.Platform;
 import javafx.scene.control.ButtonType;
 import javafx.util.Duration;
-import org.berndpruenster.netlayer.tor.Tor;
 
 import java.io.File;
 import java.text.DateFormat;
@@ -203,8 +202,6 @@ public class ServerTestDialog extends DialogWindow {
             reason = tlsServerException.getMessage() + "\n\n" + reason;
         } else if(exception instanceof ProxyServerException) {
             reason += ". Check if the proxy server is running.";
-        } else if(exception instanceof TorServerAlreadyBoundException) {
-            reason += "\nIs a Tor proxy already running on port " + TorService.PROXY_PORT + "?";
         } else if(reason != null && reason.contains("Check if Bitcoin Core is running")) {
             reason += "\n\nSee https://sparrowwallet.com/docs/connect-node.html";
         }
