@@ -27,6 +27,7 @@ import java.io.FileInputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 
@@ -148,6 +149,23 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         return words;
     }
 
+    public List<String> shuffle(List<String> mnemonic) {
+        String mnemonicString = String.join(" ", mnemonic);
+        List<String> words = new ArrayList<>(Bip39MnemonicCode.INSTANCE.getWordList());
+
+        UltraHighEntropyPrng uhePrng = new UltraHighEntropyPrng();
+        uhePrng.initState();
+        uhePrng.hashString(mnemonicString);
+        for(int i = words.size() - 1; i > 0; i--) {
+            int j = (int)uhePrng.random(i + 1);
+            String tmp = words.get(i);
+            words.set(i, words.get(j));
+            words.set(j, tmp);
+        }
+
+        return words;
+    }
+
     private class MnemonicGridDialogPane extends DialogPane {
         @Override
         protected Node createButton(ButtonType buttonType) {
@@ -191,6 +209,109 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
             Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
             glyph.setFontSize(11);
             return glyph;
+        }
+    }
+
+    public static class UltraHighEntropyPrng {
+        private final int order;
+        private double carry;
+        private int phase;
+        private final double[] intermediates;
+        private int i, j, k; // general purpose locals
+
+        public UltraHighEntropyPrng() {
+            order = 48; // set the 'order' number of ENTROPY-holding 32-bit values
+            carry = 1; // init the 'carry' used by the multiply-with-carry (MWC) algorithm
+            phase = order; // init the 'phase' (max-1) of the intermediate variable pointer
+            intermediates = new double[order]; // declare our intermediate variables array
+
+            for(i = 0; i < order; i++) {
+                // Used to simulate javascript's Math.random
+                Random random = new Random();
+                intermediates[i] = mash(random.nextInt(Integer.MAX_VALUE)); // fill the array with initial mash hash values
+            }
+        }
+
+        public double random(int range) {
+            return Math.floor(range * (rawPrng() + ((long)(rawPrng() * 0x200000L)) * 1.1102230246251565e-16)); // 2^-53
+        }
+
+        private String randomString(int count) {
+            StringBuilder stringBuilder = new StringBuilder();
+            for(i = 0; i < count; i++) {
+                char newChar = (char) (33 + random(94));
+                stringBuilder.append(newChar);
+            }
+            return stringBuilder.toString();
+        }
+
+        private double rawPrng() {
+            if(++phase >= order) {
+                phase = 0;
+            }
+            double t = 1768863 * intermediates[phase] + carry * 2.3283064365386963e-10; // 2^-32
+            long temp = (long)t;
+            return intermediates[phase] = t - (carry = temp);
+        }
+
+        private void hash(String args) {
+            for(i = 0; i < args.length(); i++) {
+                for(j = 0; j < order; j++) {
+                    intermediates[j] -= mash(args.charAt(i));
+                    if(intermediates[j] < 0) {
+                        intermediates[j] = intermediates[j] + 1;
+                    }
+                }
+            }
+        }
+
+        public void hashString(String input) {
+            mash(input); // use the string to evolve the 'mash' state
+
+            char[] inputAry = input.toCharArray();
+            for(i = 0; i < inputAry.length; i++) // scan through the characters in our string
+            {
+                k = inputAry[i]; // get the character code at the location
+                for(j = 0; j < order; j++) // "mash" it into the UHEPRNG state
+                {
+                    intermediates[j] -= mash(k);
+                    if(intermediates[j] < 0) {
+                        intermediates[j] += 1;
+                    }
+                }
+            }
+        }
+
+        public void initState() {
+            mash(null);
+            for(i = 0; i < order; i++) {
+                intermediates[i] = mash(' '); // fill the array with initial mash hash values
+            }
+            carry = 1; // init our multiply-with-carry carry
+            phase = order; // init our phase
+        }
+
+        double n = Integer.toUnsignedLong(0xefc8249d);
+
+        private double mash(Object data) {
+            if(data != null) {
+                String strData = data.toString();
+                for(int i = 0; i < strData.length(); i++) {
+                    n += strData.charAt(i);
+                    double h = 0.02519603282416938 * n;
+                    n = Integer.toUnsignedLong((int)h);
+                    h -= n;
+                    h *= n;
+                    n = Integer.toUnsignedLong((int)h);
+                    h -= n;
+                    n += h * 0x100000000L; // 2^32
+                }
+                return ((long)n) * 2.3283064365386963e-10; // 2^-32
+            } else {
+                n = Integer.toUnsignedLong(0xefc8249d);
+            }
+
+            return n;
         }
     }
 }
