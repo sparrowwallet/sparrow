@@ -34,6 +34,12 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
         this.bip47Account = bip47Account;
         bip84w.getAccount(account).getReceive().setAddrIdx(wallet.getFreshNode(KeyPurpose.RECEIVE).getIndex());
         bip84w.getAccount(account).getChange().setAddrIdx(wallet.getFreshNode(KeyPurpose.CHANGE).getIndex());
+
+        if(!wallet.isMasterWallet() && account != 0) {
+            Wallet masterWallet = wallet.getMasterWallet();
+            bip84w.getAccount(0).getReceive().setAddrIdx(masterWallet.getFreshNode(KeyPurpose.RECEIVE).getIndex());
+            bip84w.getAccount(0).getChange().setAddrIdx(masterWallet.getFreshNode(KeyPurpose.CHANGE).getIndex());
+        }
     }
 
     public void addUtxo(WalletNode node, BlockTransaction blockTransaction, int index) {
@@ -84,15 +90,23 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
     public Pair<Integer, Integer> fetchReceiveIndex(int account) throws Exception {
         if(account == StandardAccount.WHIRLPOOL_POSTMIX.getAccountNumber()) {
             // force change chain
-            return Pair.of(wallet.getFreshNode(KeyPurpose.CHANGE).getIndex(), 1);
+            return Pair.of(getWallet(account).getFreshNode(KeyPurpose.CHANGE).getIndex(), 1);
         }
 
-        return Pair.of(wallet.getFreshNode(KeyPurpose.RECEIVE).getIndex(), 0);
+        return Pair.of(getWallet(account).getFreshNode(KeyPurpose.RECEIVE).getIndex(), 0);
     }
 
     @Override
     public Pair<Integer, Integer> fetchChangeIndex(int account) throws Exception {
-        return Pair.of(wallet.getFreshNode(KeyPurpose.CHANGE).getIndex(), 1);
+        return Pair.of(getWallet(account).getFreshNode(KeyPurpose.CHANGE).getIndex(), 1);
+    }
+
+    private Wallet getWallet(int account) {
+        if(account != this.account && account == 0 && !wallet.isMasterWallet()) {
+            return wallet.getMasterWallet();
+        }
+
+        return wallet;
     }
 
     @Override

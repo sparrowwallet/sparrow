@@ -294,20 +294,10 @@ public class CounterpartyController extends SorobanController {
         sorobanProgressLabel.setText("Creating mix transaction...");
 
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        Wallet counterpartyWallet;
-        if(counterpartyCahootsWallet.getAccount() == StandardAccount.WHIRLPOOL_POSTMIX.getAccountNumber() && cahootsType == CahootsType.STOWAWAY
-                && !counterpartyCahootsWallet.getWallet().isMasterWallet()) {
-            //Counterparty cannot participate in Stowaway using Postmix wallet, switch to master wallet
-            counterpartyWallet = counterpartyCahootsWallet.getWallet().getMasterWallet();
-            counterpartyCahootsWallet = soroban.getCahootsWallet(counterpartyWallet, 1);
-        } else {
-            counterpartyWallet = wallet;
-        }
-
-        Map<BlockTransactionHashIndex, WalletNode> walletUtxos = counterpartyWallet.getWalletUtxos();
+        Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : walletUtxos.entrySet()) {
             if(entry.getKey().getStatus() != Status.FROZEN) {
-                counterpartyCahootsWallet.addUtxo(entry.getValue(), counterpartyWallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
+                counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
             }
         }
 
@@ -331,7 +321,7 @@ public class CounterpartyController extends SorobanController {
                                             Transaction transaction = getTransaction(cahoots);
                                             if(transaction != null) {
                                                 transactionProperty.set(transaction);
-                                                updateTransactionDiagram(transactionDiagram, counterpartyWallet, null, transaction);
+                                                updateTransactionDiagram(transactionDiagram, wallet, null, transaction);
                                                 next();
                                             }
                                         } catch(PSBTParseException e) {
