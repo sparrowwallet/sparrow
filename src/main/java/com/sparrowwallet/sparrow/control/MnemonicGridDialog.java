@@ -240,7 +240,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                         initializedProperty.set(true);
 
                         if(seedEntryDialog.isGenerated()) {
-                            //TODO: Save grid PDF
+                            PdfUtils.saveWordGrid(wordGrid, mnemonicWords);
                         }
                     }
                 });
