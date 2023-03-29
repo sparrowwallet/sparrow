@@ -81,7 +81,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             enterMnemonicButton.getItems().add(item);
         }
         enterMnemonicButton.getItems().add(new SeparatorMenuItem());
-        MenuItem gridItem = new MenuItem("Border Wallets...");
+        MenuItem gridItem = new MenuItem("Border Wallets Grid...");
         gridItem.setOnAction(event -> {
             showGrid();
         });
@@ -100,7 +100,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
         Optional<List<String>> optWords = mnemonicGridDialog.showAndWait();
         if(optWords.isPresent()) {
             List<String> words = optWords.get();
-            setContent(getMnemonicWordsEntry(words.size() + 1, true));
+            setContent(getMnemonicWordsEntry(words.size() + 1, true, true));
             setExpanded(true);
 
             for(int i = 0; i < wordsPane.getChildren().size(); i++) {
@@ -150,7 +150,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
     protected void showWordList(DeterministicSeed seed) {
         List<String> words = seed.getMnemonicCode();
-        setContent(getMnemonicWordsEntry(words.size(), true));
+        setContent(getMnemonicWordsEntry(words.size(), true, true));
         setExpanded(true);
 
         for(int i = 0; i < wordsPane.getChildren().size(); i++) {
@@ -163,11 +163,11 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     protected void enterMnemonic(int numWords) {
         setDescription("Generate new or enter existing");
         showHideLink.setVisible(false);
-        setContent(getMnemonicWordsEntry(numWords, true));
+        setContent(getMnemonicWordsEntry(numWords, true, true));
         setExpanded(true);
     }
 
-    protected Node getMnemonicWordsEntry(int numWords, boolean editPassphrase) {
+    protected Node getMnemonicWordsEntry(int numWords, boolean showPassphrase, boolean editPassphrase) {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 
@@ -196,10 +196,12 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
         vBox.getChildren().add(wordsPane);
 
-        PassphraseEntry passphraseEntry = new PassphraseEntry(editPassphrase);
-        wordEntries.get(wordEntries.size() - 1).setNextField(passphraseEntry.getEditor());
-        passphraseEntry.setPadding(new Insets(0, 26, 10, 10));
-        vBox.getChildren().add(passphraseEntry);
+        if(showPassphrase) {
+            PassphraseEntry passphraseEntry = new PassphraseEntry(editPassphrase);
+            wordEntries.get(wordEntries.size() - 1).setNextField(passphraseEntry.getEditor());
+            passphraseEntry.setPadding(new Insets(0, 26, 10, 10));
+            vBox.getChildren().add(passphraseEntry);
+        }
 
         AnchorPane buttonPane = new AnchorPane();
         buttonPane.setPadding(new Insets(0, 26, 0, 10));
