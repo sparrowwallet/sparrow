@@ -199,7 +199,9 @@ public class KeystoreController extends WalletFormController implements Initiali
             scanXpubQR.setVisible(!valid);
         });
 
-        setInputFieldsDisabled(keystore.getSource() != KeystoreSource.SW_WATCH && (!walletForm.getWallet().isMasterWallet() || !walletForm.getWallet().getChildWallets().isEmpty()));
+        if(keystore.getSource() != KeystoreSource.SW_WATCH && (!walletForm.getWallet().isMasterWallet() || !walletForm.getWallet().getChildWallets().isEmpty())) {
+            setInputFieldsDisabled(true);
+        }
     }
 
     private void setXpubContext(ExtendedKey extendedKey) {
