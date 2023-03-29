@@ -260,7 +260,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 DeterministicSeed seed;
                 try {
                     extendedKey = ExtendedKey.fromDescriptor(qrtext);
-                    result = new Result(extendedKey);
+                    result = new Result(extendedKey, null);
                     return;
                 } catch(Exception e) {
                     //Ignore, not a valid xpub
@@ -409,7 +409,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 } else if(urRegistryType.equals(RegistryType.CRYPTO_HDKEY)) {
                     CryptoHDKey cryptoHDKey = (CryptoHDKey)ur.decodeFromRegistry();
                     ExtendedKey extendedKey = getExtendedKey(cryptoHDKey);
-                    return new Result(extendedKey);
+                    return new Result(extendedKey, cryptoHDKey.getName());
                 } else if(urRegistryType.equals(RegistryType.CRYPTO_OUTPUT)) {
                     CryptoOutput cryptoOutput = (CryptoOutput)ur.decodeFromRegistry();
                     OutputDescriptor outputDescriptor = getOutputDescriptor(cryptoOutput);
@@ -662,6 +662,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         public final PSBT psbt;
         public final BitcoinURI uri;
         public final ExtendedKey extendedKey;
+        public final String extendedKeyName;
         public final OutputDescriptor outputDescriptor;
         public final List<Wallet> wallets;
         public final DeterministicSeed seed;
@@ -673,6 +674,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;
@@ -685,6 +687,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = psbt;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;
@@ -697,6 +700,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = uri;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;
@@ -709,6 +713,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = BitcoinURI.fromAddress(address);
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;
@@ -716,11 +721,12 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.exception = null;
         }
 
-        public Result(ExtendedKey extendedKey) {
+        public Result(ExtendedKey extendedKey, String name) {
             this.transaction = null;
             this.psbt = null;
             this.uri = null;
             this.extendedKey = extendedKey;
+            this.extendedKeyName = name;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;
@@ -733,6 +739,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = outputDescriptor;
             this.wallets = null;
             this.seed = null;
@@ -745,6 +752,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = wallets;
             this.seed = null;
@@ -757,6 +765,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = seed;
@@ -769,6 +778,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;
@@ -781,6 +791,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             this.psbt = null;
             this.uri = null;
             this.extendedKey = null;
+            this.extendedKeyName = null;
             this.outputDescriptor = null;
             this.wallets = null;
             this.seed = null;

@@ -517,6 +517,9 @@ public class KeystoreController extends WalletFormController implements Initiali
             QRScanDialog.Result result = optionalResult.get();
             if(result.extendedKey != null && result.extendedKey.getKey().isPubKeyOnly()) {
                 xpub.setText(result.extendedKey.getExtendedKey());
+                if(result.extendedKeyName != null) {
+                    label.setText(result.extendedKeyName);
+                }
             } else if(result.outputDescriptor != null && !result.outputDescriptor.getExtendedPublicKeys().isEmpty()) {
                 ExtendedKey extendedKey = result.outputDescriptor.getExtendedPublicKeys().iterator().next();
                 KeyDerivation keyDerivation = result.outputDescriptor.getKeyDerivation(extendedKey);
