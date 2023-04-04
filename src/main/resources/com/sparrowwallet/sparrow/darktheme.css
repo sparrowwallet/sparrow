@@ -54,10 +54,13 @@
 }
 
 .list-cell:even,
-.list-cell:odd,
-.table-row-cell:even,
-.table-row-cell:odd{
+.table-row-cell:even{
     -fx-control-inner-background: derive(-fx-base, 15%);
+}
+
+.list-cell:odd,
+.table-row-cell:odd{
+    -fx-control-inner-background: derive(-fx-base, 20%);
 }
 
 .list-cell:empty,
@@ -67,8 +70,26 @@
 
 .list-cell,
 .table-row-cell{
-    -fx-border-color: transparent;
     -fx-table-cell-border-color:transparent;
+}
+
+.spreadsheet-cell {
+    -fx-background-color: -fx-table-cell-border-color, derive(-fx-base, 25%);
+    -fx-text-fill: -fx-text-inner-color;
+}
+
+VerticalHeader > Label{
+    -fx-background-color: derive(-fx-box-border, 15%), -fx-base;
+}
+
+HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
+    -fx-background-color: derive(-fx-box-border, 15%), -fx-base;
+}
+
+.root #grid .spreadsheet-cell:selected,
+.root #grid .spreadsheet-cell:focused:selected,
+.root #grid .spreadsheet-cell:focused:selected:hover {
+    -fx-background-color: rgb(159, 142, 0);
 }
 
 .status-bar {
