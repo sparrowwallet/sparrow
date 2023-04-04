@@ -1,10 +1,10 @@
 .root {
-    -fx-accent: #1e88cf;
+    -fx-accent: #166793;
     -fx-focus-color: -fx-accent;
-    -fx-base: #373e43;
-    -fx-control-inner-background: derive(-fx-base, 35%);
+    -fx-base: #1b1d1f;
+    -fx-control-inner-background: derive(-fx-base, 25%);
     -fx-control-inner-background-alt: -fx-control-inner-background ;
-    -fx-default-button: -fx-accent;
+    -fx-default-button: #1e88cf;
     -fx-box-border: ladder(-fx-color, black 20%, derive(-fx-color,40%) 30%);
 }
 
@@ -12,7 +12,7 @@
     -fx-text-fill: lightgray;
 }
 
-.text-field {
+.text-field, .text-area {
     -fx-prompt-text-fill: gray;
 }
 
@@ -40,7 +40,11 @@
 }
 
 .button:default {
-    -fx-base: -fx-accent ;
+    -fx-base: -fx-default-button;
+}
+
+.split-menu-button.default-button > .label {
+    -fx-text-fill: white;
 }
 
 .table-view, .tree-view {
@@ -73,17 +77,31 @@
     -fx-table-cell-border-color:transparent;
 }
 
+.list-view:focused > .virtual-flow > .clipped-container > .sheet > .list-cell:filled:selected,
+.tree-table-view:focused > .virtual-flow > .clipped-container > .sheet > .tree-table-row-cell:filled:selected,
+.tree-table-view:focused > .virtual-flow > .clipped-container > .sheet > .tree-table-row-cell .tree-table-cell:selected {
+    -fx-background: -fx-selection-bar;
+    -fx-table-cell-border-color: derive(-fx-selection-bar, 20%);
+}
+
+.list-cell:filled:selected,
+.tree-table-row-cell:filled:selected,
+.tree-table-row-cell:filled > .tree-table-cell:selected {
+    -fx-background: derive(-fx-selection-bar-non-focused, -60%);
+    -fx-table-cell-border-color: -fx-inner-border;
+}
+
 .spreadsheet-cell {
     -fx-background-color: -fx-table-cell-border-color, derive(-fx-base, 25%);
     -fx-text-fill: -fx-text-inner-color;
 }
 
 VerticalHeader > Label{
-    -fx-background-color: derive(-fx-box-border, 15%), -fx-base;
+    -fx-background-color: derive(-fx-box-border, 50%), -fx-base;
 }
 
 HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
-    -fx-background-color: derive(-fx-box-border, 15%), -fx-base;
+    -fx-background-color: derive(-fx-box-border, 50%), -fx-base;
 }
 
 .root #grid .spreadsheet-cell:selected,
@@ -114,6 +132,36 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 
 .root .titled-description-pane .status-error .text, .root .titled-description-pane .description-error .text {
     -fx-fill: #e06c75;
+}
+
+.root .list-menu {
+    -fx-background-color: #2284bb;
+}
+
+.root .list-item {
+    -fx-pref-width: 180;
+    -fx-background-color: #2284bb;
+}
+
+.root .list-item:hover {
+    -fx-background-color: linear-gradient(to right, #2284bb, derive(#388fc7, 10%));
+}
+
+.root .list-item:selected {
+    -fx-background-color: linear-gradient(to right, #2284bb, derive(#1479bb, -10%));
+}
+
+.root .list-item:disabled {
+    -fx-background-color: #626367;
+    -fx-border-color: #626367;
+}
+
+.root .wallet-subtabs > .tab-header-area .tab {
+    -fx-background-color: derive(#2284bb, 32%);
+}
+
+.root .wallet-subtabs > .tab-header-area .tab:selected {
+    -fx-background-color: #2284bb;
 }
 
 #inputsPie .default-color0.chart-pie {
@@ -176,6 +224,38 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     color-7: #be5046;
     color-8: #c8ccd4;
     color-grey: #3e4451;
+}
+
+.root .progress-bar {
+    -fx-accent: derive(-fx-default-button, -15%);
+}
+
+.root .segment1 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_3, -20%);
+}
+
+.root .segment2 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_7, -20%);
+}
+
+.root .segment3 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_5, -20%);
+}
+
+.root .segment4 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_6, -20%);
+}
+
+.root .segment5 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_2, -20%);
+}
+
+.root .segment6 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_1, -20%);
+}
+
+.root .segment7 .progress-bar {
+    -fx-accent: derive(CHART_COLOR_8, -20%);
 }
 
 .root .readonly.text-input {
@@ -242,4 +322,12 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 
 .root .progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {
     -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, #e06c75 70%, derive(-fx-control-inner-background, -9%) 100%);
+}
+
+.root .hyperlink {
+    -fx-text-fill: #229df5;
+}
+
+.root .hyperlink:visited {
+    -fx-text-fill: #229df5;
 }
