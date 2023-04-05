@@ -15,8 +15,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
-
 public class HwAirgappedController extends KeystoreImportDetailController {
     private static final Logger log = LoggerFactory.getLogger(HwAirgappedController.class);
 
@@ -40,10 +38,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             }
         }
 
-        List<KeystoreCardImport> cardImporters = Collections.emptyList();
-        if(isReaderAvailable()) {
-            cardImporters = List.of(new Tapsigner());
-        }
+        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner());
         for(KeystoreCardImport importer : cardImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());

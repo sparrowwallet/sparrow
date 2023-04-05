@@ -33,6 +33,8 @@ import javax.smartcardio.CardException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
+
 public class CardImportPane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(CardImportPane.class);
 
@@ -62,6 +64,12 @@ public class CardImportPane extends TitledDescriptionPane {
     }
 
     private void importCard() {
+        if(!isReaderAvailable()) {
+            setError("No reader", "No card reader was detected.");
+            importButton.setDisable(false);
+            return;
+        }
+
         if(pin.get().length() < 6) {
             setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
             setContent(getPinEntry());
