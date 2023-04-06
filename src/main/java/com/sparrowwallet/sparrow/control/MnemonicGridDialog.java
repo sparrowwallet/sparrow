@@ -148,6 +148,13 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                     break;
                 }
             }
+
+            try {
+                int index = Integer.parseInt(abbreviation);
+                words.add(Bip39MnemonicCode.INSTANCE.getWordList().get(index - 1));
+            } catch(NumberFormatException e) {
+                //ignore
+            }
         }
 
         if(words.size() != abbreviations.size()) {

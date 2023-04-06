@@ -100,6 +100,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
         Optional<List<String>> optWords = mnemonicGridDialog.showAndWait();
         if(optWords.isPresent()) {
             List<String> words = optWords.get();
+            defaultWordSizeProperty.set(words.size() + 1);
             setContent(getMnemonicWordsEntry(words.size() + 1, true, true));
             setExpanded(true);
 
