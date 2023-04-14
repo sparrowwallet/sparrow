@@ -40,6 +40,8 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
     private final BooleanProperty initializedProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty wordsSelectedProperty = new SimpleBooleanProperty(false);
 
+    private final List<TablePosition> selectedCells = new ArrayList<>();
+
     public MnemonicGridDialog() {
         DialogPane dialogPane = new MnemonicGridDialogPane();
         setDialogPane(dialogPane);
@@ -71,6 +73,15 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         spreadsheetView.getSelectionModel().getSelectedCells().addListener(new ListChangeListener<>() {
             @Override
             public void onChanged(Change<? extends TablePosition> c) {
+                while(c.next()) {
+                    if(c.wasRemoved()) {
+                        selectedCells.removeAll(c.getRemoved());
+                    }
+                    if(c.wasAdded()) {
+                        selectedCells.addAll(c.getAddedSubList());
+                    }
+                }
+
                 int numWords = c.getList().size();
                 wordsSelectedProperty.set(numWords == 11 || numWords == 23);
             }
@@ -137,7 +148,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
     }
 
     private List<String> getSelectedWords() {
-        List<String> abbreviations = spreadsheetView.getSelectionModel().getSelectedCells().stream()
+        List<String> abbreviations = selectedCells.stream()
                 .map(position -> (String)spreadsheetView.getGrid().getRows().get(position.getRow()).get(position.getColumn()).getItem()).collect(Collectors.toList());
 
         List<String> words = new ArrayList<>();
