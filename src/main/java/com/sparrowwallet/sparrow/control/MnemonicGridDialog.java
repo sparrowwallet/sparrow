@@ -235,6 +235,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                         try(BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
                             String[][] wordGrid = PdfUtils.getWordGrid(inputStream);
                             spreadsheetView.setGrid(getGrid(wordGrid));
+                            selectedCells.clear();
                             initializedProperty.set(true);
                         } catch(Exception e) {
                             AppServices.showErrorDialog("Cannot load PDF", e.getMessage());
@@ -255,6 +256,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                         List<String> shuffledWordList = shuffle(mnemonicWords);
                         String[][] wordGrid = toGrid(shuffledWordList);
                         spreadsheetView.setGrid(getGrid(wordGrid));
+                        selectedCells.clear();
                         initializedProperty.set(true);
 
                         if(seedEntryDialog.isGenerated()) {
@@ -269,6 +271,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                 final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
                 ButtonBar.setButtonData(clearButton, buttonData);
                 clearButton.setOnAction(event -> {
+                    selectedCells.clear();
                     spreadsheetView.getSelectionModel().clearSelection();
                 });
 
