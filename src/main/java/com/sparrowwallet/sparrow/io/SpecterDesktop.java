@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.google.gson.*;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.wallet.*;
 import org.slf4j.Logger;
@@ -12,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 public class SpecterDesktop implements WalletImport, WalletExport {
@@ -54,7 +54,44 @@ public class SpecterDesktop implements WalletImport, WalletExport {
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
-            SpecterWallet specterWallet = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), SpecterWallet.class);
+            JsonObject jsonObj = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), JsonElement.class).getAsJsonObject();
+
+            SpecterWallet specterWallet = new SpecterWallet();
+            if(jsonObj.get("descriptor") != null) {
+                specterWallet.descriptor = jsonObj.get("descriptor").getAsString();
+            } else if(jsonObj.get("recv_descriptor") != null) {
+                specterWallet.descriptor = jsonObj.get("recv_descriptor").getAsString();
+            }
+
+            if(jsonObj.get("label") != null) {
+                specterWallet.label = jsonObj.get("label").getAsString();
+            } else if(jsonObj.get("name") != null) {
+                specterWallet.label = jsonObj.get("name").getAsString();
+            }
+
+            if(jsonObj.get("blockheight") != null) {
+                specterWallet.blockheight = jsonObj.get("blockheight").getAsInt();
+            }
+
+            if(jsonObj.get("devices") != null) {
+                JsonArray jsonDevices = jsonObj.get("devices").getAsJsonArray();
+                specterWallet.devices = new ArrayList<>();
+                for(JsonElement jsonDevice : jsonDevices) {
+                    SpecterWalletDevice specterWalletDevice = new SpecterWalletDevice();
+                    if(jsonDevice.isJsonObject()) {
+                        JsonObject jsonDeviceObj = (JsonObject)jsonDevice;
+                        if(jsonDeviceObj.get("label") != null) {
+                            specterWalletDevice.label = jsonDeviceObj.get("label").getAsString();
+                        }
+                        if(jsonDeviceObj.get("type") != null) {
+                            specterWalletDevice.type = jsonDeviceObj.get("type").getAsString();
+                        }
+                    } else if(jsonDevice.isJsonPrimitive()) {
+                        specterWalletDevice.label = jsonDevice.getAsString();
+                    }
+                    specterWallet.devices.add(specterWalletDevice);
+                }
+            }
 
             if(specterWallet.descriptor != null) {
                 OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(specterWallet.descriptor);
@@ -80,6 +117,9 @@ public class SpecterDesktop implements WalletImport, WalletExport {
                             } else {
                                 keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                             }
+                        } else {
+                            keystore.setWalletModel(WalletModel.SPARROW);
+                            keystore.setSource(KeystoreSource.SW_WATCH);
                         }
                     }
                 }
