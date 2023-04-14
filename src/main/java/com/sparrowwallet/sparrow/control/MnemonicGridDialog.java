@@ -10,6 +10,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -48,7 +49,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         setTitle("Border Wallets Grid");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("grid.css").toExternalForm());
-        dialogPane.setHeaderText("Load a Border Wallets PDF, or generate a grid from a BIP39 seed.\nThen select 11 or 23 words in a pattern on the grid. Note the order of selection is important!");
+        dialogPane.setHeaderText("Load a Border Wallets PDF, or generate a grid from a BIP39 seed.\nThen select 11 or 23 words in a pattern on the grid, one at a time (do not drag).\nThe order of selection is important!");
         javafx.scene.image.Image image = new Image("/image/border-wallets.png");
         dialogPane.setGraphic(new ImageView(image));
 
@@ -104,7 +105,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         final ButtonType loadCsvButtonType = new javafx.scene.control.ButtonType("Load PDF...", ButtonBar.ButtonData.LEFT);
         dialogPane.getButtonTypes().add(loadCsvButtonType);
 
-        final ButtonType generateButtonType = new javafx.scene.control.ButtonType("Generate Grid...", ButtonBar.ButtonData.HELP);
+        final ButtonType generateButtonType = new javafx.scene.control.ButtonType("Generate Grid...", ButtonBar.ButtonData.HELP_2);
         dialogPane.getButtonTypes().add(generateButtonType);
 
         final ButtonType clearButtonType = new javafx.scene.control.ButtonType("Clear Selection", ButtonBar.ButtonData.OTHER);
@@ -236,6 +237,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                             String[][] wordGrid = PdfUtils.getWordGrid(inputStream);
                             spreadsheetView.setGrid(getGrid(wordGrid));
                             selectedCells.clear();
+                            spreadsheetView.getSelectionModel().clearSelection();
                             initializedProperty.set(true);
                         } catch(Exception e) {
                             AppServices.showErrorDialog("Cannot load PDF", e.getMessage());
@@ -244,7 +246,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                 });
 
                 button = loadButton;
-            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.HELP) {
+            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.HELP_2) {
                 Button generateButton = new Button(buttonType.getText());
                 final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
                 ButtonBar.setButtonData(generateButton, buttonData);
@@ -257,6 +259,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                         String[][] wordGrid = toGrid(shuffledWordList);
                         spreadsheetView.setGrid(getGrid(wordGrid));
                         selectedCells.clear();
+                        spreadsheetView.getSelectionModel().clearSelection();
                         initializedProperty.set(true);
 
                         if(seedEntryDialog.isGenerated()) {
