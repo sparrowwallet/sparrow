@@ -56,6 +56,8 @@ public enum BroadcastSource {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
             } else if(Network.get() == Network.TESTNET) {
                 return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+            } else if(Network.get() == Network.SIGNET) {
+                return new URL(getBaseUrl(proxy) + "/signet/api/tx");
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
