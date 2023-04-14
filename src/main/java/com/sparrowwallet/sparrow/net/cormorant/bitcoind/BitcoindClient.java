@@ -125,6 +125,9 @@ public class BitcoindClient {
         }
 
         ListWalletDirResult listWalletDirResult = getBitcoindService().listWalletDir();
+        if(listWalletDirResult == null) {
+            throw new RuntimeException("Wallet support must be enabled in Bitcoin Core");
+        }
         boolean exists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(CORE_WALLET_NAME));
         legacyWalletExists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(Bwt.DEFAULT_CORE_WALLET));
 
