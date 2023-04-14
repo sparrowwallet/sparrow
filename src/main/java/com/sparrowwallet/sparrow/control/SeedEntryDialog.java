@@ -12,7 +12,7 @@ import java.util.List;
 public class SeedEntryDialog extends Dialog<List<String>> {
     private final MnemonicKeystoreEntryPane keystorePane;
 
-    public SeedEntryDialog(int numWords) {
+    public SeedEntryDialog(String name, int numWords) {
         final DialogPane dialogPane = new MnemonicGridDialogPane();
         setDialogPane(dialogPane);
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
@@ -38,7 +38,7 @@ public class SeedEntryDialog extends Dialog<List<String>> {
         Accordion keystoreAccordion = new Accordion();
         scrollPane.setContent(keystoreAccordion);
 
-        keystorePane = new MnemonicKeystoreEntryPane(numWords);
+        keystorePane = new MnemonicKeystoreEntryPane(name, numWords);
         keystorePane.setAnimated(false);
         keystoreAccordion.getPanes().add(keystorePane);
 

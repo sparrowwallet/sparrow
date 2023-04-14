@@ -210,6 +210,8 @@ public class PdfUtils {
                 log.error("Error creating word grid PDF", e);
                 AppServices.showErrorDialog("Error creating word grid PDF", e.getMessage());
             }
+        } else {
+            AppServices.showWarningDialog("Entropy Grid PDF not saved", "You have chosen to not save the entropy grid PDF.\n\nDo not store funds on a seed selected from this grid - you will not be able to regenerate it!");
         }
     }
 }
