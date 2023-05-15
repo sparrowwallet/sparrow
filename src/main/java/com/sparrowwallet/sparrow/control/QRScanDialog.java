@@ -16,6 +16,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
+import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.SeedQR;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -349,6 +350,17 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     return;
                 } catch(Exception e) {
                     //Ignore, not parseable as a CompactSeedQR
+                }
+
+                try {
+                    List<String> words = Arrays.asList(qrtext.split(" "));
+                    if(words.size() == 12 || words.size() == 15 || words.size() == 18 || words.size() == 21 || words.size() == 24) {
+                        Bip39MnemonicCode.INSTANCE.check(words);
+                        result = new Result(new DeterministicSeed(words, null, System.currentTimeMillis(), DeterministicSeed.Type.BIP39));
+                        return;
+                    }
+                } catch(Exception e) {
+                    //Ignore, not parseable as BIP39 seed words
                 }
 
                 result = new Result(qrtext);
