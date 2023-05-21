@@ -211,52 +211,57 @@ public class PaymentController extends WalletFormController implements Initializ
         });
 
         address.textProperty().addListener((observable, oldValue, newValue) -> {
-            address.leftProperty().set(null);
+            String strippedNewValue = newValue.strip();
+            if (newValue.equals(strippedNewValue)) {
+                address.leftProperty().set(null);
 
-            if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
-                payNymProperty.set(null);
-            }
-
-            try {
-                BitcoinURI bitcoinURI = new BitcoinURI(newValue);
-                Platform.runLater(() -> updateFromURI(bitcoinURI));
-                return;
-            } catch(Exception e) {
-                //ignore, not a URI
-            }
-
-            if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
-                try {
-                    PaymentCode paymentCode = new PaymentCode(newValue);
-                    Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
-                    if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
-                        recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
-                    }
-
-                    if(recipientBip47Wallet != null) {
-                        PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
-                        Platform.runLater(() -> setPayNym(payNym));
-                    } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
-                        ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
-                        Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
-                        if(optButton.isPresent() && optButton.get() == previewType) {
-                            Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
-                            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
-                        } else {
-                            Platform.runLater(() -> address.setText(""));
-                        }
-                    }
-                } catch(Exception e) {
-                    //ignore, not a payment code
+                if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
+                    payNymProperty.set(null);
                 }
-            }
 
-            revalidateAmount();
-            maxButton.setDisable(!isMaxButtonEnabled());
-            sendController.updateTransaction();
+                try {
+                    BitcoinURI bitcoinURI = new BitcoinURI(newValue);
+                    Platform.runLater(() -> updateFromURI(bitcoinURI));
+                    return;
+                } catch(Exception e) {
+                    //ignore, not a URI
+                }
 
-            if(validationSupport != null) {
-                validationSupport.setErrorDecorationEnabled(true);
+                if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
+                    try {
+                        PaymentCode paymentCode = new PaymentCode(newValue);
+                        Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
+                        if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
+                            recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
+                        }
+
+                        if(recipientBip47Wallet != null) {
+                            PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
+                            Platform.runLater(() -> setPayNym(payNym));
+                        } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
+                            ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
+                            Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
+                            if(optButton.isPresent() && optButton.get() == previewType) {
+                                Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
+                                Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
+                            } else {
+                                Platform.runLater(() -> address.setText(""));
+                            }
+                        }
+                    } catch(Exception e) {
+                        //ignore, not a payment code
+                    }
+                }
+
+                revalidateAmount();
+                maxButton.setDisable(!isMaxButtonEnabled());
+                sendController.updateTransaction();
+
+                if(validationSupport != null) {
+                    validationSupport.setErrorDecorationEnabled(true);
+                }
+            } else {
+                address.setText(strippedNewValue);
             }
         });
 
