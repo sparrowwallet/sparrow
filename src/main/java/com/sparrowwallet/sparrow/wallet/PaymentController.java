@@ -210,6 +210,18 @@ public class PaymentController extends WalletFormController implements Initializ
             revalidateAmount();
         });
 
+        address.setTextFormatter(new TextFormatter<>(change -> {
+            String controlNewText = change.getControlNewText();
+            if(!controlNewText.equals(controlNewText.trim())) {
+                String text = change.getText();
+                String newText = text.trim();
+                int caretPos = change.getCaretPosition() - text.length() + newText.length();
+                change.setText(newText);
+                change.selectRange(caretPos, caretPos);
+            }
+            return change;
+        }));
+
         address.textProperty().addListener((observable, oldValue, newValue) -> {
             address.leftProperty().set(null);
 
