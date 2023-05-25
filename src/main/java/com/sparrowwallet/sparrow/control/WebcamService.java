@@ -14,16 +14,21 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class WebcamService extends ScheduledService<Image> {
+    private static final Logger log = LoggerFactory.getLogger(WebcamService.class);
+
     private WebcamResolution resolution;
     private WebcamDevice device;
     private final WebcamListener listener;
@@ -137,6 +142,9 @@ public class WebcamService extends ScheduledService<Image> {
         if(result == null) {
             result = readQR(croppedImage);
         }
+        if(result == null) {
+            result = readQR(invert(croppedImage));
+        }
 
         if(result != null) {
             resultProperty.set(result);
@@ -173,6 +181,29 @@ public class WebcamService extends ScheduledService<Image> {
         int x = (bufferedImage.getWidth() - squareSize) / 2;
         int y = (bufferedImage.getHeight() - squareSize) / 2;
         return new CroppedDimension(x, y, squareSize);
+    }
+
+    public BufferedImage invert(BufferedImage inImg) {
+        try {
+            int width = inImg.getWidth();
+            int height = inImg.getHeight();
+            BufferedImage outImg = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            WritableRaster outRaster = outImg.getRaster();
+            WritableRaster inRaster = inImg.getRaster();
+
+            for(int y = 0; y < height; y++) {
+                for(int x = 0; x < width; x++) {
+                    for(int i = 0; i < outRaster.getNumBands(); i++) {
+                        outRaster.setSample(x, y, i, 255 - inRaster.getSample(x, y, i));
+                    }
+                }
+            }
+
+            return outImg;
+        } catch(Exception e) {
+            log.warn("Error inverting image", e);
+            return inImg;
+        }
     }
 
     public Result getResult() {
