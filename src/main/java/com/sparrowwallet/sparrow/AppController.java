@@ -328,6 +328,9 @@ public class AppController implements Initializable {
         final BitcoinUnit selectedUnit = unit;
         Optional<Toggle> selectedUnitToggle = bitcoinUnit.getToggles().stream().filter(toggle -> selectedUnit.equals(toggle.getUserData())).findFirst();
         selectedUnitToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+        Optional<Toggle> otherUnitToggle = bitcoinUnit.getToggles().stream().filter(toggle ->
+                (List.of(BitcoinUnit.AUTO, BitcoinUnit.SATOSHIS).contains(selectedUnit) && BitcoinUnit.BTC.equals(toggle.getUserData()) || (selectedUnit == BitcoinUnit.BTC && BitcoinUnit.SATOSHIS.equals(toggle.getUserData())))).findFirst();
+        otherUnitToggle.ifPresent(toggle -> ((RadioMenuItem)toggle).setAccelerator(new KeyCodeCombination(KeyCode.B, KeyCombination.SHORTCUT_DOWN)));
 
         UnitFormat format = Config.get().getUnitFormat();
         if(format == null) {
@@ -2797,6 +2800,14 @@ public class AppController implements Initializable {
     public void bitcoinUnitChanged(BitcoinUnitChangedEvent event) {
         Optional<Toggle> selectedToggle = bitcoinUnit.getToggles().stream().filter(toggle -> event.getBitcoinUnit().equals(toggle.getUserData())).findFirst();
         selectedToggle.ifPresent(toggle -> bitcoinUnit.selectToggle(toggle));
+        bitcoinUnit.getToggles().forEach(toggle -> {
+            RadioMenuItem menuItem = (RadioMenuItem)toggle;
+            if(List.of(BitcoinUnit.AUTO, BitcoinUnit.SATOSHIS).contains(event.getBitcoinUnit()) && BitcoinUnit.BTC.equals(toggle.getUserData()) || (event.getBitcoinUnit() == BitcoinUnit.BTC && BitcoinUnit.SATOSHIS.equals(toggle.getUserData()))) {
+                menuItem.setAccelerator(new KeyCodeCombination(KeyCode.B, KeyCombination.SHORTCUT_DOWN));
+            } else {
+                menuItem.setAccelerator(null);
+            }
+        });
     }
 
     @Subscribe
