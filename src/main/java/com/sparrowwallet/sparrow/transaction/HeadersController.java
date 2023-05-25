@@ -60,6 +60,8 @@ import java.text.SimpleDateFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -73,6 +75,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     public static final String MAX_LOCKTIME_DATE = "2106-02-07T06:28:15Z";
     public static final String MIN_LOCKTIME_DATE = "1985-11-05T00:53:20Z";
+
+    private static final Pattern RBF_INSUFFICIENT_FEE = Pattern.compile("insufficient fee, rejecting replacement.*?(\\d+\\.?\\d*) < (\\d+\\.?\\d*)");
+    private static final Pattern RBF_INSUFFICIENT_FEE_RATE = Pattern.compile("insufficient fee, rejecting replacement.*new feerate (\\d+\\.?\\d*)[^\\d]*(\\d+\\.?\\d*)[^\\d]*");
 
     private HeadersForm headersForm;
 
@@ -1144,6 +1149,20 @@ public class HeadersController extends TransactionFormController implements Init
                         "You can solve this by recreating the transaction with a slightly increased fee rate.");
             } else if(failMessage.startsWith("bad-txns-inputs-missingorspent")) {
                 AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error indicating some or all of the UTXOs this transaction is spending are missing or have already been spent.");
+            } else if(failMessage.startsWith("insufficient fee, rejecting replacement")) {
+                Matcher feeMatcher = RBF_INSUFFICIENT_FEE.matcher(failMessage);
+                Matcher feeRateMatcher = RBF_INSUFFICIENT_FEE_RATE.matcher(failMessage);
+                if(feeMatcher.matches() && fee.getValue() > 0) {
+                    long currentAdditionalFee = (long)(Double.parseDouble(feeMatcher.group(1)) * Transaction.SATOSHIS_PER_BITCOIN);
+                    long requiredAdditionalFee = (long)(Double.parseDouble(feeMatcher.group(2)) * Transaction.SATOSHIS_PER_BITCOIN);
+                    long requiredFee = fee.getValue() - currentAdditionalFee + requiredAdditionalFee;
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the replacement transaction was insufficient. Increase the fee to at least " + requiredFee + " sats to try again.");
+                } else if(feeRateMatcher.matches()) {
+                    double requiredFeeRate = Double.parseDouble(feeRateMatcher.group(2)) * Transaction.SATOSHIS_PER_BITCOIN / 1000;
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the replacement transaction was insufficient. Increase the fee rate to at least " + requiredFeeRate + " sats/vB to try again.");
+                } else {
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the replacement transaction was insufficient. Increase the fee to try again.");
+                }
             } else {
                 AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error when broadcasting the transaction. The server response is contained in the log (See Help > Show Log File).");
             }
