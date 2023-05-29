@@ -25,6 +25,8 @@ import com.sparrowwallet.hummingbird.registry.*;
 import com.sparrowwallet.hummingbird.ResultType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.URDecoder;
+import com.sparrowwallet.hummingbird.registry.pathcomponent.IndexPathComponent;
+import com.sparrowwallet.hummingbird.registry.pathcomponent.PathComponent;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
@@ -208,6 +210,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         URDecoder.Result urResult = decoder.getResult();
                         if(urResult.type == ResultType.SUCCESS) {
                             result = extractResultFromUR(urResult.ur);
+                            Platform.runLater(() -> setResult(result));
                         } else {
                             result = new Result(new URException(urResult.error));
                         }
@@ -479,7 +482,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 if(cryptoHDKey.getOrigin() != null) {
                     if(!cryptoHDKey.getOrigin().getComponents().isEmpty()) {
                         PathComponent lastComponent = cryptoHDKey.getOrigin().getComponents().get(cryptoHDKey.getOrigin().getComponents().size() - 1);
-                        lastChild = new ChildNumber(lastComponent.getIndex(), lastComponent.isHardened());
+                        if(lastComponent instanceof IndexPathComponent indexPathComponent) {
+                            lastChild = new ChildNumber(indexPathComponent.getIndex(), indexPathComponent.isHardened());
+                        }
                         depth = cryptoHDKey.getOrigin().getComponents().size();
                     }
                     if(cryptoHDKey.getParentFingerprint() != null) {
@@ -555,11 +560,12 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private KeyDerivation getKeyDerivation(CryptoKeypath cryptoKeypath) {
             if(cryptoKeypath != null) {
-                if(cryptoKeypath.getComponents().stream().anyMatch(PathComponent::isWildcard)) {
-                    throw new IllegalArgumentException("Wildcard derivation paths are not supported");
+                if(!cryptoKeypath.getComponents().stream().allMatch(pathComponent -> pathComponent instanceof IndexPathComponent)) {
+                    throw new IllegalArgumentException("Only indexed derivation path components are supported");
                 }
 
-                List<ChildNumber> path = cryptoKeypath.getComponents().stream().map(comp -> new ChildNumber(comp.getIndex(), comp.isHardened())).collect(Collectors.toList());
+                List<ChildNumber> path = cryptoKeypath.getComponents().stream().map(comp -> (IndexPathComponent)comp)
+                        .map(comp -> new ChildNumber(comp.getIndex(), comp.isHardened())).collect(Collectors.toList());
                 return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getSourceFingerprint()), KeyDerivation.writePath(path));
             }
 
