@@ -157,7 +157,7 @@ public class PdfUtils {
                 Font headerFont = new Font(Font.HELVETICA, 8, Font.BOLD, Color.DARK_GRAY);
                 Font font = new Font(Font.HELVETICA, 8, Font.NORMAL, Color.DARK_GRAY);
 
-                HeaderFooter footer = new HeaderFooter(false, new Phrase("Recovery Phrase: " + String.join(" ", mnemonicWords), font));
+                HeaderFooter footer = new HeaderFooter(false, new Phrase("Recovery Phrase (to regenerate grid): " + String.join(" ", mnemonicWords), font));
                 footer.setAlignment(Element.ALIGN_CENTER);
                 footer.setBorder(Rectangle.NO_BORDER);
                 footer.setBorderWidth(0);

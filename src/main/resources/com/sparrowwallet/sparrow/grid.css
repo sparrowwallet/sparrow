@@ -1,5 +1,13 @@
 #grid .spreadsheet-cell:selected,
 #grid .spreadsheet-cell:focused:selected,
 #grid .spreadsheet-cell:focused:selected:hover {
+    -fx-background-color: transparent;
+}
+
+#grid .spreadsheet-cell.selection:selected,
+#grid .spreadsheet-cell.selection:focused:selected,
+#grid .spreadsheet-cell.selection:focused:selected:hover,
+#grid .spreadsheet-cell.selection {
     -fx-background-color: rgb(238, 210, 2);
+    -fx-content-display: RIGHT;
 }

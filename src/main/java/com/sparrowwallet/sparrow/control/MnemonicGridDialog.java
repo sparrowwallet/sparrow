@@ -10,22 +10,20 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.event.Event;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import org.controlsfx.control.spreadsheet.*;
 import org.controlsfx.glyphfont.Glyph;
-import org.controlsfx.tools.Platform;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +39,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
     private final BooleanProperty initializedProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty wordsSelectedProperty = new SimpleBooleanProperty(false);
 
-    private final List<TablePosition> selectedCells = new ArrayList<>();
+    private final ObservableList<TablePosition> selectedCells = FXCollections.observableArrayList();
 
     public MnemonicGridDialog() {
         DialogPane dialogPane = new MnemonicGridDialogPane();
@@ -49,7 +47,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         setTitle("Border Wallets Grid");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("grid.css").toExternalForm());
-        dialogPane.setHeaderText("Load a Border Wallets PDF, or generate a grid from a BIP39 seed.\nThen select 11 or 23 words in a pattern on the grid, one at a time (do not drag).\nThe order of selection is important!");
+        dialogPane.setHeaderText("Load a Border Wallets PDF, or generate a grid from a BIP39 seed.\nThen select 11 or 23 words in a pattern on the grid.\nThe order of selection is important!");
         javafx.scene.image.Image image = new Image("/image/border-wallets.png");
         dialogPane.setGraphic(new ImageView(image));
 
@@ -57,34 +55,53 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         Grid grid = getGrid(emptyWordGrid);
 
         spreadsheetView = new SpreadsheetView(grid);
-        spreadsheetView.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-            try {
-                Field f = event.getClass().getDeclaredField(Platform.getCurrent() == Platform.OSX ? "metaDown" : "controlDown");
-                f.setAccessible(true);
-                f.set(event, true);
-            } catch(IllegalAccessException | NoSuchFieldException e) {
-                //ignore
-            }
-        });
         spreadsheetView.setId("grid");
         spreadsheetView.setEditable(false);
         spreadsheetView.setFixingColumnsAllowed(false);
         spreadsheetView.setFixingRowsAllowed(false);
+        spreadsheetView.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
 
         spreadsheetView.getSelectionModel().getSelectedCells().addListener(new ListChangeListener<>() {
             @Override
             public void onChanged(Change<? extends TablePosition> c) {
                 while(c.next()) {
-                    if(c.wasRemoved()) {
-                        selectedCells.removeAll(c.getRemoved());
-                    }
                     if(c.wasAdded()) {
-                        selectedCells.addAll(c.getAddedSubList());
+                        for(TablePosition<?, ?> pos : c.getAddedSubList()) {
+                            if(selectedCells.contains(pos)) {
+                                selectedCells.remove(pos);
+                            } else {
+                                selectedCells.add(pos);
+                            }
+                        }
                     }
                 }
 
-                int numWords = c.getList().size();
+                int numWords = selectedCells.size();
                 wordsSelectedProperty.set(numWords == 11 || numWords == 23);
+            }
+        });
+
+        selectedCells.addListener((ListChangeListener<? super TablePosition>) c -> {
+            while(c.next()) {
+                if(c.wasRemoved()) {
+                    for(TablePosition<?,?> pos : c.getRemoved()) {
+                        SpreadsheetCell cell = spreadsheetView.getGrid().getRows().get(pos.getRow()).get(pos.getColumn());
+                        cell.getStyleClass().remove("selection");
+                        cell.setGraphic(null);
+                    }
+                }
+                if(c.wasAdded()) {
+                    for(TablePosition<?,?> pos : c.getAddedSubList()) {
+                        SpreadsheetCell cell = spreadsheetView.getGrid().getRows().get(pos.getRow()).get(pos.getColumn());
+                        cell.getStyleClass().add("selection");
+                    }
+                }
+                for(int i = 0; i < selectedCells.size(); i++) {
+                    Text index = new Text(Integer.toString(i+1));
+                    index.setFont(Font.font(8));
+                    SpreadsheetCell cell = spreadsheetView.getGrid().getRows().get(selectedCells.get(i).getRow()).get(selectedCells.get(i).getColumn());
+                    cell.setGraphic(index);
+                }
             }
         });
 
