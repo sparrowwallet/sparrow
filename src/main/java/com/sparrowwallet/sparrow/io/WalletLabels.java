@@ -8,6 +8,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreLabelsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelsChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletUtxoStatusChangedEvent;
 import com.sparrowwallet.sparrow.wallet.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,29 +55,32 @@ public class WalletLabels implements WalletImport, WalletExport {
 
             for(Keystore keystore : exportWallet.getKeystores()) {
                 if(keystore.getLabel() != null && !keystore.getLabel().isEmpty()) {
-                    labels.add(new Label(Type.xpub, keystore.getExtendedPublicKey().toString(), keystore.getLabel(), null));
+                    labels.add(new Label(Type.xpub, keystore.getExtendedPublicKey().toString(), keystore.getLabel(), null, null));
                 }
             }
 
             for(BlockTransaction blkTx : exportWallet.getWalletTransactions().values()) {
                 if(blkTx.getLabel() != null && !blkTx.getLabel().isEmpty()) {
-                    labels.add(new Label(Type.tx, blkTx.getHashAsString(), blkTx.getLabel(), origin));
+                    labels.add(new Label(Type.tx, blkTx.getHashAsString(), blkTx.getLabel(), origin, null));
                 }
             }
 
             for(WalletNode addressNode : exportWallet.getWalletAddresses().values()) {
                 if(addressNode.getLabel() != null && !addressNode.getLabel().isEmpty()) {
-                    labels.add(new Label(Type.addr, addressNode.getAddress().toString(), addressNode.getLabel(), null));
+                    labels.add(new Label(Type.addr, addressNode.getAddress().toString(), addressNode.getLabel(), null, null));
                 }
             }
 
             for(BlockTransactionHashIndex txo : exportWallet.getWalletTxos().keySet()) {
+                String spendable = (txo.isSpent() ? null : txo.getStatus() == Status.FROZEN ? "false" : "true");
                 if(txo.getLabel() != null && !txo.getLabel().isEmpty()) {
-                    labels.add(new Label(Type.output, txo.toString(), txo.getLabel(), null));
+                    labels.add(new Label(Type.output, txo.toString(), txo.getLabel(), null, spendable));
+                } else if(!txo.isSpent()) {
+                    labels.add(new Label(Type.output, txo.toString(), null, null, spendable));
                 }
 
                 if(txo.isSpent() && txo.getSpentBy().getLabel() != null && !txo.getSpentBy().getLabel().isEmpty()) {
-                    labels.add(new Label(Type.input, txo.getSpentBy().toString(), txo.getSpentBy().getLabel(), null));
+                    labels.add(new Label(Type.input, txo.getSpentBy().toString(), txo.getSpentBy().getLabel(), null, null));
                 }
             }
         }
@@ -140,7 +144,15 @@ public class WalletLabels implements WalletImport, WalletExport {
                     continue;
                 }
 
-                if(label == null || label.type == null || label.ref == null || label.label == null || label.label.isEmpty()) {
+                if(label == null || label.type == null || label.ref == null) {
+                    continue;
+                }
+
+                if(label.type == Type.output) {
+                    if((label.label == null || label.label.isEmpty()) && label.spendable == null) {
+                        continue;
+                    }
+                } else if(label.label == null || label.label.isEmpty()) {
                     continue;
                 }
 
@@ -152,6 +164,7 @@ public class WalletLabels implements WalletImport, WalletExport {
 
         Map<Wallet, List<Keystore>> changedWalletKeystores = new LinkedHashMap<>();
         Map<Wallet, List<Entry>> changedWalletEntries = new LinkedHashMap<>();
+        Map<Wallet, List<BlockTransactionHashIndex>> changedWalletUtxoStatuses = new LinkedHashMap<>();
 
         for(WalletForm walletForm : walletForms) {
             Wallet wallet = walletForm.getWallet();
@@ -216,9 +229,21 @@ public class WalletLabels implements WalletImport, WalletExport {
                                 BlockTransactionHashIndex reference = txioEntry.getHashIndex();
                                 if((label.type == Type.output && txioEntry.getType() == HashIndexEntry.Type.OUTPUT && reference.toString().equals(label.ref))
                                         || (label.type == Type.input && txioEntry.getType() == HashIndexEntry.Type.INPUT && reference.toString().equals(label.ref))) {
-                                    txioEntry.getHashIndex().setLabel(label.label);
-                                    txioEntry.labelProperty().set(label.label);
-                                    addChangedEntry(changedWalletEntries, txioEntry);
+                                    if(label.label != null && !label.label.isEmpty()) {
+                                        reference.setLabel(label.label);
+                                        txioEntry.labelProperty().set(label.label);
+                                        addChangedEntry(changedWalletEntries, txioEntry);
+                                    }
+
+                                    if(label.type == Type.output && !reference.isSpent()) {
+                                        if("false".equalsIgnoreCase(label.spendable) && reference.getStatus() != Status.FROZEN) {
+                                            reference.setStatus(Status.FROZEN);
+                                            addChangedUtxo(changedWalletUtxoStatuses, txioEntry);
+                                        } else if("true".equalsIgnoreCase(label.spendable) && reference.getStatus() == Status.FROZEN) {
+                                            reference.setStatus(null);
+                                            addChangedUtxo(changedWalletUtxoStatuses, txioEntry);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -248,6 +273,10 @@ public class WalletLabels implements WalletImport, WalletExport {
             EventManager.get().post(new WalletEntryLabelsChangedEvent(walletEntries.getKey(), walletEntries.getValue(), false));
         }
 
+        for(Map.Entry<Wallet, List<BlockTransactionHashIndex>> walletUtxos : changedWalletUtxoStatuses.entrySet()) {
+            EventManager.get().post(new WalletUtxoStatusChangedEvent(walletUtxos.getKey(), walletUtxos.getValue()));
+        }
+
         return walletForms.get(0).getWallet();
     }
 
@@ -256,7 +285,9 @@ public class WalletLabels implements WalletImport, WalletExport {
             BlockTransactionHashIndex reference = hashIndexEntry.getHashIndex();
             if((label.type == Type.output && hashIndexEntry.getType() == HashIndexEntry.Type.OUTPUT && reference.toString().equals(label.ref))
                     || (label.type == Type.input && hashIndexEntry.getType() == HashIndexEntry.Type.INPUT && reference.toString().equals(label.ref))) {
-                hashIndexEntry.labelProperty().set(label.label);
+                if(label.label != null && !label.label.isEmpty()) {
+                    hashIndexEntry.labelProperty().set(label.label);
+                }
             }
         }
     }
@@ -264,6 +295,11 @@ public class WalletLabels implements WalletImport, WalletExport {
     private static void addChangedEntry(Map<Wallet, List<Entry>> changedEntries, Entry entry) {
         List<Entry> entries = changedEntries.computeIfAbsent(entry.getWallet(), wallet -> new ArrayList<>());
         entries.add(entry);
+    }
+
+    private static void addChangedUtxo(Map<Wallet, List<BlockTransactionHashIndex>> changedUtxos, TransactionHashIndexEntry utxoEntry) {
+        List<BlockTransactionHashIndex> utxos = changedUtxos.computeIfAbsent(utxoEntry.getWallet(), w -> new ArrayList<>());
+        utxos.add(utxoEntry.getHashIndex());
     }
 
     @Override
@@ -281,16 +317,18 @@ public class WalletLabels implements WalletImport, WalletExport {
     }
 
     private static class Label {
-        public Label(Type type, String ref, String label, String origin) {
+        public Label(Type type, String ref, String label, String origin, String spendable) {
             this.type = type;
             this.ref = ref;
             this.label = label;
             this.origin = origin;
+            this.spendable = spendable;
         }
 
         Type type;
         String ref;
         String label;
         String origin;
+        String spendable;
     }
 }
