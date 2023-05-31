@@ -20,8 +20,7 @@ import org.slf4j.LoggerFactory;
 import javax.smartcardio.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.*;
 import java.util.Map;
 
 public class CardTransport {
@@ -41,15 +40,32 @@ public class CardTransport {
             throw new IllegalStateException("No reader connected");
         }
 
-        CardTerminal cardTerminal = (CardTerminal)terminals.get(0);
-        connection = cardTerminal.connect("*");
+        Card connection = null;
+        for(Iterator<CardTerminal> iter = terminals.iterator(); iter.hasNext(); ) {
+            try {
+                connection = getConnection(iter.next());
+                break;
+            } catch(CardException e) {
+                if(!iter.hasNext()) {
+                    log.error(e.getMessage());
+                    throw e;
+                }
+            }
+        }
+
+        this.connection = connection;
+    }
+
+    private Card getConnection(CardTerminal cardTerminal) throws CardException {
+        Card connection = cardTerminal.connect("*");
 
         CardChannel cardChannel = connection.getBasicChannel();
         ResponseAPDU resp = cardChannel.transmit(new CommandAPDU(0, 0xA4, 4, 0, Utils.hexToBytes(APPID.toUpperCase())));
         if(resp.getSW() != SW_OKAY) {
-            log.error("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()));
             throw new CardException("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()) + ". Note that only the Tapsigner is currently supported.");
         }
+
+        return connection;
     }
 
     JsonObject send(String cmd, Map<String, Object> args) throws CardException {

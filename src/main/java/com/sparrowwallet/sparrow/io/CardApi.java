@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.smartcardio.CardException;
+import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
 import java.io.File;
@@ -90,11 +91,15 @@ public abstract class CardApi {
     public abstract void disconnect();
 
     public static boolean isReaderAvailable() {
+        return !getAvailableTerminals().isEmpty();
+    }
+
+    public static List<CardTerminal> getAvailableTerminals() {
         setLibrary();
 
         try {
             TerminalFactory tf = TerminalFactory.getDefault();
-            return !tf.terminals().list().isEmpty();
+            return tf.terminals().list();
         } catch(Exception e) {
             Throwable cause = Throwables.getRootCause(e);
             if(cause.getMessage().equals("SCARD_E_NO_SERVICE")) {
@@ -106,7 +111,7 @@ public abstract class CardApi {
             }
         }
 
-        return false;
+        return Collections.emptyList();
     }
 
     private static void recoverNoService() {
