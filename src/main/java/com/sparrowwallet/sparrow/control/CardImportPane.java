@@ -26,6 +26,10 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.textfield.CustomPasswordField;
 import org.controlsfx.glyphfont.Glyph;
+import org.controlsfx.validation.ValidationResult;
+import org.controlsfx.validation.ValidationSupport;
+import org.controlsfx.validation.Validator;
+import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +43,7 @@ public class CardImportPane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(CardImportPane.class);
 
     private final KeystoreCardImport importer;
-    private final List<ChildNumber> derivation;
+    private List<ChildNumber> derivation;
     protected Button importButton;
     private final SimpleStringProperty pin = new SimpleStringProperty("");
 
@@ -72,7 +76,7 @@ public class CardImportPane extends TitledDescriptionPane {
 
         if(pin.get().length() < 6) {
             setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
-            setContent(getPinEntry());
+            setContent(getPinAndDerivationEntry());
             showHideLink.setVisible(false);
             setExpanded(true);
             importButton.setDisable(false);
@@ -106,7 +110,7 @@ public class CardImportPane extends TitledDescriptionPane {
             Throwable rootCause = Throwables.getRootCause(event.getSource().getException());
             if(rootCause instanceof CardAuthorizationException) {
                 setError(rootCause.getMessage(), null);
-                setContent(getPinEntry());
+                setContent(getPinAndDerivationEntry());
             } else {
                 log.error("Error importing keystore from card", event.getSource().getException());
                 setError("Import Error", rootCause.getMessage());
@@ -169,6 +173,13 @@ public class CardImportPane extends TitledDescriptionPane {
         return contentBox;
     }
 
+    private Node getPinAndDerivationEntry() {
+        VBox vBox = new VBox();
+        vBox.getChildren().add(getPinEntry());
+        vBox.getChildren().add(getDerivationEntry());
+        return vBox;
+    }
+
     private Node getPinEntry() {
         VBox vBox = new VBox();
 
@@ -183,10 +194,55 @@ public class CardImportPane extends TitledDescriptionPane {
         contentBox.setAlignment(Pos.TOP_RIGHT);
         contentBox.setSpacing(20);
         contentBox.getChildren().add(pinField);
-        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        contentBox.setPadding(new Insets(10, 30, 0, 30));
         contentBox.setPrefHeight(50);
 
         vBox.getChildren().add(contentBox);
+
+        return vBox;
+    }
+
+    private Node getDerivationEntry() {
+        VBox vBox = new VBox();
+
+        CheckBox checkBox = new CheckBox("Use Custom Derivation");
+        Label customLabel = new Label("Derivation:");
+        TextField customDerivation = new TextField(KeyDerivation.writePath(derivation));
+
+        ValidationSupport validationSupport = new ValidationSupport();
+        validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
+        validationSupport.registerValidator(customDerivation, Validator.combine(
+                Validator.createEmptyValidator("Derivation is required"),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid derivation", !KeyDerivation.isValid(newValue))
+        ));
+
+        customDerivation.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue.isEmpty() || !KeyDerivation.isValid(newValue)) {
+                importButton.setDisable(true);
+            } else {
+                importButton.setDisable(false);
+                derivation = KeyDerivation.parsePath(newValue);
+            }
+        });
+
+        checkBox.managedProperty().bind(checkBox.visibleProperty());
+        customLabel.managedProperty().bind(customLabel.visibleProperty());
+        customDerivation.managedProperty().bind(customDerivation.visibleProperty());
+        customLabel.visibleProperty().bind(checkBox.visibleProperty().not());
+        customDerivation.visibleProperty().bind(checkBox.visibleProperty().not());
+
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            checkBox.setVisible(false);
+        });
+
+        HBox derivationBox = new HBox();
+        derivationBox.setAlignment(Pos.CENTER_LEFT);
+        derivationBox.setSpacing(20);
+        derivationBox.getChildren().addAll(checkBox, customLabel, customDerivation);
+        derivationBox.setPadding(new Insets(10, 30, 10, 30));
+        derivationBox.setPrefHeight(50);
+
+        vBox.getChildren().addAll(derivationBox);
 
         return vBox;
     }
