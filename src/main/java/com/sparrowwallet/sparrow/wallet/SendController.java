@@ -697,6 +697,41 @@ public class SendController extends WalletFormController implements Initializabl
         protected Task<WalletTransaction> createTask() {
             return new Task<>() {
                 protected WalletTransaction call() throws InsufficientFundsException {
+                    try {
+                        return getWalletTransaction();
+                    } catch(InsufficientFundsException e) {
+                        if(e.getTargetValue() != null && includeSpentMempoolOutputs && utxoSelectors.size() == 1 && utxoSelectors.get(0) instanceof PresetUtxoSelector presetUtxoSelector) {
+                            Optional<BlockTransaction> optBlkTx = wallet.getWalletTransactions().values().stream().filter(blkTx -> {
+                                return blkTx.getTransaction().getInputs().stream().anyMatch(txInput -> {
+                                    return presetUtxoSelector.getPresetUtxos().stream().anyMatch(ref -> {
+                                        return txInput.getOutpoint().getHash().equals(ref.getHash()) && txInput.getOutpoint().getIndex() == ref.getIndex();
+                                    });
+                                });
+                            }).findFirst();
+
+                            if(optBlkTx.isPresent()) {
+                                //Creating RBF transaction - include additional UTXOs if available to pay desired fee
+                                Transaction rbfTx = optBlkTx.get().getTransaction();
+                                List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(wallet.getWalletUtxos().keySet());
+                                //Remove any UTXOs that are frozen or created by the transaction that is to be replaced
+                                walletUtxos.removeIf(utxo -> utxo.getStatus() == Status.FROZEN || rbfTx.getOutputs().stream().anyMatch(output -> output.getHash().equals(utxo.getHash()) && output.getIndex() == utxo.getIndex()));
+                                //Remove any UTXOs that have already been added or previously excluded
+                                walletUtxos.removeAll(presetUtxoSelector.getPresetUtxos());
+                                walletUtxos.removeAll(presetUtxoSelector.getExcludedUtxos());
+                                Collections.shuffle(walletUtxos);
+                                while(!walletUtxos.isEmpty() && presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum() < e.getTargetValue()) {
+                                    presetUtxoSelector.getPresetUtxos().add(walletUtxos.remove(0));
+                                }
+
+                                return getWalletTransaction();
+                            }
+                        }
+
+                        throw e;
+                    }
+                }
+
+                private WalletTransaction getWalletTransaction() throws InsufficientFundsException {
                     updateMessage("Selecting UTXOs...");
                     WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, excludedChangeNodes,
                             feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, includeSpentMempoolOutputs);
@@ -1589,22 +1624,22 @@ public class SendController extends WalletFormController implements Initializabl
             if(utxoSelector instanceof MaxUtxoSelector) {
                 Collection<BlockTransactionHashIndex> utxos = walletForm.getWallet().getWalletUtxos().keySet();
                 utxos.remove(event.getUtxo());
-                if(utxoFilterProperty.get() instanceof ExcludeUtxoFilter) {
-                    ExcludeUtxoFilter existingUtxoFilter = (ExcludeUtxoFilter)utxoFilterProperty.get();
+                if(utxoFilterProperty.get() instanceof ExcludeUtxoFilter existingUtxoFilter) {
                     utxos.removeAll(existingUtxoFilter.getExcludedUtxos());
                 }
                 PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(utxos);
+                presetUtxoSelector.getExcludedUtxos().add(event.getUtxo());
                 utxoSelectorProperty.set(presetUtxoSelector);
                 updateTransaction(true);
-            } else if(utxoSelector instanceof PresetUtxoSelector) {
-                PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(((PresetUtxoSelector)utxoSelector).getPresetUtxos());
+            } else if(utxoSelector instanceof PresetUtxoSelector existingUtxoSelector) {
+                PresetUtxoSelector presetUtxoSelector = new PresetUtxoSelector(existingUtxoSelector.getPresetUtxos(), existingUtxoSelector.getExcludedUtxos());
                 presetUtxoSelector.getPresetUtxos().remove(event.getUtxo());
+                presetUtxoSelector.getExcludedUtxos().add(event.getUtxo());
                 utxoSelectorProperty.set(presetUtxoSelector);
-                updateTransaction(true);
+                updateTransaction(!includeSpentMempoolOutputsProperty.get());
             } else {
                 ExcludeUtxoFilter utxoFilter = new ExcludeUtxoFilter();
-                if(utxoFilterProperty.get() instanceof ExcludeUtxoFilter) {
-                    ExcludeUtxoFilter existingUtxoFilter = (ExcludeUtxoFilter)utxoFilterProperty.get();
+                if(utxoFilterProperty.get() instanceof ExcludeUtxoFilter existingUtxoFilter) {
                     utxoFilter.getExcludedUtxos().addAll(existingUtxoFilter.getExcludedUtxos());
                 }
 

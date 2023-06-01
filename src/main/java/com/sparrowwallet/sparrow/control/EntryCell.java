@@ -245,8 +245,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         double vSize = tx.getVirtualSize();
         int inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
         List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getWalletUtxos().keySet());
-        //Remove any UTXOs created by the transaction that is to be replaced
-        walletUtxos.removeIf(utxo -> ourOutputs.stream().anyMatch(output -> output.getHash().equals(utxo.getHash()) && output.getIndex() == utxo.getIndex()));
+        //Remove any UTXOs that are frozen or created by the transaction that is to be replaced
+        walletUtxos.removeIf(utxo -> utxo.getStatus() == Status.FROZEN || ourOutputs.stream().anyMatch(output -> output.getHash().equals(utxo.getHash()) && output.getIndex() == utxo.getIndex()));
         Collections.shuffle(walletUtxos);
         while((double)changeTotal / vSize < getMaxFeeRate() && !walletUtxos.isEmpty() && !cancelTransaction) {
             //If there is insufficient change output, include another random UTXO so the fee can be increased
