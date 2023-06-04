@@ -136,7 +136,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
             return data == ButtonBar.ButtonData.OK_DONE ? getSelectedWords() : null;
         });
 
-        dialogPane.setPrefWidth(850);
+        dialogPane.setPrefWidth(952);
         dialogPane.setPrefHeight(500);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.moveToActiveWindowScreen(this);
