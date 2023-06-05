@@ -4,6 +4,7 @@ import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.github.arteam.simplejsonrpc.core.domain.ErrorMessage;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -227,7 +228,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         try {
             return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
-            throw new ElectrumServerRpcException("Error getting fee estimates", e);
+            throw new ElectrumServerRpcException("Error getting fee estimates: " + e.getErrors(), e);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting fee estimates for target blocks: " + targetBlocks, e);
         }
