@@ -356,7 +356,11 @@ public class SettingsController extends WalletFormController implements Initiali
         if(wallet.getPolicyType() == PolicyType.SINGLE) {
             cryptoOutput = new CryptoOutput(scriptExpressions, getCryptoHDKey(wallet.getKeystores().get(0)));
         } else if(wallet.getPolicyType() == PolicyType.MULTI) {
-            List<CryptoHDKey> cryptoHDKeys = wallet.getKeystores().stream().map(this::getCryptoHDKey).collect(Collectors.toList());
+            WalletNode firstReceive = new WalletNode(wallet, KeyPurpose.RECEIVE, 0);
+            Utils.LexicographicByteArrayComparator lexicographicByteArrayComparator = new Utils.LexicographicByteArrayComparator();
+            List<CryptoHDKey> cryptoHDKeys = wallet.getKeystores().stream().sorted((keystore1, keystore2) -> {
+                return lexicographicByteArrayComparator.compare(keystore1.getPubKey(firstReceive).getPubKey(), keystore2.getPubKey(firstReceive).getPubKey());
+            }).map(this::getCryptoHDKey).collect(Collectors.toList());
             MultiKey multiKey = new MultiKey(wallet.getDefaultPolicy().getNumSignaturesRequired(), null, cryptoHDKeys);
             List<ScriptExpression> multiScriptExpressions = new ArrayList<>(scriptExpressions);
             multiScriptExpressions.add(ScriptExpression.SORTED_MULTISIG);
