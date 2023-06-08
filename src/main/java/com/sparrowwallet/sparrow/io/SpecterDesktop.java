@@ -22,7 +22,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
         try {
             SpecterWallet specterWallet = new SpecterWallet();
             specterWallet.label = wallet.getFullName();
-            specterWallet.blockheight = wallet.getTransactions().values().stream().mapToInt(BlockTransactionHash::getHeight).min().orElse(wallet.getStoredBlockHeight());
+            specterWallet.blockheight = wallet.getTransactions().values().stream().mapToInt(BlockTransactionHash::getHeight).min().orElse(wallet.getStoredBlockHeight() == null ? 0 : wallet.getStoredBlockHeight());
             specterWallet.descriptor = OutputDescriptor.getOutputDescriptor(wallet).toString(true);
 
             Gson gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
