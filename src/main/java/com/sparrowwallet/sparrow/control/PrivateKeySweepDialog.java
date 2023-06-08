@@ -378,11 +378,17 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         transaction.addOutput(new TransactionOutput(transaction, total - fee, destAddress.getOutputScript()));
 
         PSBT psbt = new PSBT(transaction);
+        //Set witness UTXOs on PSBT inputs first - they are all required when hashing for a Taproot signature
+        for(int i = 0; i < txOutputs.size(); i++) {
+            TransactionOutput utxoOutput = txOutputs.get(i);
+            PSBTInput psbtInput = psbt.getPsbtInputs().get(i);
+            psbtInput.setWitnessUtxo(utxoOutput);
+        }
+
         for(int i = 0; i < txOutputs.size(); i++) {
             TransactionOutput utxoOutput = txOutputs.get(i);
             TransactionInput txInput = transaction.getInputs().get(i);
             PSBTInput psbtInput = psbt.getPsbtInputs().get(i);
-            psbtInput.setWitnessUtxo(utxoOutput);
 
             if(ScriptType.P2SH.isScriptType(utxoOutput.getScript())) {
                 psbtInput.setRedeemScript(txInput.getScriptSig().getFirstNestedScript());
