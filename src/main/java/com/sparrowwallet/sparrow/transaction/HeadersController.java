@@ -76,6 +76,7 @@ public class HeadersController extends TransactionFormController implements Init
     public static final String MAX_LOCKTIME_DATE = "2106-02-07T06:28:15Z";
     public static final String MIN_LOCKTIME_DATE = "1985-11-05T00:53:20Z";
 
+    private static final Pattern MIN_MEMPOOL_FEE = Pattern.compile("the transaction was rejected by network rules.*mempool min fee not met, (\\d+) < (\\d+).*", Pattern.DOTALL | Pattern.MULTILINE);
     private static final Pattern RBF_INSUFFICIENT_FEE = Pattern.compile("insufficient fee, rejecting replacement.*?(\\d+\\.?\\d*) < (\\d+\\.?\\d*)");
     private static final Pattern RBF_INSUFFICIENT_FEE_RATE = Pattern.compile("insufficient fee, rejecting replacement.*new feerate (\\d+\\.?\\d*)[^\\d]*(\\d+\\.?\\d*)[^\\d]*");
 
@@ -1149,6 +1150,14 @@ public class HeadersController extends TransactionFormController implements Init
                         "You can solve this by recreating the transaction with a slightly increased fee rate.");
             } else if(failMessage.startsWith("bad-txns-inputs-missingorspent")) {
                 AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error indicating some or all of the UTXOs this transaction is spending are missing or have already been spent.");
+            } else if(failMessage.contains("mempool min fee not met")) {
+                Matcher minMempoolMatcher = MIN_MEMPOOL_FEE.matcher(failMessage);
+                if(minMempoolMatcher.matches()) {
+                    long requiredFee = Long.parseLong(minMempoolMatcher.group(2));
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the transaction was insufficient for relay by your connected server. Increase the fee to at least " + requiredFee + " sats to try again.");
+                } else {
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the transaction was insufficient for relay by your connected server. Increase the fee to try again.");
+                }
             } else if(failMessage.startsWith("insufficient fee, rejecting replacement")) {
                 Matcher feeMatcher = RBF_INSUFFICIENT_FEE.matcher(failMessage);
                 Matcher feeRateMatcher = RBF_INSUFFICIENT_FEE_RATE.matcher(failMessage);
