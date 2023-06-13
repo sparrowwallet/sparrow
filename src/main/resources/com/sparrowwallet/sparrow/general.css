@@ -236,11 +236,14 @@
     -fx-border-width: 0;
     -fx-border-insets: 0;
     -fx-background-color: transparent;
-    -fx-opacity: 0.7;
 }
 
-.icon-button:hover {
-    -fx-opacity: 1.0;
+.icon-button .glyph-font {
+    -fx-text-fill: #1e88cf;
+}
+
+.icon-button:hover .glyph-font {
+    -fx-text-fill: #259cf5;
 }
 
 .number-field {
