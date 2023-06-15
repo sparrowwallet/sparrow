@@ -692,7 +692,9 @@ public class ElectrumServer {
         //First check all provided txes that pay to this node
         Script nodeScript = node.getOutputScript();
         Set<BlockTransactionHash> history = nodeTransactionMap.get(node);
+        Map<Sha256Hash, BlockTransactionHash> txHashHistory = new HashMap<>();
         for(BlockTransactionHash reference : history) {
+            txHashHistory.put(reference.getHash(), reference);
             BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
             if(blockTransaction == null) {
                 throw new IllegalStateException("Did not retrieve transaction for hash " + reference.getHashAsString());
@@ -731,14 +733,13 @@ public class ElectrumServer {
                     throw new IllegalStateException("Could not retrieve transaction for hash " + reference.getHashAsString());
                 }
 
-                Optional<BlockTransactionHash> optionalTxHash = history.stream().filter(txHash -> txHash.getHash().equals(previousHash)).findFirst();
-                if(optionalTxHash.isEmpty()) {
+                BlockTransactionHash spentTxHash = txHashHistory.get(previousHash);
+                if(spentTxHash == null) {
                     //No previous transaction history found, cannot check if spends from wallet
                     //This is fine so long as all referenced transactions have been returned, in which case this refers to a transaction that does not affect this wallet node
                     continue;
                 }
 
-                BlockTransactionHash spentTxHash = optionalTxHash.get();
                 TransactionOutput spentOutput = previousTransaction.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
                 if(spentOutput.getScript().equals(nodeScript)) {
                     BlockTransactionHashIndex spendingTXI = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), reference.getFee(), inputIndex, spentOutput.getValue());

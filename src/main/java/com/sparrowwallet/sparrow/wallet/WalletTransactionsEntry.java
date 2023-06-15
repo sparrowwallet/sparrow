@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.collect.Sets;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.HashIndex;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
@@ -72,15 +73,14 @@ public class WalletTransactionsEntry extends Entry {
                 .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey,
                         BinaryOperator.maxBy(BlockTransactionHashIndex::compareTo)));
 
-        List<Entry> current = getWalletTransactions(getWallet()).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList());
-        List<Entry> previous = new ArrayList<>(getChildren());
+        Collection<WalletTransactionsEntry.WalletTransaction> entries = getWalletTransactions(getWallet());
+        Set<Entry> current = entries.stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Entry> previous = new LinkedHashSet<>(getChildren());
 
-        List<Entry> entriesAdded = new ArrayList<>(current);
-        entriesAdded.removeAll(previous);
+        Set<Entry> entriesAdded = Sets.difference(current, previous);
         getChildren().addAll(entriesAdded);
 
-        List<Entry> entriesRemoved = new ArrayList<>(previous);
-        entriesRemoved.removeAll(current);
+        Set<Entry> entriesRemoved = Sets.difference(previous, current);
         getChildren().removeAll(entriesRemoved);
 
         calculateBalances(true);
