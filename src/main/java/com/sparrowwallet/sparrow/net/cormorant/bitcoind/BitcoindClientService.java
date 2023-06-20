@@ -9,6 +9,7 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @JsonRpcService
 @JsonRpcParams(ParamsType.ARRAY)
@@ -21,6 +22,9 @@ public interface BitcoindClientService {
 
     @JsonRpcMethod("estimatesmartfee")
     FeeInfo estimateSmartFee(@JsonRpcParam("conf_target") int blocks);
+
+    @JsonRpcMethod("getrawmempool")
+    Set<String> getRawMempool();
 
     @JsonRpcMethod("getrawmempool")
     Map<String, MempoolEntry> getRawMempool(@JsonRpcParam("verbose") boolean verbose);

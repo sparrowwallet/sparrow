@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class SparrowUtxoConfigPersister extends UtxoConfigPersister {
@@ -38,7 +39,7 @@ public class SparrowUtxoConfigPersister extends UtxoConfigPersister {
         Map<String, UtxoConfigPersisted> utxoConfigs = wallet.getUtxoMixes().entrySet().stream()
                 .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> new UtxoConfigPersisted(entry.getValue().getMixesDone(), entry.getValue().getExpired()),
                         (u, v) -> { throw new IllegalStateException("Duplicate utxo config hashes"); },
-                        HashMap::new));
+                        ConcurrentHashMap::new));
 
         return new UtxoConfigData(utxoConfigs);
     }

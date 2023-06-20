@@ -3,15 +3,15 @@ package com.sparrowwallet.sparrow.net;
 import java.util.Objects;
 
 public class MempoolRateSize implements Comparable<MempoolRateSize> {
-    private final long fee;
+    private final double fee;
     private final long vSize;
 
-    public MempoolRateSize(long fee, long vSize) {
+    public MempoolRateSize(double fee, long vSize) {
         this.fee = fee;
         this.vSize = vSize;
     }
 
-    public long getFee() {
+    public double getFee() {
         return fee;
     }
 
@@ -38,7 +38,7 @@ public class MempoolRateSize implements Comparable<MempoolRateSize> {
 
     @Override
     public int compareTo(MempoolRateSize other) {
-        return Long.compare(fee, other.fee);
+        return Double.compare(fee, other.fee);
     }
 
     @Override

@@ -1508,13 +1508,17 @@ public class SendController extends WalletFormController implements Initializabl
     public void feeRatesUpdated(FeeRatesUpdatedEvent event) {
         blockTargetFeeRatesChart.update(event.getTargetBlockFeeRates());
         blockTargetFeeRatesChart.select(getTargetBlocks());
-        mempoolSizeFeeRatesChart.update(getMempoolHistogram());
         if(targetBlocksField.isVisible()) {
             setFeeRate(event.getTargetBlockFeeRates().get(getTargetBlocks()));
         } else {
             setFeeRatePriority(getFeeRangeRate());
         }
         addFeeRangeTrackHighlight(0);
+    }
+
+    @Subscribe
+    public void mempoolRateSizesUpdated(MempoolRateSizesUpdatedEvent event) {
+        mempoolSizeFeeRatesChart.update(getMempoolHistogram());
     }
 
     @Subscribe

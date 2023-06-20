@@ -12,7 +12,7 @@ import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -235,16 +235,16 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public Map<Long, Long> getFeeRateHistogram(Transport transport) {
+    public Map<Double, Long> getFeeRateHistogram(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            BigInteger[][] feesArray = new RetryLogic<BigInteger[][]>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
-                    client.createRequest().returnAs(BigInteger[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
+            BigDecimal[][] feesArray = new RetryLogic<BigDecimal[][]>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(BigDecimal[][].class).method("mempool.get_fee_histogram").id(idCounter.incrementAndGet()).execute());
 
-            Map<Long, Long> feeRateHistogram = new TreeMap<>();
-            for(BigInteger[] feePair : feesArray) {
+            Map<Double, Long> feeRateHistogram = new TreeMap<>();
+            for(BigDecimal[] feePair : feesArray) {
                 if(feePair[0].longValue() > 0) {
-                    feeRateHistogram.put(feePair[0].longValue(), feePair[1].longValue());
+                    feeRateHistogram.put(feePair[0].doubleValue(), feePair[1].longValue());
                 }
             }
 

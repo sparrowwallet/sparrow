@@ -131,3 +131,36 @@
 #transactionDiagram .useradd-icon {
     -fx-text-fill: -fx-accent;
 }
+
+.vsizeChart {
+    VSIZE1-2_COLOR: rgb(216, 27, 96);
+    VSIZE2-3_COLOR: rgb(142, 36, 170);
+    VSIZE3-4_COLOR: rgb(94, 53, 177);
+    VSIZE4-5_COLOR: rgb(57, 73, 171);
+    VSIZE5-6_COLOR: rgb(30, 136, 229);
+    VSIZE6-8_COLOR: rgb(3, 155, 229);
+    VSIZE8-10_COLOR: rgb(0, 172, 193);
+    VSIZE10-12_COLOR: rgb(0, 137, 123);
+    VSIZE12-15_COLOR: rgb(67, 160, 71);
+    VSIZE15-20_COLOR: rgb(124, 179, 66);
+    VSIZE20-30_COLOR: rgb(192, 202, 51);
+    VSIZE30-40_COLOR: rgb(253, 216, 53);
+    VSIZE40-50_COLOR: rgb(255, 179, 0);
+    VSIZE50-60_COLOR: rgb(251, 140, 0);
+    VSIZE60-70_COLOR: rgb(244, 81, 30);
+    VSIZE70-80_COLOR: rgb(109, 76, 65);
+    VSIZE80-90_COLOR: rgb(117, 117, 117);
+    VSIZE90-100_COLOR: rgb(84, 110, 122);
+    VSIZE100-125_COLOR: rgb(183, 28, 28);
+    VSIZE125-150_COLOR: rgb(136, 14, 79);
+    VSIZE150-175_COLOR: rgb(74, 20, 140);
+    VSIZE175-200_COLOR: rgb(49, 27, 146);
+    VSIZE200-250_COLOR: rgb(26, 35, 126);
+    VSIZE250-300_COLOR: rgb(13, 71, 161);
+    VSIZE300-350_COLOR: rgb(1, 87, 155);
+    VSIZE350-400_COLOR: rgb(0, 96, 100);
+    VSIZE400-500_COLOR: rgb(0, 77, 64);
+    VSIZE500-600_COLOR: rgb(27, 94, 32);
+    VSIZE600-700_COLOR: rgb(51, 105, 30);
+    VSIZE700-800_COLOR: rgb(130, 119, 23);
+}

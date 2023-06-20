@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 
 import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.google.common.collect.Sets;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
@@ -25,11 +26,14 @@ import com.sparrowwallet.sparrow.net.cormorant.electrum.ScriptHashStatus;
 import com.sparrowwallet.sparrow.net.cormorant.index.Store;
 import com.sparrowwallet.drongo.protocol.*;
 import javafx.application.Platform;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +64,7 @@ public class BitcoindClient {
 
     private Exception lastPollException;
 
+    private final boolean useWallets;
     private boolean pruned;
     private boolean legacyWalletExists;
 
@@ -76,7 +81,11 @@ public class BitcoindClient {
 
     private final List<String> pruneWarnedDescriptors = new ArrayList<>();
 
-    public BitcoindClient() {
+    private final Map<String, MempoolEntry> mempoolEntries = new ConcurrentHashMap<>();
+    private MempoolEntriesState mempoolEntriesState = MempoolEntriesState.UNINITIALIZED;
+    private long timerTaskCount;
+
+    public BitcoindClient(boolean useWallets) {
         BitcoindTransport bitcoindTransport;
 
         Config config = Config.get();
@@ -87,6 +96,7 @@ public class BitcoindClient {
         }
 
         this.jsonRpcClient = new JsonRpcClient(bitcoindTransport);
+        this.useWallets = useWallets;
     }
 
     public void initialize() throws CormorantBitcoindException {
@@ -516,6 +526,64 @@ public class BitcoindClient {
         }
     }
 
+    public void initializeMempoolEntries() {
+        mempoolEntriesState = MempoolEntriesState.INITIALIZING;
+
+        long start = System.currentTimeMillis();
+        Set<String> txids = getBitcoindService().getRawMempool();
+        long end = System.currentTimeMillis();
+
+        if(end - start < 1000) {
+            //Fast system, fetch all mempool data at once
+            mempoolEntries.putAll(getBitcoindService().getRawMempool(true));
+        } else {
+            //Slow system, fetch mempool entries one-by-one to avoid risking a node crash
+            for(String txid : txids) {
+                try {
+                    MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid);
+                    mempoolEntries.put(txid, mempoolEntry);
+                } catch(JsonRpcException e) {
+                    //ignore, probably tx has been removed from mempool
+                }
+            }
+        }
+
+        mempoolEntriesState = MempoolEntriesState.INITIALIZED;
+    }
+
+    public void updateMempoolEntries() {
+        Set<String> txids = getBitcoindService().getRawMempool();
+
+        Set<String> removed = new HashSet<>(Sets.difference(mempoolEntries.keySet(), txids));
+        mempoolEntries.keySet().removeAll(removed);
+
+        Set<String> added = Sets.difference(txids, mempoolEntries.keySet());
+        for(String txid : added) {
+            try {
+                MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid);
+                mempoolEntries.put(txid, mempoolEntry);
+            } catch(JsonRpcException e) {
+                //ignore, probably tx has been removed from mempool
+            }
+        }
+    }
+
+    public Map<String, MempoolEntry> getMempoolEntries() {
+        return mempoolEntries;
+    }
+
+    public MempoolEntriesState getMempoolEntriesState() {
+        return mempoolEntriesState;
+    }
+
+    public InitializeMempoolEntriesService getInitializeMempoolEntriesService() {
+        return new InitializeMempoolEntriesService();
+    }
+
+    public boolean isUseWallets() {
+        return useWallets;
+    }
+
     public Store getStore() {
         return store;
     }
@@ -566,6 +634,10 @@ public class BitcoindClient {
                     }
                 }
 
+                if(mempoolEntriesState == MempoolEntriesState.INITIALIZED && (++timerTaskCount+1) % 12 == 0) {
+                    updateMempoolEntries();
+                }
+
                 ListSinceBlock listSinceBlock = getListSinceBlock(lastBlock);
                 String currentBlock = lastBlock;
                 updateStore(listSinceBlock);
@@ -591,7 +663,7 @@ public class BitcoindClient {
                 }
             } catch(Exception e) {
                 lastPollException = e;
-                log.warn("Error polling Bitcoin Core: " + e.getMessage());
+                log.warn("Error polling Bitcoin Core", e);
 
                 if(syncing) {
                     syncingLock.lock();
@@ -626,5 +698,22 @@ public class BitcoindClient {
         public Object getTimestamp() {
             return rescanSince == null ? "now" : rescanSince.getTime() / 1000;
         }
+    }
+
+    public class InitializeMempoolEntriesService extends Service<Void> {
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() {
+                    initializeMempoolEntries();
+                    return null;
+                }
+            };
+        }
+    }
+
+    public enum MempoolEntriesState {
+        UNINITIALIZED, INITIALIZING, INITIALIZED
     }
 }

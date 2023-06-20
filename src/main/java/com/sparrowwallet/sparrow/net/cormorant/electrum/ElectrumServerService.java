@@ -5,7 +5,10 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
+import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
+import com.sparrowwallet.sparrow.event.MempoolEntriesInitializedEvent;
 import com.sparrowwallet.sparrow.net.Version;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.*;
@@ -60,9 +63,23 @@ public class ElectrumServerService {
     }
 
     @JsonRpcMethod("mempool.get_fee_histogram")
-    public List<List<Number>> getFeeHistogram() throws BitcoindIOException {
-        try {
-            Map<String, MempoolEntry> mempoolEntries = bitcoindClient.getBitcoindService().getRawMempool(true);
+    public List<List<Number>> getFeeHistogram() {
+        BitcoindClient.MempoolEntriesState mempoolEntriesState = bitcoindClient.getMempoolEntriesState();
+        if(mempoolEntriesState != BitcoindClient.MempoolEntriesState.INITIALIZED) {
+            if(bitcoindClient.isUseWallets() && mempoolEntriesState == BitcoindClient.MempoolEntriesState.UNINITIALIZED) {
+                BitcoindClient.InitializeMempoolEntriesService initializeMempoolEntriesService = bitcoindClient.getInitializeMempoolEntriesService();
+                initializeMempoolEntriesService.setOnSucceeded(successEvent -> {
+                    EventManager.get().post(new MempoolEntriesInitializedEvent());
+                });
+                initializeMempoolEntriesService.setOnFailed(failedEvent -> {
+                    log.error("Failed to initialize mempool entries", failedEvent.getSource().getException());
+                });
+                initializeMempoolEntriesService.start();
+            }
+
+            return Collections.emptyList();
+        } else {
+            Map<String, MempoolEntry> mempoolEntries = bitcoindClient.getMempoolEntries();
 
             List<VsizeFeerate> vsizeFeerates = mempoolEntries.values().stream().map(entry -> new VsizeFeerate(entry.vsize(), entry.fees().base())).sorted().toList();
 
@@ -85,8 +102,6 @@ public class ElectrumServerService {
             }
 
             return histogram;
-        } catch(IllegalStateException e) {
-            throw new BitcoindIOException(e);
         }
     }
 
@@ -204,7 +219,9 @@ public class ElectrumServerService {
 
         public VsizeFeerate(int vsize, double fee) {
             this.vsize = vsize;
-            this.feerate = fee / vsize * 100000000;
+            double feeRate = fee / vsize * Transaction.SATOSHIS_PER_BITCOIN;
+            //Round down to 0.1 sats/vb precision
+            this.feerate = Math.floor(10 * feeRate) / 10;
         }
 
         @Override

@@ -1,19 +1,31 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
 import javafx.collections.FXCollections;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
+import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.chart.*;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
@@ -29,14 +41,80 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
     private static final DateFormat dateFormatter = new SimpleDateFormat("HH:mm");
     public static final int MAX_PERIOD_HOURS = 2;
     private static final double Y_VALUE_BREAK_MVB = 3.0;
+    private static final List<Integer> FEE_RATES_INTERVALS = List.of(1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 700, 800);
 
     private Tooltip tooltip;
 
+    private MempoolSizeFeeRatesChart expandedChart;
+    private final EventHandler<MouseEvent> expandedChartHandler = new EventHandler<>() {
+        @Override
+        public void handle(MouseEvent event) {
+            if(!event.isConsumed() && event.getButton() != MouseButton.SECONDARY) {
+                Stage stage = new Stage(StageStyle.UNDECORATED);
+                stage.setTitle("Mempool by vBytes");
+                stage.initOwner(MempoolSizeFeeRatesChart.this.getScene().getWindow());
+                stage.initModality(Modality.WINDOW_MODAL);
+                stage.setResizable(false);
+
+                StackPane scenePane = new StackPane();
+                if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+                    scenePane.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
+                }
+
+                scenePane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+                if(Config.get().getTheme() == Theme.DARK) {
+                    scenePane.getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+                }
+                scenePane.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
+                scenePane.getStylesheets().add(AppServices.class.getResource("wallet/send.css").toExternalForm());
+
+                VBox vBox = new VBox(20);
+                vBox.setPadding(new Insets(20, 20, 20, 20));
+
+                expandedChart = new MempoolSizeFeeRatesChart();
+                expandedChart.initialize();
+                expandedChart.getStyleClass().add("vsizeChart");
+                expandedChart.update(AppServices.getMempoolHistogram());
+                expandedChart.setLegendVisible(false);
+                expandedChart.setAnimated(false);
+                expandedChart.setPrefWidth(700);
+
+                HBox buttonBox = new HBox();
+                buttonBox.setAlignment(Pos.CENTER_RIGHT);
+                Button button = new Button("Close");
+                button.setOnAction(e -> {
+                    stage.close();
+                });
+                buttonBox.getChildren().add(button);
+                vBox.getChildren().addAll(expandedChart, buttonBox);
+                scenePane.getChildren().add(vBox);
+
+                Scene scene = new Scene(scenePane);
+                AppServices.onEscapePressed(scene, stage::close);
+                AppServices.setStageIcon(stage);
+                stage.setScene(scene);
+                stage.setOnShowing(e -> {
+                    AppServices.moveToActiveWindowScreen(stage, 800, 460);
+                });
+                stage.setOnHidden(e -> {
+                    expandedChart = null;
+                });
+                stage.show();
+            }
+        }
+    };
+
+    public MempoolSizeFeeRatesChart() {
+        super(new CategoryAxis(), new NumberAxis());
+    }
+
     public MempoolSizeFeeRatesChart(@NamedArg("xAxis") Axis<String> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
+        setOnMouseClicked(expandedChartHandler);
     }
 
     public void initialize() {
+        getStyleClass().add("vsizeChart");
         setCreateSymbols(false);
         setCursor(Cursor.CROSSHAIR);
         setVerticalGridLinesVisible(false);
@@ -78,17 +156,18 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             }
         });
 
-        long previousFeeRate = 0;
-        for(Long feeRate : AppServices.FEE_RATES_RANGE) {
+        for(int i = 0; i < FEE_RATES_INTERVALS.size(); i++) {
+            int feeRate = FEE_RATES_INTERVALS.get(i);
+            int nextFeeRate = (i == FEE_RATES_INTERVALS.size() - 1 ? Integer.MAX_VALUE : FEE_RATES_INTERVALS.get(i+1));
             XYChart.Series<String, Number> series = new XYChart.Series<>();
-            series.setName(feeRate + "+ sats/vB");
+            series.setName(feeRate + "-" + (nextFeeRate == Integer.MAX_VALUE ? 900 : nextFeeRate));
             long seriesTotalVSize = 0;
 
             for(Date date : periodRateSizes.keySet()) {
                 Set<MempoolRateSize> rateSizes = periodRateSizes.get(date);
                 long totalVSize = 0;
                 for(MempoolRateSize rateSize : rateSizes) {
-                    if(rateSize.getFee() > previousFeeRate && rateSize.getFee() <= feeRate) {
+                    if(rateSize.getFee() >= feeRate && rateSize.getFee() < nextFeeRate) {
                         totalVSize += rateSize.getVSize();
                     }
                 }
@@ -100,8 +179,19 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             if(seriesTotalVSize > 0) {
                 getData().add(series);
             }
+        }
 
-            previousFeeRate = feeRate;
+        for(int i = 0; i < getData().size(); i++) {
+            Series<String, Number> series = getData().get(i);
+            Set<Node> nodes = lookupAll(".series" + i);
+            for(Node node : nodes) {
+                if(node.getStyleClass().contains("chart-series-area-line")) {
+                    node.setStyle("-fx-stroke: VSIZE" + series.getName() + "_COLOR; -fx-opacity: 0.2;");
+                } else {
+                    node.setStyle("-fx-fill: VSIZE" + series.getName() + "_COLOR; -fx-opacity: 0.5;");
+                }
+                node.getStyleClass().remove("default-color" + i);
+            }
         }
 
         final double maxMvB = getMaxMvB(getData());
@@ -130,6 +220,10 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         } else {
             numberAxis.setTickLabelsVisible(false);
             numberAxis.setOpacity(0);
+        }
+
+        if(expandedChart != null) {
+            expandedChart.update(mempoolRateSizes);
         }
     }
 
@@ -200,11 +294,9 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                         double mvb = kvb / 1000;
                         if(mvb >= 0.01 || (maxMvB < Y_VALUE_BREAK_MVB && mvb > 0.001)) {
                             String amount = (maxMvB < Y_VALUE_BREAK_MVB ? (int)kvb + " kvB" : String.format("%.2f", mvb) + " MvB");
-                            Label label = new Label(series.getName() + ": " + amount);
+                            Label label = new Label(series.getName() + " sats/vB: " + amount);
                             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CIRCLE);
-                            if(i < 8) {
-                                circle.setStyle("-fx-text-fill: CHART_COLOR_" + (i+1));
-                            }
+                            circle.setStyle("-fx-text-fill: VSIZE" + series.getName() + "_COLOR; -fx-opacity: 0.7;");
                             label.setGraphic(circle);
                             getChildren().add(label);
                         }

@@ -30,7 +30,7 @@ public interface ElectrumServerRpc {
 
     Map<Integer, Double> getFeeEstimates(Transport transport, List<Integer> targetBlocks);
 
-    Map<Long, Long> getFeeRateHistogram(Transport transport);
+    Map<Double, Long> getFeeRateHistogram(Transport transport);
 
     Double getMinimumRelayFee(Transport transport);
 

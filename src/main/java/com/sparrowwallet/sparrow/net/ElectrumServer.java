@@ -836,9 +836,9 @@ public class ElectrumServer {
     }
 
     public Set<MempoolRateSize> getMempoolRateSizes() throws ServerException {
-        Map<Long, Long> feeRateHistogram = electrumServerRpc.getFeeRateHistogram(getTransport());
+        Map<Double, Long> feeRateHistogram = electrumServerRpc.getFeeRateHistogram(getTransport());
         Set<MempoolRateSize> mempoolRateSizes = new TreeSet<>();
-        for(Long fee : feeRateHistogram.keySet()) {
+        for(Double fee : feeRateHistogram.keySet()) {
             mempoolRateSizes.add(new MempoolRateSize(fee, feeRateHistogram.get(fee)));
         }
 
@@ -1330,6 +1330,13 @@ public class ElectrumServer {
             } finally {
                 bwtStartLock.unlock();
             }
+        }
+
+        @Subscribe
+        public void mempoolEntriesInitialized(MempoolEntriesInitializedEvent event) throws ServerException {
+            ElectrumServer electrumServer = new ElectrumServer();
+            Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
+            EventManager.get().post(new MempoolRateSizesUpdatedEvent(mempoolRateSizes));
         }
     }
 

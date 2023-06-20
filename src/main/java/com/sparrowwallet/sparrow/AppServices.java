@@ -669,6 +669,10 @@ public class AppServices {
     }
 
     private void addMempoolRateSizes(Set<MempoolRateSize> rateSizes) {
+        if(rateSizes.isEmpty()) {
+            return;
+        }
+
         LocalDateTime dateMinute = LocalDateTime.now().truncatedTo(ChronoUnit.MINUTES);
         if(mempoolHistogram.isEmpty()) {
             mempoolHistogram.put(Date.from(dateMinute.minusMinutes(1).atZone(ZoneId.systemDefault()).toInstant()), rateSizes);
@@ -1022,8 +1026,6 @@ public class AppServices {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
-        targetBlockFeeRates = event.getTargetBlockFeeRates();
-        addMempoolRateSizes(event.getMempoolRateSizes());
         minimumRelayFeeRate = Math.max(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
@@ -1046,6 +1048,10 @@ public class AppServices {
     @Subscribe
     public void feesUpdated(FeeRatesUpdatedEvent event) {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
+    }
+
+    @Subscribe
+    public void mempoolRateSizes(MempoolRateSizesUpdatedEvent event) {
         addMempoolRateSizes(event.getMempoolRateSizes());
     }
 
