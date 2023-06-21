@@ -691,7 +691,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         }
     }
 
-    private static class HashIndexEntryContextMenu extends ContextMenu {
+    static class HashIndexEntryContextMenu extends ContextMenu {
         public HashIndexEntryContextMenu(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
             MenuItem viewTransaction = new MenuItem("View Transaction");
             viewTransaction.setGraphic(getViewTransactionGlyph());

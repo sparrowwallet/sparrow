@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.geometry.Pos;
@@ -11,6 +10,8 @@ import javafx.util.Duration;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+
+import static com.sparrowwallet.sparrow.control.EntryCell.HashIndexEntryContextMenu;
 
 public class DateCell extends TreeTableCell<Entry, Entry> {
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
@@ -36,11 +37,11 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
                 UtxoEntry utxoEntry = (UtxoEntry)entry;
                 if(utxoEntry.getHashIndex().getHeight() <= 0) {
                     setText("Unconfirmed " + (utxoEntry.getHashIndex().getHeight() < 0 ? "Parent " : "") + (utxoEntry.getWallet().isWhirlpoolMixWallet() ? "(Not yet mixable)" : (utxoEntry.isSpendable() ? "(Spendable)" : "(Not yet spendable)")));
-                    setContextMenu(null);
+                    setContextMenu(new HashIndexEntryContextMenu(getTreeTableView(), utxoEntry));
                 } else if(utxoEntry.getHashIndex().getDate() != null) {
                     String date = DATE_FORMAT.format(utxoEntry.getHashIndex().getDate());
                     setText(date);
-                    setContextMenu(new DateContextMenu(date, utxoEntry.getHashIndex()));
+                    setContextMenu(new DateContextMenu(getTreeTableView(), utxoEntry, date));
                 } else {
                     setText("Unknown");
                     setContextMenu(null);
@@ -56,8 +57,10 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
         }
     }
 
-    private static class DateContextMenu extends ContextMenu {
-        public DateContextMenu(String date, BlockTransactionHashIndex reference) {
+    private static class DateContextMenu extends HashIndexEntryContextMenu {
+        public DateContextMenu(TreeTableView<Entry> treeTableView, UtxoEntry utxoEntry, String date) {
+            super(treeTableView, utxoEntry);
+
             MenuItem copyDate = new MenuItem("Copy Date");
             copyDate.setOnAction(AE -> {
                 hide();
@@ -70,7 +73,7 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
             copyHeight.setOnAction(AE -> {
                 hide();
                 ClipboardContent content = new ClipboardContent();
-                content.putString(reference.getHeight() > 0 ? Integer.toString(reference.getHeight()) : "Mempool");
+                content.putString(utxoEntry.getHashIndex().getHeight() > 0 ? Integer.toString(utxoEntry.getHashIndex().getHeight()) : "Mempool");
                 Clipboard.getSystemClipboard().setContent(content);
             });
 

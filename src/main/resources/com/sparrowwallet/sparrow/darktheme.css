@@ -331,3 +331,7 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 .root .hyperlink:visited {
     -fx-text-fill: #229df5;
 }
+
+#grid .spreadsheet-cell.selection {
+    -fx-text-fill: -fx-base;
+}
