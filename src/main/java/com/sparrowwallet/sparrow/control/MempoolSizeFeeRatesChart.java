@@ -93,7 +93,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 });
 
                 Optional<Date> optEarliest = AppServices.getMempoolHistogram().keySet().stream().findFirst();
-                period24.setDisable(optEarliest.isEmpty() || optEarliest.get().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(LocalDateTime.now().minusHours(24)));
+                period24.setDisable(optEarliest.isEmpty() || optEarliest.get().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(LocalDateTime.now().minusHours(2)));
 
                 Region region = new Region();
                 HBox.setHgrow(region, Priority.SOMETIMES);
