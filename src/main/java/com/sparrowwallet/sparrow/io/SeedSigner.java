@@ -10,7 +10,7 @@ public class SeedSigner extends SpecterDIY {
 
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import QR created on your SeedSigner by selecting xPub from Seed in the Seed Tools menu once you have entered your seed.";
+        return "Import QR created on your SeedSigner by selecting Export Xpub in the Seeds menu once you have entered your seed.";
     }
 
     @Override
