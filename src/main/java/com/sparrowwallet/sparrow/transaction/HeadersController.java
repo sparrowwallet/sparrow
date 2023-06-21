@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -1144,8 +1145,9 @@ public class HeadersController extends TransactionFormController implements Init
                 failMessage = workerStateEvent.getSource().getException().getMessage();
             }
 
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
             if(failMessage.startsWith("min relay fee not met")) {
-                AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the signed transaction is below the minimum " + AppServices.getMinimumRelayFeeRate() + " sats/vB. " +
+                AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the signed transaction is below the minimum " + format.getCurrencyFormat().format(AppServices.getMinimumRelayFeeRate()) + " sats/vB. " +
                         "This usually happens because a keystore has created a signature that is larger than necessary.\n\n" +
                         "You can solve this by recreating the transaction with a slightly increased fee rate.");
             } else if(failMessage.startsWith("bad-txns-inputs-missingorspent")) {
@@ -1168,7 +1170,7 @@ public class HeadersController extends TransactionFormController implements Init
                     AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the replacement transaction was insufficient. Increase the fee to at least " + requiredFee + " sats to try again.");
                 } else if(feeRateMatcher.matches()) {
                     double requiredFeeRate = Double.parseDouble(feeRateMatcher.group(2)) * Transaction.SATOSHIS_PER_BITCOIN / 1000;
-                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the replacement transaction was insufficient. Increase the fee rate to at least " + requiredFeeRate + " sats/vB to try again.");
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the replacement transaction was insufficient. Increase the fee rate to at least " + format.getCurrencyFormat().format(requiredFeeRate) + " sats/vB to try again.");
                 } else {
                     AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the replacement transaction was insufficient. Increase the fee to try again.");
                 }
