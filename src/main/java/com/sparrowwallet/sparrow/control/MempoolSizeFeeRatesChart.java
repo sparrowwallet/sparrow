@@ -16,9 +16,7 @@ import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.chart.*;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.*;
@@ -28,6 +26,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;
 
 import java.text.DateFormat;
@@ -39,10 +38,11 @@ import java.util.stream.Collectors;
 
 public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
     private static final DateFormat dateFormatter = new SimpleDateFormat("HH:mm");
-    public static final int MAX_PERIOD_HOURS = 2;
+    public static final int DEFAULT_MAX_PERIOD_HOURS = 2;
     private static final double Y_VALUE_BREAK_MVB = 3.0;
     private static final List<Integer> FEE_RATES_INTERVALS = List.of(1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 250, 300, 350, 400, 500, 600, 700, 800);
 
+    private int maxPeriodHours = DEFAULT_MAX_PERIOD_HOURS;
     private Tooltip tooltip;
 
     private MempoolSizeFeeRatesChart expandedChart;
@@ -80,12 +80,29 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 expandedChart.setPrefWidth(700);
 
                 HBox buttonBox = new HBox();
-                buttonBox.setAlignment(Pos.CENTER_RIGHT);
+                buttonBox.setAlignment(Pos.CENTER);
+
+                ToggleGroup periodGroup = new ToggleGroup();
+                ToggleButton period2 = new ToggleButton("2H");
+                ToggleButton period24 = new ToggleButton("24H");
+                SegmentedButton periodButtons = new SegmentedButton(period2, period24);
+                periodButtons.setToggleGroup(periodGroup);
+                periodGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+                    expandedChart.maxPeriodHours = (newValue == period2 ? 2 : 24);
+                    expandedChart.update(AppServices.getMempoolHistogram());
+                });
+
+                Optional<Date> optEarliest = AppServices.getMempoolHistogram().keySet().stream().findFirst();
+                period24.setDisable(optEarliest.isEmpty() || optEarliest.get().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime().isAfter(LocalDateTime.now().minusHours(24)));
+
+                Region region = new Region();
+                HBox.setHgrow(region, Priority.SOMETIMES);
+
                 Button button = new Button("Close");
                 button.setOnAction(e -> {
                     stage.close();
                 });
-                buttonBox.getChildren().add(button);
+                buttonBox.getChildren().addAll(periodButtons, region, button);
                 vBox.getChildren().addAll(expandedChart, buttonBox);
                 scenePane.getChildren().add(vBox);
 
@@ -232,7 +249,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             return mempoolRateSizes;
         }
 
-        LocalDateTime period = LocalDateTime.now().minusHours(MAX_PERIOD_HOURS);
+        LocalDateTime period = LocalDateTime.now().minusHours(maxPeriodHours);
         return mempoolRateSizes.entrySet().stream().filter(entry -> {
             LocalDateTime dateTime = entry.getKey().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
             return dateTime.isAfter(period);
