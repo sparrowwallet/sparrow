@@ -535,7 +535,8 @@ public class TransactionDiagram extends GridPane {
     }
 
     private String getSatsValue(long amount) {
-        return String.format(Locale.ENGLISH, "%,d", amount);
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        return format.formatSatsValue(amount);
     }
 
     private Pane getInputsLines(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {

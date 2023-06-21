@@ -896,7 +896,8 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void setFeeRate(Double feeRateAmt) {
-        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vB");
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        feeRate.setText(format.getCurrencyFormat().format(feeRateAmt) + " sats/vB");
         setFeeRatePriority(feeRateAmt);
     }
 
@@ -1597,8 +1598,9 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
+        setFeeRate(getFeeRate());
         if(fee.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
-            Long value = getFeeValueSats(coinTextFormatter.getUnitFormat(), event.getBitcoinUnit());
+            Long value = getFeeValueSats(coinTextFormatter.getUnitFormat(), feeAmountUnit.getSelectionModel().getSelectedItem());
             fee.setTextFormatter(new CoinTextFormatter(event.getUnitFormat()));
 
             if(value != null) {

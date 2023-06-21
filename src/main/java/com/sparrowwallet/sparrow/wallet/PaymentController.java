@@ -706,7 +706,7 @@ public class PaymentController extends WalletFormController implements Initializ
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
         if(amount.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
-            Long value = getRecipientValueSats(coinTextFormatter.getUnitFormat(), event.getBitcoinUnit());
+            Long value = getRecipientValueSats(coinTextFormatter.getUnitFormat(), amountUnit.getSelectionModel().getSelectedItem());
             amount.setTextFormatter(new CoinTextFormatter(event.getUnitFormat()));
 
             if(value != null) {

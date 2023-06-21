@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class CoinTextFormatter extends TextFormatter<String> {
     public CoinTextFormatter(UnitFormat unitFormat) {
-        super(new CoinFilter(unitFormat));
+        super(new CoinFilter(unitFormat == null ? UnitFormat.DOT : unitFormat));
     }
 
     public UnitFormat getUnitFormat() {
@@ -29,7 +29,7 @@ public class CoinTextFormatter extends TextFormatter<String> {
         private final Pattern coinValidation;
 
         public CoinFilter(UnitFormat unitFormat) {
-            this.unitFormat = unitFormat == null ? UnitFormat.DOT : unitFormat;
+            this.unitFormat = unitFormat;
             this.coinFormat = new DecimalFormat("###,###.########", unitFormat.getDecimalFormatSymbols());
             this.coinValidation = Pattern.compile("[\\d" + Pattern.quote(unitFormat.getGroupingSeparator()) + "]*(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d{0,8})?");
         }
