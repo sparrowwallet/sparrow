@@ -79,7 +79,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions for " + path));
             try {
                 ScriptHashTx[] scriptHashTxes = new RetryLogic<ScriptHashTx[]>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
-                        client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute());
+                        client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute());
                 result.put(path, scriptHashTxes);
             } catch(Exception e) {
                 if(failOnError) {
@@ -101,7 +101,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
         for(String path : pathScriptHashes.keySet()) {
             try {
                 ScriptHashTx[] scriptHashTxes = new RetryLogic<ScriptHashTx[]>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
-                        client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_mempool").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute());
+                        client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_mempool").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute());
                 result.put(path, scriptHashTxes);
             } catch(Exception e) {
                 if(failOnError) {
@@ -124,7 +124,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
             EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + path));
             try {
                 String scriptHash = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
-                        client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(path + "-" + idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable());
+                        client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable());
                 result.put(path, scriptHash);
             } catch(Exception e) {
                 //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
