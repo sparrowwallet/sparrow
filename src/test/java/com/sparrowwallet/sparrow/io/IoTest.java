@@ -12,7 +12,8 @@ public class IoTest {
 
     protected File getFile(String filename) {
         try {
-            Path tempFile = Files.createTempFile(filename, null);
+            Path tempDir = Files.createTempDirectory(null);
+            Path tempFile = Files.createTempFile(tempDir, filename, null);
             Files.copy(getInputStream(filename), tempFile, StandardCopyOption.REPLACE_EXISTING);
             return tempFile.toFile();
         } catch(IOException e) {
