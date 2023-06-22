@@ -24,6 +24,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.StackPane;
+import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -68,7 +69,10 @@ public class KeystoreController extends WalletFormController implements Initiali
     private Button viewKeyButton;
 
     @FXML
-    private Button changePinButton;
+    private ToggleGroup cardServiceToggleGroup;
+
+    @FXML
+    private SegmentedButton cardServiceButtons;
 
     @FXML
     private Button importButton;
@@ -137,7 +141,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         exportButton.managedProperty().bind(exportButton.visibleProperty());
         viewSeedButton.managedProperty().bind(viewSeedButton.visibleProperty());
         viewKeyButton.managedProperty().bind(viewKeyButton.visibleProperty());
-        changePinButton.managedProperty().bind(changePinButton.visibleProperty());
+        cardServiceButtons.managedProperty().bind(cardServiceButtons.visibleProperty());
         scanXpubQR.managedProperty().bind(scanXpubQR.visibleProperty());
         displayXpubQR.managedProperty().bind(displayXpubQR.visibleProperty());
         displayXpubQR.visibleProperty().bind(scanXpubQR.visibleProperty().not());
@@ -294,7 +298,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         exportButton.setVisible(showExport && getWalletForm().getWallet().getPolicyType() == PolicyType.MULTI);
         viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasSeed());
         viewKeyButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasMasterPrivateExtendedKey());
-        changePinButton.setVisible(keystore.getWalletModel().isCard());
+        cardServiceButtons.setVisible(keystore.getWalletModel().isCard());
 
         importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Replace...");
         importButton.setTooltip(new Tooltip(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import a keystore from an external source" : "Replace this keystore with another source"));
@@ -432,12 +436,22 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     public void changeCardPin(ActionEvent event) {
+        cardServiceToggleGroup.selectToggle(null);
+        changeCardPinOrBackup(false);
+    }
+
+    public void backupCard(ActionEvent event) {
+        cardServiceToggleGroup.selectToggle(null);
+        changeCardPinOrBackup(true);
+    }
+
+    public void changeCardPinOrBackup(boolean backupOnly) {
         if(!isReaderAvailable()) {
             AppServices.showErrorDialog("No card reader", "Connect a card reader to change the card PIN.");
             return;
         }
 
-        CardPinDialog cardPinDialog = new CardPinDialog();
+        CardPinDialog cardPinDialog = new CardPinDialog(backupOnly);
         Optional<CardPinDialog.CardPinChange> optPinChange = cardPinDialog.showAndWait();
         if(optPinChange.isPresent()) {
             String currentPin = optPinChange.get().currentPin();
@@ -449,7 +463,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 if(authDelayService != null) {
                     authDelayService.setOnSucceeded(event1 -> {
                         try {
-                            changeCardPin(newPin, backupFirst, cardApi);
+                            changeCardPin(newPin, backupFirst, backupOnly, cardApi);
                         } catch(CardException e) {
                             log.error("Error communicating with card", e);
                             AppServices.showErrorDialog("Error communicating with card", e.getMessage());
@@ -464,7 +478,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                     AppServices.moveToActiveWindowScreen(serviceProgressDialog);
                     authDelayService.start();
                 } else {
-                    changeCardPin(newPin, backupFirst, cardApi);
+                    changeCardPin(newPin, backupFirst, backupOnly, cardApi);
                 }
             } catch(CardException e) {
                 log.error("Error communicating with card", e);
@@ -473,22 +487,24 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
     }
 
-    private void changeCardPin(String newPin, boolean backupFirst, CardApi cardApi) throws CardException {
+    private void changeCardPin(String newPin, boolean backupFirst, boolean backupOnly, CardApi cardApi) throws CardException {
         boolean requiresBackup = cardApi.requiresBackup();
-        if(backupFirst || requiresBackup) {
+        if(backupOnly || backupFirst || requiresBackup) {
             Service<String> backupService = cardApi.getBackupService();
             backupService.setOnSucceeded(event -> {
                 String backup = backupService.getValue();
                 String filename = fingerprint.getText() + ".aes";
                 TextAreaDialog backupDialog = new TextAreaDialog(backup, false, filename, Base64.getDecoder().decode(backup));
                 backupDialog.setTitle("Backup Private Key");
-                backupDialog.getDialogPane().setHeaderText((requiresBackup ? "Please backup first by saving" : "Save") + " the following text in a safe place. It contains an encrypted copy of the card's private key, and can be decrypted using the backup key written on the back of the card.");
+                backupDialog.getDialogPane().setHeaderText((requiresBackup && !backupOnly ? "Please backup first by saving" : "Save") + " the following text in a safe place. It contains an encrypted copy of the card's private key, and can be decrypted using the backup key written on the back of the card.");
                 backupDialog.showAndWait();
-                try {
-                    changePin(newPin, cardApi);
-                } catch(Exception e) {
-                    log.error("Error communicating with card", e);
-                    AppServices.showErrorDialog("Error communicating with card", e.getMessage());
+                if(!backupOnly) {
+                    try {
+                        changePin(newPin, cardApi);
+                    } catch(Exception e) {
+                        log.error("Error communicating with card", e);
+                        AppServices.showErrorDialog("Error communicating with card", e.getMessage());
+                    }
                 }
             });
             backupService.setOnFailed(event -> {

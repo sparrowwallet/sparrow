@@ -22,20 +22,25 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
     private final CheckBox backupFirst;
     private final ButtonType okButtonType;
 
-    public CardPinDialog() {
+    public CardPinDialog(boolean backupOnly) {
         this.existingPin = new ViewPasswordField();
         this.newPin = new ViewPasswordField();
         this.newPinConfirm = new ViewPasswordField();
         this.backupFirst = new CheckBox();
 
+        if(backupOnly) {
+            newPin.textProperty().bind(existingPin.textProperty());
+            newPinConfirm.textProperty().bind(existingPin.textProperty());
+        }
+
         final DialogPane dialogPane = getDialogPane();
-        setTitle("Change Card PIN");
-        dialogPane.setHeaderText("Enter the current PIN, and then the new PIN twice. PIN must be between 6 and 32 digits.");
+        setTitle(backupOnly ? "Backup Card" : "Change Card PIN");
+        dialogPane.setHeaderText(backupOnly ? "Enter the current card PIN." : "Enter the current PIN, and then the new PIN twice. PIN must be between 6 and 32 digits.");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(380);
-        dialogPane.setPrefHeight(260);
+        dialogPane.setPrefHeight(backupOnly ? 135 : 260);
         AppServices.moveToActiveWindowScreen(this);
 
         Glyph lock = new Glyph("FontAwesome", FontAwesome.Glyph.LOCK);
@@ -63,7 +68,12 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
         backupField.setText("Backup First:");
         backupField.getInputs().add(backupFirst);
 
-        fieldset.getChildren().addAll(currentField, newField, confirmField, backupField);
+        if(backupOnly) {
+            fieldset.getChildren().addAll(currentField);
+        } else {
+            fieldset.getChildren().addAll(currentField, newField, confirmField, backupField);
+        }
+
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -75,7 +85,7 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
             validationSupport.registerValidator(newPinConfirm, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "PIN confirmation does not match", !newPinConfirm.getText().equals(newPin.getText())));
         });
 
-        okButtonType = new javafx.scene.control.ButtonType("Change", ButtonBar.ButtonData.OK_DONE);
+        okButtonType = new javafx.scene.control.ButtonType(backupOnly ? "Backup" : "Change", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         okButton.setPrefWidth(130);
