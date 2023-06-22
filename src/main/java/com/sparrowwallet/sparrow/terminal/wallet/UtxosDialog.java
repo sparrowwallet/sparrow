@@ -81,7 +81,12 @@ public class UtxosDialog extends WalletDialog {
             }
         }
 
-        startMix.setLabel(newValue ? "Stop Mixing" : "Start Mixing");
+        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getWallet());
+        if(newValue) {
+            startMix.setLabel("Stop Mixing");
+        } else if(whirlpool == null || !whirlpool.stoppingProperty().get()) {
+            startMix.setLabel("Start Mixing");
+        }
     };
 
     public UtxosDialog(WalletForm walletForm) {
