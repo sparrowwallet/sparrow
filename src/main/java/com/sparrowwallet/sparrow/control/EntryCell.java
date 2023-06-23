@@ -339,15 +339,35 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             throw new IllegalStateException("Cannot create CPFP without any wallet outputs to spend");
         }
 
-        BlockTransactionHashIndex utxo = ourOutputs.get(0);
+        BlockTransactionHashIndex cpfpUtxo = ourOutputs.get(0);
+        Address freshAddress = transactionEntry.getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress();
+        TransactionOutput txOutput = new TransactionOutput(new Transaction(), cpfpUtxo.getValue(), freshAddress.getOutputScript());
+        long dustThreshold = freshAddress.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
+        int inputSize = freshAddress.getScriptType().getInputVbytes();
+        long vSize = inputSize + txOutput.getLength();
 
-        WalletNode freshNode = transactionEntry.getWallet().getFreshNode(KeyPurpose.RECEIVE);
+        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getWalletUtxos().keySet());
+        //Remove any UTXOs that are frozen or that we are already spending
+        walletUtxos.removeIf(utxo -> utxo.getStatus() == Status.FROZEN || utxo.equals(cpfpUtxo));
+        Collections.shuffle(walletUtxos);
+
+        List<BlockTransactionHashIndex> utxos = new ArrayList<>();
+        utxos.add(cpfpUtxo);
+        long inputTotal = cpfpUtxo.getValue();
+        while((inputTotal - (long)(getMaxFeeRate() * vSize)) < dustThreshold && !walletUtxos.isEmpty()) {
+            //If there is insufficient input value, include another random UTXO so the fee can be increased
+            BlockTransactionHashIndex utxo = walletUtxos.remove(0);
+            utxos.add(utxo);
+            inputTotal += utxo.getValue();
+            vSize += inputSize;
+        }
+
         String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
         label += (label.isEmpty() ? "" : " ") + "(CPFP)";
-        Payment payment = new Payment(freshNode.getAddress(), label, utxo.getValue(), true);
+        Payment payment = new Payment(freshAddress, label, inputTotal, true);
 
-        EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), List.of(utxo)));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), List.of(utxo), List.of(payment), null, blockTransaction.getFee(), false)));
+        EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, List.of(payment), null, blockTransaction.getFee(), false)));
     }
 
     private static boolean canSignMessage(WalletNode walletNode) {
