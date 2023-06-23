@@ -235,7 +235,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
-    private final Map<Integer, String> outputIndexLabels = new HashMap<>();
+    private final Map<Integer, String> outputIndexLabels = new TreeMap<>();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -1502,7 +1502,13 @@ public class HeadersController extends TransactionFormController implements Init
             List<Entry> changedLabelEntries = new ArrayList<>();
             BlockTransaction blockTransaction = event.getWallet().getWalletTransaction(txid);
             if(blockTransaction != null && blockTransaction.getLabel() == null) {
-                blockTransaction.setLabel(headersForm.getName());
+                String name = headersForm.getName();
+                if(outputIndexLabels.size() > 1) {
+                    StringJoiner joiner = new StringJoiner(", ");
+                    outputIndexLabels.values().forEach(joiner::add);
+                    name = joiner.toString();
+                }
+                blockTransaction.setLabel(name != null && name.length() > 255 ? name.substring(0, 255) : name);
                 changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
             }
 
