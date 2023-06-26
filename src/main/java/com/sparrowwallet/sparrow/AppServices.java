@@ -61,8 +61,10 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
@@ -682,6 +684,12 @@ public class AppServices {
 
         Date yesterday = Date.from(LocalDateTime.now().minusDays(1).atZone(ZoneId.systemDefault()).toInstant());
         mempoolHistogram.keySet().removeIf(date -> date.before(yesterday));
+
+        ZonedDateTime twoHoursAgo = LocalDateTime.now().minusHours(2).atZone(ZoneId.systemDefault());
+        mempoolHistogram.keySet().removeIf(date -> {
+            ZonedDateTime dateTime = date.toInstant().atZone(ZoneId.systemDefault());
+            return dateTime.isBefore(twoHoursAgo) && (dateTime.getMinute() % 10 == 0);
+        });
     }
 
     public static Double getMinimumRelayFeeRate() {
