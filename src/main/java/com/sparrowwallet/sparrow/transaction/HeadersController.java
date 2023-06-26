@@ -1507,6 +1507,13 @@ public class HeadersController extends TransactionFormController implements Init
                     StringJoiner joiner = new StringJoiner(", ");
                     outputIndexLabels.values().forEach(joiner::add);
                     name = joiner.toString();
+
+                    Matcher matcher = EntryCell.REPLACED_BY_FEE_SUFFIX.matcher(name);
+                    name = matcher.replaceAll("$1");
+                    matcher.reset();
+                    if(matcher.find()) {
+                        name += matcher.group(2);
+                    }
                 }
                 blockTransaction.setLabel(name != null && name.length() > 255 ? name.substring(0, 255) : name);
                 changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));

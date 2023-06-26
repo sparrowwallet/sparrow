@@ -36,7 +36,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     private static final Logger log = LoggerFactory.getLogger(EntryCell.class);
 
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-    private static final Pattern REPLACED_BY_FEE_SUFFIX = Pattern.compile("(.*)\\(Replaced By Fee( #)?(\\d+)?\\).*");
+    public static final Pattern REPLACED_BY_FEE_SUFFIX = Pattern.compile("(.*?)( \\(Replaced By Fee( #)?(\\d+)?\\)).*?");
 
     private static EntryCell lastCell;
 
@@ -263,17 +263,21 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         List<Payment> payments = externalOutputs.stream().map(txOutput -> {
             try {
                 String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
-                Matcher matcher = REPLACED_BY_FEE_SUFFIX.matcher(label);
+                label = REPLACED_BY_FEE_SUFFIX.matcher(label).replaceAll("$1");
+                String[] paymentLabels = label.split(", ");
+                if(externalOutputs.size() > 1 && externalOutputs.size() == paymentLabels.length) {
+                    label = paymentLabels[externalOutputs.indexOf(txOutput)];
+                }
+                Matcher matcher = REPLACED_BY_FEE_SUFFIX.matcher(transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel());
                 if(matcher.matches()) {
-                    String base = matcher.group(1);
                     if(matcher.groupCount() > 2 && matcher.group(3) != null) {
                         int count = Integer.parseInt(matcher.group(3)) + 1;
-                        label = base + "(Replaced By Fee #" + count + ")";
+                        label += " (Replaced By Fee #" + count + ")";
                     } else {
-                        label = base + "(Replaced By Fee #2)";
+                        label += " (Replaced By Fee #2)";
                     }
                 } else {
-                    label += (label.isEmpty() ? "" : " ") + "(Replaced By Fee)";
+                    label += " (Replaced By Fee)";
                 }
 
                 if(txOutput.getScript().getToAddress() != null) {
