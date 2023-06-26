@@ -270,8 +270,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 }
                 Matcher matcher = REPLACED_BY_FEE_SUFFIX.matcher(transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel());
                 if(matcher.matches()) {
-                    if(matcher.groupCount() > 2 && matcher.group(3) != null) {
-                        int count = Integer.parseInt(matcher.group(3)) + 1;
+                    if(matcher.groupCount() > 3 && matcher.group(4) != null) {
+                        int count = Integer.parseInt(matcher.group(4)) + 1;
                         label += " (Replaced By Fee #" + count + ")";
                     } else {
                         label += " (Replaced By Fee #2)";
