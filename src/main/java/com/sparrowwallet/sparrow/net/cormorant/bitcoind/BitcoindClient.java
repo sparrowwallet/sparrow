@@ -81,7 +81,7 @@ public class BitcoindClient {
 
     private final List<String> pruneWarnedDescriptors = new ArrayList<>();
 
-    private final Map<String, MempoolEntry> mempoolEntries = new ConcurrentHashMap<>();
+    private final Map<Sha256Hash, VsizeFeerate> mempoolEntries = new ConcurrentHashMap<>();
     private MempoolEntriesState mempoolEntriesState = MempoolEntriesState.UNINITIALIZED;
     private long timerTaskCount;
 
@@ -530,18 +530,20 @@ public class BitcoindClient {
         mempoolEntriesState = MempoolEntriesState.INITIALIZING;
 
         long start = System.currentTimeMillis();
-        Set<String> txids = getBitcoindService().getRawMempool();
+        Set<Sha256Hash> txids = getBitcoindService().getRawMempool();
         long end = System.currentTimeMillis();
 
         if(end - start < 1000) {
             //Fast system, fetch all mempool data at once
-            mempoolEntries.putAll(getBitcoindService().getRawMempool(true));
+            Map<Sha256Hash, VsizeFeerate> entries = getBitcoindService().getRawMempool(true).entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getVsizeFeerate(), (u, v) -> u, HashMap::new));
+            mempoolEntries.putAll(entries);
         } else {
             //Slow system, fetch mempool entries one-by-one to avoid risking a node crash
-            for(String txid : txids) {
+            for(Sha256Hash txid : txids) {
                 try {
-                    MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid);
-                    mempoolEntries.put(txid, mempoolEntry);
+                    MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid.toString());
+                    mempoolEntries.put(txid, mempoolEntry.getVsizeFeerate());
                 } catch(JsonRpcException e) {
                     //ignore, probably tx has been removed from mempool
                 }
@@ -552,23 +554,23 @@ public class BitcoindClient {
     }
 
     public void updateMempoolEntries() {
-        Set<String> txids = getBitcoindService().getRawMempool();
+        Set<Sha256Hash> txids = getBitcoindService().getRawMempool();
 
-        Set<String> removed = new HashSet<>(Sets.difference(mempoolEntries.keySet(), txids));
+        Set<Sha256Hash> removed = new HashSet<>(Sets.difference(mempoolEntries.keySet(), txids));
         mempoolEntries.keySet().removeAll(removed);
 
-        Set<String> added = Sets.difference(txids, mempoolEntries.keySet());
-        for(String txid : added) {
+        Set<Sha256Hash> added = Sets.difference(txids, mempoolEntries.keySet());
+        for(Sha256Hash txid : added) {
             try {
-                MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid);
-                mempoolEntries.put(txid, mempoolEntry);
+                MempoolEntry mempoolEntry = getBitcoindService().getMempoolEntry(txid.toString());
+                mempoolEntries.put(txid, mempoolEntry.getVsizeFeerate());
             } catch(JsonRpcException e) {
                 //ignore, probably tx has been removed from mempool
             }
         }
     }
 
-    public Map<String, MempoolEntry> getMempoolEntries() {
+    public Map<Sha256Hash, VsizeFeerate> getMempoolEntries() {
         return mempoolEntries;
     }
 

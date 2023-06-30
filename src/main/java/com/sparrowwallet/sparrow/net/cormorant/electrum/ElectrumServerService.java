@@ -5,7 +5,7 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.MempoolEntriesInitializedEvent;
@@ -79,22 +79,22 @@ public class ElectrumServerService {
 
             return Collections.emptyList();
         } else {
-            Map<String, MempoolEntry> mempoolEntries = bitcoindClient.getMempoolEntries();
-
-            List<VsizeFeerate> vsizeFeerates = mempoolEntries.values().stream().map(entry -> new VsizeFeerate(entry.vsize(), entry.fees().base())).sorted().toList();
+            Map<Sha256Hash, VsizeFeerate> mempoolEntries = bitcoindClient.getMempoolEntries();
+            List<VsizeFeerate> vsizeFeerates = new ArrayList<>(mempoolEntries.values());
+            Collections.sort(vsizeFeerates);
 
             List<List<Number>> histogram = new ArrayList<>();
             long binSize = 0;
             double lastFeerate = 0.0;
 
             for(VsizeFeerate vsizeFeerate : vsizeFeerates) {
-                if(binSize > VSIZE_BIN_WIDTH && Math.abs(lastFeerate - vsizeFeerate.feerate) > 0.0d) {
+                if(binSize > VSIZE_BIN_WIDTH && Math.abs(lastFeerate - vsizeFeerate.getFeerate()) > 0.0d) {
                     // vsize of transactions paying >= last_feerate
                     histogram.add(List.of(lastFeerate, binSize));
                     binSize = 0;
                 }
-                binSize += vsizeFeerate.vsize;
-                lastFeerate = vsizeFeerate.feerate;
+                binSize += vsizeFeerate.getVsize();
+                lastFeerate = vsizeFeerate.getFeerate();
             }
 
             if(binSize > 0) {
@@ -213,20 +213,4 @@ public class ElectrumServerService {
         }
     }
 
-    private static class VsizeFeerate implements Comparable<VsizeFeerate> {
-        private final int vsize;
-        private final double feerate;
-
-        public VsizeFeerate(int vsize, double fee) {
-            this.vsize = vsize;
-            double feeRate = fee / vsize * Transaction.SATOSHIS_PER_BITCOIN;
-            //Round down to 0.1 sats/vb precision
-            this.feerate = Math.floor(10 * feeRate) / 10;
-        }
-
-        @Override
-        public int compareTo(VsizeFeerate o) {
-            return Double.compare(o.feerate, feerate);
-        }
-    }
 }

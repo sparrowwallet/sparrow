@@ -6,6 +6,7 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 
 import java.util.List;
 import java.util.Map;
@@ -24,10 +25,10 @@ public interface BitcoindClientService {
     FeeInfo estimateSmartFee(@JsonRpcParam("conf_target") int blocks);
 
     @JsonRpcMethod("getrawmempool")
-    Set<String> getRawMempool();
+    Set<Sha256Hash> getRawMempool();
 
     @JsonRpcMethod("getrawmempool")
-    Map<String, MempoolEntry> getRawMempool(@JsonRpcParam("verbose") boolean verbose);
+    Map<Sha256Hash, MempoolEntry> getRawMempool(@JsonRpcParam("verbose") boolean verbose);
 
     @JsonRpcMethod("getmempoolinfo")
     MempoolInfo getMempoolInfo();

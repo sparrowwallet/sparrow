@@ -688,7 +688,7 @@ public class AppServices {
         ZonedDateTime twoHoursAgo = LocalDateTime.now().minusHours(2).atZone(ZoneId.systemDefault());
         mempoolHistogram.keySet().removeIf(date -> {
             ZonedDateTime dateTime = date.toInstant().atZone(ZoneId.systemDefault());
-            return dateTime.isBefore(twoHoursAgo) && (dateTime.getMinute() % 10 == 0);
+            return dateTime.isBefore(twoHoursAgo) && (dateTime.getMinute() % 10 != 0);
         });
     }
 

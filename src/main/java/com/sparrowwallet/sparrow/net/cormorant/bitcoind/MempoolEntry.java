@@ -12,4 +12,8 @@ public record MempoolEntry(int vsize, int ancestorsize, boolean bip125_replaceab
     public TxEntry getTxEntry(String txid) {
         return new TxEntry(hasUnconfirmedParents() ? -1 : 0, 0, txid);
     }
+
+    public VsizeFeerate getVsizeFeerate() {
+        return new VsizeFeerate(vsize, fees().base());
+    }
 }
