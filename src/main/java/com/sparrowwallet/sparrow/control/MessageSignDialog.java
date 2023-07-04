@@ -392,12 +392,13 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 }
             }
 
-            if(!verified) {
+            if(!verified && Bip322.isSupported(getAddress().getScriptType())) {
                 try {
-                    Bip322.verifyMessageBip322(getAddress().getScriptType(), getAddress(), message.getText().trim(), signature.getText().trim());
-                    verified = true;
-                    formatGroup.selectToggle(formatBip322);
-                } catch(Exception e) {
+                    verified = Bip322.verifyMessageBip322(getAddress().getScriptType(), getAddress(), message.getText().trim(), signature.getText().trim());
+                    if(verified) {
+                        formatGroup.selectToggle(formatBip322);
+                    }
+                } catch(SignatureException e) {
                     //ignore
                 }
             }
