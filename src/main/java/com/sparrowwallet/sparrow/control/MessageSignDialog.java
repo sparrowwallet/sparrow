@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.crypto.Bip322;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -46,9 +47,9 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private final ToggleGroup formatGroup;
     private final ToggleButton formatTrezor;
     private final ToggleButton formatElectrum;
+    private final ToggleButton formatBip322;
     private final Wallet wallet;
     private WalletNode walletNode;
-    private boolean electrumSignatureFormat;
     private boolean closed;
 
     /**
@@ -125,7 +126,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         address = new TextField();
         address.getStyleClass().add("id");
         address.setEditable(walletNode == null);
-        address.setTooltip(new Tooltip("Only Legacy (P2PKH), Nested Segwit (P2SH-P2WPKH) and Native Segwit (P2WPKH) singlesig addresses can sign"));
+        address.setTooltip(new Tooltip("Only singlesig addresses can sign"));
         addressField.getInputs().add(address);
 
         if(walletNode != null) {
@@ -136,16 +137,16 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         messageField.setText("Message:");
         message = new TextArea();
         message.setWrapText(true);
-        message.setPrefRowCount(10);
-        message.setStyle("-fx-pref-height: 180px");
+        message.setPrefRowCount(8);
+        message.setStyle("-fx-pref-height: 160px");
         messageField.getInputs().add(message);
 
         Field signatureField = new Field();
         signatureField.setText("Signature:");
         signature = new TextArea();
         signature.getStyleClass().add("id");
-        signature.setPrefRowCount(2);
-        signature.setStyle("-fx-pref-height: 60px");
+        signature.setPrefRowCount(4);
+        signature.setStyle("-fx-pref-height: 80px");
         signature.setWrapText(true);
         signatureField.getInputs().add(signature);
 
@@ -154,15 +155,10 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         formatGroup = new ToggleGroup();
         formatElectrum = new ToggleButton("Standard (Electrum)");
         formatTrezor = new ToggleButton("BIP137 (Trezor)");
-        SegmentedButton formatButtons = new SegmentedButton(formatElectrum, formatTrezor);
+        formatBip322 = new ToggleButton("BIP322 (Simple)");
+        SegmentedButton formatButtons = new SegmentedButton(formatElectrum, formatTrezor, formatBip322);
         formatButtons.setToggleGroup(formatGroup);
         formatField.getInputs().add(formatButtons);
-
-        formatGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            electrumSignatureFormat = (newValue == formatElectrum);
-        });
-
-        formatButtons.setDisable(wallet != null && walletNode != null && wallet.getScriptType() == ScriptType.P2PKH);
 
         fieldset.getChildren().addAll(addressField, messageField, signatureField, formatField);
         form.getChildren().add(fieldset);
@@ -223,10 +219,13 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 signButton.setDisable(!valid || (wallet == null));
                 verifyButton.setDisable(!valid);
 
-                if(valid && wallet != null) {
+                if(valid) {
                     try {
                         Address address = getAddress();
-                        setWalletNodeFromAddress(wallet, address);
+                        setFormatFromScriptType(address.getScriptType());
+                        if(wallet != null) {
+                            setWalletNodeFromAddress(wallet, address);
+                        }
                     } catch(InvalidAddressException e) {
                         //can't happen
                     }
@@ -258,7 +257,11 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 message.requestFocus();
             }
 
-            formatGroup.selectToggle(formatElectrum);
+            if(wallet != null && walletNode != null) {
+                setFormatFromScriptType(wallet.getScriptType());
+            } else {
+                formatGroup.selectToggle(formatElectrum);
+            }
         });
     }
 
@@ -279,20 +282,10 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         return signature.getText();
     }
 
-    /**
-     * Use the Electrum signing format, which uses the non-segwit compressed signing parameters for both segwit types (p2sh-p2wpkh and p2wpkh)
-     *
-     * @param electrumSignatureFormat
-     */
-    public void setElectrumSignatureFormat(boolean electrumSignatureFormat) {
-        formatGroup.selectToggle(electrumSignatureFormat ? formatElectrum : formatTrezor);
-        this.electrumSignatureFormat = electrumSignatureFormat;
-    }
-
     private boolean isValidAddress() {
         try {
             Address address = getAddress();
-            return address.getScriptType() != ScriptType.P2TR && (address.getScriptType().isAllowed(PolicyType.SINGLE) || address.getScriptType() == ScriptType.P2SH);
+            return address.getScriptType().isAllowed(PolicyType.SINGLE) || address.getScriptType() == ScriptType.P2SH;
         } catch (InvalidAddressException e) {
             return false;
         }
@@ -300,6 +293,25 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void setWalletNodeFromAddress(Wallet wallet, Address address) {
         walletNode = wallet.getWalletAddresses().get(address);
+    }
+
+    private void setFormatFromScriptType(ScriptType scriptType) {
+        formatElectrum.setDisable(scriptType == ScriptType.P2TR);
+        formatTrezor.setDisable(scriptType == ScriptType.P2TR || scriptType == ScriptType.P2PKH);
+        formatBip322.setDisable(scriptType != ScriptType.P2WPKH && scriptType != ScriptType.P2TR);
+        if(scriptType == ScriptType.P2TR) {
+            formatGroup.selectToggle(formatBip322);
+        } else if(formatGroup.getSelectedToggle() == null || scriptType == ScriptType.P2PKH || (scriptType != ScriptType.P2WPKH && formatBip322.isSelected())) {
+            formatGroup.selectToggle(formatElectrum);
+        }
+    }
+
+    private boolean isBip322() {
+        return formatBip322.isSelected();
+    }
+
+    private boolean isElectrumSignatureFormat() {
+        return formatElectrum.isSelected();
     }
 
     private void signMessage() {
@@ -325,8 +337,14 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         try {
             Keystore keystore = decryptedWallet.getKeystores().get(0);
             ECKey privKey = keystore.getKey(walletNode);
-            ScriptType scriptType = electrumSignatureFormat ? ScriptType.P2PKH : decryptedWallet.getScriptType();
-            String signatureText = privKey.signMessage(message.getText().trim(), scriptType);
+            String signatureText;
+            if(isBip322()) {
+                ScriptType scriptType = decryptedWallet.getScriptType();
+                signatureText = Bip322.signMessageBip322(scriptType, message.getText().trim(), privKey);
+            } else {
+                ScriptType scriptType = isElectrumSignatureFormat() ? ScriptType.P2PKH : decryptedWallet.getScriptType();
+                signatureText = privKey.signMessage(message.getText().trim(), scriptType);
+            }
             signature.clear();
             signature.appendText(signatureText);
             privKey.clear();
@@ -353,17 +371,33 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             //http://www.secg.org/download/aid-780/sec1-v2.pdf section 4.1.6
             boolean verified = false;
             try {
-                ECKey signedMessageKey = ECKey.signedMessageToKey(message.getText().trim(), signature.getText().trim(), false);
+                ECKey signedMessageKey = ECKey.signedMessageToKey(message.getText().trim(), signature.getText().trim(), true);
                 verified = verifyMessage(signedMessageKey);
+                if(verified) {
+                    formatGroup.selectToggle(formatElectrum);
+                }
             } catch(SignatureException e) {
                 //ignore
             }
 
             if(!verified) {
                 try {
-                    ECKey electrumSignedMessageKey = ECKey.signedMessageToKey(message.getText(), signature.getText(), true);
+                    ECKey electrumSignedMessageKey = ECKey.signedMessageToKey(message.getText(), signature.getText(), false);
                     verified = verifyMessage(electrumSignedMessageKey);
+                    if(verified) {
+                        formatGroup.selectToggle(formatTrezor);
+                    }
                 } catch(SignatureException e) {
+                    //ignore
+                }
+            }
+
+            if(!verified) {
+                try {
+                    Bip322.verifyMessageBip322(getAddress().getScriptType(), getAddress(), message.getText().trim(), signature.getText().trim());
+                    verified = true;
+                    formatGroup.selectToggle(formatBip322);
+                } catch(Exception e) {
                     //ignore
                 }
             }
@@ -415,7 +449,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             });
             decryptWalletService.setOnFailed(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
-                AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                AppServices.showErrorDialog("Incorrect Password", "The password was incorrect.");
             });
             EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
             decryptWalletService.start();
