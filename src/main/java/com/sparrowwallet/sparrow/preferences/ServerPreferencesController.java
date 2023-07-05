@@ -646,6 +646,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
             reason += "\n\nSee https://sparrowwallet.com/docs/connect-node.html";
         } else if(reason != null && (reason.startsWith("Cannot connect to hidden service"))) {
             reason += " on the server. Check that the onion address and port are correct, and that both Tor and the Electrum server are running on the node. Usually SSL is not enabled, and the port is 50001.";
+        } else if(reason != null && (reason.startsWith("Cannot find Bitcoin Core cookie file at"))) {
+            reason += "\n\nMake sure server=1 has been added to bitcoin.conf";
         }
 
         testResults.setText("Could not connect:\n\n" + reason);

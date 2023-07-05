@@ -37,6 +37,7 @@ import tornadofx.control.Field;
 import javax.smartcardio.CardException;
 import java.net.URL;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.stream.Collectors;
@@ -370,6 +371,14 @@ public class KeystoreController extends WalletFormController implements Initiali
             selectSourcePane.setVisible(false);
 
             Keystore importedKeystore = result.get();
+            if(keystore.getSource() == KeystoreSource.SW_SEED && importedKeystore.getSource() != KeystoreSource.SW_SEED) {
+                Optional<ButtonType> optType = AppServices.showWarningDialog("Confirm Replacement",
+                        "You are replacing a software wallet with a " + importedKeystore.getSource().getDisplayName().toLowerCase(Locale.ROOT) + ", which will remove the seed. Are you sure?",
+                        ButtonType.NO, ButtonType.YES);
+                if(optType.isPresent() && optType.get() == ButtonType.NO) {
+                    return;
+                }
+            }
             walletForm.getWallet().makeLabelsUnique(importedKeystore);
             keystore.setSource(importedKeystore.getSource());
             keystore.setWalletModel(importedKeystore.getWalletModel());
