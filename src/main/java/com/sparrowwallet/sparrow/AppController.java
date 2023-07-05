@@ -1856,6 +1856,7 @@ public class AppController implements Initializable {
             tabs.getTabs().add(index + 1, tab);
             tabs.getTabs().addListener(tabsChangeListener);
             tabs.getSelectionModel().select(tab);
+            EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
         });
         MenuItem moveLeft = new MenuItem("Move Left");
         moveLeft.setOnAction(event -> {
@@ -1865,6 +1866,7 @@ public class AppController implements Initializable {
             tabs.getTabs().add(index - 1, tab);
             tabs.getTabs().addListener(tabsChangeListener);
             tabs.getSelectionModel().select(tab);
+            EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
         });
         contextMenu.getItems().addAll(moveRight, moveLeft);
 
