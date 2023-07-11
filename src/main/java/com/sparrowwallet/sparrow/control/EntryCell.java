@@ -248,7 +248,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             TransactionOutput changeOutput = new TransactionOutput(new Transaction(), 1L, transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getOutputScript());
             vSize += changeOutput.getLength();
         }
-        int inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
+        double inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? (double)tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
         List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getSpendableUtxos(blockTransaction).keySet());
         //Remove the UTXOs we are respending
         walletUtxos.removeAll(utxos);
@@ -336,7 +336,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
     private static Double getMaxFeeRate() {
         if(AppServices.getTargetBlockFeeRates() == null || AppServices.getTargetBlockFeeRates().isEmpty()) {
-            return 100.0;
+            return 1.0;
         }
 
         return AppServices.getTargetBlockFeeRates().values().iterator().next();
