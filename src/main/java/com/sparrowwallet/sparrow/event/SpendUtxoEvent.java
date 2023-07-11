@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.event;
 
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -14,21 +15,23 @@ public class SpendUtxoEvent {
     private final List<Payment> payments;
     private final List<byte[]> opReturns;
     private final Long fee;
-    private final boolean includeSpentMempoolOutputs;
+    private final boolean requireAllUtxos;
+    private final BlockTransaction replacedTransaction;
     private final Pool pool;
     private final PaymentCode paymentCode;
 
     public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos) {
-        this(wallet, utxos, null, null, null, false);
+        this(wallet, utxos, null, null, null, false, null);
     }
 
-    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, List<byte[]> opReturns, Long fee, boolean includeSpentMempoolOutputs) {
+    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, List<byte[]> opReturns, Long fee, boolean requireAllUtxos, BlockTransaction replacedTransaction) {
         this.wallet = wallet;
         this.utxos = utxos;
         this.payments = payments;
         this.opReturns = opReturns;
         this.fee = fee;
-        this.includeSpentMempoolOutputs = includeSpentMempoolOutputs;
+        this.requireAllUtxos = requireAllUtxos;
+        this.replacedTransaction = replacedTransaction;
         this.pool = null;
         this.paymentCode = null;
     }
@@ -39,7 +42,8 @@ public class SpendUtxoEvent {
         this.payments = payments;
         this.opReturns = opReturns;
         this.fee = fee;
-        this.includeSpentMempoolOutputs = false;
+        this.requireAllUtxos = false;
+        this.replacedTransaction = null;
         this.pool = pool;
         this.paymentCode = null;
     }
@@ -50,7 +54,8 @@ public class SpendUtxoEvent {
         this.payments = payments;
         this.opReturns = opReturns;
         this.fee = null;
-        this.includeSpentMempoolOutputs = false;
+        this.requireAllUtxos = false;
+        this.replacedTransaction = null;
         this.pool = null;
         this.paymentCode = paymentCode;
     }
@@ -75,8 +80,12 @@ public class SpendUtxoEvent {
         return fee;
     }
 
-    public boolean isIncludeSpentMempoolOutputs() {
-        return includeSpentMempoolOutputs;
+    public boolean isRequireAllUtxos() {
+        return requireAllUtxos;
+    }
+
+    public BlockTransaction getReplacedTransaction() {
+        return replacedTransaction;
     }
 
     public Pool getPool() {

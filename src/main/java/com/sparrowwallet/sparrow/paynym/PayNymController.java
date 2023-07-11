@@ -465,7 +465,7 @@ public class PayNymController {
             PaymentCode paymentCode = payNym.paymentCode();
             Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + payNym.nymName(), MINIMUM_P2PKH_OUTPUT_SATS, false);
             Wallet wallet = AppServices.get().getWallet(walletId);
-            EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getWalletUtxos().keySet())));
+            EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getSpendableUtxos().keySet())));
             Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(wallet, List.of(payment), List.of(new byte[80]), paymentCode)));
             closeProperty.set(true);
         } else {
@@ -604,10 +604,10 @@ public class PayNymController {
         boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
 
         long noInputsFee = getMasterWallet().getNoInputsFee(payments, feeRate);
-        List<UtxoSelector> utxoSelectors = List.of(utxos == null ? new KnapsackUtxoSelector(noInputsFee) : new PresetUtxoSelector(utxos, true));
-        List<UtxoFilter> utxoFilters = List.of(new FrozenUtxoFilter(), new CoinbaseUtxoFilter(wallet));
+        List<UtxoSelector> utxoSelectors = List.of(utxos == null ? new KnapsackUtxoSelector(noInputsFee) : new PresetUtxoSelector(utxos, true, false));
+        List<TxoFilter> txoFilters = List.of(new SpentTxoFilter(), new FrozenTxoFilter(), new CoinbaseTxoFilter(wallet));
 
-        return wallet.createWalletTransaction(utxoSelectors, utxoFilters, payments, opReturns, Collections.emptySet(), feeRate, minimumFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs, false);
+        return wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, Collections.emptySet(), feeRate, minimumFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs);
     }
 
     private Map<BlockTransaction, WalletNode> getNotificationTransaction(PaymentCode externalPaymentCode) {

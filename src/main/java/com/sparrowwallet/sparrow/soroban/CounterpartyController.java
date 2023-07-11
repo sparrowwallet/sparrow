@@ -294,11 +294,9 @@ public class CounterpartyController extends SorobanController {
         sorobanProgressLabel.setText("Creating mix transaction...");
 
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
+        Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getSpendableUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : walletUtxos.entrySet()) {
-            if(entry.getKey().getStatus() != Status.FROZEN) {
-                counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
-            }
+            counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
         }
 
         try {

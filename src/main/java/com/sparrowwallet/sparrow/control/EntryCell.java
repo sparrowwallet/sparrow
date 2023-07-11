@@ -244,9 +244,9 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         Transaction tx = blockTransaction.getTransaction();
         double vSize = tx.getVirtualSize();
         int inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
-        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getWalletUtxos().keySet());
-        //Remove any UTXOs that are frozen or created by the transaction that is to be replaced
-        walletUtxos.removeIf(utxo -> utxo.getStatus() == Status.FROZEN || ourOutputs.stream().anyMatch(output -> output.getHash().equals(utxo.getHash()) && output.getIndex() == utxo.getIndex()));
+        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getSpendableUtxos(blockTransaction).keySet());
+        //Remove the UTXOs we are respending
+        walletUtxos.removeAll(utxos);
         Collections.shuffle(walletUtxos);
         while((double)changeTotal / vSize < getMaxFeeRate() && !walletUtxos.isEmpty() && !cancelTransaction) {
             //If there is insufficient change output, include another random UTXO so the fee can be increased
@@ -319,7 +319,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         }
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, opReturns.isEmpty() ? null : opReturns, blockTransaction.getFee(), true)));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, opReturns.isEmpty() ? null : opReturns, blockTransaction.getFee(), true, blockTransaction)));
     }
 
     private static Double getMaxFeeRate() {
@@ -350,9 +350,9 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         int inputSize = freshAddress.getScriptType().getInputVbytes();
         long vSize = inputSize + txOutput.getLength();
 
-        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getWalletUtxos().keySet());
-        //Remove any UTXOs that are frozen or that we are already spending
-        walletUtxos.removeIf(utxo -> utxo.getStatus() == Status.FROZEN || utxo.equals(cpfpUtxo));
+        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getSpendableUtxos().keySet());
+        //Remove the UTXO we are already spending
+        walletUtxos.remove(cpfpUtxo);
         Collections.shuffle(walletUtxos);
 
         List<BlockTransactionHashIndex> utxos = new ArrayList<>();
@@ -371,7 +371,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         Payment payment = new Payment(freshAddress, label, inputTotal, true);
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, List.of(payment), null, blockTransaction.getFee(), false)));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, List.of(payment), null, blockTransaction.getFee(), true, null)));
     }
 
     private static boolean canSignMessage(WalletNode walletNode) {

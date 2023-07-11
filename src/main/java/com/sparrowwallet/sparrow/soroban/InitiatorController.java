@@ -466,11 +466,9 @@ public class InitiatorController extends SorobanController {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
 
         Payment payment = walletTransaction.getPayments().get(0);
-        Map<BlockTransactionHashIndex, WalletNode> firstSetUtxos = walletTransaction.isCoinControlUsed() ? walletTransaction.getSelectedUtxoSets().get(0) : wallet.getWalletUtxos();
+        Map<BlockTransactionHashIndex, WalletNode> firstSetUtxos = walletTransaction.isCoinControlUsed() ? walletTransaction.getSelectedUtxoSets().get(0) : wallet.getSpendableUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : firstSetUtxos.entrySet()) {
-            if(entry.getKey().getStatus() != Status.FROZEN) {
-                initiatorCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
-            }
+            initiatorCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
         }
 
         SorobanCahootsService sorobanCahootsService = soroban.getSorobanCahootsService(initiatorCahootsWallet);

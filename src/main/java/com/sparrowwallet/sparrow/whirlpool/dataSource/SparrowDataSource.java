@@ -105,9 +105,9 @@ public class SparrowDataSource extends WalletResponseDataSource {
             address.n_tx = walletTransactions.size();
             addresses.add(address);
 
-            for(Map.Entry<BlockTransactionHashIndex, WalletNode> utxo : wallet.getWalletUtxos().entrySet()) {
+            for(Map.Entry<BlockTransactionHashIndex, WalletNode> utxo : wallet.getSpendableUtxos().entrySet()) {
                 BlockTransaction blockTransaction = wallet.getWalletTransaction(utxo.getKey().getHash());
-                if(blockTransaction != null && utxo.getKey().getStatus() != Status.FROZEN) {
+                if(blockTransaction != null) {
                     unspentOutputs.add(Whirlpool.getUnspentOutput(utxo.getValue(), blockTransaction, (int)utxo.getKey().getIndex()));
                 }
             }

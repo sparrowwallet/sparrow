@@ -1298,7 +1298,7 @@ public class AppController implements Initializable {
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
             optPayments.ifPresent(payments -> {
                 if(!payments.isEmpty()) {
-                    EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getWalletUtxos().keySet())));
+                    EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getSpendableUtxos().keySet())));
                     Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(wallet, payments)));
                 }
             });
