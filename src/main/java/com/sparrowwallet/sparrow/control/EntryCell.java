@@ -243,6 +243,11 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         long changeTotal = ourOutputs.stream().mapToLong(TransactionOutput::getValue).sum() - consolidationOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
         Transaction tx = blockTransaction.getTransaction();
         double vSize = tx.getVirtualSize();
+        if(changeTotal == 0) {
+            //Add change output length to vSize if change was not present on the original transaction
+            TransactionOutput changeOutput = new TransactionOutput(new Transaction(), 1L, transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getOutputScript());
+            vSize += changeOutput.getLength();
+        }
         int inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
         List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getSpendableUtxos(blockTransaction).keySet());
         //Remove the UTXOs we are respending
@@ -255,6 +260,13 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             changeTotal += utxo.getValue();
             vSize += inputSize;
         }
+
+        Long fee = blockTransaction.getFee();
+        if(fee != null) {
+            //Replacement tx fees must be greater than the original tx fees by its minimum relay cost
+            fee += (long)Math.ceil(vSize * AppServices.getMinimumRelayFeeRate());
+        }
+        Long rbfFee = fee;
 
         List<TransactionOutput> externalOutputs = new ArrayList<>(blockTransaction.getTransaction().getOutputs());
         externalOutputs.removeAll(ourOutputs);
@@ -319,7 +331,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         }
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
-        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, opReturns.isEmpty() ? null : opReturns, blockTransaction.getFee(), true, blockTransaction)));
+        Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, payments, opReturns.isEmpty() ? null : opReturns, rbfFee, true, blockTransaction)));
     }
 
     private static Double getMaxFeeRate() {
