@@ -249,16 +249,19 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             vSize += changeOutput.getLength();
         }
         double inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? (double)tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
-        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getSpendableUtxos(blockTransaction).keySet());
-        //Remove the UTXOs we are respending
-        walletUtxos.removeAll(utxos);
-        Collections.shuffle(walletUtxos);
-        while((double)changeTotal / vSize < getMaxFeeRate() && !walletUtxos.isEmpty() && !cancelTransaction) {
-            //If there is insufficient change output, include another random UTXO so the fee can be increased
-            BlockTransactionHashIndex utxo = walletUtxos.remove(0);
-            utxos.add(utxo);
-            changeTotal += utxo.getValue();
-            vSize += inputSize;
+        List<TxoFilter> txoFilters = List.of(new ExcludeTxoFilter(utxos), new SpentTxoFilter(blockTransaction.getHash()), new FrozenTxoFilter(), new CoinbaseTxoFilter(transactionEntry.getWallet()));
+        double feeRate = blockTransaction.getFeeRate() == null ? AppServices.getMinimumRelayFeeRate() : blockTransaction.getFeeRate();
+        List<OutputGroup> outputGroups = transactionEntry.getWallet().getGroupedUtxos(txoFilters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
+                .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
+        Collections.shuffle(outputGroups);
+        while((double)changeTotal / vSize < getMaxFeeRate() && !outputGroups.isEmpty() && !cancelTransaction) {
+            //If there is insufficient change output, include another random output group so the fee can be increased
+            OutputGroup outputGroup = outputGroups.remove(0);
+            for(BlockTransactionHashIndex utxo : outputGroup.getUtxos()) {
+                utxos.add(utxo);
+                changeTotal += utxo.getValue();
+                vSize += inputSize;
+            }
         }
 
         Long fee = blockTransaction.getFee();
@@ -336,7 +339,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
     private static Double getMaxFeeRate() {
         if(AppServices.getTargetBlockFeeRates() == null || AppServices.getTargetBlockFeeRates().isEmpty()) {
-            return 1.0;
+            return 100.0;
         }
 
         return AppServices.getTargetBlockFeeRates().values().iterator().next();
@@ -359,23 +362,26 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         Address freshAddress = transactionEntry.getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress();
         TransactionOutput txOutput = new TransactionOutput(new Transaction(), cpfpUtxo.getValue(), freshAddress.getOutputScript());
         long dustThreshold = freshAddress.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
-        int inputSize = freshAddress.getScriptType().getInputVbytes();
-        long vSize = inputSize + txOutput.getLength();
+        double inputSize = freshAddress.getScriptType().getInputVbytes();
+        double vSize = inputSize + txOutput.getLength();
 
-        List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(transactionEntry.getWallet().getSpendableUtxos().keySet());
-        //Remove the UTXO we are already spending
-        walletUtxos.remove(cpfpUtxo);
-        Collections.shuffle(walletUtxos);
+        List<TxoFilter> txoFilters = List.of(new ExcludeTxoFilter(List.of(cpfpUtxo)), new SpentTxoFilter(), new FrozenTxoFilter(), new CoinbaseTxoFilter(transactionEntry.getWallet()));
+        double feeRate = blockTransaction.getFeeRate() == null ? AppServices.getMinimumRelayFeeRate() : blockTransaction.getFeeRate();
+        List<OutputGroup> outputGroups = transactionEntry.getWallet().getGroupedUtxos(txoFilters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
+                .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
+        Collections.shuffle(outputGroups);
 
         List<BlockTransactionHashIndex> utxos = new ArrayList<>();
         utxos.add(cpfpUtxo);
         long inputTotal = cpfpUtxo.getValue();
-        while((inputTotal - (long)(getMaxFeeRate() * vSize)) < dustThreshold && !walletUtxos.isEmpty()) {
-            //If there is insufficient input value, include another random UTXO so the fee can be increased
-            BlockTransactionHashIndex utxo = walletUtxos.remove(0);
-            utxos.add(utxo);
-            inputTotal += utxo.getValue();
-            vSize += inputSize;
+        while((inputTotal - (long)(getMaxFeeRate() * vSize)) < dustThreshold && !outputGroups.isEmpty()) {
+            //If there is insufficient input value, include another random output group so the fee can be increased
+            OutputGroup outputGroup = outputGroups.remove(0);
+            for(BlockTransactionHashIndex utxo : outputGroup.getUtxos()) {
+                utxos.add(utxo);
+                inputTotal += utxo.getValue();
+                vSize += inputSize;
+            }
         }
 
         String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();

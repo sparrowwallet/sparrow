@@ -702,13 +702,17 @@ public class SendController extends WalletFormController implements Initializabl
                     } catch(InsufficientFundsException e) {
                         if(e.getTargetValue() != null && replacedTransaction != null && utxoSelectors.size() == 1 && utxoSelectors.get(0) instanceof PresetUtxoSelector presetUtxoSelector) {
                             //Creating RBF transaction - include additional UTXOs if available to pay desired fee
-                            List<BlockTransactionHashIndex> walletUtxos = new ArrayList<>(wallet.getWalletTxos(txoFilters).keySet());
-                            //Remove any UTXOs that have already been added or previously excluded
-                            walletUtxos.removeAll(presetUtxoSelector.getPresetUtxos());
-                            walletUtxos.removeAll(presetUtxoSelector.getExcludedUtxos());
-                            Collections.shuffle(walletUtxos);
-                            while(!walletUtxos.isEmpty() && presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum() < e.getTargetValue()) {
-                                presetUtxoSelector.getPresetUtxos().add(walletUtxos.remove(0));
+                            List<TxoFilter> filters = new ArrayList<>(txoFilters);
+                            filters.add(presetUtxoSelector.asExcludeTxoFilter());
+                            List<OutputGroup> outputGroups = wallet.getGroupedUtxos(filters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
+                                    .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
+                            Collections.shuffle(outputGroups);
+
+                            while(!outputGroups.isEmpty() && presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum() < e.getTargetValue()) {
+                                OutputGroup outputGroup = outputGroups.remove(0);
+                                for(BlockTransactionHashIndex utxo : outputGroup.getUtxos()) {
+                                    presetUtxoSelector.getPresetUtxos().add(utxo);
+                                }
                             }
 
                             return getWalletTransaction();
