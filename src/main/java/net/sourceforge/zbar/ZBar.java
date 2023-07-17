@@ -15,7 +15,11 @@ public class ZBar {
     private final static boolean enabled;
 
     static { // static initializer
-        enabled = loadLibrary();
+        if(com.sparrowwallet.sparrow.io.Config.get().isZbarScan()) {
+            enabled = loadLibrary();
+        } else {
+            enabled = false;
+        }
     }
 
     public static boolean isEnabled() {
@@ -23,34 +27,38 @@ public class ZBar {
     }
 
     public static Scan scan(BufferedImage bufferedImage) {
-        BufferedImage grayscale = new BufferedImage(bufferedImage.getWidth(), bufferedImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D g2d = (Graphics2D)grayscale.getGraphics();
-        g2d.drawImage(bufferedImage, 0, 0, null);
-        g2d.dispose();
+        try {
+            BufferedImage grayscale = new BufferedImage(bufferedImage.getWidth(), bufferedImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
+            Graphics2D g2d = (Graphics2D)grayscale.getGraphics();
+            g2d.drawImage(bufferedImage, 0, 0, null);
+            g2d.dispose();
 
-        byte[] data = convertToY800(grayscale);
+            byte[] data = convertToY800(grayscale);
 
-        try(Image image = new Image()) {
-            image.setSize(grayscale.getWidth(), grayscale.getHeight());
-            image.setFormat("Y800");
-            image.setData(data);
+            try(Image image = new Image()) {
+                image.setSize(grayscale.getWidth(), grayscale.getHeight());
+                image.setFormat("Y800");
+                image.setData(data);
 
-            try(ImageScanner scanner = new ImageScanner()) {
-                scanner.setConfig(Symbol.NONE, Config.ENABLE, 0);
-                scanner.setConfig(Symbol.QRCODE, Config.ENABLE, 1);
-                int result = scanner.scanImage(image);
-                if(result != 0) {
-                    try(SymbolSet results = scanner.getResults()) {
-                        Scan scan = null;
-                        for(Iterator<Symbol> iter = results.iterator(); iter.hasNext(); ) {
-                            try(Symbol symbol = iter.next()) {
-                                scan = new Scan(symbol.getDataBytes(), symbol.getData());
+                try(ImageScanner scanner = new ImageScanner()) {
+                    scanner.setConfig(Symbol.NONE, Config.ENABLE, 0);
+                    scanner.setConfig(Symbol.QRCODE, Config.ENABLE, 1);
+                    int result = scanner.scanImage(image);
+                    if(result != 0) {
+                        try(SymbolSet results = scanner.getResults()) {
+                            Scan scan = null;
+                            for(Iterator<Symbol> iter = results.iterator(); iter.hasNext(); ) {
+                                try(Symbol symbol = iter.next()) {
+                                    scan = new Scan(symbol.getDataBytes(), symbol.getData());
+                                }
                             }
+                            return scan;
                         }
-                        return scan;
                     }
                 }
             }
+        } catch(Exception e) {
+            log.debug("Error scanning with ZBar", e);
         }
 
         return null;
