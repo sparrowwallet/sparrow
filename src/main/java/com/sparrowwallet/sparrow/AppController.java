@@ -210,6 +210,8 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
+    private SendToManyDialog sendToManyDialog;
+
     private Tab previouslySelectedTab;
 
     private boolean subTabsVisible;
@@ -1286,6 +1288,13 @@ public class AppController implements Initializable {
     }
 
     public void sendToMany(ActionEvent event) {
+        if(sendToManyDialog != null) {
+            Stage stage = (Stage)sendToManyDialog.getDialogPane().getScene().getWindow();
+            stage.setAlwaysOnTop(true);
+            stage.setAlwaysOnTop(false);
+            return;
+        }
+
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             Wallet wallet = selectedWalletForm.getWallet();
@@ -1294,8 +1303,10 @@ public class AppController implements Initializable {
                 bitcoinUnit = wallet.getAutoUnit();
             }
 
-            SendToManyDialog sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog.initModality(Modality.NONE);
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
+            sendToManyDialog = null;
             optPayments.ifPresent(payments -> {
                 if(!payments.isEmpty()) {
                     EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getSpendableUtxos().keySet())));
