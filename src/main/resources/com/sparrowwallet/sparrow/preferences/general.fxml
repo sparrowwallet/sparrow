@@ -15,6 +15,7 @@
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
 <?import com.sparrowwallet.sparrow.net.FeeRatesSource?>
+<?import org.controlsfx.glyphfont.Glyph?>
 
 <GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.GeneralPreferencesController">
     <padding>
@@ -60,6 +61,11 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
+                <Label fx:id="currenciesLoadWarning" text="Error retrieving currencies">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="field-warning" />
+                    </graphic>
+                </Label>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Wallet" styleClass="wideLabelFieldSet">
