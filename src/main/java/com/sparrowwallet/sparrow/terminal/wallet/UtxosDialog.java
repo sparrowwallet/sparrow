@@ -192,6 +192,9 @@ public class UtxosDialog extends WalletDialog {
         SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             TableModel<TableCell> tableModel = getTableModel(walletUtxosEntry);
             utxos.setTableModel(tableModel);
+            if(utxos.getRenderer().getViewTopRow() >= tableModel.getRowCount()) {
+                utxos.getRenderer().setViewTopRow(0);
+            }
         });
     }
 
