@@ -42,9 +42,13 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
     }
 
     public WalletNameDialog(String initialName, boolean hasExistingTransactions, Date startDate) {
+        this(initialName, hasExistingTransactions, startDate, false);
+    }
+
+    public WalletNameDialog(String initialName, boolean hasExistingTransactions, Date startDate, boolean rename) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
-        boolean requestBirthDate = (Config.get().getServerType() == null || Config.get().getServerType() == ServerType.BITCOIN_CORE);
+        boolean requestBirthDate = !rename && (Config.get().getServerType() == null || Config.get().getServerType() == ServerType.BITCOIN_CORE);
 
         setTitle("Wallet Name");
         dialogPane.setHeaderText("Enter a name for this wallet:");
@@ -121,16 +125,16 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
             ));
         });
 
-        final ButtonType okButtonType = new javafx.scene.control.ButtonType("Create Wallet", ButtonBar.ButtonData.OK_DONE);
+        final ButtonType okButtonType = new javafx.scene.control.ButtonType((rename ? "Rename" : "Create") + " Wallet", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         BooleanBinding isInvalid = Bindings.createBooleanBinding(() ->
-                name.getText().length() == 0 || Storage.walletExists(name.getText()) || (existingCheck.isSelected() && existingPicker.getValue() == null), name.textProperty(), existingCheck.selectedProperty(), existingPicker.valueProperty());
+                name.getText().trim().length() == 0 || Storage.walletExists(name.getText()) || (existingCheck.isSelected() && existingPicker.getValue() == null), name.textProperty(), existingCheck.selectedProperty(), existingPicker.valueProperty());
         okButton.disableProperty().bind(isInvalid);
 
         name.setPromptText("Wallet Name");
         Platform.runLater(name::requestFocus);
-        setResultConverter(dialogButton -> dialogButton == okButtonType ? new NameAndBirthDate(name.getText(), existingPicker.getValue()) : null);
+        setResultConverter(dialogButton -> dialogButton == okButtonType ? new NameAndBirthDate(name.getText().trim(), existingPicker.getValue()) : null);
     }
 
     public static class NameAndBirthDate {

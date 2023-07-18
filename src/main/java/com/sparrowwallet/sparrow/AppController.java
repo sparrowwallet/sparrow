@@ -220,6 +220,8 @@ public class AppController implements Initializable {
 
     private final Set<Wallet> emptyLoadingWallets = new LinkedHashSet<>();
 
+    private final Map<File, File> renamedWallets = new HashMap<>();
+
     private final ChangeListener<Boolean> serverToggleOnlineListener = (observable, oldValue, newValue) -> {
         Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
     };
@@ -849,6 +851,10 @@ public class AppController implements Initializable {
                 }
             }
         }
+    }
+
+    public void renameWallet(ActionEvent event) {
+        renameWallet(getSelectedWalletForm());
     }
 
     public void deleteWallet(ActionEvent event) {
@@ -1548,6 +1554,11 @@ public class AppController implements Initializable {
 
             tabs.getTabs().add(tab);
             tabs.getSelectionModel().select(tab);
+
+            File oldWalletFile = renamedWallets.remove(storage.getWalletFile());
+            if(oldWalletFile != null) {
+                deleteStorage(new Storage(oldWalletFile), false);
+            }
         } else {
             for(Tab walletTab : tabs.getTabs()) {
                 TabData tabData = (TabData)walletTab.getUserData();
@@ -1970,6 +1981,30 @@ public class AppController implements Initializable {
         }
     }
 
+    private void renameWallet(WalletForm selectedWalletForm) {
+        WalletNameDialog walletNameDialog = new WalletNameDialog(selectedWalletForm.getMasterWallet().getName(), false, null, true);
+        Optional<WalletNameDialog.NameAndBirthDate> optName = walletNameDialog.showAndWait();
+        if(optName.isPresent()) {
+            File walletFile = Storage.getWalletFile(optName.get().getName() + "." + PersistenceType.DB.getExtension());
+            if(walletFile.exists()) {
+                showErrorDialog("Error renaming wallet", "Wallet file " + walletFile.getAbsolutePath() + " already exists.");
+                return;
+            }
+
+            Storage.CopyWalletService copyWalletService = new Storage.CopyWalletService(selectedWalletForm.getWallet(), walletFile);
+            copyWalletService.setOnSucceeded(event -> {
+                renamedWallets.put(walletFile, selectedWalletForm.getStorage().getWalletFile());
+                tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
+                openWalletFile(walletFile, true);
+            });
+            copyWalletService.setOnFailed(event -> {
+                log.error("Error renaming wallet", event.getSource().getException());
+                showErrorDialog("Error renaming wallet", event.getSource().getException().getMessage());
+            });
+            copyWalletService.start();
+        }
+    }
+
     private void deleteWallet(WalletForm selectedWalletForm) {
         Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete " + selectedWalletForm.getWallet().getMasterName() + "?", "The wallet file and any backups will be deleted. Are you sure?", ButtonType.NO, ButtonType.YES);
         if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
@@ -1985,7 +2020,7 @@ public class AppController implements Initializable {
 
                         try {
                             tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
-                            deleteStorage(storage);
+                            deleteStorage(storage, true);
                         } finally {
                             encryptionFullKey.clear();
                             password.get().clear();
@@ -2007,15 +2042,15 @@ public class AppController implements Initializable {
                 }
             } else {
                 tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
-                deleteStorage(storage);
+                deleteStorage(storage, true);
             }
         }
     }
 
-    private void deleteStorage(Storage storage) {
+    private void deleteStorage(Storage storage, boolean deleteBackups) {
         if(storage.isClosed()) {
             Platform.runLater(() -> {
-                Storage.DeleteWalletService deleteWalletService = new Storage.DeleteWalletService(storage);
+                Storage.DeleteWalletService deleteWalletService = new Storage.DeleteWalletService(storage, deleteBackups);
                 deleteWalletService.setDelay(Duration.seconds(3));
                 deleteWalletService.setPeriod(Duration.hours(1));
                 deleteWalletService.setOnSucceeded(event -> {
@@ -2031,7 +2066,7 @@ public class AppController implements Initializable {
                 deleteWalletService.start();
             });
         } else {
-            Platform.runLater(() -> deleteStorage(storage));
+            Platform.runLater(() -> deleteStorage(storage, deleteBackups));
         }
     }
 

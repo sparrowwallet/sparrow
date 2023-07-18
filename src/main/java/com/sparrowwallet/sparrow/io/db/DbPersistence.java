@@ -583,7 +583,7 @@ public class DbPersistence implements Persistence {
 
     @Override
     public boolean isClosed() {
-        return dataSource.isClosed();
+        return dataSource == null || dataSource.isClosed();
     }
 
     @Override
