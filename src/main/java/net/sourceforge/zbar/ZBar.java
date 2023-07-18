@@ -15,7 +15,7 @@ public class ZBar {
     private final static boolean enabled;
 
     static { // static initializer
-        if(com.sparrowwallet.sparrow.io.Config.get().isZbarScan()) {
+        if(com.sparrowwallet.sparrow.io.Config.get().isUseZbar()) {
             enabled = loadLibrary();
         } else {
             enabled = false;

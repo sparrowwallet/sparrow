@@ -58,7 +58,7 @@ public class Config {
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
     private Boolean hdCapture;
-    private Boolean zbarScan;
+    private boolean useZbar = true;
     private String webcamDevice;
     private ServerType serverType;
     private Server publicElectrumServer;
@@ -405,12 +405,8 @@ public class Config {
         flush();
     }
 
-    public Boolean isZbarScan() {
-        return zbarScan == null || zbarScan;
-    }
-
-    public void setZbarScan(Boolean zbarScan) {
-        this.zbarScan = zbarScan;
+    public boolean isUseZbar() {
+        return useZbar;
     }
 
     public String getWebcamDevice() {
