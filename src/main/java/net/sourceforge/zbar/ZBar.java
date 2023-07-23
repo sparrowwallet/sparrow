@@ -49,7 +49,7 @@ public class ZBar {
                             Scan scan = null;
                             for(Iterator<Symbol> iter = results.iterator(); iter.hasNext(); ) {
                                 try(Symbol symbol = iter.next()) {
-                                    scan = new Scan(symbol.getDataBytes(), symbol.getData());
+                                    scan = new Scan(getRawBytes(symbol.getData()), symbol.getData());
                                 }
                             }
                             return scan;
@@ -120,6 +120,16 @@ public class ZBar {
         }
 
         return false;
+    }
+
+    private static byte[] getRawBytes(String str) {
+        char[] chars = str.toCharArray();
+        byte[] bytes = new byte[chars.length];
+        for(int i = 0; i < chars.length; i++) {
+            bytes[i] = (byte)(chars[i]);
+        }
+
+        return bytes;
     }
 
     public record Scan(byte[] rawData, String stringData) {}
