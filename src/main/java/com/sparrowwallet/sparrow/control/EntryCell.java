@@ -240,6 +240,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 .map(e -> e.getBlockTransaction().getTransaction().getOutputs().get((int)e.getHashIndex().getIndex()))
                 .collect(Collectors.toList());
 
+        boolean consolidationTransaction = consolidationOutputs.size() == blockTransaction.getTransaction().getOutputs().size() && consolidationOutputs.size() == 1;
         long changeTotal = ourOutputs.stream().mapToLong(TransactionOutput::getValue).sum() - consolidationOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
         Transaction tx = blockTransaction.getTransaction();
         double vSize = tx.getVirtualSize();
@@ -254,7 +255,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         List<OutputGroup> outputGroups = transactionEntry.getWallet().getGroupedUtxos(txoFilters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
                 .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
         Collections.shuffle(outputGroups);
-        while((double)changeTotal / vSize < getMaxFeeRate() && !outputGroups.isEmpty() && !cancelTransaction) {
+        while((double)changeTotal / vSize < getMaxFeeRate() && !outputGroups.isEmpty() && !cancelTransaction && !consolidationTransaction) {
             //If there is insufficient change output, include another random output group so the fee can be increased
             OutputGroup outputGroup = outputGroups.remove(0);
             for(BlockTransactionHashIndex utxo : outputGroup.getUtxos()) {
