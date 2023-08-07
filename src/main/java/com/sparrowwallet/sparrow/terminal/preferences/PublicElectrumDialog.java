@@ -37,7 +37,7 @@ public class PublicElectrumDialog extends ServerProxyDialog {
         url.setSelectedItem(PublicElectrumServer.fromServer(Config.get().getPublicElectrumServer()));
         url.addListener((selectedIndex, previousSelection, changedByUserInteraction) -> {
             if(selectedIndex != previousSelection) {
-                Config.get().setPublicElectrumServer(PublicElectrumServer.values()[selectedIndex].getServer());
+                Config.get().setPublicElectrumServer(PublicElectrumServer.getServers().get(selectedIndex).getServer());
             }
         });
         mainPanel.addComponent(url);
