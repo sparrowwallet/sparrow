@@ -790,6 +790,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         cell.getStyleClass().remove("transaction-row");
         cell.getStyleClass().remove("node-row");
         cell.getStyleClass().remove("utxo-row");
+        cell.getStyleClass().remove("unconfirmed-row");
+        cell.getStyleClass().remove("summary-row");
         cell.getStyleClass().remove("address-cell");
         cell.getStyleClass().remove("hashindex-row");
         cell.getStyleClass().remove("confirming");
@@ -824,6 +826,10 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 if(hashIndexEntry.isSpent()) {
                     cell.getStyleClass().add("spent");
                 }
+            } else if(entry instanceof WalletSummaryDialog.UnconfirmedEntry) {
+                cell.getStyleClass().add("unconfirmed-row");
+            } else if(entry instanceof WalletSummaryDialog.SummaryEntry) {
+                cell.getStyleClass().add("summary-row");
             }
         }
     }

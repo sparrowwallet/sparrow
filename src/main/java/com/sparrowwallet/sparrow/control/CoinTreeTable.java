@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -28,6 +29,7 @@ import java.util.Optional;
 public class CoinTreeTable extends TreeTableView<Entry> {
     private BitcoinUnit bitcoinUnit;
     private UnitFormat unitFormat;
+    private CurrencyRate currencyRate;
 
     public BitcoinUnit getBitcoinUnit() {
         return bitcoinUnit;
@@ -60,6 +62,18 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         this.bitcoinUnit = unit;
 
         if(changed && !getChildren().isEmpty()) {
+            refresh();
+        }
+    }
+
+    public CurrencyRate getCurrencyRate() {
+        return currencyRate;
+    }
+
+    public void setCurrencyRate(CurrencyRate currencyRate) {
+        this.currencyRate = currencyRate;
+
+        if(!getChildren().isEmpty()) {
             refresh();
         }
     }

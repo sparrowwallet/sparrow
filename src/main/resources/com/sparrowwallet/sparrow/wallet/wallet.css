@@ -141,3 +141,11 @@
     -fx-font-size: 13px;
     -fx-font-family: 'Roboto Mono';
 }
+
+.unconfirmed-row {
+    -fx-opacity: 0.7;
+}
+
+.summary-row {
+    -fx-font-weight: bold;
+}

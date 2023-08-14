@@ -167,6 +167,9 @@ public class AppController implements Initializable {
     private MenuItem lockAllWallets;
 
     @FXML
+    private MenuItem showWalletSummary;
+
+    @FXML
     private MenuItem searchWallet;
 
     @FXML
@@ -380,6 +383,7 @@ public class AppController implements Initializable {
         deleteWallet.disableProperty().bind(exportWallet.disableProperty());
         closeTab.setDisable(true);
         lockWallet.setDisable(true);
+        showWalletSummary.disableProperty().bind(exportWallet.disableProperty());
         searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
@@ -1464,6 +1468,21 @@ public class AppController implements Initializable {
                         EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
                         Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
                     }
+                }
+            }
+        }
+    }
+
+    public void showWalletSummary(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        if(selectedTab != null) {
+            TabData tabData = (TabData) selectedTab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                TabPane subTabs = (TabPane) selectedTab.getContent();
+                List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
+                if(!walletForms.isEmpty()) {
+                    WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(walletForms);
+                    walletSummaryDialog.showAndWait();
                 }
             }
         }
