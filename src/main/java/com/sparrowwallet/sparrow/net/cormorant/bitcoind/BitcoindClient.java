@@ -141,11 +141,13 @@ public class BitcoindClient {
         boolean exists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(CORE_WALLET_NAME));
         legacyWalletExists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(Bwt.DEFAULT_CORE_WALLET));
 
-        if(!exists) {
+        List<String> loadedWallets = getBitcoindService().listWallets();
+        boolean loaded = loadedWallets.contains(CORE_WALLET_NAME);
+
+        if(!exists && !loaded) {
             getBitcoindService().createWallet(CORE_WALLET_NAME, true, true, "", true, true, true, false);
         } else {
-            List<String> wallets = getBitcoindService().listWallets();
-            if(!wallets.contains(CORE_WALLET_NAME)) {
+            if(!loaded) {
                 getBitcoindService().loadWallet(CORE_WALLET_NAME, true);
             }
         }
