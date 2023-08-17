@@ -78,6 +78,7 @@ public class Config {
     private int maxPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
     private boolean sameAppMixing;
+    private boolean mempoolFullRbf;
     private Double appWidth;
     private Double appHeight;
 
@@ -667,6 +668,15 @@ public class Config {
 
     public void setSameAppMixing(boolean sameAppMixing) {
         this.sameAppMixing = sameAppMixing;
+        flush();
+    }
+
+    public boolean isMempoolFullRbf() {
+        return mempoolFullRbf;
+    }
+
+    public void setMempoolFullRbf(boolean mempoolFullRbf) {
+        this.mempoolFullRbf = mempoolFullRbf;
         flush();
     }
 
