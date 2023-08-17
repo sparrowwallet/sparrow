@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+import static com.sparrowwallet.sparrow.AppServices.showWarningDialog;
 
 public class SettingsController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
@@ -97,6 +98,7 @@ public class SettingsController extends WalletFormController implements Initiali
     private final SimpleIntegerProperty totalKeystores = new SimpleIntegerProperty(0);
 
     private boolean initialising = true;
+    private boolean reverting;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -141,9 +143,32 @@ public class SettingsController extends WalletFormController implements Initiali
             }
         });
 
-        scriptType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, scriptType) -> {
-            if(scriptType != null) {
-                walletForm.getWallet().setScriptType(scriptType);
+        scriptType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                if(oldValue != null && !reverting && walletForm.getWallet().getKeystores().stream().anyMatch(keystore -> keystore.getExtendedPublicKey() != null)) {
+                    Optional<ButtonType> optType = showWarningDialog("Clear keystores?",
+                            "You are changing the script type on a wallet with existing key information. Usually this means the keys need to be re-imported using a different derivation path.\n\n" +
+                                    "Do you want to clear the current key information?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+                    if(optType.isPresent()) {
+                        if(optType.get() == ButtonType.CANCEL) {
+                            reverting = true;
+                            Platform.runLater(() -> {
+                                scriptType.getSelectionModel().select(oldValue);
+                                reverting = false;
+                            });
+                            return;
+                        } else if(optType.get() == ButtonType.YES) {
+                            clearKeystoreTabs();
+                            if(walletForm.getWallet().getPolicyType() == PolicyType.MULTI) {
+                                totalKeystores.bind(multisigControl.highValueProperty());
+                            } else {
+                                totalKeystores.set(1);
+                            }
+                        }
+                    }
+                }
+
+                walletForm.getWallet().setScriptType(newValue);
             }
 
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.SCRIPT_TYPE));
@@ -215,7 +240,10 @@ public class SettingsController extends WalletFormController implements Initiali
             totalKeystores.setValue(0);
             walletForm.revert();
             initialising = true;
+            reverting = true;
             setFieldsFromWallet(walletForm.getWallet());
+            reverting = false;
+            initialising = false;
         });
 
         apply.setOnAction(event -> {
