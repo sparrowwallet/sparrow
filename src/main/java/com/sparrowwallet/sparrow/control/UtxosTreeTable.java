@@ -83,8 +83,7 @@ public class UtxosTreeTable extends CoinTreeTable {
         setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
-        amountCol.setSortType(TreeTableColumn.SortType.DESCENDING);
-        getSortOrder().add(amountCol);
+        setSortColumn(getColumns().size() - 1, TreeTableColumn.SortType.DESCENDING);
 
         getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
@@ -96,17 +95,14 @@ public class UtxosTreeTable extends CoinTreeTable {
         setRoot(rootItem);
         rootItem.setExpanded(true);
 
-        if(getColumns().size() > 0 && getSortOrder().isEmpty()) {
-            TreeTableColumn<Entry, ?> amountCol = getColumns().get(getColumns().size() - 1);
-            getSortOrder().add(amountCol);
-            amountCol.setSortType(TreeTableColumn.SortType.DESCENDING);
-        }
+        setSortColumn(getColumns().size() - 1, TreeTableColumn.SortType.DESCENDING);
     }
 
     public void updateHistory() {
         //Utxo entries should have already been updated, so only a resort required
         if(!getRoot().getChildren().isEmpty()) {
             sort();
+            setSortColumn(getColumns().size() - 1, TreeTableColumn.SortType.DESCENDING);
         }
     }
 

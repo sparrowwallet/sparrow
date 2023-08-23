@@ -50,8 +50,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
-        dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
-        getSortOrder().add(dateCol);
+        setSortColumn(0, TreeTableColumn.SortType.DESCENDING);
     }
 
     public void updateAll(WalletTransactionsEntry rootEntry) {
@@ -61,16 +60,13 @@ public class TransactionsTreeTable extends CoinTreeTable {
         setRoot(rootItem);
         rootItem.setExpanded(true);
 
-        if(getColumns().size() > 0 && getSortOrder().isEmpty()) {
-            TreeTableColumn<Entry, ?> dateCol = getColumns().get(0);
-            getSortOrder().add(dateCol);
-            dateCol.setSortType(TreeTableColumn.SortType.DESCENDING);
-        }
+        setSortColumn(0, TreeTableColumn.SortType.DESCENDING);
     }
 
     public void updateHistory() {
         //Transaction entries should have already been updated using WalletTransactionsEntry.updateHistory, so only a resort required
         sort();
+        setSortColumn(0, TreeTableColumn.SortType.DESCENDING);
     }
 
     public void updateLabel(Entry entry) {

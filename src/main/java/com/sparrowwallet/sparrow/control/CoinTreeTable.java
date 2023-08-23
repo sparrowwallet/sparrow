@@ -18,6 +18,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
+import javafx.scene.control.TreeTableColumn;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.layout.StackPane;
 
@@ -132,5 +133,13 @@ public class CoinTreeTable extends TreeTableView<Entry> {
 
         stackPane.setAlignment(Pos.CENTER);
         return stackPane;
+    }
+
+    public void setSortColumn(int columnIndex, TreeTableColumn.SortType sortType) {
+        if(columnIndex >= 0 && columnIndex < getColumns().size() && getSortOrder().isEmpty() && !getRoot().getChildren().isEmpty()) {
+            TreeTableColumn<Entry, ?> column = getColumns().get(columnIndex);
+            column.setSortType(sortType == null ? TreeTableColumn.SortType.DESCENDING : sortType);
+            getSortOrder().add(column);
+        }
     }
 }
