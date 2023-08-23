@@ -1654,6 +1654,9 @@ public class AppController implements Initializable {
             subTabLabel.setGraphic(getSubTabGlyph(wallet));
             subTabLabel.setContentDisplay(ContentDisplay.TOP);
             subTabLabel.setAlignment(Pos.TOP_CENTER);
+            if(TextUtils.computeTextWidth(subTabLabel.getFont(), label, 0.0D) > (90-6)) {
+                subTabLabel.setTooltip(new Tooltip(label));
+            }
             subTab.setGraphic(subTabLabel);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             subTab.setContent(walletLoader.load());
