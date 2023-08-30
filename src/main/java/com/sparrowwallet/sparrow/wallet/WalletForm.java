@@ -510,7 +510,7 @@ public class WalletForm {
                                         if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()
                                                 || receivedRef.getLabel().endsWith(" (sent)") || receivedRef.getLabel().endsWith(" (change)") || receivedRef.getLabel().endsWith(" (received)"))
                                                 && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
-                                            prevRefLabel = receivedRef.getLabel();
+                                            prevRefLabel = receivedRef.getLabel() == null ? "" : receivedRef.getLabel();
                                             receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? (event.getWallet().isBip47() ? " (sent)" : " (change)") : " (received)"));
                                             labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose), entry);
                                         }
