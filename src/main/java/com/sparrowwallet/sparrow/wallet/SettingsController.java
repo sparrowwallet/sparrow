@@ -341,12 +341,12 @@ public class SettingsController extends WalletFormController implements Initiali
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.outputDescriptor != null) {
-                setDescriptorText(result.outputDescriptor.toString());
+                replaceWallet(result.outputDescriptor.toWallet());
             } else if(result.wallets != null) {
                 for(Wallet wallet : result.wallets) {
                     if(scriptType.getValue().equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
                         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
-                        setDescriptorText(outputDescriptor.toString());
+                        replaceWallet(outputDescriptor.toWallet());
                         break;
                     }
                 }
@@ -425,7 +425,7 @@ public class SettingsController extends WalletFormController implements Initiali
         CryptoCoinInfo cryptoCoinInfo = new CryptoCoinInfo(CryptoCoinInfo.Type.BITCOIN.ordinal(), Network.get() == Network.MAINNET ? CryptoCoinInfo.Network.MAINNET.ordinal() : CryptoCoinInfo.Network.TESTNET.ordinal());
         List<PathComponent> pathComponents = keystore.getKeyDerivation().getDerivation().stream().map(cNum -> new IndexPathComponent(cNum.num(), cNum.isHardened())).collect(Collectors.toList());
         CryptoKeypath cryptoKeypath = new CryptoKeypath(pathComponents, Utils.hexToBytes(keystore.getKeyDerivation().getMasterFingerprint()), pathComponents.size());
-        return new CryptoHDKey(false, extendedKey.getKey().getPubKey(), extendedKey.getKey().getChainCode(), cryptoCoinInfo, cryptoKeypath, null, extendedKey.getParentFingerprint());
+        return new CryptoHDKey(false, extendedKey.getKey().getPubKey(), extendedKey.getKey().getChainCode(), cryptoCoinInfo, cryptoKeypath, null, extendedKey.getParentFingerprint(), keystore.getLabel(), null);
     }
 
     public void editDescriptor(ActionEvent event) {
