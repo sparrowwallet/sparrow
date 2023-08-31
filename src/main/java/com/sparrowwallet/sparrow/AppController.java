@@ -1654,7 +1654,7 @@ public class AppController implements Initializable {
             subTabLabel.setGraphic(getSubTabGlyph(wallet));
             subTabLabel.setContentDisplay(ContentDisplay.TOP);
             subTabLabel.setAlignment(Pos.TOP_CENTER);
-            if(TextUtils.computeTextWidth(subTabLabel.getFont(), label, 0.0D) > (90-6)) {
+            if(isSubTabLabelTruncated(subTabLabel, label)) {
                 subTabLabel.setTooltip(new Tooltip(label));
             }
             subTab.setGraphic(subTabLabel);
@@ -2104,6 +2104,11 @@ public class AppController implements Initializable {
             if(optLabel.isPresent()) {
                 String label = optLabel.get();
                 subTabLabel.setText(label);
+                if(isSubTabLabelTruncated(subTabLabel, label)) {
+                    subTabLabel.setTooltip(new Tooltip(label));
+                } else {
+                    subTabLabel.setTooltip(null);
+                }
 
                 Wallet renamedWallet = AppServices.get().getWallet(walletId);
                 renamedWallet.setLabel(label);
@@ -2129,6 +2134,10 @@ public class AppController implements Initializable {
         }
 
         return contextMenu;
+    }
+
+    private boolean isSubTabLabelTruncated(Label subTabLabel, String label) {
+        return TextUtils.computeTextWidth(subTabLabel.getFont(), label, 0.0D) > (90-6);
     }
 
     private void configureSwitchServer() {
