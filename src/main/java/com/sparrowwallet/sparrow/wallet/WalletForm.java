@@ -597,6 +597,10 @@ public class WalletForm {
     public void walletLabelChanged(WalletLabelChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+
+            if(walletTransactionsEntry != null) {
+                walletTransactionsEntry.labelProperty().set(event.getWallet().getDisplayName());
+            }
         }
     }
 

@@ -2133,6 +2133,11 @@ public class AppController implements Initializable {
             contextMenu.getItems().add(delete);
         }
 
+        contextMenu.setOnShowing(event -> {
+            Wallet renameWallet = AppServices.get().getWallet(walletId);
+            rename.setDisable(!renameWallet.isValid());
+        });
+
         return contextMenu;
     }
 
