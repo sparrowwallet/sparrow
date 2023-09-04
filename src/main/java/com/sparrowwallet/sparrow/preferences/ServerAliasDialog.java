@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class ServerAliasDialog extends Dialog<Server> {
     private final ServerType serverType;
     private final TableView<ServerEntry> serverTable;
+    private final Button closeButton;
 
     public ServerAliasDialog(ServerType serverType) {
         this.serverType = serverType;
@@ -76,6 +77,7 @@ public class ServerAliasDialog extends Dialog<Server> {
 
         Button selectButton = (Button)dialogPane.lookupButton(selectButtonType);
         Button deleteButton = (Button)dialogPane.lookupButton(deleteButtonType);
+        closeButton = (Button)dialogPane.lookupButton(ButtonType.CLOSE);
         selectButton.setDefaultButton(true);
         selectButton.setDisable(true);
         deleteButton.setDisable(true);
@@ -112,8 +114,14 @@ public class ServerAliasDialog extends Dialog<Server> {
                         serverTable.getItems().remove(serverEntry);
                         if(serverType == ServerType.BITCOIN_CORE) {
                             Config.get().removeRecentCoreServer(serverEntry.getServer());
+                            if(serverEntry.getServer().equals(Config.get().getCoreServer()) && !serverTable.getItems().isEmpty()) {
+                                closeButton.setDisable(true);
+                            }
                         } else {
                             Config.get().removeRecentElectrumServer(serverEntry.getServer());
+                            if(serverEntry.getServer().equals(Config.get().getElectrumServer()) && !serverTable.getItems().isEmpty()) {
+                                closeButton.setDisable(true);
+                            }
                         }
                     }
                 });
