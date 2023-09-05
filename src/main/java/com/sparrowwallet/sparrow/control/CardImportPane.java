@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
@@ -74,7 +75,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return;
         }
 
-        if(pin.get().length() < 6) {
+        if(pin.get().length() < importer.getWalletModel().getMinPinLength()) {
             setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
             setContent(getPinAndDerivationEntry());
             showHideLink.setVisible(false);

@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.ckcard.CkCardApi;
+import com.sparrowwallet.sparrow.io.satochip.SatoCardApi;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
 import org.controlsfx.tools.Platform;
@@ -30,6 +31,7 @@ public abstract class CardApi {
     private static final Logger log = LoggerFactory.getLogger(CardApi.class);
 
     private static File[] LINUX_PCSC_LIBS = new File[] {
+            new File("/usr/lib/x86_64-linux-gnu/libpcsclite.so.1"),
             new File("/usr/lib/libpcsclite.so.1"),
             new File("/usr/local/lib/libpcsclite.so.1"),
             new File("/lib/x86_64-linux-gnu/libpcsclite.so.1"),
@@ -45,12 +47,24 @@ public abstract class CardApi {
             //ignore
         }
 
+        try {
+            log.error("SATOCHIP in CardApi getConnectedCards() new SatoCardApi()");
+            SatoCardApi satoCardApi = new SatoCardApi(null, null);
+            return List.of(satoCardApi.getCardType());
+        } catch(Exception e) {
+            //ignore
+        }
+
         return Collections.emptyList();
     }
 
     public static CardApi getCardApi(WalletModel walletModel, String pin) throws CardException {
         if(walletModel == WalletModel.TAPSIGNER || walletModel == WalletModel.SATSCARD) {
             return new CkCardApi(walletModel, pin);
+        }
+
+        if(walletModel == WalletModel.SATOCHIP) {
+            return new SatoCardApi(walletModel, pin);
         }
 
         throw new IllegalArgumentException("Cannot create card API for " + walletModel.toDisplayString());

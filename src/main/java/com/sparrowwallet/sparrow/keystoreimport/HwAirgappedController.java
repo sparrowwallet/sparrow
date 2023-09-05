@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.control.FileKeystoreImportPane;
 import com.sparrowwallet.sparrow.control.TitledDescriptionPane;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.io.ckcard.Tapsigner;
+import com.sparrowwallet.sparrow.io.satochip.Satochip;
 import javafx.fxml.FXML;
 import javafx.scene.control.Accordion;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
     private Accordion importAccordion;
 
     public void initializeView() {
+        log.debug("SATOCHIP HwAirgappedController START");
         List<KeystoreFileImport> fileImporters = Collections.emptyList();
         if(getMasterController().getWallet().getPolicyType().equals(PolicyType.SINGLE)) {
             fileImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY());
@@ -38,7 +40,8 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             }
         }
 
-        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner());
+        log.debug("SATOCHIP HwAirgappedController initializeView() - BEFORE cardImporters");
+        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner(), new Satochip());
         for(KeystoreCardImport importer : cardImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());
@@ -47,6 +50,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
                 }
             }
         }
+        log.debug("SATOCHIP HwAirgappedController initializeView() - AFTER cardImporters");
 
         importAccordion.getPanes().sort(Comparator.comparing(o -> ((TitledDescriptionPane) o).getTitle()));
     }

@@ -12,7 +12,9 @@ public class HwUsbDevicesController extends KeystoreImportDetailController {
     private Accordion deviceAccordion;
 
     public void initializeView(List<Device> devices) {
+        //log.debug("SATOCHIP HwUsbDevicesController initializeView START");
         for(Device device : devices) {
+            //log.debug("SATOCHIP HwUsbDevicesController initializeView device: " + device);
             DevicePane devicePane = new DevicePane(getMasterController().getWallet(), device, devices.size() == 1, getMasterController().getRequiredDerivation());
             if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == device.getModel()) {
                 deviceAccordion.getPanes().add(devicePane);
