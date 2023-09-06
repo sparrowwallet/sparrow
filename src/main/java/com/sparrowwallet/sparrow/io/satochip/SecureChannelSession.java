@@ -27,14 +27,14 @@ import org.slf4j.LoggerFactory;
  * Handles a SecureChannel session with the card.
  */
 public class SecureChannelSession {
-  
+
   private static final Logger log = LoggerFactory.getLogger(SecureChannelSession.class);
-  
+
   public static final int SC_SECRET_LENGTH = 16;
-  public static final int SC_BLOCK_SIZE = 16; 
-  public static final int IV_SIZE = 16; 
+  public static final int SC_BLOCK_SIZE = 16;
+  public static final int IV_SIZE = 16;
   public static final int MAC_SIZE= 20;
-  
+
   // secure channel constants
   private final static byte INS_INIT_SECURE_CHANNEL = (byte) 0x81;
   private final static byte INS_PROCESS_SECURE_CHANNEL = (byte) 0x82;
@@ -44,28 +44,28 @@ public class SecureChannelSession {
   private final static short SW_SECURE_CHANNEL_WRONG_MAC= (short) 0x9C23;
 
   private boolean initialized_secure_channel= false;
-  
+
   // secure channel keys
   private byte[] secret;
   private byte[] iv;
   private int ivCounter;
   byte[] derived_key;
   byte[] mac_key;
-  
+
   // for ECDH
   private SecretPoint secretPoint;
   private ECKey eckey;
-    
+
   // for session encryption
   private SecureRandom random;
   private AESKeyCrypter aesCipher;
-	
+
   /**
    * Constructs a SecureChannel session on the client.
    */
   public SecureChannelSession() {
     random = new SecureRandom();
-      
+
     try {
       // generate keypair
       eckey = new ECKey();
@@ -75,8 +75,8 @@ public class SecureChannelSession {
       log.error("SATOCHIP SecureChannelSession() exception: " + e);
     }
   }
-  
-  
+
+
   /**
    * Generates a pairing secret. This should be called before each session. The public key of the card is used as input
    * for the EC-DH algorithm. The output is stored as the secret.
@@ -86,7 +86,7 @@ public class SecureChannelSession {
   public void initiateSecureChannel(byte[] pubkeyData) { //TODO: check keyData format
     log.trace("SATOCHIP SecureChannelSession initiateSecureChannel()");
     try {
-      
+
       byte[] privkeyData = this.eckey.getPrivKeyBytes();
       secretPoint = new SecretPoint(privkeyData, pubkeyData);
       secret = secretPoint.ECDHSecretAsBytes();
@@ -109,17 +109,17 @@ public class SecureChannelSession {
       log.error("SATOCHIP SecureChannelSession initiateSecureChannel() exception:" + e);
     }
   }
-  
+
   public APDUCommand encrypt_secure_channel(APDUCommand plainApdu){
     log.trace("SATOCHIP: SecureChannelSession encrypt_secure_channel()");
     try {
-      
+
       byte[] plainBytes= plainApdu.serialize();
 
       // set iv
       iv = new byte[SC_BLOCK_SIZE];
       random.nextBytes(iv);
-      ByteBuffer bb = ByteBuffer.allocate(4); 
+      ByteBuffer bb = ByteBuffer.allocate(4);
       bb.putInt(ivCounter);  // big endian
       byte[] ivCounterBytes= bb.array();
       System.arraycopy(ivCounterBytes, 0, iv, 12, 4);
@@ -158,23 +158,23 @@ public class SecureChannelSession {
       data[offset++]= (byte)(mac.length%256);
       System.arraycopy(mac, 0, data, offset, mac.length);
       log.trace("SATOCHIP: SecureChannelSession encrypt_secure_channel() full_encrypted_data: " + Utils.bytesToHex(data));
-      
+
       // convert to C-APDU
       APDUCommand encryptedApdu= new APDUCommand(0xB0, INS_PROCESS_SECURE_CHANNEL, 0x00, 0x00, data);
       return encryptedApdu;
-      
+
     } catch (Exception e) {
       e.printStackTrace();
       log.error("SATOCHIP: Exception in encrypt_secure_channel: "+ e);
       throw new RuntimeException("SATOCHIP: Exception in encrypt_secure_channel:", e);
     }
-    
+
   }
-  
+
   public APDUResponse decrypt_secure_channel(APDUResponse encryptedApdu){
 	  log.trace("SATOCHIP SecureChannelSession decrypt_secure_channel()");
     try {
-      
+
       byte[] encryptedBytes= encryptedApdu.getData();
       if (encryptedBytes.length==0){
         return encryptedApdu; // no decryption needed
@@ -204,30 +204,30 @@ public class SecureChannelSession {
 
       APDUResponse plainResponse= new APDUResponse(decrypted, (byte)0x90, (byte)0x00);
       return plainResponse;
-      
+
     } catch (Exception e) {
       e.printStackTrace();
       log.error("SATOCHIP SecureChannelSession decrypt_secure_channel() Exception: " + e);
       throw new RuntimeException("Exception during secure channel decryption: ", e);
     }
-    
+
   }
-  
+
   public boolean initializedSecureChannel(){
 	  return initialized_secure_channel;
   }
-  
+
   public byte[] getPublicKey(){
     log.trace("SATOCHIP SecureChannelSession getPublicKey() eckey.getPubKey(): " + Utils.bytesToHex(eckey.getPubKey(false)));
     return eckey.getPubKey(false); // false: uncompressed
   }
-  
+
   public void resetSecureChannel(){
     initialized_secure_channel= false;
     // todo: generate new eckey?
 	  return;
   }
-  
+
   public static byte[] getHmacSha1Hash(byte[] key, byte[] data) {
       try{
           //log.trace("SATOCHIP SecureChannelSession getHmacSha1Hash() START");

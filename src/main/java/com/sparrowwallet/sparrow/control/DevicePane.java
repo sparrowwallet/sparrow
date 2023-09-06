@@ -674,7 +674,7 @@ public class DevicePane extends TitledDescriptionPane {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 if(!cardApi.isInitialized()) {
-                    if(pin.get().length() < device.getModel().getMinPinLength()) { 
+                    if(pin.get().length() < device.getModel().getMinPinLength()) {
                         setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
                         setContent(getCardPinEntry(importButton));
                         showHideLink.setVisible(false);
@@ -1074,17 +1074,10 @@ public class DevicePane extends TitledDescriptionPane {
             initializeButton.setDefaultButton(true);
             initializeButton.setOnAction(event -> {
                 initializeButton.setDisable(true);
-                /*
-                log.trace("SATOCHIP DevicePane getCardInitializationPanel() pin.get(): " + pin.get());
-                log.trace("SATOCHIP DevicePane getCardInitializationPanel() repeatedPin.getText(): " + repeatedPin.getText());
-                log.trace("SATOCHIP DevicePane getCardInitializationPanel() mnemonic.getText(): "+ mnemonic.getText());
-                log.trace("SATOCHIP DevicePane getCardInitializationPanel() passphrase.getText(): "+ passphrase.getText());
-                */
-                
                 byte[] seedBytes;
                 // check that pin and previous pin match
                 if ( !pin.get().equals(repeatedPin.getText()) ){
-                    seedBytes = null; // will display a proper error later in cardApi.getInitializationService() 
+                    seedBytes = null; // will display a proper error later in cardApi.getInitializationService()
                     messageProperty.set("The two entered Pin values do not correspond!");
                 } else {
                     try{
@@ -1098,7 +1091,6 @@ public class DevicePane extends TitledDescriptionPane {
                         messageProperty.set("Failed to parse the seed with error: " + e);
                     }
                 }
-                
                 Service<Void> cardInitializationService = cardApi.getInitializationService(seedBytes, messageProperty);
                 cardInitializationService.setOnSucceeded(successEvent -> {
                     log.debug("SATOCHIP DevicePane getCardInitializationPanel() Card initialized!");
@@ -1112,17 +1104,9 @@ public class DevicePane extends TitledDescriptionPane {
                     setExpanded(false);
                 });
                 cardInitializationService.setOnFailed(failEvent -> {
-                    log.error("SATOCHIP DevicePane getCardInitializationPanel() failed to initialize card!");
-                    /*Throwable rootCause = Throwables.getRootCause(failEvent.getSource().getException());
-                    if(rootCause instanceof CardAuthorizationException) {
-                        setError(rootCause.getMessage(), null);
-                        setContent(getCardPinEntry(operationButton));
-                        operationButton.setDisable(false);
-                    } else {*/
-                        log.error("Error initializing card", failEvent.getSource().getException());
-                        AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + failEvent.getSource().getException().getMessage());
-                        initializeButton.setDisable(false);
-                    //}
+                    log.error("Error initializing card", failEvent.getSource().getException());
+                    AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + failEvent.getSource().getException().getMessage());
+                    initializeButton.setDisable(false);
                 });
                 cardInitializationService.start();
             });
@@ -1190,7 +1174,7 @@ public class DevicePane extends TitledDescriptionPane {
 
             return contentBox;
         }
-        
+
     }
 
     private Node getCardPinEntry(ButtonBase operationButton) {

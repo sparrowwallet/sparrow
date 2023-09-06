@@ -57,7 +57,7 @@ public class SatoCardApi extends CardApi {
         log.debug("SATOCHIP SatoCardApi initialize() START");
         // TODO check device certificate
         SatoCardStatus cardStatus = this.getStatus();
-        
+
         APDUResponse rapdu;
         if (!cardStatus.isSetupDone()){
             byte maxPinTries = 5;
@@ -134,7 +134,7 @@ public class SatoCardApi extends CardApi {
         String derivationString = "m";
         for(int i=0;i<derivation.size();i++){
             derivationString += "/" + derivation.get(i).toString();
-        } 
+        }
         log.debug("SATOCHIP SatoCardApi setDerivation() derivationString: " + derivationString);
         // this basePath will be used when deriving keys
         this.basePath = KeyDerivation.writePath(derivation);
@@ -157,8 +157,8 @@ public class SatoCardApi extends CardApi {
 
     /* todo: provide derivation path?
      * Satochip derives BIP32 keys based on the fullPath (from masterseed to leaf), not the partial path from a given xpub.
-     * the basePath (from masterseed to xpub) is only provided in Satochip.java:getKeystore(String pin, List<ChildNumber> derivation, StringProperty messageProperty) 
-     * In SatoCardApi:getKeystore(), no derivation path (i.e. basePath from masterSeed to xpub or relative path) is given and no derivation is reliably available as a object field.  
+     * the basePath (from masterseed to xpub) is only provided in Satochip.java:getKeystore(String pin, List<ChildNumber> derivation, StringProperty messageProperty)
+     * In SatoCardApi:getKeystore(), no derivation path (i.e. basePath from masterSeed to xpub or relative path) is given and no derivation is reliably available as a object field.
      * currently, we try to get the path from this.basePath if available (or use a default value) but it's not reliable enough
      */
     @Override
@@ -174,7 +174,7 @@ public class SatoCardApi extends CardApi {
         ExtendedKey.Header xtype = Network.get().getXpubHeader();
         String xpub = this.cardProtocol.cardBip32GetXpub(keyDerivationString, xtype);
         log.debug("SATOCHIP SatoCardApi getKeystore() xpub: " + xpub);
-        
+
         ExtendedKey extendedKey = ExtendedKey.fromDescriptor(xpub);
         log.debug("SATOCHIP SatoCardApi getKeystore() extendedKey: " + extendedKey);
 
@@ -207,56 +207,14 @@ public class SatoCardApi extends CardApi {
         log.debug("SATOCHIP SatoCardApi sign() wallet: " + wallet);
         log.debug("SATOCHIP SatoCardApi sign() psbt: " + psbt);
 
-        // debug psbt
-        /*log.debug("SATOCHIP SatoCardApi sign() psbt.hasSignatures(): " + psbt.hasSignatures());
-        log.debug("SATOCHIP SatoCardApi sign() psbt.isSigned(): " + psbt.isSigned());
-        log.debug("SATOCHIP SatoCardApi sign() psbt.isFinalized(): " + psbt.isFinalized());
-        log.debug("SATOCHIP SatoCardApi sign() psbt.verifySignatures:");*/
-        /*try{
-            psbt.verifySignatures();
-            log.debug("SATOCHIP SatoCardApi sign() psbt signature verified!");
-        } catch(Exception e)  {
-            log.debug("SATOCHIP SatoCardApi sign() failed to verify signatures with error: " + e);
-        }
-        log.debug("SATOCHIP SatoCardApi sign() psbt.parse(false):");
-        try{
-            psbt.parse(false);
-            log.debug("SATOCHIP SatoCardApi sign() psbt.parse(false) finished!");
-        } catch(Exception e)  {
-            log.debug("SATOCHIP SatoCardApi sign() failed psbt.parse(false) with error: " + e);
-        }
-        log.debug("SATOCHIP SatoCardApi sign() psbt.parse(false) end:");
-        log.debug("SATOCHIP SatoCardApi sign() psbt.parse(true):");
-        try{
-            psbt.parse(true);
-            log.debug("SATOCHIP SatoCardApi sign() psbt.parse(true) finished!");
-        } catch(Exception e)  {
-            log.debug("SATOCHIP SatoCardApi sign() failed psbt.parse(true) with error: " + e);
-        }
-        log.debug("SATOCHIP SatoCardApi sign() psbt.parse(true) end:");*/
-        // endbug psbt
-
         Map<PSBTInput, WalletNode> signingNodes = wallet.getSigningNodes(psbt);
         //log.debug("SATOCHIP SatoCardApi sign() signingNodes: " + signingNodes);
         for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
             if(!psbtInput.isSigned()) {
                 WalletNode signingNode = signingNodes.get(psbtInput);
                 log.debug("SATOCHIP SatoCardApi sign() signingNode: " + signingNode);
-                log.debug("SATOCHIP SatoCardApi sign() signingNode.getDerivationPath(): " + signingNode.getDerivationPath()); // m/0/0 
+                log.debug("SATOCHIP SatoCardApi sign() signingNode.getDerivationPath(): " + signingNode.getDerivationPath()); // m/0/0
                 try {
-                    /*// debug
-                    Map<ECKey, KeyDerivation> mapPubKey = psbtInput.getDerivedPublicKeys();
-                    log.debug("SATOCHIP SatoCardApi sign() mapPubKey.size(): " + mapPubKey.size());
-                    log.debug("SATOCHIP SatoCardApi sign() mapPubKey: " + mapPubKey);
-                    for (Map.Entry<ECKey, KeyDerivation> entry : mapPubKey.entrySet()) {
-                        ECKey key = entry.getKey();
-                        KeyDerivation value = entry.getValue();
-                        log.debug("SATOCHIP SatoCardApi sign() mapPubKey pubkey: " + Utils.bytesToHex(key.getPubKey()));
-                        log.debug("SATOCHIP SatoCardApi sign() mapPubKey derivation: " + value.getDerivationPath());
-                    }
-                    log.debug("SATOCHIP SatoCardApi sign() mapPubKey END");
-                    // endbug*/
-                    
                     String fullPath= null;
                     List<Keystore> keystores = wallet.getKeystores();
                     log.debug("SATOCHIP SatoCardApi sign() keystores.size(): " + keystores.size());
@@ -276,23 +234,19 @@ public class SatoCardApi extends CardApi {
                             log.debug("SATOCHIP SatoCardApi sign() extendedPath: " + extendedPath);
                             fullPath = basePath + extendedPath;
                             log.debug("SATOCHIP SatoCardApi sign() fullPath: " + fullPath);
-                            
+
                             ECKey keystorePubkey = keystore.getPubKey(signingNode);
                             log.debug("SATOCHIP SatoCardApi sign() keystore.getPubKey(signingNode): " + Utils.bytesToHex(keystorePubkey.getPubKey()));
                             break;
                         }
-                    } 
-
-                    //psbtInput.printDebugInfo();
+                    }
                     psbtInput.sign(new CardPSBTInputSigner(signingNode, fullPath));
-                    //psbtInput.printDebugInfo();
 
                 } finally {
                 }
             }// endif
             else {
                 log.debug("SATOCHIP SatoCardApi sign() psbtInput already signed!");
-                //psbtInput.printDebugInfo();
             }
         } // endfor
     }
@@ -313,7 +267,7 @@ public class SatoCardApi extends CardApi {
 
         try {
             APDUResponse rapdu0 = cardProtocol.cardVerifyPIN(0, pin);
-            
+
             // 2FA is optionnal, currently not supported in sparrow as it requires to send 2FA to a mobile app through a server.
             SatoCardStatus cardStatus = this.getStatus();
             if (cardStatus.needs2FA()){
@@ -452,7 +406,7 @@ public class SatoCardApi extends CardApi {
             try {
                 log.debug("SATOCHIP SatoCardApi.CardPSBTInputSigner sign() fullPath:" + this.fullPath);
                 log.debug("SATOCHIP SatoCardApi.CardPSBTInputSigner sign() signingNode.getDerivationPath():" + signingNode.getDerivationPath());
-                
+
                 // 2FA is optionnal, currently not supported in sparrow as it requires to send 2FA to a mobile app through a server.
                 SatoCardStatus cardStatus = getStatus();
                 if (cardStatus.needs2FA()){
@@ -461,7 +415,7 @@ public class SatoCardApi extends CardApi {
 
                 // verify PIN
                 APDUResponse rapdu0 = cardProtocol.cardVerifyPIN(0, pin);
-                
+
                 // derive the correct key in satochip and recover pubkey
                 APDUResponse rapdu = cardProtocol.cardBip32GetExtendedKey(fullPath);
                 SatochipParser parser= new SatochipParser();
@@ -485,7 +439,7 @@ public class SatoCardApi extends CardApi {
                     boolean isCorrect = pubkey.verify(hash, txSig);
                     log.debug("SATOCHIP SatoCardApi.CardPSBTInputSigner sign() ECDSA verify with pubkey: " + isCorrect);
 
-                    return txSig; 
+                    return txSig;
 
                 } else {
                     // Satochip supports schnorr signature only for version >= 0.14 !
@@ -510,14 +464,14 @@ public class SatoCardApi extends CardApi {
                     log.debug("SATOCHIP SatoCardApi.CardPSBTInputSigner sign() SCHNORR sigBytes: " + Utils.bytesToHex(sigBytes));
                     SchnorrSignature schnorrSig = SchnorrSignature.decode(sigBytes);
                     TransactionSignature txSig = new TransactionSignature(schnorrSig, sigHash);
-                    
+
                     // verify sig with outputPubkey...
                     boolean isCorrect2 = pubkey.verify(hash, txSig);
                     log.debug("SATOCHIP SatoCardApi.CardPSBTInputSigner sign() SCHNORR verify with outputPubkey: " + isCorrect2);
 
                     return txSig; //new TransactionSignature(schnorrSig, sigHash);
                 }
-                
+
             } catch(Exception e) {
                 e.printStackTrace();
                 log.error("SATOCHIP SatoCardApi.CardPSBTInputSigner sign() Exception: " + e);

@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.io.satochip;
 
 public final class Constants {
-  
+
     // Prevents instanciation of class
     private Constants() {}
 
@@ -37,7 +37,7 @@ public final class Constants {
     public final static byte INS_SIGN_TRANSACTION= (byte) 0x6F;
     public final static byte INS_PARSE_TRANSACTION = (byte) 0x71;
     public final static byte INS_CRYPT_TRANSACTION_2FA = (byte) 0x76;
-    public final static byte INS_SET_2FA_KEY = (byte) 0x79;    
+    public final static byte INS_SET_2FA_KEY = (byte) 0x79;
     public final static byte INS_RESET_2FA_KEY = (byte) 0x78;
     public final static byte INS_SIGN_TRANSACTION_HASH= (byte) 0x7A;
     // secure channel
@@ -117,7 +117,7 @@ public final class Constants {
     public final static short SW_2FA_INITIALIZED_KEY = (short) 0x9C18;
     /** 2FA uninitialized*/
     public final static short SW_2FA_UNINITIALIZED_KEY = (short) 0x9C19;
-      
+
     /** HMAC errors */
     static final short SW_HMAC_UNSUPPORTED_KEYSIZE = (short) 0x9c1E;
     static final short SW_HMAC_UNSUPPORTED_MSGSIZE = (short) 0x9c1F;

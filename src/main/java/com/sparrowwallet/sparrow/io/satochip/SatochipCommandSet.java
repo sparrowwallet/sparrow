@@ -24,7 +24,7 @@ import javax.smartcardio.*;
  * pre/post processing.
  */
 public class SatochipCommandSet {
-    
+
     private static final Logger log = LoggerFactory.getLogger(SatochipCommandSet.class);
 
     private final SatoCardTransport cardTransport;
@@ -52,7 +52,7 @@ public class SatochipCommandSet {
         this.secureChannel = new SecureChannelSession();
         this.parser= new SatochipParser();
     }
-    
+
     /**
     * Returns the application info as stored from the last sent SELECT command. Returns null if no succesful SELECT
     * command has been sent using this command set.
@@ -65,11 +65,11 @@ public class SatochipCommandSet {
         }
         return this.status;
     }
-    
+
     /****************************************
     *                AUTHENTIKEY                    *
     ****************************************/
-    
+
     public APDUResponse cardTransmit(APDUCommand plainApdu) {
         log.trace("SATOCHIP: SatochipCommandSet cardTransmit() START");
 
@@ -115,17 +115,17 @@ public class SatochipCommandSet {
                 // check answer
                 if (sw12==0x9000){ // ok!
                     if (isEncrypted){
-                        // decrypt 
+                        // decrypt
                         //log.info("SATOCHIP Rapdu encrypted:"+ rapdu.toHexString());
                         rapdu = secureChannel.decrypt_secure_channel(rapdu);
                         //log.info("SATOCHIP Rapdu decrypted:"+ rapdu.toHexString());
                     }
                     isApduTransmitted= true; // leave loop
                     return  rapdu;
-                } 
+                }
                 // PIN authentication is required
                 else if (sw12==0x9C06){
-                    //cardVerifyPIN(); 
+                    //cardVerifyPIN();
                     log.error("SATOCHIP: SatochipCommandSet cardTransmit() sw12==0x9C06: PIN required!");
                     //TODO: throw?
                     //TODO: verify PIN?
@@ -133,7 +133,7 @@ public class SatochipCommandSet {
                 // SecureChannel is not initialized
                 else if (sw12==0x9C21){
                     log.error("SATOCHIP: SatochipCommandSet cardTransmit() sw12==0x9C21: secureChannel required!");
-                    secureChannel.resetSecureChannel(); 
+                    secureChannel.resetSecureChannel();
                 }
                 else {
                     // cannot resolve issue at this point
@@ -145,12 +145,12 @@ public class SatochipCommandSet {
                 log.warn("SATOCHIP: SatochipCommandSet cardTransmit() Exception: "+ e);
                 return new APDUResponse(new byte[0], (byte)0x00, (byte)0x00); // return empty APDUResponse
             }
-          
+
         } while(!isApduTransmitted);
-        
+
         return new APDUResponse(new byte[0], (byte)0x00, (byte)0x00); // should not happen
     }
-    
+
     public void cardDisconnect(){
         secureChannel.resetSecureChannel();
         status= null;
@@ -161,37 +161,37 @@ public class SatochipCommandSet {
             log.error("SATOCHIP SatochipCommandSet cardDisconnect() Exception: " + e);
         }
     }
-  
+
     public APDUResponse cardGetStatus() {
         APDUCommand plainApdu = new APDUCommand(0xB0, INS_GET_STATUS, 0x00, 0x00, new byte[0]);
-        
+
         log.trace("SATOCHIP SatochipCommandSet cardGetStatus() capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransmit(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardGetStatus() rapdu: "+ respApdu.toHexString());
-    
+
         this.status= new SatoCardStatus(respApdu);
         log.debug("SATOCHIP SatochipCommandSet cardGetStatus(): "+ this.status.toString());
-    
+
         return respApdu;
     }
-    
+
     public APDUResponse cardInitiateSecureChannel() throws CardException{
-    
+
         byte[] pubkey= secureChannel.getPublicKey();
-    
+
         APDUCommand plainApdu = new APDUCommand(0xB0, INS_INIT_SECURE_CHANNEL, 0x00, 0x00, pubkey);
-        
+
         log.trace("SATOCHIP SatochipCommandSet cardInitiateSecureChannel capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransport.send(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardInitiateSecureChannel rapdu: "+ respApdu.toHexString());
-    
+
         return respApdu;
-    } 
-    
+    }
+
     /****************************************
     *               CARD MGMT               *
     ****************************************/
-  
+
     public APDUResponse  cardSetup(byte pin_tries0, byte[] pin0){
         log.debug("SATOCHIP SatochipCommandSet cardSetup()");
         // use random values for pin1, ublk0, ublk1
@@ -202,19 +202,19 @@ public class SatochipCommandSet {
         random.nextBytes(ublk0);
         random.nextBytes(ublk1);
         random.nextBytes(pin1);
-        
+
         byte ublk_tries0=(byte)0x01;
         byte ublk_tries1=(byte)0x01;
         byte pin_tries1=(byte)0x01;
-        
+
         return cardSetup(pin_tries0, ublk_tries0, pin0, ublk0, pin_tries1, ublk_tries1, pin1, ublk1);
     }
-  
+
     public APDUResponse  cardSetup(
                     byte pin_tries0, byte ublk_tries0, byte[] pin0, byte[] ublk0,
                     byte pin_tries1, byte ublk_tries1, byte[] pin1, byte[] ublk1){
         log.debug("SATOCHIP SatochipCommandSet cardSetup()");
-      
+
         byte[] pin={0x4D, 0x75, 0x73, 0x63, 0x6C, 0x65, 0x30, 0x30}; //default pin
         byte cla= (byte) 0xB0;
         byte ins= INS_SETUP;
@@ -269,25 +269,25 @@ public class SatochipCommandSet {
         log.trace("SATOCHIP SatochipCommandSet cardSetup capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransmit(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardSetup rapdu:"+ respApdu.toHexString());
-    
+
         if (respApdu.getSw() == 0x9000){
-            //setPin0(pin0); // todo: cache value...       
+            //setPin0(pin0); // todo: cache value...
         } else {
             log.error("SATOCHIP SatochipCommandSet cardSetup error:"+ respApdu.toHexString());
         }
 
-        return respApdu;    
+        return respApdu;
     }
-  
-  
+
+
   /****************************************
    *             PIN MGMT                  *
    ****************************************/
-    
+
     public APDUResponse cardVerifyPIN() {
         return this.cardVerifyPIN((byte)0, pinCached);
     }
-    
+
     public APDUResponse cardVerifyPIN(int pinNbr, String pin) {
         log.debug("SATOCHIP SatochipCommandSet cardVerifyPIN()");
         if (pin == null){
@@ -296,34 +296,34 @@ public class SatochipCommandSet {
                 throw new RuntimeException("PIN required!");
             }
             pin = this.pinCached;
-        } 
+        }
         byte[] pinBytes = pin.getBytes(StandardCharsets.UTF_8);
 
         APDUCommand capdu = new APDUCommand(0xB0, INS_VERIFY_PIN, (byte)pinNbr, 0x00, pinBytes);
         log.trace("SATOCHIP SatochipCommandSet cardVerifyPIN() capdu:"+ capdu.toHexString());
         APDUResponse rapdu = this.cardTransmit(capdu);
         log.trace("SATOCHIP SatochipCommandSet cardVerifyPIN() rapdu: "+ rapdu.toHexString());
-        
+
         // correct PIN: cache PIN value
         int sw = rapdu.getSw();
         if (sw == 0x9000){
             this.pinCached = pin; //set cached PIN value
         }
         // wrong PIN, get remaining tries available (since v0.11)
-        else if ((sw & 0xffc0) == 0x63c0){ 
+        else if ((sw & 0xffc0) == 0x63c0){
             this.pinCached = null; //reset cached PIN value
             int pinLeft= (sw & ~0xffc0);
             throw new RuntimeException("Wrong PIN, remaining tries: " + pinLeft);
         }
-        // wrong PIN (legacy before v0.11)    
-        else if (sw == 0x9c02){ 
+        // wrong PIN (legacy before v0.11)
+        else if (sw == 0x9c02){
             this.pinCached = null; //reset cached PIN value
             SatoCardStatus cardStatus = this.getApplicationStatus();
             int pinLeft= cardStatus.getPin0RemainingCounter();
             throw new RuntimeException("Wrong PIN, remaining tries: " + pinLeft);
         }
         // blocked PIN
-        else if (sw == 0x9c0c){ 
+        else if (sw == 0x9c0c){
             throw new RuntimeException("Card is blocked!");
         }
         return rapdu;
@@ -348,19 +348,19 @@ public class SatochipCommandSet {
         log.trace("SATOCHIP SatochipCommandSet cardChangePIN() capdu: "+ capdu.toHexString());
         APDUResponse rapdu = this.cardTransmit(capdu);
         log.trace("SATOCHIP SatochipCommandSet cardChangePIN() rapdu: "+ rapdu.toHexString());
-        
+
         // correct PIN: cache PIN value
         int sw = rapdu.getSw();
         if (sw == 0x9000){
-            this.pinCached = newPin; 
+            this.pinCached = newPin;
         }
         // wrong PIN, get remaining tries available (since v0.11)
-        else if ((sw & 0xffc0) == 0x63c0){ 
+        else if ((sw & 0xffc0) == 0x63c0){
             int pinLeft= (sw & ~0xffc0);
             throw new RuntimeException("Wrong PIN, remaining tries: " + pinLeft);
         }
-        // wrong PIN (legacy before v0.11)    
-        else if (sw == 0x9c02){ 
+        // wrong PIN (legacy before v0.11)
+        else if (sw == 0x9c02){
             SatoCardStatus cardStatus = this.getApplicationStatus();
             int pinLeft= cardStatus.getPin0RemainingCounter();
             throw new RuntimeException("Wrong PIN, remaining tries: " + pinLeft);
@@ -375,7 +375,7 @@ public class SatochipCommandSet {
   /****************************************
    *                 BIP32                     *
    ****************************************/
-    
+
     public APDUResponse cardBip32ImportSeed(byte[] masterseed){
         //TODO: check seed (length...)
         APDUCommand plainApdu = new APDUCommand(0xB0, INS_BIP32_IMPORT_SEED, masterseed.length, 0x00, masterseed);
@@ -386,10 +386,10 @@ public class SatochipCommandSet {
 
         return respApdu;
     }
-    
+
     public APDUResponse cardBip32GetExtendedKey(String stringPath){
         log.debug("SATOCHIP SatochipCommandSet cardBip32GetExtendedKey() stringPath: " + stringPath);
-        KeyPath keyPath = new KeyPath(stringPath); 
+        KeyPath keyPath = new KeyPath(stringPath);
         byte[] bytePath = keyPath.getData();
         //log.trace("SATOCHIP SatochipCommandSet cardBip32GetExtendedKey() bytePath: " + Utils.bytesToHex(bytePath));
         return cardBip32GetExtendedKey(bytePath);
@@ -398,38 +398,38 @@ public class SatochipCommandSet {
     public APDUResponse cardBip32GetExtendedKey(byte[] bytePath){
         log.debug("SATOCHIP SatochipCommandSet cardBip32GetExtendedKey() bytePath: " + Utils.bytesToHex(bytePath));
         byte p1= (byte) (bytePath.length/4);
-        
+
         APDUCommand plainApdu = new APDUCommand(0xB0, INS_BIP32_GET_EXTENDED_KEY, p1, 0x40, bytePath);
         log.trace("SATOCHIP SatochipCommandSet cardBip32GetExtendedKey() capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransmit(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardBip32GetExtendedKey() rapdu: "+ respApdu.toHexString());
         // TODO: check SW code for particular status
-        
+
         // TODO: parse apdu to extract data?
 
         return respApdu;
-    } 
-    
-    /*  
+    }
+
+    /*
      *  Get the BIP32 xpub for given path.
-     *   
-     *  Parameters: 
+     *
+     *  Parameters:
      *  path (str): the path; if given as a string, it will be converted to bytes (4 bytes for each path index)
      *  xtype (str): the type of transaction such as  'standard', 'p2wpkh-p2sh', 'p2wpkh', 'p2wsh-p2sh', 'p2wsh'
-     *  is_mainnet (bool): is mainnet or testnet 
-     *  
-     *  Return: 
+     *  is_mainnet (bool): is mainnet or testnet
+     *
+     *  Return:
      *  xpub (str): the corresponding xpub value
      */
     public String cardBip32GetXpub(String stringPath, ExtendedKey.Header xtype){
 
         // path is of the form 44'/0'/1'
         log.debug("SATOCHIP SatochipCommandSet cardBip32GetXpub() path: " + stringPath);
-        KeyPath keyPath = new KeyPath(stringPath); 
+        KeyPath keyPath = new KeyPath(stringPath);
         byte[] bytePath = keyPath.getData();
         int depth = bytePath.length/4;
         log.debug("SATOCHIP SatochipCommandSet cardBip32GetXpub() bytePath: " + Utils.bytesToHex(bytePath));
-        
+
         APDUResponse rapdu = this.cardBip32GetExtendedKey(bytePath);
         byte[][] extendedkey = this.parser.parseBip32GetExtendedKey(rapdu);
 
@@ -452,7 +452,7 @@ public class SatochipCommandSet {
 
         log.debug("SATOCHIP SatochipCommandSet cardBip32GetXpub() xtype: " + xtype);
         log.debug("SATOCHIP SatochipCommandSet cardBip32GetXpub() Network.get().getXpubHeader(): " + Network.get().getXpubHeader());
-        
+
         ByteBuffer buffer = ByteBuffer.allocate(78);
         buffer.putInt(xtype.getHeader());
         buffer.put((byte) depth);
@@ -494,24 +494,24 @@ public class SatochipCommandSet {
             throw new RuntimeException("Wrong challenge-response length (should be 20)");
         }
         APDUCommand plainApdu = new APDUCommand(0xB0, INS_SIGN_TRANSACTION_HASH, keynbr, 0x00, data);
-        
+
         log.trace("SATOCHIP SatochipCommandSet cardSignTransactionHash() capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransmit(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardSignTransactionHash() rapdu: "+ respApdu.toHexString());
         // TODO: check SW code for particular status
-        
+
         return respApdu;
     }
-  
-    /**     
+
+    /**
      * This function signs a given hash with a std or the last extended key
-     * If 2FA is enabled, a HMAC must be provided as an additional security layer.      * 
-     * ins: 0x7B     
-     * p1: key number or 0xFF for the last derived Bip32 extended key  
-     * p2: 0x00     
+     * If 2FA is enabled, a HMAC must be provided as an additional security layer.      *
+     * ins: 0x7B
+     * p1: key number or 0xFF for the last derived Bip32 extended key
+     * p2: 0x00
      * data: [hash(32b) | option: 2FA-flag(2b)|hmac(20b)]
      * return: [sig]
-     *      
+     *
      */
     public APDUResponse cardSignSchnorrHash(byte keynbr, byte[] txhash, byte[] chalresponse){
         log.debug("SATOCHIP SatochipCommandSet cardSignSchnorrHash()");
@@ -535,23 +535,23 @@ public class SatochipCommandSet {
             throw new RuntimeException("Wrong challenge-response length (should be 20)");
         }
         APDUCommand plainApdu = new APDUCommand(0xB0, 0x7B, keynbr, 0x00, data);
-        
+
         log.trace("SATOCHIP SatochipCommandSet cardSignSchnorrHash() capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransmit(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardSignSchnorrHash() rapdu: "+ respApdu.toHexString());
         // TODO: check SW code for particular status
-        
+
         return respApdu;
     }
 
-    /**     
+    /**
      * This function tweak the currently available private stored in the Satochip.
      * Tweaking is based on the 'taproot_tweak_seckey(seckey0, h)' algorithm specification defined here:
      * https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#constructing-and-spending-taproot-outputs
-     * 
-     * ins: 0x7C     
-     * p1: key number or 0xFF for the last derived Bip32 extended key  
-     * p2: 0x00     
+     *
+     * ins: 0x7C
+     * p1: key number or 0xFF for the last derived Bip32 extended key
+     * p2: 0x00
      * data: [hash(32b) | option: 2FA-flag(2b)|hmac(20b)]
      * return: [sig]
      */
@@ -567,14 +567,14 @@ public class SatochipCommandSet {
         data= new byte[33];
         data[0]= (byte)32;
         System.arraycopy(tweak, 0, data, 1, tweak.length);
-        
+
         APDUCommand plainApdu = new APDUCommand(0xB0, 0x7C, keynbr, 0x00, data);
-        
+
         log.trace("SATOCHIP SatochipCommandSet cardTaprootTweakPrivkey() capdu: "+ plainApdu.toHexString());
         APDUResponse respApdu = this.cardTransmit(plainApdu);
         log.trace("SATOCHIP SatochipCommandSet cardTaprootTweakPrivkey() rapdu: "+ respApdu.toHexString());
         // TODO: check SW code for particular status
-        
+
         return respApdu;
     }
 
@@ -582,10 +582,10 @@ public class SatochipCommandSet {
     *               2FA commands            *
     ****************************************/
     //todo
-   
- 
+
+
     /****************************************
     *            PKI commands              *
-    ****************************************/  
+    ****************************************/
     // todo
 }

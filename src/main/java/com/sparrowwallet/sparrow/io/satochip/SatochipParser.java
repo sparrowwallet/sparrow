@@ -13,20 +13,20 @@ import java.util.Arrays;
 import java.util.Base64;
 
 public class SatochipParser{
-    
+
     private static final Logger log = LoggerFactory.getLogger(SatochipParser.class);
-    
+
     private byte[] authentikey= null;
-    
+
     public SatochipParser(){
     }
-  
+
    /****************************************
    *                  PARSER                *
    ****************************************/
-  
+
     public byte[] parseInitiateSecureChannel(APDUResponse rapdu){
-    
+
         try{
             byte[] data= rapdu.getData();
             log.trace("SATOCHIP SatochipParser parseInitiateSecureChannel() data: " + Utils.bytesToHex(data));
@@ -67,9 +67,9 @@ public class SatochipParser{
             log.error("SATOCHIP SatochipParser parseInitiateSecureChannel() exception: " + e);
             throw new RuntimeException("SATOCHIP SatochipParser parseInitiateSecureChannel() exception: ", e);
         }
-   
+
     }
-  
+
     public byte[][] parseBip32GetExtendedKey(APDUResponse rapdu){
         log.trace("SATOCHIP SatochipParser parseBip32GetExtendedKey()");
         try{
@@ -116,18 +116,18 @@ public class SatochipParser{
             System.arraycopy(pubkey, 0, extendedkey[0], 0, pubkey.length);
             System.arraycopy(chaincode, 0, extendedkey[1], 0, chaincode.length);
             return extendedkey;
-      
+
         } catch(Exception e) {
             log.error("SATOCHIP SatochipParser parseBip32GetExtendedKey() exception: " + e);
             throw new RuntimeException("SATOCHIP SatochipParser parseBip32GetExtendedKey() exception: ", e);
         }
-   
+
     }
-  
+
    /****************************************
    *             recovery  methods          *
    ****************************************/
-  
+
     public byte[] recoverPubkey(byte[] msg, byte[] dersig, byte[] coordx, Boolean compressed) {
         log.trace("SATOCHIP SatochipParser recoverPubkey() coordx: " + Utils.bytesToHex(coordx));
 
@@ -138,7 +138,7 @@ public class SatochipParser{
         byte recId = -1;
         ECKey k = null;
         for(byte i = 0; i < 4; i++) {
-            k = ECKey.recoverFromSignature(i, ecdsaSig, Sha256Hash.of(msg), compressed); 
+            k = ECKey.recoverFromSignature(i, ecdsaSig, Sha256Hash.of(msg), compressed);
             if(k != null && Arrays.equals(k.getPubKeyXCoord(),coordx)) {
                 recId = i;
                 break;

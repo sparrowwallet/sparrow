@@ -16,7 +16,7 @@ public class APDUCommand {
   protected byte[] data;
   protected boolean needsLE;
   public static final String HEXES = "0123456789ABCDEF";
-  
+
   /**
    * Constructs an APDU with no response data length field. The data field cannot be null, but can be a zero-length array.
    *

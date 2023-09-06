@@ -63,7 +63,7 @@ public class SatoCardTransport {
         // convert back to APDUResponse... (todo?)
         APDUResponse rapdu = new APDUResponse(resp.getBytes());
         log.trace("SATOCHIP SatoCardTransport send rapdu:" + rapdu.toHexString());
-        return rapdu;    
+        return rapdu;
     }
 
     void disconnect() throws CardException {

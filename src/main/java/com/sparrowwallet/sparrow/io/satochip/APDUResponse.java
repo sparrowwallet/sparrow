@@ -14,7 +14,7 @@ public class APDUResponse {
   public static final int SW_CONDITIONS_OF_USE_NOT_SATISFIED = 0x6985; // applet may be already installed
   public static final int SW_WRONG_PIN_MASK = 0x63C0;
   public static final String HEXES = "0123456789ABCDEF";
-  
+
   private byte[] apdu;
   private byte[] data;
   private int sw;
@@ -33,7 +33,7 @@ public class APDUResponse {
     this.apdu = apdu;
     this.parse();
   }
-  
+
   public APDUResponse(byte[] data, byte sw1, byte sw2)  {
     byte[] apdu= new byte[data.length + 2];
     System.arraycopy(data, 0, apdu, 0, data.length);
@@ -42,7 +42,7 @@ public class APDUResponse {
     this.apdu = apdu;
     this.parse();
   }
-  
+
 
   /**
    * Parses the APDU response, separating the response data from SW.
@@ -100,7 +100,7 @@ public class APDUResponse {
   public byte[] getBytes() {
     return this.apdu;
   }
-  
+
   /**
    * Serializes the APDU to human readable hex string format
    *
