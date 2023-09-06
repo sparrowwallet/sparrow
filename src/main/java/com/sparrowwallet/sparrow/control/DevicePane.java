@@ -1075,11 +1075,17 @@ public class DevicePane extends TitledDescriptionPane {
             initializeButton.setOnAction(event -> {
                 initializeButton.setDisable(true);
                 byte[] seedBytes;
-                // check that pin and previous pin match
-                if ( !pin.get().equals(repeatedPin.getText()) ){
-                    seedBytes = null; // will display a proper error later in cardApi.getInitializationService()
-                    messageProperty.set("The two entered Pin values do not correspond!");
-                } else {
+                try{
+                    // check that pin and previous pin match
+                    if ( !pin.get().equals(repeatedPin.getText()) ){
+                        throw new RuntimeException("The two entered PIN values do not correspond!");
+                    }
+                    // check pin size
+                    int pinSize = pin.get().getBytes(StandardCharsets.UTF_8).length;
+                    if (pinSize < 4 || pinSize >16 ){
+                        throw new RuntimeException("PIN size should be between 4 and 16 characters included!");
+                    }
+                    // check the seed
                     try{
                         // check bip39 is correct & convert seed to masterseed bytes
                         List<String> mnemonicWords = Arrays.asList(mnemonic.getText().split("[\\s,]+")); //  \\s*,\\s*
@@ -1087,9 +1093,12 @@ public class DevicePane extends TitledDescriptionPane {
                         DeterministicSeed seed = new DeterministicSeed(mnemonicWords, passphrase.getText(), System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
                         seedBytes = seed.getSeedBytes();
                     } catch (Exception e) {
-                        seedBytes = null; // will display a proper error later in cardApi.getInitializationService() 
-                        messageProperty.set("Failed to parse the seed with error: " + e);
+                        throw new RuntimeException("Failed to parse the seed with error: " + e);
                     }
+
+                } catch (Exception e) {
+                    seedBytes = null; // will display a proper error later in cardApi.getInitializationService() 
+                    messageProperty.set(e.getMessage());
                 }
                 Service<Void> cardInitializationService = cardApi.getInitializationService(seedBytes, messageProperty);
                 cardInitializationService.setOnSucceeded(successEvent -> {
