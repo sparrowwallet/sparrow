@@ -23,7 +23,11 @@ public class WalletTransactionsEntry extends Entry {
     private static final Logger log = LoggerFactory.getLogger(WalletTransactionsEntry.class);
 
     public WalletTransactionsEntry(Wallet wallet) {
-        super(wallet, wallet.getName(), getWalletTransactions(wallet).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
+        this(wallet, false);
+    }
+
+    public WalletTransactionsEntry(Wallet wallet, boolean includeAllChildWallets) {
+        super(wallet, wallet.getDisplayName(), getWalletTransactions(wallet, includeAllChildWallets).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
         calculateBalances(false); //No need to resort
     }
 
@@ -73,7 +77,7 @@ public class WalletTransactionsEntry extends Entry {
                 .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey,
                         BinaryOperator.maxBy(BlockTransactionHashIndex::compareTo)));
 
-        Collection<WalletTransactionsEntry.WalletTransaction> entries = getWalletTransactions(getWallet());
+        Collection<WalletTransactionsEntry.WalletTransaction> entries = getWalletTransactions(getWallet(), false);
         Set<Entry> current = entries.stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Entry> previous = new LinkedHashSet<>(getChildren());
 
@@ -101,7 +105,7 @@ public class WalletTransactionsEntry extends Entry {
         }
     }
 
-    private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet) {
+    private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet, boolean includeAllChildWallets) {
         Map<BlockTransaction, WalletTransaction> walletTransactionMap = new HashMap<>(wallet.getTransactions().size());
 
         for(KeyPurpose keyPurpose : wallet.getWalletKeyPurposes()) {
@@ -109,7 +113,7 @@ public class WalletTransactionsEntry extends Entry {
         }
 
         for(Wallet childWallet : wallet.getChildWallets()) {
-            if(childWallet.isNested()) {
+            if(includeAllChildWallets || childWallet.isNested()) {
                 for(KeyPurpose keyPurpose : childWallet.getWalletKeyPurposes()) {
                     getWalletTransactions(childWallet, walletTransactionMap, childWallet.getNode(keyPurpose));
                 }
@@ -216,6 +220,14 @@ public class WalletTransactionsEntry extends Entry {
             };
         }
         return mempoolBalance;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof WalletTransactionsEntry)) return false;
+
+        return super.equals(o);
     }
 
     private static class WalletTransaction implements Comparable<WalletTransaction> {

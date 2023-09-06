@@ -53,6 +53,8 @@ public class DefaultInteractionServices implements InteractionServices {
             alert.getDialogPane().setPrefHeight(200 + numLines * 20);
         }
 
+        alert.setResizable(true);
+
         moveToActiveWindowScreen(alert);
         return alert.showAndWait();
     }

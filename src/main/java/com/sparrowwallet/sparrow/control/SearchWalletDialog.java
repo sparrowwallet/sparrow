@@ -140,6 +140,8 @@ public class SearchWalletDialog extends Dialog<Entry> {
 
         setResizable(true);
 
+        AppServices.moveToActiveWindowScreen(this);
+
         Platform.runLater(search::requestFocus);
     }
 

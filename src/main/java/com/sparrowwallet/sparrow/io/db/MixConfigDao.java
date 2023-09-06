@@ -21,6 +21,7 @@ public interface MixConfigDao {
 
     default void addMixConfig(Wallet wallet) {
         if(wallet.getMixConfig() != null) {
+            wallet.getMixConfig().setId(null);
             addOrUpdate(wallet, wallet.getMixConfig());
         }
     }

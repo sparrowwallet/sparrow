@@ -49,6 +49,7 @@
                         <SeparatorMenuItem styleClass="osxHide" />
                         <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Preferences..." accelerator="Shortcut+P" onAction="#openPreferences"/>
                         <SeparatorMenuItem />
+                        <MenuItem fx:id="renameWallet" mnemonicParsing="false" text="Rename Wallet..." onAction="#renameWallet"/>
                         <MenuItem fx:id="deleteWallet" mnemonicParsing="false" text="Delete Wallet..." onAction="#deleteWallet"/>
                         <MenuItem fx:id="closeTab" mnemonicParsing="false" text="Close Tab" accelerator="Shortcut+W" onAction="#closeTab"/>
                         <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Quit" accelerator="Shortcut+Q" onAction="#quit"/>
@@ -123,6 +124,7 @@
                         <MenuItem fx:id="lockWallet" mnemonicParsing="false" text="Lock Wallet" accelerator="Shortcut+L" onAction="#lockWallet"/>
                         <MenuItem fx:id="lockAllWallets" mnemonicParsing="false" text="Lock All Wallets" accelerator="Shortcut+Shift+L" onAction="#lockWallets"/>
                         <SeparatorMenuItem />
+                        <MenuItem fx:id="showWalletSummary" mnemonicParsing="false" text="Show Wallet Summary" onAction="#showWalletSummary"/>
                         <MenuItem fx:id="searchWallet" mnemonicParsing="false" text="Search Wallet" accelerator="Shortcut+Shift+S" onAction="#searchWallet"/>
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>

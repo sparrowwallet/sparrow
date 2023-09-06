@@ -86,6 +86,10 @@ public class Tor {
                 dormantCanceledByStartup.set(TorConfig.Option.AorTorF.getTrue());
                 builder.put(dormantCanceledByStartup);
 
+                TorConfig.Setting.Ports.Control controlPort = new TorConfig.Setting.Ports.Control();
+                controlPort.set(TorConfig.Option.AorDorPort.Auto.INSTANCE);
+                builder.put(controlPort);
+
                 return builder.build();
             }
         };

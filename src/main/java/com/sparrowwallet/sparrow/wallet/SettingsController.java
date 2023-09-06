@@ -40,6 +40,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+import static com.sparrowwallet.sparrow.AppServices.showWarningDialog;
 
 public class SettingsController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SettingsController.class);
@@ -97,6 +98,7 @@ public class SettingsController extends WalletFormController implements Initiali
     private final SimpleIntegerProperty totalKeystores = new SimpleIntegerProperty(0);
 
     private boolean initialising = true;
+    private boolean reverting;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -141,9 +143,32 @@ public class SettingsController extends WalletFormController implements Initiali
             }
         });
 
-        scriptType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, scriptType) -> {
-            if(scriptType != null) {
-                walletForm.getWallet().setScriptType(scriptType);
+        scriptType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                if(oldValue != null && !reverting && walletForm.getWallet().getKeystores().stream().anyMatch(keystore -> keystore.getExtendedPublicKey() != null)) {
+                    Optional<ButtonType> optType = showWarningDialog("Clear keystores?",
+                            "You are changing the script type on a wallet with existing key information. Usually this means the keys need to be re-imported using a different derivation path.\n\n" +
+                                    "Do you want to clear the current key information?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
+                    if(optType.isPresent()) {
+                        if(optType.get() == ButtonType.CANCEL) {
+                            reverting = true;
+                            Platform.runLater(() -> {
+                                scriptType.getSelectionModel().select(oldValue);
+                                reverting = false;
+                            });
+                            return;
+                        } else if(optType.get() == ButtonType.YES) {
+                            clearKeystoreTabs();
+                            if(walletForm.getWallet().getPolicyType() == PolicyType.MULTI) {
+                                totalKeystores.bind(multisigControl.highValueProperty());
+                            } else {
+                                totalKeystores.set(1);
+                            }
+                        }
+                    }
+                }
+
+                walletForm.getWallet().setScriptType(newValue);
             }
 
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.SCRIPT_TYPE));
@@ -215,7 +240,10 @@ public class SettingsController extends WalletFormController implements Initiali
             totalKeystores.setValue(0);
             walletForm.revert();
             initialising = true;
+            reverting = true;
             setFieldsFromWallet(walletForm.getWallet());
+            reverting = false;
+            initialising = false;
         });
 
         apply.setOnAction(event -> {
@@ -313,12 +341,12 @@ public class SettingsController extends WalletFormController implements Initiali
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.outputDescriptor != null) {
-                setDescriptorText(result.outputDescriptor.toString());
+                replaceWallet(result.outputDescriptor.toWallet());
             } else if(result.wallets != null) {
                 for(Wallet wallet : result.wallets) {
                     if(scriptType.getValue().equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
                         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
-                        setDescriptorText(outputDescriptor.toString());
+                        replaceWallet(outputDescriptor.toWallet());
                         break;
                     }
                 }
@@ -397,7 +425,7 @@ public class SettingsController extends WalletFormController implements Initiali
         CryptoCoinInfo cryptoCoinInfo = new CryptoCoinInfo(CryptoCoinInfo.Type.BITCOIN.ordinal(), Network.get() == Network.MAINNET ? CryptoCoinInfo.Network.MAINNET.ordinal() : CryptoCoinInfo.Network.TESTNET.ordinal());
         List<PathComponent> pathComponents = keystore.getKeyDerivation().getDerivation().stream().map(cNum -> new IndexPathComponent(cNum.num(), cNum.isHardened())).collect(Collectors.toList());
         CryptoKeypath cryptoKeypath = new CryptoKeypath(pathComponents, Utils.hexToBytes(keystore.getKeyDerivation().getMasterFingerprint()), pathComponents.size());
-        return new CryptoHDKey(false, extendedKey.getKey().getPubKey(), extendedKey.getKey().getChainCode(), cryptoCoinInfo, cryptoKeypath, null, extendedKey.getParentFingerprint());
+        return new CryptoHDKey(false, extendedKey.getKey().getPubKey(), extendedKey.getKey().getChainCode(), cryptoCoinInfo, cryptoKeypath, null, extendedKey.getParentFingerprint(), keystore.getLabel(), null);
     }
 
     public void editDescriptor(ActionEvent event) {

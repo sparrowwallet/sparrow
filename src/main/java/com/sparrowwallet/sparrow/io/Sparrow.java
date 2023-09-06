@@ -39,8 +39,10 @@ public class Sparrow implements WalletImport, WalletExport {
             Storage tempStorage = new Storage(persistence, tempFile);
             tempStorage.setKeyDeriver(storage.getKeyDeriver());
             tempStorage.setEncryptionPubKey(storage.getEncryptionPubKey());
-            tempStorage.saveWallet(exportedWallet);
-            for(Wallet childWallet : exportedWallet.getChildWallets()) {
+
+            Wallet copy = exportedWallet.copy();
+            tempStorage.saveWallet(copy);
+            for(Wallet childWallet : copy.getChildWallets()) {
                 tempStorage.saveWallet(childWallet);
             }
             persistence.close();

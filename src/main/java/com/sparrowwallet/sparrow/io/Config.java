@@ -58,6 +58,7 @@ public class Config {
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
     private Boolean hdCapture;
+    private boolean useZbar = true;
     private String webcamDevice;
     private ServerType serverType;
     private Server publicElectrumServer;
@@ -77,6 +78,7 @@ public class Config {
     private int maxPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
     private boolean sameAppMixing;
+    private boolean mempoolFullRbf;
     private Double appWidth;
     private Double appHeight;
 
@@ -404,6 +406,10 @@ public class Config {
         flush();
     }
 
+    public boolean isUseZbar() {
+        return useZbar;
+    }
+
     public String getWebcamDevice() {
         return webcamDevice;
     }
@@ -662,6 +668,15 @@ public class Config {
 
     public void setSameAppMixing(boolean sameAppMixing) {
         this.sameAppMixing = sameAppMixing;
+        flush();
+    }
+
+    public boolean isMempoolFullRbf() {
+        return mempoolFullRbf;
+    }
+
+    public void setMempoolFullRbf(boolean mempoolFullRbf) {
+        this.mempoolFullRbf = mempoolFullRbf;
         flush();
     }
 

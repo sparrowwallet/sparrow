@@ -14,6 +14,7 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
+import net.sourceforge.zbar.ZBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,6 +155,13 @@ public class WebcamService extends ScheduledService<Image> {
     private Result readQR(BufferedImage bufferedImage) {
         LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+
+        if(ZBar.isEnabled()) {
+            ZBar.Scan scan = ZBar.scan(bufferedImage);
+            if(scan != null) {
+                return new Result(scan.stringData(), scan.rawData(), new ResultPoint[0], BarcodeFormat.QR_CODE);
+            }
+        }
 
         try {
             return qrReader.decode(bitmap, Map.of(DecodeHintType.TRY_HARDER, Boolean.TRUE));

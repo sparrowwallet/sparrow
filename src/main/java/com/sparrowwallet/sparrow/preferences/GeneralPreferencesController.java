@@ -18,6 +18,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
 
     @FXML
     private ComboBox<ExchangeSource> exchangeSource;
+
+    @FXML
+    private Label currenciesLoadWarning;
 
     @FXML
     private UnlabeledToggleSwitch loadRecentWallets;
@@ -86,6 +90,9 @@ public class GeneralPreferencesController extends PreferencesDetailController {
             config.setFeeRatesSource(newValue);
             EventManager.get().post(new FeeRatesSourceChangedEvent(newValue));
         });
+
+        currenciesLoadWarning.managedProperty().bind(currenciesLoadWarning.visibleProperty());
+        currenciesLoadWarning.setVisible(false);
 
         blockExplorers.setItems(getBlockExplorerList());
         blockExplorers.setConverter(new StringConverter<>() {
@@ -236,6 +243,8 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         } else {
             fiatCurrency.setDisable(true);
         }
+
+        currenciesLoadWarning.setVisible(exchangeSource.getValue() != ExchangeSource.NONE && currencies.isEmpty());
 
         //Always fire event regardless of previous selection to update rates
         EventManager.get().post(new FiatCurrencySelectedEvent(exchangeSource.getValue(), fiatCurrency.getValue()));

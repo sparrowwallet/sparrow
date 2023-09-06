@@ -96,9 +96,8 @@ public final class IpAddressMatcher {
     private InetAddress parseAddress(String address) {
         try {
             return InetAddress.getByName(address);
-        }
-        catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Failed to parse address: " + address, e);
+        } catch(UnknownHostException e) {
+            throw new IllegalArgumentException("Failed to resolve address: " + address, e);
         }
     }
 

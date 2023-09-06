@@ -506,16 +506,22 @@ public class WalletForm {
                             for(WalletNode childNode : wallet.getNode(keyPurpose).getChildren()) {
                                 for(BlockTransactionHashIndex receivedRef : childNode.getTransactionOutputs()) {
                                     if(receivedRef.getHash().equals(transactionEntry.getBlockTransaction().getHash())) {
-                                        if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()) && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
+                                        String prevRefLabel = "";
+                                        if((receivedRef.getLabel() == null || receivedRef.getLabel().isEmpty()
+                                                || receivedRef.getLabel().endsWith(" (sent)") || receivedRef.getLabel().endsWith(" (change)") || receivedRef.getLabel().endsWith(" (received)"))
+                                                && wallet.getStandardAccountType() != StandardAccount.WHIRLPOOL_PREMIX) {
+                                            prevRefLabel = receivedRef.getLabel() == null ? "" : receivedRef.getLabel();
                                             receivedRef.setLabel(entry.getLabel() + (keyPurpose == KeyPurpose.CHANGE ? (event.getWallet().isBip47() ? " (sent)" : " (change)") : " (received)"));
                                             labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef, HashIndexEntry.Type.OUTPUT, keyPurpose), entry);
                                         }
-                                        if((childNode.getLabel() == null || childNode.getLabel().isEmpty())) {
+                                        if(childNode.getLabel() == null || childNode.getLabel().isEmpty()
+                                                || prevRefLabel.equals(childNode.getLabel() + " (sent)") || prevRefLabel.equals(childNode.getLabel() + " (change)") || prevRefLabel.equals(childNode.getLabel() + " (received)")) {
                                             childNode.setLabel(entry.getLabel());
                                             labelChangedEntries.put(new NodeEntry(event.getWallet(), childNode), entry);
                                         }
                                     }
-                                    if(receivedRef.isSpent() && receivedRef.getSpentBy().getHash().equals(transactionEntry.getBlockTransaction().getHash()) && (receivedRef.getSpentBy().getLabel() == null || receivedRef.getSpentBy().getLabel().isEmpty())) {
+                                    if(receivedRef.isSpent() && receivedRef.getSpentBy().getHash().equals(transactionEntry.getBlockTransaction().getHash())
+                                            && (receivedRef.getSpentBy().getLabel() == null || receivedRef.getSpentBy().getLabel().isEmpty() || receivedRef.getSpentBy().getLabel().endsWith(" (input)"))) {
                                         receivedRef.getSpentBy().setLabel(entry.getLabel() + " (input)");
                                         labelChangedEntries.put(new HashIndexEntry(event.getWallet(), receivedRef.getSpentBy(), HashIndexEntry.Type.INPUT, keyPurpose), entry);
                                     }
@@ -591,6 +597,10 @@ public class WalletForm {
     public void walletLabelChanged(WalletLabelChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+
+            if(walletTransactionsEntry != null) {
+                walletTransactionsEntry.labelProperty().set(event.getWallet().getDisplayName());
+            }
         }
     }
 

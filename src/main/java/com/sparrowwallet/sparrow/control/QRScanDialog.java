@@ -502,18 +502,22 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             if(cryptoOutput.getMultiKey() != null) {
                 MultiKey multiKey = cryptoOutput.getMultiKey();
                 Map<ExtendedKey, KeyDerivation> extendedPublicKeys = new LinkedHashMap<>();
+                Map<ExtendedKey, String> extendedPublicKeyLabels = new LinkedHashMap<>();
                 for(CryptoHDKey cryptoHDKey : multiKey.getHdKeys()) {
                     ExtendedKey extendedKey = getExtendedKey(cryptoHDKey);
                     KeyDerivation keyDerivation = getKeyDerivation(cryptoHDKey.getOrigin());
                     extendedPublicKeys.put(extendedKey, keyDerivation);
+                    if(cryptoHDKey.getName() != null) {
+                        extendedPublicKeyLabels.put(extendedKey, cryptoHDKey.getName());
+                    }
                 }
-                return new OutputDescriptor(scriptType, multiKey.getThreshold(), extendedPublicKeys);
+                return new OutputDescriptor(scriptType, multiKey.getThreshold(), extendedPublicKeys, new LinkedHashMap<>(), extendedPublicKeyLabels);
             } else if(cryptoOutput.getEcKey() != null) {
                 throw new IllegalArgumentException("EC keys are currently unsupported");
             } else if(cryptoOutput.getHdKey() != null) {
                 ExtendedKey extendedKey = getExtendedKey(cryptoOutput.getHdKey());
                 KeyDerivation keyDerivation = getKeyDerivation(cryptoOutput.getHdKey().getOrigin());
-                return new OutputDescriptor(scriptType, extendedKey, keyDerivation);
+                return new OutputDescriptor(scriptType, extendedKey, keyDerivation, cryptoOutput.getHdKey().getName());
             }
 
             throw new IllegalStateException("CryptoOutput did not contain sufficient information");

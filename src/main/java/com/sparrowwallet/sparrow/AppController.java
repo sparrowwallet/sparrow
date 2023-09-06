@@ -167,6 +167,9 @@ public class AppController implements Initializable {
     private MenuItem lockAllWallets;
 
     @FXML
+    private MenuItem showWalletSummary;
+
+    @FXML
     private MenuItem searchWallet;
 
     @FXML
@@ -210,6 +213,8 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
+    private SendToManyDialog sendToManyDialog;
+
     private Tab previouslySelectedTab;
 
     private boolean subTabsVisible;
@@ -217,6 +222,8 @@ public class AppController implements Initializable {
     private final Set<Wallet> loadingWallets = new LinkedHashSet<>();
 
     private final Set<Wallet> emptyLoadingWallets = new LinkedHashSet<>();
+
+    private final Map<File, File> renamedWallets = new HashMap<>();
 
     private final ChangeListener<Boolean> serverToggleOnlineListener = (observable, oldValue, newValue) -> {
         Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
@@ -376,6 +383,7 @@ public class AppController implements Initializable {
         deleteWallet.disableProperty().bind(exportWallet.disableProperty());
         closeTab.setDisable(true);
         lockWallet.setDisable(true);
+        showWalletSummary.disableProperty().bind(exportWallet.disableProperty());
         searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
@@ -467,7 +475,17 @@ public class AppController implements Initializable {
     }
 
     public void submitBugReport(ActionEvent event) {
-        AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/submitbugreport");
+        ButtonType supportType = new ButtonType("Get Support", ButtonBar.ButtonData.LEFT);
+        ButtonType bugType = new ButtonType("Submit Bug Report", ButtonBar.ButtonData.YES);
+        Optional<ButtonType> optResponse = showWarningDialog("Submit Bug Report", "Please note that this facility is for bug reports and feature requests only. There is a community of Sparrow users who can assist with support requests.", supportType, bugType);
+
+        if(optResponse.isPresent()) {
+            if(optResponse.get() == bugType) {
+                AppServices.get().getApplication().getHostServices().showDocument("https://sparrowwallet.com/submitbugreport");
+            } else {
+                openSupport(event);
+            }
+        }
     }
 
     public void showAbout(ActionEvent event) {
@@ -837,6 +855,10 @@ public class AppController implements Initializable {
                 }
             }
         }
+    }
+
+    public void renameWallet(ActionEvent event) {
+        renameWallet(getSelectedWalletForm());
     }
 
     public void deleteWallet(ActionEvent event) {
@@ -1286,6 +1308,13 @@ public class AppController implements Initializable {
     }
 
     public void sendToMany(ActionEvent event) {
+        if(sendToManyDialog != null) {
+            Stage stage = (Stage)sendToManyDialog.getDialogPane().getScene().getWindow();
+            stage.setAlwaysOnTop(true);
+            stage.setAlwaysOnTop(false);
+            return;
+        }
+
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             Wallet wallet = selectedWalletForm.getWallet();
@@ -1294,8 +1323,10 @@ public class AppController implements Initializable {
                 bitcoinUnit = wallet.getAutoUnit();
             }
 
-            SendToManyDialog sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog.initModality(Modality.NONE);
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
+            sendToManyDialog = null;
             optPayments.ifPresent(payments -> {
                 if(!payments.isEmpty()) {
                     EventManager.get().post(new SendActionEvent(wallet, new ArrayList<>(wallet.getSpendableUtxos().keySet())));
@@ -1442,6 +1473,21 @@ public class AppController implements Initializable {
         }
     }
 
+    public void showWalletSummary(ActionEvent event) {
+        Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+        if(selectedTab != null) {
+            TabData tabData = (TabData) selectedTab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                TabPane subTabs = (TabPane) selectedTab.getContent();
+                List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
+                if(!walletForms.isEmpty()) {
+                    WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(walletForms);
+                    walletSummaryDialog.showAndWait();
+                }
+            }
+        }
+    }
+
     public void refreshWallet(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
@@ -1527,6 +1573,11 @@ public class AppController implements Initializable {
 
             tabs.getTabs().add(tab);
             tabs.getSelectionModel().select(tab);
+
+            File oldWalletFile = renamedWallets.remove(storage.getWalletFile());
+            if(oldWalletFile != null) {
+                deleteStorage(new Storage(oldWalletFile), false);
+            }
         } else {
             for(Tab walletTab : tabs.getTabs()) {
                 TabData tabData = (TabData)walletTab.getUserData();
@@ -1603,6 +1654,9 @@ public class AppController implements Initializable {
             subTabLabel.setGraphic(getSubTabGlyph(wallet));
             subTabLabel.setContentDisplay(ContentDisplay.TOP);
             subTabLabel.setAlignment(Pos.TOP_CENTER);
+            if(isSubTabLabelTruncated(subTabLabel, label)) {
+                subTabLabel.setTooltip(new Tooltip(label));
+            }
             subTab.setGraphic(subTabLabel);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             subTab.setContent(walletLoader.load());
@@ -1949,6 +2003,30 @@ public class AppController implements Initializable {
         }
     }
 
+    private void renameWallet(WalletForm selectedWalletForm) {
+        WalletNameDialog walletNameDialog = new WalletNameDialog(selectedWalletForm.getMasterWallet().getName(), false, null, true);
+        Optional<WalletNameDialog.NameAndBirthDate> optName = walletNameDialog.showAndWait();
+        if(optName.isPresent()) {
+            File walletFile = Storage.getWalletFile(optName.get().getName() + "." + PersistenceType.DB.getExtension());
+            if(walletFile.exists()) {
+                showErrorDialog("Error renaming wallet", "Wallet file " + walletFile.getAbsolutePath() + " already exists.");
+                return;
+            }
+
+            Storage.CopyWalletService copyWalletService = new Storage.CopyWalletService(selectedWalletForm.getWallet(), walletFile);
+            copyWalletService.setOnSucceeded(event -> {
+                renamedWallets.put(walletFile, selectedWalletForm.getStorage().getWalletFile());
+                tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
+                openWalletFile(walletFile, true);
+            });
+            copyWalletService.setOnFailed(event -> {
+                log.error("Error renaming wallet", event.getSource().getException());
+                showErrorDialog("Error renaming wallet", event.getSource().getException().getMessage());
+            });
+            copyWalletService.start();
+        }
+    }
+
     private void deleteWallet(WalletForm selectedWalletForm) {
         Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Delete " + selectedWalletForm.getWallet().getMasterName() + "?", "The wallet file and any backups will be deleted. Are you sure?", ButtonType.NO, ButtonType.YES);
         if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
@@ -1964,7 +2042,7 @@ public class AppController implements Initializable {
 
                         try {
                             tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
-                            deleteStorage(storage);
+                            deleteStorage(storage, true);
                         } finally {
                             encryptionFullKey.clear();
                             password.get().clear();
@@ -1986,15 +2064,15 @@ public class AppController implements Initializable {
                 }
             } else {
                 tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
-                deleteStorage(storage);
+                deleteStorage(storage, true);
             }
         }
     }
 
-    private void deleteStorage(Storage storage) {
+    private void deleteStorage(Storage storage, boolean deleteBackups) {
         if(storage.isClosed()) {
             Platform.runLater(() -> {
-                Storage.DeleteWalletService deleteWalletService = new Storage.DeleteWalletService(storage);
+                Storage.DeleteWalletService deleteWalletService = new Storage.DeleteWalletService(storage, deleteBackups);
                 deleteWalletService.setDelay(Duration.seconds(3));
                 deleteWalletService.setPeriod(Duration.hours(1));
                 deleteWalletService.setOnSucceeded(event -> {
@@ -2010,7 +2088,7 @@ public class AppController implements Initializable {
                 deleteWalletService.start();
             });
         } else {
-            Platform.runLater(() -> deleteStorage(storage));
+            Platform.runLater(() -> deleteStorage(storage, deleteBackups));
         }
     }
 
@@ -2026,6 +2104,11 @@ public class AppController implements Initializable {
             if(optLabel.isPresent()) {
                 String label = optLabel.get();
                 subTabLabel.setText(label);
+                if(isSubTabLabelTruncated(subTabLabel, label)) {
+                    subTabLabel.setTooltip(new Tooltip(label));
+                } else {
+                    subTabLabel.setTooltip(null);
+                }
 
                 Wallet renamedWallet = AppServices.get().getWallet(walletId);
                 renamedWallet.setLabel(label);
@@ -2050,7 +2133,16 @@ public class AppController implements Initializable {
             contextMenu.getItems().add(delete);
         }
 
+        contextMenu.setOnShowing(event -> {
+            Wallet renameWallet = AppServices.get().getWallet(walletId);
+            rename.setDisable(!renameWallet.isValid());
+        });
+
         return contextMenu;
+    }
+
+    private boolean isSubTabLabelTruncated(Label subTabLabel, String label) {
+        return TextUtils.computeTextWidth(subTabLabel.getFont(), label, 0.0D) > (90-6);
     }
 
     private void configureSwitchServer() {

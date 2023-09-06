@@ -271,7 +271,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.registerValidator(label, Validator.combine(
                 Validator.createEmptyValidator("Label is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is not unique", walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore).map(Keystore::getLabel).collect(Collectors.toList()).contains(newValue)),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is too long", newValue.replace(" ", "").length() > 16)
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Label is too long", newValue.replace(" ", "").length() > Keystore.MAX_LABEL_LENGTH)
         ));
 
         validationSupport.registerValidator(xpub, Validator.combine(
@@ -551,6 +551,9 @@ public class KeystoreController extends WalletFormController implements Initiali
                 fingerprint.setText(keyDerivation.getMasterFingerprint());
                 derivation.setText(keyDerivation.getDerivationPath());
                 xpub.setText(extendedKey.toString());
+                if(result.outputDescriptor.getExtendedPublicKeyLabel(extendedKey) != null) {
+                    label.setText(result.outputDescriptor.getExtendedPublicKeyLabel(extendedKey));
+                }
             } else if(result.wallets != null) {
                 for(Wallet wallet : result.wallets) {
                     if(getWalletForm().getWallet().getScriptType().equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
@@ -558,6 +561,9 @@ public class KeystoreController extends WalletFormController implements Initiali
                         fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
                         derivation.setText(keystore.getKeyDerivation().getDerivationPath());
                         xpub.setText(keystore.getExtendedPublicKey().toString());
+                        if(!Keystore.DEFAULT_LABEL.equals(keystore.getLabel())) {
+                            label.setText(keystore.getLabel());
+                        }
                         return;
                     }
                 }

@@ -320,3 +320,7 @@ CellView > .text-input.text-field {
     -fx-background-color: -fx-control-inner-background;
 }
 
+.field-warning {
+    -fx-text-fill: rgb(238, 210, 2);
+    -fx-padding: 0 0 0 12;
+}

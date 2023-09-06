@@ -301,7 +301,7 @@ public class DevicePane extends TitledDescriptionPane {
 
         if(importButton instanceof SplitMenuButton importMenuButton) {
             if(wallet.getScriptType() == null) {
-                ScriptType[] scriptTypes = new ScriptType[] {ScriptType.P2WPKH, ScriptType.P2SH_P2WPKH, ScriptType.P2PKH};
+                ScriptType[] scriptTypes = new ScriptType[] {ScriptType.P2WPKH, ScriptType.P2SH_P2WPKH, ScriptType.P2PKH, ScriptType.P2TR};
                 for(ScriptType scriptType : scriptTypes) {
                     MenuItem item = new MenuItem(scriptType.getDescription());
                     final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
