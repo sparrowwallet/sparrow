@@ -129,6 +129,7 @@ public class SatochipCommandSet {
                     log.error("SATOCHIP: SatochipCommandSet cardTransmit() sw12==0x9C06: PIN required!");
                     //TODO: throw?
                     //TODO: verify PIN?
+                    throw new RuntimeException("PIN required!");
                 }
                 // SecureChannel is not initialized
                 else if (sw12==0x9C21){
@@ -297,7 +298,11 @@ public class SatochipCommandSet {
             }
             pin = this.pinCached;
         }
+
         byte[] pinBytes = pin.getBytes(StandardCharsets.UTF_8);
+        if (pinBytes.length > 16){
+            throw new RuntimeException("PIN should be maximum 16 characters!");
+        }
 
         APDUCommand capdu = new APDUCommand(0xB0, INS_VERIFY_PIN, (byte)pinNbr, 0x00, pinBytes);
         log.trace("SATOCHIP SatochipCommandSet cardVerifyPIN() capdu:"+ capdu.toHexString());
