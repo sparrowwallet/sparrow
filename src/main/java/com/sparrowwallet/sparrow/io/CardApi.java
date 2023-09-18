@@ -33,7 +33,8 @@ public abstract class CardApi {
             new File("/usr/lib/libpcsclite.so.1"),
             new File("/usr/local/lib/libpcsclite.so.1"),
             new File("/lib/x86_64-linux-gnu/libpcsclite.so.1"),
-            new File("/lib/aarch64-linux-gnu/libpcsclite.so.1")};
+            new File("/lib/aarch64-linux-gnu/libpcsclite.so.1"),
+            new File("/usr/lib64/libpcsclite.so.1")};
 
     private static boolean initialized;
 
