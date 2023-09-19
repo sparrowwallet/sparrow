@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -169,20 +170,31 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         List<String> abbreviations = selectedCells.stream()
                 .map(position -> (String)spreadsheetView.getGrid().getRows().get(position.getRow()).get(position.getColumn()).getItem()).collect(Collectors.toList());
 
+        boolean isInteger = abbreviations.stream().allMatch(Utils::isNumber);
+        boolean isHex = abbreviations.stream().allMatch(Utils::isHex);
+
         List<String> words = new ArrayList<>();
         for(String abbreviation : abbreviations) {
-            for(String word : Bip39MnemonicCode.INSTANCE.getWordList()) {
-                if((abbreviation.length() == 3 && word.equals(abbreviation)) || (abbreviation.length() >= 4 && word.startsWith(abbreviation))) {
-                    words.add(word);
-                    break;
+            if(isInteger) {
+                try {
+                    int index = Integer.parseInt(abbreviation);
+                    words.add(Bip39MnemonicCode.INSTANCE.getWordList().get(index - 1));
+                } catch(NumberFormatException e) {
+                    //ignore
                 }
-            }
-
-            try {
-                int index = Integer.parseInt(abbreviation);
-                words.add(Bip39MnemonicCode.INSTANCE.getWordList().get(index - 1));
-            } catch(NumberFormatException e) {
-                //ignore
+            } else if(isHex) {
+                try {
+                    int index = Integer.parseInt(abbreviation, 16);
+                    words.add(Bip39MnemonicCode.INSTANCE.getWordList().get(index - 1));
+                } catch(NumberFormatException e) {
+                    //ignore
+                }
+            } else {
+                for(String word : Bip39MnemonicCode.INSTANCE.getWordList()) {
+                    if((abbreviation.length() == 3 && word.equals(abbreviation)) || (abbreviation.length() >= 4 && word.startsWith(abbreviation))) {
+                        words.add(word);
+                    }
+                }
             }
         }
 
