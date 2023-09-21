@@ -874,8 +874,11 @@ public class HeadersController extends TransactionFormController implements Init
         //Don't include non witness utxo fields for segwit wallets when displaying the PSBT as a QR - it can add greatly to the time required for scanning
         boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType());
         CryptoPSBT cryptoPSBT = new CryptoPSBT(headersForm.getPsbt().serialize(true, includeNonWitnessUtxos));
-        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), addLegacyEncodingOption);
-        qrDisplayDialog.show();
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), addLegacyEncodingOption, true);
+        Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
+        if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
+            scanPSBT(event);
+        }
     }
 
     public void scanPSBT(ActionEvent event) {

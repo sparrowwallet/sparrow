@@ -32,7 +32,7 @@ import java.util.Locale;
 import java.util.Optional;
 
 @SuppressWarnings("deprecation")
-public class QRDisplayDialog extends Dialog<UR> {
+public class QRDisplayDialog extends Dialog<ButtonType> {
     private static final Logger log = LoggerFactory.getLogger(QRDisplayDialog.class);
 
     private static final int MIN_FRAGMENT_LENGTH = 10;
@@ -58,14 +58,14 @@ public class QRDisplayDialog extends Dialog<UR> {
     private static boolean initialDensityChange;
 
     public QRDisplayDialog(String type, byte[] data, boolean addLegacyEncodingOption) throws UR.URException {
-        this(UR.fromBytes(type, data), addLegacyEncodingOption);
+        this(UR.fromBytes(type, data), addLegacyEncodingOption, false);
     }
 
     public QRDisplayDialog(UR ur) {
-        this(ur, false);
+        this(ur, false, false);
     }
 
-    public QRDisplayDialog(UR ur, boolean addLegacyEncodingOption) {
+    public QRDisplayDialog(UR ur, boolean addLegacyEncodingOption, boolean addScanButton) {
         this.ur = ur;
         this.addLegacyEncodingOption = addLegacyEncodingOption;
         this.encoder = new UREncoder(ur, Config.get().getQrDensity().getMaxFragmentLength(), MIN_FRAGMENT_LENGTH, 0);
@@ -98,11 +98,16 @@ public class QRDisplayDialog extends Dialog<UR> {
             dialogPane.getButtonTypes().add(densityButtonType);
         }
 
+        if(addScanButton) {
+            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.NEXT_FORWARD);
+            dialogPane.getButtonTypes().add(scanButtonType);
+        }
+
         dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
         dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
         AppServices.moveToActiveWindowScreen(this);
 
-        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
+        setResultConverter(dialogButton -> dialogButton);
     }
 
     public QRDisplayDialog(String data) {
@@ -125,7 +130,7 @@ public class QRDisplayDialog extends Dialog<UR> {
         dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
         AppServices.moveToActiveWindowScreen(this);
 
-        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? ur : null);
+        setResultConverter(dialogButton -> dialogButton);
     }
 
     private void createAnimateQRService() {
@@ -280,6 +285,12 @@ public class QRDisplayDialog extends Dialog<UR> {
 
                     return density;
                 }
+            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
+                Button scanButton = (Button)super.createButton(buttonType);
+                scanButton.setGraphicTextGap(5);
+                scanButton.setGraphic(getGlyph(FontAwesome5.Glyph.CAMERA));
+
+                return scanButton;
             }
 
             return super.createButton(buttonType);
