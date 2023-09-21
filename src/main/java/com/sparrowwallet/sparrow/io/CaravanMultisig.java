@@ -28,7 +28,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
 
     @Override
     public String getName() {
-        return "Caravan Multisig";
+        return "Unchained or Caravan Multisig";
     }
 
     @Override
