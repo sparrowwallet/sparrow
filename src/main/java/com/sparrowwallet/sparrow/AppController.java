@@ -1292,8 +1292,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             Wallet wallet = selectedWalletForm.getWallet();
-            if(wallet.getKeystores().size() == 1 &&
-                    (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB)) {
+            if(wallet.getKeystores().size() == 1) {
                 //Can sign and verify
                 messageSignDialog = new MessageSignDialog(wallet);
             }

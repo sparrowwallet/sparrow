@@ -399,9 +399,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
     private static boolean canSignMessage(WalletNode walletNode) {
         Wallet wallet = walletNode.getWallet();
-        return wallet.getKeystores().size() == 1 &&
-                (wallet.getKeystores().get(0).hasPrivateKey() || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB || wallet.getKeystores().get(0).getWalletModel().isCard()) &&
-                (!wallet.isBip47() || walletNode.getKeyPurpose() == KeyPurpose.RECEIVE);
+        return wallet.getKeystores().size() == 1 && (!wallet.isBip47() || walletNode.getKeyPurpose() == KeyPurpose.RECEIVE);
     }
 
     private static boolean containsWalletOutputs(TransactionEntry transactionEntry) {

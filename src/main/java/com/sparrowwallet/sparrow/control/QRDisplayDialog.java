@@ -111,10 +111,15 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     }
 
     public QRDisplayDialog(String data) {
+        this(data, false);
+    }
+
+    public QRDisplayDialog(String data, boolean addScanButton) {
         this.ur = null;
         this.encoder = null;
 
-        final DialogPane dialogPane = getDialogPane();
+        final DialogPane dialogPane = new QRDisplayDialogPane();
+        setDialogPane(dialogPane);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         StackPane stackPane = new StackPane();
@@ -126,6 +131,12 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
+
+        if(addScanButton) {
+            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.NEXT_FORWARD);
+            dialogPane.getButtonTypes().add(scanButtonType);
+        }
+
         dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
         dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
         AppServices.moveToActiveWindowScreen(this);

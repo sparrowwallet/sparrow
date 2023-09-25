@@ -12,10 +12,9 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.OpenWalletsEvent;
-import com.sparrowwallet.sparrow.event.RequestOpenWalletsEvent;
-import com.sparrowwallet.sparrow.event.StorageEvent;
-import com.sparrowwallet.sparrow.event.TimedEvent;
+import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
 import javafx.scene.control.*;
@@ -23,6 +22,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.SegmentedButton;
+import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
+
 public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private static final Logger log = LoggerFactory.getLogger(MessageSignDialog.class);
 
@@ -50,6 +52,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private final ToggleButton formatBip322;
     private final Wallet wallet;
     private WalletNode walletNode;
+    private boolean canSign;
     private boolean closed;
 
     /**
@@ -90,10 +93,12 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     public MessageSignDialog(Wallet wallet, WalletNode walletNode, String title, String msg, ButtonType... buttons) {
         if(walletNode != null) {
             checkWalletSigning(walletNode.getWallet());
+            this.canSign = canSign(walletNode.getWallet());
         }
 
         if(wallet != null) {
             checkWalletSigning(wallet);
+            this.canSign = canSign(wallet);
         }
 
         this.wallet = wallet;
@@ -172,6 +177,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             formatButtons.setDisable(true);
         }
 
+        ButtonType showQrButtonType = new javafx.scene.control.ButtonType("Sign by QR", ButtonBar.ButtonData.LEFT);
         ButtonType signButtonType = new javafx.scene.control.ButtonType("Sign", ButtonBar.ButtonData.BACK_PREVIOUS);
         ButtonType verifyButtonType = new javafx.scene.control.ButtonType("Verify", ButtonBar.ButtonData.NEXT_FORWARD);
         ButtonType doneButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -190,10 +196,20 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 });
             }
         } else {
-            dialogPane.getButtonTypes().addAll(signButtonType, verifyButtonType, doneButtonType);
+            dialogPane.getButtonTypes().addAll(showQrButtonType, signButtonType, verifyButtonType, doneButtonType);
+
+            Button showQrButton = (Button) dialogPane.lookupButton(showQrButtonType);
+            showQrButton.setDisable(wallet == null);
+            showQrButton.setGraphic(getGlyph(new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QRCODE)));
+            showQrButton.setGraphicTextGap(5);
+            showQrButton.setOnAction(event -> {
+                showQr();
+            });
 
             Button signButton = (Button) dialogPane.lookupButton(signButtonType);
-            signButton.setDisable(wallet == null);
+            signButton.setDisable(!canSign);
+            signButton.setGraphic(getGlyph(getSignGlyph()));
+            signButton.setGraphicTextGap(5);
             signButton.setOnAction(event -> {
                 signMessage();
             });
@@ -205,7 +221,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             });
 
             boolean validAddress = isValidAddress();
-            signButton.setDisable(!validAddress || (wallet == null));
+            showQrButton.setDisable(!validAddress || (wallet == null));
+            signButton.setDisable(!validAddress || !canSign);
             verifyButton.setDisable(!validAddress);
 
             ValidationSupport validationSupport = new ValidationSupport();
@@ -216,7 +233,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
             address.textProperty().addListener((observable, oldValue, newValue) -> {
                 boolean valid = isValidAddress();
-                signButton.setDisable(!valid || (wallet == null));
+                showQrButton.setDisable(!valid || (wallet == null));
+                signButton.setDisable(!valid || !canSign);
                 verifyButton.setDisable(!valid);
 
                 if(valid) {
@@ -248,7 +266,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         AppServices.onEscapePressed(dialogPane.getScene(), () -> setResult(ButtonBar.ButtonData.CANCEL_CLOSE));
         AppServices.moveToActiveWindowScreen(this);
-        setResultConverter(dialogButton -> dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : dialogButton.getButtonData());
+        setResultConverter(dialogButton -> dialogButton == showQrButtonType || dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : dialogButton.getButtonData());
 
         Platform.runLater(() -> {
             if(address.getText().isEmpty()) {
@@ -269,9 +287,12 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         if(wallet.getKeystores().size() != 1) {
             throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
         }
-        if(!wallet.getKeystores().get(0).hasPrivateKey() && wallet.getKeystores().get(0).getSource() != KeystoreSource.HW_USB && !wallet.getKeystores().get(0).getWalletModel().isCard()) {
-            throw new IllegalArgumentException("Cannot sign messages using a wallet without private keys or a connected keystore");
-        }
+    }
+
+    private boolean canSign(Wallet wallet) {
+        return wallet.getKeystores().get(0).hasPrivateKey()
+                || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB
+                || wallet.getKeystores().get(0).getWalletModel().isCard();
     }
 
     private Address getAddress()throws InvalidAddressException {
@@ -317,6 +338,11 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private void signMessage() {
         if(walletNode == null) {
             AppServices.showErrorDialog("Address not in wallet", "The provided address is not present in the currently selected wallet.");
+            return;
+        }
+
+        if(!canSign) {
+            AppServices.showErrorDialog("Wallet can't sign", "This wallet cannot sign a message.");
             return;
         }
 
@@ -428,6 +454,58 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         Address signedMessageAddress = scriptType.getAddress(signedMessageKey);
         return providedAddress.equals(signedMessageAddress);
+    }
+
+    private void showQr() {
+        if(walletNode == null) {
+            AppServices.showErrorDialog("Address not in wallet", "The provided address is not present in the currently selected wallet.");
+            return;
+        }
+
+        //Note we can expect a single keystore due to the check in the constructor
+        KeyDerivation firstDerivation = walletNode.getWallet().getKeystores().get(0).getKeyDerivation();
+        String derivationPath = KeyDerivation.writePath(firstDerivation.extend(walletNode.getDerivation()).getDerivation(), false);
+
+        String qrText = "signmessage " + derivationPath + " ascii:" + message.getText().trim();
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(qrText, true);
+        Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
+        if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
+            scanQr();
+        }
+    }
+
+    private void scanQr() {
+        QRScanDialog qrScanDialog = new QRScanDialog();
+        Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
+        if(optionalResult.isPresent()) {
+            QRScanDialog.Result result = optionalResult.get();
+            if(result.payload != null) {
+                signature.clear();
+                signature.appendText(result.payload);
+            } else if(result.exception != null) {
+                log.error("Error scanning QR", result.exception);
+                showErrorDialog("Error scanning QR", result.exception.getMessage());
+            } else {
+                AppServices.showErrorDialog("Invalid QR Code", "Cannot parse QR code into a signature.");
+            }
+        }
+    }
+
+    protected Glyph getSignGlyph() {
+        if(wallet != null) {
+            if(wallet.containsSource(KeystoreSource.HW_USB)) {
+                return new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
+            } else if(wallet.getKeystores().get(0).getWalletModel().isCard()) {
+                return new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WIFI);
+            }
+        }
+
+        return new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.PEN_FANCY);
+    }
+
+    private static Glyph getGlyph(Glyph glyph) {
+        glyph.setFontSize(11);
+        return glyph;
     }
 
     @Subscribe
