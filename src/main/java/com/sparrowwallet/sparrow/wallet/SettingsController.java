@@ -655,7 +655,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
         List<Wallet> childWallets;
-        if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+        if(standardAccount == StandardAccount.WHIRLPOOL_PREMIX) {
             childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);

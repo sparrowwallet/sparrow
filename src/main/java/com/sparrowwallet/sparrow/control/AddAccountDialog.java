@@ -17,6 +17,8 @@ import org.controlsfx.glyphfont.Glyph;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.sparrowwallet.drongo.wallet.StandardAccount.*;
+
 public class AddAccountDialog extends Dialog<List<StandardAccount>> {
     private final ComboBox<StandardAccount> standardAccountCombo;
     private boolean discoverAccounts = false;
@@ -53,13 +55,15 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
 
         List<StandardAccount> availableAccounts = new ArrayList<>();
         for(StandardAccount standardAccount : StandardAccount.values()) {
-            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
                 availableAccounts.add(standardAccount);
             }
         }
 
         if(WhirlpoolServices.canWalletMix(masterWallet) && !masterWallet.isWhirlpoolMasterWallet()) {
-            availableAccounts.add(StandardAccount.WHIRLPOOL_PREMIX);
+            availableAccounts.add(WHIRLPOOL_PREMIX);
+        } else if(WhirlpoolServices.canWatchPostmix(masterWallet) && !existingIndexes.contains(WHIRLPOOL_POSTMIX.getAccountNumber())) {
+            availableAccounts.add(WHIRLPOOL_POSTMIX);
         }
 
         final ButtonType discoverButtonType = new javafx.scene.control.ButtonType("Discover", ButtonBar.ButtonData.LEFT);
@@ -82,8 +86,12 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
                     return "None Available";
                 }
 
-                if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(account)) {
+                if(account == WHIRLPOOL_PREMIX) {
                     return "Whirlpool Accounts";
+                }
+
+                if(account == WHIRLPOOL_POSTMIX) {
+                    return "Whirlpool Postmix (No mixing)";
                 }
 
                 return account.getName();

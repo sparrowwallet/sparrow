@@ -170,6 +170,12 @@ public class WhirlpoolServices {
                 && StandardAccount.MIXABLE_ACCOUNTS.contains(wallet.getStandardAccountType());
     }
 
+    public static boolean canWatchPostmix(Wallet wallet) {
+        return Whirlpool.WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
+                && wallet.getKeystores().size() == 1;
+    }
+
     public static List<Wallet> prepareWhirlpoolWallet(Wallet decryptedWallet, String walletId, Storage storage) {
         Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
         whirlpool.setScode(decryptedWallet.getMasterMixConfig().getScode());

@@ -427,7 +427,7 @@ public class SendController extends WalletFormController implements Initializabl
         addFeeRangeTrackHighlight(0);
 
         efficiencyToggle.setOnAction(event -> {
-            if(getWalletForm().getWallet().isWhirlpoolMixWallet() && !overrideOptimizationStrategy) {
+            if(StandardAccount.WHIRLPOOL_MIX_ACCOUNTS.contains(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
                 AppServices.showWarningDialog("Privacy may be lost!", "It is recommended to optimize for privacy when sending coinjoined outputs.");
                 overrideOptimizationStrategy = true;
             }
@@ -1071,7 +1071,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private OptimizationStrategy getPreferredOptimizationStrategy() {
         OptimizationStrategy optimizationStrategy = Config.get().getSendOptimizationStrategy();
-        if(getWalletForm().getWallet().isWhirlpoolMixWallet() && !overrideOptimizationStrategy) {
+        if(StandardAccount.WHIRLPOOL_MIX_ACCOUNTS.contains(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
             optimizationStrategy = OptimizationStrategy.PRIVACY;
         }
 
