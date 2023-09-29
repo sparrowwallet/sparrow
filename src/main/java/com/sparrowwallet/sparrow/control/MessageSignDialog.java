@@ -384,6 +384,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         List<String> fingerprints = List.of(deviceWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         KeyDerivation fullDerivation = deviceWallet.getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
         DeviceSignMessageDialog deviceSignMessageDialog = new DeviceSignMessageDialog(fingerprints, deviceWallet, message.getText().trim(), fullDerivation);
+        deviceSignMessageDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<String> optSignature = deviceSignMessageDialog.showAndWait();
         if(optSignature.isPresent()) {
             signature.clear();
@@ -468,6 +469,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         String qrText = "signmessage " + derivationPath + " ascii:" + message.getText().trim();
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(qrText, true);
+        qrDisplayDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
         if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
             scanQr();
@@ -476,6 +478,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void scanQr() {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
@@ -517,6 +520,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+        dlg.initOwner(getDialogPane().getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(walletNode.getWallet().copy(), password.get());

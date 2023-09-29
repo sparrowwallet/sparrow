@@ -949,6 +949,7 @@ public class AppServices {
                     Storage storage = AppServices.get().getOpenWallets().get(wallet);
                     Wallet copy = wallet.copy();
                     WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    dlg.initOwner(getActiveWindow());
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
                         Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
@@ -1011,6 +1012,7 @@ public class AppServices {
             wallet = wallets.iterator().next();
         } else {
             ChoiceDialog<Wallet> walletChoiceDialog = new ChoiceDialog<>(wallets.iterator().next(), wallets);
+            walletChoiceDialog.initOwner(getActiveWindow());
             walletChoiceDialog.setTitle("Choose Wallet");
             walletChoiceDialog.setHeaderText("Choose a wallet to " + actionDescription);
             Image image = new Image("/image/sparrow-small.png");

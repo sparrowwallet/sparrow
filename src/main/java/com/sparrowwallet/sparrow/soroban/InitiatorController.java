@@ -363,6 +363,7 @@ public class InitiatorController extends SorobanController {
             if(wallet.isEncrypted()) {
                 Wallet copy = wallet.copy();
                 WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                dlg.initOwner(payNymFollowers.getScene().getWindow());
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
                     Storage storage = AppServices.get().getOpenWallets().get(wallet);
@@ -649,6 +650,7 @@ public class InitiatorController extends SorobanController {
 
     public void findPayNym(ActionEvent event) {
         PayNymDialog payNymDialog = new PayNymDialog(walletId, PayNymDialog.Operation.SELECT, false);
+        payNymDialog.initOwner(payNymFollowers.getScene().getWindow());
         Optional<PayNym> optPayNym = payNymDialog.showAndWait();
         optPayNym.ifPresent(payNym -> {
             counterpartyPayNymName.set(payNym.nymName());

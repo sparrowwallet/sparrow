@@ -116,6 +116,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
 
                 if(keystore.getSource() == KeystoreSource.HW_USB || keystore.getWalletModel().isCard()) {
                     TextAreaDialog dialog = new TextAreaDialog(message, false);
+                    dialog.initOwner(this.getScene().getWindow());
                     dialog.setTitle("Sign " + exporter.getName() + " Export");
                     dialog.getDialogPane().setHeaderText("The following text needs to be signed by the device.\nClick OK to continue.");
                     dialog.showAndWait();
@@ -126,6 +127,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
                     List<String> operationFingerprints = List.of(keystore.getKeyDerivation().getMasterFingerprint());
 
                     DeviceSignMessageDialog deviceSignMessageDialog = new DeviceSignMessageDialog(operationFingerprints, wallet, message, keystore.getKeyDerivation());
+                    deviceSignMessageDialog.initOwner(this.getScene().getWindow());
                     Optional<String> optSignature = deviceSignMessageDialog.showAndWait();
                     if(optSignature.isPresent()) {
                         exporter.addSignature(keystore, optSignature.get(), baos);
@@ -155,6 +157,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(baos.toString(StandardCharsets.UTF_8));
                 }
+                qrDisplayDialog.initOwner(buttonBox.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             }
         } catch(Exception e) {

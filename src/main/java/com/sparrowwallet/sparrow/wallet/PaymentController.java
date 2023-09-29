@@ -168,10 +168,12 @@ public class PaymentController extends WalletFormController implements Initializ
             if(newValue == payNymWallet) {
                 boolean selectLinkedOnly = sendController.getPaymentTabs().getTabs().size() > 1 || !SorobanServices.canWalletMix(sendController.getWalletForm().getWallet());
                 PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), PayNymDialog.Operation.SEND, selectLinkedOnly);
+                payNymDialog.initOwner(scanQrButton.getScene().getWindow());
                 Optional<PayNym> optPayNym = payNymDialog.showAndWait();
                 optPayNym.ifPresent(this::setPayNym);
             } else if(newValue == nfcCardWallet) {
                 DeviceGetAddressDialog deviceGetAddressDialog = new DeviceGetAddressDialog(Collections.emptyList());
+                deviceGetAddressDialog.initOwner(scanQrButton.getScene().getWindow());
                 Optional<Address> optAddress = deviceGetAddressDialog.showAndWait();
                 if(optAddress.isPresent()) {
                     address.setText(optAddress.get().toString());
@@ -626,6 +628,7 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public void scanQrAddress(ActionEvent event) {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(scanQrButton.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();

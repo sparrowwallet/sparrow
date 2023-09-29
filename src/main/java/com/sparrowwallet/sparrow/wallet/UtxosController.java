@@ -280,6 +280,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void mixSelected(ActionEvent event) {
         List<UtxoEntry> selectedEntries = getSelectedUtxos();
         WhirlpoolDialog whirlpoolDialog = new WhirlpoolDialog(getWalletForm().getMasterWalletId(), getWalletForm().getWallet(), selectedEntries);
+        whirlpoolDialog.initOwner(utxosTable.getScene().getWindow());
         Optional<Tx0Preview> optTx0Preview = whirlpoolDialog.showAndWait();
         optTx0Preview.ifPresent(tx0Preview -> previewPremix(tx0Preview, selectedEntries));
     }
@@ -290,6 +291,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
         if(wallet.isMasterWallet() && !wallet.isWhirlpoolMasterWallet() && wallet.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(utxosTable.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
@@ -428,6 +430,7 @@ public class UtxosController extends WalletFormController implements Initializab
 
     public void showMixToDialog(ActionEvent event) {
         MixToDialog mixToDialog = new MixToDialog(getWalletForm().getWallet());
+        mixToDialog.initOwner(mixTo.getScene().getWindow());
         Optional<MixConfig> optMixConfig = mixToDialog.showAndWait();
         if(optMixConfig.isPresent()) {
             MixConfig changedMixConfig = optMixConfig.get();

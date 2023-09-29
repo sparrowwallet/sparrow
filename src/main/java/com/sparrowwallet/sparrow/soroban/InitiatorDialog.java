@@ -137,6 +137,7 @@ public class InitiatorDialog extends Dialog<Transaction> {
     private void acceptAndBroadcast(InitiatorController initiatorController, String walletId, Wallet wallet) {
         if(confirmationRequired && wallet.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(getDialogPane().getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage storage = AppServices.get().getOpenWallets().get(wallet);

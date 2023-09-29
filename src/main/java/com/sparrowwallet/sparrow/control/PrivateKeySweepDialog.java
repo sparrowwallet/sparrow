@@ -224,6 +224,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
     private void decryptKey() {
         PassphraseDialog passphraseDialog = new PassphraseDialog();
+        passphraseDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<String> optPassphrase = passphraseDialog.showAndWait();
         if(optPassphrase.isPresent()) {
             try {
@@ -265,6 +266,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
     private void scanPrivateKey() {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<QRScanDialog.Result> result = qrScanDialog.showAndWait();
         if(result.isPresent() && result.get().payload != null) {
             key.setText(result.get().payload);
@@ -294,6 +296,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
     private void unsealPrivateKey() {
         DeviceUnsealDialog deviceUnsealDialog = new DeviceUnsealDialog(Collections.emptyList());
+        deviceUnsealDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<DeviceUnsealDialog.DevicePrivateKey> optPrivateKey = deviceUnsealDialog.showAndWait();
         if(optPrivateKey.isPresent()) {
             DeviceUnsealDialog.DevicePrivateKey devicePrivateKey = optPrivateKey.get();
@@ -312,6 +315,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             Date since = null;
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
                 WalletBirthDateDialog addressScanDateDialog = new WalletBirthDateDialog(null, true);
+                addressScanDateDialog.initOwner(getDialogPane().getScene().getWindow());
                 Optional<Date> optSince = addressScanDateDialog.showAndWait();
                 if(optSince.isPresent()) {
                     since = optSince.get();
@@ -330,6 +334,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
                 ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Address Scan", "Scanning address for transactions...", "/image/sparrow.png", addressUtxosService);
+                serviceProgressDialog.initOwner(getDialogPane().getScene().getWindow());
                 AppServices.moveToActiveWindowScreen(serviceProgressDialog);
             }
 

@@ -254,6 +254,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
             if(!dryrun) {
                 if(passphraseProperty.get() != null && !passphraseProperty.get().isEmpty()) {
                     KeystorePassphraseDialog keystorePassphraseDialog = new KeystorePassphraseDialog(null, keystore, true);
+                    keystorePassphraseDialog.initOwner(this.getScene().getWindow());
                     Optional<String> optPassphrase = keystorePassphraseDialog.showAndWait();
                     if(optPassphrase.isEmpty() || !optPassphrase.get().equals(passphraseProperty.get())) {
                         throw new ImportException("Re-entered passphrase did not match");

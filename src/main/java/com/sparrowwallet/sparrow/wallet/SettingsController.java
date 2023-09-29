@@ -257,6 +257,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 String outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null).toString(true);
                 CryptoOutput cryptoOutput = getCryptoOutput(wallet);
                 MultisigBackupDialog dialog = new MultisigBackupDialog(wallet, outputDescriptor, cryptoOutput.toUR());
+                dialog.initOwner(apply.getScene().getWindow());
                 dialog.showAndWait();
             }
         });
@@ -337,6 +338,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
     public void scanDescriptorQR(ActionEvent event) {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(scanDescriptorQR.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
@@ -374,6 +376,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
         UR cryptoOutputUR = cryptoOutput.toUR();
         QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR);
+        qrDisplayDialog.initOwner(showDescriptorQR.getScene().getWindow());
         qrDisplayDialog.showAndWait();
     }
 
@@ -433,6 +436,7 @@ public class SettingsController extends WalletFormController implements Initiali
         String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString);
+        dialog.initOwner(editDescriptor.getScene().getWindow());
         dialog.setTitle("Edit wallet output descriptor");
         dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nChanges to the output descriptor will modify the wallet configuration." +
                 (walletForm.getWallet().getPolicyType() == PolicyType.MULTI ? "\nKey expressions are shown in canonical order." : ""));
@@ -477,6 +481,7 @@ public class SettingsController extends WalletFormController implements Initiali
         String outputDescriptorString = outputDescriptor.toString(walletForm.getWallet().isValid());
 
         TextAreaDialog dialog = new TextAreaDialog(outputDescriptorString, false);
+        dialog.initOwner(showDescriptor.getScene().getWindow());
         dialog.setTitle("Show wallet output descriptor");
         dialog.getDialogPane().setHeaderText("The wallet configuration is specified in the output descriptor.\nThis wallet is no longer editable - create a new wallet to change the descriptor." +
                 (walletForm.getWallet().getPolicyType() == PolicyType.MULTI ? "\nKey expressions are shown in canonical order." : ""));
@@ -485,6 +490,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
     public void showAdvanced(ActionEvent event) {
         AdvancedDialog advancedDialog = new AdvancedDialog(walletForm);
+        advancedDialog.initOwner(apply.getScene().getWindow());
         Optional<Boolean> optApply = advancedDialog.showAndWait();
         if(optApply.isPresent() && optApply.get() && walletForm.getWallet().isValid()) {
             revert.setDisable(true);
@@ -503,6 +509,7 @@ public class SettingsController extends WalletFormController implements Initiali
                         && entry.getKey().getName().equals(walletForm.getWallet().getName())).map(Map.Entry::getKey).findFirst();
         if(optWallet.isPresent()) {
             WalletExportDialog dlg = new WalletExportDialog(optWallet.get());
+            dlg.initOwner(export.getScene().getWindow());
             dlg.showAndWait();
         } else {
             AppServices.showErrorDialog("Cannot export wallet", "Wallet cannot be exported, please save it first.");
@@ -514,6 +521,7 @@ public class SettingsController extends WalletFormController implements Initiali
         Wallet masterWallet = openWallet.isMasterWallet() ? openWallet : openWallet.getMasterWallet();
 
         AddAccountDialog addAccountDialog = new AddAccountDialog(masterWallet);
+        addAccountDialog.initOwner(addAccount.getScene().getWindow());
         Optional<List<StandardAccount>> optAccounts = addAccountDialog.showAndWait();
         if(optAccounts.isPresent()) {
             List<StandardAccount> standardAccounts = optAccounts.get();
@@ -530,6 +538,7 @@ public class SettingsController extends WalletFormController implements Initiali
             if(masterWallet.isEncrypted()) {
                 String walletId = walletForm.getWalletId();
                 WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                dlg.initOwner(addAccount.getScene().getWindow());
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
@@ -604,6 +613,7 @@ public class SettingsController extends WalletFormController implements Initiali
             if(discoverAccounts && masterWallet.getKeystores().size() == 1 && masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.HW_USB)) {
                 String fingerprint = masterWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint();
                 DeviceKeystoreDiscoverDialog deviceKeystoreDiscoverDialog = new DeviceKeystoreDiscoverDialog(List.of(fingerprint), masterWallet, standardAccounts);
+                deviceKeystoreDiscoverDialog.initOwner(addAccount.getScene().getWindow());
                 Optional<Map<StandardAccount, Keystore>> optDiscoveredKeystores = deviceKeystoreDiscoverDialog.showAndWait();
                 if(optDiscoveredKeystores.isPresent()) {
                     Map<StandardAccount, Keystore> discoveredKeystores = optDiscoveredKeystores.get();
@@ -815,6 +825,7 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         WalletPasswordDialog dlg = new WalletPasswordDialog(null, requirement, suggestChangePassword);
+        dlg.initOwner(apply.getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(dlg.isBackupExisting()) {

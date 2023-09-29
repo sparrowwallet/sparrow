@@ -15,13 +15,13 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.sparrowwallet.sparrow.AppServices.moveToActiveWindowScreen;
-import static com.sparrowwallet.sparrow.AppServices.setStageIcon;
+import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class DefaultInteractionServices implements InteractionServices {
     @Override
     public Optional<ButtonType> showAlert(String title, String content, Alert.AlertType alertType, Node graphic, ButtonType... buttons) {
         Alert alert = new Alert(alertType, content, buttons);
+        alert.initOwner(getActiveWindow());
         setStageIcon(alert.getDialogPane().getScene().getWindow());
         alert.getDialogPane().getScene().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         alert.setTitle(title);
@@ -62,6 +62,7 @@ public class DefaultInteractionServices implements InteractionServices {
     @Override
     public Optional<String> requestPassphrase(String walletName, Keystore keystore) {
         KeystorePassphraseDialog passphraseDialog = new KeystorePassphraseDialog(walletName, keystore);
+        passphraseDialog.initOwner(getActiveWindow());
         return passphraseDialog.showAndWait();
     }
 }

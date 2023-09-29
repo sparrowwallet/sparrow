@@ -366,6 +366,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         KeyDerivation requiredDerivation = restrictSource ? keystore.getKeyDerivation() : null;
         WalletModel requiredModel = restrictSource ? keystore.getWalletModel() : null;
         KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, requiredDerivation, requiredModel, restrictSource);
+        dlg.initOwner(selectSourcePane.getScene().getWindow());
         Optional<Keystore> result = dlg.showAndWait();
         if(result.isPresent()) {
             selectSourcePane.setVisible(false);
@@ -405,6 +406,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     public void export(ActionEvent event) {
         KeystoreExportDialog keystoreExportDialog = new KeystoreExportDialog(keystore);
+        keystoreExportDialog.initOwner(exportButton.getScene().getWindow());
         keystoreExportDialog.showAndWait();
     }
 
@@ -414,6 +416,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
         if(copy.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(viewSeedButton.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
@@ -437,9 +440,11 @@ public class KeystoreController extends WalletFormController implements Initiali
     private void showPrivate(Keystore keystore) {
         if(keystore.hasSeed()) {
             SeedDisplayDialog dlg = new SeedDisplayDialog(keystore);
+            dlg.initOwner(viewSeedButton.getScene().getWindow());
             dlg.showAndWait();
         } else if(keystore.hasMasterPrivateExtendedKey()) {
             MasterKeyDisplayDialog dlg = new MasterKeyDisplayDialog(keystore);
+            dlg.initOwner(viewKeyButton.getScene().getWindow());
             dlg.showAndWait();
         }
     }
@@ -461,6 +466,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         }
 
         CardPinDialog cardPinDialog = new CardPinDialog(backupOnly);
+        cardPinDialog.initOwner(cardServiceButtons.getScene().getWindow());
         Optional<CardPinDialog.CardPinChange> optPinChange = cardPinDialog.showAndWait();
         if(optPinChange.isPresent()) {
             String currentPin = optPinChange.get().currentPin();
@@ -484,6 +490,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                         AppServices.showErrorDialog("Error communicating with card", e.getMessage());
                     });
                     ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Authentication Delay", "Waiting for authentication delay to clear...", "/image/tapsigner.png", authDelayService);
+                    serviceProgressDialog.initOwner(cardServiceButtons.getScene().getWindow());
                     AppServices.moveToActiveWindowScreen(serviceProgressDialog);
                     authDelayService.start();
                 } else {
@@ -504,6 +511,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 String backup = backupService.getValue();
                 String filename = fingerprint.getText() + ".aes";
                 TextAreaDialog backupDialog = new TextAreaDialog(backup, false, filename, Base64.getDecoder().decode(backup));
+                backupDialog.initOwner(cardServiceButtons.getScene().getWindow());
                 backupDialog.setTitle("Backup Private Key");
                 backupDialog.getDialogPane().setHeaderText((requiresBackup && !backupOnly ? "Please backup first by saving" : "Save") + " the following text in a safe place. It contains an encrypted copy of the card's private key, and can be decrypted using the backup key written on the back of the card.");
                 backupDialog.showAndWait();
@@ -537,6 +545,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     public void scanXpubQR(ActionEvent event) {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(scanXpubQR.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
@@ -603,6 +612,7 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     public void displayXpubQR(ActionEvent event) {
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(xpub.getText());
+        qrDisplayDialog.initOwner(xpub.getScene().getWindow());
         qrDisplayDialog.showAndWait();
     }
 

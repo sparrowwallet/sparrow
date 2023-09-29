@@ -1301,7 +1301,7 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
-    private static class LabelContextMenu extends ContextMenu {
+    private class LabelContextMenu extends ContextMenu {
         public LabelContextMenu(Address address, long value) {
             if(address != null) {
                 MenuItem copyAddress = new MenuItem("Copy Address");
@@ -1317,6 +1317,7 @@ public class TransactionDiagram extends GridPane {
                 showAddress.setOnAction(event -> {
                     hide();
                     QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(address.toString());
+                    qrDisplayDialog.initOwner(TransactionDiagram.this.getScene().getWindow());
                     qrDisplayDialog.showAndWait();
                 });
                 getItems().add(showAddress);

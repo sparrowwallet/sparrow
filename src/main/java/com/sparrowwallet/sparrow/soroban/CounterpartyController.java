@@ -409,12 +409,14 @@ public class CounterpartyController extends SorobanController {
 
     public void showPayNym(ActionEvent event) {
         PayNymDialog payNymDialog = new PayNymDialog(walletId);
+        payNymDialog.initOwner(payNym.getScene().getWindow());
         payNymDialog.showAndWait();
     }
 
     public void showPayNymQR(ActionEvent event) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(masterWallet.getPaymentCode().toString());
+        qrDisplayDialog.initOwner(payNym.getScene().getWindow());
         qrDisplayDialog.showAndWait();
     }
 

@@ -110,6 +110,7 @@ public class PayNymCell extends ListCell<PayNym> {
             MenuItem rename = new MenuItem("Rename Contact...");
             rename.setOnAction(event -> {
                 WalletLabelDialog walletLabelDialog = new WalletLabelDialog(payNym.nymName(), "Contact");
+                walletLabelDialog.initOwner(PayNymCell.this.getScene().getWindow());
                 Optional<String> optLabel = walletLabelDialog.showAndWait();
                 if(optLabel.isPresent()) {
                     int index = getListView().getItems().indexOf(payNym);

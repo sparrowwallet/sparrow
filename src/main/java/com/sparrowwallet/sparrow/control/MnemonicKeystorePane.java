@@ -97,6 +97,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
     protected void showGrid() {
         MnemonicGridDialog mnemonicGridDialog = new MnemonicGridDialog();
+        mnemonicGridDialog.initOwner(this.getScene().getWindow());
         Optional<List<String>> optWords = mnemonicGridDialog.showAndWait();
         if(optWords.isPresent()) {
             List<String> words = optWords.get();
@@ -134,6 +135,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
     protected void scanQR() {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(this.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();

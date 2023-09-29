@@ -111,6 +111,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         if(wallet.isEncrypted() && exporter.walletExportRequiresDecryption()) {
             Wallet copy = wallet.copy();
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(buttonBox.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 final String walletId = AppServices.get().getOpenWallets().get(wallet).getWalletId(wallet);
@@ -155,6 +156,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
                 }
+                qrDisplayDialog.initOwner(buttonBox.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             }
         } catch(Exception e) {

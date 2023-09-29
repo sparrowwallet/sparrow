@@ -8,7 +8,6 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.SparrowWallet;
-import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.concurrent.ScheduledService;

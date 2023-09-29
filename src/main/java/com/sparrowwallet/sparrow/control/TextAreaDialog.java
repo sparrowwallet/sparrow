@@ -109,6 +109,7 @@ public class TextAreaDialog extends Dialog<String> {
                 ButtonBar.setButtonData(scanButton, buttonData);
                 scanButton.setOnAction(event -> {
                     QRScanDialog qrScanDialog = new QRScanDialog();
+                    qrScanDialog.initOwner(getDialogPane().getScene().getWindow());
                     Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
                     if(optionalResult.isPresent()) {
                         QRScanDialog.Result result = optionalResult.get();

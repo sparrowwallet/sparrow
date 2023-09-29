@@ -281,6 +281,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                 ButtonBar.setButtonData(generateButton, buttonData);
                 generateButton.setOnAction(event -> {
                     SeedEntryDialog seedEntryDialog = new SeedEntryDialog("Border Wallets Entropy Grid Recovery Seed", 12);
+                    seedEntryDialog.initOwner(getDialogPane().getScene().getWindow());
                     Optional<List<String>> optWords = seedEntryDialog.showAndWait();
                     if(optWords.isPresent()) {
                         List<String> mnemonicWords = optWords.get();

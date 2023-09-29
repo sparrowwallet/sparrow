@@ -451,6 +451,7 @@ public class AppController implements Initializable {
 
     public void showIntroduction(ActionEvent event) {
         WelcomeDialog welcomeDialog = new WelcomeDialog();
+        welcomeDialog.initOwner(rootStack.getScene().getWindow());
         Optional<Mode> optionalMode = welcomeDialog.showAndWait();
         if(optionalMode.isPresent() && optionalMode.get().equals(Mode.ONLINE)) {
             openPreferences(PreferenceGroup.SERVER);
@@ -539,6 +540,7 @@ public class AppController implements Initializable {
 
     public void showInstallUdevMessage() {
         TextAreaDialog dialog = new TextAreaDialog("sudo " + Config.get().getHwi().getAbsolutePath() + " installudevrules");
+        dialog.initOwner(rootStack.getScene().getWindow());
         dialog.setTitle("Install Udev Rules");
         dialog.getDialogPane().setHeaderText("Installing udev rules ensures devices can connect over USB.\nThis command requires root privileges.\nOpen a shell and enter the following:");
         dialog.showAndWait();
@@ -607,6 +609,7 @@ public class AppController implements Initializable {
 
     public void openTransactionFromText(ActionEvent event) {
         TextAreaDialog dialog = new TextAreaDialog();
+        dialog.initOwner(rootStack.getScene().getWindow());
         dialog.setTitle("Open from text");
         dialog.getDialogPane().setHeaderText("Paste a transaction or PSBT:");
         Optional<String> text = dialog.showAndWait();
@@ -625,6 +628,7 @@ public class AppController implements Initializable {
 
     public void openTransactionFromId(ActionEvent event) {
         TransactionIdDialog dialog = new TransactionIdDialog();
+        dialog.initOwner(rootStack.getScene().getWindow());
         Optional<Sha256Hash> optionalTxId = dialog.showAndWait();
         if(optionalTxId.isPresent()) {
             Sha256Hash txId = optionalTxId.get();
@@ -652,6 +656,7 @@ public class AppController implements Initializable {
 
     public void openTransactionFromQR(ActionEvent event) {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(rootStack.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
@@ -715,6 +720,7 @@ public class AppController implements Initializable {
             try {
                 UR ur = UR.fromBytes(transaction.bitcoinSerialize());
                 QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur);
+                qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             } catch(Exception e) {
                 log.error("Error creating UR", e);
@@ -813,6 +819,7 @@ public class AppController implements Initializable {
 
             CryptoPSBT cryptoPSBT = new CryptoPSBT(transactionTabData.getPsbt().serialize());
             QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR());
+            qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
             qrDisplayDialog.show();
         }
     }
@@ -978,6 +985,7 @@ public class AppController implements Initializable {
 
     public void newWallet(ActionEvent event) {
         WalletNameDialog dlg = new WalletNameDialog();
+        dlg.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = dlg.showAndWait();
         if(optNameAndBirthDate.isPresent()) {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
@@ -1027,6 +1035,7 @@ public class AppController implements Initializable {
                 loadWalletService.start();
             } else {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(storage.getWalletName(null), WalletPasswordDialog.PasswordRequirement.LOAD);
+                dlg.initOwner(rootStack.getScene().getWindow());
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
                 if(optionalPassword.isEmpty()) {
                     return;
@@ -1095,6 +1104,7 @@ public class AppController implements Initializable {
     public void importWallet(ActionEvent event) {
         List<WalletForm> selectedWalletForms = getSelectedWalletForms();
         WalletImportDialog dlg = new WalletImportDialog(selectedWalletForms);
+        dlg.initOwner(rootStack.getScene().getWindow());
         Optional<Wallet> optionalWallet = dlg.showAndWait();
         if(optionalWallet.isPresent()) {
             Wallet wallet = optionalWallet.get();
@@ -1132,6 +1142,7 @@ public class AppController implements Initializable {
             try(FileInputStream inputStream = new FileInputStream(file)) {
                 if(importer.isEncrypted(file) && password == null) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(file.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    dlg.initOwner(rootStack.getScene().getWindow());
                     Optional<SecureString> optionalPassword = dlg.showAndWait();
                     if(optionalPassword.isPresent()) {
                         password = optionalPassword.get();
@@ -1154,6 +1165,7 @@ public class AppController implements Initializable {
 
     private void addImportedWallet(Wallet wallet) {
         WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getBirthDate());
+        nameDlg.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
         if(optNameAndBirthDate.isPresent()) {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
@@ -1199,6 +1211,7 @@ public class AppController implements Initializable {
 
         Storage storage = new Storage(Storage.getWalletFile(wallet.getName()));
         WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getName(), WalletPasswordDialog.PasswordRequirement.UPDATE_NEW);
+        dlg.initOwner(rootStack.getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(password.get().length() == 0) {
@@ -1265,6 +1278,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             WalletExportDialog dlg = new WalletExportDialog(selectedWalletForm.getWallet());
+            dlg.initOwner(rootStack.getScene().getWindow());
             Optional<Wallet> wallet = dlg.showAndWait();
             if(wallet.isPresent()) {
                 //Successful export
@@ -1282,6 +1296,7 @@ public class AppController implements Initializable {
 
     private void openPreferences(PreferenceGroup preferenceGroup) {
         PreferencesDialog preferencesDialog = new PreferencesDialog(preferenceGroup);
+        preferencesDialog.initOwner(rootStack.getScene().getWindow());
         preferencesDialog.showAndWait();
         configureSwitchServer();
         serverToggle.setDisable(!Config.get().hasServer());
@@ -1303,6 +1318,7 @@ public class AppController implements Initializable {
             messageSignDialog = new MessageSignDialog();
         }
 
+        messageSignDialog.initOwner(rootStack.getScene().getWindow());
         messageSignDialog.showAndWait();
     }
 
@@ -1323,6 +1339,7 @@ public class AppController implements Initializable {
             }
 
             sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog.initOwner(rootStack.getScene().getWindow());
             sendToManyDialog.initModality(Modality.NONE);
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
             sendToManyDialog = null;
@@ -1343,6 +1360,7 @@ public class AppController implements Initializable {
         }
 
         PrivateKeySweepDialog dialog = new PrivateKeySweepDialog(wallet);
+        dialog.initOwner(rootStack.getScene().getWindow());
         Optional<Transaction> optTransaction = dialog.showAndWait();
         optTransaction.ifPresent(transaction -> addTransactionTab(null, null, transaction));
     }
@@ -1356,6 +1374,7 @@ public class AppController implements Initializable {
                 if(wallet.isEncrypted()) {
                     Wallet copy = wallet.copy();
                     WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    dlg.initOwner(rootStack.getScene().getWindow());
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
                         Storage storage = selectedWalletForm.getStorage();
@@ -1369,6 +1388,7 @@ public class AppController implements Initializable {
                             try {
                                 soroban.setHDWallet(copy);
                                 CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
+                                counterpartyDialog.initOwner(rootStack.getScene().getWindow());
                                 if(Config.get().isSameAppMixing()) {
                                     counterpartyDialog.initModality(Modality.NONE);
                                 }
@@ -1396,6 +1416,7 @@ public class AppController implements Initializable {
                 } else {
                     soroban.setHDWallet(wallet);
                     CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
+                    counterpartyDialog.initOwner(rootStack.getScene().getWindow());
                     if(Config.get().isSameAppMixing()) {
                         counterpartyDialog.initModality(Modality.NONE);
                     }
@@ -1403,6 +1424,7 @@ public class AppController implements Initializable {
                 }
             } else {
                 CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
+                counterpartyDialog.initOwner(rootStack.getScene().getWindow());
                 if(Config.get().isSameAppMixing()) {
                     counterpartyDialog.initModality(Modality.NONE);
                 }
@@ -1415,6 +1437,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             PayNymDialog payNymDialog = new PayNymDialog(selectedWalletForm.getWalletId());
+            payNymDialog.initOwner(rootStack.getScene().getWindow());
             payNymDialog.showAndWait();
         }
     }
@@ -1461,6 +1484,7 @@ public class AppController implements Initializable {
                 List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
                 if(!walletForms.isEmpty()) {
                     SearchWalletDialog searchWalletDialog = new SearchWalletDialog(walletForms);
+                    searchWalletDialog.initOwner(rootStack.getScene().getWindow());
                     Optional<Entry> optEntry = searchWalletDialog.showAndWait();
                     if(optEntry.isPresent()) {
                         Entry entry = optEntry.get();
@@ -1481,6 +1505,7 @@ public class AppController implements Initializable {
                 List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
                 if(!walletForms.isEmpty()) {
                     WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(walletForms);
+                    walletSummaryDialog.initOwner(rootStack.getScene().getWindow());
                     walletSummaryDialog.showAndWait();
                 }
             }
@@ -2004,6 +2029,7 @@ public class AppController implements Initializable {
 
     private void renameWallet(WalletForm selectedWalletForm) {
         WalletNameDialog walletNameDialog = new WalletNameDialog(selectedWalletForm.getMasterWallet().getName(), false, null, true);
+        walletNameDialog.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optName = walletNameDialog.showAndWait();
         if(optName.isPresent()) {
             File walletFile = Storage.getWalletFile(optName.get().getName() + "." + PersistenceType.DB.getExtension());
@@ -2032,6 +2058,7 @@ public class AppController implements Initializable {
             Storage storage = selectedWalletForm.getStorage();
             if(selectedWalletForm.getMasterWallet().isEncrypted()) {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(selectedWalletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                dlg.initOwner(rootStack.getScene().getWindow());
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
@@ -2099,6 +2126,7 @@ public class AppController implements Initializable {
         rename.setOnAction(event -> {
             Label subTabLabel = (Label)subTab.getGraphic();
             WalletLabelDialog walletLabelDialog = new WalletLabelDialog(subTabLabel.getText());
+            walletLabelDialog.initOwner(rootStack.getScene().getWindow());
             Optional<String> optLabel = walletLabelDialog.showAndWait();
             if(optLabel.isPresent()) {
                 String label = optLabel.get();

@@ -176,6 +176,7 @@ public class AddressesController extends WalletFormController implements Initial
 
     public void showPayNymAddresses(ActionEvent event) {
         PayNymAddressesDialog payNymAddressesDialog = new PayNymAddressesDialog(getWalletForm());
+        payNymAddressesDialog.initOwner(showPayNymAddresses.getScene().getWindow());
         payNymAddressesDialog.showAndWait();
     }
 }

@@ -150,6 +150,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
 
     private void importQR() {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(this.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();

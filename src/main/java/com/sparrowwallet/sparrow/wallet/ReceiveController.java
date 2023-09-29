@@ -85,6 +85,7 @@ public class ReceiveController extends WalletFormController implements Initializ
         qrCode.setOnMouseClicked(event -> {
             if(currentEntry != null) {
                 QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(currentEntry.getAddress().toString());
+                qrDisplayDialog.initOwner(address.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             }
         });
@@ -220,6 +221,7 @@ public class ReceiveController extends WalletFormController implements Initializ
             if(possibleDevices != null && !possibleDevices.isEmpty()) {
                 if(possibleDevices.size() > 1 || possibleDevices.get(0).isNeedsPinSent() || possibleDevices.get(0).isNeedsPassphraseSent()) {
                     DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
+                    dlg.initOwner(displayAddress.getScene().getWindow());
                     dlg.showAndWait();
                 } else {
                     Device actualDevice = possibleDevices.get(0);
@@ -227,6 +229,7 @@ public class ReceiveController extends WalletFormController implements Initializ
                     displayAddressService.setOnFailed(failedEvent -> {
                         Platform.runLater(() -> {
                             DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
+                            dlg.initOwner(displayAddress.getScene().getWindow());
                             dlg.showAndWait();
                         });
                     });
@@ -234,6 +237,7 @@ public class ReceiveController extends WalletFormController implements Initializ
                 }
             } else {
                 DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
+                dlg.initOwner(displayAddress.getScene().getWindow());
                 dlg.showAndWait();
             }
         }

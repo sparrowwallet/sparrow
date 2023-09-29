@@ -124,7 +124,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 NodeEntry nodeEntry = (NodeEntry)entry;
                 Address address = nodeEntry.getAddress();
                 setText(address.toString());
-                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry, true));
+                setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry, true, getTreeTableView()));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(nodeEntry.getNode().toString());
@@ -149,6 +149,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                     signMessageButton.setGraphic(getSignMessageGlyph());
                     signMessageButton.setOnAction(event -> {
                         MessageSignDialog messageSignDialog = new MessageSignDialog(nodeEntry.getWallet(), nodeEntry.getNode());
+                        messageSignDialog.initOwner(getTreeTableView().getScene().getWindow());
                         messageSignDialog.showAndWait();
                     });
                     actionBox.getChildren().add(signMessageButton);
@@ -645,7 +646,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     }
 
     public static class AddressContextMenu extends ContextMenu {
-        public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry, boolean addUtxoItems) {
+        public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry, boolean addUtxoItems, TreeTableView<Entry> treetable) {
             if(nodeEntry == null || !nodeEntry.getWallet().isBip47()) {
                 MenuItem receiveToAddress = new MenuItem("Receive To");
                 receiveToAddress.setGraphic(getReceiveGlyph());
@@ -663,6 +664,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 signVerifyMessage.setOnAction(AE -> {
                     hide();
                     MessageSignDialog messageSignDialog = new MessageSignDialog(nodeEntry.getWallet(), nodeEntry.getNode());
+                    messageSignDialog.initOwner(treetable.getScene().getWindow());
                     messageSignDialog.showAndWait();
                 });
                 getItems().add(signVerifyMessage);

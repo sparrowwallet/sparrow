@@ -282,6 +282,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             if(newValue != null) {
                 if(newValue == MANAGE_ALIASES_SERVER) {
                     ServerAliasDialog serverAliasDialog = new ServerAliasDialog(ServerType.BITCOIN_CORE);
+                    serverAliasDialog.initOwner(recentCoreServers.getScene().getWindow());
                     Optional<Server> optServer = serverAliasDialog.showAndWait();
                     recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
                     Server selectedServer = optServer.orElseGet(() -> Config.get().getCoreServer());
@@ -306,6 +307,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             if(newValue != null) {
                 if(newValue == MANAGE_ALIASES_SERVER) {
                     ServerAliasDialog serverAliasDialog = new ServerAliasDialog(ServerType.ELECTRUM_SERVER);
+                    serverAliasDialog.initOwner(recentElectrumServers.getScene().getWindow());
                     Optional<Server> optServer = serverAliasDialog.showAndWait();
                     recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
                     Server selectedServer = optServer.orElseGet(() -> Config.get().getElectrumServer());

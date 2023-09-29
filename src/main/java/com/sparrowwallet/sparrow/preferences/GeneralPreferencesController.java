@@ -118,6 +118,7 @@ public class GeneralPreferencesController extends PreferencesDetailController {
             if(newValue != null) {
                 if(newValue == CUSTOM_BLOCK_EXPLORER) {
                     TextfieldDialog textfieldDialog = new TextfieldDialog();
+                    textfieldDialog.initOwner(blockExplorers.getScene().getWindow());
                     textfieldDialog.setTitle("Enter Block Explorer URL");
                     textfieldDialog.setHeaderText("Enter the URL of the block explorer.\n\nIf present, the characters {0} will be replaced with the txid.\nFor example, https://localhost or https://localhost/tx/{0}\n");
                     textfieldDialog.getEditor().setPromptText("https://localhost");

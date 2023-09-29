@@ -1268,6 +1268,7 @@ public class SendController extends WalletFormController implements Initializabl
             AppServices.showErrorDialog("Error broadcasting premix transaction", exception.getMessage());
         });
         ServiceProgressDialog progressDialog = new ServiceProgressDialog("Whirlpool", "Broadcast Premix Transaction", "/image/whirlpool.png", tx0BroadcastService);
+        progressDialog.initOwner(premixButton.getScene().getWindow());
         AppServices.moveToActiveWindowScreen(progressDialog);
         tx0BroadcastService.start();
     }
@@ -1277,6 +1278,7 @@ public class SendController extends WalletFormController implements Initializabl
         Storage storage = AppServices.get().getOpenWallets().get(wallet);
         if(wallet.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(paymentTabs.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
@@ -1373,6 +1375,7 @@ public class SendController extends WalletFormController implements Initializabl
                 AppServices.showErrorDialog("Error broadcasting notification transaction", failedEvent.getSource().getException().getMessage());
             });
             ServiceProgressDialog progressDialog = new ServiceProgressDialog("Broadcast", "Broadcast Notification Transaction", "/image/paynym.png", proxyWorker);
+            progressDialog.initOwner(notificationButton.getScene().getWindow());
             AppServices.moveToActiveWindowScreen(progressDialog);
             proxyWorker.setMessage("Broadcasting notification transaction...");
             proxyWorker.start();
@@ -1693,6 +1696,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             Platform.runLater(() -> {
                 InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
+                initiatorDialog.initOwner(paymentTabs.getScene().getWindow());
                 if(Config.get().isSameAppMixing()) {
                     initiatorDialog.initModality(Modality.NONE);
                 }

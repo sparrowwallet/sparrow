@@ -243,11 +243,13 @@ public class PayNymController {
 
     public void showQR(ActionEvent event) {
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(getMasterWallet().getPaymentCode().toString());
+        qrDisplayDialog.initOwner(payNymName.getScene().getWindow());
         qrDisplayDialog.showAndWait();
     }
 
     public void scanQR(ActionEvent event) {
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(payNymName.getScene().getWindow());
         Optional<QRScanDialog.Result> optResult = qrScanDialog.showAndWait();
         if(optResult.isPresent()) {
             QRScanDialog.Result result = optResult.get();
@@ -373,6 +375,7 @@ public class PayNymController {
                 Optional<ButtonType> optButtonType = AppServices.showAlertDialog("Link contacts?", "Some contacts were found that may be already linked. Link these contacts? Your password is required to check.", Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
                 if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
                     WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    dlg.initOwner(payNymName.getScene().getWindow());
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
                         Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
@@ -495,6 +498,7 @@ public class PayNymController {
         Storage storage = AppServices.get().getOpenWallets().get(wallet);
         if(wallet.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(payNymName.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());

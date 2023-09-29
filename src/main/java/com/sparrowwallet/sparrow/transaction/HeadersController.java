@@ -875,6 +875,7 @@ public class HeadersController extends TransactionFormController implements Init
         boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType());
         CryptoPSBT cryptoPSBT = new CryptoPSBT(headersForm.getPsbt().serialize(true, includeNonWitnessUtxos));
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), addLegacyEncodingOption, true);
+        qrDisplayDialog.initOwner(toggleButton.getScene().getWindow());
         Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
         if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
             scanPSBT(event);
@@ -886,6 +887,7 @@ public class HeadersController extends TransactionFormController implements Init
         toggleButton.setSelected(false);
 
         QRScanDialog qrScanDialog = new QRScanDialog();
+        qrScanDialog.initOwner(toggleButton.getScene().getWindow());
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
@@ -985,6 +987,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         if(copy.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            dlg.initOwner(signButton.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
@@ -1029,6 +1032,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         DeviceSignDialog dlg = new DeviceSignDialog(headersForm.getSigningWallet(), fingerprints, headersForm.getPsbt());
+        dlg.initOwner(signButton.getScene().getWindow());
         dlg.initModality(Modality.NONE);
         Stage stage = (Stage)dlg.getDialogPane().getScene().getWindow();
         stage.setAlwaysOnTop(true);
