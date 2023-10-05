@@ -99,6 +99,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private boolean initialising = true;
     private boolean reverting;
+    private boolean ignoreScriptTypeChange;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -145,7 +146,7 @@ public class SettingsController extends WalletFormController implements Initiali
 
         scriptType.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
-                if(oldValue != null && !reverting && walletForm.getWallet().getKeystores().stream().anyMatch(keystore -> keystore.getExtendedPublicKey() != null)) {
+                if(oldValue != null && !ignoreScriptTypeChange && !reverting && walletForm.getWallet().getKeystores().stream().anyMatch(keystore -> keystore.getExtendedPublicKey() != null)) {
                     Optional<ButtonType> optType = showWarningDialog("Clear keystores?",
                             "You are changing the script type on a wallet with existing key information. Usually this means the keys need to be re-imported using a different derivation path.\n\n" +
                                     "Do you want to clear the current key information?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
@@ -471,7 +472,10 @@ public class SettingsController extends WalletFormController implements Initiali
         totalKeystores.setValue(0);
         walletForm.setWallet(editedWallet);
         initialising = true;
+        ignoreScriptTypeChange = true;
         setFieldsFromWallet(editedWallet);
+        ignoreScriptTypeChange = false;
+        initialising = false;
 
         EventManager.get().post(new SettingsChangedEvent(editedWallet, SettingsChangedEvent.Type.POLICY));
     }
