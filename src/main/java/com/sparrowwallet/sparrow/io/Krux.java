@@ -10,7 +10,7 @@ public class Krux extends SpecterDIY {
 
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import QR created on your Krux by selecting Extended Public Key from the main menu once you have loaded your mnemonic.";
+        return "Import file or QR created on your Krux by selecting Extended Public Key from the main menu once you have loaded your mnemonic.";
     }
 
     @Override
