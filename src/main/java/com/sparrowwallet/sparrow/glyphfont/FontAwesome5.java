@@ -25,6 +25,8 @@ public class FontAwesome5 extends GlyphFont {
         BTC('\uf15a'),
         BULLSEYE('\uf140'),
         CAMERA('\uf030'),
+        CARET_LEFT('\uf0d9'),
+        CARET_RIGHT('\uf0da'),
         CHECK_CIRCLE('\uf058'),
         CIRCLE('\uf111'),
         COINS('\uf51e'),

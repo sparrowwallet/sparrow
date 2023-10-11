@@ -82,6 +82,22 @@
     -fx-text-fill: rgb(238, 210, 2);
 }
 
+#transactionDiagramLabel .button {
+    -fx-padding: 0;
+    -fx-pref-height: 18;
+    -fx-pref-width: 18;
+    -fx-border-width: 0;
+    -fx-background-color: -fx-background;
+}
+
+#transactionDiagramLabel .button .glyph-font {
+    -fx-text-fill: #0184bc;
+}
+
+#transactionDiagramLabel .button:hover .glyph-font {
+    -fx-text-fill: #259cf5;
+}
+
 .details-lower .fieldset {
     -fx-padding: 0 0 0 0;
 }

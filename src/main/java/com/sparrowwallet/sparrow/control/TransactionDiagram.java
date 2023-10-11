@@ -72,6 +72,7 @@ public class TransactionDiagram extends GridPane {
 
     private WalletTransaction walletTx;
     private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
+    private final ObjectProperty<TransactionDiagramLabel> labelProperty = new SimpleObjectProperty<>(null);
     private final ObjectProperty<OptimizationStrategy> optimizationStrategyProperty = new SimpleObjectProperty<>(OptimizationStrategy.EFFICIENCY);
     private boolean expanded;
     private TransactionDiagram expandedDiagram;
@@ -153,6 +154,10 @@ public class TransactionDiagram extends GridPane {
             if(expandedDiagram != null) {
                 updateDerivedDiagram(expandedDiagram);
             }
+        }
+
+        if(getLabel() != null) {
+            getLabel().update(this);
         }
     }
 
@@ -534,7 +539,7 @@ public class TransactionDiagram extends GridPane {
         return input.getLabel() != null && !input.getLabel().isEmpty() ? input.getLabel() : input.getHashAsString().substring(0, 8) + "..:" + input.getIndex();
     }
 
-    private String getSatsValue(long amount) {
+    String getSatsValue(long amount) {
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
         return format.formatSatsValue(amount);
     }
@@ -923,12 +928,12 @@ public class TransactionDiagram extends GridPane {
         }
 
         if(payment.getType() == Payment.Type.WHIRLPOOL_FEE) {
-            return "Whirlpool Fee";
+            return "Whirlpool fee";
         } else if(walletTx.isPremixSend(payment)) {
             int premixIndex = getOutputIndex(payment.getAddress(), payment.getAmount()) - 2;
             return "Premix #" + premixIndex;
         } else if(walletTx.isBadbankSend(payment)) {
-            return "Badbank Change";
+            return "Badbank change";
         }
 
         return null;
@@ -938,7 +943,7 @@ public class TransactionDiagram extends GridPane {
         return walletTx.getTransaction().getOutputs().stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress()) && txOutput.getValue() == amount).mapToInt(TransactionOutput::getIndex).findFirst().orElseThrow();
     }
 
-    private Wallet getToWallet(Payment payment) {
+    Wallet getToWallet(Payment payment) {
         for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
             if(openWallet != walletTx.getWallet() && openWallet.isValid()) {
                 WalletNode addressNode = openWallet.getWalletAddresses().get(payment.getAddress());
@@ -1078,7 +1083,7 @@ public class TransactionDiagram extends GridPane {
         return changeReplaceGlyph;
     }
 
-    private Glyph getFeeGlyph() {
+    public Glyph getFeeGlyph() {
         Glyph feeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HAND_HOLDING);
         feeGlyph.getStyleClass().add("fee-icon");
         feeGlyph.setFontSize(12);
@@ -1162,6 +1167,10 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
+    public WalletTransaction getWalletTransaction() {
+        return walletTx;
+    }
+
     public boolean isFinal() {
         return finalProperty.get();
     }
@@ -1172,6 +1181,18 @@ public class TransactionDiagram extends GridPane {
 
     public void setFinal(boolean isFinal) {
         this.finalProperty.set(isFinal);
+    }
+
+    public TransactionDiagramLabel getLabel() {
+        return labelProperty.get();
+    }
+
+    public ObjectProperty<TransactionDiagramLabel> labelProperty() {
+        return labelProperty;
+    }
+
+    public void setLabelProperty(TransactionDiagramLabel label) {
+        this.labelProperty.set(label);
     }
 
     public OptimizationStrategy getOptimizationStrategy() {

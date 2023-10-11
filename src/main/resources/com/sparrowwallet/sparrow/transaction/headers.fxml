@@ -29,6 +29,7 @@
 <?import javafx.scene.control.Tab?>
 <?import com.sparrowwallet.sparrow.control.TransactionDiagram?>
 <?import com.sparrowwallet.sparrow.control.IntegerSpinner?>
+<?import com.sparrowwallet.sparrow.control.TransactionDiagramLabel?>
 
 <GridPane hgap="10.0" vgap="10.0" styleClass="tx-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.HeadersController" stylesheets="@headers.css, @transaction.css, @../general.css">
    <padding>
@@ -73,7 +74,10 @@
 
     <TabPane side="RIGHT" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" styleClass="headers-tabs">
         <Tab text="Overview" closable="false">
-            <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
+            <VBox spacing="8">
+                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
+                <TransactionDiagramLabel fx:id="transactionDiagramLabel" maxWidth="640" prefWidth="640" />
+            </VBox>
         </Tab>
         <Tab text="Detail" closable="false">
             <GridPane hgap="10.0" vgap="10.0">

@@ -45,6 +45,7 @@ public class SparrowDesktop extends Application {
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
         Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Italic.ttf"), 11);
         URL.setURLStreamHandlerFactory(protocol -> WalletIcon.PROTOCOL.equals(protocol) ? new WalletIcon.WalletIconStreamHandler() : null);
 
         AppServices.initialize(this);

@@ -96,6 +96,9 @@ public class HeadersController extends TransactionFormController implements Init
     private TransactionDiagram transactionDiagram;
 
     @FXML
+    private TransactionDiagramLabel transactionDiagramLabel;
+
+    @FXML
     private IntegerSpinner version;
 
     @FXML
@@ -440,6 +443,7 @@ public class HeadersController extends TransactionFormController implements Init
             updateFee(feeAmt);
         }
 
+        transactionDiagram.labelProperty().set(transactionDiagramLabel);
         transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
 
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
@@ -628,7 +632,11 @@ public class HeadersController extends TransactionFormController implements Init
                             payments.add(new Payment(txOutput.getScript().getToAddress(), ".." + changeNode + " (Mix)", txOutput.getValue(), false, Payment.Type.MIX));
                         }
                     } else {
-                        changeMap.put(changeNode, txOutput.getValue());
+                        if(changeMap.containsKey(changeNode)) {
+                            payments.add(new Payment(txOutput.getScript().getToAddress(), headersForm.getName(), txOutput.getValue(), false, Payment.Type.DEFAULT));
+                        } else {
+                            changeMap.put(changeNode, txOutput.getValue());
+                        }
                     }
                 } else {
                     Payment.Type paymentType = Payment.Type.DEFAULT;
