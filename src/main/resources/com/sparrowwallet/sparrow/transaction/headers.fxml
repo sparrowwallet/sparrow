@@ -187,9 +187,6 @@
             <Field fx:id="blockTimestampField" text="Timestamp:">
                 <CopyableLabel fx:id="blockTimestamp" />
             </Field>
-            <Field fx:id="blockHashField" text="Block Hash:">
-                <IdLabel fx:id="blockHash" />
-            </Field>
         </Fieldset>
     </DynamicForm>
 

@@ -177,12 +177,6 @@ public class HeadersController extends TransactionFormController implements Init
     private CopyableLabel blockTimestamp;
 
     @FXML
-    private Field blockHashField;
-
-    @FXML
-    private IdLabel blockHash;
-
-    @FXML
     private Form signingWalletForm;
 
     @FXML
@@ -746,11 +740,11 @@ public class HeadersController extends TransactionFormController implements Init
 
         blockHeightField.managedProperty().bind(blockHeightField.visibleProperty());
         blockTimestampField.managedProperty().bind(blockTimestampField.visibleProperty());
-        blockHashField.managedProperty().bind(blockHashField.visibleProperty());
 
         if(blockTransaction.getHeight() > 0) {
             blockHeightField.setVisible(true);
             blockHeight.setText(Integer.toString(blockTransaction.getHeight()));
+            blockHeight.setContextMenu(new BlockHeightContextMenu(blockTransaction));
         } else {
             blockHeightField.setVisible(false);
         }
@@ -759,16 +753,9 @@ public class HeadersController extends TransactionFormController implements Init
             blockTimestampField.setVisible(true);
             SimpleDateFormat dateFormat = new SimpleDateFormat(BLOCK_TIMESTAMP_DATE_FORMAT);
             blockTimestamp.setText(dateFormat.format(blockTransaction.getDate()));
+            blockTimestamp.setContextMenu(new BlockHeightContextMenu(blockTransaction));
         } else {
             blockTimestampField.setVisible(false);
-        }
-
-        if(blockTransaction.getBlockHash() != null && !blockTransaction.getBlockHash().equals(Sha256Hash.ZERO_HASH)) {
-            blockHashField.setVisible(true);
-            blockHash.setText(blockTransaction.getBlockHash().toString());
-            blockHash.setContextMenu(new BlockHeightContextMenu(blockTransaction.getBlockHash()));
-        } else {
-            blockHashField.setVisible(false);
         }
     }
 
@@ -809,15 +796,38 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private static class BlockHeightContextMenu extends ContextMenu {
-        public BlockHeightContextMenu(Sha256Hash blockHash) {
-            MenuItem copyBlockHash = new MenuItem("Copy Block Hash");
-            copyBlockHash.setOnAction(AE -> {
-                hide();
-                ClipboardContent content = new ClipboardContent();
-                content.putString(blockHash.toString());
-                Clipboard.getSystemClipboard().setContent(content);
-            });
-            getItems().add(copyBlockHash);
+        public BlockHeightContextMenu(BlockTransaction blockTransaction) {
+            if(blockTransaction.getHeight() > 0) {
+                MenuItem copyBlockHeight = new MenuItem("Copy Block Height");
+                copyBlockHeight.setOnAction(AE -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(Integer.toString(blockTransaction.getHeight()));
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().add(copyBlockHeight);
+            }
+            if(blockTransaction.getDate() != null) {
+                MenuItem copyBlockTimestamp = new MenuItem("Copy Block Timestamp");
+                copyBlockTimestamp.setOnAction(AE -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    SimpleDateFormat dateFormat = new SimpleDateFormat(BLOCK_TIMESTAMP_DATE_FORMAT);
+                    content.putString(dateFormat.format(blockTransaction.getDate()));
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().add(copyBlockTimestamp);
+            }
+            if(blockTransaction.getBlockHash() != null && !blockTransaction.getBlockHash().equals(Sha256Hash.ZERO_HASH)) {
+                MenuItem copyBlockHash = new MenuItem("Copy Block Hash");
+                copyBlockHash.setOnAction(AE -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(blockTransaction.getBlockHash().toString());
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().add(copyBlockHash);
+            }
         }
     }
 
@@ -1342,7 +1352,6 @@ public class HeadersController extends TransactionFormController implements Init
             errorGlyph.getStyleClass().add("failure");
             blockHeightField.setVisible(false);
             blockTimestampField.setVisible(false);
-            blockHashField.setVisible(false);
         }
     }
 
