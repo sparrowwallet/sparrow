@@ -697,7 +697,8 @@ public class TransactionDiagram extends GridPane {
             Wallet toBip47Wallet = getBip47SendWallet(payment);
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "
-                    + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : (toBip47Wallet == null ? "external address" : toBip47Wallet.getDisplayName())) : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString()));
+                    + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : (toBip47Wallet == null ? "external address" : toBip47Wallet.getDisplayName())) : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString())
+                    + (isDuplicateAddress(payment) ? " (Duplicate)" : ""));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
@@ -990,9 +991,15 @@ public class TransactionDiagram extends GridPane {
             return ((AdditionalPayment)payment).getOutputGlyph(this);
         } else if(getToWallet(payment) != null) {
             return getDepositGlyph();
+        } else if(isDuplicateAddress(payment)) {
+            return getPaymentWarningGlyph();
         }
 
         return getPaymentGlyph();
+    }
+
+    private boolean isDuplicateAddress(Payment payment) {
+        return walletTx.getPayments().stream().filter(p -> payment != p).anyMatch(p -> payment.getAddress().equals(p.getAddress()));
     }
 
     public static Glyph getExcludeGlyph() {
@@ -1007,6 +1014,13 @@ public class TransactionDiagram extends GridPane {
         paymentGlyph.getStyleClass().add("payment-icon");
         paymentGlyph.setFontSize(12);
         return paymentGlyph;
+    }
+
+    public static Glyph getPaymentWarningGlyph() {
+        Glyph paymentWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
+        paymentWarningGlyph.getStyleClass().add("payment-warning-icon");
+        paymentWarningGlyph.setFontSize(12);
+        return paymentWarningGlyph;
     }
 
     public static Glyph getConsolidationGlyph() {

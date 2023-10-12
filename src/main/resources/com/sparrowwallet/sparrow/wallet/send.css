@@ -109,7 +109,7 @@
     -fx-fill: -fx-text-base-color;
 }
 
-#transactionDiagram .change-warning-icon {
+#transactionDiagram .change-warning-icon, #transactionDiagram .payment-warning-icon {
     -fx-text-fill: rgb(238, 210, 2);
 }
 
