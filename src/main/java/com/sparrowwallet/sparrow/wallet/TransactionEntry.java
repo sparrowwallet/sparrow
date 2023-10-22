@@ -103,7 +103,9 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
             BlockTransactionHashIndex ref = walletTxos.get(new HashIndex(txInput.getOutpoint().getHash(), txInput.getOutpoint().getIndex()));
             if(ref != null) {
                 validEntries++;
-                if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().toString().equals(ref.getSpentBy().toString()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.INPUT))) {
+                if(!ref.isSpent()) {
+                    log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " missing spending reference on output " + ref);
+                } else if(getChildren().stream().noneMatch(entry -> ((HashIndexEntry)entry).getHashIndex().toString().equals(ref.getSpentBy().toString()) && ((HashIndexEntry)entry).getType().equals(HashIndexEntry.Type.INPUT))) {
                     log.warn("TransactionEntry " + blockTransaction.getHash() + " for wallet " + getWallet().getFullName() + " missing child for input " + ref.getSpentBy() + " on output " + ref);
                     return false;
                 }

@@ -95,8 +95,9 @@ public class WalletTransactionsEntry extends Entry {
         }
 
         if(entriesAdded.size() > entriesComplete.size()) {
-            entriesAdded.removeAll(entriesComplete);
-            for(Entry entry : entriesAdded) {
+            Set<Entry> incompleteEntries = new HashSet<>(entriesAdded);
+            entriesComplete.forEach(incompleteEntries::remove);
+            for(Entry entry : incompleteEntries) {
                 TransactionEntry txEntry = (TransactionEntry)entry;
                 getChildren().remove(txEntry);
                 log.warn("Removing and not notifying incomplete entry " + ((TransactionEntry)entry).getBlockTransaction().getHashAsString() + " value " + txEntry.getValue()

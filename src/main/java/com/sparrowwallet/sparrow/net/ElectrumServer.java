@@ -355,14 +355,14 @@ public class ElectrumServer {
         //Because node children are added sequentially in WalletNode.fillToIndex, we can simply look at the number of children to determine the highest filled index
         int historySize = purposeNode.getChildren().size();
         //The gap limit size takes the highest used index in the retrieved history and adds the gap limit (plus one to be comparable to the number of children since index is zero based)
-        int gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
+        int gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap, purposeNode);
         while(historySize < gapLimitSize) {
             purposeNode.fillToIndex(wallet, gapLimitSize - 1);
             subscribeWalletNodes(wallet, getAddressNodes(wallet, purposeNode), nodeTransactionMap, historySize);
             getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, historySize);
             getReferencedTransactions(wallet, nodeTransactionMap);
             historySize = purposeNode.getChildren().size();
-            gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap);
+            gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap, purposeNode);
         }
     }
 
@@ -377,8 +377,9 @@ public class ElectrumServer {
         return purposeNode.getChildren().stream().filter(walletNode -> walletNode.getIndex() >= startFromIndex).collect(Collectors.toCollection(TreeSet::new));
     }
 
-    private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
-        int highestIndex = nodeTransactionMap.keySet().stream().filter(node -> node.getDerivation().size() > 1).map(WalletNode::getIndex).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
+    private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, WalletNode purposeNode) {
+        int highestIndex = nodeTransactionMap.keySet().stream().filter(node -> node.getDerivation().size() > 1 && purposeNode.getKeyPurpose() == node.getKeyPurpose())
+                .map(WalletNode::getIndex).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
         return highestIndex + wallet.getGapLimit() + 1;
     }
 
