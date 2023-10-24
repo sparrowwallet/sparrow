@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
 import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 @SuppressWarnings("deprecation")
@@ -39,8 +41,10 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
     private static final int ANIMATION_PERIOD_MILLIS = 200;
 
-    private static final int QR_WIDTH = 480;
-    private static final int QR_HEIGHT = 480;
+    private static final int DEFAULT_QR_SIZE = 580;
+    private static final int REDUCED_QR_SIZE = 520;
+
+    private final int qrSize = getQRSize();
 
     private final UR ur;
     private UREncoder encoder;
@@ -103,8 +107,8 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             dialogPane.getButtonTypes().add(scanButtonType);
         }
 
-        dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
-        dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
+        dialogPane.setPrefWidth(40 + qrSize + 40);
+        dialogPane.setPrefHeight(40 + qrSize + 85);
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton);
@@ -137,11 +141,15 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             dialogPane.getButtonTypes().add(scanButtonType);
         }
 
-        dialogPane.setPrefWidth(40 + QR_WIDTH + 40);
-        dialogPane.setPrefHeight(40 + QR_HEIGHT + 85);
+        dialogPane.setPrefWidth(40 + qrSize + 40);
+        dialogPane.setPrefHeight(40 + qrSize + 85);
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton);
+    }
+
+    private int getQRSize() {
+        return AppServices.isReducedWindowHeight() ? REDUCED_QR_SIZE : DEFAULT_QR_SIZE;
     }
 
     private void createAnimateQRService() {
@@ -169,7 +177,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     protected Image getQrCode(String fragment) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
-            BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT);
+            BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, qrSize, qrSize, Map.of(EncodeHintType.MARGIN, "2"));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             MatrixToImageWriter.writeToStream(qrMatrix, "PNG", baos, new MatrixToImageConfig());

@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 public enum QRDensity {
-    NORMAL("Normal", 250),
+    NORMAL("Normal", 400),
     LOW("Low", 80);
 
     private final String name;

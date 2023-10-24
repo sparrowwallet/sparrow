@@ -565,6 +565,11 @@ public class AppServices {
         return windowIcon;
     }
 
+    public static boolean isReducedWindowHeight() {
+        Window activeWindow = getActiveWindow();
+        return (activeWindow != null && activeWindow.getHeight() < 768);
+    }
+
     public static boolean isReducedWindowHeight(Node node) {
         return (node.getScene() != null && node.getScene().getWindow().getHeight() < 768);
     }

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
 import com.google.zxing.client.j2se.MatrixToImageConfig;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -104,7 +105,7 @@ public class PdfUtils {
 
     private static javafx.scene.image.Image getQrCode(String fragment) throws IOException, WriterException {
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        BitMatrix qrMatrix = qrCodeWriter.encode(fragment.toUpperCase(Locale.ROOT), BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT);
+        BitMatrix qrMatrix = qrCodeWriter.encode(fragment.toUpperCase(Locale.ROOT), BarcodeFormat.QR_CODE, QR_WIDTH, QR_HEIGHT, Map.of(EncodeHintType.MARGIN, "2"));
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         MatrixToImageWriter.writeToStream(qrMatrix, "PNG", baos, new MatrixToImageConfig());
