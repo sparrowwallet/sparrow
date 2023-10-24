@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.base.Splitter;
 import com.google.common.net.HostAndPort;
@@ -19,6 +18,7 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
@@ -39,6 +39,8 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     protected Socket socket;
 
     private String response;
+
+    private final CountDownLatch readReadySignal = new CountDownLatch(1);
 
     private final ReentrantLock readLock = new ReentrantLock();
     private final Condition readingCondition = readLock.newCondition();
@@ -110,6 +112,17 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     }
 
     private String readResponse() throws IOException {
+        if(firstRead) {
+            try {
+                //Ensure read thread has started
+                if(!readReadySignal.await(2, TimeUnit.SECONDS)) {
+                    throw new IOException("Read thread did not start");
+                }
+            } catch(InterruptedException e) {
+                throw new IOException("Read ready await interrupted");
+            }
+        }
+
         try {
             if(!readLock.tryLock((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
                 readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
@@ -155,6 +168,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     public void readInputLoop() throws ServerException {
         readLock.lock();
+        readReadySignal.countDown();
 
         try {
             try {
