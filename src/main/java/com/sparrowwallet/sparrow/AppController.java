@@ -327,6 +327,8 @@ public class AppController implements Initializable {
             EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), Collections.emptyList()));
         });
 
+        registerShortcuts();
+
         BitcoinUnit unit = Config.get().getBitcoinUnit();
         if(unit == null) {
             unit = BitcoinUnit.AUTO;
@@ -406,6 +408,19 @@ public class AppController implements Initializable {
 
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
         setNetworkLabel();
+    }
+
+    private void registerShortcuts() {
+        tabs.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if(event.isShortcutDown() && event.isAltDown()) {
+                int currentIndex = tabs.getSelectionModel().getSelectedIndex();
+                if(event.getCode() == KeyCode.LEFT && currentIndex > 0) {
+                    tabs.getSelectionModel().select(currentIndex - 1);
+                } else if(event.getCode() == KeyCode.RIGHT && currentIndex < tabs.getTabs().size() - 1) {
+                    tabs.getSelectionModel().select(currentIndex + 1);
+                }
+            }
+        });
     }
 
     private void setPlatformApplicationMenu() {
