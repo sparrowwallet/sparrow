@@ -157,7 +157,16 @@ public class BitcoindClient {
     }
 
     private ListSinceBlock getListSinceBlock(String blockHash) {
-        return getBitcoindService().listSinceBlock(blockHash, 1, true, true, true);
+        try {
+            return getBitcoindService().listSinceBlock(blockHash, 1, true, true, true);
+        } catch(JsonRpcException e) {
+            if(e.getErrorMessage() != null && e.getErrorMessage().getMessage() != null && e.getErrorMessage().getMessage().contains("is not loaded")) {
+                getBitcoindService().loadWallet(CORE_WALLET_NAME, true);
+                return getBitcoindService().listSinceBlock(blockHash, 1, true, true, true);
+            }
+
+            throw e;
+        }
     }
 
     public void importWallets(Collection<Wallet> wallets) throws ImportFailedException {
