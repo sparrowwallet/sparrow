@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.terminal.wallet.table;
 
+import com.sparrowwallet.drongo.wallet.Status;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
@@ -22,6 +23,10 @@ public class DateTableCell extends TableCell {
 
         if(selected) {
             return "(*) " + unselected.substring(Math.min(4, unselected.length()));
+        }
+
+        if(entry instanceof UtxoEntry utxoEntry && utxoEntry.getHashIndex().getStatus() == Status.FROZEN) {
+            return "(f) " + unselected.substring(Math.min(4, unselected.length()));
         }
 
         return unselected;

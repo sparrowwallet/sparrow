@@ -118,6 +118,20 @@ public class UtxosDialog extends WalletDialog {
                 updateMixSelectedButton();
             }
         });
+        utxos.setInputFilter((interactable, keyStroke) -> {
+            if(keyStroke.getCharacter() == Character.valueOf('f')) {
+                if(utxos.getTableModel().getRowCount() > utxos.getSelectedRow()) {
+                    TableCell dateCell = utxos.getTableModel().getRow(utxos.getSelectedRow()).get(0);
+                    if(dateCell.getEntry() instanceof UtxoEntry utxoEntry) {
+                        utxoEntry.getHashIndex().setStatus(utxoEntry.getHashIndex().getStatus() == Status.FROZEN ? null : Status.FROZEN);
+                        utxos.invalidate();
+                        EventManager.get().post(new WalletUtxoStatusChangedEvent(utxoEntry.getWallet(), List.of(utxoEntry.getHashIndex())));
+                    }
+                }
+            }
+
+            return true;
+        });
 
         updateLabels(walletUtxosEntry);
         updateHistory(getWalletForm().getWalletUtxosEntry());
