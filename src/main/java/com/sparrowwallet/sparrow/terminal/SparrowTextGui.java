@@ -73,7 +73,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
     private void setConnectedLabel(Integer height) {
         getGUIThread().invokeLater(() -> {
-            connectedLabel.setText(height == null ? "Disconnected" : "Connected at " + height);
+            connectedLabel.setText(height == null ? "Disconnected" : "Connected " + (AppServices.isUsingProxy() ? "with proxy " : "") + "at " + height);
         });
     }
 
