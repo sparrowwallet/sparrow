@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -22,7 +23,7 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
     private final CheckBox backupFirst;
     private final ButtonType okButtonType;
 
-    public CardPinDialog(boolean backupOnly) {
+    public CardPinDialog(WalletModel walletModel, boolean backupOnly) {
         this.existingPin = new ViewPasswordField();
         this.newPin = new ViewPasswordField();
         this.newPinConfirm = new ViewPasswordField();
@@ -71,7 +72,11 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
         if(backupOnly) {
             fieldset.getChildren().addAll(currentField);
         } else {
-            fieldset.getChildren().addAll(currentField, newField, confirmField, backupField);
+            fieldset.getChildren().addAll(currentField, newField, confirmField);
+        }
+
+        if(walletModel.supportsBackup()) {
+            fieldset.getChildren().add(backupField);
         }
 
         form.getChildren().add(fieldset);
@@ -80,8 +85,8 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
         ValidationSupport validationSupport = new ValidationSupport();
         Platform.runLater( () -> {
             validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
-            validationSupport.registerValidator(existingPin, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Incorrect PIN length", existingPin.getText().length() < 6 || existingPin.getText().length() > 32));
-            validationSupport.registerValidator(newPin, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Incorrect PIN length", newPin.getText().length() < 6 || newPin.getText().length() > 32));
+            validationSupport.registerValidator(existingPin, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Incorrect PIN length", existingPin.getText().length() < walletModel.getMinPinLength() || existingPin.getText().length() > walletModel.getMaxPinLength()));
+            validationSupport.registerValidator(newPin, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Incorrect PIN length", newPin.getText().length() < walletModel.getMinPinLength() || newPin.getText().length() > walletModel.getMaxPinLength()));
             validationSupport.registerValidator(newPinConfirm, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "PIN confirmation does not match", !newPinConfirm.getText().equals(newPin.getText())));
         });
 
@@ -89,8 +94,8 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         okButton.setPrefWidth(130);
-        BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> existingPin.getText().length() < 6 || existingPin.getText().length() > 32
-                        || newPin.getText().length() < 6 || newPin.getText().length() > 32
+        BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> existingPin.getText().length() < walletModel.getMinPinLength() || existingPin.getText().length() > walletModel.getMaxPinLength()
+                        || newPin.getText().length() < walletModel.getMinPinLength() || newPin.getText().length() > walletModel.getMaxPinLength()
                         || !newPin.getText().equals(newPinConfirm.getText()),
                 existingPin.textProperty(), newPin.textProperty(), newPinConfirm.textProperty());
         okButton.disableProperty().bind(isInvalid);

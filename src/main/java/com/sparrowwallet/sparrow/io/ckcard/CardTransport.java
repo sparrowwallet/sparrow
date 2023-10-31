@@ -47,7 +47,7 @@ public class CardTransport {
                 break;
             } catch(CardException e) {
                 if(!iter.hasNext()) {
-                    log.error(e.getMessage());
+                    log.debug(e.getMessage());
                     throw e;
                 }
             }
@@ -62,7 +62,7 @@ public class CardTransport {
         CardChannel cardChannel = connection.getBasicChannel();
         ResponseAPDU resp = cardChannel.transmit(new CommandAPDU(0, 0xA4, 4, 0, Utils.hexToBytes(APPID.toUpperCase())));
         if(resp.getSW() != SW_OKAY) {
-            throw new CardException("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()) + ". Note that only the Tapsigner is currently supported.");
+            throw new CardException("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()));
         }
 
         return connection;

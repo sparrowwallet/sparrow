@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.control.FileKeystoreImportPane;
 import com.sparrowwallet.sparrow.control.TitledDescriptionPane;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.io.ckcard.Tapsigner;
+import com.sparrowwallet.sparrow.io.satochip.Satochip;
 import javafx.fxml.FXML;
 import javafx.scene.control.Accordion;
 import org.slf4j.Logger;
@@ -38,7 +39,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             }
         }
 
-        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner());
+        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner(), new Satochip());
         for(KeystoreCardImport importer : cardImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());

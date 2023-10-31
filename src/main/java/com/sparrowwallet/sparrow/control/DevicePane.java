@@ -673,8 +673,8 @@ public class DevicePane extends TitledDescriptionPane {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 if(!cardApi.isInitialized()) {
-                    if(pin.get().length() < 6) {
-                        setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
+                    if(pin.get().length() < device.getModel().getMinPinLength()) {
+                        setDescription(pin.get().isEmpty() ? (device.getModel().hasDefaultPin() ? "Enter PIN code" : "Choose a PIN code") : "PIN code too short");
                         setContent(getCardPinEntry(importButton));
                         showHideLink.setVisible(false);
                         setExpanded(true);
@@ -795,7 +795,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void handleCardOperation(Service<?> service, ButtonBase operationButton, String operationDescription, boolean pinRequired, EventHandler<WorkerStateEvent> successHandler) {
-        if(pinRequired && pin.get().length() < 6) {
+        if(pinRequired && pin.get().length() < device.getModel().getMinPinLength()) {
             setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
             setContent(getCardPinEntry(operationButton));
             showHideLink.setVisible(false);
@@ -940,7 +940,7 @@ public class DevicePane extends TitledDescriptionPane {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
                 if(!cardApi.isInitialized()) {
-                    if(pin.get().length() < 6) {
+                    if(pin.get().length() < device.getModel().getMinPinLength()) {
                         setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
                         setContent(getCardPinEntry(getAddressButton));
                         showHideLink.setVisible(false);
@@ -1047,6 +1047,75 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private Node getCardInitializationPanel(CardApi cardApi, ButtonBase operationButton, DeviceOperation deviceOperation) {
+        if(device.getModel().requiresSeedInitialization()) {
+            return getCardSeedInitializationPanel(cardApi, operationButton, deviceOperation);
+        }
+
+        return getCardEntropyInitializationPanel(cardApi, operationButton, deviceOperation);
+    }
+
+    private Node getCardSeedInitializationPanel(CardApi cardApi, ButtonBase operationButton, DeviceOperation deviceOperation) {
+        VBox confirmationBox = new VBox(5);
+        CustomPasswordField confirmationPin = new ViewPasswordField();
+        confirmationPin.setPromptText("Re-enter chosen PIN");
+        confirmationBox.getChildren().add(confirmationPin);
+
+        Button initializeButton = new Button("Initialize");
+        initializeButton.setDefaultButton(true);
+        initializeButton.setOnAction(event -> {
+            initializeButton.setDisable(true);
+            if(!pin.get().equals(confirmationPin.getText())) {
+                setError("PIN Error", "The confirmation PIN did not match");
+                return;
+            }
+            int pinSize = pin.get().length();
+            if(pinSize < device.getModel().getMinPinLength() || pinSize > device.getModel().getMaxPinLength()) {
+                setError("PIN Error", "PIN length must be between " + device.getModel().getMinPinLength() + " and " + device.getModel().getMaxPinLength() + " characters");
+                return;
+            }
+
+            SeedEntryDialog seedEntryDialog = new SeedEntryDialog(device.getModel().toDisplayString() + " Seed Words", 12);
+            seedEntryDialog.initOwner(this.getScene().getWindow());
+            Optional<List<String>> optWords = seedEntryDialog.showAndWait();
+            if(optWords.isPresent()) {
+                try {
+                    List<String> mnemonicWords = optWords.get();
+                    Bip39MnemonicCode.INSTANCE.check(mnemonicWords);
+                    DeterministicSeed seed = new DeterministicSeed(mnemonicWords, "", System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
+                    byte[] seedBytes = seed.getSeedBytes();
+
+                    Service<Void> cardInitializationService = cardApi.getInitializationService(seedBytes, messageProperty);
+                    cardInitializationService.setOnSucceeded(successEvent -> {
+                        AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou can now import the keystore.");
+                        operationButton.setDisable(false);
+                        setDefaultStatus();
+                        setExpanded(false);
+                    });
+                    cardInitializationService.setOnFailed(failEvent -> {
+                        log.error("Error initializing card", failEvent.getSource().getException());
+                        AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + failEvent.getSource().getException().getMessage());
+                        initializeButton.setDisable(false);
+                    });
+                    cardInitializationService.start();
+                } catch(MnemonicException e) {
+                    log.error("Invalid seed entered", e);
+                    AppServices.showErrorDialog("Invalid seed entered", "The seed was invalid.\n\n" + e.getMessage());
+                    initializeButton.setDisable(false);
+                }
+            } else {
+                initializeButton.setDisable(false);
+            }
+        });
+
+        HBox contentBox = new HBox(20);
+        contentBox.getChildren().addAll(confirmationBox, initializeButton);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        HBox.setHgrow(confirmationBox, Priority.ALWAYS);
+
+        return contentBox;
+    }
+
+    private Node getCardEntropyInitializationPanel(CardApi cardApi, ButtonBase operationButton, DeviceOperation deviceOperation) {
         VBox initTypeBox = new VBox(5);
         RadioButton automatic = new RadioButton("Automatic (Recommended)");
         RadioButton advanced = new RadioButton("Advanced");

@@ -76,6 +76,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     private SegmentedButton cardServiceButtons;
 
     @FXML
+    private ToggleButton backupButton;
+
+    @FXML
     private Button importButton;
 
     @FXML
@@ -300,6 +303,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         viewSeedButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasSeed());
         viewKeyButton.setVisible(keystore.getSource() == KeystoreSource.SW_SEED && keystore.hasMasterPrivateExtendedKey());
         cardServiceButtons.setVisible(keystore.getWalletModel().isCard());
+        backupButton.setDisable(!keystore.getWalletModel().supportsBackup());
 
         importButton.setText(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import..." : "Replace...");
         importButton.setTooltip(new Tooltip(keystore.getSource() == KeystoreSource.SW_WATCH ? "Import a keystore from an external source" : "Replace this keystore with another source"));
@@ -465,7 +469,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             return;
         }
 
-        CardPinDialog cardPinDialog = new CardPinDialog(backupOnly);
+        CardPinDialog cardPinDialog = new CardPinDialog(keystore.getWalletModel(), backupOnly);
         cardPinDialog.initOwner(cardServiceButtons.getScene().getWindow());
         Optional<CardPinDialog.CardPinChange> optPinChange = cardPinDialog.showAndWait();
         if(optPinChange.isPresent()) {

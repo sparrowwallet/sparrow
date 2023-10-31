@@ -4,8 +4,7 @@ import com.google.common.base.Throwables;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
@@ -36,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import javax.smartcardio.CardException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 
 import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
 
@@ -74,21 +74,21 @@ public class CardImportPane extends TitledDescriptionPane {
             return;
         }
 
-        if(pin.get().length() < 6) {
-            setDescription(pin.get().isEmpty() ? "Enter PIN code" : "PIN code too short");
-            setContent(getPinAndDerivationEntry());
-            showHideLink.setVisible(false);
-            setExpanded(true);
-            importButton.setDisable(false);
-            return;
-        }
-
         StringProperty messageProperty = new SimpleStringProperty();
         messageProperty.addListener((observable, oldValue, newValue) -> {
             Platform.runLater(() -> setDescription(newValue));
         });
 
         try {
+            if(pin.get().length() < importer.getWalletModel().getMinPinLength()) {
+                setDescription(pin.get().isEmpty() ? (!importer.getWalletModel().hasDefaultPin() && !importer.isInitialized() ? "Choose a PIN code" : "Enter PIN code") : "PIN code too short");
+                setContent(getPinAndDerivationEntry());
+                showHideLink.setVisible(false);
+                setExpanded(true);
+                importButton.setDisable(false);
+                return;
+            }
+
             if(!importer.isInitialized()) {
                 setDescription("Card not initialized");
                 setContent(getInitializationPanel(messageProperty));
@@ -121,6 +121,75 @@ public class CardImportPane extends TitledDescriptionPane {
     }
 
     private Node getInitializationPanel(StringProperty messageProperty) {
+        if(importer.getWalletModel().requiresSeedInitialization()) {
+            return getSeedInitializationPanel(messageProperty);
+        }
+
+        return getEntropyInitializationPanel(messageProperty);
+    }
+
+    private Node getSeedInitializationPanel(StringProperty messageProperty) {
+        VBox confirmationBox = new VBox(5);
+        CustomPasswordField confirmationPin = new ViewPasswordField();
+        confirmationPin.setPromptText("Re-enter chosen PIN");
+        confirmationBox.getChildren().add(confirmationPin);
+
+        Button initializeButton = new Button("Initialize");
+        initializeButton.setDefaultButton(true);
+        initializeButton.setOnAction(event -> {
+            initializeButton.setDisable(true);
+            if(!pin.get().equals(confirmationPin.getText())) {
+                setError("PIN Error", "The confirmation PIN did not match");
+                return;
+            }
+            int pinSize = pin.get().length();
+            if(pinSize < importer.getWalletModel().getMinPinLength() || pinSize > importer.getWalletModel().getMaxPinLength()) {
+                setError("PIN Error", "PIN length must be between " + importer.getWalletModel().getMinPinLength() + " and " + importer.getWalletModel().getMaxPinLength() + " characters");
+                return;
+            }
+
+            SeedEntryDialog seedEntryDialog = new SeedEntryDialog(importer.getWalletModel().toDisplayString() + " Seed Words", 12);
+            seedEntryDialog.initOwner(this.getScene().getWindow());
+            Optional<List<String>> optWords = seedEntryDialog.showAndWait();
+            if(optWords.isPresent()) {
+                try {
+                    List<String> mnemonicWords = optWords.get();
+                    Bip39MnemonicCode.INSTANCE.check(mnemonicWords);
+                    DeterministicSeed seed = new DeterministicSeed(mnemonicWords, "", System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
+                    byte[] seedBytes = seed.getSeedBytes();
+
+                    CardInitializationService cardInitializationService = new CardInitializationService(importer, pin.get(), seedBytes, messageProperty);
+                    cardInitializationService.setOnSucceeded(successEvent -> {
+                        AppServices.showSuccessDialog("Card Initialized", "The card was successfully initialized.\n\nYou can now import the keystore.");
+                        setDescription("Leave card on reader");
+                        setExpanded(false);
+                        importButton.setDisable(false);
+                    });
+                    cardInitializationService.setOnFailed(failEvent -> {
+                        log.error("Error initializing card", failEvent.getSource().getException());
+                        AppServices.showErrorDialog("Card Initialization Failed", "The card was not initialized.\n\n" + failEvent.getSource().getException().getMessage());
+                        initializeButton.setDisable(false);
+                    });
+                    cardInitializationService.start();
+                } catch(MnemonicException e) {
+                    log.error("Invalid seed entered", e);
+                    AppServices.showErrorDialog("Invalid seed entered", "The seed was invalid.\n\n" + e.getMessage());
+                    initializeButton.setDisable(false);
+                }
+            } else {
+                initializeButton.setDisable(false);
+            }
+        });
+
+        HBox contentBox = new HBox(20);
+        contentBox.getChildren().addAll(confirmationBox, initializeButton);
+        contentBox.setPadding(new Insets(10, 30, 10, 30));
+        HBox.setHgrow(confirmationBox, Priority.ALWAYS);
+
+        return contentBox;
+    }
+
+    private Node getEntropyInitializationPanel(StringProperty messageProperty) {
         VBox initTypeBox = new VBox(5);
         RadioButton automatic = new RadioButton("Automatic (Recommended)");
         RadioButton advanced = new RadioButton("Advanced");

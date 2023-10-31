@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.ckcard.CkCardApi;
+import com.sparrowwallet.sparrow.io.satochip.SatoCardApi;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
 import org.controlsfx.tools.Platform;
@@ -23,6 +24,7 @@ import javax.smartcardio.TerminalFactory;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -34,24 +36,38 @@ public abstract class CardApi {
             new File("/usr/local/lib/libpcsclite.so.1"),
             new File("/lib/x86_64-linux-gnu/libpcsclite.so.1"),
             new File("/lib/aarch64-linux-gnu/libpcsclite.so.1"),
-            new File("/usr/lib64/libpcsclite.so.1")};
+            new File("/usr/lib64/libpcsclite.so.1"),
+            new File("/usr/lib/x86_64-linux-gnu/libpcsclite.so.1")};
 
     private static boolean initialized;
 
     public static List<WalletModel> getConnectedCards() throws CardException {
+        List<WalletModel> cards = new ArrayList<>();
+
         try {
             CkCardApi ckCardApi = new CkCardApi(null, null);
-            return List.of(ckCardApi.getCardType());
+            cards.add(ckCardApi.getCardType());
         } catch(Exception e) {
             //ignore
         }
 
-        return Collections.emptyList();
+        try {
+            SatoCardApi satoCardApi = new SatoCardApi(null, null);
+            cards.add(satoCardApi.getCardType());
+        } catch(Exception e) {
+            //ignore
+        }
+
+        return cards;
     }
 
     public static CardApi getCardApi(WalletModel walletModel, String pin) throws CardException {
         if(walletModel == WalletModel.TAPSIGNER || walletModel == WalletModel.SATSCARD) {
             return new CkCardApi(walletModel, pin);
+        }
+
+        if(walletModel == WalletModel.SATOCHIP) {
+            return new SatoCardApi(walletModel, pin);
         }
 
         throw new IllegalArgumentException("Cannot create card API for " + walletModel.toDisplayString());
