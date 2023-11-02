@@ -1364,6 +1364,20 @@ public class HeadersController extends TransactionFormController implements Init
     public void openWallets(OpenWalletsEvent event) {
         if(id.getScene().getWindow().equals(event.getWindow()) && headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
             List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).sorted(new WalletSignComparator()).collect(Collectors.toList());
+            if(availableWallets.isEmpty()) {
+                for(Wallet wallet : event.getWalletsMap().keySet()) {
+                    if(wallet.isValid() && !wallet.getSigningKeystores(headersForm.getPsbt()).isEmpty()) {
+                        int currentGapLimit = wallet.getGapLimit();
+                        Integer requiredGapLimit = wallet.getRequiredGapLimit(headersForm.getPsbt());
+                        if(requiredGapLimit != null && requiredGapLimit > currentGapLimit) {
+                            wallet.setGapLimit(requiredGapLimit);
+                            EventManager.get().post(new WalletGapLimitChangedEvent(event.getStorage(wallet).getWalletId(wallet), wallet, currentGapLimit));
+                            Platform.runLater(() -> EventManager.get().post(new RequestOpenWalletsEvent()));
+                        }
+                    }
+                }
+            }
+
             Map<Wallet, Storage> availableWalletsMap = new LinkedHashMap<>(event.getWalletsMap());
             availableWalletsMap.keySet().retainAll(availableWallets);
             headersForm.getAvailableWallets().keySet().retainAll(availableWallets);
