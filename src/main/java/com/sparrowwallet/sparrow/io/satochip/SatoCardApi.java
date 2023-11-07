@@ -139,7 +139,9 @@ public class SatoCardApi extends CardApi {
         ExtendedKey.Header xtype = Network.get().getXpubHeader();
         String xpub = this.cardProtocol.cardBip32GetXpub(keyDerivationString, xtype);
         ExtendedKey extendedKey = ExtendedKey.fromDescriptor(xpub);
-        String masterFingerprint = Utils.bytesToHex(extendedKey.getKey().getFingerprint());
+        String masterXpub = this.cardProtocol.cardBip32GetXpub("m", xtype);
+        ExtendedKey masterExtendedKey = ExtendedKey.fromDescriptor(masterXpub);
+        String masterFingerprint = Utils.bytesToHex(masterExtendedKey.getKey().getFingerprint());
         KeyDerivation keyDerivation = new KeyDerivation(masterFingerprint, keyDerivationString);
 
         Keystore keystore = new Keystore();
