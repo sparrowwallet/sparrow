@@ -587,9 +587,11 @@ public class AppController implements Initializable {
         );
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
-        File file = fileChooser.showOpenDialog(window);
-        if (file != null) {
-            openTransactionFile(file);
+        List<File> files = fileChooser.showOpenMultipleDialog(window);
+        if(files != null) {
+            for(File file : files) {
+                openTransactionFile(file);
+            }
         }
     }
 
@@ -1036,9 +1038,11 @@ public class AppController implements Initializable {
         fileChooser.setInitialDirectory(Storage.getWalletsDir());
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
-        File file = fileChooser.showOpenDialog(window);
-        if(file != null) {
-            openWalletFile(file, forceSameWindow);
+        List<File> files = fileChooser.showOpenMultipleDialog(window);
+        if(files != null) {
+            for(File file : files) {
+                openWalletFile(file, forceSameWindow);
+            }
         }
     }
 
