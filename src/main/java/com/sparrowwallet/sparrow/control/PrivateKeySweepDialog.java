@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.google.common.base.Throwables;
+import com.google.common.eventbus.Subscribe;
 import com.google.common.io.Files;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
@@ -14,6 +15,9 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.event.FeeRatesUpdatedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Config;
@@ -46,10 +50,7 @@ import tornadofx.control.Form;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.drongo.protocol.ScriptType.P2TR;
@@ -62,6 +63,8 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final CopyableLabel keyAddress;
     private final ComboBoxTextField toAddress;
     private final ComboBox<Wallet> toWallet;
+    private final FeeRangeSlider feeRange;
+    private final CopyableLabel feeRate;
 
     public PrivateKeySweepDialog(Wallet wallet) {
         final DialogPane dialogPane = getDialogPane();
@@ -146,7 +149,24 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         stackPane.getChildren().addAll(toWallet, toAddress);
         toAddressField.getInputs().add(stackPane);
 
-        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField);
+        Field feeRangeField = new Field();
+        feeRangeField.setText("Fee range:");
+        feeRange = new FeeRangeSlider();
+        feeRange.setMaxWidth(320);
+        feeRangeField.getInputs().add(feeRange);
+
+        Field feeRateField = new Field();
+        feeRateField.setText("Fee rate:");
+        feeRate = new CopyableLabel();
+        feeRateField.getInputs().add(feeRate);
+
+        feeRange.valueProperty().addListener((observable, oldValue, newValue) -> {
+            updateFeeRate();
+        });
+        feeRange.setFeeRate(AppServices.getDefaultFeeRate());
+        updateFeeRate();
+
+        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -200,6 +220,11 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         AppServices.moveToActiveWindowScreen(this);
         setResultConverter(dialogButton -> null);
         dialogPane.setPrefWidth(680);
+
+        EventManager.get().register(this);
+        setOnCloseRequest(event -> {
+            EventManager.get().unregister(this);
+        });
 
         ValidationSupport validationSupport = new ValidationSupport();
         Platform.runLater(() -> {
@@ -357,7 +382,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         TransactionOutput sweepOutput = new TransactionOutput(noFeeTransaction, total, destAddress.getOutputScript());
         noFeeTransaction.addOutput(sweepOutput);
 
-        Double feeRate = AppServices.getDefaultFeeRate();
+        double feeRate = feeRange.getFeeRate();
         long fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate);
         if(feeRate == Transaction.DEFAULT_MIN_RELAY_FEE) {
             fee++;
@@ -423,6 +448,16 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphEnum);
         glyph.setFontSize(12);
         return glyph;
+    }
+
+    private void updateFeeRate() {
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        feeRate.setText(format.getCurrencyFormat().format(feeRange.getFeeRate()) + " sats/vB");
+    }
+
+    @Subscribe
+    public void feeRatesUpdated(FeeRatesUpdatedEvent event) {
+        feeRange.updateTrackHighlight();
     }
 
     public class PassphraseDialog extends Dialog<String> {

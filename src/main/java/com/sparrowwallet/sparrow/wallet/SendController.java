@@ -93,7 +93,7 @@ public class SendController extends WalletFormController implements Initializabl
     private Field feeRangeField;
 
     @FXML
-    private Slider feeRange;
+    private FeeRangeSlider feeRange;
 
     @FXML
     private CopyableLabel feeRate;
@@ -306,21 +306,6 @@ public class SendController extends WalletFormController implements Initializabl
 
         feeRangeField.managedProperty().bind(feeRangeField.visibleProperty());
         feeRangeField.visibleProperty().bind(targetBlocksField.visibleProperty().not());
-        feeRange.setMin(0);
-        feeRange.setMax(FEE_RATES_RANGE.size() - 1);
-        feeRange.setMajorTickUnit(1);
-        feeRange.setMinorTickCount(0);
-        feeRange.setLabelFormatter(new StringConverter<Double>() {
-            @Override
-            public String toString(Double object) {
-                return Long.toString(FEE_RATES_RANGE.get(object.intValue()));
-            }
-
-            @Override
-            public Double fromString(String string) {
-                return null;
-            }
-        });
         feeRange.valueProperty().addListener(feeRangeListener);
 
         blockTargetFeeRatesChart.managedProperty().bind(blockTargetFeeRatesChart.visibleProperty());
@@ -423,8 +408,6 @@ public class SendController extends WalletFormController implements Initializabl
                 });
             }
         });
-
-        addFeeRangeTrackHighlight(0);
 
         efficiencyToggle.setOnAction(event -> {
             if(StandardAccount.WHIRLPOOL_MIX_ACCOUNTS.contains(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
@@ -846,12 +829,12 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private Double getFeeRangeRate() {
-        return Math.pow(2.0, feeRange.getValue());
+        return feeRange.getFeeRate();
     }
 
     private void setFeeRangeRate(Double feeRate) {
         feeRange.valueProperty().removeListener(feeRangeListener);
-        feeRange.setValue(Math.log(feeRate) / Math.log(2));
+        feeRange.setFeeRate(feeRate);
         feeRange.valueProperty().addListener(feeRangeListener);
     }
 
@@ -979,47 +962,6 @@ public class SendController extends WalletFormController implements Initializabl
         if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
             fiatFeeAmount.set(currencyRate, amount);
         }
-    }
-
-    private void addFeeRangeTrackHighlight(int count) {
-        Platform.runLater(() -> {
-            Node track = feeRange.lookup(".track");
-            if(track != null) {
-                Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
-                String highlight = "";
-                if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
-                    highlight += "#a0a1a766 " + getPercentageOfFeeRange(targetBlocksFeeRates.get(Integer.MAX_VALUE)) + "%, ";
-                }
-                highlight += "#41a9c966 " + getPercentageOfFeeRange(targetBlocksFeeRates, FeeRatesSource.BLOCKS_IN_TWO_HOURS - 1) + "%, ";
-                highlight += "#fba71b66 " + getPercentageOfFeeRange(targetBlocksFeeRates, FeeRatesSource.BLOCKS_IN_HOUR - 1) + "%, ";
-                highlight += "#c8416466 " + getPercentageOfFeeRange(targetBlocksFeeRates, FeeRatesSource.BLOCKS_IN_HALF_HOUR - 1) + "%";
-
-                track.setStyle("-fx-background-color: " +
-                        "-fx-shadow-highlight-color, " +
-                        "linear-gradient(to bottom, derive(-fx-text-box-border, -10%), -fx-text-box-border), " +
-                        "linear-gradient(to bottom, derive(-fx-control-inner-background, -9%), derive(-fx-control-inner-background, 0%), derive(-fx-control-inner-background, -5%), derive(-fx-control-inner-background, -12%)), " +
-                        "linear-gradient(to right, " + highlight + ")");
-            } else if(count < 20) {
-                addFeeRangeTrackHighlight(count+1);
-            }
-        });
-    }
-
-    private int getPercentageOfFeeRange(Map<Integer, Double> targetBlocksFeeRates, Integer minTargetBlocks) {
-        List<Integer> rates = new ArrayList<>(targetBlocksFeeRates.keySet());
-        Collections.reverse(rates);
-        for(Integer targetBlocks : rates) {
-            if(targetBlocks < minTargetBlocks) {
-                return getPercentageOfFeeRange(targetBlocksFeeRates.get(targetBlocks));
-            }
-        }
-
-        return 100;
-    }
-
-    private int getPercentageOfFeeRange(Double feeRate) {
-        double index = Math.log(feeRate) / Math.log(2);
-        return (int)Math.round(index * 10.0);
     }
 
     private void updateMaxClearButtons(UtxoSelector utxoSelector, TxoFilter txoFilter) {
@@ -1507,7 +1449,7 @@ public class SendController extends WalletFormController implements Initializabl
         } else {
             setFeeRatePriority(getFeeRangeRate());
         }
-        addFeeRangeTrackHighlight(0);
+        feeRange.updateTrackHighlight();
     }
 
     @Subscribe

@@ -25,6 +25,7 @@
 <?import com.sparrowwallet.sparrow.wallet.FeeRatesSelection?>
 <?import com.sparrowwallet.sparrow.wallet.OptimizationStrategy?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
+<?import com.sparrowwallet.sparrow.control.FeeRangeSlider?>
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
@@ -88,7 +89,7 @@
                             <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
                         </Field>
                         <Field fx:id="feeRangeField" text="Range:">
-                            <Slider fx:id="feeRange" snapToTicks="false" showTickLabels="true" showTickMarks="true" />
+                            <FeeRangeSlider fx:id="feeRange" />
                         </Field>
                         <Field fx:id="feeRateField" text="Rate:">
                             <CopyableLabel fx:id="feeRate" />
