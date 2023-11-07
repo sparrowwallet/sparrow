@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.wallet.*;
@@ -21,6 +23,7 @@ import tornadofx.control.Form;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 public class SearchWalletDialog extends Dialog<Entry> {
     private static final Logger log = LoggerFactory.getLogger(SearchWalletDialog.class);
@@ -36,13 +39,16 @@ public class SearchWalletDialog extends Dialog<Entry> {
             throw new IllegalArgumentException("No wallets selected to search");
         }
 
+        boolean showWallet = walletForms.stream().map(WalletForm::getMasterWallet).distinct().limit(2).count() > 1;
+        boolean showAccount = walletForms.stream().anyMatch(walletForm -> !walletForm.getWallet().isMasterWallet() || !walletForm.getNestedWalletForms().isEmpty());
+
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("search.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
-        dialogPane.setHeaderText("Search Wallet");
+        dialogPane.setHeaderText(showWallet ? "Search All Wallets" : "Search Wallet");
 
         Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
         if(!image.isError()) {
@@ -69,11 +75,9 @@ public class SearchWalletDialog extends Dialog<Entry> {
         fieldset.getChildren().addAll(searchField);
         form.getChildren().add(fieldset);
 
-        boolean showWallet = walletForms.size() > 1 || walletForms.stream().anyMatch(walletForm -> !walletForm.getNestedWalletForms().isEmpty());
-
         results = new CoinTreeTable();
         results.setShowRoot(false);
-        results.setPrefWidth(showWallet ? 950 : 850);
+        results.setPrefWidth(showWallet || showAccount ? 950 : 850);
         results.setUnitFormat(walletForms.iterator().next().getWallet());
         results.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         results.setPlaceholder(new Label("No results"));
@@ -81,9 +85,17 @@ public class SearchWalletDialog extends Dialog<Entry> {
         if(showWallet) {
             TreeTableColumn<Entry, String> walletColumn = new TreeTableColumn<>("Wallet");
             walletColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
-                return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getWallet().getDisplayName());
+                return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getWallet().getMasterName());
             });
             results.getColumns().add(walletColumn);
+        }
+
+        if(showAccount) {
+            TreeTableColumn<Entry, String> accountColumn = new TreeTableColumn<>("Account");
+            accountColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
+                return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getWallet().getDisplayName());
+            });
+            results.getColumns().add(accountColumn);
         }
 
         TreeTableColumn<Entry, String> typeColumn = new TreeTableColumn<>("Type");
@@ -135,7 +147,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         });
 
         search.textProperty().addListener((observable, oldValue, newValue) -> {
-            searchWallet(newValue.toLowerCase(Locale.ROOT));
+            searchWallets(newValue.toLowerCase(Locale.ROOT));
         });
 
         setResizable(true);
@@ -145,17 +157,12 @@ public class SearchWalletDialog extends Dialog<Entry> {
         Platform.runLater(search::requestFocus);
     }
 
-    private void searchWallet(String searchText) {
+    private void searchWallets(String searchText) {
         List<Entry> matchingEntries = new ArrayList<>();
 
         if(!searchText.isEmpty()) {
-            Long searchValue = null;
-
-            try {
-                searchValue = Math.abs(Long.parseLong(searchText));
-            } catch(NumberFormatException e) {
-                //ignore
-            }
+            Long searchValue = getSearchValue(searchText);
+            Address searchAddress = getSearchAddress(searchText);
 
             for(WalletForm walletForm : walletForms) {
                 WalletTransactionsEntry walletTransactionsEntry = walletForm.getWalletTransactionsEntry();
@@ -163,7 +170,8 @@ public class SearchWalletDialog extends Dialog<Entry> {
                     if(entry instanceof TransactionEntry transactionEntry) {
                         if(transactionEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
                                 (transactionEntry.getLabel() != null && transactionEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
-                                (transactionEntry.getValue() != null && searchValue != null && Math.abs(transactionEntry.getValue()) == searchValue)) {
+                                (transactionEntry.getValue() != null && searchValue != null && Math.abs(transactionEntry.getValue()) == searchValue) ||
+                                (searchAddress != null && transactionEntry.getBlockTransaction().getTransaction().getOutputs().stream().map(output -> output.getScript().getToAddress()).filter(Objects::nonNull).anyMatch(address -> address.equals(searchAddress)))) {
                             matchingEntries.add(entry);
                         }
                     }
@@ -213,6 +221,22 @@ public class SearchWalletDialog extends Dialog<Entry> {
         SearchWalletEntry rootEntry = new SearchWalletEntry(walletForms.iterator().next().getWallet(), matchingEntries);
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         results.setRoot(rootItem);
+    }
+
+    private Long getSearchValue(String searchText) {
+        try {
+            return Math.abs(Long.parseLong(searchText));
+        } catch(NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Address getSearchAddress(String searchText) {
+        try {
+            return Address.fromString(searchText);
+        } catch(InvalidAddressException e) {
+            return null;
+        }
     }
 
     private static class SearchWalletEntry extends Entry {

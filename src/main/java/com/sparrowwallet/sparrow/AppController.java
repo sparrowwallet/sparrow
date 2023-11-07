@@ -1516,16 +1516,38 @@ public class AppController implements Initializable {
                 TabPane subTabs = (TabPane) selectedTab.getContent();
                 List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
                 if(!walletForms.isEmpty()) {
-                    SearchWalletDialog searchWalletDialog = new SearchWalletDialog(walletForms);
-                    searchWalletDialog.initOwner(rootStack.getScene().getWindow());
-                    Optional<Entry> optEntry = searchWalletDialog.showAndWait();
-                    if(optEntry.isPresent()) {
-                        Entry entry = optEntry.get();
-                        EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
-                        Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
-                    }
+                    searchWallets(walletForms);
                 }
             }
+        }
+    }
+
+    public void searchAllWallets(ActionEvent event) {
+        List<WalletForm> allWalletForms = new ArrayList<>();
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData instanceof WalletTabData) {
+                TabPane subTabs = (TabPane)tab.getContent();
+                allWalletForms.addAll(subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm())
+                        .filter(walletForm -> walletForm.getWallet().isValid() && !walletForm.isLocked()).collect(Collectors.toList()));
+            }
+        }
+
+        if(allWalletForms.isEmpty()) {
+            showErrorDialog("No wallets", "There are no open and unlocked wallets to search.");
+        } else {
+            searchWallets(allWalletForms);
+        }
+    }
+
+    private void searchWallets(List<WalletForm> walletForms) {
+        SearchWalletDialog searchWalletDialog = new SearchWalletDialog(walletForms);
+        searchWalletDialog.initOwner(rootStack.getScene().getWindow());
+        Optional<Entry> optEntry = searchWalletDialog.showAndWait();
+        if(optEntry.isPresent()) {
+            Entry entry = optEntry.get();
+            EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
+            Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
         }
     }
 

@@ -124,8 +124,10 @@
                         <MenuItem fx:id="lockWallet" mnemonicParsing="false" text="Lock Wallet" accelerator="Shortcut+L" onAction="#lockWallet"/>
                         <MenuItem fx:id="lockAllWallets" mnemonicParsing="false" text="Lock All Wallets" accelerator="Shortcut+Shift+L" onAction="#lockWallets"/>
                         <SeparatorMenuItem />
-                        <MenuItem fx:id="showWalletSummary" mnemonicParsing="false" text="Show Wallet Summary" onAction="#showWalletSummary"/>
                         <MenuItem fx:id="searchWallet" mnemonicParsing="false" text="Search Wallet" accelerator="Shortcut+Shift+S" onAction="#searchWallet"/>
+                        <MenuItem fx:id="searchAllWallets" mnemonicParsing="false" text="Search All Wallets" accelerator="Shortcut+Shift+Alt+S" onAction="#searchAllWallets"/>
+                        <SeparatorMenuItem />
+                        <MenuItem fx:id="showWalletSummary" mnemonicParsing="false" text="Show Wallet Summary" onAction="#showWalletSummary"/>
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>
