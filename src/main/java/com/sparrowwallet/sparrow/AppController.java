@@ -568,7 +568,7 @@ public class AppController implements Initializable {
     }
 
     public void showInstallUdevMessage() {
-        TextAreaDialog dialog = new TextAreaDialog("sudo " + Config.get().getHwi().getAbsolutePath() + " installudevrules");
+        TextAreaDialog dialog = new TextAreaDialog("sudo " + Config.get().getHwi().getAbsolutePath() + " installudevrules", false);
         dialog.initOwner(rootStack.getScene().getWindow());
         dialog.setTitle("Install Udev Rules");
         dialog.getDialogPane().setHeaderText("Installing udev rules ensures devices can connect over USB.\nThis command requires root privileges.\nOpen a shell and enter the following:");

@@ -153,6 +153,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         signature.setPrefRowCount(4);
         signature.setStyle("-fx-pref-height: 80px");
         signature.setWrapText(true);
+        signature.setOnMouseClicked(event -> signature.selectAll());
         signatureField.getInputs().add(signature);
 
         Field formatField = new Field();
