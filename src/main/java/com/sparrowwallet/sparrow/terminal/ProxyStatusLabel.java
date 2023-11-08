@@ -25,6 +25,7 @@ public class ProxyStatusLabel extends Label {
 
     public void update() {
         if(!AppServices.isUsingProxy()) {
+            proxyConnectionTest.cancel();
             getTextGUI().getGUIThread().invokeLater(() -> setText(""));
         } else if(!Config.get().isUseProxy()) {
             proxyConnectionTest.cancel();
