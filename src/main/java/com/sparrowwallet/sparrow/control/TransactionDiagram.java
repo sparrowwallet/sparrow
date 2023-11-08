@@ -999,7 +999,7 @@ public class TransactionDiagram extends GridPane {
     }
 
     private boolean isDuplicateAddress(Payment payment) {
-        return walletTx.getPayments().stream().filter(p -> payment != p).anyMatch(p -> payment.getAddress().equals(p.getAddress()));
+        return walletTx.getPayments().stream().filter(p -> payment != p).anyMatch(p -> payment.getAddress() != null && payment.getAddress().equals(p.getAddress()));
     }
 
     public static Glyph getExcludeGlyph() {

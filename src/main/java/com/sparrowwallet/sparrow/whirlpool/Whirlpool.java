@@ -45,6 +45,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +76,7 @@ public class Whirlpool {
     private boolean resyncMixesDone;
 
     private StartupService startupService;
+    private Duration startupServiceDelay;
 
     private final BooleanProperty startingProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty stoppingProperty = new SimpleBooleanProperty(false);
@@ -561,6 +563,14 @@ public class Whirlpool {
 
     public BooleanProperty stoppingProperty() {
         return stoppingProperty;
+    }
+
+    public Duration getStartupServiceDelay() {
+        return startupServiceDelay;
+    }
+
+    public void setStartupServiceDelay(Duration startupServiceDelay) {
+        this.startupServiceDelay = startupServiceDelay;
     }
 
     @Subscribe

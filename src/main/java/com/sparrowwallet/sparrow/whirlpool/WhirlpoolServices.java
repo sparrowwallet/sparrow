@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.soroban.Soroban;
+import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -105,6 +106,11 @@ public class WhirlpoolServices {
             }
 
             Whirlpool.StartupService startupService = whirlpool.createStartupService();
+            if(whirlpool.getStartupServiceDelay() != null) {
+                startupService.setDelay(whirlpool.getStartupServiceDelay());
+                whirlpool.setStartupServiceDelay(null);
+            }
+
             startupService.setPeriod(Duration.minutes(2));
             startupService.setOnSucceeded(workerStateEvent -> {
                 startupService.cancel();
@@ -279,6 +285,19 @@ public class WhirlpoolServices {
         Whirlpool whirlpool = getWhirlpool(event.getWallet());
         if(whirlpool != null) {
             whirlpool.refreshUtxos();
+        }
+    }
+
+    @Subscribe
+    public void whirlpoolIndexHighFrequency(WhirlpoolIndexHighFrequencyEvent event) {
+        Whirlpool whirlpool = getWhirlpool(event.getWallet());
+        if(whirlpool != null && whirlpool.isStarted() && !whirlpool.isStopping()) {
+            log.warn("Rapidly increasing address index detected, temporarily disconnecting " + event.getWallet().getMasterName() + " from Whirlpool");
+            Platform.runLater(() -> {
+                EventManager.get().post(new StatusEvent("Error communicating with Whirlpool, will retry soon..."));
+                whirlpool.setStartupServiceDelay(Duration.minutes(5));
+                stopWhirlpool(whirlpool, false);
+            });
         }
     }
 }

@@ -8,11 +8,16 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletGapLimitChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletMixConfigChangedEvent;
+import com.sparrowwallet.sparrow.event.WhirlpoolIndexHighFrequencyEvent;
 
 public class SparrowIndexHandler extends AbstractIndexHandler {
     private final Wallet wallet;
     private final WalletNode walletNode;
     private final int defaultValue;
+
+    private static final long PERIOD = 1000 * 60 * 10L;  //Period of 10 minutes
+    private long periodStart;
+    private int periodCount;
 
     public SparrowIndexHandler(Wallet wallet, WalletNode walletNode) {
         this(wallet, walletNode, 0);
@@ -77,6 +82,20 @@ public class SparrowIndexHandler extends AbstractIndexHandler {
         if(index > highestUsedIndex + existingGapLimit) {
             wallet.setGapLimit(Math.max(wallet.getGapLimit(), index - highestUsedIndex));
             EventManager.get().post(new WalletGapLimitChangedEvent(getWalletId(), wallet, existingGapLimit));
+            checkFrequency();
+        }
+    }
+
+    private void checkFrequency() {
+        if(periodStart > 0 && System.currentTimeMillis() - periodStart < PERIOD) {
+            periodCount++;
+        } else {
+            periodStart = System.currentTimeMillis();
+            periodCount = 0;
+        }
+
+        if(periodCount >= Wallet.DEFAULT_LOOKAHEAD) {
+            EventManager.get().post(new WhirlpoolIndexHighFrequencyEvent(wallet));
         }
     }
 
