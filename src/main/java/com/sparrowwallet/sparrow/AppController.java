@@ -414,22 +414,11 @@ public class AppController implements Initializable {
         org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
         if(platform == org.controlsfx.tools.Platform.OSX) {
             tabs.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-                if(event.isShortcutDown() && event.isAltDown()) {
+                if(event.isShortcutDown() && event.isAltDown() && (event.getCode() == KeyCode.LEFT || event.getCode() == KeyCode.RIGHT)) {
                     int currentIndex = tabs.getSelectionModel().getSelectedIndex();
                     if(event.getCode() == KeyCode.LEFT && currentIndex > 0) {
                         tabs.getSelectionModel().select(currentIndex - 1);
                     } else if(event.getCode() == KeyCode.RIGHT && currentIndex < tabs.getTabs().size() - 1) {
-                        tabs.getSelectionModel().select(currentIndex + 1);
-                    }
-                }
-            });
-        } else {
-            tabs.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-                if(event.isShortcutDown()) {
-                    int currentIndex = tabs.getSelectionModel().getSelectedIndex();
-                    if(event.getCode() == KeyCode.PAGE_UP && currentIndex > 0) {
-                        tabs.getSelectionModel().select(currentIndex - 1);
-                    } else if(event.getCode() == KeyCode.PAGE_DOWN && currentIndex < tabs.getTabs().size() - 1) {
                         tabs.getSelectionModel().select(currentIndex + 1);
                     }
                 }
