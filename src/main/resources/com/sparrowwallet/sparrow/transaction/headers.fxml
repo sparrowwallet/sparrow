@@ -191,7 +191,7 @@
     </DynamicForm>
 
     <Form fx:id="signingWalletForm" GridPane.columnIndex="0" GridPane.rowIndex="6">
-        <Fieldset text="Signatures" inputGrow="SOMETIMES">
+        <Fieldset text="Signatures" inputGrow="SOMETIMES" styleClass="relaxedLabelFieldSet">
             <Field text="Signing Wallet:">
                 <ComboBox fx:id="signingWallet" />
                 <Label fx:id="noWalletsWarning" graphicTextGap="5" text="No open wallets can sign. ">

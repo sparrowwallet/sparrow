@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.animation.*;
+import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.util.Duration;
@@ -20,6 +21,7 @@ public class SparrowTextGui extends MultiWindowTextGUI {
     private final Panel titleBar;
     private final Panel statusBar;
 
+    private final ProxyStatusLabel proxyStatusLabel;
     private final Label connectedLabel;
     private final Label statusLabel;
     private final ProgressBar statusProgress;
@@ -36,8 +38,10 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
         Panel panel = new Panel(new BorderLayout());
 
-        titleBar = new Panel(new GridLayout(2));
+        titleBar = new Panel(new GridLayout(3));
         new Label("Sparrow Terminal").addTo(titleBar);
+        this.proxyStatusLabel = new ProxyStatusLabel();
+        titleBar.addComponent(proxyStatusLabel, GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, true, false));
         this.connectedLabel = new Label("Disconnected");
         titleBar.addComponent(connectedLabel, GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER, true, false));
         panel.addComponent(titleBar, BorderLayout.Location.TOP);
@@ -73,8 +77,12 @@ public class SparrowTextGui extends MultiWindowTextGUI {
 
     private void setConnectedLabel(Integer height) {
         getGUIThread().invokeLater(() -> {
-            connectedLabel.setText(height == null ? "Disconnected" : "Connected " + (AppServices.isUsingProxy() ? "with proxy " : "") + "at " + height);
+            connectedLabel.setText(height == null ? "Disconnected" : "Connected at " + height);
         });
+    }
+
+    private void updateProxyStatusLabel() {
+        Platform.runLater(proxyStatusLabel::update);
     }
 
     @Subscribe
@@ -85,12 +93,14 @@ public class SparrowTextGui extends MultiWindowTextGUI {
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
         setDisconnectedLabel();
+        updateProxyStatusLabel();
         statusUpdated(new StatusEvent("Connection failed: " + event.getMessage()));
     }
 
     @Subscribe
     public void connection(ConnectionEvent event) {
         setConnectedLabel(event.getBlockHeight());
+        updateProxyStatusLabel();
         statusUpdated(new StatusEvent("Connected to " + Config.get().getServerDisplayName() + " at height " + event.getBlockHeight()));
     }
 
@@ -105,6 +115,21 @@ public class SparrowTextGui extends MultiWindowTextGUI {
     @Subscribe
     public void newBlock(NewBlockEvent event) {
         setConnectedLabel(event.getHeight());
+    }
+
+    @Subscribe
+    public void torBootStatus(TorBootStatusEvent event) {
+        updateProxyStatusLabel();
+    }
+
+    @Subscribe
+    public void torFailedStatus(TorFailedStatusEvent event) {
+        updateProxyStatusLabel();
+    }
+
+    @Subscribe
+    public void torReadyStatus(TorReadyStatusEvent event) {
+        updateProxyStatusLabel();
     }
 
     @Subscribe
