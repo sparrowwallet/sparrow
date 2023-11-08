@@ -278,6 +278,11 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     public void mixSelected(ActionEvent event) {
+        if(!getWalletForm().getWallet().isMasterWallet() && getWalletForm().getWallet().getStandardAccountType() == StandardAccount.ACCOUNT_0) {
+            showErrorDialog("Invalid Whirlpool wallet", "Create a new wallet with Account #0 as the first account.");
+            return;
+        }
+
         List<UtxoEntry> selectedEntries = getSelectedUtxos();
         WhirlpoolDialog whirlpoolDialog = new WhirlpoolDialog(getWalletForm().getMasterWalletId(), getWalletForm().getWallet(), selectedEntries);
         whirlpoolDialog.initOwner(utxosTable.getScene().getWindow());
