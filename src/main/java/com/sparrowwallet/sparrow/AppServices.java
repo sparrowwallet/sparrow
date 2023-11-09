@@ -575,7 +575,7 @@ public class AppServices {
     }
 
     private static double getReducedWindowHeight() {
-        return org.controlsfx.tools.Platform.getCurrent() != org.controlsfx.tools.Platform.OSX ? 790d : 768d;  //Check for menu bar of ~22px
+        return org.controlsfx.tools.Platform.getCurrent() != org.controlsfx.tools.Platform.OSX ? 802d : 768d;  //Check for menu bar of ~34px
     }
 
     public Application getApplication() {
