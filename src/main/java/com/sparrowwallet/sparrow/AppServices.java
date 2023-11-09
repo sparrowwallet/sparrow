@@ -567,11 +567,15 @@ public class AppServices {
 
     public static boolean isReducedWindowHeight() {
         Window activeWindow = getActiveWindow();
-        return (activeWindow != null && activeWindow.getHeight() < 768);
+        return (activeWindow != null && activeWindow.getHeight() < getReducedWindowHeight());
     }
 
     public static boolean isReducedWindowHeight(Node node) {
-        return (node.getScene() != null && node.getScene().getWindow().getHeight() < 768);
+        return (node.getScene() != null && node.getScene().getWindow().getHeight() < getReducedWindowHeight());
+    }
+
+    private static double getReducedWindowHeight() {
+        return org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS ? 790d : 768d;  //Windows includes menu bar of 22px
     }
 
     public Application getApplication() {

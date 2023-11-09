@@ -224,11 +224,12 @@
     </Form>
 
     <VBox fx:id="finalizeButtonBox" styleClass="signatures-buttons" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="7">
-        <Button fx:id="finalizeTransaction" graphicTextGap="5" text="Finalize Transaction for Signing" prefWidth="Infinity" defaultButton="true" onAction="#finalizeTransaction">
+        <Button fx:id="finalizeTransaction" graphicTextGap="5" text="Finalize Transaction for Signing" prefWidth="Infinity" defaultButton="true" onAction="#finalizeTransaction" minHeight="52">
             <graphic>
                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="10" icon="LOCK" />
             </graphic>
         </Button>
+        <Region minHeight="14" />
     </VBox>
 
     <Form fx:id="signaturesForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
