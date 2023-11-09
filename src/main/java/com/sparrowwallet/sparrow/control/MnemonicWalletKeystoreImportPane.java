@@ -109,6 +109,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
 
         List<List<ChildNumber>> derivations = ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE).stream().map(ScriptType::getDefaultDerivation).collect(Collectors.toList());
         derivations.add(List.of(new ChildNumber(0, true)));
+        derivations.add(ScriptType.P2PKH.getDefaultDerivation(1)); //Bisq segwit misderivation
 
         for(ScriptType scriptType : ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE)) {
             for(List<ChildNumber> derivation : derivations) {
