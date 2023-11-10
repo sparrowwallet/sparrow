@@ -51,7 +51,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
         AnchorPane.setRightAnchor(scrollPane, 0.0);
 
         importAccordion = new Accordion();
-        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new GordianSeedTool(), new SeedSigner(), new SpecterDIY());
+        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new GordianSeedTool(), new SeedSigner(), new SpecterDIY(), new Krux());
         for(KeystoreFileImport importer : keystoreImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
