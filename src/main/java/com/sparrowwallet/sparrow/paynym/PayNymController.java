@@ -179,7 +179,7 @@ public class PayNymController {
         }
         retrievePayNymProgress.setVisible(true);
 
-        AppServices.getPayNymService().getPayNym(getMasterWallet().getPaymentCode().toString()).subscribe(payNym -> {
+        PayNymService.getPayNym(getMasterWallet().getPaymentCode().toString()).subscribe(payNym -> {
             retrievePayNymProgress.setVisible(false);
             walletPayNym = payNym;
             searchPayNyms.setDisable(false);
@@ -229,7 +229,7 @@ public class PayNymController {
             followingList.setItems(FXCollections.observableList(new ArrayList<>()));
             findPayNym.setVisible(true);
 
-            AppServices.getPayNymService().getPayNym(nymIdentifier, true).subscribe(searchedPayNym -> {
+            PayNymService.getPayNym(nymIdentifier, true).subscribe(searchedPayNym -> {
                 findPayNym.setVisible(false);
                 List<PayNym> searchList = new ArrayList<>();
                 searchList.add(searchedPayNym);
@@ -262,15 +262,14 @@ public class PayNymController {
     }
 
     public void retrievePayNym(ActionEvent event) {
-        PayNymService payNymService = AppServices.getPayNymService();
         Wallet masterWallet = getMasterWallet();
         setUsePayNym(masterWallet, true);
-        payNymService.createPayNym(masterWallet).subscribe(createMap -> {
+        PayNymService.createPayNym(masterWallet).subscribe(createMap -> {
             payNymName.setText((String)createMap.get("nymName"));
             payNymAvatar.setPaymentCode(masterWallet.getPaymentCode());
             payNymName.setVisible(true);
 
-            payNymService.claimPayNym(masterWallet, createMap, getMasterWallet().getScriptType() != ScriptType.P2PKH);
+            PayNymService.claimPayNym(masterWallet, createMap, getMasterWallet().getScriptType() != ScriptType.P2PKH);
             refresh();
         }, error -> {
             log.error("Error retrieving PayNym", error);
@@ -282,12 +281,11 @@ public class PayNymController {
     }
 
     public void followPayNym(PaymentCode contact) {
-        PayNymService payNymService = AppServices.getPayNymService();
         Wallet masterWallet = getMasterWallet();
         retrievePayNymProgress.setVisible(true);
-        payNymService.getAuthToken(masterWallet, new HashMap<>()).subscribe(authToken -> {
-            String signature = payNymService.getSignature(masterWallet, authToken);
-            payNymService.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
+        PayNymService.getAuthToken(masterWallet, new HashMap<>()).subscribe(authToken -> {
+            String signature = PayNymService.getSignature(masterWallet, authToken);
+            PayNymService.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
                 refresh();
             }, error -> {
                 retrievePayNymProgress.setVisible(false);

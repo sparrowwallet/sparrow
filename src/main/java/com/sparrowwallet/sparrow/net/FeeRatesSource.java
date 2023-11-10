@@ -1,16 +1,9 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.google.gson.Gson;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.Proxy;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -66,16 +59,14 @@ public enum FeeRatesSource {
     }
 
     private static Map<Integer, Double> getThreeTierFeeRates(Map<Integer, Double> defaultblockTargetFeeRates, String url) {
-        Proxy proxy = AppServices.getProxy();
-
         if(log.isInfoEnabled()) {
             log.info("Requesting fee rates from " + url);
         }
 
         Map<Integer, Double> blockTargetFeeRates = new LinkedHashMap<>();
-        try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-            Gson gson = new Gson();
-            ThreeTierRates threeTierRates = gson.fromJson(reader, ThreeTierRates.class);
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        try {
+            ThreeTierRates threeTierRates = httpClientService.requestJson(url, ThreeTierRates.class, null);
             Double lastRate = null;
             for(Integer blockTarget : defaultblockTargetFeeRates.keySet()) {
                 if(blockTarget < BLOCKS_IN_HALF_HOUR) {
@@ -116,9 +107,9 @@ public enum FeeRatesSource {
     }
 
     private static class ThreeTierRates {
-        Double fastestFee;
-        Double halfHourFee;
-        Double hourFee;
-        Double minimumFee;
+        public Double fastestFee;
+        public Double halfHourFee;
+        public Double hourFee;
+        public Double minimumFee;
     }
 }

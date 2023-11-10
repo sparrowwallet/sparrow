@@ -1,19 +1,17 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.nightjar.http.JavaHttpException;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.Proxy;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.List;
 
@@ -30,7 +28,7 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET, Network.TESTNET);
         }
 
-        protected URL getURL(Proxy proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
             if(Network.get() == Network.MAINNET) {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
             } else if(Network.get() == Network.TESTNET) {
@@ -51,7 +49,7 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET);
         }
 
-        protected URL getURL(Proxy proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
             if(Network.get() == Network.MAINNET) {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
             } else if(Network.get() == Network.TESTNET) {
@@ -74,7 +72,7 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET);
         }
 
-        protected URL getURL(Proxy proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
             if(Network.get() == Network.MAINNET) {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
             } else if(Network.get() == Network.TESTNET) {
@@ -95,7 +93,7 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET);
         }
 
-        protected URL getURL(Proxy proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
             if(Network.get() == Network.MAINNET) {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
             } else if(Network.get() == Network.TESTNET) {
@@ -131,7 +129,7 @@ public enum BroadcastSource {
         return onionUrl;
     }
 
-    public String getBaseUrl(Proxy proxy) {
+    public String getBaseUrl(HostAndPort proxy) {
         return (proxy == null ? getTlsUrl() : getOnionUrl());
     }
 
@@ -139,48 +137,30 @@ public enum BroadcastSource {
 
     public abstract List<Network> getSupportedNetworks();
 
-    protected abstract URL getURL(Proxy proxy) throws MalformedURLException;
+    protected abstract URL getURL(HostAndPort proxy) throws MalformedURLException;
 
     public Sha256Hash postTransactionData(String data) throws BroadcastException {
         //If a Tor proxy is configured, ensure we use a new circuit by configuring a random proxy password
-        Proxy proxy = AppServices.getProxy(Integer.toString(secureRandom.nextInt()));
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        httpClientService.changeIdentity();
 
         try {
-            URL url = getURL(proxy);
+            URL url = getURL(httpClientService.getTorProxy());
 
             if(log.isInfoEnabled()) {
                 log.info("Broadcasting transaction to " + url);
             }
 
-            HttpURLConnection connection = proxy == null ? (HttpURLConnection)url.openConnection() : (HttpURLConnection)url.openConnection(proxy);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "text/plain");
-            connection.setDoOutput(true);
-
-            try(OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream())) {
-                writer.write(data);
-                writer.flush();
-            }
-
-            StringBuilder response = new StringBuilder();
-            try(BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-                String responseLine;
-                while((responseLine = br.readLine()) != null) {
-                    response.append(responseLine.trim());
-                }
-            }
-
-            int statusCode = connection.getResponseCode();
-            if(statusCode < 200 || statusCode >= 300) {
-                throw new BroadcastException("Could not broadcast transaction, server returned " + statusCode + ": " + response);
-            }
+            String response = httpClientService.postString(url.toString(), null, "text/plain", data);
 
             try {
-                return Sha256Hash.wrap(response.toString().trim());
+                return Sha256Hash.wrap(response.trim());
             } catch(Exception e) {
-                throw new BroadcastException("Could not retrieve txid from broadcast, server returned " + statusCode + ": " + response);
+                throw new BroadcastException("Could not retrieve txid from broadcast, server returned: " + response);
             }
-        } catch(IOException e) {
+        } catch(JavaHttpException e) {
+            throw new BroadcastException("Could not broadcast transaction, server returned " + e.getStatusCode() + ": " + e.getResponseBody());
+        } catch(Exception e) {
             log.error("Could not post transaction via " + getName(), e);
             throw new BroadcastException("Could not broadcast transaction via " + getName(), e);
         }

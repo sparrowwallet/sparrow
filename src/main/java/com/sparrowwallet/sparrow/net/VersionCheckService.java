@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.google.gson.Gson;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;
@@ -13,12 +12,7 @@ import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.Proxy;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.security.SignatureException;
 import java.util.Map;
 
@@ -45,18 +39,15 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
     }
 
     private VersionCheck getVersionCheck() throws IOException {
-        URL url = new URL(VERSION_CHECK_URL);
-        Proxy proxy = AppServices.getProxy();
-
         if(log.isInfoEnabled()) {
-            log.info("Requesting application version check from " + url);
+            log.info("Requesting application version check from " + VERSION_CHECK_URL);
         }
 
-        HttpsURLConnection conn = (HttpsURLConnection)(proxy == null ? url.openConnection() : url.openConnection(proxy));
-
-        try(InputStreamReader reader = new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8)) {
-            Gson gson = new Gson();
-            return gson.fromJson(reader, VersionCheck.class);
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        try {
+            return httpClientService.requestJson(VERSION_CHECK_URL, VersionCheck.class, null);
+        } catch(Exception e) {
+            throw new IOException(e);
         }
     }
 

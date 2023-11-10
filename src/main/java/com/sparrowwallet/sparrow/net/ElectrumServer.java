@@ -18,6 +18,7 @@ import com.sparrowwallet.sparrow.io.Server;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindException;
 import com.sparrowwallet.sparrow.paynym.PayNym;
+import com.sparrowwallet.sparrow.paynym.PayNymService;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -1882,7 +1883,7 @@ public class ElectrumServer {
 
         private PayNym getPayNym(PaymentCode paymentCode) {
             try {
-                return AppServices.getPayNymService().getPayNym(paymentCode.toString()).blockingFirst();
+                return PayNymService.getPayNym(paymentCode.toString()).blockingFirst();
             } catch(Exception e) {
                 //ignore
             }

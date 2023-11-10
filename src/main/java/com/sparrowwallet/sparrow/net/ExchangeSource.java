@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.google.gson.Gson;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import javafx.concurrent.ScheduledService;
@@ -9,12 +8,6 @@ import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.net.Proxy;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -50,15 +43,14 @@ public enum ExchangeSource {
 
         private CoinbaseRates getRates() {
             String url = "https://api.coinbase.com/v2/exchange-rates?currency=BTC";
-            Proxy proxy = AppServices.getProxy();
 
             if(log.isInfoEnabled()) {
                 log.info("Requesting exchange rates from " + url);
             }
 
-            try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                Gson gson = new Gson();
-                return gson.fromJson(reader, CoinbaseRates.class);
+            HttpClientService httpClientService = AppServices.getHttpClientService();
+            try {
+                return httpClientService.requestJson(url, CoinbaseRates.class, null);
             } catch (Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -89,15 +81,14 @@ public enum ExchangeSource {
 
         private CoinGeckoRates getRates() {
             String url = "https://api.coingecko.com/api/v3/exchange_rates";
-            Proxy proxy = AppServices.getProxy();
 
             if(log.isInfoEnabled()) {
                 log.info("Requesting exchange rates from " + url);
             }
 
-            try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream()); Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                Gson gson = new Gson();
-                return gson.fromJson(reader, CoinGeckoRates.class);
+            HttpClientService httpClientService = AppServices.getHttpClientService();
+            try {
+                return httpClientService.requestJson(url, CoinGeckoRates.class, null);
             } catch(Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -176,22 +167,22 @@ public enum ExchangeSource {
     }
 
     private static class CoinbaseRates {
-        CoinbaseData data;
+        public CoinbaseData data = new CoinbaseData();
     }
 
     private static class CoinbaseData {
-        String currency;
-        Map<String, Double> rates;
+        public String currency;
+        public Map<String, Double> rates = new LinkedHashMap<>();
     }
 
     private static class CoinGeckoRates {
-        Map<String, CoinGeckoRate> rates = new LinkedHashMap<>();
+        public Map<String, CoinGeckoRate> rates = new LinkedHashMap<>();
     }
 
     private static class CoinGeckoRate {
-        String name;
-        String unit;
-        Double value;
-        String type;
+        public String name;
+        public String unit;
+        public Double value;
+        public String type;
     }
 }

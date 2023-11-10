@@ -24,6 +24,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.paynym.PayNym;
+import com.sparrowwallet.sparrow.paynym.PayNymService;
 import com.sparrowwallet.sparrow.soroban.InitiatorDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymAddress;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
@@ -1282,7 +1283,7 @@ public class SendController extends WalletFormController implements Initializabl
                         clear(null);
                         if(Config.get().isUsePayNym()) {
                             proxyWorker.setMessage("Finding PayNym...");
-                            AppServices.getPayNymService().getPayNym(externalPaymentCode.toString()).subscribe(payNym -> {
+                            PayNymService.getPayNym(externalPaymentCode.toString()).subscribe(payNym -> {
                                 proxyWorker.end();
                                 addChildWallets(walletTransaction.getWallet(), externalPaymentCode, transaction, payNym);
                             }, error -> {

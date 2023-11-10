@@ -24,7 +24,6 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
-import com.sparrowwallet.sparrow.paynym.PayNymService;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Application;
@@ -61,7 +60,6 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -96,7 +94,7 @@ public class AppServices {
 
     private InteractionServices interactionServices;
 
-    private static PayNymService payNymService;
+    private static HttpClientService httpClientService;
 
     private final Application application;
 
@@ -247,8 +245,8 @@ public class AppServices {
             versionCheckService.cancel();
         }
 
-        if(payNymService != null) {
-            PayNymService.ShutdownService shutdownService = new PayNymService.ShutdownService(payNymService);
+        if(httpClientService != null) {
+            HttpClientService.ShutdownService shutdownService = new HttpClientService.ShutdownService(httpClientService);
             shutdownService.start();
         }
 
@@ -513,18 +511,18 @@ public class AppServices {
         return get().interactionServices;
     }
 
-    public static PayNymService getPayNymService() {
-        if(payNymService == null) {
+    public static HttpClientService getHttpClientService() {
+        if(httpClientService == null) {
             HostAndPort torProxy = getTorProxy();
-            payNymService = new PayNymService(torProxy);
+            httpClientService = new HttpClientService(torProxy);
         } else {
             HostAndPort torProxy = getTorProxy();
-            if(!Objects.equals(payNymService.getTorProxy(), torProxy)) {
-                payNymService.setTorProxy(getTorProxy());
+            if(!Objects.equals(httpClientService.getTorProxy(), torProxy)) {
+                httpClientService.setTorProxy(getTorProxy());
             }
         }
 
-        return payNymService;
+        return httpClientService;
     }
 
     public static HostAndPort getTorProxy() {

@@ -31,6 +31,7 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymAddress;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
+import com.sparrowwallet.sparrow.paynym.PayNymService;
 import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -325,7 +326,7 @@ public class InitiatorController extends SorobanController {
 
     private void searchPayNyms(String identifier) {
         payNymLoading.setVisible(true);
-        AppServices.getPayNymService().getPayNym(identifier).subscribe(payNym -> {
+        PayNymService.getPayNym(identifier).subscribe(payNym -> {
             payNymLoading.setVisible(false);
             counterpartyPayNymName.set(payNym.nymName());
             counterpartyPaymentCode.set(new PaymentCode(payNym.paymentCode().toString()));
@@ -344,7 +345,7 @@ public class InitiatorController extends SorobanController {
 
     private void setPayNymFollowers() {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
-        AppServices.getPayNymService().getPayNym(masterWallet.getPaymentCode().toString()).map(PayNym::following).subscribe(followerPayNyms -> {
+        PayNymService.getPayNym(masterWallet.getPaymentCode().toString()).map(PayNym::following).subscribe(followerPayNyms -> {
             findPayNym.setVisible(true);
             payNymFollowers.setItems(FXCollections.observableList(followerPayNyms));
         }, error -> {
@@ -624,7 +625,7 @@ public class InitiatorController extends SorobanController {
         if(counterpartyPaymentCode.get() != null) {
             return Observable.just(counterpartyPaymentCode.get());
         } else {
-            return AppServices.getPayNymService().getPayNym(counterparty.getText()).map(payNym -> new PaymentCode(payNym.paymentCode().toString()));
+            return PayNymService.getPayNym(counterparty.getText()).map(payNym -> new PaymentCode(payNym.paymentCode().toString()));
         }
     }
 

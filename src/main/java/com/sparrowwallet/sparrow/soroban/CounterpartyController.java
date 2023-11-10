@@ -268,7 +268,7 @@ public class CounterpartyController extends SorobanController {
         mixingPartner.setText(code.substring(0, 12) + "..." + code.substring(code.length() - 5));
         if(isUsePayNym(wallet)) {
             mixPartnerAvatar.setPaymentCode(paymentCodeInitiator);
-            AppServices.getPayNymService().getPayNym(paymentCodeInitiator.toString()).subscribe(payNym -> {
+            PayNymService.getPayNym(paymentCodeInitiator.toString()).subscribe(payNym -> {
                 mixingPartner.setText(payNym.nymName());
             }, error -> {
                 //ignore, may not be a PayNym
@@ -346,10 +346,9 @@ public class CounterpartyController extends SorobanController {
 
     private void followPaymentCode(PaymentCode paymentCodeInitiator) {
         if(isUsePayNym(wallet)) {
-            PayNymService payNymService = AppServices.getPayNymService();
-            payNymService.getAuthToken(wallet, new HashMap<>()).subscribe(authToken -> {
-                String signature = payNymService.getSignature(wallet, authToken);
-                payNymService.followPaymentCode(paymentCodeInitiator, authToken, signature).subscribe(followMap -> {
+            PayNymService.getAuthToken(wallet, new HashMap<>()).subscribe(authToken -> {
+                String signature = PayNymService.getSignature(wallet, authToken);
+                PayNymService.followPaymentCode(paymentCodeInitiator, authToken, signature).subscribe(followMap -> {
                    log.debug("Followed payment code " + followMap.get("following"));
                 }, error -> {
                     log.warn("Could not follow payment code", error);
@@ -389,13 +388,12 @@ public class CounterpartyController extends SorobanController {
     public void retrievePayNym(ActionEvent event) {
         setUsePayNym(wallet, true);
 
-        PayNymService payNymService = AppServices.getPayNymService();
-        payNymService.createPayNym(wallet).subscribe(createMap -> {
+        PayNymService.createPayNym(wallet).subscribe(createMap -> {
             payNym.setText((String)createMap.get("nymName"));
             payNymAvatar.setPaymentCode(wallet.isMasterWallet() ? wallet.getPaymentCode() : wallet.getMasterWallet().getPaymentCode());
             payNym.setVisible(true);
 
-            payNymService.claimPayNym(wallet, createMap, true);
+            PayNymService.claimPayNym(wallet, createMap, true);
         }, error -> {
             log.error("Error retrieving PayNym", error);
             Optional<ButtonType> optResponse = showErrorDialog("Error retrieving PayNym", "Could not retrieve PayNym. Try again?", ButtonType.CANCEL, ButtonType.OK);

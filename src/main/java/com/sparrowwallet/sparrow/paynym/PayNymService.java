@@ -1,8 +1,5 @@
 package com.sparrowwallet.sparrow.paynym;
 
-import com.google.common.net.HostAndPort;
-import com.samourai.http.client.HttpUsage;
-import com.samourai.http.client.IHttpClient;
 import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
@@ -10,13 +7,11 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.nightjar.http.JavaHttpClientService;
+import com.sparrowwallet.sparrow.AppServices;
 import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
 import java8.util.Optional;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,17 +25,15 @@ import java.util.stream.Collectors;
 public class PayNymService {
     private static final Logger log = LoggerFactory.getLogger(PayNymService.class);
 
-    private final JavaHttpClientService httpClientService;
-
-    public PayNymService(HostAndPort torProxy) {
-        this.httpClientService = new JavaHttpClientService(torProxy, 120000);
+    private PayNymService() {
+        //private constructor
     }
 
-    public Observable<Map<String, Object>> createPayNym(Wallet wallet) {
+    public static Observable<Map<String, Object>> createPayNym(Wallet wallet) {
         return createPayNym(getPaymentCode(wallet));
     }
 
-    public Observable<Map<String, Object>> createPayNym(PaymentCode paymentCode) {
+    public static Observable<Map<String, Object>> createPayNym(PaymentCode paymentCode) {
         if(paymentCode == null) {
             throw new IllegalStateException("Payment code is null");
         }
@@ -56,14 +49,13 @@ public class PayNymService {
             log.info("Creating PayNym using " + url);
         }
 
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, Map.class, headers, body)
+        return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
     }
 
-    public Observable<Map<String, Object>> updateToken(PaymentCode paymentCode) {
+    public static Observable<Map<String, Object>> updateToken(PaymentCode paymentCode) {
         if(paymentCode == null) {
             throw new IllegalStateException("Payment code is null");
         }
@@ -79,14 +71,13 @@ public class PayNymService {
             log.info("Updating PayNym token using " + url);
         }
 
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, Map.class, headers, body)
+        return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
     }
 
-    public void claimPayNym(Wallet wallet, Map<String, Object> createMap, boolean segwit) {
+    public static void claimPayNym(Wallet wallet, Map<String, Object> createMap, boolean segwit) {
         if(createMap.get("claimed") == Boolean.FALSE) {
             getAuthToken(wallet, createMap).subscribe(authToken -> {
                 String signature = getSignature(wallet, authToken);
@@ -116,7 +107,7 @@ public class PayNymService {
         }
     }
 
-    private Observable<Map<String, Object>> claimPayNym(String authToken, String signature) {
+    private static Observable<Map<String, Object>> claimPayNym(String authToken, String signature) {
         Map<String, String> headers = new HashMap<>();
         headers.put("content-type", "application/json");
         headers.put("auth-token", authToken);
@@ -129,14 +120,13 @@ public class PayNymService {
             log.info("Claiming PayNym using " + url);
         }
 
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, Map.class, headers, body)
+        return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
     }
 
-    public Observable<Map<String, Object>> addPaymentCode(PaymentCode paymentCode, String authToken, String signature, boolean segwit) {
+    public static Observable<Map<String, Object>> addPaymentCode(PaymentCode paymentCode, String authToken, String signature, boolean segwit) {
         String strPaymentCode;
         try {
             strPaymentCode = segwit ? paymentCode.makeSamouraiPaymentCode() : paymentCode.toString();
@@ -159,18 +149,17 @@ public class PayNymService {
             log.info("Adding payment code to PayNym using " + url);
         }
 
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, Map.class, headers, body)
+        return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
     }
 
-    public Observable<Map<String, Object>> followPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode, String authToken, String signature) {
+    public static Observable<Map<String, Object>> followPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode, String authToken, String signature) {
         return followPaymentCode(PaymentCode.fromString(paymentCode.toString()), authToken, signature);
     }
 
-    public Observable<Map<String, Object>> followPaymentCode(PaymentCode paymentCode, String authToken, String signature) {
+    public static Observable<Map<String, Object>> followPaymentCode(PaymentCode paymentCode, String authToken, String signature) {
         Map<String, String> headers = new HashMap<>();
         headers.put("content-type", "application/json");
         headers.put("auth-token", authToken);
@@ -184,14 +173,13 @@ public class PayNymService {
             log.info("Following payment code using " + url);
         }
 
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, Map.class, headers, body)
+        return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
     }
 
-    public Observable<Map<String, Object>> fetchPayNym(String nymIdentifier, boolean compact) {
+    public static Observable<Map<String, Object>> fetchPayNym(String nymIdentifier, boolean compact) {
         Map<String, String> headers = new HashMap<>();
         headers.put("content-type", "application/json");
 
@@ -203,18 +191,17 @@ public class PayNymService {
             log.info("Fetching PayNym using " + url);
         }
 
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, Map.class, headers, body)
+        return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
                 .map(Optional::get);
     }
 
-    public Observable<PayNym> getPayNym(String nymIdentifier) {
+    public static Observable<PayNym> getPayNym(String nymIdentifier) {
         return getPayNym(nymIdentifier, false);
     }
 
-    public Observable<PayNym> getPayNym(String nymIdentifier, boolean compact) {
+    public static Observable<PayNym> getPayNym(String nymIdentifier, boolean compact) {
         return fetchPayNym(nymIdentifier, compact).map(nymMap -> {
             List<Map<String, Object>> codes = (List<Map<String, Object>>)nymMap.get("codes");
             PaymentCode code = new PaymentCode((String)codes.stream().filter(codeMap -> codeMap.get("segwit") == Boolean.FALSE).map(codeMap -> codeMap.get("code")).findFirst().orElse(codes.get(0).get("code")));
@@ -237,7 +224,7 @@ public class PayNymService {
         });
     }
 
-    public Observable<String> getAuthToken(Wallet wallet, Map<String, Object> map) {
+    public static Observable<String> getAuthToken(Wallet wallet, Map<String, Object> map) {
         if(map.containsKey("token")) {
             return Observable.just((String)map.get("token"));
         }
@@ -245,11 +232,11 @@ public class PayNymService {
         return updateToken(wallet).map(tokenMap -> (String)tokenMap.get("token"));
     }
 
-    public Observable<Map<String, Object>> updateToken(Wallet wallet) {
+    public static Observable<Map<String, Object>> updateToken(Wallet wallet) {
         return updateToken(getPaymentCode(wallet));
     }
 
-    public String getSignature(Wallet wallet, String authToken) {
+    public static String getSignature(Wallet wallet, String authToken) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         Keystore keystore = masterWallet.getKeystores().get(0);
         List<ChildNumber> derivation = keystore.getKeyDerivation().getDerivation();
@@ -258,48 +245,16 @@ public class PayNymService {
         return notificationPrivKey.signMessage(authToken, ScriptType.P2PKH);
     }
 
-    private PaymentCode getPaymentCode(Wallet wallet) {
+    private static PaymentCode getPaymentCode(Wallet wallet) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         return masterWallet.getPaymentCode();
     }
 
-    public HostAndPort getTorProxy() {
-        return httpClientService.getTorProxy();
-    }
-
-    public void setTorProxy(HostAndPort torProxy) {
-        //Ensure all http clients are shutdown first
-        httpClientService.shutdown();
-        httpClientService.setTorProxy(torProxy);
-    }
-
-    private String getHostUrl() {
-        return getHostUrl(getTorProxy() != null);
+    private static String getHostUrl() {
+        return getHostUrl(AppServices.getHttpClientService().getTorProxy() != null);
     }
 
     public static String getHostUrl(boolean tor) {
         return tor ? "http://paynym7bwekdtb2hzgkpl6y2waqcrs2dii7lwincvxme7mdpcpxzfsad.onion" : "https://paynym.is";
-    }
-
-    public void shutdown() {
-        httpClientService.shutdown();
-    }
-
-    public static class ShutdownService extends Service<Boolean> {
-        private final PayNymService payNymService;
-
-        public ShutdownService(PayNymService payNymService) {
-            this.payNymService = payNymService;
-        }
-
-        @Override
-        protected Task<Boolean> createTask() {
-            return new Task<>() {
-                protected Boolean call() throws Exception {
-                    payNymService.shutdown();
-                    return true;
-                }
-            };
-        }
     }
 }
