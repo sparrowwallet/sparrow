@@ -352,12 +352,14 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         List<BlockTransactionHashIndex> ourOutputs = transactionEntry.getChildren().stream()
                 .filter(e -> e instanceof HashIndexEntry)
                 .map(e -> (HashIndexEntry)e)
-                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT))
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
                 .map(HashIndexEntry::getHashIndex)
                 .collect(Collectors.toList());
 
         if(ourOutputs.isEmpty()) {
-            throw new IllegalStateException("Cannot create CPFP without any wallet outputs to spend");
+            AppServices.showErrorDialog("No spendable outputs", "None of the outputs on this transaction are spendable.\n\n Ensure that the outputs are not frozen" +
+                    (transactionEntry.getConfirmations() <= 0 ? ", and spending unconfirmed UTXOs is allowed." : "."));
+            return;
         }
 
         BlockTransactionHashIndex cpfpUtxo = ourOutputs.get(0);
