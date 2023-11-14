@@ -36,6 +36,7 @@ public class PayNymAddressesDialog extends Dialog<Boolean> {
 
             dialogPane.setPrefWidth(800);
             dialogPane.setPrefHeight(600);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
 
             setResizable(true);
         } catch(IOException e) {

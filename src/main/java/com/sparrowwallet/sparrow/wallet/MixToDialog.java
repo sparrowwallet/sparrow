@@ -46,6 +46,7 @@ public class MixToDialog extends Dialog<MixConfig> {
 
             dialogPane.setPrefWidth(400);
             dialogPane.setPrefHeight(300);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
             setResultConverter(dialogButton -> dialogButton == applyButtonType ? mixToController.getMixConfig() : null);

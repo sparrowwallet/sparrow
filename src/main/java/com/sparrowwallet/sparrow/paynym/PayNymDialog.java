@@ -27,6 +27,7 @@ public class PayNymDialog extends Dialog<PayNym> {
 
             dialogPane.setPrefWidth(730);
             dialogPane.setPrefHeight(600);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());

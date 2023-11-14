@@ -22,6 +22,7 @@ public class WelcomeDialog extends Dialog<Mode> {
 
             dialogPane.setPrefWidth(600);
             dialogPane.setPrefHeight(520);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("welcome.css").toExternalForm());

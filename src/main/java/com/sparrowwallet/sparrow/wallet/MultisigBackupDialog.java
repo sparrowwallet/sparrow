@@ -55,6 +55,7 @@ public class MultisigBackupDialog extends Dialog<String> {
 
         dialogPane.setPrefWidth(700);
         dialogPane.setPrefHeight(500);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
     }
 

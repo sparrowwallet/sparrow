@@ -91,6 +91,7 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(360);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton == cancelButtonType ? null : getResult());

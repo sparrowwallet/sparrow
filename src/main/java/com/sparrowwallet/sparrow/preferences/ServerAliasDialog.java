@@ -90,6 +90,7 @@ public class ServerAliasDialog extends Dialog<Server> {
 
         dialogPane.setPrefWidth(680);
         dialogPane.setPrefHeight(500);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.moveToActiveWindowScreen(this);
     }

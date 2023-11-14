@@ -45,6 +45,7 @@ public class InitiatorDialog extends Dialog<Transaction> {
 
             dialogPane.setPrefWidth(730);
             dialogPane.setPrefHeight(530);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());

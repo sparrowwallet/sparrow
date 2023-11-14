@@ -173,6 +173,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         dialogPane.getButtonTypes().addAll(hdButtonType, camButtonType, cancelButtonType);
         dialogPane.setPrefWidth(646);
         dialogPane.setPrefHeight(webcamResolutionProperty.get() == WebcamResolution.HD ? 490 : 590);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? result : null);

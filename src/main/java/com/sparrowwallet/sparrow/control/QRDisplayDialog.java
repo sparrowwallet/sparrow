@@ -109,6 +109,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         dialogPane.setPrefWidth(40 + qrSize + 40);
         dialogPane.setPrefHeight(40 + qrSize + 85);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton);
@@ -143,6 +144,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         dialogPane.setPrefWidth(40 + qrSize + 40);
         dialogPane.setPrefHeight(40 + qrSize + 85);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton);

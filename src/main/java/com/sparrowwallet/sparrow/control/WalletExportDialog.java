@@ -64,6 +64,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
         dialogPane.getButtonTypes().addAll(cancelButtonType);
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(480);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);

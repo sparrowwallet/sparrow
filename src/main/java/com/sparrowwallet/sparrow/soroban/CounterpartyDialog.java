@@ -22,6 +22,7 @@ public class CounterpartyDialog extends Dialog<Boolean> {
 
             dialogPane.setPrefWidth(730);
             dialogPane.setPrefHeight(520);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());

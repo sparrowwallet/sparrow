@@ -90,6 +90,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(600);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);

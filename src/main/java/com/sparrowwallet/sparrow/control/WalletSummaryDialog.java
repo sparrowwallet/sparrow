@@ -116,6 +116,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         ButtonType okButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().addAll(okButtonType);
 
+        setResizable(true);
         AppServices.moveToActiveWindowScreen(this);
     }
 

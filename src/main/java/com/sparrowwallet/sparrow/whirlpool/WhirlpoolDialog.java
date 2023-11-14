@@ -27,6 +27,7 @@ public class WhirlpoolDialog extends Dialog<Tx0Preview> {
 
             dialogPane.setPrefWidth(600);
             dialogPane.setPrefHeight(570);
+            dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());

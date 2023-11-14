@@ -81,6 +81,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
 
         dialogPane.setPrefWidth(850);
         dialogPane.setPrefHeight(500);
+        setResizable(true);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.moveToActiveWindowScreen(this);
     }

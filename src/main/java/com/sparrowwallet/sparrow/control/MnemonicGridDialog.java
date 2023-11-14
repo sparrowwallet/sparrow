@@ -139,6 +139,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
 
         dialogPane.setPrefWidth(952);
         dialogPane.setPrefHeight(500);
+        dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.moveToActiveWindowScreen(this);
     }
