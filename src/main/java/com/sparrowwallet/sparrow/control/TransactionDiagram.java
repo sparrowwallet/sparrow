@@ -642,7 +642,7 @@ public class TransactionDiagram extends GridPane {
 
         double width = 140.0;
         long sum = walletTx.getTotal();
-        List<Long> values = walletTx.getTransaction().getOutputs().stream().map(TransactionOutput::getValue).collect(Collectors.toList());
+        List<Long> values = walletTx.getTransaction().getOutputs().stream().filter(txo -> txo.getScript().getToAddress() != null).map(TransactionOutput::getValue).collect(Collectors.toList());
         values.add(walletTx.getFee());
         int numOutputs = displayedPayments.size() + walletTx.getChangeMap().size() + 1;
         for(int i = 1; i <= numOutputs; i++) {
