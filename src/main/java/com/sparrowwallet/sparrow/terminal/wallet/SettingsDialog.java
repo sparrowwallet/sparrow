@@ -114,7 +114,7 @@ public class SettingsDialog extends WalletDialog {
         if(standardAccount != null) {
             addAccount(masterWallet, standardAccount, () -> {
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
-                    if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+                    if(StandardAccount.isWhirlpoolAccount(standardAccount)) {
                         showSuccessDialog("Added Accounts", "Whirlpool Accounts have been successfully added.");
                     } else {
                         showSuccessDialog("Added Account", standardAccount.getName() + " has been successfully added.");

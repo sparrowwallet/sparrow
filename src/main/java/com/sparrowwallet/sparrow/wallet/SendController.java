@@ -411,7 +411,7 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         efficiencyToggle.setOnAction(event -> {
-            if(StandardAccount.WHIRLPOOL_MIX_ACCOUNTS.contains(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
+            if(StandardAccount.isWhirlpoolMixAccount(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
                 AppServices.showWarningDialog("Privacy may be lost!", "It is recommended to optimize for privacy when sending coinjoined outputs.");
                 overrideOptimizationStrategy = true;
             }
@@ -1014,7 +1014,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private OptimizationStrategy getPreferredOptimizationStrategy() {
         OptimizationStrategy optimizationStrategy = Config.get().getSendOptimizationStrategy();
-        if(StandardAccount.WHIRLPOOL_MIX_ACCOUNTS.contains(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
+        if(StandardAccount.isWhirlpoolMixAccount(getWalletForm().getWallet().getStandardAccountType()) && !overrideOptimizationStrategy) {
             optimizationStrategy = OptimizationStrategy.PRIVACY;
         }
 

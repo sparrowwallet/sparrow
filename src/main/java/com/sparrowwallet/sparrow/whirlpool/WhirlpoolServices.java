@@ -173,7 +173,7 @@ public class WhirlpoolServices {
                 && wallet.getKeystores().get(0).hasSeed()
                 && wallet.getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
                 && wallet.getStandardAccountType() != null
-                && StandardAccount.MIXABLE_ACCOUNTS.contains(wallet.getStandardAccountType());
+                && StandardAccount.isMixableAccount(wallet.getStandardAccountType());
     }
 
     public static boolean canWatchPostmix(Wallet wallet) {

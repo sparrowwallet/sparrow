@@ -40,7 +40,7 @@ final class AddAccountDialog extends DialogWindow {
 
         List<StandardAccount> availableAccounts = new ArrayList<>();
         for(StandardAccount standardAccount : StandardAccount.values()) {
-            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.isWhirlpoolAccount(standardAccount)) {
                 availableAccounts.add(standardAccount);
             }
         }
@@ -87,7 +87,7 @@ final class AddAccountDialog extends DialogWindow {
 
         @Override
         public String toString() {
-            if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(account)) {
+            if(StandardAccount.isWhirlpoolAccount(account)) {
                 return "Whirlpool Accounts";
             }
 

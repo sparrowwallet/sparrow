@@ -124,7 +124,7 @@ public class WalletDialog extends DialogWindow {
 
     private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
         List<Wallet> childWallets;
-        if(StandardAccount.WHIRLPOOL_ACCOUNTS.contains(standardAccount)) {
+        if(StandardAccount.isWhirlpoolAccount(standardAccount)) {
             childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);
