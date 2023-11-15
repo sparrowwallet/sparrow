@@ -58,6 +58,7 @@ public class BitcoindClient {
     private final Map<String, ScanDate> importedDescriptors = Collections.synchronizedMap(new HashMap<>());
 
     private final Map<String, Date> descriptorBirthDates = new HashMap<>();
+    private final Map<String, Integer> descriptorUsedIndexes = new HashMap<>();
 
     private boolean initialized;
     private boolean stopped;
@@ -257,7 +258,7 @@ public class BitcoindClient {
     }
 
     private ScanDate getScanDate(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose, Date earliestBirthDate) {
-        Integer range = (keyPurpose == null ? null : wallet.getFreshNode(keyPurpose).getIndex() + getGapLimit(wallet, keyPurpose));
+        Integer range = (keyPurpose == null ? null : getHighestUsedIndex(normalizedDescriptor, wallet, keyPurpose) + getGapLimit(wallet, keyPurpose));
 
         //Force a rescan if loading a wallet with a birthday later than existing transactions, or if the wallet birthdate has been set or changed to an earlier date from the last check
         boolean forceRescan = false;
@@ -271,8 +272,13 @@ public class BitcoindClient {
         return new ScanDate(earliestBirthDate, range, forceRescan);
     }
 
+    private int getHighestUsedIndex(String descriptor, Wallet wallet, KeyPurpose keyPurpose) {
+        int highestUsedIndex = wallet.getFreshNode(keyPurpose).getIndex() - 1;
+        return descriptorUsedIndexes.compute(descriptor, (d, lastHighestUsedIndex) -> lastHighestUsedIndex == null ? highestUsedIndex : Math.max(highestUsedIndex, lastHighestUsedIndex));
+    }
+
     private int getGapLimit(Wallet wallet, KeyPurpose keyPurpose) {
-        return wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && keyPurpose == KeyPurpose.RECEIVE ? POSTMIX_GAP_LIMIT : DEFAULT_GAP_LIMIT;
+        return Math.max(wallet.getGapLimit(), wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && keyPurpose == KeyPurpose.RECEIVE ? POSTMIX_GAP_LIMIT : DEFAULT_GAP_LIMIT);
     }
 
     private void importDescriptors(Map<String, ScanDate> descriptors) throws ScanDateBeforePruneException {
@@ -322,8 +328,11 @@ public class BitcoindClient {
             }
 
             ScanDate scanDate = entry.getValue();
-            if(scanDate.forceRescan) {
-                ScanDate importedScanDate = importedDescriptors.get(entry.getKey());
+            ScanDate importedScanDate = importedDescriptors.get(entry.getKey());
+            if(scanDate.range != null && importedScanDate != null && importedScanDate.range != null && scanDate.range > importedScanDate.range) {
+                Date rescanSince = scanDate.rescanSince != null && (importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince)) ? scanDate.rescanSince : importedScanDate.rescanSince;
+                importingDescriptors.put(entry.getKey(), new ScanDate(rescanSince, scanDate.range, false));
+            } else if(scanDate.forceRescan) {
                 if(scanDate.rescanSince != null && (importedScanDate == null || importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince))) {
                     importingDescriptors.put(entry.getKey(), new ScanDate(scanDate.rescanSince, importedScanDate != null ? importedScanDate.range : scanDate.range, false));
                 }
