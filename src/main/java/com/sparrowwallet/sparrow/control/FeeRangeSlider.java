@@ -20,6 +20,7 @@ public class FeeRangeSlider extends Slider {
         setSnapToTicks(false);
         setShowTickLabels(true);
         setShowTickMarks(true);
+        setBlockIncrement(Math.log(1.02) / Math.log(2));
 
         setLabelFormatter(new StringConverter<Double>() {
             @Override
