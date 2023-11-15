@@ -71,6 +71,13 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
                 throw new IllegalStateException("Cannot find wallet for external destination " + externalDestination);
             }
 
+            //Ensure mix config is present to save indexes
+            MixConfig mixConfig = externalWallet.getMixConfig();
+            if(mixConfig == null) {
+                mixConfig = new MixConfig();
+                externalWallet.setMixConfig(mixConfig);
+            }
+
             KeyPurpose keyPurpose = KeyPurpose.fromChildNumber(new ChildNumber(externalDestination.getChain()));
             WalletNode externalNode = externalWallet.getNode(keyPurpose);
             externalIndexHandler = new SparrowIndexHandler(externalWallet, externalNode, externalDestination.getStartIndex());

@@ -533,6 +533,10 @@ public class Whirlpool {
             int startIndex = highestUsedIndex == null ? 0 : highestUsedIndex + 1;
             int mixes = minMixes == null ? DEFAULT_MIXTO_MIN_MIXES : minMixes;
 
+            if(mixToWallet.getMixConfig() != null) {
+                startIndex = Math.max(startIndex, mixToWallet.getMixConfig().getReceiveIndex());
+            }
+
             IPostmixHandler postmixHandler = new SparrowPostmixHandler(whirlpoolWalletService, mixToWallet, KeyPurpose.RECEIVE, startIndex);
             ExternalDestination externalDestination = new ExternalDestination(postmixHandler, 0, startIndex, mixes, DEFAULT_MIXTO_RANDOM_FACTOR);
             config.setExternalDestination(externalDestination);
