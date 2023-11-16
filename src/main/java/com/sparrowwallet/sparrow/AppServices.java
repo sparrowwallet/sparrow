@@ -83,8 +83,10 @@ public class AppServices {
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
 
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
-    public static final List<Long> FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L);
+    public static final List<Long> LONG_FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L, 2048L, 4096L, 8192L);
+    public static final List<Long> FEE_RATES_RANGE = LONG_FEE_RATES_RANGE.subList(0, LONG_FEE_RATES_RANGE.size() - 3);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
+    public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
 
     private static AppServices INSTANCE;
 
@@ -660,13 +662,17 @@ public class AppServices {
 
     public static Double getDefaultFeeRate() {
         int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
-        return getTargetBlockFeeRates() == null ? FALLBACK_FEE_RATE : getTargetBlockFeeRates().get(defaultTarget);
+        return getTargetBlockFeeRates() == null ? getFallbackFeeRate() : getTargetBlockFeeRates().get(defaultTarget);
     }
 
     public static Double getMinimumFeeRate() {
         Optional<Double> optMinFeeRate = getTargetBlockFeeRates().values().stream().min(Double::compareTo);
-        Double minRate = optMinFeeRate.orElse(FALLBACK_FEE_RATE);
+        Double minRate = optMinFeeRate.orElse(getFallbackFeeRate());
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
+    }
+
+    public static double getFallbackFeeRate() {
+        return Network.get() == Network.MAINNET ? FALLBACK_FEE_RATE : TESTNET_FALLBACK_FEE_RATE;
     }
 
     public static Map<Integer, Double> getTargetBlockFeeRates() {

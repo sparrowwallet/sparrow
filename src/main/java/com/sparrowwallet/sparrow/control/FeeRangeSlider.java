@@ -22,10 +22,14 @@ public class FeeRangeSlider extends Slider {
         setShowTickMarks(true);
         setBlockIncrement(Math.log(1.02) / Math.log(2));
 
-        setLabelFormatter(new StringConverter<Double>() {
+        setLabelFormatter(new StringConverter<>() {
             @Override
             public String toString(Double object) {
-                return Long.toString(FEE_RATES_RANGE.get(object.intValue()));
+                Long feeRate = LONG_FEE_RATES_RANGE.get(object.intValue());
+                if(isLongFeeRange() && feeRate >= 1000) {
+                    return feeRate / 1000 + "k";
+                }
+                return Long.toString(feeRate);
             }
 
             @Override
@@ -35,6 +39,12 @@ public class FeeRangeSlider extends Slider {
         });
 
         updateTrackHighlight();
+
+        valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null) {
+                updateMaxFeeRange(newValue.doubleValue());
+            }
+        });
     }
 
     public double getFeeRate() {
@@ -42,7 +52,23 @@ public class FeeRangeSlider extends Slider {
     }
 
     public void setFeeRate(double feeRate) {
-        setValue(Math.log(feeRate) / Math.log(2));
+        double value = Math.log(feeRate) / Math.log(2);
+        updateMaxFeeRange(value);
+        setValue(value);
+    }
+
+    private void updateMaxFeeRange(double value) {
+        if(value >= getMax() && !isLongFeeRange()) {
+            setMax(LONG_FEE_RATES_RANGE.size() - 1);
+            updateTrackHighlight();
+        } else if(value == getMin() && isLongFeeRange()) {
+            setMax(FEE_RATES_RANGE.size() - 1);
+            updateTrackHighlight();
+        }
+    }
+
+    private boolean isLongFeeRange() {
+        return getMax() > FEE_RATES_RANGE.size() - 1;
     }
 
     public void updateTrackHighlight() {
@@ -76,7 +102,7 @@ public class FeeRangeSlider extends Slider {
     private Map<Integer, Double> getTargetBlocksFeeRates() {
         Map<Integer, Double> retrievedFeeRates = AppServices.getTargetBlockFeeRates();
         if(retrievedFeeRates == null) {
-            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> FALLBACK_FEE_RATE,
+            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> getFallbackFeeRate(),
                     (u, v) -> { throw new IllegalStateException("Duplicate target blocks"); },
                     LinkedHashMap::new));
         }
@@ -98,6 +124,9 @@ public class FeeRangeSlider extends Slider {
 
     private int getPercentageOfFeeRange(Double feeRate) {
         double index = Math.log(feeRate) / Math.log(2);
+        if(isLongFeeRange()) {
+            index *= ((double)FEE_RATES_RANGE.size() / (LONG_FEE_RATES_RANGE.size())) * 0.99;
+        }
         return (int)Math.round(index * 10.0);
     }
 }

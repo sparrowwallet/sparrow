@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
@@ -242,6 +243,8 @@ public class SendController extends WalletFormController implements Initializabl
     private WalletTransactionService walletTransactionService;
 
     private boolean overrideOptimizationStrategy;
+
+    private boolean updateDefaultFeeRate;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -757,6 +760,10 @@ public class SendController extends WalletFormController implements Initializabl
         blockTargetFeeRatesChart.select(defaultTarget);
         setFeeRangeRate(defaultRate);
         setFeeRate(getFeeRangeRate());
+        if(Network.get().equals(Network.MAINNET) && defaultRate == getFallbackFeeRate()) {
+            //Update the selected fee rate once fee rates have been received
+            updateDefaultFeeRate = true;
+        }
     }
 
     private Long getFeeValueSats() {
@@ -821,7 +828,7 @@ public class SendController extends WalletFormController implements Initializabl
     private Map<Integer, Double> getTargetBlocksFeeRates() {
         Map<Integer, Double> retrievedFeeRates = AppServices.getTargetBlockFeeRates();
         if(retrievedFeeRates == null) {
-            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> FALLBACK_FEE_RATE,
+            retrievedFeeRates = TARGET_BLOCKS_RANGE.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> getFallbackFeeRate(),
                     (u, v) -> { throw new IllegalStateException("Duplicate target blocks"); },
                     LinkedHashMap::new));
         }
@@ -860,7 +867,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private Double getMinimumFeeRate() {
         Optional<Double> optMinFeeRate = getTargetBlocksFeeRates().values().stream().min(Double::compareTo);
-        Double minRate = optMinFeeRate.orElse(FALLBACK_FEE_RATE);
+        Double minRate = optMinFeeRate.orElse(getFallbackFeeRate());
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
     }
 
@@ -1451,6 +1458,11 @@ public class SendController extends WalletFormController implements Initializabl
             setFeeRatePriority(getFeeRangeRate());
         }
         feeRange.updateTrackHighlight();
+
+        if(updateDefaultFeeRate) {
+            setDefaultFeeRate();
+            updateDefaultFeeRate = false;
+        }
     }
 
     @Subscribe
