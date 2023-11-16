@@ -1460,7 +1460,9 @@ public class SendController extends WalletFormController implements Initializabl
         feeRange.updateTrackHighlight();
 
         if(updateDefaultFeeRate) {
-            setDefaultFeeRate();
+            if(getFeeRate() != null && Long.valueOf((long)getFallbackFeeRate()).equals(getFeeRate().longValue())) {
+                setDefaultFeeRate();
+            }
             updateDefaultFeeRate = false;
         }
     }
