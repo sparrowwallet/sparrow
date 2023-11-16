@@ -19,14 +19,14 @@ public enum FeeRatesSource {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/fees/recommended" : "https://mempool.space/api/v1/fees/recommended";
-            return getThreeTierFeeRates(defaultblockTargetFeeRates, url);
+            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
         }
     },
     BITCOINFEES_EARN_COM("bitcoinfees.earn.com") {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = "https://bitcoinfees.earn.com/api/v1/fees/recommended";
-            return getThreeTierFeeRates(defaultblockTargetFeeRates, url);
+            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
         }
     },
     MINIMUM("Minimum (1 sat/vB)") {
@@ -38,6 +38,22 @@ public enum FeeRatesSource {
             }
 
             return blockTargetFeeRates;
+        }
+    },
+    OXT_ME("oxt.me") {
+        @Override
+        public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
+            String url = AppServices.isUsingProxy() ? "http://oxtwshnfyktikbflierkwcxxksbonl6v73l5so5zky7ur72w52tktkid.onion/stats/global/mempool" : "https://api.oxt.me/stats/global/mempool";
+            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        protected ThreeTierRates getThreeTierRates(String url, HttpClientService httpClientService) throws Exception {
+            OxtRates oxtRates = httpClientService.requestJson(url, OxtRates.class, null);
+            if(oxtRates.data == null || oxtRates.data.length < 1) {
+                throw new Exception("Invalid response from " + url);
+            }
+            return oxtRates.data[0].getThreeTierRates();
         }
     };
 
@@ -58,7 +74,7 @@ public enum FeeRatesSource {
         return name;
     }
 
-    private static Map<Integer, Double> getThreeTierFeeRates(Map<Integer, Double> defaultblockTargetFeeRates, String url) {
+    private static Map<Integer, Double> getThreeTierFeeRates(FeeRatesSource feeRatesSource, Map<Integer, Double> defaultblockTargetFeeRates, String url) {
         if(log.isInfoEnabled()) {
             log.info("Requesting fee rates from " + url);
         }
@@ -66,7 +82,7 @@ public enum FeeRatesSource {
         Map<Integer, Double> blockTargetFeeRates = new LinkedHashMap<>();
         HttpClientService httpClientService = AppServices.getHttpClientService();
         try {
-            ThreeTierRates threeTierRates = httpClientService.requestJson(url, ThreeTierRates.class, null);
+            ThreeTierRates threeTierRates = feeRatesSource.getThreeTierRates(url, httpClientService);
             Double lastRate = null;
             for(Integer blockTarget : defaultblockTargetFeeRates.keySet()) {
                 if(blockTarget < BLOCKS_IN_HALF_HOUR) {
@@ -101,15 +117,22 @@ public enum FeeRatesSource {
         return blockTargetFeeRates;
     }
 
+    protected ThreeTierRates getThreeTierRates(String url, HttpClientService httpClientService) throws Exception {
+        return httpClientService.requestJson(url, ThreeTierRates.class, null);
+    }
+
     @Override
     public String toString() {
         return name;
     }
 
-    private static class ThreeTierRates {
-        public Double fastestFee;
-        public Double halfHourFee;
-        public Double hourFee;
-        public Double minimumFee;
+    private record ThreeTierRates(Double fastestFee, Double halfHourFee, Double hourFee, Double minimumFee) {}
+
+    private record OxtRates(OxtRatesData[] data) {}
+
+    private record OxtRatesData(Double recommended_fee_099, Double recommended_fee_090, Double recommended_fee_050) {
+        public ThreeTierRates getThreeTierRates() {
+            return new ThreeTierRates(recommended_fee_099/1000, recommended_fee_090/1000, recommended_fee_050/1000, null);
+        }
     }
 }
