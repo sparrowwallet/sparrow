@@ -813,6 +813,18 @@ public class ElectrumServer {
     }
 
     public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks) throws ServerException {
+        Map<Integer, Double> targetBlocksFeeRatesSats = getDefaultFeeEstimates(targetBlocks);
+
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        if(Network.get().equals(Network.MAINNET)) {
+            targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
+        }
+
+        return targetBlocksFeeRatesSats;
+    }
+
+    public Map<Integer, Double> getDefaultFeeEstimates(List<Integer> targetBlocks) throws ServerException {
         try {
             Map<Integer, Double> targetBlocksFeeRatesBtcKb = electrumServerRpc.getFeeEstimates(getTransport(), targetBlocks);
 
@@ -825,15 +837,12 @@ public class ElectrumServer {
                 targetBlocksFeeRatesSats.put(target, minFeeRateSatsKb / 1000d);
             }
 
-            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
-            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
-            if(Network.get().equals(Network.MAINNET)) {
-                targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
-            }
-
             return targetBlocksFeeRatesSats;
         } catch(ElectrumServerRpcException e) {
-            throw new ServerException(e.getMessage(), e);
+            log.warn(e.getMessage());
+            return targetBlocks.stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> AppServices.getFallbackFeeRate(),
+                    (u, v) -> { throw new IllegalStateException("Duplicate target blocks"); },
+                    LinkedHashMap::new));
         }
     }
 

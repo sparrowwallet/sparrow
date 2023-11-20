@@ -228,7 +228,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         try {
             return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
-            throw new ElectrumServerRpcException("Error getting fee estimates: " + e.getErrors(), e);
+            throw new ElectrumServerRpcException("Error getting fee estimates from connected server: " + e.getErrors(), e);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting fee estimates for target blocks: " + targetBlocks, e);
         }
