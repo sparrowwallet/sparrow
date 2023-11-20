@@ -62,6 +62,11 @@ public class Cormorant {
     }
 
     public boolean checkWalletImport(Wallet wallet) {
+        if(bitcoindClient == null) {
+            log.warn("Attempting to check if " + wallet.getMasterName() + " is imported, but Cormorant is not started");
+            return false;
+        }
+
         //Will block until all wallet descriptors have been added
         try {
             bitcoindClient.importWallet(wallet);
@@ -73,6 +78,11 @@ public class Cormorant {
     }
 
     public void checkAddressImport(Address address, Date since) throws ServerException {
+        if(bitcoindClient == null) {
+            log.warn("Attempting to check if an address is imported, but Cormorant is not started");
+            throw new ServerException("Server is not connected");
+        }
+
         //Will block until address descriptor has been added
         try {
             bitcoindClient.importAddress(address, since);
@@ -86,7 +96,9 @@ public class Cormorant {
     }
 
     public void stop() {
-        bitcoindClient.stop();
+        if(bitcoindClient != null) {
+            bitcoindClient.stop();
+        }
         if(electrumServer != null) {
             electrumServer.stop();
         }
