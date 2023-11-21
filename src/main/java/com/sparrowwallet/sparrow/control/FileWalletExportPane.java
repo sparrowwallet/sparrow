@@ -1,7 +1,10 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.hummingbird.registry.CryptoOutput;
 import com.sparrowwallet.hummingbird.registry.RegistryType;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -25,6 +28,8 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.Optional;
+
+import static com.sparrowwallet.sparrow.wallet.SettingsController.getCryptoOutput;
 
 public class FileWalletExportPane extends TitledDescriptionPane {
     private final Wallet wallet;
@@ -164,6 +169,10 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
                 } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig || exporter instanceof Bip129) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
+                } else if(exporter instanceof Descriptor) {
+                    OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(exportWallet, KeyPurpose.DEFAULT_PURPOSES, null);
+                    CryptoOutput cryptoOutput = getCryptoOutput(exportWallet);
+                    qrDisplayDialog = new DescriptorQRDisplayDialog(exportWallet.getFullDisplayName(), outputDescriptor.toString(true), cryptoOutput.toUR());
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
                 }

@@ -381,7 +381,7 @@ public class SettingsController extends WalletFormController implements Initiali
         qrDisplayDialog.showAndWait();
     }
 
-    private CryptoOutput getCryptoOutput(Wallet wallet) {
+    public static CryptoOutput getCryptoOutput(Wallet wallet) {
         List<ScriptExpression> scriptExpressions = getScriptExpressions(wallet.getScriptType());
 
         CryptoOutput cryptoOutput = null;
@@ -392,7 +392,7 @@ public class SettingsController extends WalletFormController implements Initiali
             Utils.LexicographicByteArrayComparator lexicographicByteArrayComparator = new Utils.LexicographicByteArrayComparator();
             List<CryptoHDKey> cryptoHDKeys = wallet.getKeystores().stream().sorted((keystore1, keystore2) -> {
                 return lexicographicByteArrayComparator.compare(keystore1.getPubKey(firstReceive).getPubKey(), keystore2.getPubKey(firstReceive).getPubKey());
-            }).map(this::getCryptoHDKey).collect(Collectors.toList());
+            }).map(SettingsController::getCryptoHDKey).collect(Collectors.toList());
             MultiKey multiKey = new MultiKey(wallet.getDefaultPolicy().getNumSignaturesRequired(), null, cryptoHDKeys);
             List<ScriptExpression> multiScriptExpressions = new ArrayList<>(scriptExpressions);
             multiScriptExpressions.add(ScriptExpression.SORTED_MULTISIG);
@@ -402,7 +402,7 @@ public class SettingsController extends WalletFormController implements Initiali
         return cryptoOutput;
     }
 
-    private List<ScriptExpression> getScriptExpressions(ScriptType scriptType) {
+    private static List<ScriptExpression> getScriptExpressions(ScriptType scriptType) {
         if(scriptType == ScriptType.P2PK) {
             return List.of(ScriptExpression.PUBLIC_KEY);
         } else if(scriptType == ScriptType.P2PKH) {
@@ -424,7 +424,7 @@ public class SettingsController extends WalletFormController implements Initiali
         throw new IllegalArgumentException("Unknown script type of " + scriptType);
     }
 
-    private CryptoHDKey getCryptoHDKey(Keystore keystore) {
+    private static CryptoHDKey getCryptoHDKey(Keystore keystore) {
         ExtendedKey extendedKey = keystore.getExtendedPublicKey();
         CryptoCoinInfo cryptoCoinInfo = new CryptoCoinInfo(CryptoCoinInfo.Type.BITCOIN.ordinal(), Network.get() == Network.MAINNET ? CryptoCoinInfo.Network.MAINNET.ordinal() : CryptoCoinInfo.Network.TESTNET.ordinal());
         List<PathComponent> pathComponents = keystore.getKeyDerivation().getDerivation().stream().map(cNum -> new IndexPathComponent(cNum.num(), cNum.isHardened())).collect(Collectors.toList());
