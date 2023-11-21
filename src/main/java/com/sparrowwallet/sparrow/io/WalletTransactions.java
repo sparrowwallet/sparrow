@@ -96,6 +96,12 @@ public class WalletTransactions implements WalletExport {
                 writer.write(txEntry.getBlockTransaction().getHash().toString());
                 writer.endRecord();
             }
+
+            if(fiatCurrency != null) {
+                writer.endRecord();
+                writer.writeComment(" Historical " + fiatCurrency.getCurrencyCode() + " values are taken from daily rates and should only be considered as approximate.");
+            }
+
             writer.close();
         } catch(IOException e) {
             throw new ExportException("Error writing transactions CSV", e);
