@@ -58,7 +58,7 @@ public class WalletData {
 
     public SettingsDialog getSettingsDialog() {
         if(settingsDialog == null) {
-            SettingsWalletForm settingsWalletForm = new SettingsWalletForm(walletForm.getStorage(), walletForm.getWallet());
+            SettingsWalletForm settingsWalletForm = new SettingsWalletForm(walletForm.getStorage(), walletForm.getWallet(), walletForm);
             settingsDialog = new SettingsDialog(settingsWalletForm);
             EventManager.get().register(settingsDialog);
         }

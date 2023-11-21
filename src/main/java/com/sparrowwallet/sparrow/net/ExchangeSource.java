@@ -1,13 +1,20 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.sparrowwallet.nightjar.http.JavaHttpException;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.apache.commons.lang3.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,6 +28,11 @@ public enum ExchangeSource {
         @Override
         public Double getExchangeRate(Currency currency) {
             return null;
+        }
+
+        @Override
+        public Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end) {
+            return Collections.emptyMap();
         }
     },
     COINBASE("Coinbase") {
@@ -60,6 +72,52 @@ public enum ExchangeSource {
                 return new CoinbaseRates();
             }
         }
+
+        @Override
+        public Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end) {
+            Map<Date, Double> historicalRates = new TreeMap<>();
+            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+            Instant currentInstant = start.toInstant();
+            Instant endInstant = end.toInstant();
+
+            while(currentInstant.isBefore(endInstant) || currentInstant.equals(endInstant)) {
+                Date fromDate = Date.from(currentInstant.atZone(ZoneId.systemDefault()).toInstant());
+                currentInstant = currentInstant.plus(300, ChronoUnit.DAYS);
+                Date toDate = Date.from(currentInstant.atZone(ZoneId.systemDefault()).toInstant());
+                toDate = toDate.after(end) ? end : toDate;
+
+                String startTime = dateFormat.format(fromDate);
+                String endTime = dateFormat.format(toDate);
+
+                String url = "https://api.pro.coinbase.com/products/BTC-" + currency.getCurrencyCode() + "/candles?start=" + startTime + "T12:00:00&end=" + endTime + "T12:00:00&granularity=86400";
+
+                if(log.isInfoEnabled()) {
+                    log.info("Requesting historical exchange rates from " + url);
+                }
+
+                HttpClientService httpClientService = AppServices.getHttpClientService();
+                try {
+                    Number[][] coinbaseData = httpClientService.requestJson(url, Number[][].class, Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*"));
+                    for(Number[] price : coinbaseData) {
+                        Date date = new Date(price[0].longValue() * 1000);
+                        historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), price[3].doubleValue());
+                    }
+                } catch(Exception e) {
+                    if(log.isDebugEnabled()) {
+                        log.warn("Error retrieving historical currency rates", e);
+                    } else {
+                        if(e instanceof JavaHttpException javaHttpException && javaHttpException.getStatusCode() == 404) {
+                            log.warn("Error retrieving historical currency rates (" + e.getMessage() + "). BTC-" + currency.getCurrencyCode() + " may not be supported by " + this);
+                        } else {
+                            log.warn("Error retrieving historical currency rates (" + e.getMessage() + ")");
+                        }
+                    }
+                }
+            }
+
+            return historicalRates;
+        }
     },
     COINGECKO("Coingecko") {
         @Override
@@ -98,6 +156,36 @@ public enum ExchangeSource {
                 return new CoinGeckoRates();
             }
         }
+
+        @Override
+        public Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end) {
+            long startDate = start.getTime() / 1000;
+            long endDate = end.getTime() / 1000;
+
+            String url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=" + currency.getCurrencyCode() + "&from=" + startDate + "&to=" + endDate;
+
+            if(log.isInfoEnabled()) {
+                log.info("Requesting historical exchange rates from " + url);
+            }
+
+            Map<Date, Double> historicalRates = new TreeMap<>();
+            HttpClientService httpClientService = AppServices.getHttpClientService();
+            try {
+                CoinGeckoHistoricalRates coinGeckoHistoricalRates = httpClientService.requestJson(url, CoinGeckoHistoricalRates.class, null);
+                for(List<Number> historicalRate : coinGeckoHistoricalRates.prices) {
+                    Date date = new Date(historicalRate.get(0).longValue());
+                    historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), historicalRate.get(1).doubleValue());
+                }
+            } catch(Exception e) {
+                if(log.isDebugEnabled()) {
+                    log.warn("Error retrieving historical currency rates", e);
+                } else {
+                    log.warn("Error retrieving historical currency rates (" + e.getMessage() + ")");
+                }
+            }
+
+            return historicalRates;
+        }
     };
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
@@ -111,6 +199,8 @@ public enum ExchangeSource {
     public abstract List<Currency> getSupportedCurrencies();
 
     public abstract Double getExchangeRate(Currency currency);
+
+    public abstract Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end);
 
     private static boolean isValidISO4217Code(String code) {
         try {
@@ -184,5 +274,9 @@ public enum ExchangeSource {
         public String unit;
         public Double value;
         public String type;
+    }
+
+    private static class CoinGeckoHistoricalRates {
+        public List<List<Number>> prices = new ArrayList<>();
     }
 }

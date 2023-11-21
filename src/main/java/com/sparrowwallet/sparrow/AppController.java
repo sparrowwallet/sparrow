@@ -1299,7 +1299,7 @@ public class AppController implements Initializable {
     public void exportWallet(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
-            WalletExportDialog dlg = new WalletExportDialog(selectedWalletForm.getWallet());
+            WalletExportDialog dlg = new WalletExportDialog(selectedWalletForm);
             dlg.initOwner(rootStack.getScene().getWindow());
             Optional<Wallet> wallet = dlg.showAndWait();
             if(wallet.isPresent()) {

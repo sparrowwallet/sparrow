@@ -22,11 +22,13 @@ import java.util.Objects;
  */
 public class SettingsWalletForm extends WalletForm {
     private Wallet walletCopy;
+    private final WalletForm appWalletForm;
 
-    public SettingsWalletForm(Storage storage, Wallet currentWallet) {
+    public SettingsWalletForm(Storage storage, Wallet currentWallet, WalletForm appWalletForm) {
         super(storage, currentWallet);
         this.walletCopy = currentWallet.copy();
         this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
+        this.appWalletForm = appWalletForm;
     }
 
     @Override
@@ -37,6 +39,10 @@ public class SettingsWalletForm extends WalletForm {
     @Override
     public void setWallet(Wallet wallet) {
         this.walletCopy = wallet;
+    }
+
+    public WalletForm getAppWalletForm() {
+        return appWalletForm;
     }
 
     @Override

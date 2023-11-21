@@ -10,6 +10,8 @@ import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
@@ -141,10 +143,19 @@ public class FileWalletExportPane extends TitledDescriptionPane {
     private void exportWallet(File file, Wallet exportWallet) {
         try {
             if(file != null) {
-                try(OutputStream outputStream = new FileOutputStream(file)) {
-                    exporter.exportWallet(exportWallet, outputStream);
+                FileWalletExportService fileWalletExportService = new FileWalletExportService(exporter, file, exportWallet);
+                fileWalletExportService.setOnSucceeded(event -> {
                     EventManager.get().post(new WalletExportEvent(exportWallet));
-                }
+                });
+                fileWalletExportService.setOnFailed(event -> {
+                    Throwable e = event.getSource().getException();
+                    String errorMessage = e.getMessage();
+                    if(e.getCause() != null && e.getCause().getMessage() != null && !e.getCause().getMessage().isEmpty()) {
+                        errorMessage = e.getCause().getMessage();
+                    }
+                    setError("Export Error", errorMessage);
+                });
+                fileWalletExportService.start();
             } else {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 exporter.exportWallet(exportWallet, outputStream);
@@ -165,6 +176,32 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 errorMessage = e.getCause().getMessage();
             }
             setError("Export Error", errorMessage);
+        }
+    }
+
+    public static class FileWalletExportService extends Service<Void> {
+        private final WalletExport exporter;
+        private final File file;
+        private final Wallet wallet;
+
+        public FileWalletExportService(WalletExport exporter, File file, Wallet wallet) {
+            this.exporter = exporter;
+            this.file = file;
+            this.wallet = wallet;
+        }
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    try(OutputStream outputStream = new FileOutputStream(file)) {
+                        exporter.exportWallet(wallet, outputStream);
+                    }
+
+                    return null;
+                }
+            };
         }
     }
 }

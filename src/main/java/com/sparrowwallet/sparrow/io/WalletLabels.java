@@ -37,7 +37,7 @@ public class WalletLabels implements WalletImport, WalletExport {
 
     @Override
     public String getName() {
-        return "Wallet Labels";
+        return "Labels";
     }
 
     @Override

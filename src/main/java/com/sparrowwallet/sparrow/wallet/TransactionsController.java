@@ -1,18 +1,14 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.csvreader.CsvWriter;
 import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.drongo.BitcoinUnit;
-import com.sparrowwallet.drongo.protocol.TransactionInput;
-import com.sparrowwallet.drongo.protocol.TransactionOutput;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.WalletTransactions;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
@@ -28,15 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Locale;
 import java.util.ResourceBundle;
 
 public class TransactionsController extends WalletFormController implements Initializable {
@@ -113,63 +105,23 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     public void exportCSV(ActionEvent event) {
-        WalletTransactionsEntry walletTransactionsEntry = getWalletForm().getWalletTransactionsEntry();
+        Wallet wallet = getWalletForm().getWallet();
 
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export Transactions as CSV");
-        fileChooser.setInitialFileName(getWalletForm().getWallet().getFullName() + ".csv");
-
+        fileChooser.setInitialFileName(wallet.getFullName() + "-transactions.csv");
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
-            try(FileOutputStream outputStream = new FileOutputStream(file)) {
-                CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                writer.writeRecord(new String[] {"Date", "Label", "Value", "Balance", "Fee", "Txid"});
-                for(Entry entry : walletTransactionsEntry.getChildren()) {
-                    TransactionEntry txEntry = (TransactionEntry)entry;
-                    writer.write(txEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
-                    writer.write(txEntry.getLabel());
-                    writer.write(getCoinValue(txEntry.getValue()));
-                    writer.write(getCoinValue(txEntry.getBalance()));
-                    Long fee = txEntry.getValue() < 0 ? getFee(txEntry.getBlockTransaction()) : null;
-                    writer.write(fee == null ? "" : getCoinValue(fee));
-                    writer.write(txEntry.getBlockTransaction().getHash().toString());
-                    writer.endRecord();
-                }
-                writer.close();
-            } catch(IOException e) {
+            FileWalletExportPane.FileWalletExportService exportService = new FileWalletExportPane.FileWalletExportService(new WalletTransactions(getWalletForm()), file, wallet);
+            exportService.setOnFailed(failedEvent -> {
+                Throwable e = failedEvent.getSource().getException();
                 log.error("Error exporting transactions as CSV", e);
                 AppServices.showErrorDialog("Error exporting transactions as CSV", e.getMessage());
-            }
+            });
+            exportService.start();
         }
-    }
-
-    private Long getFee(BlockTransaction blockTransaction) {
-        long fee = 0L;
-        for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
-            if(txInput.isCoinBase()) {
-                return 0L;
-            }
-
-            BlockTransaction inputTx = getWalletForm().getWallet().getWalletTransaction(txInput.getOutpoint().getHash());
-            if(inputTx == null || inputTx.getTransaction().getOutputs().size() <= txInput.getOutpoint().getIndex()) {
-                return null;
-            }
-            TransactionOutput spentOutput = inputTx.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
-            fee += spentOutput.getValue();
-        }
-
-        for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
-            fee -= txOutput.getValue();
-        }
-
-        return fee;
-    }
-
-    private String getCoinValue(Long value) {
-        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-        return BitcoinUnit.BTC.equals(transactionsTable.getBitcoinUnit()) ? format.tableFormatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
     }
 
     private void logMessage(String logMessage) {

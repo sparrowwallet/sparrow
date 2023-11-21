@@ -12,6 +12,7 @@ public enum UnitFormat {
         private final DecimalFormat satsFormat = new DecimalFormat("#,##0", getDecimalFormatSymbols());
         private final DecimalFormat tableBtcFormat = new DecimalFormat("0.00000000", getDecimalFormatSymbols());
         private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00", getDecimalFormatSymbols());
+        private final DecimalFormat tableCurrencyFormat = new DecimalFormat("0.00", getDecimalFormatSymbols());
 
         public DecimalFormat getBtcFormat() {
             btcFormat.setMaximumFractionDigits(8);
@@ -28,6 +29,10 @@ public enum UnitFormat {
 
         public DecimalFormat getCurrencyFormat() {
             return currencyFormat;
+        }
+
+        public DecimalFormat getTableCurrencyFormat() {
+            return tableCurrencyFormat;
         }
 
         public DecimalFormatSymbols getDecimalFormatSymbols() {
@@ -42,6 +47,7 @@ public enum UnitFormat {
         private final DecimalFormat satsFormat = new DecimalFormat("#,##0", getDecimalFormatSymbols());
         private final DecimalFormat tableBtcFormat = new DecimalFormat("0.00000000", getDecimalFormatSymbols());
         private final DecimalFormat currencyFormat = new DecimalFormat("#,##0.00", getDecimalFormatSymbols());
+        private final DecimalFormat tableCurrencyFormat = new DecimalFormat("0.00", getDecimalFormatSymbols());
 
         public DecimalFormat getBtcFormat() {
             btcFormat.setMaximumFractionDigits(8);
@@ -58,6 +64,10 @@ public enum UnitFormat {
 
         public DecimalFormat getCurrencyFormat() {
             return currencyFormat;
+        }
+
+        public DecimalFormat getTableCurrencyFormat() {
+            return tableCurrencyFormat;
         }
 
         public DecimalFormatSymbols getDecimalFormatSymbols() {
@@ -78,6 +88,8 @@ public enum UnitFormat {
 
     public abstract DecimalFormat getCurrencyFormat();
 
+    public abstract DecimalFormat getTableCurrencyFormat();
+
     public String formatBtcValue(Long amount) {
         return getBtcFormat().format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
     }
@@ -92,6 +104,10 @@ public enum UnitFormat {
 
     public String formatCurrencyValue(double amount) {
         return getCurrencyFormat().format(amount);
+    }
+
+    public String tableFormatCurrencyValue(double amount) {
+        return getTableCurrencyFormat().format(amount);
     }
 
     public String getGroupingSeparator() {
