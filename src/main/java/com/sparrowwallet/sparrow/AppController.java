@@ -108,6 +108,9 @@ public class AppController implements Initializable {
     private MenuItem exportWallet;
 
     @FXML
+    private MenuItem renameWallet;
+
+    @FXML
     private MenuItem deleteWallet;
 
     @FXML
@@ -382,6 +385,7 @@ public class AppController implements Initializable {
         savePSBTBinary.disableProperty().bind(saveTransaction.visibleProperty());
         showPSBT.visibleProperty().bind(saveTransaction.visibleProperty().not());
         exportWallet.setDisable(true);
+        renameWallet.disableProperty().bind(exportWallet.disableProperty());
         deleteWallet.disableProperty().bind(exportWallet.disableProperty());
         closeTab.setDisable(true);
         lockWallet.setDisable(true);
