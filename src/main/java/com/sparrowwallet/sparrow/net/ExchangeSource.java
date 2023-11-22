@@ -101,7 +101,7 @@ public enum ExchangeSource {
                     Number[][] coinbaseData = httpClientService.requestJson(url, Number[][].class, Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*"));
                     for(Number[] price : coinbaseData) {
                         Date date = new Date(price[0].longValue() * 1000);
-                        historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), price[3].doubleValue());
+                        historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), price[4].doubleValue());
                     }
                 } catch(Exception e) {
                     if(log.isDebugEnabled()) {
