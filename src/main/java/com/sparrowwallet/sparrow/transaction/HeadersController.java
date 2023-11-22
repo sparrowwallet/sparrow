@@ -1593,6 +1593,14 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
+    @Subscribe
+    public void psbtReordered(PSBTReorderedEvent event) {
+        if(event.getPsbt().equals(headersForm.getPsbt())) {
+            updateTxId();
+            transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
+        }
+    }
+
     private static class WalletSignComparator implements Comparator<Wallet> {
         private static final List<KeystoreSource> sourceOrder = List.of(KeystoreSource.SW_WATCH, KeystoreSource.HW_AIRGAPPED, KeystoreSource.HW_USB, KeystoreSource.SW_SEED);
 

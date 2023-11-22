@@ -9,26 +9,20 @@ import javafx.scene.Node;
 import java.io.IOException;
 
 public class OutputForm extends IndexedTransactionForm {
-    private final TransactionOutput transactionOutput;
-    private PSBTOutput psbtOutput;
-
     public OutputForm(TransactionData txdata, PSBTOutput psbtOutput) {
         super(txdata, txdata.getPsbt().getPsbtOutputs().indexOf(psbtOutput));
-        this.transactionOutput = txdata.getPsbt().getTransaction().getOutputs().get(txdata.getPsbt().getPsbtOutputs().indexOf(psbtOutput));
-        this.psbtOutput = psbtOutput;
     }
 
     public OutputForm(TransactionData txdata, TransactionOutput transactionOutput) {
         super(txdata, txdata.getTransaction().getOutputs().indexOf(transactionOutput));
-        this.transactionOutput = transactionOutput;
     }
 
     public TransactionOutput getTransactionOutput() {
-        return transactionOutput;
-    }
+        if(txdata.getTransaction() != null) {
+            return txdata.getTransaction().getOutputs().get(getIndex());
+        }
 
-    public PSBTOutput getPsbtOutput() {
-        return psbtOutput;
+        return null;
     }
 
     public boolean isWalletConsolidation() {
@@ -59,6 +53,6 @@ public class OutputForm extends IndexedTransactionForm {
     }
 
     public String toString() {
-        return "Output #" + transactionOutput.getIndex();
+        return "Output #" + getIndex();
     }
 }

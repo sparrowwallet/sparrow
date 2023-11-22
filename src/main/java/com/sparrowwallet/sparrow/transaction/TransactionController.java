@@ -23,6 +23,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import org.controlsfx.control.MasterDetailPane;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 
 public class TransactionController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
+    private static final DataFormat JAVA_FORMAT = new DataFormat("application/x-java-serialized-object");
 
     @FXML
     private Node tabContent;
@@ -61,6 +63,9 @@ public class TransactionController implements Initializable {
 
     private boolean allInputsFetchedFromWallet;
     private boolean transactionsFetched;
+
+    private TreeItem<TransactionForm> draggedItem;
+    private TreeCell<TransactionForm> dropZone;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -174,6 +179,14 @@ public class TransactionController implements Initializable {
                                 setGraphic(TransactionDiagram.getPaymentGlyph());
                             }
                         }
+
+                        setOnDragDetected(null);
+                        setOnDragOver(null);
+                        setOnDragDropped(null);
+                    } else if(form.isEditable()) {
+                        setOnDragDetected(event -> dragDetected(event, this));
+                        setOnDragOver(event -> dragOver(event, this));
+                        setOnDragDropped(event -> drop(event, this));
                     }
                 }
             }
@@ -463,6 +476,85 @@ public class TransactionController implements Initializable {
         this.initialIndex = initialIndex;
     }
 
+    private void dragDetected(MouseEvent event, TreeCell<TransactionForm> treeCell) {
+        draggedItem = treeCell.getTreeItem();
+
+        if(!draggedItem.getChildren().isEmpty()) {
+            return;
+        }
+        Dragboard db = treeCell.startDragAndDrop(TransferMode.MOVE);
+
+        ClipboardContent content = new ClipboardContent();
+        content.put(JAVA_FORMAT, draggedItem.getValue().toString());
+        db.setContent(content);
+        db.setDragView(treeCell.snapshot(null, null));
+        event.consume();
+    }
+
+    private void dragOver(DragEvent event, TreeCell<TransactionForm> treeCell) {
+        if(!event.getDragboard().hasContent(JAVA_FORMAT)) {
+            return;
+        }
+        TreeItem<TransactionForm> thisItem = treeCell.getTreeItem();
+
+        if(draggedItem == null || thisItem == null || thisItem == draggedItem) {
+            return;
+        }
+        if(draggedItem.getParent() == null || thisItem.getParent() == null) {
+            return;
+        }
+        if(draggedItem.getValue() instanceof InputForm && (thisItem.getValue() instanceof OutputForm || thisItem.getValue() instanceof OutputsForm)) {
+            return;
+        }
+        if(draggedItem.getValue() instanceof OutputForm && (thisItem.getValue() instanceof InputForm || thisItem.getValue() instanceof InputsForm)) {
+            return;
+        }
+
+        event.acceptTransferModes(TransferMode.MOVE);
+        if(!Objects.equals(dropZone, treeCell)) {
+            this.dropZone = treeCell;
+        }
+    }
+
+    private void drop(DragEvent event, TreeCell<TransactionForm> treeCell) {
+        Dragboard db = event.getDragboard();
+        if(!db.hasContent(JAVA_FORMAT)) {
+            return;
+        }
+
+        TreeItem<TransactionForm> thisItem = treeCell.getTreeItem();
+        TreeItem<TransactionForm> droppedItemParent = draggedItem.getParent();
+
+        int fromIndex = droppedItemParent.getChildren().indexOf(draggedItem);
+        int toIndex = Objects.equals(droppedItemParent, thisItem) ? 0 : thisItem.getParent().getChildren().indexOf(thisItem);
+        droppedItemParent.getChildren().remove(draggedItem);
+
+        if(Objects.equals(droppedItemParent, thisItem)) {
+            thisItem.getChildren().add(toIndex, draggedItem);
+        } else {
+            thisItem.getParent().getChildren().add(toIndex, draggedItem);
+        }
+
+        PSBT psbt = getPSBT();
+        if(draggedItem.getValue() instanceof InputForm) {
+            psbt.moveInput(fromIndex, toIndex);
+        } else if(draggedItem.getValue() instanceof OutputForm) {
+            psbt.moveOutput(fromIndex, toIndex);
+        }
+
+        for(int i = 0; i < draggedItem.getParent().getChildren().size(); i++) {
+            if(draggedItem.getParent().getChildren().get(i).getValue() instanceof IndexedTransactionForm indexedTransactionForm) {
+                indexedTransactionForm.setIndex(i);
+            }
+        }
+
+        txdata.setTransaction(psbt.getTransaction());
+        txtree.getSelectionModel().select(draggedItem);
+        event.setDropCompleted(true);
+
+        EventManager.get().post(new PSBTReorderedEvent(psbt));
+    }
+
     @Subscribe
     public void viewTransaction(ViewTransactionEvent event) {
         if(txdata.getTransaction().getTxId().equals(event.getTransaction().getTxId())) {
@@ -592,6 +684,14 @@ public class TransactionController implements Initializable {
     public void openWallets(OpenWalletsEvent event) {
         if(!transactionsFetched) {
             fetchTransactions();
+        }
+    }
+
+    @Subscribe
+    public void psbtReordered(PSBTReorderedEvent event) {
+        if(event.getPsbt() == getPSBT()) {
+            txhex.setTransaction(getTransaction());
+            highlightTxHex();
         }
     }
 }

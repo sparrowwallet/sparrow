@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
+import com.sparrowwallet.sparrow.event.PSBTReorderedEvent;
 import com.sparrowwallet.sparrow.event.UnitFormatChangedEvent;
 import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
@@ -177,5 +178,12 @@ public class OutputController extends TransactionFormController implements Initi
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
         value.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+    }
+
+    @Subscribe
+    public void psbtReordered(PSBTReorderedEvent event) {
+        if(event.getPsbt().equals(outputForm.getPsbt())) {
+            updateOutputLegendFromWallet(outputForm.getTransactionOutput(), null);
+        }
     }
 }

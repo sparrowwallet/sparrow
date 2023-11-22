@@ -570,4 +570,11 @@ public class InputController extends TransactionFormController implements Initia
             updateScriptFields(event.getFinalTransaction().getInputs().get(inputForm.getIndex()), null);
         }
     }
+
+    @Subscribe
+    public void psbtReordered(PSBTReorderedEvent event) {
+        if(event.getPsbt().equals(inputForm.getPsbt())) {
+            updateInputLegendFromWallet(inputForm.getTransactionInput(), null);
+        }
+    }
 }
