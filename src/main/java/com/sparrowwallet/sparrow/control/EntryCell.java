@@ -357,7 +357,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 .collect(Collectors.toList());
 
         if(ourOutputs.isEmpty()) {
-            AppServices.showErrorDialog("No spendable outputs", "None of the outputs on this transaction are spendable.\n\n Ensure that the outputs are not frozen" +
+            AppServices.showErrorDialog("No spendable outputs", "None of the outputs on this transaction are spendable.\n\nEnsure that the outputs are not frozen" +
                     (transactionEntry.getConfirmations() <= 0 ? ", and spending unconfirmed UTXOs is allowed." : "."));
             return;
         }
