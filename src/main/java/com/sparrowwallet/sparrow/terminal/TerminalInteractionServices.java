@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.terminal;
 
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
-import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.InteractionServices;
 import javafx.application.Platform;
@@ -103,10 +102,8 @@ public class TerminalInteractionServices implements InteractionServices {
     }
 
     private Optional<String> showPassphraseDialog(String walletName, Keystore keystore) {
-        TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Passphrase for " + walletName);
-        builder.setDescription("Enter the BIP39 passphrase for keystore:\n" + keystore.getLabel());
-        builder.setPasswordInput(true);
-        String passphrase = builder.build().showDialog(SparrowTerminal.get().getGui());
+        PassphraseDialog passphraseDialog = new PassphraseDialog(walletName, keystore);
+        String passphrase = passphraseDialog.showDialog(SparrowTerminal.get().getGui());
         return passphrase == null ? Optional.empty() : Optional.of(passphrase);
     }
 }

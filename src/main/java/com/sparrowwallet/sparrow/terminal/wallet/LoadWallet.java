@@ -121,6 +121,7 @@ public class LoadWallet implements Runnable {
             }
         } catch(Exception e) {
             log.error("Wallet Error", e);
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(loadingDialog));
             showErrorDialog("Wallet Error", e.getMessage());
         } finally {
             walletAndKey.clear();
