@@ -6,9 +6,9 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.table.Table;
 import com.googlecode.lanterna.gui2.table.TableModel;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.terminal.wallet.table.CoinTableCell;
@@ -94,7 +94,7 @@ public class TransactionsDialog extends WalletDialog {
             balance.setText(formatBitcoinValue(walletTransactionsEntry.getBalance(), true));
             mempoolBalance.setText(formatBitcoinValue(walletTransactionsEntry.getMempoolBalance(), true));
 
-            if(AppServices.getFiatCurrencyExchangeRate() != null) {
+            if(AppServices.getFiatCurrencyExchangeRate() != null && Config.get().getExchangeSource() != ExchangeSource.NONE) {
                 fiatBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getBalance(), AppServices.getFiatCurrencyExchangeRate())));
                 fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletTransactionsEntry.getMempoolBalance(), AppServices.getFiatCurrencyExchangeRate())));
             } else {

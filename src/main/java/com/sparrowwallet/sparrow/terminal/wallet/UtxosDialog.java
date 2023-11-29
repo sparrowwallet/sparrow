@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.terminal.ModalDialog;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
@@ -233,7 +234,7 @@ public class UtxosDialog extends WalletDialog {
             balance.setText(formatBitcoinValue(walletUtxosEntry.getBalance(), true));
             mempoolBalance.setText(formatBitcoinValue(walletUtxosEntry.getMempoolBalance(), true));
 
-            if(AppServices.getFiatCurrencyExchangeRate() != null) {
+            if(AppServices.getFiatCurrencyExchangeRate() != null && Config.get().getExchangeSource() != ExchangeSource.NONE) {
                 fiatBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getBalance(), AppServices.getFiatCurrencyExchangeRate())));
                 fiatMempoolBalance.setText(formatFiatValue(getFiatValue(walletUtxosEntry.getMempoolBalance(), AppServices.getFiatCurrencyExchangeRate())));
             } else {
