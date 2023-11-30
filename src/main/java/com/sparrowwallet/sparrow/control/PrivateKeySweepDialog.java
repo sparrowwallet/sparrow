@@ -190,6 +190,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
             boolean isValidKey = isValidKey();
             createButton.setDisable(!isValidKey || !isValidToAddress());
+            setScriptTypes(isValidKey);
             if(isValidKey) {
                 setFromAddress();
             }
@@ -287,6 +288,16 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         ScriptType scriptType = keyScriptType.getValue();
         Address address = scriptType.getAddress(privateKey.getKey());
         keyAddress.setText(address.toString());
+    }
+
+    private void setScriptTypes(boolean isValidKey) {
+        boolean compressed = !isValidKey || getPrivateKey().getKey().isCompressed();
+        if(compressed && !keyScriptType.getItems().equals(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE))) {
+            keyScriptType.getItems().addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE).stream().filter(s -> !keyScriptType.getItems().contains(s)).collect(Collectors.toList()));
+        } else if(!compressed && !keyScriptType.getItems().equals(List.of(ScriptType.P2PKH))) {
+            keyScriptType.getSelectionModel().select(0);
+            keyScriptType.getItems().removeIf(scriptType -> scriptType != ScriptType.P2PKH);
+        }
     }
 
     private void scanPrivateKey() {
