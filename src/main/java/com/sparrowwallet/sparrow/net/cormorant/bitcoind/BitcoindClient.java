@@ -330,8 +330,7 @@ public class BitcoindClient {
             ScanDate scanDate = entry.getValue();
             ScanDate importedScanDate = importedDescriptors.get(entry.getKey());
             if(scanDate.range != null && importedScanDate != null && importedScanDate.range != null && scanDate.range > importedScanDate.range) {
-                Date rescanSince = scanDate.rescanSince != null && (importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince)) ? scanDate.rescanSince : importedScanDate.rescanSince;
-                importingDescriptors.put(entry.getKey(), new ScanDate(rescanSince, scanDate.range, false));
+                importingDescriptors.put(entry.getKey(), new ScanDate(importedScanDate.rescanSince == null || scanDate.forceRescan ? scanDate.rescanSince : importedScanDate.rescanSince, scanDate.range, false));
             } else if(scanDate.forceRescan) {
                 if(scanDate.rescanSince != null && (importedScanDate == null || importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince))) {
                     importingDescriptors.put(entry.getKey(), new ScanDate(scanDate.rescanSince, importedScanDate != null ? importedScanDate.range : scanDate.range, false));
