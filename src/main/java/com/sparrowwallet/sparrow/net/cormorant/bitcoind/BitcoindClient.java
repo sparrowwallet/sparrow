@@ -46,6 +46,8 @@ public class BitcoindClient {
     private static final int DEFAULT_GAP_LIMIT = 1000;
     private static final int POSTMIX_GAP_LIMIT = 4000;
 
+    private static final long PRUNED_RESCAN_TIMEGAP_MILLIS = 7200*1000;
+
     private final JsonRpcClient jsonRpcClient;
     private final Timer timer = new Timer(true);
     private final Store store = new Store();
@@ -258,7 +260,7 @@ public class BitcoindClient {
     }
 
     private ScanDate getScanDate(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose, Date earliestBirthDate) {
-        Integer range = (keyPurpose == null ? null : getHighestUsedIndex(normalizedDescriptor, wallet, keyPurpose) + getGapLimit(wallet, keyPurpose));
+        Integer range = (keyPurpose == null ? null : Math.max(getHighestUsedIndex(normalizedDescriptor, wallet, keyPurpose) + wallet.getGapLimit(), getDefaultRange(wallet, keyPurpose)));
 
         //Force a rescan if loading a wallet with a birthday later than existing transactions, or if the wallet birthdate has been set or changed to an earlier date from the last check
         boolean forceRescan = false;
@@ -277,8 +279,8 @@ public class BitcoindClient {
         return descriptorUsedIndexes.compute(descriptor, (d, lastHighestUsedIndex) -> lastHighestUsedIndex == null ? highestUsedIndex : Math.max(highestUsedIndex, lastHighestUsedIndex));
     }
 
-    private int getGapLimit(Wallet wallet, KeyPurpose keyPurpose) {
-        return Math.max(wallet.getGapLimit(), wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && keyPurpose == KeyPurpose.RECEIVE ? POSTMIX_GAP_LIMIT : DEFAULT_GAP_LIMIT);
+    private int getDefaultRange(Wallet wallet, KeyPurpose keyPurpose) {
+        return wallet.getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && keyPurpose == KeyPurpose.RECEIVE ? POSTMIX_GAP_LIMIT : DEFAULT_GAP_LIMIT;
     }
 
     private void importDescriptors(Map<String, ScanDate> descriptors) throws ScanDateBeforePruneException {
@@ -320,6 +322,7 @@ public class BitcoindClient {
             }
         }
 
+        Optional<Date> optPrunedDate = pruned ? getPrunedDate() : Optional.empty();
         Map<String, ScanDate> importingDescriptors = new LinkedHashMap<>(descriptors);
         importingDescriptors.keySet().removeAll(importedDescriptors.keySet());
         for(Map.Entry<String, ScanDate> entry : descriptors.entrySet()) {
@@ -330,7 +333,10 @@ public class BitcoindClient {
             ScanDate scanDate = entry.getValue();
             ScanDate importedScanDate = importedDescriptors.get(entry.getKey());
             if(scanDate.range != null && importedScanDate != null && importedScanDate.range != null && scanDate.range > importedScanDate.range) {
-                importingDescriptors.put(entry.getKey(), new ScanDate(importedScanDate.rescanSince == null || scanDate.forceRescan ? scanDate.rescanSince : importedScanDate.rescanSince, scanDate.range, false));
+                Date rescanSince = scanDate.rescanSince != null && (importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince)) ? scanDate.rescanSince : importedScanDate.rescanSince;
+                Optional<Date> optPrunedStart = optPrunedDate.map(date -> new Date(date.getTime() + PRUNED_RESCAN_TIMEGAP_MILLIS));
+                rescanSince = optPrunedStart.isPresent() && (rescanSince == null || optPrunedStart.get().after(rescanSince)) ? optPrunedStart.get() : rescanSince;
+                importingDescriptors.put(entry.getKey(), new ScanDate(rescanSince, scanDate.range, false));
             } else if(scanDate.forceRescan) {
                 if(scanDate.rescanSince != null && (importedScanDate == null || importedScanDate.rescanSince == null || scanDate.rescanSince.before(importedScanDate.rescanSince))) {
                     importingDescriptors.put(entry.getKey(), new ScanDate(scanDate.rescanSince, importedScanDate != null ? importedScanDate.range : scanDate.range, false));
@@ -338,15 +344,12 @@ public class BitcoindClient {
             }
         }
 
-        if(pruned) {
-            Optional<Date> optPrunedDate = getPrunedDate();
-            if(optPrunedDate.isPresent()) {
-                Date prunedDate = optPrunedDate.get();
-                Optional<Map.Entry<String, ScanDate>> optPrePruneImport = importingDescriptors.entrySet().stream().filter(entry -> entry.getValue().rescanSince != null && entry.getValue().rescanSince.before(prunedDate)).findFirst();
-                if(optPrePruneImport.isPresent()) {
-                    Map.Entry<String, ScanDate> prePruneImport = optPrePruneImport.get();
-                    throw new ScanDateBeforePruneException(prePruneImport.getKey(), prePruneImport.getValue().rescanSince, prunedDate);
-                }
+        if(optPrunedDate.isPresent()) {
+            Date prunedDate = optPrunedDate.get();
+            Optional<Map.Entry<String, ScanDate>> optPrePruneImport = importingDescriptors.entrySet().stream().filter(entry -> entry.getValue().rescanSince != null && entry.getValue().rescanSince.before(prunedDate)).findFirst();
+            if(optPrePruneImport.isPresent()) {
+                Map.Entry<String, ScanDate> prePruneImport = optPrePruneImport.get();
+                throw new ScanDateBeforePruneException(prePruneImport.getKey(), prePruneImport.getValue().rescanSince, prunedDate);
             }
         }
 
