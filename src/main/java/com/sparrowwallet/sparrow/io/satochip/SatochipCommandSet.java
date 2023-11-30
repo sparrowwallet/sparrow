@@ -347,8 +347,14 @@ public class SatochipCommandSet {
     public APDUResponse cardBip32GetExtendedKey(byte[] bytePath) {
         byte p1 = (byte) (bytePath.length / 4);
 
-        APDUCommand plainApdu = new APDUCommand(0xB0, INS_BIP32_GET_EXTENDED_KEY, p1, 0x40, bytePath);
-        return this.cardTransmit(plainApdu);
+        APDUCommand capdu = new APDUCommand(0xB0, INS_BIP32_GET_EXTENDED_KEY, p1, 0x40, bytePath);
+        APDUResponse rapdu = this.cardTransmit(capdu);
+        if(rapdu.getSw() == 0x9C01) {
+            // error 0X9C01: no memory available for key derivation => flush memory cache in card
+            capdu = new APDUCommand(0xB0, INS_BIP32_GET_EXTENDED_KEY, p1, 0x80, bytePath);
+            rapdu = this.cardTransmit(capdu);
+        }
+        return rapdu;
     }
 
     /*
