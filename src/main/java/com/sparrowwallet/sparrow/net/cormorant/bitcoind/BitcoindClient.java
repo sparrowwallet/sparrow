@@ -260,7 +260,7 @@ public class BitcoindClient {
     }
 
     private ScanDate getScanDate(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose, Date earliestBirthDate) {
-        Integer range = (keyPurpose == null ? null : Math.max(getHighestUsedIndex(normalizedDescriptor, wallet, keyPurpose) + wallet.getGapLimit(), getDefaultRange(wallet, keyPurpose)));
+        Integer range = (keyPurpose == null ? null : Math.max(getWalletRange(normalizedDescriptor, wallet, keyPurpose), getDefaultRange(wallet, keyPurpose)));
 
         //Force a rescan if loading a wallet with a birthday later than existing transactions, or if the wallet birthdate has been set or changed to an earlier date from the last check
         boolean forceRescan = false;
@@ -272,6 +272,13 @@ public class BitcoindClient {
         }
 
         return new ScanDate(earliestBirthDate, range, forceRescan);
+    }
+
+    private int getWalletRange(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose) {
+        int maxIndex = getHighestUsedIndex(normalizedDescriptor, wallet, keyPurpose) + wallet.getGapLimit();
+        //Default keypool size of 1000 will mean no rescans with a normal (<1000) gap limit as range is automatically extended by keypool size on address use
+        //Rounding up to the nearest 500 will ensure reduced rescans where gap limit is over 1000
+        return maxIndex % 500 == 0 ? maxIndex : ((maxIndex / 500) + 1) * 500;
     }
 
     private int getHighestUsedIndex(String descriptor, Wallet wallet, KeyPurpose keyPurpose) {
