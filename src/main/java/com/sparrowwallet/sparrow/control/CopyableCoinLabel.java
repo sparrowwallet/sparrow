@@ -10,19 +10,40 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.event.EventHandler;
+import javafx.scene.input.MouseEvent;
 
 public class CopyableCoinLabel extends CopyableLabel {
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final Tooltip tooltip;
     private final CoinContextMenu contextMenu;
 
+    private BitcoinUnit bitcoinUnit;
+
     public CopyableCoinLabel() {
         this("Unknown");
     }
 
+    private final EventHandler<MouseEvent> toggleBitcoinUnit = event -> {
+        if(bitcoinUnit == null) {
+          bitcoinUnit = Config.get().getBitcoinUnit();
+        }
+
+        if(bitcoinUnit == BitcoinUnit.SATOSHIS) {
+          bitcoinUnit = BitcoinUnit.BTC;
+        } else {
+          bitcoinUnit = BitcoinUnit.SATOSHIS;
+        }
+
+        refresh(Config.get().getUnitFormat(), bitcoinUnit);
+    };
+
     public CopyableCoinLabel(String text) {
         super(text);
         valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getUnitFormat(), Config.get().getBitcoinUnit()));
+
+        setOnMouseClicked(toggleBitcoinUnit);
+
         tooltip = new Tooltip();
         contextMenu = new CoinContextMenu();
     }
@@ -62,6 +83,8 @@ public class CopyableCoinLabel extends CopyableLabel {
         if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
             unit = (value >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
         }
+
+        this.bitcoinUnit = unit;
 
         if(unit.equals(BitcoinUnit.BTC)) {
             tooltip.setText(satsValue);
