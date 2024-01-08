@@ -38,7 +38,7 @@ public class ElectrumTest extends IoTest {
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-singlesig-wallet.json"));
         Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        electrum.exportWallet(wallet, baos);
+        electrum.exportWallet(wallet, baos, null);
 
         wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assert.assertTrue(wallet.isValid());
@@ -76,7 +76,7 @@ public class ElectrumTest extends IoTest {
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-multisig-wallet.json"));
         Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        electrum.exportWallet(wallet, baos);
+        electrum.exportWallet(wallet, baos, null);
 
         wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assert.assertTrue(wallet.isValid());
@@ -113,7 +113,7 @@ public class ElectrumTest extends IoTest {
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-singlesig-seed-wallet.json"));
         Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        electrum.exportWallet(wallet, baos);
+        electrum.exportWallet(wallet, baos, null);
         Assert.assertEquals("e14c40c638e2c83d1f20e5ee9cd744bc2ba1ef64fa939926f3778fc8735e891f56852f687b32bbd044f272d2831137e3eeba61fd1f285fa73dcc97d9f2be3cd1", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getSeedBytes()));
 
         wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);

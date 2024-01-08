@@ -94,7 +94,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         if(!wallet.isValid()) {
             throw new ExportException("Cannot export an incomplete wallet");
         }

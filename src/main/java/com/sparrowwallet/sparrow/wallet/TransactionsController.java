@@ -114,7 +114,7 @@ public class TransactionsController extends WalletFormController implements Init
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
-            FileWalletExportPane.FileWalletExportService exportService = new FileWalletExportPane.FileWalletExportService(new WalletTransactions(getWalletForm()), file, wallet);
+            FileWalletExportPane.FileWalletExportService exportService = new FileWalletExportPane.FileWalletExportService(new WalletTransactions(getWalletForm()), file, wallet, null);
             exportService.setOnFailed(failedEvent -> {
                 Throwable e = failedEvent.getSource().getException();
                 log.error("Error exporting transactions as CSV", e);

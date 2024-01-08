@@ -189,7 +189,7 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             String record = "BSMS 1.0\n" +
                     OutputDescriptor.getOutputDescriptor(wallet) +

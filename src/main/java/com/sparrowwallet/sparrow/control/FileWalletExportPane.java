@@ -122,16 +122,12 @@ public class FileWalletExportPane extends TitledDescriptionPane {
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 final String walletId = AppServices.get().getOpenWallets().get(wallet).getWalletId(wallet);
+                String walletPassword = password.get().asString();
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
-
-                    try {
-                        exportWallet(file, decryptedWallet);
-                    } finally {
-                        decryptedWallet.clearPrivate();
-                    }
+                    exportWallet(file, decryptedWallet, walletPassword);
                 });
                 decryptWalletService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
@@ -141,14 +137,14 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 decryptWalletService.start();
             }
         } else {
-            exportWallet(file, wallet);
+            exportWallet(file, wallet, null);
         }
     }
 
-    private void exportWallet(File file, Wallet exportWallet) {
+    private void exportWallet(File file, Wallet exportWallet, String password) {
         try {
             if(file != null) {
-                FileWalletExportService fileWalletExportService = new FileWalletExportService(exporter, file, exportWallet);
+                FileWalletExportService fileWalletExportService = new FileWalletExportService(exporter, file, exportWallet, password);
                 fileWalletExportService.setOnSucceeded(event -> {
                     EventManager.get().post(new WalletExportEvent(exportWallet));
                 });
@@ -163,7 +159,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 fileWalletExportService.start();
             } else {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                exporter.exportWallet(exportWallet, outputStream);
+                exporter.exportWallet(exportWallet, outputStream, password);
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
@@ -185,6 +181,10 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 errorMessage = e.getCause().getMessage();
             }
             setError("Export Error", errorMessage);
+        } finally {
+            if(file == null && password != null) {
+                exportWallet.clearPrivate();
+            }
         }
     }
 
@@ -192,11 +192,13 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         private final WalletExport exporter;
         private final File file;
         private final Wallet wallet;
+        private final String password;
 
-        public FileWalletExportService(WalletExport exporter, File file, Wallet wallet) {
+        public FileWalletExportService(WalletExport exporter, File file, Wallet wallet, String password) {
             this.exporter = exporter;
             this.file = file;
             this.wallet = wallet;
+            this.password = password;
         }
 
         @Override
@@ -205,7 +207,11 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 @Override
                 protected Void call() throws Exception {
                     try(OutputStream outputStream = new FileOutputStream(file)) {
-                        exporter.exportWallet(wallet, outputStream);
+                        exporter.exportWallet(wallet, outputStream, password);
+                    } finally {
+                        if(password != null) {
+                            wallet.clearPrivate();
+                        }
                     }
 
                     return null;

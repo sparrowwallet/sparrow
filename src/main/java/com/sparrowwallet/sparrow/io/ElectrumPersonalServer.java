@@ -29,7 +29,7 @@ public class ElectrumPersonalServer implements WalletExport {
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         if(wallet.getScriptType() == ScriptType.P2TR) {
             throw new ExportException(getName() + " does not support Taproot wallets.");
         }

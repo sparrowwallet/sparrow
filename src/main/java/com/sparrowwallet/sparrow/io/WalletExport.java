@@ -5,7 +5,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.io.OutputStream;
 
 public interface WalletExport extends ImportExport {
-    void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException;
+    void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException;
     String getWalletExportDescription();
     String getExportFileExtension(Wallet wallet);
     boolean isWalletExportScannable();

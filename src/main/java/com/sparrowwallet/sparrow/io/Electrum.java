@@ -2,10 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
-import com.sparrowwallet.drongo.ExtendedKey;
-import com.sparrowwallet.drongo.KeyDerivation;
-import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.Policy;
@@ -18,7 +15,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.InflaterInputStream;
 
 public class Electrum implements KeystoreFileImport, WalletImport, WalletExport {
@@ -301,11 +301,11 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
     @Override
     public String getExportFileExtension(Wallet wallet) {
-        return "json";
+        return wallet.isEncrypted() ? "" : "json";
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             ElectrumJsonWallet ew = new ElectrumJsonWallet();
             if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
@@ -342,7 +342,18 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                         ek.seed = keystore.getSeed().getMnemonicString().asString();
                         ek.passphrase = keystore.getSeed().getPassphrase() == null ? null : keystore.getSeed().getPassphrase().asString();
                     }
-                    ew.use_encryption = false;
+                    if(password != null) {
+                        ek.xprv = encrypt(ek.xprv, password);
+                        if(ek.seed != null) {
+                            ek.seed = encrypt(ek.seed, password);
+                        }
+                        if(ek.passphrase != null) {
+                            ek.passphrase = encrypt(ek.passphrase, password);
+                        }
+                        ew.use_encryption = true;
+                    } else {
+                        ew.use_encryption = false;
+                    }
                 } else if(keystore.getSource() == KeystoreSource.SW_WATCH) {
                     ek.type = "bip32";
                     ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
@@ -373,12 +384,39 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
             gson = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create();
             String json = gson.toJson(eJson);
+            if(password != null) {
+                ECKey encryptionKey = Pbkdf2KeyDeriver.DEFAULT_INSTANCE.deriveECKey(password);
+                outputStream = new DeflaterOutputStream(new ECIESOutputStream(outputStream, encryptionKey));
+            }
+
             outputStream.write(json.getBytes(StandardCharsets.UTF_8));
             outputStream.flush();
+            outputStream.close();
         } catch (Exception e) {
             log.error("Error exporting Electrum Wallet", e);
             throw new ExportException("Error exporting Electrum Wallet", e);
         }
+    }
+
+    private String encrypt(String plain, String password) throws NoSuchAlgorithmException {
+        if(plain == null) {
+            return null;
+        }
+
+        byte[] plainBytes = plain.getBytes(StandardCharsets.UTF_8);
+
+        KeyDeriver keyDeriver = new DoubleSha256KeyDeriver();
+        Key key = keyDeriver.deriveKey(password);
+
+        KeyCrypter keyCrypter = new AESKeyCrypter();
+        byte[] initializationVector = new byte[16];
+        SecureRandom.getInstanceStrong().nextBytes(initializationVector);
+        EncryptedData encryptedData = keyCrypter.encrypt(plainBytes, initializationVector, key);
+        byte[] encrypted = new byte[initializationVector.length + encryptedData.getEncryptedBytes().length];
+        System.arraycopy(initializationVector, 0, encrypted, 0, 16);
+        System.arraycopy(encryptedData.getEncryptedBytes(), 0, encrypted, 16, encryptedData.getEncryptedBytes().length);
+        byte[] encryptedBase64 = Base64.getEncoder().encode(encrypted);
+        return new String(encryptedBase64, StandardCharsets.UTF_8);
     }
 
     @Override

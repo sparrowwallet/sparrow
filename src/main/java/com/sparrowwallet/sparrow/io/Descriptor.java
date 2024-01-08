@@ -23,7 +23,7 @@ public class Descriptor implements WalletImport, WalletExport {
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
             bufferedWriter.write("# Receive and change descriptor (BIP389):");

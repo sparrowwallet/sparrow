@@ -18,7 +18,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
     private static final Logger log = LoggerFactory.getLogger(SpecterDesktop.class);
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             SpecterWallet specterWallet = new SpecterWallet();
             specterWallet.label = wallet.getFullName();

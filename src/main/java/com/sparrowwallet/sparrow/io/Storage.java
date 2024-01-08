@@ -752,7 +752,7 @@ public class Storage {
                 protected Void call() throws IOException, ExportException {
                     Sparrow export = new Sparrow();
                     try(BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(newWalletFile))) {
-                        export.exportWallet(wallet, outputStream);
+                        export.exportWallet(wallet, outputStream, null);
                     }
 
                     return null;

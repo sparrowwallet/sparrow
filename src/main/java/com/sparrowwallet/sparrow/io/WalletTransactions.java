@@ -44,7 +44,7 @@ public class WalletTransactions implements WalletExport {
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         WalletTransactionsEntry walletTransactionsEntry = walletForm.getWalletTransactionsEntry();
 
         ExchangeSource exchangeSource = Config.get().getExchangeSource();

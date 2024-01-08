@@ -105,7 +105,7 @@ public class ColdcardMultisigTest extends IoTest {
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("cc-multisig-export-1.txt"));
         Wallet wallet = ccMultisig.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ccMultisig.exportWallet(wallet, baos);
+        ccMultisig.exportWallet(wallet, baos, null);
         byte[] exportedBytes = baos.toByteArray();
         String original = new String(walletBytes);
         String exported = new String(exportedBytes);
@@ -118,7 +118,7 @@ public class ColdcardMultisigTest extends IoTest {
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("cc-multisig-export-multideriv.txt"));
         Wallet wallet = ccMultisig.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ccMultisig.exportWallet(wallet, baos);
+        ccMultisig.exportWallet(wallet, baos, null);
         byte[] exportedBytes = baos.toByteArray();
         String original = new String(walletBytes);
         String exported = new String(exportedBytes);

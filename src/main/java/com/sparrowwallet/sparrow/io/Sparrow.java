@@ -28,7 +28,7 @@ public class Sparrow implements WalletImport, WalletExport {
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             Wallet exportedWallet = !wallet.isMasterWallet() ? wallet.getMasterWallet() : wallet;
             PersistenceType persistenceType = PersistenceType.DB;

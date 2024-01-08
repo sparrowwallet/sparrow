@@ -36,7 +36,7 @@ public class CaravanMultisigTest extends IoTest {
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("caravan-multisig-export-1.json"));
         Wallet wallet = ccMultisig.importWallet(new ByteArrayInputStream(walletBytes), null);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ccMultisig.exportWallet(wallet, baos);
+        ccMultisig.exportWallet(wallet, baos, null);
         byte[] exportedBytes = baos.toByteArray();
         String original = new String(walletBytes);
         String exported = new String(exportedBytes);

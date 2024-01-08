@@ -46,7 +46,7 @@ public class WalletLabels implements WalletImport, WalletExport {
     }
 
     @Override
-    public void exportWallet(Wallet wallet, OutputStream outputStream) throws ExportException {
+    public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         List<Label> labels = new ArrayList<>();
         List<Wallet> allWallets = wallet.isMasterWallet() ? wallet.getAllWallets() : wallet.getMasterWallet().getAllWallets();
         for(Wallet exportWallet : allWallets) {

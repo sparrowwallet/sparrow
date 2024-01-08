@@ -37,7 +37,7 @@ public class SpecterDIYTest extends IoTest {
         SpecterDIY specterDIY = new SpecterDIY();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("specter-diy-export.txt"));
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        specterDIY.exportWallet(wallet, baos);
+        specterDIY.exportWallet(wallet, baos, null);
         String original = new String(walletBytes);
         String exported = new String(baos.toByteArray());
 
