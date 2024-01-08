@@ -720,6 +720,7 @@ public class TransactionDiagram extends GridPane {
             outputNodes.add(new OutputNode(paymentBox, payment.getAddress(), payment.getAmount()));
         }
 
+        Set<Integer> seenIndexes = new HashSet<>();
         for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
             WalletNode changeNode = changeEntry.getKey();
             WalletNode defaultChangeNode = walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE);
@@ -765,11 +766,15 @@ public class TransactionDiagram extends GridPane {
                 actionBox.getChildren().addAll(region, amountLabel);
             }
 
-            outputNodes.add(new OutputNode(actionBox, changeAddress, changeEntry.getValue()));
-        }
-
-        if(isFinal()) {
-            Collections.sort(outputNodes);
+            int changeIndex = outputNodes.size();
+            if(isFinal()) {
+                changeIndex = getOutputIndex(changeAddress, changeEntry.getValue(), seenIndexes);
+                seenIndexes.add(changeIndex);
+                if(changeIndex > outputNodes.size()) {
+                    changeIndex = outputNodes.size();
+                }
+            }
+            outputNodes.add(changeIndex, new OutputNode(actionBox, changeAddress, changeEntry.getValue()));
         }
 
         for(OutputNode outputNode : outputNodes) {
@@ -931,7 +936,7 @@ public class TransactionDiagram extends GridPane {
         if(payment.getType() == Payment.Type.WHIRLPOOL_FEE) {
             return "Whirlpool fee";
         } else if(walletTx.isPremixSend(payment)) {
-            int premixIndex = getOutputIndex(payment.getAddress(), payment.getAmount()) - 2;
+            int premixIndex = getOutputIndex(payment.getAddress(), payment.getAmount(), Collections.emptySet()) - 1;
             return "Premix #" + premixIndex;
         } else if(walletTx.isBadbankSend(payment)) {
             return "Badbank change";
@@ -940,8 +945,10 @@ public class TransactionDiagram extends GridPane {
         return null;
     }
 
-    private int getOutputIndex(Address address, long amount) {
-        return walletTx.getTransaction().getOutputs().stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress()) && txOutput.getValue() == amount).mapToInt(TransactionOutput::getIndex).findFirst().orElseThrow();
+    private int getOutputIndex(Address address, long amount, Collection<Integer> seenIndexes) {
+        List<TransactionOutput> addressOutputs = walletTx.getTransaction().getOutputs().stream().filter(txOutput -> txOutput.getScript().getToAddress() != null).collect(Collectors.toList());
+        TransactionOutput output = addressOutputs.stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress()) && txOutput.getValue() == amount && !seenIndexes.contains(txOutput.getIndex())).findFirst().orElseThrow();
+        return addressOutputs.indexOf(output);
     }
 
     Wallet getToWallet(Payment payment) {
@@ -1315,7 +1322,7 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
-    private class OutputNode implements Comparable<OutputNode> {
+    private static class OutputNode {
         public Pane outputLabel;
         public Address address;
         public long amount;
@@ -1324,15 +1331,6 @@ public class TransactionDiagram extends GridPane {
             this.outputLabel = outputLabel;
             this.address = address;
             this.amount = amount;
-        }
-
-        @Override
-        public int compareTo(TransactionDiagram.OutputNode o) {
-            try {
-                return getOutputIndex(address, amount) - getOutputIndex(o.address, o.amount);
-            } catch(Exception e) {
-                return 0;
-            }
         }
     }
 
