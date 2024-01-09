@@ -487,8 +487,8 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public Tab getPaymentTab() {
-        OptionalInt highestTabNo = paymentTabs.getTabs().stream().mapToInt(tab -> Integer.parseInt(tab.getText())).max();
-        Tab tab = new Tab(Integer.toString(highestTabNo.isPresent() ? highestTabNo.getAsInt() + 1 : 1));
+s        OptionalInt highestTabNo = paymentTabs.getTabs().stream().mapToInt(tab -> Integer.parseInt(tab.getText().trim())).max();
+        Tab tab = new Tab(" " + (highestTabNo.isPresent() ? highestTabNo.getAsInt() + 1 : 1) + " ");
 
         try {
             FXMLLoader paymentLoader = new FXMLLoader(AppServices.class.getResource("wallet/payment.fxml"));
