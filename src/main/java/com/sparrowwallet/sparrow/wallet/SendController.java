@@ -487,7 +487,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     public Tab getPaymentTab() {
-s        OptionalInt highestTabNo = paymentTabs.getTabs().stream().mapToInt(tab -> Integer.parseInt(tab.getText().trim())).max();
+        OptionalInt highestTabNo = paymentTabs.getTabs().stream().mapToInt(tab -> Integer.parseInt(tab.getText().trim())).max();
         Tab tab = new Tab(" " + (highestTabNo.isPresent() ? highestTabNo.getAsInt() + 1 : 1) + " ");
 
         try {
