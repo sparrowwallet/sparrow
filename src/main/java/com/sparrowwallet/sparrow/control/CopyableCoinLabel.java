@@ -24,25 +24,23 @@ public class CopyableCoinLabel extends CopyableLabel {
         this("Unknown");
     }
 
-    private final EventHandler<MouseEvent> toggleBitcoinUnit = event -> {
-        if(bitcoinUnit == null) {
-          bitcoinUnit = Config.get().getBitcoinUnit();
-        }
-
-        if(bitcoinUnit == BitcoinUnit.SATOSHIS) {
-          bitcoinUnit = BitcoinUnit.BTC;
-        } else {
-          bitcoinUnit = BitcoinUnit.SATOSHIS;
-        }
-
-        refresh(Config.get().getUnitFormat(), bitcoinUnit);
-    };
-
     public CopyableCoinLabel(String text) {
         super(text);
         valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getUnitFormat(), Config.get().getBitcoinUnit()));
 
-        setOnMouseClicked(toggleBitcoinUnit);
+        setOnMouseClicked(event -> {
+            if(bitcoinUnit == null) {
+                bitcoinUnit = Config.get().getBitcoinUnit();
+            }
+
+            if(bitcoinUnit == BitcoinUnit.SATOSHIS) {
+                bitcoinUnit = BitcoinUnit.BTC;
+            } else {
+                bitcoinUnit = BitcoinUnit.SATOSHIS;
+            }
+
+            refresh(Config.get().getUnitFormat(), bitcoinUnit);
+        });
 
         tooltip = new Tooltip();
         contextMenu = new CoinContextMenu();
