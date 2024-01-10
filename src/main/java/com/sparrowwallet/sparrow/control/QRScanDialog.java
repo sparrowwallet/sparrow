@@ -442,6 +442,39 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     CryptoBip39 cryptoBip39 = (CryptoBip39)ur.decodeFromRegistry();
                     DeterministicSeed seed = getSeed(cryptoBip39);
                     return new Result(seed);
+                } else if(urRegistryType.equals(RegistryType.PSBT)) {
+                    URPSBT urPSBT = (URPSBT)ur.decodeFromRegistry();
+                    try {
+                        PSBT psbt = new PSBT(urPSBT.getPsbt(), false);
+                        return new Result(psbt);
+                    } catch(Exception e) {
+                        log.error("Error parsing PSBT from UR type " + urRegistryType, e);
+                        return new Result(new URException("Error parsing PSBT from UR type " + urRegistryType, e));
+                    }
+                } else if(urRegistryType.equals(RegistryType.ADDRESS)) {
+                    URAddress urAddress = (URAddress)ur.decodeFromRegistry();
+                    Address address = getAddress(urAddress);
+                    if(address != null) {
+                        return new Result(BitcoinURI.fromAddress(address));
+                    } else {
+                        return new Result(new URException("Unknown " + urRegistryType + " type of " + urAddress.getType()));
+                    }
+                } else if(urRegistryType.equals(RegistryType.HDKEY)) {
+                    URHDKey urHDKey = (URHDKey)ur.decodeFromRegistry();
+                    ExtendedKey extendedKey = getExtendedKey(urHDKey);
+                    return new Result(extendedKey, urHDKey.getName());
+                } else if(urRegistryType.equals(RegistryType.OUTPUT_DESCRIPTOR)) {
+                    UROutputDescriptor urOutputDescriptor = (UROutputDescriptor)ur.decodeFromRegistry();
+                    OutputDescriptor outputDescriptor = getOutputDescriptor(urOutputDescriptor);
+                    return new Result(outputDescriptor);
+                } else if(urRegistryType.equals(RegistryType.ACCOUNT_DESCRIPTOR)) {
+                    URAccountDescriptor urAccountDescriptor = (URAccountDescriptor)ur.decodeFromRegistry();
+                    List<Wallet> wallets = getWallets(urAccountDescriptor);
+                    return new Result(wallets);
+                } else if(urRegistryType.equals(RegistryType.SEED)) {
+                    URSeed urSeed = (URSeed)ur.decodeFromRegistry();
+                    DeterministicSeed seed = getSeed(urSeed);
+                    return new Result(seed);
                 } else {
                     log.error("Unsupported UR type " + urRegistryType);
                     return new Result(new URException("UR type " + urRegistryType + " is not supported"));
@@ -583,6 +616,40 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
         private DeterministicSeed getSeed(CryptoBip39 cryptoBip39) {
             return new DeterministicSeed(cryptoBip39.getWords(), null, System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
+        }
+
+        private OutputDescriptor getOutputDescriptor(UROutputDescriptor urOutputDescriptor) {
+            String source = urOutputDescriptor.getSource();
+            List<RegistryItem> keys = urOutputDescriptor.getKeys();
+            Map<ExtendedKey, String> mapExtendedPublicKeyLabels = new LinkedHashMap<>();
+
+            for(int i = 0; i < keys.size(); i++) {
+                RegistryItem key = keys.get(i);
+                if(key instanceof URHDKey urhdKey) {
+                    ExtendedKey extendedKey = getExtendedKey(urhdKey);
+                    KeyDerivation keyDerivation = getKeyDerivation(urhdKey.getOrigin());
+                    source = source.replaceAll("@" + i, OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true));
+                    if(urhdKey.getName() != null) {
+                        mapExtendedPublicKeyLabels.put(extendedKey, urhdKey.getName());
+                    }
+                } else {
+                    throw new IllegalArgumentException("Only extended HD keys are supported in output descriptors");
+                }
+            }
+
+            return OutputDescriptor.getOutputDescriptor(source, mapExtendedPublicKeyLabels);
+        }
+
+        private List<Wallet> getWallets(URAccountDescriptor urAccountDescriptor) {
+            List<Wallet> wallets = new ArrayList<>();
+            String masterFingerprint = Utils.bytesToHex(urAccountDescriptor.getMasterFingerprint());
+            for(UROutputDescriptor urOutputDescriptor : urAccountDescriptor.getOutputDescriptors()) {
+                OutputDescriptor outputDescriptor = getOutputDescriptor(urOutputDescriptor);
+                Wallet wallet = outputDescriptor.toKeystoreWallet(masterFingerprint);
+                wallets.add(wallet);
+            }
+
+            return wallets;
         }
     }
 
