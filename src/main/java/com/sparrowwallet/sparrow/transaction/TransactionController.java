@@ -5,8 +5,7 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTOutput;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TransactionController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(TransactionController.class);
@@ -426,7 +426,44 @@ public class TransactionController implements Initializable {
     private void fetchOutputBlockTransactions(int indexStart, int indexEnd) {
         if(AppServices.isConnected() && getPSBT() == null && indexStart < getTransaction().getOutputs().size()) {
             int maxIndex = Math.min(getTransaction().getOutputs().size(), indexEnd);
-            ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(getTransaction(), indexStart, maxIndex);
+
+            Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
+            List<Set<BlockTransactionHash>> blockTransactionHashes = new ArrayList<>(getTransaction().getOutputs().size());
+            for(int i = 0; i < getTransaction().getOutputs().size(); i++) {
+                blockTransactionHashes.add(null);
+            }
+
+            Map<Script, WalletNode> openWalletOutputScripts = new HashMap<>();
+            for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+                openWalletOutputScripts.putAll(wallet.getWalletOutputScripts());
+                for(Wallet childWallet : wallet.getChildWallets()) {
+                    if(!childWallet.isNested()) {
+                        openWalletOutputScripts.putAll(childWallet.getWalletOutputScripts());
+                    }
+                }
+            }
+
+            for(int i = indexStart; i < getTransaction().getOutputs().size() && i < maxIndex; i++) {
+                TransactionOutput output = getTransaction().getOutputs().get(i);
+                List<ScriptChunk> chunks = output.getScript().getChunks();
+                if(!chunks.isEmpty() && chunks.get(0).isOpCode() && chunks.get(0).getOpcode() == ScriptOpCodes.OP_RETURN) {
+                    blockTransactionHashes.set(i, Collections.emptySet());
+                } else if(openWalletOutputScripts.get(output.getScript()) != null) {
+                    WalletNode walletNode = openWalletOutputScripts.get(output.getScript());
+                    if(walletNode != null) {
+                        Set<BlockTransactionHash> references = walletNode.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo.getSpentBy()) : Stream.empty()).collect(Collectors.toCollection(TreeSet::new));
+                        blockTransactionHashes.set(i, references);
+                        for(BlockTransactionHash reference : references) {
+                            BlockTransaction blkTx = walletNode.getWallet().getWalletTransaction(reference.getHash());
+                            if(blkTx != null) {
+                                transactionMap.put(reference.getHash(), blkTx);
+                            }
+                        }
+                    }
+                }
+            }
+
+            ElectrumServer.TransactionOutputsReferenceService transactionOutputsReferenceService = new ElectrumServer.TransactionOutputsReferenceService(getTransaction(), indexStart, maxIndex, blockTransactionHashes, transactionMap);
             transactionOutputsReferenceService.setOnSucceeded(successEvent -> {
                 List<BlockTransaction> outputTransactions = transactionOutputsReferenceService.getValue();
                 Platform.runLater(() -> {

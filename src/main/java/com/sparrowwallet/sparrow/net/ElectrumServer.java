@@ -504,19 +504,19 @@ public class ElectrumServer {
         }
     }
 
-    public List<Set<BlockTransactionHash>> getOutputTransactionReferences(Transaction transaction, int indexStart, int indexEnd) throws ServerException {
+    public List<Set<BlockTransactionHash>> getOutputTransactionReferences(Transaction transaction, int indexStart, int indexEnd, List<Set<BlockTransactionHash>> blockTransactionHashes) throws ServerException {
         try {
             Map<String, String> pathScriptHashes = new LinkedHashMap<>();
             for(int i = indexStart; i < transaction.getOutputs().size() && i < indexEnd; i++) {
-                TransactionOutput output = transaction.getOutputs().get(i);
-                pathScriptHashes.put(Integer.toString(i), getScriptHash(output));
+                if(blockTransactionHashes.get(i) == null) {
+                    TransactionOutput output = transaction.getOutputs().get(i);
+                    pathScriptHashes.put(Integer.toString(i), getScriptHash(output));
+                }
             }
 
-            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), null, pathScriptHashes, false);
-
-            List<Set<BlockTransactionHash>> blockTransactionHashes = new ArrayList<>(transaction.getOutputs().size());
-            for(int i = 0; i < transaction.getOutputs().size(); i++) {
-                blockTransactionHashes.add(null);
+            Map<String, ScriptHashTx[]> result = new HashMap<>();
+            if(!pathScriptHashes.isEmpty()) {
+                result = electrumServerRpc.getScriptHashHistory(getTransport(), null, pathScriptHashes, false);
             }
 
             for(String index : result.keySet()) {
@@ -1571,17 +1571,26 @@ public class ElectrumServer {
         private final Transaction transaction;
         private final int indexStart;
         private final int indexEnd;
-
-        public TransactionOutputsReferenceService(Transaction transaction) {
-            this.transaction = transaction;
-            this.indexStart = 0;
-            this.indexEnd = transaction.getOutputs().size();
-        }
+        private final List<Set<BlockTransactionHash>> blockTransactionHashes;
+        private final Map<Sha256Hash, BlockTransaction> transactionMap;
 
         public TransactionOutputsReferenceService(Transaction transaction, int indexStart, int indexEnd) {
             this.transaction = transaction;
             this.indexStart = Math.min(transaction.getOutputs().size(), indexStart);
             this.indexEnd = Math.min(transaction.getOutputs().size(), indexEnd);
+            this.blockTransactionHashes = new ArrayList<>(transaction.getOutputs().size());
+            for(int i = 0; i < transaction.getOutputs().size(); i++) {
+                blockTransactionHashes.add(null);
+            }
+            this.transactionMap = new HashMap<>();
+        }
+
+        public TransactionOutputsReferenceService(Transaction transaction, int indexStart, int indexEnd, List<Set<BlockTransactionHash>> blockTransactionHashes, Map<Sha256Hash, BlockTransaction> transactionMap) {
+            this.transaction = transaction;
+            this.indexStart = Math.min(transaction.getOutputs().size(), indexStart);
+            this.indexEnd = Math.min(transaction.getOutputs().size(), indexEnd);
+            this.blockTransactionHashes = blockTransactionHashes;
+            this.transactionMap = transactionMap;
         }
 
         @Override
@@ -1589,7 +1598,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected List<BlockTransaction> call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    List<Set<BlockTransactionHash>> outputTransactionReferences = electrumServer.getOutputTransactionReferences(transaction, indexStart, indexEnd);
+                    List<Set<BlockTransactionHash>> outputTransactionReferences = electrumServer.getOutputTransactionReferences(transaction, indexStart, indexEnd, blockTransactionHashes);
 
                     Set<BlockTransactionHash> setReferences = new HashSet<>();
                     for(Set<BlockTransactionHash> outputReferences : outputTransactionReferences) {
@@ -1599,16 +1608,16 @@ public class ElectrumServer {
                     }
                     setReferences.remove(null);
                     setReferences.remove(UNFETCHABLE_BLOCK_TRANSACTION);
+                    setReferences.removeIf(ref -> transactionMap.get(ref.getHash()) != null);
 
                     List<BlockTransaction> blockTransactions = new ArrayList<>(transaction.getOutputs().size());
                     for(int i = 0; i < transaction.getOutputs().size(); i++) {
                         blockTransactions.add(null);
                     }
 
-                    Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
                     if(!setReferences.isEmpty()) {
                         Map<Integer, BlockHeader> blockHeaderMap = electrumServer.getBlockHeaders(null, setReferences);
-                        transactionMap = electrumServer.getTransactions(null, setReferences, blockHeaderMap);
+                        transactionMap.putAll(electrumServer.getTransactions(null, setReferences, blockHeaderMap));
                     }
 
                     for(int i = 0; i < outputTransactionReferences.size(); i++) {
