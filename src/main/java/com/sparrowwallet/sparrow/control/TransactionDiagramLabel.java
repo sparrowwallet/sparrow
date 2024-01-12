@@ -1,7 +1,9 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.geometry.Pos;
@@ -81,13 +83,13 @@ public class TransactionDiagramLabel extends HBox {
             List<Payment> badbankOutputs = walletTx.getPayments().stream().filter(walletTx::isBadbankSend).collect(Collectors.toList());
             List<OutputLabel> badbankOutputLabels = badbankOutputs.stream().map(payment -> getBadbankOutputLabel(transactionDiagram, payment)).collect(Collectors.toList());
             outputLabels.addAll(badbankOutputLabels);
-        } else if(walletTx.getPayments().size() >= 5 && walletTx.getPayments().stream().mapToLong(Payment::getAmount).distinct().count() <= 1
+        } else if(walletTx.getPayments().size() >= 5 && walletTx.getPayments().stream().mapToLong(Payment::getAmount).distinct().count() <= 1 && walletTx.getWallet() != null
                 && walletTx.getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_PREMIX  && walletTx.getPayments().stream().anyMatch(walletTx::isPostmixSend)) {
             OutputLabel mixOutputLabel = getMixOutputLabel(transactionDiagram, walletTx.getPayments());
             if(mixOutputLabel != null) {
                 outputLabels.add(mixOutputLabel);
             }
-        } else if(walletTx.getPayments().size() >= 5 && walletTx.getPayments().stream().mapToLong(Payment::getAmount).distinct().count() <= 1
+        } else if(walletTx.getPayments().size() >= 5 && walletTx.getPayments().stream().mapToLong(Payment::getAmount).distinct().count() <= 1 && walletTx.getWallet() != null
                 && walletTx.getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX  && walletTx.getPayments().stream().anyMatch(walletTx::isConsolidationSend)) {
             OutputLabel remixOutputLabel = getRemixOutputLabel(transactionDiagram, walletTx.getPayments());
             if(remixOutputLabel != null) {
@@ -142,7 +144,7 @@ public class TransactionDiagramLabel extends HBox {
 
         Payment premixOutput = premixOutputs.get(0);
         long total = premixOutputs.stream().mapToLong(Payment::getAmount).sum();
-        Glyph glyph = transactionDiagram.getOutputGlyph(premixOutput);
+        Glyph glyph = GlyphUtils.getOutputGlyph(transactionDiagram.getWalletTransaction(), premixOutput);
         String text;
         if(premixOutputs.size() == 1) {
             text = "Premix transaction with 1 output of " + transactionDiagram.getSatsValue(premixOutput.getAmount()) + " sats";
@@ -155,7 +157,7 @@ public class TransactionDiagramLabel extends HBox {
     }
 
     private OutputLabel getBadbankOutputLabel(TransactionDiagram transactionDiagram, Payment payment) {
-        Glyph glyph = transactionDiagram.getOutputGlyph(payment);
+        Glyph glyph = GlyphUtils.getOutputGlyph(transactionDiagram.getWalletTransaction(), payment);
         String text = "Badbank change of " + transactionDiagram.getSatsValue(payment.getAmount()) + " sats to " + payment.getAddress().toString();
 
         return getOutputLabel(glyph, text);
@@ -164,7 +166,7 @@ public class TransactionDiagramLabel extends HBox {
     private OutputLabel getWhirlpoolFeeOutputLabel(TransactionDiagram transactionDiagram, Payment whirlpoolFee, List<Payment> premixOutputs) {
         long total = premixOutputs.stream().mapToLong(Payment::getAmount).sum();
         double feePercentage = (double)whirlpoolFee.getAmount() / (total - whirlpoolFee.getAmount());
-        Glyph glyph = transactionDiagram.getOutputGlyph(whirlpoolFee);
+        Glyph glyph = GlyphUtils.getOutputGlyph(transactionDiagram.getWalletTransaction(), whirlpoolFee);
         String text = "Whirlpool fee of " + transactionDiagram.getSatsValue(whirlpoolFee.getAmount()) + " sats (" + String.format("%.2f", feePercentage * 100.0) + "% of total premix value)";
 
         return getOutputLabel(glyph, text);
@@ -177,7 +179,7 @@ public class TransactionDiagramLabel extends HBox {
 
         Payment remixOutput = mixOutputs.get(0);
         long total = mixOutputs.stream().mapToLong(Payment::getAmount).sum();
-        Glyph glyph = TransactionDiagram.getPremixGlyph();
+        Glyph glyph = GlyphUtils.getPremixGlyph();
         String text = "Mix transaction with " + mixOutputs.size() + " outputs of " + transactionDiagram.getSatsValue(remixOutput.getAmount()) + " sats each ("
                 + transactionDiagram.getSatsValue(total) + " sats)";
 
@@ -191,7 +193,7 @@ public class TransactionDiagramLabel extends HBox {
 
         Payment remixOutput = remixOutputs.get(0);
         long total = remixOutputs.stream().mapToLong(Payment::getAmount).sum();
-        Glyph glyph = TransactionDiagram.getPremixGlyph();
+        Glyph glyph = GlyphUtils.getPremixGlyph();
         String text = "Remix transaction with " + remixOutputs.size() + " outputs of " + transactionDiagram.getSatsValue(remixOutput.getAmount()) + " sats each ("
                 + transactionDiagram.getSatsValue(total) + " sats)";
 
@@ -200,10 +202,10 @@ public class TransactionDiagramLabel extends HBox {
 
     private OutputLabel getOutputLabel(TransactionDiagram transactionDiagram, Payment payment) {
         WalletTransaction walletTx = transactionDiagram.getWalletTransaction();
-        Wallet toWallet = transactionDiagram.getToWallet(payment);
+        Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
         WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap().get(payment.getAddress()) : null;
 
-        Glyph glyph = transactionDiagram.getOutputGlyph(payment);
+        Glyph glyph = GlyphUtils.getOutputGlyph(transactionDiagram.getWalletTransaction(), payment);
         String text = (toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ") + transactionDiagram.getSatsValue(payment.getAmount()) + " sats to " + payment.getAddress().toString();
 
         return getOutputLabel(glyph, text);
@@ -212,7 +214,7 @@ public class TransactionDiagramLabel extends HBox {
     private OutputLabel getOutputLabel(TransactionDiagram transactionDiagram, Map.Entry<WalletNode, Long> changeEntry) {
         WalletTransaction walletTx = transactionDiagram.getWalletTransaction();
 
-        Glyph glyph = TransactionDiagram.getChangeGlyph();
+        Glyph glyph = GlyphUtils.getChangeGlyph();
         String text = "Change of " + transactionDiagram.getSatsValue(changeEntry.getValue()) + " sats to " + walletTx.getChangeAddress(changeEntry.getKey()).toString();
 
         return getOutputLabel(glyph, text);
@@ -224,7 +226,7 @@ public class TransactionDiagramLabel extends HBox {
             return null;
         }
 
-        Glyph glyph = transactionDiagram.getFeeGlyph();
+        Glyph glyph = GlyphUtils.getFeeGlyph();
         String text = "Fee of " + transactionDiagram.getSatsValue(walletTx.getFee()) + " sats (" + String.format("%.2f", walletTx.getFeePercentage() * 100.0) + "%)";
 
         return getOutputLabel(glyph, text);

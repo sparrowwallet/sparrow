@@ -4,14 +4,12 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionSignature;
 import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.ObservableMap;
 import javafx.scene.Node;
+import javafx.scene.control.Label;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -98,6 +96,22 @@ public abstract class TransactionForm {
         return txdata.getSigningWalletNodes();
     }
 
+    public WalletTransaction getWalletTransaction() {
+        return txdata.getWalletTransaction();
+    }
+
+    public SimpleObjectProperty<WalletTransaction> walletTransactionProperty() {
+        return txdata.walletTransactionProperty();
+    }
+
+    public void setWalletTransaction(WalletTransaction walletTransaction) {
+        txdata.setWalletTransaction(walletTransaction);
+    }
+
+    public Wallet getWallet() {
+        return txdata.getWallet();
+    }
+
     public boolean isEditable() {
         if(getBlockTransaction() != null) {
             return false;
@@ -120,4 +134,8 @@ public abstract class TransactionForm {
     public abstract Node getContents() throws IOException;
 
     public abstract TransactionView getView();
+
+    public Label getLabel() {
+        return new Label(toString());
+    }
 }

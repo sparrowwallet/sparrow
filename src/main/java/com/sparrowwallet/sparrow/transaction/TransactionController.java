@@ -10,7 +10,6 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
-import com.sparrowwallet.sparrow.control.TransactionDiagram;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -20,6 +19,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.control.Label;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -158,28 +158,11 @@ public class TransactionController implements Initializable {
                 setContextMenu(null);
 
                 if(form != null) {
-                    setText(form.toString());
+                    Label label = form.getLabel();
+                    label.setMaxWidth(100);
+                    setGraphic(label);
 
                     if(form.getSigningWallet() != null) {
-                        if(form instanceof InputForm) {
-                            InputForm inputForm = (InputForm)form;
-                            if(inputForm.isWalletTxo()) {
-                                setGraphic(TransactionDiagram.getTxoGlyph());
-                            } else {
-                                setGraphic(TransactionDiagram.getMixGlyph());
-                            }
-                        }
-                        if(form instanceof OutputForm) {
-                            OutputForm outputForm = (OutputForm)form;
-                            if(outputForm.isWalletChange()) {
-                                setGraphic(TransactionDiagram.getChangeGlyph());
-                            } else if(outputForm.isWalletConsolidation()) {
-                                setGraphic(TransactionDiagram.getConsolidationGlyph());
-                            } else {
-                                setGraphic(TransactionDiagram.getPaymentGlyph());
-                            }
-                        }
-
                         setOnDragDetected(null);
                         setOnDragOver(null);
                         setOnDragDropped(null);
@@ -193,6 +176,10 @@ public class TransactionController implements Initializable {
         });
 
         txdata.signingWalletProperty().addListener((observable, oldValue, newValue) -> {
+            txtree.refresh();
+        });
+
+        txdata.walletTransactionProperty().addListener((observable, oldValue, newValue) -> {
             txtree.refresh();
         });
 

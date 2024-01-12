@@ -437,8 +437,11 @@ public class HeadersController extends TransactionFormController implements Init
             updateFee(feeAmt);
         }
 
+        headersForm.walletTransactionProperty().addListener((observable, oldValue, walletTransaction) -> {
+            transactionDiagram.update(walletTransaction);
+        });
         transactionDiagram.labelProperty().set(transactionDiagramLabel);
-        transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
+        headersForm.setWalletTransaction(getWalletTransaction(headersForm.getInputTransactions()));
 
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
 
@@ -1334,7 +1337,7 @@ public class HeadersController extends TransactionFormController implements Init
                 if(headersForm.getInputTransactions() != null) {
                     allFetchedInputTransactions.putAll(headersForm.getInputTransactions());
                 }
-                transactionDiagram.update(getWalletTransaction(allFetchedInputTransactions));
+                headersForm.setWalletTransaction(getWalletTransaction(allFetchedInputTransactions));
             }
         }
     }
@@ -1500,7 +1503,7 @@ public class HeadersController extends TransactionFormController implements Init
             updateType();
             updateSize();
             updateFee(headersForm.getPsbt().getFee());
-            transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
+            headersForm.setWalletTransaction(getWalletTransaction(headersForm.getInputTransactions()));
         }
     }
 
@@ -1597,7 +1600,7 @@ public class HeadersController extends TransactionFormController implements Init
     public void psbtReordered(PSBTReorderedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt())) {
             updateTxId();
-            transactionDiagram.update(getWalletTransaction(headersForm.getInputTransactions()));
+            headersForm.setWalletTransaction(getWalletTransaction(headersForm.getInputTransactions()));
         }
     }
 

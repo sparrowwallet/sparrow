@@ -5,8 +5,8 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.PSBTReorderedEvent;
@@ -66,7 +66,10 @@ public class OutputController extends TransactionFormController implements Initi
         outputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
             updateOutputLegendFromWallet(txOutput, signingWallet);
         });
-        updateOutputLegendFromWallet(txOutput, outputForm.getSigningWallet());
+        outputForm.walletTransactionProperty().addListener((observable, oldValue, walletTransaction) -> {
+            updateOutputLegendFromWallet(txOutput, walletTransaction != null ? walletTransaction.getWallet() : null);
+        });
+        updateOutputLegendFromWallet(txOutput, outputForm.getWallet());
 
         value.setValue(txOutput.getValue());
         to.setVisible(false);
@@ -103,23 +106,40 @@ public class OutputController extends TransactionFormController implements Initi
         return "Output #" + txOutput.getIndex();
     }
 
-    private void updateOutputLegendFromWallet(TransactionOutput txOutput, Wallet signingWallet) {
+    private void updateOutputLegendFromWallet(TransactionOutput txOutput, Wallet wallet) {
         String baseText = getLegendText(txOutput);
-        if(signingWallet != null) {
+        WalletTransaction walletTx = outputForm.getWalletTransaction();
+        if(walletTx != null) {
+            List<WalletTransaction.Output> outputs = walletTx.getOutputs();
+            if(outputForm.getIndex() < outputs.size()) {
+                WalletTransaction.Output output = outputs.get(outputForm.getIndex());
+                if(output instanceof WalletTransaction.NonAddressOutput) {
+                    outputFieldset.setText(baseText);
+                } else if(output instanceof WalletTransaction.PaymentOutput paymentOutput) {
+                    Payment payment = paymentOutput.getPayment();
+                    Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
+                    WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap().get(payment.getAddress()) : null;
+                    outputFieldset.setText(baseText + (toWallet == null ? (toNode != null ? " - Consolidation" : " - Payment") : " - Received to " + toWallet.getFullDisplayName()));
+                } else if(output instanceof WalletTransaction.ChangeOutput changeOutput) {
+                    outputFieldset.setText(baseText + " - Change to " + changeOutput.getWalletNode().toString());
+                } else {
+                    outputFieldset.setText(baseText);
+                }
+            } else {
+                outputFieldset.setText(baseText);
+            }
+        } else if(wallet != null) {
             if(outputForm.isWalletChange()) {
                 outputFieldset.setText(baseText + " - Change");
-                outputFieldset.setIcon(TransactionDiagram.getChangeGlyph());
             } else if(outputForm.isWalletConsolidation()) {
                 outputFieldset.setText(baseText + " - Consolidation");
-                outputFieldset.setIcon(TransactionDiagram.getConsolidationGlyph());
             } else {
                 outputFieldset.setText(baseText + " - Payment");
-                outputFieldset.setIcon(TransactionDiagram.getPaymentGlyph());
             }
         } else {
             outputFieldset.setText(baseText);
-            outputFieldset.setIcon(null);
         }
+        outputFieldset.setIcon(outputForm.getLabel().getGraphic());
     }
 
     private void updateSpent(List<BlockTransaction> outputTransactions) {

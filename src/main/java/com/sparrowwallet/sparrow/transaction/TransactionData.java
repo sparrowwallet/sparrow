@@ -3,10 +3,7 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.wallet.BlockTransaction;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
@@ -30,6 +27,7 @@ public class TransactionData {
     private final ObservableMap<Wallet, Storage> availableWallets = FXCollections.observableHashMap();
     private final SimpleObjectProperty<Wallet> signingWallet = new SimpleObjectProperty<>(this, "signingWallet", null);
     private final ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap = FXCollections.observableMap(new LinkedHashMap<>());
+    private final SimpleObjectProperty<WalletTransaction> walletTransaction = new SimpleObjectProperty<>(this, "walletTransaction", null);
 
     public TransactionData(String name, PSBT psbt) {
         this(name, psbt.getTransaction());
@@ -178,5 +176,21 @@ public class TransactionData {
         }
 
         return signingWalletNodes;
+    }
+
+    public WalletTransaction getWalletTransaction() {
+        return walletTransaction.get();
+    }
+
+    public SimpleObjectProperty<WalletTransaction> walletTransactionProperty() {
+        return walletTransaction;
+    }
+
+    public void setWalletTransaction(WalletTransaction walletTransaction) {
+        this.walletTransaction.set(walletTransaction);
+    }
+
+    public Wallet getWallet() {
+        return getSigningWallet() != null ? getSigningWallet() : (getWalletTransaction() != null ? getWalletTransaction().getWallet() : null);
     }
 }

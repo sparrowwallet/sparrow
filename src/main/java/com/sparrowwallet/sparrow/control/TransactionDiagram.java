@@ -14,6 +14,7 @@ import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
 import com.sparrowwallet.sparrow.event.SorobanInitiatedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
@@ -44,7 +45,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
-import org.controlsfx.glyphfont.FontAwesome;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Platform;
 
@@ -55,6 +55,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.sparrowwallet.sparrow.glyphfont.GlyphUtils.*;
 
 public class TransactionDiagram extends GridPane {
     private static final int MAX_UTXOS = 8;
@@ -686,19 +688,18 @@ public class TransactionDiagram extends GridPane {
 
         List<OutputNode> outputNodes = new ArrayList<>();
         for(Payment payment : displayedPayments) {
-            Glyph outputGlyph = getOutputGlyph(payment);
+            Glyph outputGlyph = GlyphUtils.getOutputGlyph(walletTx, payment);
             boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon").contains(style)) || payment instanceof AdditionalPayment;
-            payment.setLabel(getOutputLabel(payment));
             Label recipientLabel = new Label(payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX || payment.getType() == Payment.Type.MIX ? payment.getAddress().toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
-            Wallet toWallet = getToWallet(payment);
+            Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
             WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap().get(payment.getAddress()) : null;
             Wallet toBip47Wallet = getBip47SendWallet(payment);
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
                     + getSatsValue(payment.getAmount()) + " sats to "
                     + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (payment.getLabel() == null ? (toNode != null ? toNode : (toBip47Wallet == null ? "external address" : toBip47Wallet.getDisplayName())) : payment.getLabel()) : toWallet.getFullDisplayName()) + "\n" + payment.getAddress().toString())
-                    + (isDuplicateAddress(payment) ? " (Duplicate)" : ""));
+                    + (walletTx.isDuplicateAddress(payment) ? " (Duplicate)" : ""));
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
@@ -928,40 +929,10 @@ public class TransactionDiagram extends GridPane {
         return spacer;
     }
 
-    private String getOutputLabel(Payment payment) {
-        if(payment.getLabel() != null) {
-            return payment.getLabel();
-        }
-
-        if(payment.getType() == Payment.Type.WHIRLPOOL_FEE) {
-            return "Whirlpool fee";
-        } else if(walletTx.isPremixSend(payment)) {
-            int premixIndex = getOutputIndex(payment.getAddress(), payment.getAmount(), Collections.emptySet()) - 1;
-            return "Premix #" + premixIndex;
-        } else if(walletTx.isBadbankSend(payment)) {
-            return "Badbank change";
-        }
-
-        return null;
-    }
-
     private int getOutputIndex(Address address, long amount, Collection<Integer> seenIndexes) {
         List<TransactionOutput> addressOutputs = walletTx.getTransaction().getOutputs().stream().filter(txOutput -> txOutput.getScript().getToAddress() != null).collect(Collectors.toList());
         TransactionOutput output = addressOutputs.stream().filter(txOutput -> address.equals(txOutput.getScript().getToAddress()) && txOutput.getValue() == amount && !seenIndexes.contains(txOutput.getIndex())).findFirst().orElseThrow();
         return addressOutputs.indexOf(output);
-    }
-
-    Wallet getToWallet(Payment payment) {
-        for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
-            if(openWallet != walletTx.getWallet() && openWallet.isValid()) {
-                WalletNode addressNode = openWallet.getWalletAddresses().get(payment.getAddress());
-                if(addressNode != null) {
-                    return addressNode.getWallet();
-                }
-            }
-        }
-
-        return null;
     }
 
     private Wallet getBip47SendWallet(Payment payment) {
@@ -979,164 +950,6 @@ public class TransactionDiagram extends GridPane {
         }
 
         return null;
-    }
-
-    public Glyph getOutputGlyph(Payment payment) {
-        if(payment.getType().equals(Payment.Type.MIX)) {
-            return getMixGlyph();
-        } else if(payment.getType().equals(Payment.Type.FAKE_MIX)) {
-            return getFakeMixGlyph();
-        } else if(walletTx.isConsolidationSend(payment)) {
-            return getConsolidationGlyph();
-        } else if(walletTx.isPremixSend(payment)) {
-            return getPremixGlyph();
-        } else if(walletTx.isBadbankSend(payment)) {
-            return getBadbankGlyph();
-        } else if(payment.getType().equals(Payment.Type.WHIRLPOOL_FEE)) {
-            return getWhirlpoolFeeGlyph();
-        } else if(payment instanceof AdditionalPayment) {
-            return ((AdditionalPayment)payment).getOutputGlyph(this);
-        } else if(getToWallet(payment) != null) {
-            return getDepositGlyph();
-        } else if(isDuplicateAddress(payment)) {
-            return getPaymentWarningGlyph();
-        }
-
-        return getPaymentGlyph();
-    }
-
-    private boolean isDuplicateAddress(Payment payment) {
-        return walletTx.getPayments().stream().filter(p -> payment != p).anyMatch(p -> payment.getAddress() != null && payment.getAddress().equals(p.getAddress()));
-    }
-
-    public static Glyph getExcludeGlyph() {
-        Glyph excludeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.TIMES_CIRCLE);
-        excludeGlyph.getStyleClass().add("exclude-utxo");
-        excludeGlyph.setFontSize(12);
-        return excludeGlyph;
-    }
-
-    public static Glyph getPaymentGlyph() {
-        Glyph paymentGlyph = new Glyph("FontAwesome", FontAwesome.Glyph.SEND);
-        paymentGlyph.getStyleClass().add("payment-icon");
-        paymentGlyph.setFontSize(12);
-        return paymentGlyph;
-    }
-
-    public static Glyph getPaymentWarningGlyph() {
-        Glyph paymentWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
-        paymentWarningGlyph.getStyleClass().add("payment-warning-icon");
-        paymentWarningGlyph.setFontSize(12);
-        return paymentWarningGlyph;
-    }
-
-    public static Glyph getConsolidationGlyph() {
-        Glyph consolidationGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.REPLY_ALL);
-        consolidationGlyph.getStyleClass().add("consolidation-icon");
-        consolidationGlyph.setFontSize(12);
-        return consolidationGlyph;
-    }
-
-    public static Glyph getDepositGlyph() {
-        Glyph depositGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ARROW_DOWN);
-        depositGlyph.getStyleClass().add("deposit-icon");
-        depositGlyph.setFontSize(12);
-        return depositGlyph;
-    }
-
-    public static Glyph getPremixGlyph() {
-        Glyph premixGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
-        premixGlyph.getStyleClass().add("premix-icon");
-        premixGlyph.setFontSize(12);
-        return premixGlyph;
-    }
-
-    public static Glyph getBadbankGlyph() {
-        Glyph badbankGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.BIOHAZARD);
-        badbankGlyph.getStyleClass().add("badbank-icon");
-        badbankGlyph.setFontSize(12);
-        return badbankGlyph;
-    }
-
-    public static Glyph getWhirlpoolFeeGlyph() {
-        Glyph whirlpoolFeeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HAND_HOLDING_WATER);
-        whirlpoolFeeGlyph.getStyleClass().add("whirlpoolfee-icon");
-        whirlpoolFeeGlyph.setFontSize(12);
-        return whirlpoolFeeGlyph;
-    }
-
-    public static Glyph getFakeMixGlyph() {
-        Glyph fakeMixGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.THEATER_MASKS);
-        fakeMixGlyph.getStyleClass().add("fakemix-icon");
-        fakeMixGlyph.setFontSize(12);
-        return fakeMixGlyph;
-    }
-
-    public static Glyph getTxoGlyph() {
-        return getChangeGlyph();
-    }
-
-    public static Glyph getMixGlyph() {
-        Glyph payjoinGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
-        payjoinGlyph.getStyleClass().add("mix-icon");
-        payjoinGlyph.setFontSize(12);
-        return payjoinGlyph;
-    }
-
-    public static Glyph getChangeGlyph() {
-        Glyph changeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.COINS);
-        changeGlyph.getStyleClass().add("change-icon");
-        changeGlyph.setFontSize(12);
-        return changeGlyph;
-    }
-
-    public static Glyph getChangeWarningGlyph() {
-        Glyph changeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
-        changeWarningGlyph.getStyleClass().add("change-warning-icon");
-        changeWarningGlyph.setFontSize(12);
-        return changeWarningGlyph;
-    }
-
-    public static Glyph getChangeReplaceGlyph() {
-        Glyph changeReplaceGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ARROW_DOWN);
-        changeReplaceGlyph.getStyleClass().add("change-replace-icon");
-        changeReplaceGlyph.setFontSize(12);
-        return changeReplaceGlyph;
-    }
-
-    public Glyph getFeeGlyph() {
-        Glyph feeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HAND_HOLDING);
-        feeGlyph.getStyleClass().add("fee-icon");
-        feeGlyph.setFontSize(12);
-        return feeGlyph;
-    }
-
-    private Glyph getWarningGlyph() {
-        Glyph feeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
-        feeWarningGlyph.getStyleClass().add("fee-warning-icon");
-        feeWarningGlyph.setFontSize(12);
-        return feeWarningGlyph;
-    }
-
-    private Glyph getQuestionGlyph() {
-        Glyph feeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QUESTION_CIRCLE);
-        feeWarningGlyph.getStyleClass().add("question-icon");
-        feeWarningGlyph.setFontSize(12);
-        return feeWarningGlyph;
-    }
-
-    private Glyph getLockGlyph() {
-        Glyph lockGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LOCK);
-        lockGlyph.getStyleClass().add("lock-icon");
-        lockGlyph.setFontSize(12);
-        return lockGlyph;
-    }
-
-    private Glyph getUserGlyph() {
-        Glyph userGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.USER);
-        userGlyph.getStyleClass().add("user-icon");
-        userGlyph.setFontSize(12);
-        return userGlyph;
     }
 
     private Glyph getUserAddGlyph() {
@@ -1295,7 +1108,7 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
-    private static class AdditionalPayment extends Payment {
+    public static class AdditionalPayment extends Payment {
         private final List<Payment> additionalPayments;
 
         public AdditionalPayment(List<Payment> additionalPayments) {
@@ -1303,10 +1116,10 @@ public class TransactionDiagram extends GridPane {
             this.additionalPayments = additionalPayments;
         }
 
-        public Glyph getOutputGlyph(TransactionDiagram transactionDiagram) {
+        public Glyph getOutputGlyph(WalletTransaction walletTx) {
             Glyph glyph = null;
             for(Payment payment : additionalPayments) {
-                Glyph paymentGlyph = transactionDiagram.getOutputGlyph(payment);
+                Glyph paymentGlyph = GlyphUtils.getOutputGlyph(walletTx, payment);
                 if(glyph != null && !paymentGlyph.getStyleClass().equals(glyph.getStyleClass())) {
                     return getPaymentGlyph();
                 }

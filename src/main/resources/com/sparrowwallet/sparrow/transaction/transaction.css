@@ -31,3 +31,7 @@
 .color-8 { -fx-fill: #000000 }
 
 .color-grey { -fx-fill: #e5e5e6 }
+
+.change-warning-icon, .payment-warning-icon {
+    -fx-text-fill: rgb(238, 210, 2);
+}

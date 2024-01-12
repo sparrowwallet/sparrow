@@ -1,14 +1,20 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutPoint;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.Label;
+import org.controlsfx.glyphfont.Glyph;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class InputForm extends IndexedTransactionForm {
     public InputForm(TransactionData txdata, PSBTInput psbtInput) {
@@ -48,7 +54,7 @@ public class InputForm extends IndexedTransactionForm {
 
     public boolean isWalletTxo() {
         TransactionInput txInput = getTransactionInput();
-        return getSigningWallet() != null && getSigningWallet().isWalletTxo(txInput);
+        return getWallet() != null && getWallet().isWalletTxo(txInput);
     }
 
     @Override
@@ -67,6 +73,24 @@ public class InputForm extends IndexedTransactionForm {
     }
 
     public String toString() {
-        return "Input #" + getIndex();
+        TransactionOutPoint outPoint = getTransactionInput().getOutpoint();
+        return outPoint.getHash().toString().substring(0, 8) + "..:" + outPoint.getIndex();
+    }
+
+    @Override
+    public Label getLabel() {
+        if(getWalletTransaction() != null) {
+            TransactionOutPoint outPoint = getTransactionInput().getOutpoint();
+            Optional<BlockTransactionHashIndex> optRef = getWalletTransaction().getSelectedUtxos().keySet().stream()
+                    .filter(txo -> txo.getHash().equals(outPoint.getHash()) && txo.getIndex() == outPoint.getIndex()).findFirst();
+            Glyph inputGlyph = isWalletTxo() ? GlyphUtils.getTxoGlyph() : (getWallet() != null ? GlyphUtils.getMixGlyph() : GlyphUtils.getExternalInputGlyph());
+            if(optRef.isPresent() && optRef.get().getLabel() != null) {
+                return new Label(optRef.get().getLabel(), inputGlyph);
+            } else {
+                return new Label(toString(), inputGlyph);
+            }
+        }
+
+        return super.getLabel();
     }
 }

@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import javafx.collections.MapChangeListener;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -124,7 +125,7 @@ public class InputController extends TransactionFormController implements Initia
         inputForm.signingWalletProperty().addListener((observable, oldValue, signingWallet) -> {
             updateInputLegendFromWallet(txInput, signingWallet);
         });
-        updateInputLegendFromWallet(txInput, inputForm.getSigningWallet());
+        updateInputLegendFromWallet(txInput, inputForm.getWallet());
 
         initializeInputFields(txInput, psbtInput);
         initializeScriptFields(txInput, psbtInput);
@@ -142,19 +143,19 @@ public class InputController extends TransactionFormController implements Initia
         return "Input #" + txInput.getIndex();
     }
 
-    private void updateInputLegendFromWallet(TransactionInput txInput, Wallet signingWallet) {
+    private void updateInputLegendFromWallet(TransactionInput txInput, Wallet wallet) {
         String baseText = getLegendText(txInput);
-        if(signingWallet != null) {
+        if(wallet != null) {
             if(inputForm.isWalletTxo()) {
-                inputFieldset.setText(baseText + " from " + signingWallet.getFullDisplayName());
-                inputFieldset.setIcon(TransactionDiagram.getTxoGlyph());
+                inputFieldset.setText(baseText + " from " + wallet.getFullDisplayName());
+                inputFieldset.setIcon(GlyphUtils.getTxoGlyph());
             } else {
-                inputFieldset.setText(baseText + " - External");
-                inputFieldset.setIcon(TransactionDiagram.getMixGlyph());
+                inputFieldset.setText(baseText + (txInput.isCoinBase() ? " - Coinbase" : " - External"));
+                inputFieldset.setIcon(GlyphUtils.getMixGlyph());
             }
         } else {
-            inputFieldset.setText(baseText);
-            inputFieldset.setIcon(null);
+            inputFieldset.setText(baseText + (txInput.isCoinBase() ? " - Coinbase" : " - External"));
+            inputFieldset.setIcon(GlyphUtils.getExternalInputGlyph());
         }
     }
 
