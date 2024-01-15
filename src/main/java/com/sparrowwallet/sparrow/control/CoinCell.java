@@ -70,7 +70,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             setContextMenu(contextMenu);
 
             if(entry instanceof TransactionEntry transactionEntry) {
-                tooltip.showConfirmations(transactionEntry.confirmationsProperty());
+                tooltip.showConfirmations(transactionEntry.confirmationsProperty(), transactionEntry.isCoinbase());
 
                 if(transactionEntry.isConfirming()) {
                     ConfirmationProgressIndicator arc = new ConfirmationProgressIndicator(transactionEntry.getConfirmations());
@@ -119,6 +119,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
     private static final class CoinTooltip extends Tooltip {
         private final IntegerProperty confirmationsProperty = new SimpleIntegerProperty();
         private boolean showConfirmations;
+        private boolean isCoinbase;
         private String value;
 
         public void setValue(String value) {
@@ -126,8 +127,9 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             setTooltipText();
         }
 
-        public void showConfirmations(IntegerProperty txEntryConfirmationsProperty) {
+        public void showConfirmations(IntegerProperty txEntryConfirmationsProperty, boolean coinbase) {
             showConfirmations = true;
+            isCoinbase = coinbase;
 
             int confirmations = txEntryConfirmationsProperty.get();
             if(confirmations < BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM) {
@@ -155,7 +157,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             if(confirmations == 0) {
                 return "Unconfirmed in mempool";
             } else if(confirmations < BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM) {
-                return confirmations + " confirmation" + (confirmations == 1 ? "" : "s");
+                return confirmations + " confirmation" + (confirmations == 1 ? "" : "s") + (isCoinbase ? ", immature coinbase" : "");
             } else {
                 return BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM + "+ confirmations";
             }

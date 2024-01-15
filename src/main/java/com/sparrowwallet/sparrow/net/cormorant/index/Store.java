@@ -19,7 +19,7 @@ public class Store {
     private final Map<String, MempoolEntry> mempoolEntries = new HashMap<>();
 
     public String addAddressTransaction(Address address, ListTransaction listTransaction) {
-        if(listTransaction.category() == Category.receive) {
+        if(listTransaction.category() == Category.receive || listTransaction.category() == Category.immature || listTransaction.category() == Category.generate) {
             fundingAddresses.put(new HashIndex(Sha256Hash.wrap(listTransaction.txid()), listTransaction.vout()), address);
         }
 

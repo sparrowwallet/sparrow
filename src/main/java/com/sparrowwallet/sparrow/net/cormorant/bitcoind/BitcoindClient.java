@@ -433,7 +433,7 @@ public class BitcoindClient {
             }
 
             try {
-                if(listTransaction.category() == Category.receive) {
+                if(listTransaction.category() == Category.receive || listTransaction.category() == Category.immature || listTransaction.category() == Category.generate) {
                     //Transactions received to an address can be added directly
                     Address address = Address.fromString(listTransaction.address());
                     String updatedScriptHash = store.addAddressTransaction(address, listTransaction);
