@@ -287,7 +287,8 @@ public class PaymentController extends WalletFormController implements Initializ
         amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getRecipientValueSats(oldValue);
             if(value != null) {
-                DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+                UnitFormat unitFormat = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                DecimalFormat df = new DecimalFormat("#.#", unitFormat.getDecimalFormatSymbols());
                 df.setMaximumFractionDigits(8);
                 amount.setText(df.format(newValue.getValue(value)));
             }
