@@ -12,7 +12,7 @@
         <masterNode>
             <SplitPane dividerPositions="0.15">
                 <items>
-                    <TreeView fx:id="txtree" minWidth="120">
+                    <TreeView fx:id="txtree" minWidth="170">
                         <SplitPane.resizableWithParent>false</SplitPane.resizableWithParent>
                     </TreeView>
                     <StackPane fx:id="txpane" styleClass="tx-pane" minHeight="0"/>

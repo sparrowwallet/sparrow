@@ -159,7 +159,7 @@ public class TransactionController implements Initializable {
 
                 if(form != null) {
                     Label label = form.getLabel();
-                    label.setMaxWidth(100);
+                    label.setMaxWidth(110);
                     setGraphic(label);
 
                     if(form.getSigningWallet() != null) {
