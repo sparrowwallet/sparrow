@@ -434,13 +434,8 @@ public class TransactionController implements Initializable {
             }
 
             Map<Script, WalletNode> openWalletOutputScripts = new HashMap<>();
-            for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+            for(Wallet wallet : AppServices.get().getOpenWallets().keySet().stream().filter(Wallet::isValid).collect(Collectors.toList())) {
                 openWalletOutputScripts.putAll(wallet.getWalletOutputScripts());
-                for(Wallet childWallet : wallet.getChildWallets()) {
-                    if(!childWallet.isNested()) {
-                        openWalletOutputScripts.putAll(childWallet.getWalletOutputScripts());
-                    }
-                }
             }
 
             for(int i = indexStart; i < getTransaction().getOutputs().size() && i < maxIndex; i++) {
