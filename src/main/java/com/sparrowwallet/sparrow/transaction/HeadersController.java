@@ -54,6 +54,7 @@ import tornadofx.control.Fieldset;
 import com.google.common.eventbus.Subscribe;
 import tornadofx.control.Form;
 
+import javax.swing.text.html.Option;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -674,7 +675,8 @@ public class HeadersController extends TransactionFormController implements Init
             List<Payment> payments = new ArrayList<>();
             for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
                 try {
-                    payments.add(new Payment(txOutput.getScript().getToAddresses()[0], null, txOutput.getValue(), false));
+                    BlockTransactionHashIndex receivedTxo = getBlockTransactionOutput(txOutput);
+                    payments.add(new Payment(txOutput.getScript().getToAddresses()[0], receivedTxo != null ? receivedTxo.getLabel() : null, txOutput.getValue(), false));
                 } catch(Exception e) {
                     //ignore
                 }
@@ -702,6 +704,17 @@ public class HeadersController extends TransactionFormController implements Init
                 if(openWallet.isWalletTxo(txInput)) {
                     return openWallet;
                 }
+            }
+        }
+
+        return null;
+    }
+
+    private BlockTransactionHashIndex getBlockTransactionOutput(TransactionOutput txOutput) {
+        for(Wallet openWallet : AppServices.get().getOpenWallets().keySet()) {
+            Optional<BlockTransactionHashIndex> output = openWallet.getWalletTxos().keySet().stream().filter(ref -> ref.getHash().equals(txOutput.getHash()) && ref.getIndex() == txOutput.getIndex()).findFirst();
+            if(output.isPresent()) {
+                return output.get();
             }
         }
 
