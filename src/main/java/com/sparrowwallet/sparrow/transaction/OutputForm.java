@@ -83,7 +83,7 @@ public class OutputForm extends IndexedTransactionForm {
                     return new Label(payment.getLabel() != null && payment.getType() != Payment.Type.FAKE_MIX && payment.getType() != Payment.Type.MIX ? payment.getLabel() : payment.getAddress().toString(),
                             GlyphUtils.getOutputGlyph(getWalletTransaction(), payment));
                 } else if(output instanceof WalletTransaction.ChangeOutput changeOutput) {
-                    return new Label(changeOutput.getWalletNode().getAddress().toString(), GlyphUtils.getChangeGlyph());
+                    return new Label("Change", GlyphUtils.getChangeGlyph());
                 }
             }
         }

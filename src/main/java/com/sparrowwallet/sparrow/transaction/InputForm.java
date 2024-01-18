@@ -73,6 +73,10 @@ public class InputForm extends IndexedTransactionForm {
     }
 
     public String toString() {
+        if(getTransactionInput().isCoinBase()) {
+            return "Coinbase";
+        }
+
         TransactionOutPoint outPoint = getTransactionInput().getOutpoint();
         return outPoint.getHash().toString().substring(0, 8) + "..:" + outPoint.getIndex();
     }
