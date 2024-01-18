@@ -382,6 +382,7 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         walletTransactionProperty.addListener((observable, oldValue, walletTransaction) -> {
+            setEffectiveFeeRate(walletTransaction);
             if(walletTransaction != null) {
                 setPayments(walletTransaction.getPayments().stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList()));
 
@@ -395,7 +396,6 @@ public class SendController extends WalletFormController implements Initializabl
                 }
 
                 setFeeRate(feeRate);
-                setEffectiveFeeRate(walletTransaction);
             }
 
             transactionDiagram.update(walletTransaction);
@@ -881,22 +881,27 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setFeeRate(Double feeRateAmt) {
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-        feeRate.setText(format.getCurrencyFormat().format(feeRateAmt) + " sats/vB");
+        feeRate.setText(format.getCurrencyFormat().format(feeRateAmt) + (cpfpFeeRate.isVisible() ? "" : " sats/vB"));
         setFeeRatePriority(feeRateAmt);
     }
 
     private void setEffectiveFeeRate(WalletTransaction walletTransaction) {
-        List<BlockTransaction> unconfirmedUtxoTxs = walletTransaction.getSelectedUtxos().keySet().stream().filter(ref -> ref.getHeight() <= 0)
-                .map(ref -> getWalletForm().getWallet().getWalletTransaction(ref.getHash())).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        List<BlockTransaction> unconfirmedUtxoTxs = walletTransaction == null ? Collections.emptyList() :
+                walletTransaction.getSelectedUtxos().keySet().stream().filter(ref -> ref.getHeight() <= 0)
+                        .map(ref -> getWalletForm().getWallet().getWalletTransaction(ref.getHash()))
+                        .filter(Objects::nonNull).distinct().collect(Collectors.toList());
         if(!unconfirmedUtxoTxs.isEmpty()) {
             long utxoTxFee = unconfirmedUtxoTxs.stream().mapToLong(BlockTransaction::getFee).sum();
             double utxoTxSize = unconfirmedUtxoTxs.stream().mapToDouble(blkTx -> blkTx.getTransaction().getVirtualSize()).sum();
             long thisFee = walletTransaction.getFee();
             double thisSize = walletTransaction.getTransaction().getVirtualSize();
             double effectiveRate = (utxoTxFee + thisFee) / (utxoTxSize + thisSize);
-            Tooltip tooltip = new Tooltip("Child Pays For Parent\n" + String.format("%.2f", effectiveRate) + " sats/vB effective rate");
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+            String strEffectiveRate = format.getCurrencyFormat().format(effectiveRate);
+            Tooltip tooltip = new Tooltip("CPFP (Child Pays For Parent)\n" + strEffectiveRate + " sats/vB effective rate");
             cpfpFeeRate.setTooltip(tooltip);
             cpfpFeeRate.setVisible(true);
+            cpfpFeeRate.setText(strEffectiveRate + " sats/vB (CPFP)");
         } else {
             cpfpFeeRate.setVisible(false);
         }
@@ -1548,6 +1553,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
+        setEffectiveFeeRate(getWalletTransaction());
         setFeeRate(getFeeRate());
         if(fee.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
             Long value = getFeeValueSats(coinTextFormatter.getUnitFormat(), feeAmountUnit.getSelectionModel().getSelectedItem());

@@ -98,7 +98,7 @@
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="SIGN_OUT_ALT" />
                                 </graphic>
                                 <padding>
-                                    <Insets left="10"/>
+                                    <Insets left="4"/>
                                 </padding>
                             </Label>
                             <Region HBox.hgrow="ALWAYS" />
