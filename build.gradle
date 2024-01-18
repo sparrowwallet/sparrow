@@ -7,7 +7,7 @@ plugins {
     id 'org.beryx.jlink' version '2.26.0'
 }
 
-def sparrowVersion = '1.8.2'
+def sparrowVersion = '1.8.3'
 def os = org.gradle.internal.os.OperatingSystem.current()
 def osName = os.getFamilyName()
 if(os.macOsX) {
