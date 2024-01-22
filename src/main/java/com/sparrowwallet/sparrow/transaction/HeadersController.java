@@ -1580,7 +1580,7 @@ public class HeadersController extends TransactionFormController implements Init
                         output.setLabel(label + (walletNode.getKeyPurpose() == KeyPurpose.CHANGE ? (walletNode.getWallet().isBip47() ? " (sent)" : " (change)") : " (received)"));
                         changedLabelEntries.add(new HashIndexEntry(event.getWallet(), output, HashIndexEntry.Type.OUTPUT, walletNode.getKeyPurpose()));
                     }
-                    if(output.getSpentBy() != null && output.getSpentBy().getHash().equals(txid) && output.getSpentBy().getLabel() == null) { //The norm - sending out
+                    if(output.getSpentBy() != null && output.getSpentBy().getHash().equals(txid) && output.getSpentBy().getLabel() == null && headersForm.getName() != null) { //The norm - sending out
                         output.getSpentBy().setLabel(headersForm.getName() + " (input)");
                         changedLabelEntries.add(new HashIndexEntry(event.getWallet(), output.getSpentBy(), HashIndexEntry.Type.INPUT, walletNode.getKeyPurpose()));
                     }
