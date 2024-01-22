@@ -167,7 +167,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             Platform.runLater(() -> webcamResolutionProperty.set(null));
         });
 
-        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
         final ButtonType hdButtonType = new javafx.scene.control.ButtonType("Use HD Capture", ButtonBar.ButtonData.LEFT);
         final ButtonType camButtonType = new javafx.scene.control.ButtonType("Default Camera", ButtonBar.ButtonData.HELP_2);
         dialogPane.getButtonTypes().addAll(hdButtonType, camButtonType, cancelButtonType);

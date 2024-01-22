@@ -91,7 +91,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             createAnimateQRService();
         }
 
-        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().add(cancelButtonType);
 
         if(addLegacyEncodingOption) {
@@ -134,7 +134,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
         qrImageView.setImage(getQrCode(data));
 
-        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
 
         if(addScanButton) {
