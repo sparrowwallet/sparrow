@@ -91,7 +91,7 @@ public class TransactionDiagram extends GridPane {
                 stage.setResizable(false);
 
                 StackPane scenePane = new StackPane();
-                if(Platform.getCurrent() == Platform.WINDOWS) {
+                if(Platform.getCurrent() == Platform.WINDOWS || Platform.getCurrent() == Platform.UNIX) {
                     scenePane.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
                 }
 
