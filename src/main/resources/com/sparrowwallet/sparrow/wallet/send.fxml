@@ -129,7 +129,7 @@
                             <CategoryAxis side="BOTTOM" />
                         </xAxis>
                         <yAxis>
-                            <NumberAxis side="LEFT" />
+                            <NumberAxis side="LEFT" forceZeroInRange="false" />
                         </yAxis>
                     </BlockTargetFeeRatesChart>
                     <MempoolSizeFeeRatesChart fx:id="mempoolSizeFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false" minHeight="135">
