@@ -2,8 +2,8 @@ import java.awt.GraphicsEnvironment
 
 plugins {
     id 'application'
-    id 'org-openjfx-javafxplugin'
     id 'extra-java-module-info'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'org.beryx.jlink' version '3.0.1'
 }
 
@@ -134,11 +134,6 @@ dependencies {
     testImplementation('junit:junit:4.13.1')
 }
 
-application {
-    mainModule = 'com.sparrowwallet.sparrow'
-    mainClass = 'com.sparrowwallet.sparrow.SparrowWallet'
-}
-
 compileJava {
     options.with {
         fork = true
@@ -160,7 +155,10 @@ test {
     jvmArgs '--add-opens=java.base/java.io=com.google.gson'
 }
 
-run {
+application {
+    mainModule = 'com.sparrowwallet.sparrow'
+    mainClass = 'com.sparrowwallet.sparrow.SparrowWallet'
+
     applicationDefaultJvmArgs = ["-XX:+HeapDumpOnOutOfMemoryError",
                                  "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                                  "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
