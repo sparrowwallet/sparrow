@@ -117,10 +117,11 @@ public class TcpOverTlsTransport extends TcpTransport {
     }
 
     protected boolean shouldSaveCertificate() {
-        //Avoid saving the certificates for blockstream.info public servers - they change too often and encourage approval complacency
-        if(PublicElectrumServer.BLOCKSTREAM_INFO.getServer().getHost().equals(server.getHost())
-                || PublicElectrumServer.ELECTRUM_BLOCKSTREAM_INFO.getServer().getHost().equals(server.getHost())) {
-            return false;
+        //Avoid saving the certificates for public servers - they change often, encourage approval complacency, and there is little a user can do to check
+        for(PublicElectrumServer publicElectrumServer : PublicElectrumServer.getServers()) {
+            if(publicElectrumServer.getServer().getHost().equals(server.getHost())) {
+                return false;
+            }
         }
 
         return Storage.getCertificateFile(server.getHost()) == null;
