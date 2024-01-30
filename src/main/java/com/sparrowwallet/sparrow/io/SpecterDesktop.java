@@ -108,7 +108,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
                         WalletModel walletModel = device.getWalletModel();
                         if(walletModel != null) {
                             keystore.setWalletModel(walletModel);
-                            if(walletModel == WalletModel.TREZOR_1 || walletModel == WalletModel.TREZOR_T || walletModel == WalletModel.KEEPKEY ||
+                            if(walletModel == WalletModel.TREZOR_1 || walletModel == WalletModel.TREZOR_T || walletModel == WalletModel.TREZOR_SAFE_3 || walletModel == WalletModel.KEEPKEY ||
                                 walletModel == WalletModel.LEDGER_NANO_S || walletModel == WalletModel.LEDGER_NANO_X || walletModel == WalletModel.LEDGER_NANO_S_PLUS ||
                                 walletModel == WalletModel.BITBOX_02 || walletModel == WalletModel.COLDCARD) {
                                 keystore.setSource(KeystoreSource.HW_USB);

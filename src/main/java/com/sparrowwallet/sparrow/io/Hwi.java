@@ -836,7 +836,7 @@ public class Hwi {
         public WalletModel deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             String modelStr = json.getAsJsonPrimitive().getAsString();
             try {
-                return WalletModel.valueOf(modelStr.toUpperCase(Locale.ROOT));
+                return WalletModel.valueOf(modelStr.toUpperCase(Locale.ROOT).replace(' ', '_'));
             } catch(Exception e) {
                 for(WalletModel model : WalletModel.values()) {
                     if(modelStr.startsWith(model.getType())) {
