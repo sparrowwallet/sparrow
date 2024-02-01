@@ -53,6 +53,7 @@ open module com.sparrowwallet.sparrow {
     requires io.reactivex.rxjava2;
     requires io.reactivex.rxjava2fx;
     requires org.apache.commons.lang3;
+    requires org.apache.commons.compress;
     requires net.sourceforge.streamsupport;
     requires co.nstant.in.cbor;
     requires com.github.librepdf.openpdf;

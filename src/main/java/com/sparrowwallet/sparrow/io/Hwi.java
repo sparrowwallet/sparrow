@@ -13,6 +13,9 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,19 +27,18 @@ import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
     private static final String HWI_HOME_DIR = "hwi";
     private static final String HWI_VERSION_PREFIX = "hwi-";
-    private static final String HWI_VERSION = "2.3.1";
+    private static final String HWI_VERSION = "2.4.0";
     private static final String HWI_VERSION_DIR = HWI_VERSION_PREFIX + HWI_VERSION;
 
     private static boolean isPromptActive = false;
@@ -377,9 +379,9 @@ public class Hwi {
                 if(platform == Platform.OSX) {
                     InputStream inputStream;
                     if(osArch.equals("aarch64")) {
-                        inputStream = Hwi.class.getResourceAsStream("/native/osx/aarch64/" + HWI_VERSION_DIR + "-mac-aarch64-signed.zip");
+                        inputStream = Hwi.class.getResourceAsStream("/native/osx/aarch64/" + HWI_VERSION_DIR + "-mac-aarch64-signed.tar.bz2");
                     } else {
-                        inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + HWI_VERSION_DIR + "-mac-amd64-signed.zip");
+                        inputStream = Hwi.class.getResourceAsStream("/native/osx/x64/" + HWI_VERSION_DIR + "-mac-amd64-signed.tar.bz2");
                     }
 
                     if(inputStream == null) {
@@ -396,26 +398,27 @@ public class Hwi {
                     log.debug("Using HWI path: " + hwiVersionDir.getAbsolutePath());
 
                     File hwiExec = null;
-                    try(ZipInputStream zis = new ZipInputStream(inputStream)) {
-                        ZipEntry zipEntry = zis.getNextEntry();
-                        while(zipEntry != null) {
-                            if(zipEntry.isDirectory()) {
-                                newDirectory(hwiVersionDir, zipEntry, ownerExecutableWritable);
+                    try(TarArchiveInputStream tarInput = new TarArchiveInputStream(new BZip2CompressorInputStream(inputStream))) {
+                        TarArchiveEntry tarEntry = tarInput.getNextEntry();
+                        while(tarEntry != null) {
+                            if(tarEntry.isDirectory()) {
+                                newDirectory(hwiVersionDir, tarEntry, ownerExecutableWritable);
+                            } else if(tarEntry.isSymbolicLink()) {
+                                newSymlink(hwiVersionDir, tarEntry, ownerExecutableWritable);
                             } else {
-                                File newFile = newFile(hwiVersionDir, zipEntry, ownerExecutableWritable);
+                                File newFile = newFile(hwiVersionDir, tarEntry, ownerExecutableWritable);
                                 try(FileOutputStream fos = new FileOutputStream(newFile)) {
-                                    ByteStreams.copy(zis, new FileOutputStream(newFile));
+                                    ByteStreams.copy(tarInput, new FileOutputStream(newFile));
                                     fos.flush();
-                                };
+                                }
 
-                                if(zipEntry.getName().equals("hwi")) {
+                                if(tarEntry.getName().equals("hwi")) {
                                     hwiExec = newFile;
                                 }
                             }
 
-                            zipEntry = zis.getNextEntry();
+                            tarEntry = tarInput.getNextEntry();
                         }
-                        zis.closeEntry();
                     }
 
                     hwiExecutable = hwiExec;
@@ -478,29 +481,43 @@ public class Hwi {
         }
     }
 
-    public static File newDirectory(File destinationDir, ZipEntry zipEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
+    public static File newDirectory(File destinationDir, TarArchiveEntry tarEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
         String destDirPath = destinationDir.getCanonicalPath();
 
-        Path path = Path.of(destDirPath, zipEntry.getName());
+        Path path = Path.of(destDirPath, tarEntry.getName());
         File destDir = Files.createDirectory(path, PosixFilePermissions.asFileAttribute(setFilePermissions)).toFile();
 
         String destSubDirPath = destDir.getCanonicalPath();
         if(!destSubDirPath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+            throw new IOException("Entry is outside of the target dir: " + tarEntry.getName());
         }
 
         return destDir;
     }
 
-    public static File newFile(File destinationDir, ZipEntry zipEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
+    public static File newFile(File destinationDir, TarArchiveEntry tarEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
         String destDirPath = destinationDir.getCanonicalPath();
 
-        Path path = Path.of(destDirPath, zipEntry.getName());
+        Path path = Path.of(destDirPath, tarEntry.getName());
         File destFile = Files.createFile(path, PosixFilePermissions.asFileAttribute(setFilePermissions)).toFile();
 
         String destFilePath = destFile.getCanonicalPath();
         if(!destFilePath.startsWith(destDirPath + File.separator)) {
-            throw new IOException("Entry is outside of the target dir: " + zipEntry.getName());
+            throw new IOException("Entry is outside of the target dir: " + tarEntry.getName());
+        }
+
+        return destFile;
+    }
+
+    public static File newSymlink(File destinationDir, TarArchiveEntry tarEntry, Set<PosixFilePermission> setFilePermissions) throws IOException {
+        String destDirPath = destinationDir.getCanonicalPath();
+
+        Path path = Path.of(destDirPath, tarEntry.getName());
+        File destFile = Files.createSymbolicLink(path, Paths.get(tarEntry.getLinkName())).toFile();
+
+        String destFilePath = destFile.getCanonicalPath();
+        if(!destFilePath.startsWith(destDirPath + File.separator)) {
+            throw new IOException("Entry is outside of the target dir: " + tarEntry.getName());
         }
 
         return destFile;
