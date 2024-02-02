@@ -46,7 +46,7 @@ public class SatochipCommandSet {
     }
 
     /**
-     * Returns the application info as stored from the last sent SELECT command. Returns null if no succesful SELECT
+     * Returns the application info as stored from the last sent SELECT command. Returns null if no successful SELECT
      * command has been sent using this command set.
      *
      * @return the application info object
