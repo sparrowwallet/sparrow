@@ -42,7 +42,7 @@ Check if key fingerprint matches: `3B04D753C9050D9A5D343F39843C48A565F8F04B`:
 ```
 gpg --import --import-options show-only adoptium.asc
 ```
-If key doesn't match, do not procede.
+If key doesn't match, do not proceed.
 
 Add Adoptium PGP key to a the keyring shared folder:
 ```sh

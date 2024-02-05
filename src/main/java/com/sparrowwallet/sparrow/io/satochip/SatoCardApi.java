@@ -192,7 +192,7 @@ public class SatoCardApi extends CardApi {
         String fullpath = KeyDerivation.writePath(derivation);
         cardProtocol.cardVerifyPIN(0, pin);
 
-        // 2FA is optionnal, currently not supported in sparrow as it requires to send 2FA to a mobile app through a server.
+        // 2FA is optional, currently not supported in sparrow as it requires to send 2FA to a mobile app through a server.
         SatoCardStatus cardStatus = this.getStatus();
         if(cardStatus.needs2FA()) {
             throw new CardException("Satochip 2FA is not (yet) supported within Sparrow");
