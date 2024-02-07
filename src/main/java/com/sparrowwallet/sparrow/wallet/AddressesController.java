@@ -163,7 +163,7 @@ public class AddressesController extends WalletFormController implements Initial
                     writer.write(getDerivationPath(indexNode));
                     Optional<Entry> optLabelEntry = getWalletForm().getNodeEntry(keyPurpose).getChildren().stream()
                             .filter(entry -> ((NodeEntry)entry).getNode().getIndex() == indexNode.getIndex()).findFirst();
-                    writer.write(optLabelEntry.isPresent() ? optLabelEntry.get().getLabel() : "");
+                    writer.write(optLabelEntry.isPresent() ? optLabelEntry.get().getLabel() : indexNode.getLabel());
                     writer.endRecord();
                 }
                 writer.close();
