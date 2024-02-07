@@ -32,10 +32,6 @@ public class CkCardApi extends CardApi {
     private final CardProtocol cardProtocol;
     private String cvc;
 
-    public CkCardApi(String cvc) throws CardException {
-        this(WalletModel.TAPSIGNER, cvc);
-    }
-
     public CkCardApi(WalletModel cardType, String cvc) throws CardException {
         this.cardType = cardType;
         this.cardProtocol = new CardProtocol();
@@ -137,6 +133,8 @@ public class CkCardApi extends CardApi {
     public Service<Void> getInitializationService(byte[] entropy, StringProperty messageProperty) {
         if(cardType == WalletModel.TAPSIGNER) {
             return new CardImportPane.CardInitializationService(new Tapsigner(), cvc, entropy, messageProperty);
+        } else if(cardType == WalletModel.SATSCHIP) {
+            return new CardImportPane.CardInitializationService(new Satschip(), cvc, entropy, messageProperty);
         }
 
         return new CardInitializationService(entropy, messageProperty);
@@ -144,6 +142,10 @@ public class CkCardApi extends CardApi {
 
     @Override
     public Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty) {
+        if(cardType == WalletModel.SATSCHIP) {
+            return new CardImportPane.CardImportService(new Satschip(), cvc, derivation, messageProperty);
+        }
+
         return new CardImportPane.CardImportService(new Tapsigner(), cvc, derivation, messageProperty);
     }
 
@@ -155,11 +157,11 @@ public class CkCardApi extends CardApi {
         ExtendedKey derivedXpubkey = ExtendedKey.fromDescriptor(Base58.encodeChecked(derivedXpub.xpub));
 
         Keystore keystore = new Keystore();
-        keystore.setLabel(WalletModel.TAPSIGNER.toDisplayString());
+        keystore.setLabel(cardType.toDisplayString());
         keystore.setKeyDerivation(keyDerivation);
         keystore.setSource(KeystoreSource.HW_AIRGAPPED);
         keystore.setExtendedPublicKey(derivedXpubkey);
-        keystore.setWalletModel(WalletModel.TAPSIGNER);
+        keystore.setWalletModel(cardType);
 
         return keystore;
     }
@@ -404,7 +406,7 @@ public class CkCardApi extends CardApi {
                 @Override
                 protected PSBT call() throws Exception {
                     CardStatus cardStatus = getStatus();
-                    if(cardStatus.getCardType() != WalletModel.TAPSIGNER) {
+                    if(cardStatus.getCardType() != WalletModel.TAPSIGNER && cardStatus.getCardType() != WalletModel.SATSCHIP) {
                         throw new IllegalStateException("Please use a " + WalletModel.TAPSIGNER.toDisplayString() + " to sign transactions.");
                     }
 
@@ -465,7 +467,7 @@ public class CkCardApi extends CardApi {
                 @Override
                 protected String call() throws Exception {
                     CardStatus cardStatus = getStatus();
-                    if(cardStatus.getCardType() != WalletModel.TAPSIGNER) {
+                    if(cardStatus.getCardType() != WalletModel.TAPSIGNER && cardStatus.getCardType() != WalletModel.SATSCHIP) {
                         throw new IllegalStateException("Please use a " + WalletModel.TAPSIGNER.toDisplayString() + " to sign messages.");
                     }
 

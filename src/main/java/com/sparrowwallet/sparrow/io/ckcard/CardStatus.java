@@ -15,6 +15,7 @@ public class CardStatus extends CardResponse {
     String ver;
     BigInteger birth;
     boolean tapsigner;
+    boolean satschip;
     List<BigInteger> path;
     BigInteger num_backups;
     List<BigInteger> slots;
@@ -24,7 +25,7 @@ public class CardStatus extends CardResponse {
     boolean testnet;
 
     public boolean isInitialized() {
-        return (getCardType() == WalletModel.TAPSIGNER && path != null) || (getCardType() == WalletModel.SATSCARD && addr != null);
+        return ((getCardType() == WalletModel.TAPSIGNER || getCardType() == WalletModel.SATSCHIP) && path != null) || (getCardType() == WalletModel.SATSCARD && addr != null);
     }
 
     public String getIdentifier() {
@@ -42,11 +43,11 @@ public class CardStatus extends CardResponse {
     }
 
     public boolean requiresBackup() {
-        return num_backups == null || num_backups.intValue() == 0;
+        return !satschip && (num_backups == null || num_backups.intValue() == 0);
     }
 
     public WalletModel getCardType() {
-        return tapsigner ? WalletModel.TAPSIGNER : WalletModel.SATSCARD;
+        return satschip ? WalletModel.SATSCHIP : (tapsigner ? WalletModel.TAPSIGNER : WalletModel.SATSCARD);
     }
 
     public int getCurrentSlot() {
@@ -72,6 +73,7 @@ public class CardStatus extends CardResponse {
                 ", ver='" + ver + '\'' +
                 ", birth=" + birth +
                 ", tapsigner=" + tapsigner +
+                ", satschip=" + satschip +
                 ", path=" + path +
                 ", num_backups=" + num_backups +
                 ", slots=" + slots +

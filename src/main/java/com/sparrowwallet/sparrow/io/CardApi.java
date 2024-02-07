@@ -62,7 +62,7 @@ public abstract class CardApi {
     }
 
     public static CardApi getCardApi(WalletModel walletModel, String pin) throws CardException {
-        if(walletModel == WalletModel.TAPSIGNER || walletModel == WalletModel.SATSCARD) {
+        if(walletModel == WalletModel.TAPSIGNER || walletModel == WalletModel.SATSCHIP || walletModel == WalletModel.SATSCARD) {
             return new CkCardApi(walletModel, pin);
         }
 

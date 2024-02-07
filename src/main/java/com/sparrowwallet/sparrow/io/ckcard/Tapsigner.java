@@ -16,7 +16,7 @@ public class Tapsigner implements KeystoreCardImport {
     public boolean isInitialized() throws CardException {
         CkCardApi cardApi = null;
         try {
-            cardApi = new CkCardApi(null);
+            cardApi = new CkCardApi(getWalletModel(), null);
             return cardApi.isInitialized();
         } finally {
             if(cardApi != null) {
@@ -37,7 +37,7 @@ public class Tapsigner implements KeystoreCardImport {
 
         CkCardApi cardApi = null;
         try {
-            cardApi = new CkCardApi(pin);
+            cardApi = new CkCardApi(getWalletModel(), pin);
             CardStatus cardStatus = cardApi.getStatus();
             if(cardStatus.isInitialized()) {
                 throw new IllegalStateException("Card is already initialized.");
@@ -63,7 +63,7 @@ public class Tapsigner implements KeystoreCardImport {
 
         CkCardApi cardApi = null;
         try {
-            cardApi = new CkCardApi(pin);
+            cardApi = new CkCardApi(getWalletModel(), pin);
             CardStatus cardStatus = cardApi.getStatus();
             if(!cardStatus.isInitialized()) {
                 throw new IllegalStateException("Card is not initialized.");
