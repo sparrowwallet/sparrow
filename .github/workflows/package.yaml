@@ -12,14 +12,14 @@ jobs:
       matrix:
         os: [windows-2022, ubuntu-20.04, macos-12]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Set up JDK 21.0.2
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '21.0.2'
+          java-version: '21.0.1'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Build with Gradle
@@ -31,7 +31,7 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew packageTarDistribution
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Sparrow Build - ${{ runner.os }}
           path: |
@@ -48,7 +48,7 @@ jobs:
         run: for f in build/jpackage/sparrow*; do mv -v "$f" "${f/sparrow/sparrow-server}"; done;
       - name: Upload Headless Artifact
         if: ${{ runner.os == 'Linux' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Sparrow Build - ${{ runner.os }} Headless
           path: |
