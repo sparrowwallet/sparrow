@@ -1,6 +1,7 @@
 open module com.sparrowwallet.sparrow {
     requires java.desktop;
     requires java.net.http;
+    requires java.sql;
     requires javafx.base;
     requires javafx.controls;
     requires javafx.fxml;
@@ -44,7 +45,7 @@ open module com.sparrowwallet.sparrow {
     requires com.github.sarxos.webcam.capture;
     requires centerdevice.nsmenufx;
     requires com.beust.jcommander;
-    requires org.slf4j.jul.to.slf4j;
+    requires jul.to.slf4j;
     requires net.sourceforge.javacsv;
     requires com.nativelibs4java.bridj;
     requires org.reactfx.reactfx;

@@ -63,18 +63,19 @@ java {
 
 dependencies {
     //Any changes to the dependencies must be reflected in the module definitions below!
-    implementation(project(':drongo')) {
-        exclude group: 'org.hamcrest'
-        exclude group: 'junit'
-    }
-    implementation('com.google.guava:guava:31.1-jre')
-    implementation('com.google.code.gson:gson:2.8.6')
+    implementation(project(':drongo'))
+    implementation('com.google.guava:guava:33.0.0-jre')
+    implementation('com.google.code.gson:gson:2.9.1')
     implementation('com.h2database:h2:2.1.214')
-    implementation('com.zaxxer:HikariCP:4.0.3')
+    implementation('com.zaxxer:HikariCP:4.0.3') {
+        exclude group: 'org.slf4j'
+    }
     implementation('org.jdbi:jdbi3-core:3.20.0') {
         exclude group: 'org.slf4j'
     }
-    implementation('org.jdbi:jdbi3-sqlobject:3.20.0')
+    implementation('org.jdbi:jdbi3-sqlobject:3.20.0') {
+        exclude group: 'org.slf4j'
+    }
     implementation('org.flywaydb:flyway-core:7.10.7-SNAPSHOT')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
@@ -118,10 +119,11 @@ dependencies {
     }
     implementation('dev.bwt:bwt-jni:0.1.8')
     implementation('net.sourceforge.javacsv:javacsv:2.0')
-    implementation('org.slf4j:jul-to-slf4j:1.7.30') {
+    implementation ('org.slf4j:slf4j-api:2.0.12')
+    implementation('org.slf4j:jul-to-slf4j:2.0.12') {
         exclude group: 'org.slf4j'
     }
-    implementation('com.sparrowwallet.nightjar:nightjar:0.2.39')
+    implementation('com.sparrowwallet.nightjar:nightjar:0.2.40')
     implementation('io.reactivex.rxjava2:rxjava:2.2.15')
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.7')
@@ -132,7 +134,8 @@ dependencies {
     implementation('net.coobird:thumbnailator:0.4.18')
     implementation('com.github.hervegirod:fxsvgimage:1.0b2')
     implementation('com.sparrowwallet:toucan:0.9.0')
-    testImplementation('junit:junit:4.13.1')
+    testImplementation('org.junit.jupiter:junit-jupiter-api:5.10.0')
+    testImplementation('org.junit.vintage:junit-vintage-engine:5.10.0')
 }
 
 compileJava {
@@ -153,7 +156,7 @@ processResources {
 }
 
 test {
-    jvmArgs '--add-opens=java.base/java.io=com.google.gson'
+    jvmArgs '--add-opens=java.base/java.io=ALL-UNNAMED'
 }
 
 application {
@@ -235,7 +238,8 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop",
                    "--add-reads=com.sparrowwallet.merged.module=java.sql",
                    "--add-reads=com.sparrowwallet.merged.module=com.sparrowwallet.sparrow",
-                   "--add-reads=com.sparrowwallet.merged.module=logback.classic",
+                   "--add-reads=com.sparrowwallet.merged.module=ch.qos.logback.classic",
+                   "--add-reads=com.sparrowwallet.merged.module=org.slf4j",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.databind",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.annotation",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.core",
@@ -404,41 +408,16 @@ extraJavaModuleInfo {
     module('javacsv-2.0.jar', 'net.sourceforge.javacsv', '2.0') {
         exports('com.csvreader')
     }
-    module('jul-to-slf4j-1.7.30.jar', 'org.slf4j.jul.to.slf4j', '1.7.30') {
-        exports('org.slf4j.bridge')
-        requires('java.logging')
-        requires('org.slf4j')
-    }
     module('jeromq-0.5.0.jar', 'jeromq', '0.5.0') {
         exports('org.zeromq')
     }
     module('json-simple-1.1.1.jar', 'json.simple', '1.1.1') {
         exports('org.json.simple')
-    }
-    module('logback-classic-1.2.8.jar', 'logback.classic', '1.2.8') {
-        exports('ch.qos.logback.classic')
-        requires('org.slf4j')
-        requires('logback.core')
-        requires('java.xml')
-        requires('java.logging')
-    }
-    module('failureaccess-1.0.1.jar', 'failureaccess', '1.0.1') {
-        exports('com.google.common.util.concurrent.internal')
+        exports('org.json.simple.parser')
     }
     module('listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar', 'com.google.guava.listenablefuture', '9999.0-empty-to-avoid-conflict-with-guava')
-    module('guava-31.1-jre.jar', 'com.google.common', '31.1-jre') {
-        exports('com.google.common.eventbus')
-        exports('com.google.common.net')
-        exports('com.google.common.base')
-        exports('com.google.common.collect')
-        exports('com.google.common.io')
-        exports('com.google.common.primitives')
-        exports('com.google.common.math')
-        requires('failureaccess')
-        requires('java.logging')
-    }
     module('jsr305-3.0.2.jar', 'com.google.code.findbugs.jsr305', '3.0.2')
-    module('j2objc-annotations-1.3.jar', 'com.google.j2objc.j2objc.annotations', '1.3')
+    module('j2objc-annotations-2.8.jar', 'com.google.j2objc.j2objc.annotations', '2.8')
     module('jdbi3-core-3.20.0.jar', 'org.jdbi.v3.core', '3.20.0') {
         exports('org.jdbi.v3.core')
         exports('org.jdbi.v3.core.mapper')
@@ -449,6 +428,7 @@ extraJavaModuleInfo {
         requires('io.leangen.geantyref')
         requires('java.sql')
         requires('org.slf4j')
+        requires('com.github.benmanes.caffeine')
     }
     module('geantyref-1.3.11.jar', 'io.leangen.geantyref', '1.3.11') {
         exports('io.leangen.geantyref')
@@ -507,7 +487,7 @@ extraJavaModuleInfo {
         exports('co.nstant.in.cbor.model')
         exports('co.nstant.in.cbor.builder')
     }
-    module('nightjar-0.2.39.jar', 'com.sparrowwallet.nightjar', '0.2.39') {
+    module('nightjar-0.2.40.jar', 'com.sparrowwallet.nightjar', '0.2.40') {
         requires('com.google.common')
         requires('net.sourceforge.streamsupport')
         requires('org.slf4j')
@@ -515,7 +495,7 @@ extraJavaModuleInfo {
         requires('com.fasterxml.jackson.databind')
         requires('com.fasterxml.jackson.annotation')
         requires('com.fasterxml.jackson.core')
-        requires('logback.classic')
+        requires('ch.qos.logback.classic')
         requires('org.json')
         requires('io.reactivex.rxjava2')
         exports('com.samourai.http.client')
@@ -718,15 +698,8 @@ extraJavaModuleInfo {
         exports('io.matthewnelson.component.parcelize')
     }
     module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
-    module('logback-core-1.2.8.jar', 'logback.core', '1.2.8') {
-        requires('java.xml')
-    }
     module('jcommander-1.81.jar', 'com.beust.jcommander', '1.81') {
         exports('com.beust.jcommander')
-    }
-    module('junit-4.12.jar', 'junit', '4.12') {
-        exports('org.junit')
-        requires('org.hamcrest.core')
     }
     module('hamcrest-core-1.3.jar', 'org.hamcrest.core', '1.3')
 }
