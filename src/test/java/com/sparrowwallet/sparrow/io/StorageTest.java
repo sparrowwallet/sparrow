@@ -7,8 +7,8 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.io.*;
 
@@ -17,7 +17,7 @@ public class StorageTest extends IoTest {
     public void loadWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
         Wallet wallet = storage.loadEncryptedWallet("pass").getWallet();
-        Assert.assertTrue(wallet.isValid());
+        Assertions.assertTrue(wallet.isValid());
     }
 
     @Test
@@ -40,19 +40,19 @@ public class StorageTest extends IoTest {
             }
         }
 
-        Assert.assertTrue(wallet.isValid());
+        Assertions.assertTrue(wallet.isValid());
 
-        Assert.assertEquals("testd2", wallet.getName());
-        Assert.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
-        Assert.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
-        Assert.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
-        Assert.assertEquals("pkh(60bcd3a7)", wallet.getDefaultPolicy().getMiniscript().getScript());
-        Assert.assertEquals("60bcd3a7", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
-        Assert.assertEquals("m/84'/0'/3'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
-        Assert.assertEquals("xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
-        Assert.assertEquals("af6ebd81714c301c3a71fe11a7a9c99ccef4b33d4b36582220767bfa92768a2aa040f88b015b2465f8075a8b9dbf892a7d6e6c49932109f2cbc05ba0bd7f355fbcc34c237f71be5fb4dd7f8184e44cb0", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getEncryptedData().getEncryptedBytes()));
-        Assert.assertNull(wallet.getKeystores().get(0).getSeed().getMnemonicCode());
-        Assert.assertEquals("bc1q2mkrttcuzryrdyn9vtu3nfnt3jlngwn476ktus", wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+        Assertions.assertEquals("testd2", wallet.getName());
+        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
+        Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
+        Assertions.assertEquals("pkh(60bcd3a7)", wallet.getDefaultPolicy().getMiniscript().getScript());
+        Assertions.assertEquals("60bcd3a7", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
+        Assertions.assertEquals("m/84'/0'/3'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
+        Assertions.assertEquals("xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+        Assertions.assertEquals("af6ebd81714c301c3a71fe11a7a9c99ccef4b33d4b36582220767bfa92768a2aa040f88b015b2465f8075a8b9dbf892a7d6e6c49932109f2cbc05ba0bd7f355fbcc34c237f71be5fb4dd7f8184e44cb0", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getEncryptedData().getEncryptedBytes()));
+        Assertions.assertNull(wallet.getKeystores().get(0).getSeed().getMnemonicCode());
+        Assertions.assertEquals("bc1q2mkrttcuzryrdyn9vtu3nfnt3jlngwn476ktus", wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
     }
 
     @Test
@@ -66,7 +66,7 @@ public class StorageTest extends IoTest {
     public void saveWallet() throws IOException, MnemonicException, StorageException {
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
         Wallet wallet = storage.loadEncryptedWallet("pass").getWallet();
-        Assert.assertTrue(wallet.isValid());
+        Assertions.assertTrue(wallet.isValid());
 
         File tempWallet = File.createTempFile("sparrow", "tmp");
         tempWallet.deleteOnExit();
@@ -78,6 +78,6 @@ public class StorageTest extends IoTest {
 
         Storage temp2Storage = new Storage(tempWallet);
         wallet = temp2Storage.loadEncryptedWallet("pass").getWallet();
-        Assert.assertTrue(wallet.isValid());
+        Assertions.assertTrue(wallet.isValid());
     }
 }
