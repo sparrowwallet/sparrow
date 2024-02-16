@@ -58,6 +58,7 @@ public class Whirlpool {
     public static final List<Network> WHIRLPOOL_NETWORKS = List.of(Network.MAINNET, Network.TESTNET);
     public static final int DEFAULT_MIXTO_MIN_MIXES = 3;
     public static final int DEFAULT_MIXTO_RANDOM_FACTOR = 4;
+    protected static final int TIMEOUT_MS = 60000;
 
     private final WhirlpoolServer whirlpoolServer;
     private final JavaHttpClientService httpClientService;
@@ -84,7 +85,7 @@ public class Whirlpool {
 
     public Whirlpool(Network network, HostAndPort torProxy) {
         this.whirlpoolServer = WhirlpoolServer.valueOf(network.getName().toUpperCase(Locale.ROOT));
-        this.httpClientService = new JavaHttpClientService(torProxy);
+        this.httpClientService = new JavaHttpClientService(torProxy, TIMEOUT_MS);
         this.stompClientService = new JavaStompClientService(httpClientService);
         this.torClientService = new SparrowTorClientService(this);
 
