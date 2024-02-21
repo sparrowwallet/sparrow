@@ -60,7 +60,7 @@ public class AddressTreeTable extends CoinTreeTable {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getValue());
         });
         amountCol.setCellFactory(p -> new CoinCell());
-        amountCol.setSortable(false);
+        amountCol.setSortable(true);
         getColumns().add(amountCol);
 
         ContextMenu contextMenu = new ContextMenu();
