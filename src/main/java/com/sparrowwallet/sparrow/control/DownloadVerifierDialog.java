@@ -99,7 +99,15 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         releaseVerifiedField.getInputs().add(releaseLink);
         releaseLink.setOnAction(event -> {
             if(release.get() != null && release.get().exists()) {
-                AppServices.get().getApplication().getHostServices().showDocument("file://" + release.get().getAbsolutePath());
+                if(release.get().getName().toLowerCase(Locale.ROOT).startsWith("sparrow")) {
+                    Optional<ButtonType> optType = AppServices.showAlertDialog("Close Sparrow?", "Close Sparrow before installing?", Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
+                    if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                        javafx.application.Platform.exit();
+                        AppServices.get().getApplication().getHostServices().showDocument("file://" + release.get().getAbsolutePath());
+                    }
+                } else {
+                    AppServices.get().getApplication().getHostServices().showDocument("file://" + release.get().getAbsolutePath());
+                }
             }
         });
 
