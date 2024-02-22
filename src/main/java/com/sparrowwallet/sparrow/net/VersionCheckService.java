@@ -20,12 +20,15 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
     private static final Logger log = LoggerFactory.getLogger(VersionCheckService.class);
     private static final String VERSION_CHECK_URL = "https://www.sparrowwallet.com/version";
 
+    private static String version;
+
     @Override
     protected Task<VersionUpdatedEvent> createTask() {
         return new Task<>() {
             protected VersionUpdatedEvent call() {
                 try {
                     VersionCheck versionCheck = getVersionCheck();
+                    version = versionCheck.version;
                     if(isNewer(versionCheck) && verifySignature(versionCheck)) {
                         return new VersionUpdatedEvent(versionCheck.version);
                     }
@@ -91,9 +94,12 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
         return false;
     }
 
+    public static String getVersion() {
+        return version;
+    }
+
     private static class VersionCheck {
         public String version;
         public Map<String, String> signatures;
     }
-
 }

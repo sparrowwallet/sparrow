@@ -141,7 +141,7 @@ public class GlyphUtils {
         return feeGlyph;
     }
 
-    public static Glyph getWarningGlyph() {
+    public static Glyph getFeeWarningGlyph() {
         Glyph feeWarningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
         feeWarningGlyph.getStyleClass().add("fee-warning-icon");
         feeWarningGlyph.setFontSize(12);
@@ -174,5 +174,33 @@ public class GlyphUtils {
         userGlyph.getStyleClass().add("opcode-icon");
         userGlyph.setFontSize(12);
         return userGlyph;
+    }
+
+    public static Glyph getSuccessGlyph() {
+        Glyph successGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CHECK_CIRCLE);
+        successGlyph.getStyleClass().add("success");
+        successGlyph.setFontSize(12);
+        return successGlyph;
+    }
+
+    public static Glyph getWarningGlyph() {
+        Glyph warningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
+        warningGlyph.getStyleClass().add("warn-icon");
+        warningGlyph.setFontSize(12);
+        return warningGlyph;
+    }
+
+    public static Glyph getFailureGlyph() {
+        Glyph failureGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.TIMES_CIRCLE);
+        failureGlyph.getStyleClass().add("failure");
+        failureGlyph.setFontSize(12);
+        return failureGlyph;
+    }
+
+    public static Glyph getBusyGlyph() {
+        Glyph busyGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HOURGLASS_HALF);
+        busyGlyph.getStyleClass().add("busy");
+        busyGlyph.setFontSize(12);
+        return busyGlyph;
     }
 }

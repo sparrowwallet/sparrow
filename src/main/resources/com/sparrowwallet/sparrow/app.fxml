@@ -140,6 +140,7 @@
                     <MenuItem fx:id="showPayNym" mnemonicParsing="false" text="Show PayNym" onAction="#showPayNym"/>
                     <SeparatorMenuItem />
                     <Menu fx:id="switchServer" text="Switch Server"/>
+                    <MenuItem mnemonicParsing="false" text="Verify Download" onAction="#verifyDownload" />
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
                     <MenuItem fx:id="restart" mnemonicParsing="false" text="Restart" onAction="#restart" />

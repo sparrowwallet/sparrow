@@ -44,6 +44,7 @@ public class FontAwesome5 extends GlyphFont {
         HAND_HOLDING('\uf4bd'),
         HAND_HOLDING_MEDICAL('\ue05c'),
         HAND_HOLDING_WATER('\uf4c1'),
+        HOURGLASS_HALF('\uf252'),
         HISTORY('\uf1da'),
         INFO_CIRCLE('\uf05a'),
         KEY('\uf084'),

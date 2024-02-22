@@ -1468,6 +1468,11 @@ public class AppController implements Initializable {
         }
     }
 
+    public void verifyDownload(ActionEvent event) {
+        DownloadVerifierDialog downloadVerifierDialog = new DownloadVerifierDialog();
+        downloadVerifierDialog.showAndWait();
+    }
+
     public void minimizeToTray(ActionEvent event) {
         AppServices.get().minimizeStage((Stage)tabs.getScene().getWindow());
     }

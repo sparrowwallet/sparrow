@@ -476,7 +476,7 @@ public class TransactionDiagram extends GridPane {
                         tooltip.setText("");
                     } else if(input instanceof AddUserBlockTransactionHashIndex) {
                         tooltip.setText("");
-                        label.setGraphic(walletTx.isTwoPersonCoinjoin() ? getQuestionGlyph() : getWarningGlyph());
+                        label.setGraphic(walletTx.isTwoPersonCoinjoin() ? getQuestionGlyph() : getFeeWarningGlyph());
                         label.setOnMouseClicked(event -> {
                             EventManager.get().post(new SorobanInitiatedEvent(walletTx.getWallet()));
                             closeExpanded();
@@ -789,7 +789,7 @@ public class TransactionDiagram extends GridPane {
         }
 
         boolean highFee = (walletTx.getFeePercentage() > 0.1);
-        Label feeLabel = highFee ? new Label("High Fee", getWarningGlyph()) : new Label("Fee", getFeeGlyph());
+        Label feeLabel = highFee ? new Label("High Fee", getFeeWarningGlyph()) : new Label("Fee", getFeeGlyph());
         feeLabel.getStyleClass().addAll("output-label", "fee-label");
         String percentage = String.format("%.2f", walletTx.getFeePercentage() * 100.0);
         Tooltip feeTooltip = new Tooltip(walletTx.getFee() < 0 ? "Unknown fee" : "Fee of " + getSatsValue(walletTx.getFee()) + " sats (" + percentage + "%)");

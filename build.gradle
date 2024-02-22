@@ -703,4 +703,16 @@ extraJavaModuleInfo {
     module('jcommander-1.81.jar', 'com.beust.jcommander', '1.81') {
         exports('com.beust.jcommander')
     }
+    module('pgpainless-core-1.6.6.jar', 'org.pgpainless.core', '1.6.6') {
+        exports('org.pgpainless')
+        exports('org.pgpainless.key')
+        exports('org.pgpainless.key.parsing')
+        exports('org.pgpainless.decryption_verification')
+        exports('org.pgpainless.exception')
+        exports('org.pgpainless.signature')
+        exports('org.pgpainless.util')
+        requires('org.bouncycastle.provider')
+        requires('org.bouncycastle.pg')
+        requires('org.slf4j')
+    }
 }
