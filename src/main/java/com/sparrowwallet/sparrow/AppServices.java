@@ -355,6 +355,8 @@ public class AppServices {
         ExchangeSource.RatesService ratesService = new ExchangeSource.RatesService(
                 exchangeSource == null ? DEFAULT_EXCHANGE_SOURCE : exchangeSource,
                 currency == null ? DEFAULT_FIAT_CURRENCY : currency);
+        //Delay startup on first run
+        ratesService.setDelay(Duration.seconds(CONNECTION_DELAY_SECS));
         ratesService.setPeriod(Duration.seconds(RATES_PERIOD_SECS));
         ratesService.setRestartOnFailure(true);
 
