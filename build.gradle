@@ -134,6 +134,7 @@ dependencies {
     implementation('net.coobird:thumbnailator:0.4.18')
     implementation('com.github.hervegirod:fxsvgimage:1.0b2')
     implementation('com.sparrowwallet:toucan:0.9.0')
+    implementation('com.jcraft:jzlib:1.1.3')
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.10.0')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.10.0')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher')
@@ -714,5 +715,8 @@ extraJavaModuleInfo {
         requires('org.bouncycastle.provider')
         requires('org.bouncycastle.pg')
         requires('org.slf4j')
+    }
+    module('jzlib-1.1.3.jar', 'com.jcraft.jzlib', '1.1.3') {
+        exports('com.jcraft.jzlib')
     }
 }
