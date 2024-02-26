@@ -78,7 +78,8 @@ public class AppServices {
     private static final int RATES_PERIOD_SECS = 5 * 60;
     private static final int VERSION_CHECK_PERIOD_HOURS = 24;
     private static final int CONNECTION_DELAY_SECS = 2;
-    private static final int RATES_STARTUP_DELAY_SECS = 5;
+    private static final int RATES_STARTUP_DELAY_SECS_DEFAULT = 2;
+    private static final int RATES_STARTUP_DELAY_SECS_WINDOWS = 5;
     private static final ExchangeSource DEFAULT_EXCHANGE_SOURCE = ExchangeSource.COINGECKO;
     private static final Currency DEFAULT_FIAT_CURRENCY = Currency.getInstance("USD");
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
@@ -357,7 +358,20 @@ public class AppServices {
                 exchangeSource == null ? DEFAULT_EXCHANGE_SOURCE : exchangeSource,
                 currency == null ? DEFAULT_FIAT_CURRENCY : currency);
         //Delay startup on first run
-        ratesService.setDelay(Duration.seconds(RATES_STARTUP_DELAY_SECS));
+        switch(org.controlsfx.tools.Platform.getCurrent())
+        {
+            case WINDOWS:
+                //Windows needs more time (5 Seconds)
+                ratesService.setDelay(Duration.seconds(RATES_STARTUP_DELAY_SECS_WINDOWS));
+                break;
+            case OSX:
+            case UNIX:
+            case UNKNOWN:
+            default:
+                //Other platforms seem ok with 2 Seconds
+                ratesService.setDelay(Duration.seconds(RATES_STARTUP_DELAY_SECS_DEFAULT));
+                break;
+        }
         ratesService.setPeriod(Duration.seconds(RATES_PERIOD_SECS));
         ratesService.setRestartOnFailure(true);
 
