@@ -14,6 +14,9 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.UREncoder;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQREncoder;
+import com.sparrowwallet.sparrow.io.bbqr.BBQREncoding;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.scene.Node;
@@ -44,10 +47,16 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     private static final int DEFAULT_QR_SIZE = 580;
     private static final int REDUCED_QR_SIZE = 520;
 
+    private static final BBQREncoding DEFAULT_BBQR_ENCODING = BBQREncoding.ZLIB;
+
     private final int qrSize = getQRSize();
 
     private final UR ur;
-    private UREncoder encoder;
+    private UREncoder urEncoder;
+
+    private final BBQR bbqr;
+    private BBQREncoder bbqrEncoder;
+    private boolean useBbqrEncoding;
 
     private final ImageView qrImageView;
 
@@ -62,17 +71,26 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     private static boolean initialDensityChange;
 
     public QRDisplayDialog(String type, byte[] data, boolean addLegacyEncodingOption) throws UR.URException {
-        this(UR.fromBytes(type, data), addLegacyEncodingOption, false);
+        this(UR.fromBytes(type, data), null, addLegacyEncodingOption, false, false);
     }
 
     public QRDisplayDialog(UR ur) {
-        this(ur, false, false);
+        this(ur, null, false, false, false);
     }
 
-    public QRDisplayDialog(UR ur, boolean addLegacyEncodingOption, boolean addScanButton) {
+    public QRDisplayDialog(UR ur, BBQR bbqr, boolean addLegacyEncodingOption, boolean addScanButton, boolean selectBbqrButton) {
         this.ur = ur;
-        this.addLegacyEncodingOption = addLegacyEncodingOption;
-        this.encoder = new UREncoder(ur, Config.get().getQrDensity().getMaxFragmentLength(), MIN_FRAGMENT_LENGTH, 0);
+        this.bbqr = bbqr;
+        this.addLegacyEncodingOption = bbqr == null && addLegacyEncodingOption;
+
+        this.urEncoder = new UREncoder(ur, Config.get().getQrDensity().getMaxUrFragmentLength(), MIN_FRAGMENT_LENGTH, 0);
+
+        if(bbqr != null) {
+            this.bbqrEncoder = new BBQREncoder(bbqr.type(), DEFAULT_BBQR_ENCODING, bbqr.data(), Config.get().getQrDensity().getMaxBbqrFragmentLength(), 0);
+            if(selectBbqrButton) {
+                useBbqrEncoding = true;
+            }
+        }
 
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
@@ -85,7 +103,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
 
         nextPart();
-        if(encoder.isSinglePart()) {
+        if(isSinglePart()) {
             qrImageView.setImage(getQrCode(currentPart));
         } else {
             createAnimateQRService();
@@ -94,7 +112,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().add(cancelButtonType);
 
-        if(addLegacyEncodingOption) {
+        if(this.addLegacyEncodingOption) {
             final ButtonType legacyEncodingButtonType = new javafx.scene.control.ButtonType("Use Legacy Encoding (Cobo Vault)", ButtonBar.ButtonData.LEFT);
             dialogPane.getButtonTypes().add(legacyEncodingButtonType);
         } else {
@@ -102,8 +120,13 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             dialogPane.getButtonTypes().add(densityButtonType);
         }
 
+        if(bbqr != null) {
+            final ButtonType bbqrButtonType = new javafx.scene.control.ButtonType("Show BBQr", ButtonBar.ButtonData.BACK_PREVIOUS);
+            dialogPane.getButtonTypes().add(bbqrButtonType);
+        }
+
         if(addScanButton) {
-            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.NEXT_FORWARD);
+            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.OK_DONE);
             dialogPane.getButtonTypes().add(scanButtonType);
         }
 
@@ -121,7 +144,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
     public QRDisplayDialog(String data, boolean addScanButton) {
         this.ur = null;
-        this.encoder = null;
+        this.bbqr = null;
+        this.urEncoder = null;
+        this.bbqrEncoder = null;
 
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
@@ -138,7 +163,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         dialogPane.getButtonTypes().addAll(cancelButtonType);
 
         if(addScanButton) {
-            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.NEXT_FORWARD);
+            final ButtonType scanButtonType = new javafx.scene.control.ButtonType("Scan QR", ButtonBar.ButtonData.OK_DONE);
             dialogPane.getButtonTypes().add(scanButtonType);
         }
 
@@ -163,9 +188,22 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         });
     }
 
+    private boolean isSinglePart() {
+        if(useBbqrEncoding) {
+            return bbqrEncoder.isSinglePart();
+        } else if(!useLegacyEncoding) {
+            return urEncoder.isSinglePart();
+        } else {
+            return legacyParts.length == 1;
+        }
+    }
+
     private void nextPart() {
-        if(!useLegacyEncoding) {
-            String fragment = encoder.nextPart();
+        if(useBbqrEncoding) {
+            String fragment = bbqrEncoder.nextPart();
+            currentPart = fragment.toUpperCase(Locale.ROOT);
+        } else if(!useLegacyEncoding) {
+            String fragment = urEncoder.nextPart();
             currentPart = fragment.toUpperCase(Locale.ROOT);
         } else {
             currentPart = legacyParts[legacyPartIndex];
@@ -201,37 +239,23 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
                 this.legacyParts = legacyEncoder.encode();
                 this.useLegacyEncoding = true;
 
-                if(legacyParts.length == 1) {
-                    if(animateQRService != null) {
-                        animateQRService.cancel();
-                    }
-
-                    nextPart();
-                    qrImageView.setImage(getQrCode(currentPart));
-                } else if(animateQRService == null) {
-                    createAnimateQRService();
-                } else if(!animateQRService.isRunning()) {
-                    animateQRService.reset();
-                    animateQRService.start();
-                }
+                restartAnimation();
             } catch(UR.InvalidTypeException e) {
                 //Can't happen
             }
         } else {
             this.useLegacyEncoding = false;
+            restartAnimation();
+        }
+    }
 
-            if(encoder.isSinglePart()) {
-                if(animateQRService != null) {
-                    animateQRService.cancel();
-                }
-
-                qrImageView.setImage(getQrCode(currentPart));
-            } else if(animateQRService == null) {
-                createAnimateQRService();
-            } else if(!animateQRService.isRunning()) {
-                animateQRService.reset();
-                animateQRService.start();
-            }
+    private void setUseBbqrEncoding(boolean useBbqrEncoding) {
+        if(useBbqrEncoding) {
+            this.useBbqrEncoding = true;
+            restartAnimation();
+        } else {
+            this.useBbqrEncoding = false;
+            restartAnimation();
         }
     }
 
@@ -240,12 +264,28 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             animateQRService.cancel();
         }
 
-        this.encoder = new UREncoder(ur, Config.get().getQrDensity().getMaxFragmentLength(), MIN_FRAGMENT_LENGTH, 0);
-        nextPart();
-        if(encoder.isSinglePart()) {
+        if(bbqr != null) {
+            this.bbqrEncoder = new BBQREncoder(bbqr.type(), DEFAULT_BBQR_ENCODING, bbqr.data(), Config.get().getQrDensity().getMaxBbqrFragmentLength(), 0);
+        }
+
+        this.urEncoder = new UREncoder(ur, Config.get().getQrDensity().getMaxUrFragmentLength(), MIN_FRAGMENT_LENGTH, 0);
+
+        restartAnimation();
+    }
+
+    private void restartAnimation() {
+        if(isSinglePart()) {
+            if(animateQRService != null) {
+                animateQRService.cancel();
+            }
+
+            nextPart();
             qrImageView.setImage(getQrCode(currentPart));
-        } else {
+        } else if(animateQRService == null) {
             createAnimateQRService();
+        } else if(!animateQRService.isRunning()) {
+            animateQRService.reset();
+            animateQRService.start();
         }
     }
 
@@ -290,7 +330,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
                     final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
                     ButtonBar.setButtonData(density, buttonData);
                     density.setOnAction(event -> {
-                        if(!initialDensityChange && !encoder.isSinglePart()) {
+                        if(!initialDensityChange && !isSinglePart()) {
                             Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Discard progress?", "Changing the QR code density means any progress on the receiving device must be discarded. Proceed?", ButtonType.NO, ButtonType.YES);
                             if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
                                 initialDensityChange = true;
@@ -306,12 +346,25 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
                     return density;
                 }
-            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
+            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.OK_DONE) {
                 Button scanButton = (Button)super.createButton(buttonType);
                 scanButton.setGraphicTextGap(5);
                 scanButton.setGraphic(getGlyph(FontAwesome5.Glyph.CAMERA));
 
                 return scanButton;
+            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.BACK_PREVIOUS) {
+                ToggleButton bbqr = new ToggleButton(buttonType.getText());
+                bbqr.setGraphicTextGap(5);
+                bbqr.setGraphic(getGlyph(FontAwesome5.Glyph.QRCODE));
+                bbqr.setSelected(useBbqrEncoding);
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(bbqr, buttonData);
+
+                bbqr.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                    setUseBbqrEncoding(newValue);
+                });
+
+                return bbqr;
             }
 
             return super.createButton(buttonType);

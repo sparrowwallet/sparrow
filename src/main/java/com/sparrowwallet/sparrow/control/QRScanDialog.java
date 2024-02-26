@@ -30,6 +30,8 @@ import com.sparrowwallet.hummingbird.registry.pathcomponent.PathComponent;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRDecoder;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRException;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -63,8 +65,9 @@ import java.util.stream.IntStream;
 public class QRScanDialog extends Dialog<QRScanDialog.Result> {
     private static final Logger log = LoggerFactory.getLogger(QRScanDialog.class);
 
-    private final URDecoder decoder;
-    private final LegacyURDecoder legacyDecoder;
+    private final URDecoder urDecoder;
+    private final LegacyURDecoder legacyUrDecoder;
+    private final BBQRDecoder bbqrDecoder;
     private final WebcamService webcamService;
     private List<String> parts;
 
@@ -80,8 +83,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
     private final ObjectProperty<WebcamDevice> webcamDeviceProperty = new SimpleObjectProperty<>();
 
     public QRScanDialog() {
-        this.decoder = new URDecoder();
-        this.legacyDecoder = new LegacyURDecoder();
+        this.urDecoder = new URDecoder();
+        this.legacyUrDecoder = new LegacyURDecoder();
+        this.bbqrDecoder = new BBQRDecoder();
 
         if(Config.get().isHdCapture()) {
             webcamResolutionProperty.set(WebcamResolution.HD);
@@ -192,29 +196,42 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
             if(qrtext.toLowerCase(Locale.ROOT).startsWith(UR.UR_PREFIX)) {
                 if(LegacyURDecoder.isLegacyURFragment(qrtext)) {
-                    legacyDecoder.receivePart(qrtext);
-                    Platform.runLater(() -> percentComplete.setValue(legacyDecoder.getPercentComplete()));
+                    legacyUrDecoder.receivePart(qrtext);
+                    Platform.runLater(() -> percentComplete.setValue(legacyUrDecoder.getPercentComplete()));
 
-                    if(legacyDecoder.isComplete()) {
+                    if(legacyUrDecoder.isComplete()) {
                         try {
-                            UR ur = legacyDecoder.decode();
+                            UR ur = legacyUrDecoder.decode();
                             result = extractResultFromUR(ur);
                         } catch(Exception e) {
                             result = new Result(new URException(e.getMessage()));
                         }
                     }
                 } else {
-                    decoder.receivePart(qrtext);
-                    Platform.runLater(() -> percentComplete.setValue(decoder.getProcessedPartsCount() > 0 ? decoder.getEstimatedPercentComplete() : 0));
+                    urDecoder.receivePart(qrtext);
+                    Platform.runLater(() -> percentComplete.setValue(urDecoder.getProcessedPartsCount() > 0 ? urDecoder.getEstimatedPercentComplete() : 0));
 
-                    if(decoder.getResult() != null) {
-                        URDecoder.Result urResult = decoder.getResult();
+                    if(urDecoder.getResult() != null) {
+                        URDecoder.Result urResult = urDecoder.getResult();
                         if(urResult.type == ResultType.SUCCESS) {
                             result = extractResultFromUR(urResult.ur);
                             Platform.runLater(() -> setResult(result));
                         } else {
                             result = new Result(new URException(urResult.error));
                         }
+                    }
+                }
+            } else if(BBQRDecoder.isBBQRFragment(qrtext)) {
+                bbqrDecoder.receivePart(qrtext);
+                Platform.runLater(() -> percentComplete.setValue(bbqrDecoder.getPercentComplete()));
+
+                if(bbqrDecoder.getResult() != null) {
+                    BBQRDecoder.Result bbqrResult = bbqrDecoder.getResult();
+                    if(bbqrResult.getResultType() == BBQRDecoder.ResultType.SUCCESS) {
+                        result = extractResultFromBBQR(bbqrResult);
+                        Platform.runLater(() -> setResult(result));
+                    } else {
+                        result = new Result(new BBQRException(bbqrResult.getError()));
                     }
                 }
             } else if(partMatcher.matches()) {
@@ -650,6 +667,19 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
 
             return wallets;
+        }
+
+        private Result extractResultFromBBQR(BBQRDecoder.Result result) {
+            if(result.getPsbt() != null) {
+                return new Result(result.getPsbt());
+            } else if(result.getTransaction() != null) {
+                return new Result(result.getTransaction());
+            } else if(result.toString() != null) {
+                return new Result(result.toString());
+            } else {
+                log.error("Unsupported BBQR type " + result.getBbqrType());
+                return new Result(new URException("BBQR type " + result.getBbqrType() + " is not supported"));
+            }
         }
     }
 

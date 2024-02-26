@@ -63,4 +63,5 @@ open module com.sparrowwallet.sparrow {
     requires com.github.hervegirod;
     requires com.sparrowwallet.toucan;
     requires java.smartcardio;
+    requires com.jcraft.jzlib;
 }
