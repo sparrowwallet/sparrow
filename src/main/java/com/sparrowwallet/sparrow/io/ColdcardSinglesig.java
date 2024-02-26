@@ -45,12 +45,12 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
 
     @Override
     public boolean isWalletImportScannable() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isKeystoreImportScannable() {
-        return false;
+        return true;
     }
 
     @Override
