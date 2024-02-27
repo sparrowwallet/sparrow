@@ -10,7 +10,6 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.UnitFormat;
-import com.sparrowwallet.sparrow.control.EntryCell;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
@@ -21,11 +20,14 @@ import org.apache.commons.lang3.time.DateUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class WalletTransactions implements WalletExport {
     private static final long ONE_DAY = 24*60*60*1000L;
+    public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private final WalletForm walletForm;
 
@@ -83,7 +85,7 @@ public class WalletTransactions implements WalletExport {
 
             for(Entry entry : walletTransactionsEntry.getChildren()) {
                 TransactionEntry txEntry = (TransactionEntry)entry;
-                writer.write(txEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
+                writer.write(txEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : DATE_FORMAT.format(txEntry.getBlockTransaction().getDate()));
                 writer.write(txEntry.getLabel());
                 writer.write(getCoinValue(bitcoinUnit, txEntry.getValue()));
                 writer.write(getCoinValue(bitcoinUnit, txEntry.getBalance()));

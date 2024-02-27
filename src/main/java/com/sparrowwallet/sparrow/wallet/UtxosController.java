@@ -18,6 +18,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.WalletTransactions;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolDialog;
@@ -482,7 +483,7 @@ public class UtxosController extends WalletFormController implements Initializab
                 writer.writeRecord(new String[] {"Date", "Output", "Address", "Label", "Value"});
                 for(Entry entry : getWalletForm().getWalletUtxosEntry().getChildren()) {
                     UtxoEntry utxoEntry = (UtxoEntry)entry;
-                    writer.write(utxoEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(utxoEntry.getBlockTransaction().getDate()));
+                    writer.write(utxoEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : WalletTransactions.DATE_FORMAT.format(utxoEntry.getBlockTransaction().getDate()));
                     writer.write(utxoEntry.getHashIndex().toString());
                     writer.write(utxoEntry.getAddress().getAddress());
                     writer.write(utxoEntry.getLabel());
