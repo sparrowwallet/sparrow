@@ -209,7 +209,7 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 .root .script-hash { -fx-fill: #d19a66 }
 .root .script-signature { -fx-fill: #98c379 }
 .root .script-pubkey { -fx-fill: #c678dd }
-.root .script-redeem { -fx-fill: derive(#e06c75, 20%) }
+.root .script-redeem, .root .script-controlblock { -fx-fill: derive(#e06c75, 20%) }
 .root .script-other { -fx-fill: #c8ccd4 }
 
 .root #txhex {

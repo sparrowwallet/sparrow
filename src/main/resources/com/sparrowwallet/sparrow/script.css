@@ -3,7 +3,7 @@
 .script-hash { -fx-fill: #986801 }
 .script-signature { -fx-fill: #50a14f }
 .script-pubkey { -fx-fill: #a626a4 }
-.script-redeem { -fx-fill: #ca1243 }
+.script-redeem, .script-controlblock { -fx-fill: #ca1243 }
 .script-other { -fx-fill: #a0a1a7 }
 
 .non-final {
