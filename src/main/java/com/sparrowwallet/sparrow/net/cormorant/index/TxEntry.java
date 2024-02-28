@@ -49,7 +49,7 @@ public class TxEntry implements Comparable<TxEntry> {
             return height - o.height;
         }
 
-        if(height == 0) {
+        if(height <= 0) {
             return tx_hash.compareTo(o.tx_hash);
         }
 
