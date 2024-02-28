@@ -198,7 +198,7 @@ public class AppController implements Initializable {
     private static final BooleanProperty preventSleepProperty = new SimpleBooleanProperty();
 
     @FXML
-    private MenuItem restart;
+    private Menu restart;
 
     @FXML
     private StackPane rootStack;
@@ -375,7 +375,14 @@ public class AppController implements Initializable {
         showLoadingLog.selectedProperty().bindBidirectional(showLoadingLogProperty);
         preventSleepProperty.set(Config.get().isPreventSleep());
         preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
-        restart.setText("Restart in " + (Network.get() == Network.MAINNET ? Network.TESTNET.toDisplayString() : Network.MAINNET.toDisplayString()));
+
+        List<Network> networks = new ArrayList<>(List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET));
+        networks.remove(Network.get());
+        for(Network network : networks) {
+            MenuItem networkItem = new MenuItem(network.toDisplayString());
+            networkItem.setOnAction(event -> restart(event, network));
+            restart.getItems().add(networkItem);
+        }
         restart.setVisible(System.getProperty(JPACKAGE_APP_PATH) != null);
 
         saveTransaction.setDisable(true);
@@ -957,7 +964,7 @@ public class AppController implements Initializable {
         AppServices.get().setPreventSleep(item.isSelected());
     }
 
-    public void restart(ActionEvent event) {
+    public void restart(ActionEvent event, Network network) {
         if(System.getProperty(JPACKAGE_APP_PATH) == null) {
             throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
         }
@@ -968,7 +975,7 @@ public class AppController implements Initializable {
             jCommander.parse(argv);
         });
 
-        args.network = (Network.get() == Network.MAINNET ? Network.TESTNET : Network.MAINNET);
+        args.network = network;
 
         try {
             List<String> cmd = new ArrayList<>();

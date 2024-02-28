@@ -114,7 +114,7 @@
                             </items>
                         </Menu>
                         <SeparatorMenuItem />
-                        <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets in New Windows" onAction="#openWalletsInNewWindows"/>
+                        <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets In New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
                         <CheckMenuItem fx:id="useHdCameraResolution" mnemonicParsing="false" text="Use HD Camera Resolution" onAction="#useHdCameraResolution"/>
                         <CheckMenuItem fx:id="showLoadingLog" mnemonicParsing="false" text="Show Wallet Loading Log" onAction="#showLoadingLog" />
@@ -143,7 +143,7 @@
                     <MenuItem mnemonicParsing="false" text="Verify Download" onAction="#verifyDownload" />
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
-                    <MenuItem fx:id="restart" mnemonicParsing="false" text="Restart" onAction="#restart" />
+                    <Menu fx:id="restart" mnemonicParsing="false" text="Restart In Network" />
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>
