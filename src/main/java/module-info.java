@@ -62,6 +62,7 @@ open module com.sparrowwallet.sparrow {
     requires net.coobird.thumbnailator;
     requires com.github.hervegirod;
     requires com.sparrowwallet.toucan;
+    requires com.sparrowwallet.bokmakierie;
     requires java.smartcardio;
     requires com.jcraft.jzlib;
 }

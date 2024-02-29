@@ -5,6 +5,7 @@ import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
+import com.sparrowwallet.bokmakierie.Bokmakierie;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -43,6 +44,7 @@ public class WebcamService extends ScheduledService<Image> {
     private Webcam cam;
     private long lastQrSampleTime;
     private final Reader qrReader;
+    private final Bokmakierie bokmakierie;
 
     static {
         Webcam.setDriver(new WebcamScanDriver());
@@ -55,6 +57,7 @@ public class WebcamService extends ScheduledService<Image> {
         this.delayCalculator = delayCalculator;
         this.lastQrSampleTime = System.currentTimeMillis();
         this.qrReader = new QRCodeReader();
+        this.bokmakierie = new Bokmakierie();
     }
 
     @Override
@@ -155,6 +158,15 @@ public class WebcamService extends ScheduledService<Image> {
     private Result readQR(BufferedImage bufferedImage) {
         LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
         BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
+
+        try {
+            com.sparrowwallet.bokmakierie.Result result = bokmakierie.scan(bufferedImage);
+            if(result != null) {
+                return new Result(result.getMessage(), result.getRawBytes(), new ResultPoint[0], BarcodeFormat.QR_CODE);
+            }
+        } catch(Exception e) {
+            log.debug("Error scanning QR", e);
+        }
 
         if(ZBar.isEnabled()) {
             ZBar.Scan scan = ZBar.scan(bufferedImage);
