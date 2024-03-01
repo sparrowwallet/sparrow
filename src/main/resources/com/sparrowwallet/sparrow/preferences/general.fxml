@@ -76,7 +76,7 @@
             </Field>
             <Field text="Validate derivations:">
                 <UnlabeledToggleSwitch fx:id="validateDerivationPaths" />
-                <HelpLabel helpText="Disallow keystores to have derivation paths that match the defaults for other script types."/>
+                <HelpLabel helpText="Disallow keystores to have derivation paths that match the defaults for other script types and networks."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Coin Selection" styleClass="wideLabelFieldSet">

@@ -186,7 +186,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             return null;
         }));
         derivation.textProperty().addListener((observable, oldValue, newValue) -> {
-            if(KeyDerivation.isValid(newValue) && !walletForm.getWallet().derivationMatchesAnotherScriptType(newValue)) {
+            if(KeyDerivation.isValid(newValue) && !walletForm.getWallet().derivationMatchesAnotherScriptType(newValue) && !walletForm.getWallet().derivationMatchesAnotherNetwork(newValue)) {
                 keystore.setKeyDerivation(new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), newValue));
                 EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_DERIVATION));
             }
@@ -287,7 +287,8 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.registerValidator(derivation, Validator.combine(
                 Validator.createEmptyValidator("Derivation is required"),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation is invalid", !KeyDerivation.isValid(newValue)),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation matches another script type", walletForm.getWallet().derivationMatchesAnotherScriptType(newValue))
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation matches another script type", walletForm.getWallet().derivationMatchesAnotherScriptType(newValue)),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Derivation matches another network", walletForm.getWallet().derivationMatchesAnotherNetwork(newValue))
         ));
 
         validationSupport.registerValidator(fingerprint, Validator.combine(

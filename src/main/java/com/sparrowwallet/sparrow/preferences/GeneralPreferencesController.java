@@ -175,6 +175,7 @@ public class GeneralPreferencesController extends PreferencesDetailController {
         validateDerivationPaths.selectedProperty().addListener((observableValue, oldValue, newValue) -> {
             config.setValidateDerivationPaths(newValue);
             System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!newValue));
+            System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, Boolean.toString(!newValue));
         });
 
         groupByAddress.setSelected(config.isGroupByAddress());

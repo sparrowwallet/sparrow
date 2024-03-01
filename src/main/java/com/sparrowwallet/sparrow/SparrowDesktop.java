@@ -80,6 +80,7 @@ public class SparrowDesktop extends Application {
         }
 
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
+        System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
 
         if(Config.get().getAppHeight() != null && Config.get().getAppWidth() != null) {
             mainStage.setWidth(Config.get().getAppWidth());
