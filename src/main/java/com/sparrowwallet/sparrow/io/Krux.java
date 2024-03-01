@@ -17,9 +17,4 @@ public class Krux extends SpecterDIY {
     public WalletModel getWalletModel() {
         return WalletModel.KRUX;
     }
-
-    @Override
-    public boolean isFileFormatAvailable() {
-        return false;
-    }
 }
