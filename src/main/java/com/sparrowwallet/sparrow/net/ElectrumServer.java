@@ -1702,7 +1702,7 @@ public class ElectrumServer {
 
                     for(int i = 0; i < wallets.size(); i++) {
                         Wallet wallet = wallets.get(i);
-                        updateProgress(i, wallets.size() + StandardAccount.values().length);
+                        updateProgress(i, wallets.size() + StandardAccount.DISCOVERY_ACCOUNTS.size());
                         Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = new TreeMap<>();
                         electrumServer.getReferences(wallet, wallet.getNode(KeyPurpose.RECEIVE).getChildren(), nodeTransactionMap, 0);
                         if(nodeTransactionMap.values().stream().anyMatch(blockTransactionHashes -> !blockTransactionHashes.isEmpty())) {
@@ -1721,7 +1721,7 @@ public class ElectrumServer {
                                         foundAccounts.add(standardAccount);
                                     }
                                 }
-                                updateProgress(i + j, wallets.size() + StandardAccount.values().length);
+                                updateProgress(i + j, wallets.size() + StandardAccount.DISCOVERY_ACCOUNTS.size());
                             }
 
                             for(StandardAccount standardAccount : foundAccounts) {
@@ -1743,7 +1743,7 @@ public class ElectrumServer {
             }
 
             List<StandardAccount> accounts = new ArrayList<>();
-            for(StandardAccount account : StandardAccount.values()) {
+            for(StandardAccount account : StandardAccount.DISCOVERY_ACCOUNTS) {
                 if(account != StandardAccount.ACCOUNT_0 && (!StandardAccount.isWhirlpoolAccount(account) || wallet.getScriptType() == ScriptType.P2WPKH)) {
                     accounts.add(account);
                 }

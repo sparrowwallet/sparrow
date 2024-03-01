@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class AddAccountDialog extends DialogWindow {
+    private static final int MAX_SHOWN_ACCOUNTS = 8;
+
     private ComboBox<DisplayStandardAccount> standardAccounts;
     private StandardAccount standardAccount;
 
@@ -40,7 +42,7 @@ final class AddAccountDialog extends DialogWindow {
 
         List<StandardAccount> availableAccounts = new ArrayList<>();
         for(StandardAccount standardAccount : StandardAccount.values()) {
-            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.isWhirlpoolAccount(standardAccount)) {
+            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.isWhirlpoolAccount(standardAccount) && availableAccounts.size() <= MAX_SHOWN_ACCOUNTS) {
                 availableAccounts.add(standardAccount);
             }
         }

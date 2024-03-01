@@ -20,6 +20,8 @@ import java.util.List;
 import static com.sparrowwallet.drongo.wallet.StandardAccount.*;
 
 public class AddAccountDialog extends Dialog<List<StandardAccount>> {
+    private static final int MAX_SHOWN_ACCOUNTS = 8;
+
     private final ComboBox<StandardAccount> standardAccountCombo;
     private boolean discoverAccounts = false;
 
@@ -55,7 +57,7 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
 
         List<StandardAccount> availableAccounts = new ArrayList<>();
         for(StandardAccount standardAccount : StandardAccount.values()) {
-            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.isWhirlpoolAccount(standardAccount)) {
+            if(!existingIndexes.contains(standardAccount.getAccountNumber()) && !StandardAccount.isWhirlpoolAccount(standardAccount) && availableAccounts.size() <= MAX_SHOWN_ACCOUNTS) {
                 availableAccounts.add(standardAccount);
             }
         }
