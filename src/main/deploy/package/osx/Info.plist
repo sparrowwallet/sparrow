@@ -94,6 +94,21 @@
           <key>UTTypeIconFile</key>
           <string>sparrow.icns</string>
       </dict>
+      <dict>
+          <key>UTTypeIdentifier</key>
+          <string>com.sparrowwallet.asc</string>
+          <key>UTTypeTagSpecification</key>
+          <dict>
+              <key>public.filename-extension</key>
+              <array>
+                  <string>asc</string>
+              </array>
+          </dict>
+          <key>UTTypeDescription</key>
+          <string>ASCII Armored Signature</string>
+          <key>UTTypeIconFile</key>
+          <string>sparrow.icns</string>
+      </dict>
   </array>
  <key>CFBundleDocumentTypes</key>
  <array>

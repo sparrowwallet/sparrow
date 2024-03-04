@@ -77,6 +77,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.*;
+import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
 
 public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
@@ -992,6 +993,8 @@ public class AppController implements Initializable {
     public void openFile(File file) {
         if(isWalletFile(file)) {
             openWalletFile(file, true);
+        } else if(isSignatureFile(file)) {
+            verifyDownload(new ActionEvent(file, rootStack));
         } else {
             openTransactionFile(file);
         }
@@ -1476,7 +1479,7 @@ public class AppController implements Initializable {
     }
 
     public void verifyDownload(ActionEvent event) {
-        DownloadVerifierDialog downloadVerifierDialog = new DownloadVerifierDialog();
+        DownloadVerifierDialog downloadVerifierDialog = new DownloadVerifierDialog(event.getSource() instanceof File file ? file : null);
         downloadVerifierDialog.showAndWait();
     }
 
@@ -3038,6 +3041,13 @@ public class AppController implements Initializable {
     public void requestQRScan(RequestQRScanEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             openTransactionFromQR(null);
+        }
+    }
+
+    @Subscribe
+    public void requestVerifyDownloadOpen(RequestVerifyDownloadEvent event) {
+        if(tabs.getScene().getWindow().equals(event.getWindow())) {
+            verifyDownload(new ActionEvent(event.getFile(), rootStack));
         }
     }
 

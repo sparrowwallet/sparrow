@@ -42,6 +42,13 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private static final DateFormat signatureDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy z");
     private static final long MAX_VALID_MANIFEST_SIZE = 100 * 1024;
 
+    private static final List<String> SIGNATURE_EXTENSIONS = List.of("asc", "sig", "gpg");
+    private static final List<String> MANIFEST_EXTENSIONS = List.of("txt");
+    private static final List<String> PUBLIC_KEY_EXTENSIONS = List.of("asc");
+    private static final List<String> MACOS_RELEASE_EXTENSIONS = List.of("dmg");
+    private static final List<String> WINDOWS_RELEASE_EXTENSIONS = List.of("exe", "zip");
+    private static final List<String> LINUX_RELEASE_EXTENSIONS = List.of("deb", "rpm", "tar.gz");
+
     private final ObjectProperty<File> signature = new SimpleObjectProperty<>();
     private final ObjectProperty<File> manifest = new SimpleObjectProperty<>();
     private final ObjectProperty<File> publicKey = new SimpleObjectProperty<>();
@@ -56,7 +63,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
     private static File lastFileParent;
 
-    public DownloadVerifierDialog() {
+    public DownloadVerifierDialog(File initialSignatureFile) {
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
@@ -74,9 +81,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
         String version = VersionCheckService.getVersion() != null ? VersionCheckService.getVersion() : "x.x.x";
 
-        Field signatureField = setupField(signature, "Signature", List.of("asc", "sig", "gpg"), false, "sparrow-" + version + "-manifest.txt", null);
-        Field manifestField = setupField(manifest, "Manifest", List.of("txt"), false, "sparrow-" + version + "-manifest", null);
-        Field publicKeyField = setupField(publicKey, "Public Key", List.of("asc"), true, "pgp_keys", publicKeyDisabled);
+        Field signatureField = setupField(signature, "Signature", SIGNATURE_EXTENSIONS, false, "sparrow-" + version + "-manifest.txt", null);
+        Field manifestField = setupField(manifest, "Manifest", MANIFEST_EXTENSIONS, false, "sparrow-" + version + "-manifest", null);
+        Field publicKeyField = setupField(publicKey, "Public Key", PUBLIC_KEY_EXTENSIONS, true, "pgp_keys", publicKeyDisabled);
         Field releaseFileField = setupField(release, "Release File", getReleaseFileExtensions(), false, getReleaseFileExample(version), null);
 
         filesFieldset.getChildren().addAll(signatureField, manifestField, publicKeyField, releaseFileField);
@@ -146,17 +153,18 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         signature.addListener((observable, oldValue, signatureFile) -> {
             if(signatureFile != null) {
                 boolean verify = true;
-                if(PGPUtils.signatureContainsManifest(signatureFile)) {
+                File actualSignatureFile = findSignatureFile(signatureFile);
+                if(actualSignatureFile != null  && !actualSignatureFile.equals(signature.get())) {
+                    signature.set(actualSignatureFile);
+                    verify = false;
+                } else if(PGPUtils.signatureContainsManifest(signatureFile)) {
                     manifest.set(signatureFile);
                     verify = false;
                 } else {
-                    String signatureName = signatureFile.getName();
-                    if(signatureName.length() > 4) {
-                        File manifestFile = new File(signatureFile.getParent(), signatureName.substring(0, signatureName.length() - 4));
-                        if(manifestFile.exists() && !manifestFile.equals(manifest.get())) {
-                            manifest.set(manifestFile);
-                            verify = false;
-                        }
+                    File manifestFile = findManifestFile(signatureFile);
+                    if(manifestFile != null && !manifestFile.equals(manifest.get())) {
+                        manifest.set(manifestFile);
+                        verify = false;
                     }
                 }
 
@@ -174,6 +182,16 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                     List<String> releaseExtensions = getReleaseFileExtensions();
                     for(File file : manifestMap.keySet()) {
                         if(releaseExtensions.stream().anyMatch(ext -> file.getName().toLowerCase(Locale.ROOT).endsWith(ext))) {
+                            File releaseFile = new File(manifestFile.getParent(), file.getName());
+                            if(releaseFile.exists() && !releaseFile.equals(release.get())) {
+                                release.set(releaseFile);
+                                verify = false;
+                                break;
+                            }
+                        }
+                    }
+                    if(release.get() == null) {
+                        for(File file : manifestMap.keySet()) {
                             File releaseFile = new File(manifestFile.getParent(), file.getName());
                             if(releaseFile.exists() && !releaseFile.equals(release.get())) {
                                 release.set(releaseFile);
@@ -203,6 +221,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         release.addListener((observable, oldValue, releaseFile) -> {
             verify();
         });
+
+        if(initialSignatureFile != null) {
+            javafx.application.Platform.runLater(() -> signature.set(initialSignatureFile));
+        }
     }
 
     public void verify() {
@@ -382,17 +404,40 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         return null;
     }
 
+    private File findSignatureFile(File providedFile) {
+        for(String extension : SIGNATURE_EXTENSIONS) {
+            File signatureFile = new File(providedFile.getParentFile(), providedFile.getName() + "." + extension);
+            if(signatureFile.exists()) {
+                return signatureFile;
+            }
+        }
+
+        return null;
+    }
+
+    private File findManifestFile(File providedFile) {
+        String signatureName = providedFile.getName();
+        if(signatureName.length() > 4 && SIGNATURE_EXTENSIONS.stream().anyMatch(ext -> signatureName.toLowerCase(Locale.ROOT).endsWith("." + ext))) {
+            File manifestFile = new File(providedFile.getParent(), signatureName.substring(0, signatureName.length() - 4));
+            if(manifestFile.exists()) {
+                return manifestFile;
+            }
+        }
+
+        return null;
+    }
+
     private List<String> getReleaseFileExtensions() {
         Platform platform = Platform.getCurrent();
         switch(platform) {
             case OSX -> {
-                return List.of("dmg");
+                return MACOS_RELEASE_EXTENSIONS;
             }
             case WINDOWS -> {
-                return List.of("exe", "zip");
+                return WINDOWS_RELEASE_EXTENSIONS;
             }
-            default ->  {
-                return List.of("deb", "rpm", "tar.gz");
+            default -> {
+                return LINUX_RELEASE_EXTENSIONS;
             }
         }
     }
@@ -430,6 +475,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         return message;
+    }
+
+    public static boolean isSignatureFile(File file) {
+        return file != null && file.getName().length() > 4 && SIGNATURE_EXTENSIONS.stream().anyMatch(ext -> file.getName().toLowerCase(Locale.ROOT).endsWith("." + ext));
     }
 
     private static class Header extends GridPane {

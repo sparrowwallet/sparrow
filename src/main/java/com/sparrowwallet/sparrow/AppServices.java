@@ -68,6 +68,8 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
+
 public class AppServices {
     private static final Logger log = LoggerFactory.getLogger(AppServices.class);
 
@@ -883,6 +885,8 @@ public class AppServices {
             for(File file : openFiles) {
                 if(isWalletFile(file)) {
                     EventManager.get().post(new RequestWalletOpenEvent(openWindow, file));
+                } else if(isSignatureFile(file)) {
+                    EventManager.get().post(new RequestVerifyDownloadEvent(openWindow, file));
                 } else {
                     EventManager.get().post(new RequestTransactionOpenEvent(openWindow, file));
                 }
