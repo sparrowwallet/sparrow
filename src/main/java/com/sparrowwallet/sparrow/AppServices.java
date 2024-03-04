@@ -885,7 +885,7 @@ public class AppServices {
             for(File file : openFiles) {
                 if(isWalletFile(file)) {
                     EventManager.get().post(new RequestWalletOpenEvent(openWindow, file));
-                } else if(isSignatureFile(file)) {
+                } else if(isSignatureOrManifestFile(file)) {
                     EventManager.get().post(new RequestVerifyDownloadEvent(openWindow, file));
                 } else {
                     EventManager.get().post(new RequestTransactionOpenEvent(openWindow, file));

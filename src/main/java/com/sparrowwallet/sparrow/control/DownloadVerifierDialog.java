@@ -364,7 +364,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         return field;
     }
 
-    public Map<File, String> getManifest(File manifest) throws IOException, InvalidManifestException {
+    public static Map<File, String> getManifest(File manifest) throws IOException, InvalidManifestException {
         if(manifest.length() > MAX_VALID_MANIFEST_SIZE) {
             throw new InvalidManifestException();
         }
@@ -374,7 +374,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
     }
 
-    public Map<File, String> getManifest(InputStream manifestStream) throws IOException {
+    public static Map<File, String> getManifest(InputStream manifestStream) throws IOException {
         Map<File, String> manifest = new HashMap<>();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(manifestStream, StandardCharsets.UTF_8));
@@ -477,8 +477,23 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         return message;
     }
 
-    public static boolean isSignatureFile(File file) {
-        return file != null && file.getName().length() > 4 && SIGNATURE_EXTENSIONS.stream().anyMatch(ext -> file.getName().toLowerCase(Locale.ROOT).endsWith("." + ext));
+    public static boolean isSignatureOrManifestFile(File file) {
+        if(file != null) {
+            if(file.getName().length() > 4 && SIGNATURE_EXTENSIONS.stream().anyMatch(ext -> file.getName().toLowerCase(Locale.ROOT).endsWith("." + ext))) {
+                return true;
+            }
+
+            if(file.getName().toLowerCase(Locale.ROOT).endsWith(".txt")) {
+                try {
+                    Map<File, String> manifest = getManifest(file);
+                    return !manifest.isEmpty();
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+        }
+
+        return false;
     }
 
     private static class Header extends GridPane {

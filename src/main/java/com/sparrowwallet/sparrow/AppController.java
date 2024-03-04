@@ -993,7 +993,7 @@ public class AppController implements Initializable {
     public void openFile(File file) {
         if(isWalletFile(file)) {
             openWalletFile(file, true);
-        } else if(isSignatureFile(file)) {
+        } else if(isSignatureOrManifestFile(file)) {
             verifyDownload(new ActionEvent(file, rootStack));
         } else {
             openTransactionFile(file);
