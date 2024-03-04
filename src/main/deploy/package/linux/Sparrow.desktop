@@ -6,5 +6,5 @@ Icon=/opt/sparrow/lib/Sparrow.png
 Terminal=false
 Type=Application
 Categories=Finance;Network;
-MimeType=application/psbt;application/bitcoin-transaction;x-scheme-handler/bitcoin;x-scheme-handler/auth47;x-scheme-handler/lightning
+MimeType=application/psbt;application/bitcoin-transaction;application/pgp-signature;x-scheme-handler/bitcoin;x-scheme-handler/auth47;x-scheme-handler/lightning
 StartupWMClass=Sparrow
