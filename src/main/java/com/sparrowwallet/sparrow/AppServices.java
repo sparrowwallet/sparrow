@@ -786,7 +786,7 @@ public class AppServices {
     }
 
     public static Window getActiveWindow() {
-        return Stage.getWindows().stream().filter(Window::isFocused).findFirst().orElse(get().walletWindows.keySet().iterator().hasNext() ? get().walletWindows.keySet().iterator().next() : null);
+        return Stage.getWindows().stream().filter(Window::isFocused).findFirst().orElse(get().walletWindows.keySet().iterator().hasNext() ? get().walletWindows.keySet().iterator().next() : (Stage.getWindows().iterator().hasNext() ? Stage.getWindows().iterator().next() : null));
     }
 
     public static void moveToActiveWindowScreen(Dialog<?> dialog) {
@@ -885,7 +885,7 @@ public class AppServices {
             for(File file : openFiles) {
                 if(isWalletFile(file)) {
                     EventManager.get().post(new RequestWalletOpenEvent(openWindow, file));
-                } else if(isSignatureOrManifestFile(file)) {
+                } else if(isVerifyDownloadFile(file)) {
                     EventManager.get().post(new RequestVerifyDownloadEvent(openWindow, file));
                 } else {
                     EventManager.get().post(new RequestTransactionOpenEvent(openWindow, file));

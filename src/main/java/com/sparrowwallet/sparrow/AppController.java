@@ -219,6 +219,8 @@ public class AppController implements Initializable {
 
     private SendToManyDialog sendToManyDialog;
 
+    private DownloadVerifierDialog downloadVerifierDialog;
+
     private Tab previouslySelectedTab;
 
     private boolean subTabsVisible;
@@ -634,7 +636,7 @@ public class AppController implements Initializable {
             } catch(TransactionParseException e) {
                 showErrorDialog("Invalid transaction", e.getMessage());
             } catch(Exception e) {
-                showErrorDialog("Invalid file", e.getMessage());
+                showErrorDialog("Invalid file", "Cannot recognise the format of this file.");
             }
         }
     }
@@ -993,7 +995,7 @@ public class AppController implements Initializable {
     public void openFile(File file) {
         if(isWalletFile(file)) {
             openWalletFile(file, true);
-        } else if(isSignatureOrManifestFile(file)) {
+        } else if(isVerifyDownloadFile(file)) {
             verifyDownload(new ActionEvent(file, rootStack));
         } else {
             openTransactionFile(file);
@@ -1479,8 +1481,20 @@ public class AppController implements Initializable {
     }
 
     public void verifyDownload(ActionEvent event) {
-        DownloadVerifierDialog downloadVerifierDialog = new DownloadVerifierDialog(event.getSource() instanceof File file ? file : null);
+        if(downloadVerifierDialog != null) {
+            Stage stage = (Stage)downloadVerifierDialog.getDialogPane().getScene().getWindow();
+            stage.setAlwaysOnTop(true);
+            stage.setAlwaysOnTop(false);
+            if(event.getSource() instanceof File file) {
+                downloadVerifierDialog.setSignatureFile(file);
+            }
+            return;
+        }
+
+        downloadVerifierDialog = new DownloadVerifierDialog(event.getSource() instanceof File file ? file : null);
+        downloadVerifierDialog.initOwner(rootStack.getScene().getWindow());
         downloadVerifierDialog.showAndWait();
+        downloadVerifierDialog = null;
     }
 
     public void minimizeToTray(ActionEvent event) {
