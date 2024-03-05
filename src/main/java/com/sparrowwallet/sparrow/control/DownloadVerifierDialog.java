@@ -261,9 +261,32 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         });
     }
 
-    public void verify() {
-        boolean signatureVerified = verifySignature();
-        if(signatureVerified) {
+    private void verify() {
+        publicKeyDisabled.set(false);
+
+        if(signature.get() == null || manifest.get() == null) {
+            clearReleaseFields();
+            return;
+        }
+
+        PGPVerifyService pgpVerifyService = new PGPVerifyService(signature.get(), manifest.get(), publicKey.get());
+        pgpVerifyService.setOnRunning(event -> {
+            signedBy.setText("Verifying...");
+            signedBy.setGraphic(GlyphUtils.getBusyGlyph());
+            signedBy.setTooltip(null);
+            clearReleaseFields();
+        });
+        pgpVerifyService.setOnSucceeded(event -> {
+            PGPVerificationResult result = pgpVerifyService.getValue();
+
+            String message = result.userId() + " on " + signatureDateFormat.format(result.signatureTimestamp()) + (result.expired() ? " (key expired)" : "");
+            signedBy.setText(message);
+            signedBy.setGraphic(result.expired() ? GlyphUtils.getWarningGlyph() : GlyphUtils.getSuccessGlyph());
+
+            if(!result.expired()) {
+                publicKeyDisabled.set(true);
+            }
+
             if(manifest.get().equals(release.get())) {
                 releaseHash.setText("No hash required, signature signs release file directly");
                 releaseHash.setGraphic(GlyphUtils.getSuccessGlyph());
@@ -274,45 +297,24 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             } else {
                 verifyManifest();
             }
-        } else {
-            releaseHash.setText("");
-            releaseHash.setGraphic(null);
-            releaseHash.setTooltip(null);
-            releaseVerified.setText("");
-            releaseVerified.setGraphic(null);
-            releaseLink.setText("");
-        }
-    }
-
-    private boolean verifySignature() {
-        publicKeyDisabled.set(false);
-
-        if(signature.get() == null || manifest.get() == null) {
-            return false;
-        }
-
-        boolean detachedSignature = !manifest.get().equals(signature.get());
-
-        try(InputStream publicKeyStream = publicKey.get() == null ? null : new FileInputStream(publicKey.get());
-            InputStream contentStream = new BufferedInputStream(new FileInputStream(manifest.get()));
-            InputStream detachedSignatureStream = detachedSignature ? new FileInputStream(signature.get()) : null) {
-            PGPVerificationResult result = PGPUtils.verify(publicKeyStream, contentStream, detachedSignatureStream);
-
-            String message = result.userId() + " on " + signatureDateFormat.format(result.signatureTimestamp()) + (result.expired() ? " (key expired)" : "");
-            signedBy.setText(message);
-            signedBy.setGraphic(result.expired() ? GlyphUtils.getWarningGlyph() : GlyphUtils.getSuccessGlyph());
-
-            if(!result.expired()) {
-                publicKeyDisabled.set(true);
-            }
-
-            return true;
-        } catch(IOException | PGPVerificationException e) {
+        });
+        pgpVerifyService.setOnFailed(event -> {
+            Throwable e = event.getSource().getException();
             signedBy.setText(getDisplayMessage(e));
             signedBy.setGraphic(GlyphUtils.getFailureGlyph());
-        }
+            clearReleaseFields();
+        });
 
-        return false;
+        pgpVerifyService.start();
+    }
+
+    private void clearReleaseFields() {
+        releaseHash.setText("");
+        releaseHash.setGraphic(null);
+        releaseHash.setTooltip(null);
+        releaseVerified.setText("");
+        releaseVerified.setGraphic(null);
+        releaseLink.setText("");
     }
 
     private void verifyManifest() {
@@ -521,7 +523,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
     }
 
-    private String getDisplayMessage(Exception e) {
+    private String getDisplayMessage(Throwable e) {
         String message = e.getMessage();
         message = message.substring(0, 1).toUpperCase(Locale.ROOT) + message.substring(1);
 
@@ -671,6 +673,33 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             }
 
             return result.toString();
+        }
+    }
+
+    private static class PGPVerifyService extends Service<PGPVerificationResult> {
+        private final File signature;
+        private final File manifest;
+        private final File publicKey;
+
+        public PGPVerifyService(File signature, File manifest, File publicKey) {
+            this.signature = signature;
+            this.manifest = manifest;
+            this.publicKey = publicKey;
+        }
+
+        @Override
+        protected Task<PGPVerificationResult> createTask() {
+            return new Task<>() {
+                protected PGPVerificationResult call() throws IOException, PGPVerificationException {
+                    boolean detachedSignature = !manifest.equals(signature);
+
+                    try(InputStream publicKeyStream = publicKey == null ? null : new FileInputStream(publicKey);
+                        InputStream contentStream = new BufferedInputStream(new FileInputStream(manifest));
+                        InputStream detachedSignatureStream = detachedSignature ? new FileInputStream(signature) : null) {
+                        return PGPUtils.verify(publicKeyStream, contentStream, detachedSignatureStream);
+                    }
+                }
+            };
         }
     }
 
