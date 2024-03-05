@@ -868,13 +868,13 @@ public class AppServices {
                     return new Task<>() {
                         @Override
                         protected Void call() {
+                            Platform.runLater(() -> openFileUriArguments(window));
                             return null;
                         }
                     };
                 }
             };
             service.setExecutor(Storage.LoadWalletService.getSingleThreadedExecutor());
-            service.setOnSucceeded(event -> openFileUriArguments(window));
             service.start();
         }
     }
