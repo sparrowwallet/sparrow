@@ -280,7 +280,7 @@ public class AppController implements Initializable {
 
         rootStack.setOnDragOver(event -> {
             if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
-                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                event.acceptTransferModes(TransferMode.LINK);
             }
             event.consume();
         });

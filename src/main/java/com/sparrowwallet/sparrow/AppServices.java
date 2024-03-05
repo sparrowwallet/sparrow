@@ -33,6 +33,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.ScheduledService;
+import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
@@ -856,6 +857,25 @@ public class AppServices {
             } catch(Exception e) {
                 //ignore
             }
+        }
+    }
+
+    public static void openFileUriArgumentsAfterWalletLoading(Window window) {
+        if(!argFiles.isEmpty() || !argUris.isEmpty()) {
+            Service<Void> service = new Service<>() {
+                @Override
+                protected Task<Void> createTask() {
+                    return new Task<>() {
+                        @Override
+                        protected Void call() {
+                            return null;
+                        }
+                    };
+                }
+            };
+            service.setExecutor(Storage.LoadWalletService.getSingleThreadedExecutor());
+            service.setOnSucceeded(event -> openFileUriArguments(window));
+            service.start();
         }
     }
 

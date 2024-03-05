@@ -231,7 +231,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private void setupDrag(DialogPane dialogPane) {
         dialogPane.setOnDragOver(event -> {
             if(event.getGestureSource() != dialogPane && event.getDragboard().hasFiles()) {
-                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                event.acceptTransferModes(TransferMode.LINK);
             }
             event.consume();
         });

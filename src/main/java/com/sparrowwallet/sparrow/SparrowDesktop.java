@@ -108,7 +108,7 @@ public class SparrowDesktop extends Application {
             }
         }
 
-        AppServices.openFileUriArguments(stage);
+        AppServices.openFileUriArgumentsAfterWalletLoading(stage);
 
         AppServices.get().start();
     }
