@@ -4,7 +4,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigData;
 import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigPersisted;
-import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigPersister;
+import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigPersisterFile;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.UtxoMixData;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class SparrowUtxoConfigPersister extends UtxoConfigPersister {
+public class SparrowUtxoConfigPersister extends UtxoConfigPersisterFile {
     private static final Logger log = LoggerFactory.getLogger(SparrowUtxoConfigPersister.class);
 
     private final String walletId;
@@ -37,7 +37,7 @@ public class SparrowUtxoConfigPersister extends UtxoConfigPersister {
         }
 
         Map<String, UtxoConfigPersisted> utxoConfigs = wallet.getUtxoMixes().entrySet().stream()
-                .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> new UtxoConfigPersisted(entry.getValue().getMixesDone(), entry.getValue().getExpired()),
+                .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> new UtxoConfigPersisted(entry.getValue().getMixesDone(), entry.getValue().getExpired(), false, null),
                         (u, v) -> { throw new IllegalStateException("Duplicate utxo config hashes"); },
                         ConcurrentHashMap::new));
 

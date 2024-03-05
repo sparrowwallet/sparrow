@@ -120,6 +120,8 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             tt.setText(status);
             setTooltip(tt);
 
+            // TODO nbRegisteredInputs is not available anymore
+            /*
             if(mixProgress.getMixStep() == MixStep.REGISTERED_INPUT) {
                 tt.setOnShowing(event -> {
                     Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
@@ -131,7 +133,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                     });
                     registeredInputsService.start();
                 });
-            }
+            }*/
         } else {
             setGraphic(null);
             setTooltip(null);

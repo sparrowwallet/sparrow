@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.payjoin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.sparrowwallet.drongo.KeyPurpose;
+import com.samourai.wallet.api.backend.beans.HttpException;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
@@ -14,7 +14,6 @@ import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
-import com.sparrowwallet.nightjar.http.JavaHttpException;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.net.Protocol;
@@ -23,7 +22,8 @@ import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -87,7 +87,7 @@ public class Payjoin {
             checkProposal(psbt, proposalPsbt, changeOutputIndex, maxAdditionalFeeContribution, allowOutputSubstitution);
 
             return proposalPsbt;
-        } catch(JavaHttpException e) {
+        } catch(HttpException e) {
             Gson gson = new Gson();
             PayjoinReceiverError payjoinReceiverError = gson.fromJson(e.getResponseBody(), PayjoinReceiverError.class);
             log.warn("Payjoin receiver returned an error of " + payjoinReceiverError.getErrorCode() + " (" + payjoinReceiverError.getMessage() + ")");

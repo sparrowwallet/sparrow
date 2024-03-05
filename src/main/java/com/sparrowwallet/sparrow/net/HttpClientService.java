@@ -1,57 +1,56 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
-import com.samourai.http.client.HttpUsage;
-import com.samourai.http.client.IHttpClient;
-import com.sparrowwallet.nightjar.http.JavaHttpClientService;
+import com.samourai.http.client.JettyHttpClientService;
+import com.samourai.wallet.httpClient.HttpUsage;
+import com.samourai.wallet.httpClient.IHttpClient;
+import com.samourai.wallet.util.AsyncUtil;
+import com.samourai.whirlpool.client.utils.ClientUtils;
 import io.reactivex.Observable;
-import java8.util.Optional;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 
 import java.util.Map;
+import java.util.Optional;
 
-public class HttpClientService {
-    private final JavaHttpClientService httpClientService;
+public class HttpClientService extends JettyHttpClientService {
+    private static final int REQUEST_TIMEOUT = 120000;
 
     public HttpClientService(HostAndPort torProxy) {
-        this.httpClientService = new JavaHttpClientService(torProxy, 120000);
+        super(REQUEST_TIMEOUT,
+                ClientUtils.USER_AGENT,
+                new HttpProxySupplier(torProxy));
     }
 
     public <T> T requestJson(String url, Class<T> responseType, Map<String, String> headers) throws Exception {
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.getJson(url, responseType, headers);
+        return getHttpClient(HttpUsage.BACKEND)
+                .getJson(url, responseType, headers);
     }
 
     public <T> Observable<Optional<T>> postJson(String url, Class<T> responseType, Map<String, String> headers, Object body) {
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postJson(url, responseType, headers, body);
+        return getHttpClient(HttpUsage.BACKEND)
+                .postJson(url, responseType, headers, body).toObservable();
     }
 
     public String postString(String url, Map<String, String> headers, String contentType, String content) throws Exception {
-        IHttpClient httpClient = httpClientService.getHttpClient(HttpUsage.COORDINATOR_REST);
-        return httpClient.postString(url, headers, contentType, content);
-    }
-
-    public void changeIdentity() {
-        HostAndPort torProxy = getTorProxy();
-        if(torProxy != null) {
-            TorUtils.changeIdentity(torProxy);
-        }
+        IHttpClient httpClient = getHttpClient(HttpUsage.BACKEND);
+        return AsyncUtil.getInstance().blockingGet(
+                httpClient.postString(url, headers, contentType, content)).get();
     }
 
     public HostAndPort getTorProxy() {
-        return httpClientService.getTorProxy();
+        return getHttpProxySupplier().getTorProxy();
     }
 
     public void setTorProxy(HostAndPort torProxy) {
         //Ensure all http clients are shutdown first
-        httpClientService.shutdown();
-        httpClientService.setTorProxy(torProxy);
+        stop();
+        getHttpProxySupplier()._setTorProxy(torProxy);
     }
 
-    public void shutdown() {
-        httpClientService.shutdown();
+    @Override
+    public HttpProxySupplier getHttpProxySupplier() {
+        return (HttpProxySupplier)super.getHttpProxySupplier();
     }
 
     public static class ShutdownService extends Service<Boolean> {
@@ -65,7 +64,7 @@ public class HttpClientService {
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() throws Exception {
-                    httpClientService.shutdown();
+                    httpClientService.stop();
                     return true;
                 }
             };

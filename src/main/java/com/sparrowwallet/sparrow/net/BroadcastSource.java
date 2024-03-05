@@ -1,11 +1,11 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
+import com.samourai.wallet.api.backend.beans.HttpException;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.nightjar.http.JavaHttpException;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,7 +158,7 @@ public enum BroadcastSource {
             } catch(Exception e) {
                 throw new BroadcastException("Could not retrieve txid from broadcast, server returned: " + response);
             }
-        } catch(JavaHttpException e) {
+        } catch(HttpException e) {
             throw new BroadcastException("Could not broadcast transaction, server returned " + e.getStatusCode() + ": " + e.getResponseBody());
         } catch(Exception e) {
             log.error("Could not post transaction via " + getName(), e);

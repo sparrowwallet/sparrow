@@ -521,11 +521,10 @@ public class AppServices {
     }
 
     public static HttpClientService getHttpClientService() {
+        HostAndPort torProxy = getTorProxy();
         if(httpClientService == null) {
-            HostAndPort torProxy = getTorProxy();
             httpClientService = new HttpClientService(torProxy);
         } else {
-            HostAndPort torProxy = getTorProxy();
             if(!Objects.equals(httpClientService.getTorProxy(), torProxy)) {
                 httpClientService.setTorProxy(getTorProxy());
             }
