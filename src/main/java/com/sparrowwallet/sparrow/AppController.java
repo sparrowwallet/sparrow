@@ -636,7 +636,7 @@ public class AppController implements Initializable {
             } catch(TransactionParseException e) {
                 showErrorDialog("Invalid transaction", e.getMessage());
             } catch(Exception e) {
-                showErrorDialog("Invalid file", "Cannot recognise the format of this file.");
+                showErrorDialog("Invalid file", "Cannot recognise the format of the " + file.getName() + " file.");
             }
         }
     }
