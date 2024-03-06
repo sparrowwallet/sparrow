@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.CryptoOutput;
 import com.sparrowwallet.hummingbird.registry.RegistryType;
 import com.sparrowwallet.sparrow.AppServices;
@@ -13,6 +14,8 @@ import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.event.WalletExportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
@@ -163,8 +166,12 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof CoboVaultMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
-                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig || exporter instanceof Bip129) {
+                } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
+                } else if(exporter instanceof Bip129) {
+                    UR ur = UR.fromBytes(outputStream.toByteArray());
+                    BBQR bbqr = new BBQR(BBQRType.UNICODE, outputStream.toByteArray());
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, false);
                 } else if(exporter instanceof Descriptor) {
                     OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(exportWallet, KeyPurpose.DEFAULT_PURPOSES, null);
                     CryptoOutput cryptoOutput = getCryptoOutput(exportWallet);

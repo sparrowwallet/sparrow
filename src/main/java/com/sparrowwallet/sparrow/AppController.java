@@ -21,6 +21,8 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
@@ -752,8 +754,10 @@ public class AppController implements Initializable {
             Transaction transaction = transactionTabData.getTransaction();
 
             try {
-                UR ur = UR.fromBytes(transaction.bitcoinSerialize());
-                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur);
+                byte[] txBytes = transaction.bitcoinSerialize();
+                UR ur = UR.fromBytes(txBytes);
+                BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
+                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
                 qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             } catch(Exception e) {
@@ -851,8 +855,10 @@ public class AppController implements Initializable {
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
 
-            CryptoPSBT cryptoPSBT = new CryptoPSBT(transactionTabData.getPsbt().serialize());
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR());
+            byte[] psbtBytes = transactionTabData.getPsbt().serialize();
+            CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
+            BBQR bbqr = new BBQR(BBQRType.PSBT, psbtBytes);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, false);
             qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
             qrDisplayDialog.show();
         }
