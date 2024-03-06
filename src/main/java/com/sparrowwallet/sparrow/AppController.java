@@ -291,9 +291,7 @@ public class AppController implements Initializable {
             Dragboard db = event.getDragboard();
             boolean success = false;
             if(db.hasFiles()) {
-                for(File file : db.getFiles()) {
-                    openFile(file);
-                }
+                openFiles(db.getFiles());
                 success = true;
             }
             event.setDropCompleted(success);
@@ -998,13 +996,19 @@ public class AppController implements Initializable {
         }
     }
 
-    public void openFile(File file) {
-        if(isWalletFile(file)) {
-            openWalletFile(file, true);
-        } else if(isVerifyDownloadFile(file)) {
-            verifyDownload(new ActionEvent(file, rootStack));
-        } else {
-            openTransactionFile(file);
+    public void openFiles(List<File> files) {
+        boolean verifyOpened = false;
+        for(File file : files) {
+            if(isWalletFile(file)) {
+                openWalletFile(file, true);
+            } else if(isVerifyDownloadFile(file)) {
+                if(!verifyOpened) {
+                    verifyDownload(new ActionEvent(file, rootStack));
+                    verifyOpened = true;
+                }
+            } else {
+                openTransactionFile(file);
+            }
         }
     }
 
