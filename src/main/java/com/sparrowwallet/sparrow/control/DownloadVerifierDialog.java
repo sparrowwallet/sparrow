@@ -283,7 +283,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             signedBy.setText(message);
             signedBy.setGraphic(result.expired() ? GlyphUtils.getWarningGlyph() : GlyphUtils.getSuccessGlyph());
 
-            if(!result.expired()) {
+            if(!result.expired() && !result.userProvidedKey()) {
                 publicKeyDisabled.set(true);
             }
 
