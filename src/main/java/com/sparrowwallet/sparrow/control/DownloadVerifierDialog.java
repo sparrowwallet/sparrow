@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.pgp.PGPKeySource;
 import com.sparrowwallet.drongo.pgp.PGPUtils;
 import com.sparrowwallet.drongo.pgp.PGPVerificationException;
 import com.sparrowwallet.drongo.pgp.PGPVerificationResult;
@@ -283,7 +284,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             signedBy.setText(message);
             signedBy.setGraphic(result.expired() ? GlyphUtils.getWarningGlyph() : GlyphUtils.getSuccessGlyph());
 
-            if(!result.expired() && !result.userProvidedKey()) {
+            if(!result.expired() && result.keySource() != PGPKeySource.USER) {
                 publicKeyDisabled.set(true);
             }
 
