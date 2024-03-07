@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +16,7 @@ import java.io.*;
 public class StorageTest extends IoTest {
     @Test
     public void loadWallet() throws IOException, MnemonicException, StorageException {
+        System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, "true");
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
         Wallet wallet = storage.loadEncryptedWallet("pass").getWallet();
         Assertions.assertTrue(wallet.isValid());
@@ -64,6 +66,7 @@ public class StorageTest extends IoTest {
 
     @Test
     public void saveWallet() throws IOException, MnemonicException, StorageException {
+        System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, "true");
         Storage storage = new Storage(getFile("sparrow-single-wallet"));
         Wallet wallet = storage.loadEncryptedWallet("pass").getWallet();
         Assertions.assertTrue(wallet.isValid());
@@ -79,5 +82,10 @@ public class StorageTest extends IoTest {
         Storage temp2Storage = new Storage(tempWallet);
         wallet = temp2Storage.loadEncryptedWallet("pass").getWallet();
         Assertions.assertTrue(wallet.isValid());
+    }
+
+    @AfterEach
+    void tearDown() {
+        System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, "false");
     }
 }

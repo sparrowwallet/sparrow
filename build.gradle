@@ -160,7 +160,7 @@ processResources {
 
 test {
     useJUnitPlatform()
-    jvmArgs '--add-opens=java.base/java.io=ALL-UNNAMED'
+    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--add-opens=java.base/java.io=com.google.gson"]
 }
 
 application {
