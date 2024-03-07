@@ -3,6 +3,8 @@ plugins {
 }
 
 dependencies {
+    implementation 'com.google.gradle:osdetector-gradle-plugin:1.7.0'
+    implementation 'org.javamodularity:moduleplugin:1.8.12'
     implementation 'org.ow2.asm:asm:9.6'
 }
 
@@ -19,6 +21,10 @@ gradlePlugin {
         register("extra-java-module-info") {
             id = "extra-java-module-info"
             implementationClass = "org.gradle.sample.transform.javamodules.ExtraModuleInfoPlugin"
+        }
+        register("org-openjfx-javafxplugin") {
+            id = "org-openjfx-javafxplugin"
+            implementationClass = "org.openjfx.gradle.JavaFXPlugin"
         }
     }
 }

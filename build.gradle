@@ -3,7 +3,7 @@ import java.awt.GraphicsEnvironment
 plugins {
     id 'application'
     id 'extra-java-module-info'
-    id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'org-openjfx-javafxplugin'
     id 'org.beryx.jlink' version '3.0.1'
 }
 
