@@ -154,6 +154,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 release.set(null);
                 signedBy.setText("");
                 signedBy.setGraphic(null);
+                signedBy.setTooltip(null);
                 releaseHash.setText("");
                 releaseHash.setGraphic(null);
                 releaseVerified.setText("");
@@ -283,6 +284,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             String message = result.userId() + " on " + signatureDateFormat.format(result.signatureTimestamp()) + (result.expired() ? " (key expired)" : "");
             signedBy.setText(message);
             signedBy.setGraphic(result.expired() ? GlyphUtils.getWarningGlyph() : GlyphUtils.getSuccessGlyph());
+            signedBy.setTooltip(new Tooltip(result.fingerprint()));
 
             if(!result.expired() && result.keySource() != PGPKeySource.USER) {
                 publicKeyDisabled.set(true);
@@ -303,6 +305,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             Throwable e = event.getSource().getException();
             signedBy.setText(getDisplayMessage(e));
             signedBy.setGraphic(GlyphUtils.getFailureGlyph());
+            signedBy.setTooltip(null);
             clearReleaseFields();
         });
 
