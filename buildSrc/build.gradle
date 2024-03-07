@@ -3,8 +3,8 @@ plugins {
 }
 
 dependencies {
-    implementation 'com.google.gradle:osdetector-gradle-plugin:1.7.0'
-    implementation 'org.javamodularity:moduleplugin:1.8.12'
+    implementation 'com.google.gradle:osdetector-gradle-plugin:1.7.3'
+    implementation 'org.javamodularity:moduleplugin:1.8.14'
     implementation 'org.ow2.asm:asm:9.6'
 }
 
