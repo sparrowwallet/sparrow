@@ -585,12 +585,14 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 getItems().add(createCpfp);
             }
 
-            MenuItem openBlockExplorer = new MenuItem("Open in Block Explorer");
-            openBlockExplorer.setOnAction(AE -> {
-                hide();
-                AppServices.openBlockExplorer(blockTransaction.getHashAsString());
-            });
-            getItems().add(openBlockExplorer);
+            if(!Config.get().isBlockExplorerDisabled()) {
+                MenuItem openBlockExplorer = new MenuItem("Open in Block Explorer");
+                openBlockExplorer.setOnAction(AE -> {
+                    hide();
+                    AppServices.openBlockExplorer(blockTransaction.getHashAsString());
+                });
+                getItems().add(openBlockExplorer);
+            }
 
             MenuItem copyTxid = new MenuItem("Copy Transaction ID");
             copyTxid.setOnAction(AE -> {
@@ -612,12 +614,16 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 hide();
                 EventManager.get().post(new ViewTransactionEvent(this.getOwnerWindow(), blockTransaction));
             });
+            getItems().add(viewTransaction);
 
-            MenuItem openBlockExplorer = new MenuItem("Open in Block Explorer");
-            openBlockExplorer.setOnAction(AE -> {
-                hide();
-                AppServices.openBlockExplorer(blockTransaction.getHashAsString());
-            });
+            if(!Config.get().isBlockExplorerDisabled()) {
+                MenuItem openBlockExplorer = new MenuItem("Open in Block Explorer");
+                openBlockExplorer.setOnAction(AE -> {
+                    hide();
+                    AppServices.openBlockExplorer(blockTransaction.getHashAsString());
+                });
+                getItems().add(openBlockExplorer);
+            }
 
             MenuItem copyDate = new MenuItem("Copy Date");
             copyDate.setOnAction(AE -> {
@@ -626,6 +632,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 content.putString(date);
                 Clipboard.getSystemClipboard().setContent(content);
             });
+            getItems().add(copyDate);
 
             MenuItem copyTxid = new MenuItem("Copy Transaction ID");
             copyTxid.setOnAction(AE -> {
@@ -634,6 +641,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 content.putString(blockTransaction.getHashAsString());
                 Clipboard.getSystemClipboard().setContent(content);
             });
+            getItems().add(copyTxid);
 
             MenuItem copyHeight = new MenuItem("Copy Block Height");
             copyHeight.setOnAction(AE -> {
@@ -642,8 +650,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 content.putString(blockTransaction.getHeight() > 0 ? Integer.toString(blockTransaction.getHeight()) : "Mempool");
                 Clipboard.getSystemClipboard().setContent(content);
             });
-
-            getItems().addAll(viewTransaction, openBlockExplorer, copyDate, copyTxid, copyHeight);
+            getItems().add(copyHeight);
         }
     }
 
