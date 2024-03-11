@@ -330,20 +330,18 @@ public class CounterpartyController extends SorobanController {
                     }
                 }
             };
-            sorobanWalletCounterparty.counterparty(cahootsContext, initiatorPaymentCode, onProgress)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(JavaFxScheduler.platform())
-                    .subscribe(cahoots -> {
-                                // cahoots success
-                            }, error -> {
-                                log.error("Error creating mix transaction", error);
-                                String cutFrom = "Exception: ";
-                                int index = error.getMessage().lastIndexOf(cutFrom);
-                                String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
-                                msg = msg.replace("#Cahoots", "mix transaction");
-                                step3Desc.setText(msg);
-                                sorobanProgressLabel.setVisible(false);
-                            });
+            try {
+                // TODO run in background thread?
+                Cahoots result = sorobanWalletCounterparty.counterparty(cahootsContext, initiatorPaymentCode, onProgress);
+            } catch (Exception error) {
+                log.error("Error creating mix transaction", error);
+                String cutFrom = "Exception: ";
+                int index = error.getMessage().lastIndexOf(cutFrom);
+                String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
+                msg = msg.replace("#Cahoots", "mix transaction");
+                step3Desc.setText(msg);
+                sorobanProgressLabel.setVisible(false);
+            }
         } catch(Exception e) {
             log.error("Error creating mix transaction", e);
             sorobanProgressLabel.setText(e.getMessage());

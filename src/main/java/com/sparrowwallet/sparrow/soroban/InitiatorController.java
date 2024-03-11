@@ -494,17 +494,16 @@ public class InitiatorController extends SorobanController {
             };
             SorobanWalletService sorobanWalletService = soroban.getSorobanWalletService();
             sorobanProgressLabel.setText("Waiting for mix partner...");
-            sorobanWalletService.getSorobanWalletInitiator(cahootsWallet).meetAndInitiate(cahootsContext, paymentCodeCounterparty, listener)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(JavaFxScheduler.platform())
-                    .subscribe(sorobanResponse -> {
-                    }, error -> {
-                        log.error("Error receiving meeting response", error);
-                        step2Desc.setText(getErrorMessage(error));
-                        sorobanProgressLabel.setVisible(false);
-                        meetingFail.setVisible(true);
-                        requestUserAttention();
-                    });
+            try {
+                // TODO run in background thread?
+                Cahoots result = sorobanWalletService.getSorobanWalletInitiator(cahootsWallet).meetAndInitiate(cahootsContext, paymentCodeCounterparty, listener);
+            } catch (Exception error){
+                log.error("Error receiving meeting response", error);
+                step2Desc.setText(getErrorMessage(error));
+                sorobanProgressLabel.setVisible(false);
+                meetingFail.setVisible(true);
+                requestUserAttention();
+            }
         }, error -> {
             log.error("Could not retrieve payment code", error);
             if(error.getMessage().endsWith("404")) {

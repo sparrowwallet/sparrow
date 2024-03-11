@@ -26,11 +26,10 @@ public class SparrowUtxoSupplier extends BasicUtxoSupplier {
     private static final Logger log = LoggerFactory.getLogger(SparrowUtxoSupplier.class);
 
     public SparrowUtxoSupplier(
-            WhirlpoolWallet whirlpoolWallet,
             WalletSupplier walletSupplier,
             UtxoConfigSupplier utxoConfigSupplier,
             DataSourceConfig dataSourceConfig) {
-        super(whirlpoolWallet, walletSupplier, utxoConfigSupplier, dataSourceConfig);
+        super(walletSupplier, utxoConfigSupplier, dataSourceConfig);
     }
 
     @Override

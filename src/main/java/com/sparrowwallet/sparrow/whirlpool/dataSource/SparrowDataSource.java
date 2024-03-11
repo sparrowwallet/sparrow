@@ -52,7 +52,7 @@ public class SparrowDataSource extends AbstractDataSource {
         super(whirlpoolWallet, bip44w, walletStateSupplier, dataSourceConfig);
         this.seenBackend = computeSeenBackend(whirlpoolWallet.getConfig());
         this.pushTx = computePushTx();
-        this.utxoSupplier = new SparrowUtxoSupplier(whirlpoolWallet, walletSupplier, utxoConfigSupplier, dataSourceConfig);
+        this.utxoSupplier = new SparrowUtxoSupplier(walletSupplier, utxoConfigSupplier, dataSourceConfig);
     }
 
     private ISeenBackend computeSeenBackend(WhirlpoolWalletConfig whirlpoolWalletConfig) {

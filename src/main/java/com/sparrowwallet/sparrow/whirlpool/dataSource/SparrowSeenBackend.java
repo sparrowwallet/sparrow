@@ -5,6 +5,8 @@ import com.samourai.wallet.api.backend.seenBackend.SeenResponse;
 import com.samourai.wallet.httpClient.IHttpClient;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class SparrowSeenBackend implements ISeenBackend {
     private IHttpClient httpClient;
@@ -15,7 +17,11 @@ public class SparrowSeenBackend implements ISeenBackend {
 
     @Override
     public SeenResponse seen(Collection<String> addresses) throws Exception {
-        return null; // TODO implement: check if each address already received funds
+        Map<String,Boolean> map = new LinkedHashMap<>();
+        for (String address : addresses) {
+            map.put(address, seen(address));
+        }
+        return new SeenResponse(map);
     }
 
     @Override
