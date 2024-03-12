@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.payjoin;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.samourai.wallet.api.backend.beans.HttpException;
+import com.samourai.wallet.httpClient.HttpResponseException;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
@@ -87,7 +88,7 @@ public class Payjoin {
             checkProposal(psbt, proposalPsbt, changeOutputIndex, maxAdditionalFeeContribution, allowOutputSubstitution);
 
             return proposalPsbt;
-        } catch(HttpException e) {
+        } catch(HttpResponseException e) {
             Gson gson = new Gson();
             PayjoinReceiverError payjoinReceiverError = gson.fromJson(e.getResponseBody(), PayjoinReceiverError.class);
             log.warn("Payjoin receiver returned an error of " + payjoinReceiverError.getErrorCode() + " (" + payjoinReceiverError.getMessage() + ")");

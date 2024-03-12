@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.samourai.wallet.api.backend.beans.HttpException;
+import com.samourai.wallet.httpClient.HttpResponseException;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import javafx.concurrent.ScheduledService;
@@ -107,7 +108,7 @@ public enum ExchangeSource {
                     if(log.isDebugEnabled()) {
                         log.warn("Error retrieving historical currency rates", e);
                     } else {
-                        if(e instanceof HttpException httpException && httpException.getStatusCode() == 404) {
+                        if(e instanceof HttpResponseException httpException && httpException.getStatusCode() == 404) {
                             log.warn("Error retrieving historical currency rates (" + e.getMessage() + "). BTC-" + currency.getCurrencyCode() + " may not be supported by " + this);
                         } else {
                             log.warn("Error retrieving historical currency rates (" + e.getMessage() + ")");
