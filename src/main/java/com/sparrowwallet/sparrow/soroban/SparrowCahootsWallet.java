@@ -26,13 +26,12 @@ import java.util.List;
 
 public class SparrowCahootsWallet extends AbstractCahootsWallet {
     private final Wallet wallet;
-    private HD_Wallet bip84w;
+    private final HD_Wallet bip84w;
     private final int account;
-    private List<CahootsUtxo> utxos;
+    private final List<CahootsUtxo> utxos;
 
     public SparrowCahootsWallet(ChainSupplier chainSupplier, Wallet wallet, HD_Wallet bip84w, int bip47Account) {
-        super(chainSupplier, bip84w.getFingerprint(),
-                new BIP47Wallet(bip84w).getAccount(bip47Account));
+        super(chainSupplier, bip84w.getFingerprint(), new BIP47Wallet(bip84w).getAccount(bip47Account));
         this.wallet = wallet;
         this.bip84w = bip84w;
         this.account = wallet.getAccountIndex();
@@ -107,7 +106,7 @@ public class SparrowCahootsWallet extends AbstractCahootsWallet {
                 throw new IllegalStateException("Cannot add BIP47 UTXO", e);
             }
         } else {
-            HD_Address hdAddress = bip84w.getAddressAt(index, unspentOutput);
+            HD_Address hdAddress = bip84w.getAddressAt(account, unspentOutput);
             cahootsUtxo = new CahootsUtxo(myTransactionOutPoint, node.getDerivationPath(), null, hdAddress.getECKey().getPrivKeyBytes());
         }
 

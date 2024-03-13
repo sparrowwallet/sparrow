@@ -38,8 +38,6 @@ import com.sparrowwallet.sparrow.paynym.PayNymAddress;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
 import io.reactivex.Observable;
-import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
-import io.reactivex.schedulers.Schedulers;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -47,6 +45,8 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -431,79 +431,99 @@ public class InitiatorController extends SorobanController {
                 public void onResponse(SorobanResponseMessage sorobanResponse) throws Exception {
                     super.onResponse(sorobanResponse);
 
-                    requestUserAttention();
-                    if(sorobanResponse.isAccept()) {
-                        sorobanProgressBar.setProgress(0.1);
-                        sorobanProgressLabel.setText("Mix partner accepted!");
-                    } else {
-                        step2Desc.setText("Mix partner declined.");
-                        sorobanProgressLabel.setVisible(false);
-                    }
+                    Platform.runLater(() -> {
+                        requestUserAttention();
+                        if(sorobanResponse.isAccept()) {
+                            sorobanProgressBar.setProgress(0.1);
+                            sorobanProgressLabel.setText("Mix partner accepted!");
+                        } else {
+                            step2Desc.setText("Mix partner declined.");
+                            sorobanProgressLabel.setVisible(false);
+                        }
+                    });
                 }
 
                 @Override
                 public void onInteraction(OnlineSorobanInteraction interaction) throws Exception {
                     SorobanInteraction originInteraction = interaction.getInteraction();
-                    if (originInteraction instanceof TxBroadcastInteraction) {
-                        Boolean accepted = (Boolean)Platform.enterNestedEventLoop(transactionAccepted);
-                        if(accepted) {
-                            interaction.sorobanAccept();
-                        } else {
-                            interaction.sorobanReject("Mix partner declined to broadcast the transaction.");
-                        }
+                    if(originInteraction instanceof TxBroadcastInteraction) {
+                        Platform.runLater(() -> {
+                            try {
+                                Boolean accepted = (Boolean)Platform.enterNestedEventLoop(transactionAccepted);
+                                if(accepted) {
+                                    interaction.sorobanAccept();
+                                } else {
+                                    interaction.sorobanReject("Mix partner declined to broadcast the transaction.");
+                                }
+                            } catch(Exception e) {
+                                log.error("Error accepting Soroban interaction", e);
+                            }
+                        });
                     } else {
                         throw new Exception("Unknown interaction: "+originInteraction.getTypeInteraction());
                     }
                 }
 
                 @Override
-                public void progress(OnlineCahootsMessage message) {
-                    super.progress(message);
+                public void progress(OnlineCahootsMessage cahootsMessage) {
+                    super.progress(cahootsMessage);
 
-                    OnlineCahootsMessage cahootsMessage = (OnlineCahootsMessage)message;
                     if(cahootsMessage != null) {
-                        Cahoots cahoots = cahootsMessage.getCahoots();
-                        sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
+                        Platform.runLater(() -> {
+                            Cahoots cahoots = cahootsMessage.getCahoots();
+                            sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
 
-                        if(cahoots.getStep() >= 3) {
-                            try {
-                                Transaction transaction = getTransaction(cahoots);
-                                if(transaction != null) {
-                                    transactionProperty.set(transaction);
-                                    if(cahoots.getStep() == 3) {
-                                        next();
-                                        step3Timer.start(e -> {
-                                            if(stepProperty.get() != Step.BROADCAST && stepProperty.get() != Step.REBROADCAST) {
-                                                step3Desc.setText("Transaction declined due to timeout.");
-                                                transactionAccepted.set(Boolean.FALSE);
-                                            }
-                                        });
-                                    } else if(cahoots.getStep() == 4) {
-                                        next();
-                                        broadcastTransaction();
+                            if(cahoots.getStep() >= 3) {
+                                try {
+                                    Transaction transaction = getTransaction(cahoots);
+                                    if(transaction != null) {
+                                        transactionProperty.set(transaction);
+                                        if(cahoots.getStep() == 3) {
+                                            next();
+                                            step3Timer.start(e -> {
+                                                if(stepProperty.get() != Step.BROADCAST && stepProperty.get() != Step.REBROADCAST) {
+                                                    step3Desc.setText("Transaction declined due to timeout.");
+                                                    transactionAccepted.set(Boolean.FALSE);
+                                                }
+                                            });
+                                        } else if(cahoots.getStep() == 4) {
+                                            next();
+                                            broadcastTransaction();
+                                        }
                                     }
+                                } catch(PSBTParseException e) {
+                                    log.error("Invalid collaborative PSBT created", e);
+                                    step2Desc.setText("Invalid transaction created.");
+                                    sorobanProgressLabel.setVisible(false);
                                 }
-                            } catch(PSBTParseException e) {
-                                log.error("Invalid collaborative PSBT created", e);
-                                step2Desc.setText("Invalid transaction created.");
-                                sorobanProgressLabel.setVisible(false);
                             }
-                        }
+                        });
                     }
                 }
             };
             SorobanWalletService sorobanWalletService = soroban.getSorobanWalletService();
             sorobanProgressLabel.setText("Waiting for mix partner...");
-            try {
-                // TODO run in background thread?
-                Cahoots result = sorobanWalletService.getSorobanWalletInitiator(cahootsWallet).meetAndInitiate(cahootsContext, paymentCodeCounterparty, listener);
-            } catch (Exception error){
+
+            Service<Cahoots> cahootsService = new Service<>() {
+                @Override
+                protected Task<Cahoots> createTask() {
+                    return new Task<>() {
+                        @Override
+                        protected Cahoots call() throws Exception {
+                            return sorobanWalletService.getSorobanWalletInitiator(cahootsWallet).meetAndInitiate(cahootsContext, paymentCodeCounterparty, listener);
+                        }
+                    };
+                }
+            };
+            cahootsService.setOnFailed(event -> {
+                Throwable error = event.getSource().getException();
                 log.error("Error receiving meeting response", error);
                 step2Desc.setText(getErrorMessage(error));
                 sorobanProgressLabel.setVisible(false);
                 meetingFail.setVisible(true);
                 requestUserAttention();
-            }
+            });
+            cahootsService.start();
         }, error -> {
             log.error("Could not retrieve payment code", error);
             if(error.getMessage().endsWith("404")) {

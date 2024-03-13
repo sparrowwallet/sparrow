@@ -79,26 +79,4 @@ public class Soroban {
     public SorobanWalletService getSorobanWalletService() {
         return sorobanWalletService;
     }
-
-    public void stop() {
-        AppServices.getHttpClientService().stop();
-    }
-
-    public static class ShutdownService extends Service<Boolean> {
-        private final Soroban soroban;
-
-        public ShutdownService(Soroban soroban) {
-            this.soroban = soroban;
-        }
-
-        @Override
-        protected Task<Boolean> createTask() {
-            return new Task<>() {
-                protected Boolean call() throws Exception {
-                    soroban.stop();
-                    return true;
-                }
-            };
-        }
-    }
 }

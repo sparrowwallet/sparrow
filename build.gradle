@@ -124,8 +124,8 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('com.sparrowwallet.bokmakierie:bokmakierie:1.0')
-    implementation('io.samourai.code.whirlpool:whirlpool-client:1.0.0-beta10')
-    implementation('io.samourai.code.wallet:java-http-client:2.0.0-beta3')
+    implementation('io.samourai.code.whirlpool:whirlpool-client:1.0.0-beta13')
+    implementation('io.samourai.code.wallet:java-http-client:2.0.0-beta4')
     implementation('io.reactivex.rxjava2:rxjava:2.2.15')
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.7')
@@ -490,7 +490,6 @@ extraJavaModuleInfo {
         exports('co.nstant.in.cbor.model')
         exports('co.nstant.in.cbor.builder')
     }
-    // begin samourai dependencies
     module('commons-codec-1.10.jar', 'commons.codec', '1.10') {
         exports('org.apache.commons.codec')
     }
@@ -507,7 +506,6 @@ extraJavaModuleInfo {
         exports('com.lambdaworks.codec')
         exports('com.lambdaworks.crypto')
     }
-    // end samourai dependencies
     module('okio-1.6.0.jar', 'com.squareup.okio', '1.6.0') {
         exports('okio')
     }

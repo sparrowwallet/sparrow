@@ -25,6 +25,8 @@ import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -238,10 +240,19 @@ public class CounterpartyController extends SorobanController {
         SorobanWalletCounterparty sorobanWalletCounterparty = sorobanWalletService.getSorobanWalletCounterparty(cahootsWallet);
         sorobanWalletCounterparty.setTimeoutMeetingMs(TIMEOUT_MS);
 
-        try {
-            // TODO run in background thread?
-            SorobanRequestMessage requestMessage = sorobanWalletCounterparty.receiveMeetingRequest();
-
+        Service<SorobanRequestMessage> receiveMeetingService = new Service<>() {
+            @Override
+            protected Task<SorobanRequestMessage> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected SorobanRequestMessage call() throws Exception {
+                        return sorobanWalletCounterparty.receiveMeetingRequest();
+                    }
+                };
+            }
+        };
+        receiveMeetingService.setOnSucceeded(event -> {
+            SorobanRequestMessage requestMessage = receiveMeetingService.getValue();
             PaymentCode paymentCodeInitiator = requestMessage.getSender();
             CahootsType cahootsType = requestMessage.getType();
             updateMixPartner(paymentCodeInitiator, cahootsType);
@@ -261,11 +272,14 @@ public class CounterpartyController extends SorobanController {
                         mixingPartner.setVisible(false);
                         requestUserAttention();
                     });
-        } catch(Exception e) {
+        });
+        receiveMeetingService.setOnFailed(event -> {
+            Throwable e = event.getSource().getException();
             log.error("Failed to receive meeting request", e);
             mixingPartner.setVisible(false);
             requestUserAttention();
-        }
+        });
+        receiveMeetingService.start();
     }
 
     private void updateMixPartner(PaymentCode paymentCodeInitiator, CahootsType cahootsType) {
@@ -308,32 +322,44 @@ public class CounterpartyController extends SorobanController {
             CahootsContext cahootsContext = CahootsContext.newCounterparty(cahootsWallet, cahootsType, account);
             Consumer<OnlineCahootsMessage> onProgress = cahootsMessage -> {
                 if(cahootsMessage != null) {
-                    Cahoots cahoots = cahootsMessage.getCahoots();
-                    sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
+                    Platform.runLater(() -> {
+                        Cahoots cahoots = cahootsMessage.getCahoots();
+                        sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
 
-                    if(cahoots.getStep() == 3) {
-                        sorobanProgressLabel.setText("Your mix partner is reviewing the transaction...");
-                        step3Timer.start();
-                    } else if(cahoots.getStep() >= 4) {
-                        try {
-                            Transaction transaction = getTransaction(cahoots);
-                            if(transaction != null) {
-                                transactionProperty.set(transaction);
-                                updateTransactionDiagram(transactionDiagram, wallet, null, transaction);
-                                next();
+                        if(cahoots.getStep() == 3) {
+                            sorobanProgressLabel.setText("Your mix partner is reviewing the transaction...");
+                            step3Timer.start();
+                        } else if(cahoots.getStep() >= 4) {
+                            try {
+                                Transaction transaction = getTransaction(cahoots);
+                                if(transaction != null) {
+                                    transactionProperty.set(transaction);
+                                    updateTransactionDiagram(transactionDiagram, wallet, null, transaction);
+                                    next();
+                                }
+                            } catch(PSBTParseException e) {
+                                log.error("Invalid collaborative PSBT created", e);
+                                step3Desc.setText("Invalid transaction created.");
+                                sorobanProgressLabel.setVisible(false);
                             }
-                        } catch(PSBTParseException e) {
-                            log.error("Invalid collaborative PSBT created", e);
-                            step3Desc.setText("Invalid transaction created.");
-                            sorobanProgressLabel.setVisible(false);
                         }
-                    }
+                    });
                 }
             };
-            try {
-                // TODO run in background thread?
-                Cahoots result = sorobanWalletCounterparty.counterparty(cahootsContext, initiatorPaymentCode, onProgress);
-            } catch (Exception error) {
+
+            Service<Cahoots> cahootsService = new Service<>() {
+                @Override
+                protected Task<Cahoots> createTask() {
+                    return new Task<>() {
+                        @Override
+                        protected Cahoots call() throws Exception {
+                            return sorobanWalletCounterparty.counterparty(cahootsContext, initiatorPaymentCode, onProgress);
+                        }
+                    };
+                }
+            };
+            cahootsService.setOnFailed(event -> {
+                Throwable error = event.getSource().getException();
                 log.error("Error creating mix transaction", error);
                 String cutFrom = "Exception: ";
                 int index = error.getMessage().lastIndexOf(cutFrom);
@@ -341,7 +367,8 @@ public class CounterpartyController extends SorobanController {
                 msg = msg.replace("#Cahoots", "mix transaction");
                 step3Desc.setText(msg);
                 sorobanProgressLabel.setVisible(false);
-            }
+            });
+            cahootsService.start();
         } catch(Exception e) {
             log.error("Error creating mix transaction", e);
             sorobanProgressLabel.setText(e.getMessage());

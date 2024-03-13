@@ -21,7 +21,7 @@ public class HttpProxySupplier implements IHttpProxySupplier {
         if (hostAndPort == null) {
             return null;
         }
-        // TODO verify
+
         return new HttpProxy(HttpProxyProtocol.SOCKS, hostAndPort.getHost(), hostAndPort.getPort());
     }
 

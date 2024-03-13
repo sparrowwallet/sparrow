@@ -40,7 +40,7 @@ public class SparrowDataSource extends AbstractDataSource {
 
     private final ISeenBackend seenBackend;
     private final IPushTx pushTx;
-    private SparrowUtxoSupplier utxoSupplier;
+    private final SparrowUtxoSupplier utxoSupplier;
 
     public SparrowDataSource(
             WhirlpoolWallet whirlpoolWallet,
@@ -57,7 +57,7 @@ public class SparrowDataSource extends AbstractDataSource {
 
     private ISeenBackend computeSeenBackend(WhirlpoolWalletConfig whirlpoolWalletConfig) {
         IHttpClient httpClient = whirlpoolWalletConfig.getHttpClient(HttpUsage.BACKEND);
-        ISeenBackend sparrowSeenBackend = new SparrowSeenBackend(httpClient);
+        ISeenBackend sparrowSeenBackend = new SparrowSeenBackend(getWhirlpoolWallet().getWalletIdentifier(), httpClient);
         NetworkParameters params = whirlpoolWalletConfig.getSamouraiNetwork().getParams();
         return SeenBackendWithFallback.withOxt(sparrowSeenBackend, params);
     }

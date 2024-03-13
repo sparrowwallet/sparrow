@@ -5,6 +5,7 @@ import com.samourai.http.client.JettyHttpClientService;
 import com.samourai.wallet.httpClient.HttpUsage;
 import com.samourai.wallet.httpClient.IHttpClient;
 import com.samourai.wallet.util.AsyncUtil;
+import com.samourai.wallet.util.ThreadUtil;
 import com.samourai.whirlpool.client.utils.ClientUtils;
 import io.reactivex.Observable;
 import javafx.concurrent.Service;
@@ -17,25 +18,20 @@ public class HttpClientService extends JettyHttpClientService {
     private static final int REQUEST_TIMEOUT = 120000;
 
     public HttpClientService(HostAndPort torProxy) {
-        super(REQUEST_TIMEOUT,
-                ClientUtils.USER_AGENT,
-                new HttpProxySupplier(torProxy));
+        super(REQUEST_TIMEOUT, ClientUtils.USER_AGENT, new HttpProxySupplier(torProxy));
     }
 
     public <T> T requestJson(String url, Class<T> responseType, Map<String, String> headers) throws Exception {
-        return getHttpClient(HttpUsage.BACKEND)
-                .getJson(url, responseType, headers);
+        return getHttpClient(HttpUsage.BACKEND).getJson(url, responseType, headers);
     }
 
     public <T> Observable<Optional<T>> postJson(String url, Class<T> responseType, Map<String, String> headers, Object body) {
-        return getHttpClient(HttpUsage.BACKEND)
-                .postJson(url, responseType, headers, body).toObservable();
+        return getHttpClient(HttpUsage.BACKEND).postJson(url, responseType, headers, body).toObservable();
     }
 
     public String postString(String url, Map<String, String> headers, String contentType, String content) throws Exception {
         IHttpClient httpClient = getHttpClient(HttpUsage.BACKEND);
-        return AsyncUtil.getInstance().blockingGet(
-                httpClient.postString(url, headers, contentType, content)).get();
+        return AsyncUtil.getInstance().blockingGet(httpClient.postString(url, headers, contentType, content)).get();
     }
 
     public HostAndPort getTorProxy() {
@@ -64,6 +60,7 @@ public class HttpClientService extends JettyHttpClientService {
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() throws Exception {
+                    ThreadUtil.getInstance().getExecutorService().shutdown();
                     httpClientService.stop();
                     return true;
                 }

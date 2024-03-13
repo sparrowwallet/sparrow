@@ -73,7 +73,8 @@ public class WhirlpoolServices {
     public Whirlpool getWhirlpool(String walletId) {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
-            whirlpool = new Whirlpool();
+            Wallet wallet = AppServices.get().getWallet(walletId);
+            whirlpool = new Whirlpool(wallet == null ? null : wallet.getStoredBlockHeight());
             whirlpoolMap.put(walletId, whirlpool);
         }
 

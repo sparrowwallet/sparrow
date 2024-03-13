@@ -33,10 +33,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
-import com.sparrowwallet.drongo.protocol.TransactionInput;
-import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -71,7 +68,6 @@ public class Whirlpool {
     public static final int DEFAULT_MIXTO_MIN_MIXES = 3;
     public static final int DEFAULT_MIXTO_RANDOM_FACTOR = 4;
 
-
     private final WhirlpoolWalletService whirlpoolWalletService;
     private final WhirlpoolWalletConfig config;
     private WhirlpoolInfo whirlpoolInfo;
@@ -89,11 +85,10 @@ public class Whirlpool {
     private final BooleanProperty stoppingProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty mixingProperty = new SimpleBooleanProperty(false);
 
-    public Whirlpool() {
+    public Whirlpool(Integer storedBlockHeight) {
         this.whirlpoolWalletService = new WhirlpoolWalletService();
-        Integer storedBlockHeight = null; // TODO
         this.config = computeWhirlpoolWalletConfig(storedBlockHeight);
-        this.whirlpoolInfo = null; // instanciated by getWhirlpoolInfo()
+        this.whirlpoolInfo = null; // instantiated by getWhirlpoolInfo()
 
         WhirlpoolEventService.getInstance().register(this);
     }
@@ -112,17 +107,14 @@ public class Whirlpool {
     }
 
     private DataSourceConfig computeDataSourceConfig(Integer storedBlockHeight) {
-        return new DataSourceConfig(
-                SparrowMinerFeeSupplier.getInstance(),
-                new SparrowChainSupplier(storedBlockHeight),
-                BIP_FORMAT.PROVIDER,
-                BIP_WALLETS.WHIRLPOOL);
+        return new DataSourceConfig(SparrowMinerFeeSupplier.getInstance(), new SparrowChainSupplier(storedBlockHeight), BIP_FORMAT.PROVIDER, BIP_WALLETS.WHIRLPOOL);
     }
 
     private WhirlpoolInfo getWhirlpoolInfo() {
-        if (whirlpoolInfo == null) {
+        if(whirlpoolInfo == null) {
             whirlpoolInfo = new WhirlpoolInfo(SparrowMinerFeeSupplier.getInstance(), config);
         }
+
         return whirlpoolInfo;
     }
 
@@ -144,8 +136,7 @@ public class Whirlpool {
 
     public Tx0 broadcastTx0(Pool pool, Collection<BlockTransactionHashIndex> utxos) throws Exception {
         WhirlpoolWallet whirlpoolWallet = getWhirlpoolWallet();
-        whirlpoolWallet.startAsync().subscribeOn(Schedulers.io())
-                .observeOn(JavaFxScheduler.platform());
+        whirlpoolWallet.startAsync().subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform());
         UtxoSupplier utxoSupplier = whirlpoolWallet.getUtxoSupplier();
         List<WhirlpoolUtxo> whirlpoolUtxos = utxos.stream().map(ref -> utxoSupplier.findUtxo(ref.getHashAsString(), (int)ref.getIndex())).filter(Objects::nonNull).collect(Collectors.toList());
 
@@ -177,10 +168,13 @@ public class Whirlpool {
 
         try {
             Keystore keystore = wallet.getKeystores().get(0);
-            String words = keystore.getSeed().getMnemonicString().asString();
+            ScriptType scriptType = wallet.getScriptType();
+            int purpose = scriptType.getDefaultDerivation().get(0).num();
+            List<String> words = keystore.getSeed().getMnemonicCode();
             String passphrase = keystore.getSeed().getPassphrase() == null ? "" : keystore.getSeed().getPassphrase().asString();
             HD_WalletFactoryGeneric hdWalletFactory = HD_WalletFactoryGeneric.getInstance();
-            return hdWalletFactory.restoreWalletFromWords(words, passphrase, params);
+            byte[] seed = hdWalletFactory.computeSeedFromWords(words);
+            return hdWalletFactory.getHD(purpose, seed, passphrase, params);
         } catch(Exception e) {
             throw new IllegalStateException("Could not create Whirlpool HD wallet ", e);
         }
@@ -264,9 +258,7 @@ public class Whirlpool {
 
     public void refreshUtxos() {
         if(whirlpoolWalletService.whirlpoolWallet() != null) {
-            whirlpoolWalletService.whirlpoolWallet().refreshUtxosAsync()
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(JavaFxScheduler.platform());
+            whirlpoolWalletService.whirlpoolWallet().refreshUtxosAsync().subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform());
         }
     }
 
@@ -352,7 +344,6 @@ public class Whirlpool {
 
     public void shutdown() {
         whirlpoolWalletService.closeWallet();
-        AppServices.getHttpClientService().stop();
     }
 
     public StartupService createStartupService() {
@@ -517,7 +508,12 @@ public class Whirlpool {
             int mixes = minMixes == null ? DEFAULT_MIXTO_MIN_MIXES : minMixes;
 
             IPostmixHandler postmixHandler = new SparrowPostmixHandler(whirlpoolWalletService, mixToWallet, KeyPurpose.RECEIVE);
-            ExternalDestination externalDestination = new ExternalDestination(postmixHandler, 0, mixes, DEFAULT_MIXTO_RANDOM_FACTOR);
+            ExternalDestination externalDestination = new ExternalDestination(postmixHandler, 0, mixes, DEFAULT_MIXTO_RANDOM_FACTOR) {
+                @Override
+                public IPostmixHandler getPostmixHandlerCustomOrDefault(WhirlpoolWallet whirlpoolWallet) {
+                    return postmixHandler;
+                }
+            };
             config.setExternalDestination(externalDestination);
         }
 
@@ -715,10 +711,7 @@ public class Whirlpool {
                         whirlpool.startingProperty.set(true);
                         WhirlpoolWallet whirlpoolWallet = whirlpool.getWhirlpoolWallet();
                         if(AppServices.onlineProperty().get()) {
-                            whirlpoolWallet.startAsync()
-                                    .subscribeOn(Schedulers.io())
-                                    .observeOn(JavaFxScheduler.platform())
-                                    .subscribe();
+                            whirlpoolWallet.startAsync().subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform()).subscribe();
                         }
 
                         return whirlpoolWallet;

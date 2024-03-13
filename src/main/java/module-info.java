@@ -64,7 +64,6 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.bokmakierie;
     requires java.smartcardio;
     requires com.jcraft.jzlib;
-    // samourai dependencies
     requires com.samourai.whirlpool.client;
     requires com.samourai.whirlpool.protocol;
     requires com.samourai.extlibj;

@@ -35,7 +35,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
         SamouraiAccount samouraiAccount = bipWallet.getAccount();
         String key = mapKey(bipWallet, chain);
         IIndexHandler indexHandler = indexHandlerWallets.get(key);
-        if (indexHandler == null) {
+        if(indexHandler == null) {
             Wallet wallet = findWallet(samouraiAccount);
             KeyPurpose keyPurpose = (chain == Chain.RECEIVE ? KeyPurpose.RECEIVE : KeyPurpose.CHANGE);
             WalletNode walletNode = wallet.getNode(keyPurpose);
@@ -123,7 +123,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
     private String mapKey(BipWallet bipWallet, Chain chain) {
         SamouraiAccount samouraiAccount = bipWallet.getAccount();
         BipDerivation derivation = bipWallet.getDerivation();
-        return samouraiAccount.name()+"_"+derivation.getPurpose()+"_"+chain.getIndex();
+        return samouraiAccount.name() + "_" + derivation.getPurpose() + "_" + chain.getIndex();
     }
 
     private Wallet findWallet(SamouraiAccount samouraiAccount) {
