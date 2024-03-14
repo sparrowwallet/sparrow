@@ -201,6 +201,8 @@ public class AppServices {
             } else {
                 restartServices();
             }
+        } else {
+            EventManager.get().post(new DisconnectionEvent());
         }
 
         addURIHandlers();

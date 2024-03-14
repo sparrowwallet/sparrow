@@ -2753,7 +2753,7 @@ public class AppController implements Initializable {
     public void disconnection(DisconnectionEvent event) {
         serverToggle.setDisable(false);
         if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith(CONNECTION_FAILED_PREFIX) && !statusBar.getText().contains(TRYING_ANOTHER_SERVER_MESSAGE)) {
-            statusUpdated(new StatusEvent("Disconnected"));
+            statusUpdated(new StatusEvent("Disconnected (click toggle on the right to connect)", 240));
         }
         if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
             statusBar.setProgress(0);
