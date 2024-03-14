@@ -472,7 +472,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(qrText, true);
         qrDisplayDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
-        if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.NEXT_FORWARD) {
+        if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
             scanQr();
         }
     }
