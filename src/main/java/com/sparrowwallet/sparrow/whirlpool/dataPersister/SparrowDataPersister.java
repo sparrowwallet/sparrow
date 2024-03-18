@@ -4,7 +4,7 @@ import com.samourai.wallet.util.AbstractOrchestrator;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletConfig;
 import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersister;
-import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigPersistedSupplier;
+import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigPersistableSupplier;
 import com.samourai.whirlpool.client.wallet.data.utxoConfig.UtxoConfigSupplier;
 import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowWalletStateSupplier;
@@ -24,7 +24,7 @@ public class SparrowDataPersister implements DataPersister {
         WhirlpoolWalletConfig config = whirlpoolWallet.getConfig();
         String walletIdentifier = whirlpoolWallet.getWalletIdentifier();
         this.walletStateSupplier = new SparrowWalletStateSupplier(walletIdentifier, config);
-        this.utxoConfigSupplier = new UtxoConfigPersistedSupplier(new SparrowUtxoConfigPersister(walletIdentifier));
+        this.utxoConfigSupplier = new UtxoConfigPersistableSupplier(new SparrowUtxoConfigPersister(walletIdentifier));
         this.persistDelaySeconds = persistDelaySeconds;
     }
 

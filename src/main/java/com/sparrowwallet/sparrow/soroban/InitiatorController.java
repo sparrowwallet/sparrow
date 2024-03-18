@@ -1,12 +1,17 @@
 package com.sparrowwallet.sparrow.soroban;
 
 import com.google.common.eventbus.Subscribe;
-import com.samourai.soroban.cahoots.CahootsContext;
+import com.samourai.soroban.client.OnlineSorobanInteraction;
+import com.samourai.soroban.client.meeting.SorobanResponseMessage;
+import com.samourai.soroban.client.wallet.SorobanWalletService;
+import com.samourai.soroban.client.wallet.sender.CahootsSorobanInitiatorListener;
+import com.samourai.wallet.cahoots.CahootsContext;
 import com.samourai.soroban.client.cahoots.OnlineCahootsMessage;
-import com.samourai.soroban.client.cahoots.SorobanCahootsService;
 import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.samourai.wallet.cahoots.Cahoots;
 import com.samourai.wallet.cahoots.CahootsType;
+import com.samourai.wallet.cahoots.TxBroadcastInteraction;
+import com.samourai.wallet.sorobanClient.SorobanInteraction;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
@@ -62,7 +67,6 @@ import java.util.function.UnaryOperator;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.paynym.PayNymController.PAYNYM_REGEX;
-import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
 
 public class InitiatorController extends SorobanController {
     private static final Logger log = LoggerFactory.getLogger(InitiatorController.class);
@@ -199,7 +203,7 @@ public class InitiatorController extends SorobanController {
             meetingFail.setVisible(false);
             step2Desc.setText("Retrying...");
             sorobanProgressLabel.setVisible(true);
-            startInitiatorMeetingRequest(AppServices.getSorobanServices().getSoroban(walletId), wallet);
+            startInitiatorMeetAndInitiate(AppServices.getSorobanServices().getSoroban(walletId), wallet);
             step2Timer.start();
         });
 
@@ -221,7 +225,7 @@ public class InitiatorController extends SorobanController {
 
         step2.visibleProperty().addListener((observable, oldValue, visible) -> {
             if(visible) {
-                startInitiatorMeetingRequest();
+                startInitiatorMeetAndInitiate();
                 step2Timer.start();
             }
         });
@@ -358,7 +362,7 @@ public class InitiatorController extends SorobanController {
         });
     }
 
-    private void startInitiatorMeetingRequest() {
+    private void startInitiatorMeetAndInitiate() {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         if(soroban.getHdWallet() == null) {
             if(wallet.isEncrypted()) {
@@ -377,7 +381,7 @@ public class InitiatorController extends SorobanController {
 
                         try {
                             soroban.setHDWallet(copy);
-                            startInitiatorMeetingRequest(soroban, wallet);
+                            startInitiatorMeetAndInitiate(soroban, wallet);
                         } finally {
                             key.clear();
                             encryptionFullKey.clear();
@@ -389,7 +393,7 @@ public class InitiatorController extends SorobanController {
                         if(keyDerivationService.getException() instanceof InvalidPasswordException) {
                             Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
                             if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                                Platform.runLater(this::startInitiatorMeetingRequest);
+                                Platform.runLater(this::startInitiatorMeetAndInitiate);
                             }
                         } else {
                             log.error("Error deriving wallet key", keyDerivationService.getException());
@@ -403,53 +407,102 @@ public class InitiatorController extends SorobanController {
                 }
             } else {
                 soroban.setHDWallet(wallet);
-                startInitiatorMeetingRequest(soroban, wallet);
+                startInitiatorMeetAndInitiate(soroban, wallet);
             }
         } else {
-            startInitiatorMeetingRequest(soroban, wallet);
+            startInitiatorMeetAndInitiate(soroban, wallet);
         }
     }
 
-    private void startInitiatorMeetingRequest(Soroban soroban, Wallet wallet) {
-        SparrowCahootsWallet initiatorCahootsWallet = soroban.getCahootsWallet(wallet, (long)walletTransaction.getFeeRate());
-
+    private void startInitiatorMeetAndInitiate(Soroban soroban, Wallet wallet) {
         getPaymentCodeCounterparty().subscribe(paymentCodeCounterparty -> {
+            SparrowCahootsWallet cahootsWallet = soroban.getCahootsWallet(wallet);
+            Map<BlockTransactionHashIndex, WalletNode> firstSetUtxos = walletTransaction.isCoinControlUsed() ? walletTransaction.getSelectedUtxoSets().get(0) : wallet.getSpendableUtxos();
+            for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : firstSetUtxos.entrySet()) {
+                cahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
+            }
+
+            Payment payment = walletTransaction.getPayments().get(0);
+            long feePerB = (long)walletTransaction.getFeeRate();
+            CahootsContext cahootsContext = CahootsContext.newInitiator(cahootsWallet, cahootsType, soroban.getBip47Account(), feePerB, payment.getAmount(), payment.getAddress().getAddress(), paymentCodeCounterparty.toString());
+
+            CahootsSorobanInitiatorListener listener = new CahootsSorobanInitiatorListener() {
+                @Override
+                public void onResponse(SorobanResponseMessage sorobanResponse) throws Exception {
+                    super.onResponse(sorobanResponse);
+
+                    requestUserAttention();
+                    if(sorobanResponse.isAccept()) {
+                        sorobanProgressBar.setProgress(0.1);
+                        sorobanProgressLabel.setText("Mix partner accepted!");
+                    } else {
+                        step2Desc.setText("Mix partner declined.");
+                        sorobanProgressLabel.setVisible(false);
+                    }
+                }
+
+                @Override
+                public void onInteraction(OnlineSorobanInteraction interaction) throws Exception {
+                    SorobanInteraction originInteraction = interaction.getInteraction();
+                    if (originInteraction instanceof TxBroadcastInteraction) {
+                        Boolean accepted = (Boolean)Platform.enterNestedEventLoop(transactionAccepted);
+                        if(accepted) {
+                            interaction.sorobanAccept();
+                        } else {
+                            interaction.sorobanReject("Mix partner declined to broadcast the transaction.");
+                        }
+                    } else {
+                        throw new Exception("Unknown interaction: "+originInteraction.getTypeInteraction());
+                    }
+                }
+
+                @Override
+                public void progress(OnlineCahootsMessage message) {
+                    super.progress(message);
+
+                    OnlineCahootsMessage cahootsMessage = (OnlineCahootsMessage)message;
+                    if(cahootsMessage != null) {
+                        Cahoots cahoots = cahootsMessage.getCahoots();
+                        sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
+
+                        if(cahoots.getStep() >= 3) {
+                            try {
+                                Transaction transaction = getTransaction(cahoots);
+                                if(transaction != null) {
+                                    transactionProperty.set(transaction);
+                                    if(cahoots.getStep() == 3) {
+                                        next();
+                                        step3Timer.start(e -> {
+                                            if(stepProperty.get() != Step.BROADCAST && stepProperty.get() != Step.REBROADCAST) {
+                                                step3Desc.setText("Transaction declined due to timeout.");
+                                                transactionAccepted.set(Boolean.FALSE);
+                                            }
+                                        });
+                                    } else if(cahoots.getStep() == 4) {
+                                        next();
+                                        broadcastTransaction();
+                                    }
+                                }
+                            } catch(PSBTParseException e) {
+                                log.error("Invalid collaborative PSBT created", e);
+                                step2Desc.setText("Invalid transaction created.");
+                                sorobanProgressLabel.setVisible(false);
+                            }
+                        }
+                    }
+                }
+            };
+            SorobanWalletService sorobanWalletService = soroban.getSorobanWalletService();
+            sorobanProgressLabel.setText("Waiting for mix partner...");
             try {
-                SorobanCahootsService sorobanMeetingService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
-                sorobanMeetingService.sendMeetingRequest(paymentCodeCounterparty, cahootsType)
-                        .subscribeOn(Schedulers.io())
-                        .observeOn(JavaFxScheduler.platform())
-                        .subscribe(meetingRequest -> {
-                            sorobanProgressLabel.setText("Waiting for mix partner...");
-                            sorobanMeetingService.receiveMeetingResponse(paymentCodeCounterparty, meetingRequest, TIMEOUT_MS)
-                                    .subscribeOn(Schedulers.io())
-                                    .observeOn(JavaFxScheduler.platform())
-                                    .subscribe(sorobanResponse -> {
-                                        requestUserAttention();
-                                        if(sorobanResponse.isAccept()) {
-                                            sorobanProgressBar.setProgress(0.1);
-                                            sorobanProgressLabel.setText("Mix partner accepted!");
-                                            startInitiatorCollaborative(initiatorCahootsWallet, paymentCodeCounterparty);
-                                        } else {
-                                            step2Desc.setText("Mix partner declined.");
-                                            sorobanProgressLabel.setVisible(false);
-                                        }
-                                    }, error -> {
-                                        log.error("Error receiving meeting response", error);
-                                        step2Desc.setText(getErrorMessage(error));
-                                        sorobanProgressLabel.setVisible(false);
-                                        meetingFail.setVisible(true);
-                                        requestUserAttention();
-                                    });
-                        }, error -> {
-                            log.error("Error sending meeting request", error);
-                            step2Desc.setText(getErrorMessage(error));
-                            sorobanProgressLabel.setVisible(false);
-                            meetingFail.setVisible(true);
-                            requestUserAttention();
-                        });
-            } catch(Exception e) {
-                log.error("Error sending meeting request", e);
+                // TODO run in background thread?
+                Cahoots result = sorobanWalletService.getSorobanWalletInitiator(cahootsWallet).meetAndInitiate(cahootsContext, paymentCodeCounterparty, listener);
+            } catch (Exception error){
+                log.error("Error receiving meeting response", error);
+                step2Desc.setText(getErrorMessage(error));
+                sorobanProgressLabel.setVisible(false);
+                meetingFail.setVisible(true);
+                requestUserAttention();
             }
         }, error -> {
             log.error("Could not retrieve payment code", error);
@@ -462,77 +515,6 @@ public class InitiatorController extends SorobanController {
             }
             sorobanProgressLabel.setVisible(false);
         });
-    }
-
-    private void startInitiatorCollaborative(SparrowCahootsWallet initiatorCahootsWallet, PaymentCode paymentCodeCounterparty) {
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-
-        Payment payment = walletTransaction.getPayments().get(0);
-        Map<BlockTransactionHashIndex, WalletNode> firstSetUtxos = walletTransaction.isCoinControlUsed() ? walletTransaction.getSelectedUtxoSets().get(0) : wallet.getSpendableUtxos();
-        for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : firstSetUtxos.entrySet()) {
-            initiatorCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
-        }
-
-        SorobanCahootsService sorobanCahootsService = soroban.getSorobanCahootsService(initiatorCahootsWallet);
-        CahootsContext cahootsContext = cahootsType == CahootsType.STONEWALLX2 ?
-                CahootsContext.newInitiatorStonewallx2(payment.getAmount(), payment.getAddress().toString()) :
-                CahootsContext.newInitiatorStowaway(payment.getAmount());
-
-        sorobanCahootsService.getSorobanService().getOnInteraction()
-                .observeOn(JavaFxScheduler.platform())
-                .subscribe(interaction -> {
-            Boolean accepted = (Boolean)Platform.enterNestedEventLoop(transactionAccepted);            
-            if(accepted) {
-                interaction.sorobanAccept();
-            } else {
-                interaction.sorobanReject("Mix partner declined to broadcast the transaction.");
-            }
-        });
-
-        try {
-            sorobanCahootsService.initiator(initiatorCahootsWallet.getAccount(), cahootsContext, paymentCodeCounterparty, TIMEOUT_MS)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(JavaFxScheduler.platform())
-                    .subscribe(sorobanMessage -> {
-                                OnlineCahootsMessage cahootsMessage = (OnlineCahootsMessage)sorobanMessage;
-                                if(cahootsMessage != null) {
-                                    Cahoots cahoots = cahootsMessage.getCahoots();
-                                    sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
-
-                                    if(cahoots.getStep() >= 3) {
-                                        try {
-                                            Transaction transaction = getTransaction(cahoots);
-                                            if(transaction != null) {
-                                                transactionProperty.set(transaction);
-                                                if(cahoots.getStep() == 3) {
-                                                    next();
-                                                    step3Timer.start(e -> {
-                                                        if(stepProperty.get() != Step.BROADCAST && stepProperty.get() != Step.REBROADCAST) {
-                                                            step3Desc.setText("Transaction declined due to timeout.");
-                                                            transactionAccepted.set(Boolean.FALSE);
-                                                        }
-                                                    });
-                                                } else if(cahoots.getStep() == 4) {
-                                                    next();
-                                                    broadcastTransaction();
-                                                }
-                                            }
-                                        } catch(PSBTParseException e) {
-                                            log.error("Invalid collaborative PSBT created", e);
-                                            step2Desc.setText("Invalid transaction created.");
-                                            sorobanProgressLabel.setVisible(false);
-                                        }
-                                    }
-                                }
-                            },
-                            error -> {
-                                log.error("Error creating mix transaction", error);
-                                step2Desc.setText(getErrorMessage(error));
-                                sorobanProgressLabel.setVisible(false);
-                            });
-        } catch(Exception e) {
-            log.error("Soroban communication error", e);
-        }
     }
 
     public void broadcastTransaction() {

@@ -123,8 +123,9 @@ dependencies {
     implementation('org.slf4j:jul-to-slf4j:2.0.12') {
         exclude group: 'org.slf4j'
     }
-    implementation('com.sparrowwallet.nightjar:nightjar:0.2.40')
     implementation('com.sparrowwallet.bokmakierie:bokmakierie:1.0')
+    implementation('io.samourai.code.whirlpool:whirlpool-client:1.0.0-beta13')
+    implementation('io.samourai.code.wallet:java-http-client:2.0.0-beta4')
     implementation('io.reactivex.rxjava2:rxjava:2.2.15')
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.7')
@@ -212,8 +213,6 @@ jlink {
         uses 'org.flywaydb.core.extensibility.FlywayExtension'
         uses 'org.flywaydb.core.internal.database.DatabaseType'
         uses 'org.eclipse.jetty.http.HttpFieldPreEncoder'
-        uses 'org.eclipse.jetty.websocket.api.extensions.Extension'
-        uses 'org.eclipse.jetty.websocket.common.RemoteEndpointFactory'
     }
 
     options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png', '--exclude-resources', 'glob:/com.sparrowwallet.merged.module/META-INF/*']
@@ -491,87 +490,35 @@ extraJavaModuleInfo {
         exports('co.nstant.in.cbor.model')
         exports('co.nstant.in.cbor.builder')
     }
-    module('nightjar-0.2.40.jar', 'com.sparrowwallet.nightjar', '0.2.40') {
-        requires('com.google.common')
-        requires('net.sourceforge.streamsupport')
-        requires('org.slf4j')
-        requires('org.bouncycastle.provider')
-        requires('com.fasterxml.jackson.databind')
-        requires('com.fasterxml.jackson.annotation')
-        requires('com.fasterxml.jackson.core')
-        requires('ch.qos.logback.classic')
-        requires('org.json')
-        requires('io.reactivex.rxjava2')
-        exports('com.samourai.http.client')
-        exports('com.samourai.tor.client')
-        exports('com.samourai.wallet.api.backend')
-        exports('com.samourai.wallet.api.backend.beans')
-        exports('com.samourai.wallet.client.indexHandler')
-        exports('com.samourai.wallet.hd')
-        exports('com.samourai.wallet.util')
-        exports('com.samourai.wallet.bip47.rpc')
-        exports('com.samourai.wallet.bip47.rpc.java')
-        exports('com.samourai.wallet.cahoots')
-        exports('com.samourai.wallet.cahoots.psbt')
-        exports('com.samourai.wallet.cahoots.stonewallx2')
-        exports('com.samourai.soroban.cahoots')
-        exports('com.samourai.soroban.client')
-        exports('com.samourai.soroban.client.cahoots')
-        exports('com.samourai.soroban.client.meeting')
-        exports('com.samourai.soroban.client.rpc')
-        exports('com.samourai.wallet.send')
-        exports('com.samourai.whirlpool.client.event')
-        exports('com.samourai.whirlpool.client.wallet')
-        exports('com.samourai.whirlpool.client.wallet.beans')
-        exports('com.samourai.whirlpool.client.wallet.data.dataSource')
-        exports('com.samourai.whirlpool.client.wallet.data.dataPersister')
-        exports('com.samourai.whirlpool.client.whirlpool')
-        exports('com.samourai.whirlpool.client.whirlpool.beans')
-        exports('com.samourai.whirlpool.client.wallet.data.pool')
-        exports('com.samourai.whirlpool.client.wallet.data.utxo')
-        exports('com.samourai.whirlpool.client.wallet.data.utxoConfig')
-        exports('com.samourai.whirlpool.client.wallet.data.supplier')
-        exports('com.samourai.whirlpool.client.mix.handler')
-        exports('com.samourai.whirlpool.client.mix.listener')
-        exports('com.samourai.whirlpool.protocol.beans')
-        exports('com.samourai.whirlpool.protocol.rest')
-        exports('com.samourai.whirlpool.client.tx0')
-        exports('com.samourai.wallet.segwit.bech32')
-        exports('com.samourai.whirlpool.client.wallet.data.chain')
-        exports('com.samourai.whirlpool.client.wallet.data.wallet')
-        exports('com.samourai.whirlpool.client.wallet.data.minerFee')
-        exports('com.samourai.whirlpool.client.wallet.data.walletState')
-        exports('com.sparrowwallet.nightjar.http')
-        exports('com.sparrowwallet.nightjar.stomp')
-        exports('com.sparrowwallet.nightjar.tor')
+    // begin samourai dependencies
+    module('commons-codec-1.10.jar', 'commons.codec', '1.10') {
+        exports('org.apache.commons.codec')
     }
-    module('throwing-supplier-1.0.3.jar', 'zeroleak.throwingsupplier', '1.0.3') {
-        exports('com.zeroleak.throwingsupplier')
+    module('logback-core-1.2.13.jar', 'ch.qos.logback.core', '1.2.13') {
+        exports('ch.qos.logback.core')
     }
-    module('okhttp-2.7.5.jar', 'com.squareup.okhttp', '2.7.5') {
-        exports('com.squareup.okhttp')
+    module('jackson-datatype-jsr310-2.13.2.jar', 'jackson-datatype-jsr310', '2.13.2') {
+        exports('com.fasterxml.jackson.datatype.jsr310')
     }
+    module('json-20240205.jar', 'org.json', '20240205') {
+        exports('org.json')
+    }
+    module('scrypt-1.4.0.jar', 'scrypt', '1.4.0') {
+        exports('com.lambdaworks.codec')
+        exports('com.lambdaworks.crypto')
+    }
+    // end samourai dependencies
     module('okio-1.6.0.jar', 'com.squareup.okio', '1.6.0') {
         exports('okio')
     }
     module('java-jwt-3.8.1.jar', 'com.auth0.jwt', '3.8.1') {
         exports('com.auth0.jwt')
     }
-    module('json-20180130.jar', 'org.json', '1.0') {
-        exports('org.json')
-    }
-    module('scrypt-1.4.0.jar', 'com.lambdaworks.scrypt', '1.4.0') {
-        exports('com.lambdaworks.codec')
-        exports('com.lambdaworks.crypto')
-    }
     module('streamsupport-1.7.0.jar', 'net.sourceforge.streamsupport', '1.7.0') {
         requires('jdk.unsupported')
         exports('java8.util')
         exports('java8.util.function')
         exports('java8.util.stream')
-    }
-    module('protobuf-java-2.6.1.jar', 'com.google.protobuf', '2.6.1') {
-        exports('com.google.protobuf')
     }
     module('commons-text-1.2.jar', 'org.apache.commons.text', '1.2') {
         exports('org.apache.commons.text')

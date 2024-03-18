@@ -2,7 +2,11 @@ package com.sparrowwallet.sparrow.whirlpool;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
+import com.samourai.soroban.client.SorobanConfig;
+import com.samourai.wallet.constants.SamouraiNetwork;
+import com.samourai.wallet.util.ExtLibJConfig;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
+import com.sparrowwallet.drongo.Drongo;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
@@ -14,6 +18,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
@@ -36,6 +41,24 @@ public class WhirlpoolServices {
 
     private final Map<String, Whirlpool> whirlpoolMap = new HashMap<>();
 
+    private final SorobanConfig sorobanConfig;
+
+    public WhirlpoolServices() {
+        ExtLibJConfig extLibJConfig = computeExtLibJConfig();
+        this.sorobanConfig = new SorobanConfig(extLibJConfig);
+    }
+
+    private ExtLibJConfig computeExtLibJConfig() {
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        boolean onion = (AppServices.getTorProxy() != null);
+        SamouraiNetwork samouraiNetwork = getSamouraiNetwork();
+        return new ExtLibJConfig(samouraiNetwork,  onion, Drongo.getProvider(), httpClientService);
+    }
+
+    public SamouraiNetwork getSamouraiNetwork() {
+        return SamouraiNetwork.valueOf(Network.get().getName().toUpperCase(Locale.ROOT));
+    }
+
     public Whirlpool getWhirlpool(Wallet wallet) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         for(Map.Entry<Wallet, Storage> entry : AppServices.get().getOpenWallets().entrySet()) {
@@ -50,14 +73,8 @@ public class WhirlpoolServices {
     public Whirlpool getWhirlpool(String walletId) {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
-            HostAndPort torProxy = getTorProxy();
-            whirlpool = new Whirlpool(Network.get(), torProxy);
+            whirlpool = new Whirlpool();
             whirlpoolMap.put(walletId, whirlpool);
-        } else if(!whirlpool.isStarted()) {
-            HostAndPort torProxy = getTorProxy();
-            if(!Objects.equals(whirlpool.getTorProxy(), torProxy)) {
-                whirlpool.setTorProxy(getTorProxy());
-            }
         }
 
         return whirlpool;
@@ -87,11 +104,6 @@ public class WhirlpoolServices {
 
     public void startWhirlpool(Wallet wallet, Whirlpool whirlpool, boolean notifyIfMixToMissing) {
         if(wallet.getMasterMixConfig().getMixOnStartup() != Boolean.FALSE) {
-            HostAndPort torProxy = getTorProxy();
-            if(!Objects.equals(whirlpool.getTorProxy(), torProxy)) {
-                whirlpool.setTorProxy(getTorProxy());
-            }
-
             try {
                 String mixToWalletId = getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
                 whirlpool.setMixToWallet(mixToWalletId, wallet.getMasterMixConfig().getMinMixes());
@@ -122,6 +134,7 @@ public class WhirlpoolServices {
                 }
                 if(exception instanceof TimeoutException || exception instanceof SocketTimeoutException) {
                     EventManager.get().post(new StatusEvent("Error connecting to Whirlpool server, will retry soon..."));
+                    HostAndPort torProxy = getTorProxy();
                     if(torProxy != null) {
                         whirlpool.refreshTorCircuits();
                     }
@@ -299,5 +312,9 @@ public class WhirlpoolServices {
                 stopWhirlpool(whirlpool, false);
             });
         }
+    }
+
+    public SorobanConfig getSorobanConfig() {
+        return sorobanConfig;
     }
 }

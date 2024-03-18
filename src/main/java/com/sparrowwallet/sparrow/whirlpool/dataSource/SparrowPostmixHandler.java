@@ -1,11 +1,10 @@
 package com.sparrowwallet.sparrow.whirlpool.dataSource;
 
-import com.samourai.wallet.client.indexHandler.IIndexHandler;
-import com.samourai.wallet.util.XPubUtil;
+import com.samourai.whirlpool.client.mix.handler.AbstractPostmixHandler;
 import com.samourai.whirlpool.client.mix.handler.DestinationType;
-import com.samourai.whirlpool.client.mix.handler.IPostmixHandler;
 import com.samourai.whirlpool.client.mix.handler.MixDestination;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletService;
+import com.samourai.whirlpool.client.wallet.beans.IndexRange;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -13,65 +12,37 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SparrowPostmixHandler implements IPostmixHandler {
+// TODO maybe replace with XPubPostmixHandler
+public class SparrowPostmixHandler extends AbstractPostmixHandler {
     private static final Logger log = LoggerFactory.getLogger(SparrowPostmixHandler.class);
 
-    private final WhirlpoolWalletService whirlpoolWalletService;
     private final Wallet wallet;
     private final KeyPurpose keyPurpose;
-    private final int startIndex;
 
-    protected MixDestination destination;
-
-    public SparrowPostmixHandler(WhirlpoolWalletService whirlpoolWalletService, Wallet wallet, KeyPurpose keyPurpose, int startIndex) {
-        this.whirlpoolWalletService = whirlpoolWalletService;
+    public SparrowPostmixHandler(WhirlpoolWalletService whirlpoolWalletService, Wallet wallet, KeyPurpose keyPurpose) {
+        super(whirlpoolWalletService.whirlpoolWallet().getWalletStateSupplier().getIndexHandlerExternal(),
+                whirlpoolWalletService.whirlpoolWallet().getConfig().getSamouraiNetwork().getParams());
         this.wallet = wallet;
         this.keyPurpose = keyPurpose;
-        this.startIndex = startIndex;
+    }
+
+    @Override
+    protected IndexRange getIndexRange() {
+        return IndexRange.FULL;
     }
 
     public Wallet getWallet() {
         return wallet;
     }
 
-    protected MixDestination computeNextDestination() throws Exception {
-        // index
-        int index = Math.max(getIndexHandler().getAndIncrementUnconfirmed(), startIndex);
-
+    @Override
+    public MixDestination computeDestination(int index) throws Exception {
         // address
         WalletNode node = new WalletNode(wallet, keyPurpose, index);
         Address address = node.getAddress();
-        String path = XPubUtil.getInstance().getPath(index, keyPurpose.getPathIndex().num());
+        String path = "xpub/"+keyPurpose.getPathIndex().num()+"/"+index;
 
         log.info("Mixing to external xPub -> receiveAddress=" + address + ", path=" + path);
         return new MixDestination(DestinationType.XPUB, index, address.toString(), path);
-    }
-
-    @Override
-    public MixDestination getDestination() {
-        return destination; // may be NULL
-    }
-
-    public final MixDestination computeDestination() throws Exception {
-        // use "unconfirmed" index to avoid huge index gaps on multiple mix failures
-        this.destination = computeNextDestination();
-        return destination;
-    }
-
-    @Override
-    public void onMixFail() {
-        if(destination != null) {
-            getIndexHandler().cancelUnconfirmed(destination.getIndex());
-        }
-    }
-
-    @Override
-    public void onRegisterOutput() {
-        // confirm receive address even when REGISTER_OUTPUT fails, to avoid 'ouput already registered'
-        getIndexHandler().confirmUnconfirmed(destination.getIndex());
-    }
-
-    private IIndexHandler getIndexHandler() {
-        return whirlpoolWalletService.whirlpoolWallet().getWalletStateSupplier().getIndexHandlerExternal();
     }
 }

@@ -182,7 +182,7 @@ public class WhirlpoolController {
                 selectedPool.setVisible(false);
             } else {
                 poolFee.setValue(newValue.getFeeValue());
-                poolAnonset.setText(newValue.getMixAnonymitySet() + " UTXOs");
+                poolAnonset.setText(newValue.getAnonymitySet() + " UTXOs");
                 selectedPool.setVisible(true);
                 fetchTx0Preview(newValue);
             }
