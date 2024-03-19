@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.samourai.soroban.client.SorobanConfig;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
 import com.samourai.wallet.bipFormat.BIP_FORMAT;
+import com.samourai.wallet.bipWallet.WalletSupplier;
 import com.samourai.wallet.constants.BIP_WALLETS;
 import com.samourai.wallet.constants.SamouraiAccount;
 import com.samourai.wallet.constants.SamouraiNetwork;
@@ -15,7 +16,7 @@ import com.samourai.whirlpool.client.event.*;
 import com.samourai.whirlpool.client.mix.handler.IPostmixHandler;
 import com.samourai.whirlpool.client.tx0.Tx0;
 import com.samourai.whirlpool.client.tx0.Tx0Config;
-import com.samourai.whirlpool.client.tx0.Tx0PreviewService;
+import com.samourai.whirlpool.client.tx0.Tx0Info;
 import com.samourai.whirlpool.client.tx0.Tx0Previews;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
@@ -45,6 +46,7 @@ import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowChainSupplier;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowDataSource;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowMinerFeeSupplier;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowPostmixHandler;
+import io.reactivex.Single;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
 import javafx.application.Platform;
@@ -129,12 +131,17 @@ public class Whirlpool {
     }
 
     public Tx0Previews getTx0Previews(Collection<UnspentOutput> utxos) throws Exception {
+        // TODO keep tx0Info for reusing it later on another TX0 preview or TX0 broadcast
+        // it should be refreshed after each successful TX0 broadcast
+        Tx0Info tx0Info = fetchTx0Info();
+
         // preview all pools
-        Tx0Config tx0Config = computeTx0Config();
-        return AsyncUtil.getInstance().blockingGet(getWhirlpoolInfo().tx0Previews(tx0Config, utxos));
+        Tx0Config tx0Config = computeTx0Config(tx0Info);
+        return tx0Info.tx0Previews(tx0Config, utxos);
     }
 
     public Tx0 broadcastTx0(Pool pool, Collection<BlockTransactionHashIndex> utxos) throws Exception {
+        // TODO no need to instanciate WhirlpoolWallet, you just need walletSupplier & utxoSupplier
         WhirlpoolWallet whirlpoolWallet = getWhirlpoolWallet();
         whirlpoolWallet.startAsync().subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform());
         UtxoSupplier utxoSupplier = whirlpoolWallet.getUtxoSupplier();
@@ -144,15 +151,24 @@ public class Whirlpool {
             throw new IllegalStateException("Failed to find UTXOs in Whirlpool wallet");
         }
 
-        Tx0Config tx0Config = computeTx0Config();
-        return whirlpoolWallet.tx0(whirlpoolUtxos, pool, tx0Config);
+        // TODO reuse tx0Info from TX0 preview to speed up the process
+        Tx0Info tx0Info = fetchTx0Info();
+
+        WalletSupplier walletSupplier = whirlpoolWallet.getWalletSupplier();
+        Tx0Config tx0Config = computeTx0Config(tx0Info);
+        return tx0Info.tx0(walletSupplier, utxoSupplier, whirlpoolUtxos, pool, tx0Config);
     }
 
-    private Tx0Config computeTx0Config() {
-        CoordinatorSupplier coordinatorSupplier = getWhirlpoolInfo().getCoordinatorSupplier();
-        Tx0PreviewService tx0PreviewService = getWhirlpoolInfo().getTx0PreviewService();
-        Collection<Pool> pools = coordinatorSupplier.getPools();
-        return new Tx0Config(tx0PreviewService, pools, tx0FeeTarget, mixFeeTarget, SamouraiAccount.BADBANK);
+    private Tx0Info fetchTx0Info() throws Exception {
+        return AsyncUtil.getInstance().blockingGet(
+                Single.fromCallable(() -> getWhirlpoolInfo().fetchTx0Info(getScode()))
+                        .subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform()));
+    }
+
+    private Tx0Config computeTx0Config(Tx0Info tx0Info) {
+        Tx0Config tx0Config = tx0Info.getTx0Config(tx0FeeTarget, mixFeeTarget);
+        tx0Config.setChangeWallet(SamouraiAccount.BADBANK);
+        return tx0Config;
     }
 
     public void setHDWallet(String walletId, Wallet wallet) {

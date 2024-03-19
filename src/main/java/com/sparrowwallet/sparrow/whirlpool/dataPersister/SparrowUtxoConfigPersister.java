@@ -37,7 +37,7 @@ public class SparrowUtxoConfigPersister extends UtxoConfigPersisterFile {
         }
 
         Map<String, UtxoConfigPersisted> utxoConfigs = wallet.getUtxoMixes().entrySet().stream()
-                .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> new UtxoConfigPersisted(entry.getValue().getMixesDone(), entry.getValue().getExpired(), false, null),
+                .collect(Collectors.toMap(entry -> entry.getKey().toString(), entry -> new UtxoConfigPersisted(entry.getValue().getMixesDone(), entry.getValue().getExpired()),
                         (u, v) -> { throw new IllegalStateException("Duplicate utxo config hashes"); },
                         ConcurrentHashMap::new));
 
