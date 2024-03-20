@@ -21,6 +21,7 @@ import java.util.Locale;
 
 public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
     private static final int ERROR_DISPLAY_MILLIS = 5 * 60 * 1000;
+    private static int maxMixesDoneDigitCount = 0;
 
     public MixStatusCell() {
         super();
@@ -40,7 +41,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             setText(null);
             setGraphic(null);
         } else {
-            setText(Integer.toString(mixStatus.getMixesDone()));
+            setText(formatMixesDone(mixStatus.getMixesDone()));
             if(mixStatus.getNextMixUtxo() == null) {
                 setContextMenu(new MixStatusContextMenu(mixStatus.getUtxoEntry(), mixStatus.getMixProgress() != null && mixStatus.getMixProgress().getMixStep() != MixStep.FAIL));
             } else {
@@ -208,6 +209,67 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
                     }
                 });
                 getItems().add(mixNow);
+            }
+        }
+    }
+
+    /**
+     * Provides an equal length for all displayed mixesDone cell texts by reserving enough space to hold the largest
+     * mix count.
+     * @param mixesDone
+     * @return A string representation of <code>mixesDone</code> but of the same string length as the greatest mix
+     * count in the column.
+     */
+    private String formatMixesDone(int mixesDone) {
+        int mixesDoneDigits = calcDigitCount(mixesDone);
+        if (mixesDoneDigits > maxMixesDoneDigitCount) maxMixesDoneDigitCount = mixesDoneDigits;
+        String formattingString = "%1$" + maxMixesDoneDigitCount + "s";
+
+        return String.format(formattingString, mixesDone);
+    }
+
+    /**
+     * Util method to count the digits of a number excluding its sign by a divide and conquer algorithm.
+     * @param number
+     * @return An integer representing the number of digits in the provided integer.
+     */
+    private int calcDigitCount(int number) {
+        number = Math.abs(number);
+        if (number < 100000) {
+            if (number < 100) {
+                if (number < 10) {
+                    return 1;
+                } else {
+                    return 2;
+                }
+            } else {
+                if (number < 1000) {
+                    return 3;
+                } else {
+                    if (number < 10000) {
+                        return 4;
+                    } else {
+                        return 5;
+                    }
+                }
+            }
+        } else {
+            if (number < 10000000) {
+                if (number < 1000000) {
+                    return 6;
+                } else {
+                    return 7;
+                }
+            } else {
+                if (number < 100000000) {
+                    return 8;
+                } else {
+                    if (number < 1000000000) {
+                        return 9;
+                    } else {
+                        return 10;
+                    }
+                }
             }
         }
     }
