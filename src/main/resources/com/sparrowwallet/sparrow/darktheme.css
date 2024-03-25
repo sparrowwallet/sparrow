@@ -156,11 +156,25 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-border-color: #626367;
 }
 
-.root .wallet-subtabs > .tab-header-area .tab {
+.root .tab-pane > .tab-header-area > .headers-region {
+    -fx-color: derive(-fx-base, 40%);
+    -fx-mark-color: ladder(-fx-base, white 30%, derive(-fx-base,-63%) 31%);
+}
+
+.root .tab-pane > .tab-header-area > .headers-region > .tab .tab-label .label {
+    -fx-text-fill: derive(white, -8%);
+}
+
+.root .tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label .label,
+.root .tab-pane > .tab-header-area > .headers-region > .tab:hover .tab-label .label {
+    -fx-text-fill: white;
+}
+
+.root .wallet-subtabs > .tab-header-area > .headers-region > .tab {
     -fx-background-color: derive(#2284bb, 32%);
 }
 
-.root .wallet-subtabs > .tab-header-area .tab:selected {
+.root .wallet-subtabs > .tab-header-area > .headers-region > .tab:selected {
     -fx-background-color: #2284bb;
 }
 
