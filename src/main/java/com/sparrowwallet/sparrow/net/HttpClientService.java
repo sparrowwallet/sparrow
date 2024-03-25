@@ -18,7 +18,7 @@ public class HttpClientService extends JettyHttpClientService {
     private static final int REQUEST_TIMEOUT = 120000;
 
     public HttpClientService(HostAndPort torProxy) {
-        super(REQUEST_TIMEOUT, ClientUtils.USER_AGENT, new HttpProxySupplier(torProxy));
+        super(REQUEST_TIMEOUT, new HttpProxySupplier(torProxy));
     }
 
     public <T> T requestJson(String url, Class<T> responseType, Map<String, String> headers) throws Exception {
@@ -60,7 +60,6 @@ public class HttpClientService extends JettyHttpClientService {
         protected Task<Boolean> createTask() {
             return new Task<>() {
                 protected Boolean call() throws Exception {
-                    ThreadUtil.getInstance().getExecutorService().shutdown();
                     httpClientService.stop();
                     return true;
                 }
