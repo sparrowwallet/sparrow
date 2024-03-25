@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.getTorProxy;
+import static org.bitcoinj.crypto.MnemonicCode.SPARROW_FIX_NFKD_MNEMONIC;
 
 public class WhirlpoolServices {
     private static final Logger log = LoggerFactory.getLogger(WhirlpoolServices.class);
@@ -46,6 +47,7 @@ public class WhirlpoolServices {
     public WhirlpoolServices() {
         ExtLibJConfig extLibJConfig = computeExtLibJConfig();
         this.sorobanConfig = new SorobanConfig(extLibJConfig);
+        System.setProperty(SPARROW_FIX_NFKD_MNEMONIC, "true");
     }
 
     private ExtLibJConfig computeExtLibJConfig() {
