@@ -538,12 +538,7 @@ public class Whirlpool {
             int mixes = minMixes == null ? DEFAULT_MIXTO_MIN_MIXES : minMixes;
 
             IPostmixHandler postmixHandler = new SparrowPostmixHandler(whirlpoolWalletService, mixToWallet, KeyPurpose.RECEIVE);
-            ExternalDestination externalDestination = new ExternalDestination(postmixHandler, 0, mixes, DEFAULT_MIXTO_RANDOM_FACTOR) {
-                @Override
-                public IPostmixHandler getPostmixHandlerCustomOrDefault(WhirlpoolWallet whirlpoolWallet) {
-                    return postmixHandler;
-                }
-            };
+            ExternalDestination externalDestination = new ExternalDestination(postmixHandler, 0, mixes, DEFAULT_MIXTO_RANDOM_FACTOR);
             config.setExternalDestination(externalDestination);
         }
 
