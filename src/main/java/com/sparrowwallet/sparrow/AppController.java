@@ -333,6 +333,8 @@ public class AppController implements Initializable {
             EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), Collections.emptyList()));
         });
 
+        tabs.setPickOnBounds(false);
+
         registerShortcuts();
 
         BitcoinUnit unit = Config.get().getBitcoinUnit();
