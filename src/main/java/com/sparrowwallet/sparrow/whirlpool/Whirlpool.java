@@ -73,6 +73,7 @@ public class Whirlpool {
     private final WhirlpoolWalletService whirlpoolWalletService;
     private final WhirlpoolWalletConfig config;
     private WhirlpoolInfo whirlpoolInfo;
+    private Tx0Info tx0Info;
     private Tx0FeeTarget tx0FeeTarget = Tx0FeeTarget.BLOCKS_4;
     private Tx0FeeTarget mixFeeTarget = Tx0FeeTarget.BLOCKS_4;
     private HD_Wallet hdWallet;
@@ -90,6 +91,7 @@ public class Whirlpool {
     public Whirlpool(Integer storedBlockHeight) {
         this.whirlpoolWalletService = new WhirlpoolWalletService();
         this.config = computeWhirlpoolWalletConfig(storedBlockHeight);
+        this.tx0Info = null; // instantiated by getTx0Info()
         this.whirlpoolInfo = null; // instantiated by getWhirlpoolInfo()
 
         WhirlpoolEventService.getInstance().register(this);
@@ -131,9 +133,7 @@ public class Whirlpool {
     }
 
     public Tx0Previews getTx0Previews(Collection<UnspentOutput> utxos) throws Exception {
-        // TODO keep tx0Info for reusing it later on another TX0 preview or TX0 broadcast
-        // it should be refreshed after each successful TX0 broadcast
-        Tx0Info tx0Info = fetchTx0Info();
+        Tx0Info tx0Info = getTx0Info();
 
         // preview all pools
         Tx0Config tx0Config = computeTx0Config(tx0Info);
@@ -141,7 +141,6 @@ public class Whirlpool {
     }
 
     public Tx0 broadcastTx0(Pool pool, Collection<BlockTransactionHashIndex> utxos) throws Exception {
-        // TODO no need to instanciate WhirlpoolWallet, you just need walletSupplier & utxoSupplier
         WhirlpoolWallet whirlpoolWallet = getWhirlpoolWallet();
         whirlpoolWallet.startAsync().subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform());
         UtxoSupplier utxoSupplier = whirlpoolWallet.getUtxoSupplier();
@@ -151,18 +150,33 @@ public class Whirlpool {
             throw new IllegalStateException("Failed to find UTXOs in Whirlpool wallet");
         }
 
-        // TODO reuse tx0Info from TX0 preview to speed up the process
-        Tx0Info tx0Info = fetchTx0Info();
+        Tx0Info tx0Info = getTx0Info();
 
         WalletSupplier walletSupplier = whirlpoolWallet.getWalletSupplier();
         Tx0Config tx0Config = computeTx0Config(tx0Info);
-        return tx0Info.tx0(walletSupplier, utxoSupplier, whirlpoolUtxos, pool, tx0Config);
+        Tx0 tx0 = tx0Info.tx0(walletSupplier, utxoSupplier, whirlpoolUtxos, pool, tx0Config);
+
+        //Clear tx0 for new fee addresses
+        clearTx0Info();
+        return tx0;
+    }
+
+    private Tx0Info getTx0Info() throws Exception {
+        if(tx0Info == null) {
+            tx0Info = fetchTx0Info();
+        }
+
+        return tx0Info;
     }
 
     private Tx0Info fetchTx0Info() throws Exception {
         return AsyncUtil.getInstance().blockingGet(
                 Single.fromCallable(() -> getWhirlpoolInfo().fetchTx0Info(getScode()))
                         .subscribeOn(Schedulers.io()).observeOn(JavaFxScheduler.platform()));
+    }
+
+    private void clearTx0Info() {
+        tx0Info = null;
     }
 
     private Tx0Config computeTx0Config(Tx0Info tx0Info) {
