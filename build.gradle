@@ -248,6 +248,8 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.annotation",
                    "--add-reads=com.sparrowwallet.merged.module=com.fasterxml.jackson.core",
                    "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor",
+                   "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.pg",
+                   "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.provider",
                    "--add-reads=kotlin.stdlib=kotlinx.coroutines.core"]
 
         if(os.windows) {
@@ -704,18 +706,6 @@ extraJavaModuleInfo {
     module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
     module('jcommander-1.81.jar', 'com.beust.jcommander', '1.81') {
         exports('com.beust.jcommander')
-    }
-    module('pgpainless-core-1.6.6.jar', 'org.pgpainless.core', '1.6.6') {
-        exports('org.pgpainless')
-        exports('org.pgpainless.key')
-        exports('org.pgpainless.key.parsing')
-        exports('org.pgpainless.decryption_verification')
-        exports('org.pgpainless.exception')
-        exports('org.pgpainless.signature')
-        exports('org.pgpainless.util')
-        requires('org.bouncycastle.provider')
-        requires('org.bouncycastle.pg')
-        requires('org.slf4j')
     }
     module('jzlib-1.1.3.jar', 'com.jcraft.jzlib', '1.1.3') {
         exports('com.jcraft.jzlib')
