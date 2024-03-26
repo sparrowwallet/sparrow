@@ -143,7 +143,7 @@
                     <MenuItem mnemonicParsing="false" text="Verify Download" onAction="#verifyDownload" />
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
-                    <Menu fx:id="restart" mnemonicParsing="false" text="Restart In Network" />
+                    <Menu fx:id="restart" mnemonicParsing="false" text="Restart In" />
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>

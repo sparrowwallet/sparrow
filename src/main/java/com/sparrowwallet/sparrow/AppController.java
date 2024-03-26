@@ -381,6 +381,9 @@ public class AppController implements Initializable {
         preventSleepProperty.set(Config.get().isPreventSleep());
         preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
 
+        MenuItem homeItem = new MenuItem("Home Folder...");
+        homeItem.setOnAction(this::restartInHome);
+        restart.getItems().add(homeItem);
         List<Network> networks = new ArrayList<>(List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET));
         networks.remove(Network.get());
         for(Network network : networks) {
@@ -973,19 +976,46 @@ public class AppController implements Initializable {
         AppServices.get().setPreventSleep(item.isSelected());
     }
 
+    public void restartInHome(ActionEvent event) {
+        Args args = getRestartArgs();
+        File initialDir = null;
+        if(args.dir != null) {
+            initialDir = new File(args.dir);
+        }
+
+        Stage window = new Stage();
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Choose Sparrow Home Folder");
+        directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists() ? Storage.getSparrowHome() : initialDir);
+        File newHome = directoryChooser.showDialog(window);
+
+        if(newHome != null) {
+            args.dir = newHome.getAbsolutePath();
+            restart(event, args);
+        }
+    }
+
     public void restart(ActionEvent event, Network network) {
         if(System.getProperty(JPACKAGE_APP_PATH) == null) {
             throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
         }
 
+        Args args = getRestartArgs();
+        args.network = network;
+        restart(event, args);
+    }
+
+    private static Args getRestartArgs() {
         Args args = new Args();
         ProcessHandle.current().info().arguments().ifPresent(argv -> {
             JCommander jCommander = JCommander.newBuilder().addObject(args).acceptUnknownOptions(true).build();
             jCommander.parse(argv);
         });
 
-        args.network = network;
+        return args;
+    }
 
+    private void restart(ActionEvent event, Args args) {
         try {
             List<String> cmd = new ArrayList<>();
             cmd.add(System.getProperty(JPACKAGE_APP_PATH));
