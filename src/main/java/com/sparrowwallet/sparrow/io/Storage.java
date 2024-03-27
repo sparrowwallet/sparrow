@@ -535,7 +535,7 @@ public class Storage {
         return certsDir;
     }
 
-    static File getSparrowDir() {
+    public static File getSparrowDir() {
         File sparrowDir;
         if(Network.get() != Network.MAINNET) {
             sparrowDir = new File(getSparrowHome(), Network.get().getName());

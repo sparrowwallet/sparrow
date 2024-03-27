@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.file.Files;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,11 +29,14 @@ public class TorUtils {
         } else {
             HostAndPort control = HostAndPort.fromParts(proxy.getHost(), proxy.getPort() + 1);
             try(Socket socket = new Socket(control.getHost(), control.getPort())) {
+                socket.setSoTimeout(1500);
                 if(authenticate(socket)) {
                     writeNewNym(socket);
                 }
             } catch(TorAuthenticationException e) {
                 log.warn("Error authenticating to Tor at " + control + ", server returned " + e.getMessage());
+            } catch(SocketTimeoutException e) {
+                log.warn("Timeout reading from " + control + ", is this a Tor ControlPort?");
             } catch(Exception e) {
                 log.warn("Error connecting to " + control + ", no Tor ControlPort configured?");
             }

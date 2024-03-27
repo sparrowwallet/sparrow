@@ -16,7 +16,7 @@ import java.io.File;
 import java.util.*;
 
 public class SparrowWallet {
-    public static final String APP_ID = "com.sparrowwallet.sparrow";
+    public static final String APP_ID = "sparrow";
     public static final String APP_NAME = "Sparrow";
     public static final String APP_VERSION = "1.8.5";
     public static final String APP_VERSION_SUFFIX = "";
@@ -79,7 +79,7 @@ public class SparrowWallet {
 
         try {
             instance = new Instance(fileUriArguments);
-            instance.acquireLock(); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
+            instance.acquireLock(!fileUriArguments.isEmpty()); //If fileUriArguments is not empty, will exit app after sending fileUriArguments if lock cannot be acquired
         } catch(InstanceException e) {
             getLogger().error("Could not access application lock", e);
         }
@@ -130,7 +130,7 @@ public class SparrowWallet {
         private final List<String> fileUriArguments;
 
         public Instance(List<String> fileUriArguments) {
-            super(SparrowWallet.APP_ID + "." + Network.get(), !fileUriArguments.isEmpty());
+            super(SparrowWallet.APP_ID + "." + Network.get(), true);
             this.fileUriArguments = fileUriArguments;
         }
 
