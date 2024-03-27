@@ -134,13 +134,17 @@ public abstract class Instance {
 
     private Path getLockFile(boolean findExisting) {
         if(findExisting) {
-            Path symlink = getSystemSymlinkPath();
+            Path pointer = getSystemLockFilePointer();
             try {
-                if(Files.exists(symlink)) {
-                    return Files.readSymbolicLink(symlink);
+                if(Files.exists(pointer)) {
+                    if(Files.isSymbolicLink(pointer)) {
+                        return Files.readSymbolicLink(pointer);
+                    } else {
+                        return Path.of(Files.readString(pointer, StandardCharsets.UTF_8));
+                    }
                 }
             } catch(IOException e) {
-                log.warn("Could not follow symbolic link at " + symlink.toAbsolutePath());
+                log.warn("Could not follow symbolic link at " + pointer.toAbsolutePath());
             } catch(Exception e) {
                 //ignore
             }
@@ -150,21 +154,27 @@ public abstract class Instance {
     }
 
     private void createSymlink(Path lockFile) {
-        Path symlink = getSystemSymlinkPath();
+        Path pointer = getSystemLockFilePointer();
         try {
-            if(!Files.exists(symlink, LinkOption.NOFOLLOW_LINKS)) {
-                Files.createSymbolicLink(symlink, lockFile);
-                log.warn("Created symlink at " + symlink.toAbsolutePath());
-                symlink.toFile().deleteOnExit();
+            if(!Files.exists(pointer, LinkOption.NOFOLLOW_LINKS)) {
+                Files.createSymbolicLink(pointer, lockFile);
+                pointer.toFile().deleteOnExit();
             }
         } catch(IOException e) {
-            log.warn("Could not create symlink " + symlink.toAbsolutePath() + " to lockFile at " + lockFile.toAbsolutePath());
+            log.debug("Could not create symlink " + pointer.toAbsolutePath() + " to lockFile at " + lockFile.toAbsolutePath() + ", writing as normal file", e);
+
+            try {
+                Files.writeString(pointer, lockFile.toAbsolutePath().toString(), StandardCharsets.UTF_8);
+                pointer.toFile().deleteOnExit();
+            } catch(IOException ex) {
+                log.warn("Could not create pointer " + pointer.toAbsolutePath() + " to lockFile at " + lockFile.toAbsolutePath(), ex);
+            }
         } catch(Exception e) {
             //ignore
         }
     }
 
-    private Path getSystemSymlinkPath() {
+    private Path getSystemLockFilePointer() {
         return Path.of(System.getProperty("java.io.tmpdir")).resolve(applicationId + ".link");
     }
 
@@ -179,7 +189,7 @@ public abstract class Instance {
                 serverChannel.close();
             }
 
-            Files.deleteIfExists(getSystemSymlinkPath());
+            Files.deleteIfExists(getSystemLockFilePointer());
             Files.deleteIfExists(getLockFile(false));
         } catch(Exception e) {
             throw new InstanceException(e);
