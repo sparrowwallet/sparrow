@@ -536,15 +536,11 @@ public class Storage {
     }
 
     public static File getSparrowDir() {
-        return getSparrowDir(false);
-    }
-
-    public static File getSparrowDir(boolean useDefault) {
         File sparrowDir;
         if(Network.get() != Network.MAINNET) {
-            sparrowDir = new File(getSparrowHome(useDefault), Network.get().getName());
+            sparrowDir = new File(getSparrowHome(), Network.get().getName());
         } else {
-            sparrowDir = getSparrowHome(useDefault);
+            sparrowDir = getSparrowHome();
         }
 
         if(!sparrowDir.exists()) {

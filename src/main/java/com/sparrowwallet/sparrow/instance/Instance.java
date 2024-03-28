@@ -4,6 +4,7 @@ import com.sparrowwallet.sparrow.io.Storage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
@@ -23,6 +24,7 @@ import java.util.Set;
 
 public abstract class Instance {
     private static final Logger log = LoggerFactory.getLogger(Instance.class);
+    private static final String LINK_ENV_PROPERTY = "SPARROW_NO_LOCK_FILE_LINK";
 
     public final String applicationId;
     private final boolean autoExit;
@@ -64,7 +66,7 @@ public abstract class Instance {
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
             lockFile.toFile().deleteOnExit();
         } catch(Exception e) {
-            throw new InstanceException("Could not open UNIX socket at " + lockFile.toAbsolutePath(), e);
+            throw new InstanceException("Could not open UNIX socket lock file for instance at " + lockFile.toAbsolutePath(), e);
         }
 
         Thread thread = new Thread(() -> {
@@ -121,7 +123,7 @@ public abstract class Instance {
             try {
                 Files.deleteIfExists(lockFile);
                 startServer(lockFile);
-            } catch(IOException ex) {
+            } catch(Exception ex) {
                 throw new InstanceException("Could not delete lock file from previous instance", e);
             }
         } catch(Exception e) {
@@ -187,8 +189,17 @@ public abstract class Instance {
     }
 
     private Path getUserLockFilePointer() {
+        if(Boolean.parseBoolean(System.getenv(LINK_ENV_PROPERTY))) {
+            return null;
+        }
+
         try {
-            return Storage.getSparrowDir(true).toPath().resolve(applicationId + ".default");
+            File sparrowHome = Storage.getSparrowHome(true);
+            if(!sparrowHome.exists()) {
+                Storage.createOwnerOnlyDirectory(sparrowHome);
+            }
+
+            return sparrowHome.toPath().resolve(applicationId + ".default");
         } catch(Exception e) {
             return null;
         }
