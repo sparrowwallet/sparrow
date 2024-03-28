@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.StandardProtocolFamily;
 import java.net.UnixDomainSocketAddress;
@@ -48,7 +49,6 @@ public abstract class Instance {
 
         if(!Files.exists(lockFile)) {
             startServer(lockFile);
-            createSymlink(lockFile);
         } else {
             doClient(lockFile);
         }
@@ -102,6 +102,8 @@ public abstract class Instance {
         thread.setDaemon(true);
         thread.setName("SparrowInstanceListener");
         thread.start();
+
+        createSymlink(lockFile);
     }
 
     private void doClient(Path lockFile) throws InstanceException {
@@ -114,6 +116,13 @@ public abstract class Instance {
             if(response.equals(applicationId) && autoExit) {
                 beforeExit();
                 System.exit(0);
+            }
+        } catch(ConnectException e) {
+            try {
+                Files.deleteIfExists(lockFile);
+                startServer(lockFile);
+            } catch(IOException ex) {
+                throw new InstanceException("Could not delete lock file from previous instance", e);
             }
         } catch(Exception e) {
             throw new InstanceException("Could not open client connection to existing instance", e);
