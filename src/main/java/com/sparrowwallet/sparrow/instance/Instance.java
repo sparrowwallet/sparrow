@@ -134,17 +134,20 @@ public abstract class Instance {
 
     private Path getLockFile(boolean findExisting) {
         if(findExisting) {
-            Path pointer = getSystemLockFilePointer();
+            Path pointer = getUserLockFilePointer();
             try {
-                if(Files.exists(pointer)) {
+                if(pointer != null && Files.exists(pointer)) {
                     if(Files.isSymbolicLink(pointer)) {
                         return Files.readSymbolicLink(pointer);
                     } else {
-                        return Path.of(Files.readString(pointer, StandardCharsets.UTF_8));
+                        Path lockFile = Path.of(Files.readString(pointer, StandardCharsets.UTF_8));
+                        if(Files.exists(lockFile)) {
+                            return lockFile;
+                        }
                     }
                 }
             } catch(IOException e) {
-                log.warn("Could not follow symbolic link at " + pointer.toAbsolutePath());
+                log.warn("Could not find lock file at " + pointer.toAbsolutePath());
             } catch(Exception e) {
                 //ignore
             }
@@ -154,9 +157,9 @@ public abstract class Instance {
     }
 
     private void createSymlink(Path lockFile) {
-        Path pointer = getSystemLockFilePointer();
+        Path pointer = getUserLockFilePointer();
         try {
-            if(!Files.exists(pointer, LinkOption.NOFOLLOW_LINKS)) {
+            if(pointer != null && !Files.exists(pointer, LinkOption.NOFOLLOW_LINKS)) {
                 Files.createSymbolicLink(pointer, lockFile);
                 pointer.toFile().deleteOnExit();
             }
@@ -174,8 +177,12 @@ public abstract class Instance {
         }
     }
 
-    private Path getSystemLockFilePointer() {
-        return Path.of(System.getProperty("java.io.tmpdir")).resolve(applicationId + ".link");
+    private Path getUserLockFilePointer() {
+        try {
+            return Storage.getSparrowDir(true).toPath().resolve(applicationId + ".default");
+        } catch(Exception e) {
+            return null;
+        }
     }
 
     /**
@@ -188,8 +195,9 @@ public abstract class Instance {
             if(serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close();
             }
-
-            Files.deleteIfExists(getSystemLockFilePointer());
+            if(getUserLockFilePointer() != null) {
+                Files.deleteIfExists(getUserLockFilePointer());
+            }
             Files.deleteIfExists(getLockFile(false));
         } catch(Exception e) {
             throw new InstanceException(e);

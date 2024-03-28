@@ -130,7 +130,7 @@ public class SparrowWallet {
         private final List<String> fileUriArguments;
 
         public Instance(List<String> fileUriArguments) {
-            super(SparrowWallet.APP_ID + "." + Network.get(), true);
+            super(SparrowWallet.APP_ID, true);
             this.fileUriArguments = fileUriArguments;
         }
 

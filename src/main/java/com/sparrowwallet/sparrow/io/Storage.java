@@ -536,11 +536,15 @@ public class Storage {
     }
 
     public static File getSparrowDir() {
+        return getSparrowDir(false);
+    }
+
+    public static File getSparrowDir(boolean useDefault) {
         File sparrowDir;
         if(Network.get() != Network.MAINNET) {
-            sparrowDir = new File(getSparrowHome(), Network.get().getName());
+            sparrowDir = new File(getSparrowHome(useDefault), Network.get().getName());
         } else {
-            sparrowDir = getSparrowHome();
+            sparrowDir = getSparrowHome(useDefault);
         }
 
         if(!sparrowDir.exists()) {
@@ -551,7 +555,11 @@ public class Storage {
     }
 
     public static File getSparrowHome() {
-        if(System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
+        return getSparrowHome(false);
+    }
+
+    public static File getSparrowHome(boolean useDefault) {
+        if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
             return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
         }
 
