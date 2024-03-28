@@ -815,16 +815,16 @@ public class ElectrumServer {
     public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks, boolean useCached) throws ServerException {
         Map<Integer, Double> targetBlocksFeeRatesSats = getDefaultFeeEstimates(targetBlocks);
 
-        if(useCached) {
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        if(!feeRatesSource.isExternal()) {
+            targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
+        } else if(useCached) {
             if(AppServices.getTargetBlockFeeRates() != null) {
                 targetBlocksFeeRatesSats.putAll(AppServices.getTargetBlockFeeRates());
             }
-        } else {
-            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
-            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
-            if(Network.get().equals(Network.MAINNET)) {
-                targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
-            }
+        } else if(Network.get().equals(Network.MAINNET)) {
+            targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
         }
 
         return targetBlocksFeeRatesSats;
@@ -1686,8 +1686,7 @@ public class ElectrumServer {
                 protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
                     Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
-                    Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
-                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
+                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, null);
                 }
             };
         }

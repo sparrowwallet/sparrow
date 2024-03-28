@@ -294,8 +294,10 @@ public class AppServices {
                 EventManager.get().post(event);
             }
 
-            if(event instanceof ConnectionEvent && Network.get().equals(Network.MAINNET)) {
-                EventManager.get().post(new FeeRatesSourceChangedEvent(Config.get().getFeeRatesSource()));
+            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+            if(event instanceof ConnectionEvent && Network.get().equals(Network.MAINNET) && feeRatesSource.isExternal()) {
+                EventManager.get().post(new FeeRatesSourceChangedEvent(feeRatesSource));
             }
         });
         connectionService.setOnFailed(failEvent -> {
@@ -1122,7 +1124,9 @@ public class AppServices {
 
     @Subscribe
     public void mempoolRateSizes(MempoolRateSizesUpdatedEvent event) {
-        addMempoolRateSizes(event.getMempoolRateSizes());
+        if(event.getMempoolRateSizes() != null) {
+            addMempoolRateSizes(event.getMempoolRateSizes());
+        }
     }
 
     @Subscribe
