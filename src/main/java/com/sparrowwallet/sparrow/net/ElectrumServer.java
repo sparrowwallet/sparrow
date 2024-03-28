@@ -812,13 +812,19 @@ public class ElectrumServer {
         return transactionMap;
     }
 
-    public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks) throws ServerException {
+    public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks, boolean useCached) throws ServerException {
         Map<Integer, Double> targetBlocksFeeRatesSats = getDefaultFeeEstimates(targetBlocks);
 
-        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
-        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
-        if(Network.get().equals(Network.MAINNET)) {
-            targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
+        if(useCached) {
+            if(AppServices.getTargetBlockFeeRates() != null) {
+                targetBlocksFeeRatesSats.putAll(AppServices.getTargetBlockFeeRates());
+            }
+        } else {
+            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+            if(Network.get().equals(Network.MAINNET)) {
+                targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
+            }
         }
 
         return targetBlocksFeeRatesSats;
@@ -1204,7 +1210,7 @@ public class ElectrumServer {
 
                         String banner = electrumServer.getServerBanner();
 
-                        Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE);
+                        Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, true);
                         Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                         feeRatesRetrievedAt = System.currentTimeMillis();
 
@@ -1220,7 +1226,7 @@ public class ElectrumServer {
 
                             long elapsed = System.currentTimeMillis() - feeRatesRetrievedAt;
                             if(elapsed > FEE_RATES_PERIOD) {
-                                Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE);
+                                Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
                                 Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                                 feeRatesRetrievedAt = System.currentTimeMillis();
                                 return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
@@ -1679,7 +1685,7 @@ public class ElectrumServer {
             return new Task<>() {
                 protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
-                    Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE);
+                    Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
                     Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
                     return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
                 }
