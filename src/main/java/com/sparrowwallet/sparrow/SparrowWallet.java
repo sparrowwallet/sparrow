@@ -136,7 +136,7 @@ public class SparrowWallet {
 
         @Override
         protected void receiveMessageList(List<String> messageList) {
-            if(messageList != null && !messageList.isEmpty()) {
+            if(messageList != null) {
                 AppServices.parseFileUriArguments(messageList);
                 AppServices.openFileUriArguments(null);
             }
