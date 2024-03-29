@@ -16,6 +16,21 @@
     -fx-font-size: 20;
 }
 
+.background-link {
+    -fx-padding: 0;
+    -fx-border-width: 0;
+}
+
+.background-link:visited,
+.background-link:hover:armed {
+    -fx-text-fill: -fx-accent;
+    -fx-underline: false;
+}
+
+.background-link:hover:visited {
+    -fx-underline: true;
+}
+
 .drag-over > .background-text {
     -fx-fill: #383a42;
 }

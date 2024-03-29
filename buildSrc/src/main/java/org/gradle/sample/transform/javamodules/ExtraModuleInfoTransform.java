@@ -143,7 +143,7 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
     private static void copyEntries(JarInputStream inputStream, JarOutputStream outputStream) throws IOException {
         JarEntry jarEntry = inputStream.getNextJarEntry();
         while (jarEntry != null) {
-            if(!jarEntry.getName().equals("module-info.class") && !jarEntry.getName().equals("org/bouncycastle/CachingBcPublicKeyDataDecryptorFactory.class")) {
+            if(!jarEntry.getName().equals("module-info.class")) {
                 outputStream.putNextEntry(jarEntry);
                 outputStream.write(inputStream.readAllBytes());
                 outputStream.closeEntry();

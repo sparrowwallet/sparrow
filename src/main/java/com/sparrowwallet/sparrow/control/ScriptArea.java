@@ -54,10 +54,10 @@ public class ScriptArea extends CodeArea {
                 ScriptChunk chunk = script.getChunks().get(i);
                 if(chunk.isOpCode()) {
                     append(chunk.toString(), "script-opcode");
-                } else if(chunk.isSignature()) {
-                    append("<signature" + signatureCount++ + ">", "script-signature");
                 } else if(chunk.isPubKey()) {
                     append("<pubkey" + pubKeyCount++ + ">", "script-pubkey");
+                } else if(chunk.isSignature()) {
+                    append("<signature" + signatureCount++ + ">", "script-signature");
                 } else if(chunk.isTaprootControlBlock()) {
                     append("<controlblock>", "script-controlblock");
                 } else if(chunk.isString()) {

@@ -9,27 +9,27 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public enum FeeRatesSource {
-    ELECTRUM_SERVER("Server") {
+    ELECTRUM_SERVER("Server", false) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             return Collections.emptyMap();
         }
     },
-    MEMPOOL_SPACE("mempool.space") {
+    MEMPOOL_SPACE("mempool.space", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/fees/recommended" : "https://mempool.space/api/v1/fees/recommended";
             return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
         }
     },
-    BITCOINFEES_EARN_COM("bitcoinfees.earn.com") {
+    BITCOINFEES_EARN_COM("bitcoinfees.earn.com", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = "https://bitcoinfees.earn.com/api/v1/fees/recommended";
             return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
         }
     },
-    MINIMUM("Minimum (1 sat/vB)") {
+    MINIMUM("Minimum (1 sat/vB)", false) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             Map<Integer, Double> blockTargetFeeRates = new LinkedHashMap<>();
@@ -40,7 +40,7 @@ public enum FeeRatesSource {
             return blockTargetFeeRates;
         }
     },
-    OXT_ME("oxt.me") {
+    OXT_ME("oxt.me", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = AppServices.isUsingProxy() ? "http://oxtwshnfyktikbflierkwcxxksbonl6v73l5so5zky7ur72w52tktkid.onion/stats/global/mempool" : "https://api.oxt.me/stats/global/mempool";
@@ -63,15 +63,21 @@ public enum FeeRatesSource {
     public static final int BLOCKS_IN_TWO_HOURS = 12;
 
     private final String name;
+    private final boolean external;
 
-    FeeRatesSource(String name) {
+    FeeRatesSource(String name, boolean external) {
         this.name = name;
+        this.external = external;
     }
 
     public abstract Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates);
 
     public String getName() {
         return name;
+    }
+
+    public boolean isExternal() {
+        return external;
     }
 
     private static Map<Integer, Double> getThreeTierFeeRates(FeeRatesSource feeRatesSource, Map<Integer, Double> defaultblockTargetFeeRates, String url) {

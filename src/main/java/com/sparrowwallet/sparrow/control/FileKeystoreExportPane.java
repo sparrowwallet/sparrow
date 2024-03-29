@@ -4,12 +4,14 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.hummingbird.registry.RegistryType;
+import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreExportEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -153,7 +155,9 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
             } else {
                 QRDisplayDialog qrDisplayDialog;
                 if(exporter instanceof Bip129) {
-                    qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), baos.toByteArray(), false);
+                    UR ur = UR.fromBytes(baos.toByteArray());
+                    BBQR bbqr = new BBQR(BBQRType.UNICODE, baos.toByteArray());
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, false);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(baos.toString(StandardCharsets.UTF_8));
                 }

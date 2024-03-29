@@ -117,6 +117,8 @@ public class AppServices {
 
     private ElectrumServer.ConnectionService connectionService;
 
+    private ElectrumServer.FeeRatesService feeRatesService;
+
     private Hwi.ScheduledEnumerateService deviceEnumerateService;
 
     private VersionCheckService versionCheckService;
@@ -188,6 +190,7 @@ public class AppServices {
     public void start() {
         Config config = Config.get();
         connectionService = createConnectionService();
+        feeRatesService = createFeeRatesService();
         ratesService = createRatesService(config.getExchangeSource(), config.getFiatCurrency());
         versionCheckService = createVersionCheckService();
         torService = createTorService();
@@ -201,6 +204,8 @@ public class AppServices {
             } else {
                 restartServices();
             }
+        } else {
+            EventManager.get().post(new DisconnectionEvent());
         }
 
         addURIHandlers();
@@ -284,8 +289,15 @@ public class AppServices {
             onlineProperty.setValue(true);
             onlineProperty.addListener(onlineServicesListener);
 
-            if(connectionService.getValue() != null) {
-                EventManager.get().post(connectionService.getValue());
+            FeeRatesUpdatedEvent event = connectionService.getValue();
+            if(event != null) {
+                EventManager.get().post(event);
+            }
+
+            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+            if(event instanceof ConnectionEvent && Network.get().equals(Network.MAINNET) && feeRatesSource.isExternal()) {
+                EventManager.get().post(new FeeRatesSourceChangedEvent(feeRatesSource));
             }
         });
         connectionService.setOnFailed(failEvent -> {
@@ -354,6 +366,15 @@ public class AppServices {
         });
 
         return connectionService;
+    }
+
+    private ElectrumServer.FeeRatesService createFeeRatesService() {
+        ElectrumServer.FeeRatesService feeRatesService = new ElectrumServer.FeeRatesService();
+        feeRatesService.setOnSucceeded(workerStateEvent -> {
+            EventManager.get().post(feeRatesService.getValue());
+        });
+
+        return feeRatesService;
     }
 
     private ExchangeSource.RatesService createRatesService(ExchangeSource exchangeSource, Currency currency) {
@@ -1102,17 +1123,18 @@ public class AppServices {
 
     @Subscribe
     public void mempoolRateSizes(MempoolRateSizesUpdatedEvent event) {
-        addMempoolRateSizes(event.getMempoolRateSizes());
+        if(event.getMempoolRateSizes() != null) {
+            addMempoolRateSizes(event.getMempoolRateSizes());
+        }
     }
 
     @Subscribe
     public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
-        ElectrumServer.FeeRatesService feeRatesService = new ElectrumServer.FeeRatesService();
-        feeRatesService.setOnSucceeded(workerStateEvent -> {
-            EventManager.get().post(feeRatesService.getValue());
-        });
         //Perform once-off fee rates retrieval to immediately change displayed rates
-        feeRatesService.start();
+        if(feeRatesService != null && !feeRatesService.isRunning() && Config.get().getMode() != Mode.OFFLINE) {
+            feeRatesService = createFeeRatesService();
+            feeRatesService.start();
+        }
     }
 
     @Subscribe

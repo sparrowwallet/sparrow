@@ -143,7 +143,7 @@
                     <MenuItem mnemonicParsing="false" text="Verify Download" onAction="#verifyDownload" />
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
-                    <Menu fx:id="restart" mnemonicParsing="false" text="Restart In Network" />
+                    <Menu fx:id="restart" mnemonicParsing="false" text="Restart In" />
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>
@@ -156,12 +156,13 @@
             </menus>
         </MenuBar>
         <DecorationPane fx:id="rootStack" VBox.vgrow="ALWAYS">
-            <Rectangle styleClass="background-box" width="450" height="170" />
+            <Rectangle styleClass="background-box" width="450" height="230" />
             <HBox alignment="CENTER">
-                <VBox alignment="CENTER_LEFT" spacing="15">
-                    <Text styleClass="background-text" text="File menu → New Wallet or" />
-                    <Text styleClass="background-text" text="File menu → Import Wallet or" />
-                    <Text styleClass="background-text" text="Drag files here to open" />
+                <VBox alignment="CENTER" spacing="15">
+                    <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#newWallet" styleClass="background-text,background-link" text="New Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
+                    <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#openWallet" styleClass="background-text,background-link" text="Open Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
+                    <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#importWallet" styleClass="background-text,background-link" text="Import Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
+                    <Text styleClass="background-text" text="drag files to open" />
                 </VBox>
             </HBox>
             <TabPane fx:id="tabs" />

@@ -21,6 +21,8 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
@@ -289,9 +291,7 @@ public class AppController implements Initializable {
             Dragboard db = event.getDragboard();
             boolean success = false;
             if(db.hasFiles()) {
-                for(File file : db.getFiles()) {
-                    openFile(file);
-                }
+                openFiles(db.getFiles());
                 success = true;
             }
             event.setDropCompleted(success);
@@ -332,6 +332,8 @@ public class AppController implements Initializable {
             EventManager.get().unregister(this);
             EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), Collections.emptyList()));
         });
+
+        tabs.setPickOnBounds(false);
 
         registerShortcuts();
 
@@ -379,6 +381,9 @@ public class AppController implements Initializable {
         preventSleepProperty.set(Config.get().isPreventSleep());
         preventSleep.selectedProperty().bindBidirectional(preventSleepProperty);
 
+        MenuItem homeItem = new MenuItem("Home Folder...");
+        homeItem.setOnAction(this::restartInHome);
+        restart.getItems().add(homeItem);
         List<Network> networks = new ArrayList<>(List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET));
         networks.remove(Network.get());
         for(Network network : networks) {
@@ -636,7 +641,7 @@ public class AppController implements Initializable {
             } catch(TransactionParseException e) {
                 showErrorDialog("Invalid transaction", e.getMessage());
             } catch(Exception e) {
-                showErrorDialog("Invalid file", "Cannot recognise the format of this file.");
+                showErrorDialog("Invalid file", "Cannot recognise the format of the " + file.getName() + " file.");
             }
         }
     }
@@ -752,8 +757,10 @@ public class AppController implements Initializable {
             Transaction transaction = transactionTabData.getTransaction();
 
             try {
-                UR ur = UR.fromBytes(transaction.bitcoinSerialize());
-                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur);
+                byte[] txBytes = transaction.bitcoinSerialize();
+                UR ur = UR.fromBytes(txBytes);
+                BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
+                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
                 qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             } catch(Exception e) {
@@ -851,8 +858,10 @@ public class AppController implements Initializable {
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
 
-            CryptoPSBT cryptoPSBT = new CryptoPSBT(transactionTabData.getPsbt().serialize());
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR());
+            byte[] psbtBytes = transactionTabData.getPsbt().serialize();
+            CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
+            BBQR bbqr = new BBQR(BBQRType.PSBT, psbtBytes);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, false);
             qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
             qrDisplayDialog.show();
         }
@@ -967,19 +976,46 @@ public class AppController implements Initializable {
         AppServices.get().setPreventSleep(item.isSelected());
     }
 
+    public void restartInHome(ActionEvent event) {
+        Args args = getRestartArgs();
+        File initialDir = null;
+        if(args.dir != null) {
+            initialDir = new File(args.dir);
+        }
+
+        Stage window = new Stage();
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Choose Sparrow Home Folder");
+        directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists() ? Storage.getSparrowHome() : initialDir);
+        File newHome = directoryChooser.showDialog(window);
+
+        if(newHome != null) {
+            args.dir = newHome.getAbsolutePath();
+            restart(event, args);
+        }
+    }
+
     public void restart(ActionEvent event, Network network) {
         if(System.getProperty(JPACKAGE_APP_PATH) == null) {
             throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
         }
 
+        Args args = getRestartArgs();
+        args.network = network;
+        restart(event, args);
+    }
+
+    private static Args getRestartArgs() {
         Args args = new Args();
         ProcessHandle.current().info().arguments().ifPresent(argv -> {
             JCommander jCommander = JCommander.newBuilder().addObject(args).acceptUnknownOptions(true).build();
             jCommander.parse(argv);
         });
 
-        args.network = network;
+        return args;
+    }
 
+    private void restart(ActionEvent event, Args args) {
         try {
             List<String> cmd = new ArrayList<>();
             cmd.add(System.getProperty(JPACKAGE_APP_PATH));
@@ -992,13 +1028,19 @@ public class AppController implements Initializable {
         }
     }
 
-    public void openFile(File file) {
-        if(isWalletFile(file)) {
-            openWalletFile(file, true);
-        } else if(isVerifyDownloadFile(file)) {
-            verifyDownload(new ActionEvent(file, rootStack));
-        } else {
-            openTransactionFile(file);
+    public void openFiles(List<File> files) {
+        boolean verifyOpened = false;
+        for(File file : files) {
+            if(isWalletFile(file)) {
+                openWalletFile(file, true);
+            } else if(isVerifyDownloadFile(file)) {
+                if(!verifyOpened) {
+                    verifyDownload(new ActionEvent(file, rootStack));
+                    verifyOpened = true;
+                }
+            } else {
+                openTransactionFile(file);
+            }
         }
     }
 
@@ -2743,7 +2785,7 @@ public class AppController implements Initializable {
     public void disconnection(DisconnectionEvent event) {
         serverToggle.setDisable(false);
         if(!AppServices.isConnecting() && !AppServices.isConnected() && !statusBar.getText().startsWith(CONNECTION_FAILED_PREFIX) && !statusBar.getText().contains(TRYING_ANOTHER_SERVER_MESSAGE)) {
-            statusUpdated(new StatusEvent("Disconnected"));
+            statusUpdated(new StatusEvent("Disconnected (click toggle on the right to connect)", 240));
         }
         if(statusTimeline == null || statusTimeline.getStatus() != Animation.Status.RUNNING) {
             statusBar.setProgress(0);

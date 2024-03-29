@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.pgp.PGPKeySource;
 import com.sparrowwallet.drongo.pgp.PGPUtils;
 import com.sparrowwallet.drongo.pgp.PGPVerificationException;
 import com.sparrowwallet.drongo.pgp.PGPVerificationResult;
@@ -70,6 +71,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private final ObjectProperty<File> publicKey = new SimpleObjectProperty<>();
     private final ObjectProperty<File> release = new SimpleObjectProperty<>();
 
+    private final BooleanProperty manifestDisabled = new SimpleBooleanProperty();
     private final BooleanProperty publicKeyDisabled = new SimpleBooleanProperty();
 
     private final Label signedBy;
@@ -99,7 +101,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         String version = VersionCheckService.getVersion() != null ? VersionCheckService.getVersion() : "x.x.x";
 
         Field signatureField = setupField(signature, "Signature", SIGNATURE_EXTENSIONS, false, "sparrow-" + version + "-manifest.txt", null);
-        Field manifestField = setupField(manifest, "Manifest", MANIFEST_EXTENSIONS, false, "sparrow-" + version + "-manifest", null);
+        Field manifestField = setupField(manifest, "Manifest", MANIFEST_EXTENSIONS, false, "sparrow-" + version + "-manifest", manifestDisabled);
         Field publicKeyField = setupField(publicKey, "Public Key", PUBLIC_KEY_EXTENSIONS, true, "pgp_keys", publicKeyDisabled);
         Field releaseFileField = setupField(release, "Release File", getReleaseFileExtensions(), false, getReleaseFileExample(version), null);
 
@@ -153,6 +155,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 release.set(null);
                 signedBy.setText("");
                 signedBy.setGraphic(null);
+                signedBy.setTooltip(null);
                 releaseHash.setText("");
                 releaseHash.setGraphic(null);
                 releaseVerified.setText("");
@@ -262,6 +265,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private void verify() {
+        manifestDisabled.set(false);
         publicKeyDisabled.set(false);
 
         if(signature.get() == null || manifest.get() == null) {
@@ -282,12 +286,14 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             String message = result.userId() + " on " + signatureDateFormat.format(result.signatureTimestamp()) + (result.expired() ? " (key expired)" : "");
             signedBy.setText(message);
             signedBy.setGraphic(result.expired() ? GlyphUtils.getWarningGlyph() : GlyphUtils.getSuccessGlyph());
+            signedBy.setTooltip(new Tooltip(result.fingerprint()));
 
-            if(!result.expired()) {
+            if(!result.expired() && result.keySource() != PGPKeySource.USER) {
                 publicKeyDisabled.set(true);
             }
 
             if(manifest.get().equals(release.get())) {
+                manifestDisabled.set(true);
                 releaseHash.setText("No hash required, signature signs release file directly");
                 releaseHash.setGraphic(GlyphUtils.getSuccessGlyph());
                 releaseHash.setTooltip(null);
@@ -302,6 +308,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             Throwable e = event.getSource().getException();
             signedBy.setText(getDisplayMessage(e));
             signedBy.setGraphic(GlyphUtils.getFailureGlyph());
+            signedBy.setTooltip(null);
             clearReleaseFields();
         });
 

@@ -21,7 +21,7 @@
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.8.3</string>
+  <string>1.8.5</string>
   <key>CFBundleSignature</key>
   <string>????</string>
   <!-- See https://developer.apple.com/app-store/categories/ for list of AppStore categories -->
@@ -105,7 +105,7 @@
               </array>
           </dict>
           <key>UTTypeDescription</key>
-          <string>ASCII Armored Signature</string>
+          <string>ASCII Armored File</string>
           <key>UTTypeIconFile</key>
           <string>sparrow.icns</string>
       </dict>

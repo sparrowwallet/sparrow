@@ -535,7 +535,7 @@ public class Storage {
         return certsDir;
     }
 
-    static File getSparrowDir() {
+    public static File getSparrowDir() {
         File sparrowDir;
         if(Network.get() != Network.MAINNET) {
             sparrowDir = new File(getSparrowHome(), Network.get().getName());
@@ -551,7 +551,11 @@ public class Storage {
     }
 
     public static File getSparrowHome() {
-        if(System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
+        return getSparrowHome(false);
+    }
+
+    public static File getSparrowHome(boolean useDefault) {
+        if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
             return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
         }
 

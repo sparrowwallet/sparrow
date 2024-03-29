@@ -32,6 +32,7 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRDecoder;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRException;
+import com.sparrowwallet.sparrow.wallet.KeystoreController;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -621,7 +622,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
                 List<ChildNumber> path = cryptoKeypath.getComponents().stream().map(comp -> (IndexPathComponent)comp)
                         .map(comp -> new ChildNumber(comp.getIndex(), comp.isHardened())).collect(Collectors.toList());
-                return new KeyDerivation(Utils.bytesToHex(cryptoKeypath.getSourceFingerprint()), KeyDerivation.writePath(path));
+                String fingerprint = cryptoKeypath.getSourceFingerprint() == null ? KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT : Utils.bytesToHex(cryptoKeypath.getSourceFingerprint());
+                return new KeyDerivation(fingerprint, KeyDerivation.writePath(path));
             }
 
             return null;
