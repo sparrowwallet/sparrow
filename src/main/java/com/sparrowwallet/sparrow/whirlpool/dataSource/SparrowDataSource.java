@@ -83,6 +83,7 @@ public class SparrowDataSource extends AbstractDataSource {
     public void open(CoordinatorSupplier coordinatorSupplier) throws Exception {
         super.open(coordinatorSupplier);
         EventManager.get().register(this);
+        ((SparrowChainSupplier)getDataSourceConfig().getChainSupplier()).open();
     }
 
     @Override

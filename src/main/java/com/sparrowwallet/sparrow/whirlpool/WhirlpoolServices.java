@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.whirlpool;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.samourai.soroban.client.SorobanConfig;
+import com.samourai.soroban.client.rpc.RpcClientService;
 import com.samourai.wallet.constants.SamouraiNetwork;
 import com.samourai.wallet.util.ExtLibJConfig;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
@@ -29,11 +30,13 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppServices.getHttpClientService;
 import static com.sparrowwallet.sparrow.AppServices.getTorProxy;
 import static org.bitcoinj.crypto.MnemonicCode.SPARROW_FIX_NFKD_MNEMONIC;
 
@@ -52,9 +55,9 @@ public class WhirlpoolServices {
 
     private ExtLibJConfig computeExtLibJConfig() {
         HttpClientService httpClientService = AppServices.getHttpClientService();
-        boolean onion = (AppServices.getTorProxy() != null);
+        boolean onion = (getTorProxy() != null);
         SamouraiNetwork samouraiNetwork = getSamouraiNetwork();
-        return new ExtLibJConfig(samouraiNetwork,  onion, Drongo.getProvider(), httpClientService);
+        return new ExtLibJConfig(samouraiNetwork, onion, Drongo.getProvider(), httpClientService);
     }
 
     public SamouraiNetwork getSamouraiNetwork() {
@@ -107,6 +110,8 @@ public class WhirlpoolServices {
 
     public void startWhirlpool(Wallet wallet, Whirlpool whirlpool, boolean notifyIfMixToMissing) {
         if(wallet.getMasterMixConfig().getMixOnStartup() != Boolean.FALSE) {
+            whirlpool.setOnion(sorobanConfig.getExtLibJConfig().isOnion());
+
             try {
                 String mixToWalletId = getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
                 whirlpool.setMixToWallet(mixToWalletId, wallet.getMasterMixConfig().getMinMixes());
@@ -221,6 +226,18 @@ public class WhirlpoolServices {
 
     @Subscribe
     public void newConnection(ConnectionEvent event) {
+        ExtLibJConfig extLibJConfig = sorobanConfig.getExtLibJConfig();
+        extLibJConfig.setOnion(getTorProxy() != null);
+        getHttpClientService(); //Ensure proxy is updated
+
+        try {
+            Field onionField = RpcClientService.class.getDeclaredField("onion");
+            onionField.setAccessible(true);
+            onionField.set(sorobanConfig.getRpcClientService(), getTorProxy() != null);
+        } catch(Exception e) {
+            log.warn("Error changing onion on RpcClientService", e);
+        }
+
         startAllWhirlpool();
         bindDebugAccelerator();
     }

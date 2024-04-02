@@ -128,7 +128,8 @@ public class SparrowUtxoSupplier extends BasicUtxoSupplier {
 
     @Override
     public byte[] _getPrivKeyBip47(UnspentOutput utxo) throws Exception {
-        Wallet wallet = SparrowDataSource.getWallet(utxo.xpub.m);
+        BipWallet bipWallet = getWalletSupplier().getWalletByXPub(utxo.xpub.m);
+        Wallet wallet = SparrowDataSource.getWallet(bipWallet.getBipPub());
         Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
         WalletNode node = walletUtxos.entrySet().stream()
                 .filter(entry -> entry.getKey().getHash().equals(Sha256Hash.wrap(utxo.tx_hash)) && entry.getKey().getIndex() == utxo.tx_output_n)

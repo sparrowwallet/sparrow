@@ -29,6 +29,7 @@ import com.samourai.whirlpool.client.wallet.data.dataPersister.DataPersisterFact
 import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceConfig;
 import com.samourai.whirlpool.client.wallet.data.dataSource.DataSourceFactory;
 import com.samourai.whirlpool.client.wallet.data.utxo.UtxoSupplier;
+import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
 import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -60,6 +61,7 @@ import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -108,6 +110,18 @@ public class Whirlpool {
         whirlpoolWalletConfig.setPartner("SPARROW");
         whirlpoolWalletConfig.setIndexRangePostmix(IndexRange.FULL);
         return whirlpoolWalletConfig;
+    }
+
+    void setOnion(boolean onion) {
+        if(config.isTorOnionCoordinator() ^ onion) {
+            try {
+                Field torField = WhirlpoolClientConfig.class.getDeclaredField("torOnionCoordinator");
+                torField.setAccessible(true);
+                torField.set(config, onion);
+            } catch(Exception e) {
+                log.warn("Error changing onion on WhirlpoolWalletConfig", e);
+            }
+        }
     }
 
     private DataSourceConfig computeDataSourceConfig(Integer storedBlockHeight) {
@@ -469,7 +483,7 @@ public class Whirlpool {
         UnspentOutput.Xpub xpub = new UnspentOutput.Xpub();
         ExtendedKey.Header header = testnet ? ExtendedKey.Header.tpub : ExtendedKey.Header.xpub;
         xpub.m = wallet.getKeystores().get(0).getExtendedPublicKey().toString(header);
-        xpub.path = node.getDerivationPath().toUpperCase(Locale.ROOT);
+        xpub.path = node.getWallet().isBip47() ? null : node.getDerivationPath().toUpperCase(Locale.ROOT);
 
         out.xpub = xpub;
 

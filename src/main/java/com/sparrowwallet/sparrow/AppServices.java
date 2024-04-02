@@ -167,6 +167,11 @@ public class AppServices {
                 connectionService.cancel();
                 ratesService.cancel();
                 versionCheckService.cancel();
+
+                if(httpClientService != null) {
+                    HttpClientService.ShutdownService shutdownService = new HttpClientService.ShutdownService(httpClientService);
+                    shutdownService.start();
+                }
             }
         }
     };

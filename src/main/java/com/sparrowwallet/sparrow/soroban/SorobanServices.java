@@ -53,7 +53,10 @@ public class SorobanServices {
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData walletTabData : event.getClosedWalletTabData()) {
             String walletId = walletTabData.getStorage().getWalletId(walletTabData.getWallet());
-            sorobanMap.remove(walletId);
+            Soroban soroban = sorobanMap.remove(walletId);
+            if(soroban != null) {
+                soroban.close();
+            }
         }
     }
 }

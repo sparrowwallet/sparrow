@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.soroban;
 
 import com.samourai.soroban.client.SorobanConfig;
 import com.samourai.soroban.client.wallet.SorobanWalletService;
-import com.samourai.wallet.chain.ChainSupplier;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -10,8 +9,6 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import com.sparrowwallet.sparrow.whirlpool.dataSource.SparrowChainSupplier;
-import javafx.concurrent.Service;
-import javafx.concurrent.Task;
 import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +25,7 @@ public class Soroban {
 
     private HD_Wallet hdWallet;
     private int bip47Account;
+    private SparrowChainSupplier chainSupplier;
 
     public Soroban() {
         SorobanConfig sorobanConfig = AppServices.getWhirlpoolServices().getSorobanConfig();
@@ -63,7 +61,10 @@ public class Soroban {
         }
 
         try {
-            ChainSupplier chainSupplier = new SparrowChainSupplier(wallet.getStoredBlockHeight());
+            if(chainSupplier == null) {
+                chainSupplier = new SparrowChainSupplier(wallet.getStoredBlockHeight());
+                chainSupplier.open();
+            }
             return new SparrowCahootsWallet(chainSupplier, wallet, hdWallet, bip47Account);
         } catch(Exception e) {
             log.error("Could not create cahoots wallet", e);
@@ -78,5 +79,11 @@ public class Soroban {
 
     public SorobanWalletService getSorobanWalletService() {
         return sorobanWalletService;
+    }
+
+    public void close() {
+        if(chainSupplier != null) {
+            chainSupplier.close();
+        }
     }
 }
