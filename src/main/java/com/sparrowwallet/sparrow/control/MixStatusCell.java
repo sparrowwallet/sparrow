@@ -70,7 +70,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
     }
 
     private void setMixFail(MixFailReason mixFailReason, String mixError, Long mixErrorTimestamp) {
-        if(mixFailReason != MixFailReason.STOP_UTXO && !mixFailReason.isSilent()) {
+        if(mixFailReason.isError()) {
             long elapsed = mixErrorTimestamp == null ? 0L : System.currentTimeMillis() - mixErrorTimestamp;
             if(elapsed >= ERROR_DISPLAY_MILLIS) {
                 //Old error, don't set again.

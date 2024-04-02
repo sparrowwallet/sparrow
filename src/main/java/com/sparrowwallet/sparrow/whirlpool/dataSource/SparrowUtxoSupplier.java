@@ -16,6 +16,7 @@ import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
+import org.bitcoinj.core.NetworkParameters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,8 +29,9 @@ public class SparrowUtxoSupplier extends BasicUtxoSupplier {
     public SparrowUtxoSupplier(
             WalletSupplier walletSupplier,
             UtxoConfigSupplier utxoConfigSupplier,
-            DataSourceConfig dataSourceConfig) {
-        super(walletSupplier, utxoConfigSupplier, dataSourceConfig);
+            DataSourceConfig dataSourceConfig,
+            NetworkParameters params) {
+        super(walletSupplier, utxoConfigSupplier, dataSourceConfig, params);
     }
 
     @Override
@@ -120,13 +122,12 @@ public class SparrowUtxoSupplier extends BasicUtxoSupplier {
         // update utxos
         UnspentOutput[] uos = unspentOutputs.toArray(new UnspentOutput[0]);
         WalletResponse.Tx[] txs = txes.toArray(new WalletResponse.Tx[0]);
-        UtxoData utxoData = new UtxoData(uos, txs);
+        UtxoData utxoData = new UtxoData(uos, txs, storedBlockHeight);
         setValue(utxoData);
     }
 
     @Override
-    protected byte[] _getPrivKey(WhirlpoolUtxo whirlpoolUtxo) throws Exception {
-        UnspentOutput utxo = whirlpoolUtxo.getUtxo();
+    public byte[] _getPrivKeyBip47(UnspentOutput utxo) throws Exception {
         Wallet wallet = SparrowDataSource.getWallet(utxo.xpub.m);
         Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getWalletUtxos();
         WalletNode node = walletUtxos.entrySet().stream()
