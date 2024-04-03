@@ -15,10 +15,10 @@ public class SparrowChainSupplier implements ChainSupplier {
 
     public SparrowChainSupplier(Integer storedBlockHeight) {
         this.storedBlockHeight = AppServices.getCurrentBlockHeight() == null ? (storedBlockHeight != null ? storedBlockHeight : 0) : AppServices.getCurrentBlockHeight();
-        this.latestBlock = computeLatestBlock();
     }
 
     public void open() {
+        this.latestBlock = computeLatestBlock();
         EventManager.get().register(this);
     }
 
