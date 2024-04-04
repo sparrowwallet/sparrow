@@ -70,6 +70,8 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     private NodeEntry currentEntry;
 
+    private QRDisplayDialog addressQrDialog;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -83,10 +85,11 @@ public class ReceiveController extends WalletFormController implements Initializ
         displayAddress.setVisible(false);
 
         qrCode.setOnMouseClicked(event -> {
-            if(currentEntry != null) {
-                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(currentEntry.getAddress().toString());
-                qrDisplayDialog.initOwner(address.getScene().getWindow());
-                qrDisplayDialog.showAndWait();
+            if(currentEntry != null && addressQrDialog == null) {
+                addressQrDialog = new QRDisplayDialog(currentEntry.getAddress().toString());
+                addressQrDialog.initOwner(address.getScene().getWindow());
+                addressQrDialog.showAndWait();
+                addressQrDialog = null;
             }
         });
 
@@ -198,6 +201,9 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void refreshAddress() {
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
         setNodeEntry(freshEntry);
+        if(addressQrDialog != null) {
+            addressQrDialog.close();
+        }
     }
 
     private void ensureSufficientGapLimit(int index) {
