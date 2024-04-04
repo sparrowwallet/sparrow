@@ -27,9 +27,9 @@ public class SwController extends KeystoreImportDetailController {
             if(importer instanceof KeystoreFileImport) {
                 importPane = new FileKeystoreImportPane(getMasterController().getWallet(), (KeystoreFileImport)importer, getMasterController().getRequiredDerivation());
             } else if(importer instanceof KeystoreMnemonicImport) {
-                importPane = new MnemonicKeystoreImportPane(getMasterController().getWallet(), (KeystoreMnemonicImport)importer);
+                importPane = new MnemonicKeystoreImportPane(getMasterController().getWallet(), (KeystoreMnemonicImport)importer, getMasterController().getDefaultDerivation());
             } else if(importer instanceof KeystoreXprvImport) {
-                importPane = new XprvKeystoreImportPane(getMasterController().getWallet(), (KeystoreXprvImport)importer);
+                importPane = new XprvKeystoreImportPane(getMasterController().getWallet(), (KeystoreXprvImport)importer, getMasterController().getDefaultDerivation());
             } else {
                 throw new IllegalArgumentException("Could not create ImportPane for importer of type " + importer.getClass());
             }

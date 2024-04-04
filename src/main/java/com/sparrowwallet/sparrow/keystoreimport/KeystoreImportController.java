@@ -31,6 +31,7 @@ public class KeystoreImportController implements Initializable {
     @FXML
     private StackPane importPane;
 
+    private KeyDerivation defaultDerivation;
     private KeyDerivation requiredDerivation;
     private WalletModel requiredModel;
 
@@ -108,6 +109,14 @@ public class KeystoreImportController implements Initializable {
         } catch (IOException e) {
             throw new IllegalStateException("Can't find pane", e);
         }
+    }
+
+    public KeyDerivation getDefaultDerivation() {
+        return defaultDerivation;
+    }
+
+    public void setDefaultDerivation(KeyDerivation defaultDerivation) {
+        this.defaultDerivation = defaultDerivation;
     }
 
     public KeyDerivation getRequiredDerivation() {

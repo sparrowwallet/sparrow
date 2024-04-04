@@ -367,10 +367,10 @@ public class KeystoreController extends WalletFormController implements Initiali
     }
 
     private void launchImportDialog(KeystoreSource initialSource) {
-        boolean restrictSource = keystore.getSource() != KeystoreSource.SW_WATCH && keystoreSourceToggleGroup.getToggles().stream().anyMatch(toggle -> ((ToggleButton)toggle).isDisabled());
-        KeyDerivation requiredDerivation = restrictSource ? keystore.getKeyDerivation() : null;
-        WalletModel requiredModel = restrictSource ? keystore.getWalletModel() : null;
-        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, requiredDerivation, requiredModel, restrictSource);
+        boolean restrictImport = keystore.getSource() != KeystoreSource.SW_WATCH && keystoreSourceToggleGroup.getToggles().stream().anyMatch(toggle -> ((ToggleButton)toggle).isDisabled());
+        KeyDerivation currentDerivation = keystore.getKeyDerivation();
+        WalletModel currentModel = keystore.getWalletModel();
+        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, currentDerivation, currentModel, restrictImport);
         dlg.initOwner(selectSourcePane.getScene().getWindow());
         Optional<Keystore> result = dlg.showAndWait();
         if(result.isPresent()) {

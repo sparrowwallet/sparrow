@@ -29,7 +29,7 @@ public class FileKeystoreImportPane extends FileImportPane {
         }
 
         if(requiredDerivation != null && !requiredDerivation.getDerivation().equals(keystore.getKeyDerivation().getDerivation())) {
-            setError("Incorrect derivation", "This account requires a derivation of " + requiredDerivation.getDerivationPath() + ", but the imported keystore has a derivation of " + keystore.getKeyDerivation().getDerivationPath() + ".");
+            setError("Incorrect derivation", "This account requires a derivation of " + requiredDerivation.getDerivationPath() + ", but the imported keystore has a derivation of " + KeyDerivation.writePath(keystore.getKeyDerivation().getDerivation()) + ".");
         } else {
             EventManager.get().post(new KeystoreImportEvent(keystore));
         }

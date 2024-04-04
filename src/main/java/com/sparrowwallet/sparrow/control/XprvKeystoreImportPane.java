@@ -28,16 +28,18 @@ import java.util.List;
 public class XprvKeystoreImportPane extends TitledDescriptionPane {
     protected final Wallet wallet;
     protected final KeystoreXprvImport importer;
+    protected final KeyDerivation defaultDerivation;
 
     private Button enterXprvButton;
     private SplitMenuButton importButton;
 
     private ExtendedKey xprv;
 
-    public XprvKeystoreImportPane(Wallet wallet, KeystoreXprvImport importer) {
+    public XprvKeystoreImportPane(Wallet wallet, KeystoreXprvImport importer, KeyDerivation defaultDerivation) {
         super(importer.getName(), "Extended key import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
         this.wallet = wallet;
         this.importer = importer;
+        this.defaultDerivation = defaultDerivation;
 
         createImportButton();
         buttonBox.getChildren().add(importButton);
@@ -47,6 +49,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         super("Master Private Key", "BIP32 key", "", "image/" + WalletModel.SEED.getType() + ".png");
         this.wallet = null;
         this.importer = null;
+        this.defaultDerivation = keystore.getKeyDerivation();
 
         try {
             this.xprv = keystore.getExtendedMasterPrivateKey();
@@ -79,7 +82,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         importButton.getStyleClass().add("default-button");
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
-            importKeystore(wallet.getScriptType().getDefaultDerivation());
+            importKeystore(getDefaultDerivation());
         });
         String[] accounts = new String[] {"Import Default Account #0", "Import Account #1", "Import Account #2", "Import Account #3", "Import Account #4", "Import Account #5", "Import Account #6", "Import Account #7", "Import Account #8", "Import Account #9"};
         int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
@@ -95,6 +98,10 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
 
         importButton.managedProperty().bind(importButton.visibleProperty());
         importButton.setVisible(false);
+    }
+
+    private List<ChildNumber> getDefaultDerivation() {
+        return defaultDerivation == null || defaultDerivation.getDerivation().isEmpty() ? wallet.getScriptType().getDefaultDerivation() : defaultDerivation.getDerivation();
     }
 
     private void enterXprv() {
@@ -149,7 +156,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
             importButton.setVisible(true);
             setDescription("Ready to import");
             xprv = ExtendedKey.fromDescriptor(xprvField.getText());
-            setContent(getDerivationEntry(wallet.getScriptType().getDefaultDerivation()));
+            setContent(getDerivationEntry(getDefaultDerivation()));
         });
 
         xprvField.textProperty().addListener((observable, oldValue, newValue) -> {

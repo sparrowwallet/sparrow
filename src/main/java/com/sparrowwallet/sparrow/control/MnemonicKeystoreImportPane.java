@@ -33,6 +33,7 @@ import java.util.Optional;
 public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     protected final Wallet wallet;
     private final KeystoreMnemonicImport importer;
+    private final KeyDerivation defaultDerivation;
 
     private SplitMenuButton importButton;
 
@@ -43,10 +44,11 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     private Button confirmButton;
     private List<String> generatedMnemonicCode;
 
-    public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer) {
+    public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer, KeyDerivation defaultDerivation) {
         super(importer.getName(), "Create or enter seed", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
         this.wallet = wallet;
         this.importer = importer;
+        this.defaultDerivation = defaultDerivation;
 
         createImportButton();
         buttonBox.getChildren().add(importButton);
@@ -59,7 +61,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
         importButton.getStyleClass().add("default-button");
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
-            importKeystore(wallet.getScriptType().getDefaultDerivation(), false);
+            importKeystore(getDefaultDerivation(), false);
         });
         String[] accounts = new String[] {"Import Default Account #0", "Import Account #1", "Import Account #2", "Import Account #3", "Import Account #4", "Import Account #5", "Import Account #6", "Import Account #7", "Import Account #8", "Import Account #9"};
         int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
@@ -75,6 +77,10 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
 
         importButton.managedProperty().bind(importButton.visibleProperty());
         importButton.setVisible(false);
+    }
+
+    private List<ChildNumber> getDefaultDerivation() {
+        return defaultDerivation == null || defaultDerivation.getDerivation().isEmpty() ? wallet.getScriptType().getDefaultDerivation() : defaultDerivation.getDerivation();
     }
 
     protected void enterMnemonic(int numWords) {
@@ -243,7 +249,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
             setDescription("Ready to import");
             showHideLink.setText("Show Derivation...");
             showHideLink.setVisible(false);
-            setContent(getDerivationEntry(wallet.getScriptType().getDefaultDerivation()));
+            setContent(getDerivationEntry(getDefaultDerivation()));
         }
     }
 
