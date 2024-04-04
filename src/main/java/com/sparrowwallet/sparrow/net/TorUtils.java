@@ -10,7 +10,10 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,6 +40,10 @@ public class TorUtils {
                 log.warn("Error authenticating to Tor at " + control + ", server returned " + e.getMessage());
             } catch(SocketTimeoutException e) {
                 log.warn("Timeout reading from " + control + ", is this a Tor ControlPort?");
+            } catch(AccessDeniedException e) {
+                log.warn("Permission denied reading Tor cookie file at " + e.getFile());
+            } catch(FileSystemException e) {
+                log.warn("Error reading Tor cookie file at " + e.getFile());
             } catch(Exception e) {
                 log.warn("Error connecting to " + control + ", no Tor ControlPort configured?");
             }
