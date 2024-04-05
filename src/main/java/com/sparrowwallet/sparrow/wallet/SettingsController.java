@@ -344,12 +344,12 @@ public class SettingsController extends WalletFormController implements Initiali
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.outputDescriptor != null) {
-                replaceWallet(result.outputDescriptor.toWallet());
+                rederiveAndReplaceWallet(result.outputDescriptor.toWallet());
             } else if(result.wallets != null) {
                 for(Wallet wallet : result.wallets) {
                     if(scriptType.getValue().equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
                         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
-                        replaceWallet(outputDescriptor.toWallet());
+                        rederiveAndReplaceWallet(outputDescriptor.toWallet());
                         break;
                     }
                 }
@@ -455,9 +455,78 @@ public class SettingsController extends WalletFormController implements Initiali
         try {
             OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.trim().replace("\\", ""));
             Wallet editedWallet = editedOutputDescriptor.toWallet();
-            replaceWallet(editedWallet);
+            rederiveAndReplaceWallet(editedWallet);
         } catch(Exception e) {
             AppServices.showErrorDialog("Invalid output descriptor", e.getMessage());
+        }
+    }
+
+    private void rederiveAndReplaceWallet(Wallet editedWallet) {
+        boolean rederive = false;
+        for(Keystore keystore : editedWallet.getKeystores()) {
+            Optional<Keystore> optExisting = walletForm.getWallet().getKeystores().stream()
+                    .filter(k -> k.hasMasterPrivateKey() && k.getKeyDerivation() != null && k.getKeyDerivation().getMasterFingerprint() != null && keystore.getKeyDerivation() != null
+                            && k.getKeyDerivation().getMasterFingerprint().equals(keystore.getKeyDerivation().getMasterFingerprint())).findFirst();
+            if(optExisting.isPresent() && !keystore.hasMasterPrivateKey()) {
+                Keystore existing = optExisting.get();
+                keystore.setLabel(existing.getLabel());
+                keystore.setSource(existing.getSource());
+                keystore.setWalletModel(existing.getWalletModel());
+                if(existing.getKeyDerivation().getDerivation().equals(keystore.getKeyDerivation().getDerivation())) {
+                    keystore.setExtendedPublicKey(existing.getExtendedPublicKey());
+                } else {
+                    rederive = true;
+                }
+                if(existing.hasSeed()) {
+                    keystore.setSeed(existing.getSeed());
+                } else if(existing.hasMasterPrivateExtendedKey()) {
+                    keystore.setMasterPrivateExtendedKey(existing.getMasterPrivateExtendedKey());
+                }
+            }
+        }
+
+        if(rederive && editedWallet.isEncrypted()) {
+            rederiveAndReplaceEncryptedWallet(editedWallet);
+        } else {
+            replaceWallet(editedWallet);
+        }
+    }
+
+    private void rederiveAndReplaceEncryptedWallet(Wallet editedWallet) {
+        WalletPasswordDialog dlg = new WalletPasswordDialog(walletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+        dlg.initOwner(apply.getScene().getWindow());
+        Optional<SecureString> password = dlg.showAndWait();
+        if(password.isPresent()) {
+            Storage storage = walletForm.getStorage();
+            Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+            keyDerivationService.setOnSucceeded(workerStateEvent -> {
+                EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Done"));
+                ECKey encryptionFullKey = keyDerivationService.getValue();
+                Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                try {
+                    storage.restorePublicKeysFromSeed(editedWallet, key);
+                    replaceWallet(editedWallet);
+                } catch(Exception e) {
+                    log.error("Error restoring public keys from seed", e);
+                } finally {
+                    key.clear();
+                    encryptionFullKey.clear();
+                    password.get().clear();
+                }
+            });
+            keyDerivationService.setOnFailed(workerStateEvent -> {
+                EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Failed"));
+                if(keyDerivationService.getException() instanceof InvalidPasswordException) {
+                    Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
+                    if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
+                        Platform.runLater(() -> rederiveAndReplaceEncryptedWallet(editedWallet));
+                    }
+                } else {
+                    log.error("Error deriving wallet key", keyDerivationService.getException());
+                }
+            });
+            EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
+            keyDerivationService.start();
         }
     }
 
