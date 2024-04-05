@@ -1,11 +1,15 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.SeedQR;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
+
+import java.util.Optional;
 
 public class SeedDisplayDialog extends Dialog<Void> {
     public SeedDisplayDialog(Keystore decryptedKeystore) {
@@ -39,13 +43,31 @@ public class SeedDisplayDialog extends Dialog<Void> {
 
         stackPane.getChildren().addAll(anchorPane);
 
+        final ButtonType seedQRButtonType = new javafx.scene.control.ButtonType("Show SeedQR", ButtonBar.ButtonData.LEFT);
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialogPane.getButtonTypes().addAll(cancelButtonType);
+        dialogPane.getButtonTypes().addAll(seedQRButtonType, cancelButtonType);
+
+        Button seedQRButton = (Button)dialogPane.lookupButton(seedQRButtonType);
+        seedQRButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            showSeedQR(decryptedKeystore);
+        });
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(150 + height);
         AppServices.moveToActiveWindowScreen(this);
 
         Platform.runLater(() -> keystoreAccordion.setExpandedPane(keystorePane));
+    }
+
+    private void showSeedQR(Keystore decryptedKeystore) {
+        Optional<ButtonType> optButtonType = AppServices.showWarningDialog("Sensitive QR", "The following QR contains these seed words. " +
+                "Be careful before displaying or digitally recording it.\n\nAre you sure you want to continue?", ButtonType.YES, ButtonType.NO);
+        if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
+            String seedQR = SeedQR.getSeedQR(decryptedKeystore.getSeed());
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(seedQR);
+            qrDisplayDialog.initOwner(getDialogPane().getScene().getWindow());
+            qrDisplayDialog.showAndWait();
+        }
     }
 }
