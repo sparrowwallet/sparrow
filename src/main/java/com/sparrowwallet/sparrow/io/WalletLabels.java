@@ -1,8 +1,10 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.csvreader.CsvReader;
 import com.google.gson.Gson;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -141,7 +143,17 @@ public class WalletLabels implements WalletImport, WalletExport {
                 try {
                     label = gson.fromJson(line, Label.class);
                 } catch(Exception e) {
-                    continue;
+                    //Try parse Electrum history CSV, or any CSV with txid,label entries
+                    try {
+                        CsvReader csvReader = new CsvReader(new StringReader(line));
+                        if(csvReader.readRecord() && csvReader.getColumnCount() > 1 && csvReader.get(0).length() == 64 && Utils.isHex(csvReader.get(0))) {
+                            label = new Label(Type.tx, csvReader.get(0), csvReader.get(1), null, null);
+                        } else {
+                            continue;
+                        }
+                    } catch(Exception ex) {
+                        continue;
+                    }
                 }
 
                 if(label == null || label.type == null || label.ref == null) {
