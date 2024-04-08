@@ -124,7 +124,7 @@ public class WalletLabels implements WalletImport, WalletExport {
 
     @Override
     public String getWalletImportDescription() {
-        return "Imports a file containing labels in the BIP329 standard format to the currently selected wallet.";
+        return "Imports a file containing labels in the BIP329 standard (or Electrum history CSV) format to the currently selected wallet.";
     }
 
     @Override
