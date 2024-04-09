@@ -340,7 +340,7 @@ public class WhirlpoolController {
             });
             tx0PreviewsService.setOnSucceeded(workerStateEvent -> {
                 tx0Previews = tx0PreviewsService.getValue();
-                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(this.pool.getValue().getPoolId());
+                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(this.pool.getValue() == null ? pool.getPoolId() : this.pool.getValue().getPoolId());
                 tx0PreviewProperty.set(tx0Preview);
             });
             tx0PreviewsService.setOnFailed(workerStateEvent -> {
