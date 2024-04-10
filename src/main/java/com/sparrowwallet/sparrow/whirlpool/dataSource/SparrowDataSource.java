@@ -8,6 +8,7 @@ import com.samourai.wallet.api.backend.seenBackend.SeenBackendWithFallback;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.httpClient.HttpUsage;
 import com.samourai.wallet.httpClient.IHttpClient;
+import com.samourai.wallet.util.ExtLibJConfig;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWallet;
 import com.samourai.whirlpool.client.wallet.WhirlpoolWalletConfig;
 import com.samourai.whirlpool.client.wallet.data.coordinator.CoordinatorSupplier;
@@ -57,7 +58,8 @@ public class SparrowDataSource extends AbstractDataSource {
     }
 
     private ISeenBackend computeSeenBackend(WhirlpoolWalletConfig whirlpoolWalletConfig) {
-        IHttpClient httpClient = whirlpoolWalletConfig.getHttpClient(HttpUsage.BACKEND);
+        ExtLibJConfig extLibJConfig = whirlpoolWalletConfig.getSorobanConfig().getExtLibJConfig();
+        IHttpClient httpClient = extLibJConfig.getHttpClientService().getHttpClient(HttpUsage.BACKEND);
         ISeenBackend sparrowSeenBackend = new SparrowSeenBackend(getWhirlpoolWallet().getWalletIdentifier(), httpClient);
         NetworkParameters params = whirlpoolWalletConfig.getSamouraiNetwork().getParams();
         return SeenBackendWithFallback.withOxt(sparrowSeenBackend, params);
