@@ -264,7 +264,7 @@ public class CounterpartyController extends SorobanController {
                     .subscribe(responseMessage -> {
                         requestUserAttention();
                         if(accepted) {
-                            startCounterpartyCollaboration(sorobanWalletCounterparty, paymentCodeInitiator, cahootsType, soroban.getBip47Account());
+                            startCounterpartyCollaboration(sorobanWalletCounterparty, paymentCodeInitiator, cahootsType, cahootsWallet.getAccount());
                             followPaymentCode(paymentCodeInitiator);
                         }
                     }, error -> {

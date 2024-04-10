@@ -21,14 +21,17 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import org.bitcoinj.core.NetworkParameters;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class SparrowCahootsWallet extends AbstractCahootsWallet {
     private final Wallet wallet;
     private final HD_Wallet bip84w;
     private final int account;
     private final List<CahootsUtxo> utxos;
+    private final Map<KeyPurpose, WalletNode> lastWalletNodes = new HashMap<>();
 
     public SparrowCahootsWallet(ChainSupplier chainSupplier, Wallet wallet, HD_Wallet bip84w, int bip47Account) {
         super(chainSupplier, bip84w.getFingerprint(), new BIP47Wallet(bip84w).getAccount(bip47Account));
@@ -59,15 +62,15 @@ public class SparrowCahootsWallet extends AbstractCahootsWallet {
     protected String doFetchAddressReceive(int account, boolean increment, BipFormat bipFormat) throws Exception {
         if(account == StandardAccount.WHIRLPOOL_POSTMIX.getAccountNumber()) {
             // force change chain
-            return getAddress(account, KeyPurpose.CHANGE);
+            return getAddress(account, increment, KeyPurpose.CHANGE);
         }
 
-        return getAddress(account, KeyPurpose.RECEIVE);
+        return getAddress(account, increment, KeyPurpose.RECEIVE);
     }
 
     @Override
     protected String doFetchAddressChange(int account, boolean increment, BipFormat bipFormat) throws Exception {
-        return getAddress(account, KeyPurpose.CHANGE);
+        return getAddress(account, increment, KeyPurpose.CHANGE);
     }
 
     @Override
@@ -75,8 +78,10 @@ public class SparrowCahootsWallet extends AbstractCahootsWallet {
         return utxos;
     }
 
-    private String getAddress(int account, KeyPurpose keyPurpose) {
-        return getWallet(account).getFreshNode(keyPurpose).getAddress().getAddress();
+    private String getAddress(int account, boolean increment, KeyPurpose keyPurpose) {
+        WalletNode addressNode = getWallet(account).getFreshNode(keyPurpose, increment ? lastWalletNodes.get(keyPurpose) : null);
+        lastWalletNodes.put(keyPurpose, addressNode);
+        return addressNode.getAddress().getAddress();
     }
 
     private Wallet getWallet(int account) {

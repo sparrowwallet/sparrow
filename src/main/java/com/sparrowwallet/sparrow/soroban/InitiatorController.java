@@ -63,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 import java.util.function.UnaryOperator;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
@@ -424,7 +425,7 @@ public class InitiatorController extends SorobanController {
 
             Payment payment = walletTransaction.getPayments().get(0);
             long feePerB = (long)walletTransaction.getFeeRate();
-            CahootsContext cahootsContext = CahootsContext.newInitiator(cahootsWallet, cahootsType, soroban.getBip47Account(), feePerB, payment.getAmount(), payment.getAddress().getAddress(), paymentCodeCounterparty.toString());
+            CahootsContext cahootsContext = CahootsContext.newInitiator(cahootsWallet, cahootsType, cahootsWallet.getAccount(), feePerB, payment.getAmount(), payment.getAddress().getAddress(), paymentCodeCounterparty.toString());
 
             CahootsSorobanInitiatorListener listener = new CahootsSorobanInitiatorListener() {
                 @Override
@@ -684,9 +685,10 @@ public class InitiatorController extends SorobanController {
     }
 
     private static String getErrorMessage(Throwable error) {
+        String message = error.getMessage() == null ? (error instanceof TimeoutException ? "Timed out receiving meeting response" : "Error receiving meeting response") : error.getMessage();
         String cutFrom = "Exception: ";
-        int index = error.getMessage().lastIndexOf(cutFrom);
-        String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
+        int index = message.lastIndexOf(cutFrom);
+        String msg = index < 0 ? message : message.substring(index + cutFrom.length());
         msg = msg.replace("#Cahoots", "mix transaction");
         msg = msg.endsWith(".") ? msg : msg + ".";
         return msg;

@@ -189,8 +189,6 @@ application {
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.io=com.google.gson",
                                  "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
-                                 "--add-opens=com.samourai.whirlpool.client/com.samourai.whirlpool.client.whirlpool=com.sparrowwallet.sparrow",
-                                 "--add-opens=com.samourai.soroban.client/com.samourai.soroban.client.rpc=com.sparrowwallet.sparrow",
                                  "--add-reads=kotlin.stdlib=kotlinx.coroutines.core"]
 
     if(os.macOsX) {
@@ -240,8 +238,6 @@ jlink {
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.io=com.google.gson",
                    "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
-                   "--add-opens=com.samourai.whirlpool.client/com.samourai.whirlpool.client.whirlpool=com.sparrowwallet.sparrow",
-                   "--add-opens=com.samourai.soroban.client/com.samourai.soroban.client.rpc=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop",
                    "--add-reads=com.sparrowwallet.merged.module=java.sql",
                    "--add-reads=com.sparrowwallet.merged.module=com.sparrowwallet.sparrow",
