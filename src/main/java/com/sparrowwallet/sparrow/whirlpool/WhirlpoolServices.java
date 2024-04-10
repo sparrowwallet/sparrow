@@ -110,8 +110,6 @@ public class WhirlpoolServices {
 
     public void startWhirlpool(Wallet wallet, Whirlpool whirlpool, boolean notifyIfMixToMissing) {
         if(wallet.getMasterMixConfig().getMixOnStartup() != Boolean.FALSE) {
-            whirlpool.setOnion(sorobanConfig.getExtLibJConfig().isOnion());
-
             try {
                 String mixToWalletId = getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
                 whirlpool.setMixToWallet(mixToWalletId, wallet.getMasterMixConfig().getMinMixes());
@@ -229,14 +227,6 @@ public class WhirlpoolServices {
         ExtLibJConfig extLibJConfig = sorobanConfig.getExtLibJConfig();
         extLibJConfig.setOnion(getTorProxy() != null);
         getHttpClientService(); //Ensure proxy is updated
-
-        try {
-            Field onionField = RpcClientService.class.getDeclaredField("onion");
-            onionField.setAccessible(true);
-            onionField.set(sorobanConfig.getRpcClientService(), getTorProxy() != null);
-        } catch(Exception e) {
-            log.warn("Error changing onion on RpcClientService", e);
-        }
 
         startAllWhirlpool();
         bindDebugAccelerator();

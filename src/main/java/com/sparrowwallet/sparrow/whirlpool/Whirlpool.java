@@ -112,18 +112,6 @@ public class Whirlpool {
         return whirlpoolWalletConfig;
     }
 
-    void setOnion(boolean onion) {
-        if(config.isTorOnionCoordinator() ^ onion) {
-            try {
-                Field torField = WhirlpoolClientConfig.class.getDeclaredField("torOnionCoordinator");
-                torField.setAccessible(true);
-                torField.set(config, onion);
-            } catch(Exception e) {
-                log.warn("Error changing onion on WhirlpoolWalletConfig", e);
-            }
-        }
-    }
-
     private DataSourceConfig computeDataSourceConfig(Integer storedBlockHeight) {
         return new DataSourceConfig(SparrowMinerFeeSupplier.getInstance(), new SparrowChainSupplier(storedBlockHeight), BIP_FORMAT.PROVIDER, BIP_WALLETS.WHIRLPOOL);
     }

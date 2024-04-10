@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.soroban;
 import com.samourai.soroban.client.SorobanConfig;
 import com.samourai.soroban.client.wallet.SorobanWalletService;
 import com.samourai.wallet.hd.HD_Wallet;
+import com.samourai.wallet.util.ExtLibJConfig;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -37,7 +38,8 @@ public class Soroban {
     }
 
     public void setHDWallet(Wallet wallet) {
-        NetworkParameters params = sorobanWalletService.getSorobanService().getParams();
+        ExtLibJConfig extLibJConfig = sorobanWalletService.getSorobanService().getSorobanConfig().getExtLibJConfig();
+        NetworkParameters params = extLibJConfig.getSamouraiNetwork().getParams();
         hdWallet = Whirlpool.computeHdWallet(wallet, params);
         bip47Account = wallet.isMasterWallet() ? wallet.getAccountIndex() : wallet.getMasterWallet().getAccountIndex();
     }
