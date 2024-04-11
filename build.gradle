@@ -53,7 +53,7 @@ tasks.withType(AbstractArchiveTask) {
 }
 
 javafx {
-    version = "18"
+    sdk = "/home/scy/git/jfx-sandbox/build/sdk"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 
@@ -198,7 +198,7 @@ application {
                                       "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
     }
     if(headless) {
-        applicationDefaultJvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
+        applicationDefaultJvmArgs += ["-Dglass.platform=Headless", "-Dprism.order=sw"]
     }
 }
 
@@ -262,7 +262,7 @@ jlink {
             jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
         }
         if(headless) {
-            jvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
+            jvmArgs += ["-Dglass.platform=Headless", "-Dprism.order=sw"]
         }
     }
     addExtraDependencies("javafx")
