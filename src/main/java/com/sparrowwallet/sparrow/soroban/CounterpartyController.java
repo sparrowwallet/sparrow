@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.soroban;
 
+import com.google.common.base.Throwables;
 import com.samourai.soroban.client.cahoots.OnlineCahootsMessage;
 import com.samourai.soroban.client.meeting.SorobanRequestMessage;
 import com.samourai.soroban.client.wallet.SorobanWalletService;
@@ -8,7 +9,6 @@ import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.samourai.wallet.cahoots.Cahoots;
 import com.samourai.wallet.cahoots.CahootsContext;
 import com.samourai.wallet.cahoots.CahootsType;
-import com.samourai.wallet.cahoots.CahootsWallet;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
@@ -359,11 +360,12 @@ public class CounterpartyController extends SorobanController {
                 }
             };
             cahootsService.setOnFailed(event -> {
-                Throwable error = event.getSource().getException();
+                Throwable error = Throwables.getRootCause(event.getSource().getException());
                 log.error("Error creating mix transaction", error);
                 String cutFrom = "Exception: ";
-                int index = error.getMessage().lastIndexOf(cutFrom);
-                String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
+                String message = error.getMessage() == null ? (error instanceof TimeoutException || step3Timer.getProgress() == 0d ? "Timed out receiving response" : "Error receiving response") : error.getMessage();
+                int index = message.lastIndexOf(cutFrom);
+                String msg = index < 0 ? message : message.substring(index + cutFrom.length());
                 msg = msg.replace("#Cahoots", "mix transaction");
                 step3Desc.setText(msg);
                 sorobanProgressLabel.setVisible(false);
