@@ -1,12 +1,14 @@
 package com.sparrowwallet.sparrow.soroban;
 
-import com.samourai.soroban.client.SorobanServer;
 import com.samourai.wallet.api.backend.beans.UnspentOutput;
+import com.samourai.wallet.bip47.rpc.BIP47Wallet;
 import com.samourai.wallet.bip47.rpc.PaymentAddress;
 import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.samourai.wallet.bip47.rpc.java.Bip47UtilJava;
+import com.samourai.wallet.bipFormat.BipFormat;
+import com.samourai.wallet.cahoots.AbstractCahootsWallet;
 import com.samourai.wallet.cahoots.CahootsUtxo;
-import com.samourai.wallet.cahoots.SimpleCahootsWallet;
+import com.samourai.wallet.chain.ChainSupplier;
 import com.samourai.wallet.hd.HD_Address;
 import com.samourai.wallet.hd.HD_Wallet;
 import com.samourai.wallet.send.MyTransactionOutPoint;
@@ -17,21 +19,27 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
-import org.apache.commons.lang3.tuple.Pair;
+import org.bitcoinj.core.NetworkParameters;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
-public class SparrowCahootsWallet extends SimpleCahootsWallet {
+public class SparrowCahootsWallet extends AbstractCahootsWallet {
     private final Wallet wallet;
+    private final HD_Wallet bip84w;
     private final int account;
-    private final int bip47Account;
+    private final List<CahootsUtxo> utxos;
+    private final Map<KeyPurpose, WalletNode> lastWalletNodes = new HashMap<>();
 
-    public SparrowCahootsWallet(Wallet wallet, HD_Wallet bip84w, int bip47Account, SorobanServer sorobanServer, long feePerB) throws Exception {
-        super(bip84w, sorobanServer.getParams(), wallet.getFreshNode(KeyPurpose.CHANGE).getIndex(), feePerB);
+    public SparrowCahootsWallet(ChainSupplier chainSupplier, Wallet wallet, HD_Wallet bip84w, int bip47Account) {
+        super(chainSupplier, bip84w.getFingerprint(), new BIP47Wallet(bip84w).getAccount(bip47Account));
         this.wallet = wallet;
+        this.bip84w = bip84w;
         this.account = wallet.getAccountIndex();
-        this.bip47Account = bip47Account;
+        this.utxos = new LinkedList<>();
+
         bip84w.getAccount(account).getReceive().setAddrIdx(wallet.getFreshNode(KeyPurpose.RECEIVE).getIndex());
         bip84w.getAccount(account).getChange().setAddrIdx(wallet.getFreshNode(KeyPurpose.CHANGE).getIndex());
 
@@ -40,32 +48,6 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
             bip84w.getAccount(0).getReceive().setAddrIdx(masterWallet.getFreshNode(KeyPurpose.RECEIVE).getIndex());
             bip84w.getAccount(0).getChange().setAddrIdx(masterWallet.getFreshNode(KeyPurpose.CHANGE).getIndex());
         }
-    }
-
-    public void addUtxo(WalletNode node, BlockTransaction blockTransaction, int index) {
-        if(node.getWallet().getScriptType() != ScriptType.P2WPKH) {
-            return;
-        }
-
-        UnspentOutput unspentOutput = Whirlpool.getUnspentOutput(node, blockTransaction, index);
-        MyTransactionOutPoint myTransactionOutPoint = unspentOutput.computeOutpoint(getParams());
-
-        CahootsUtxo cahootsUtxo;
-        if(node.getWallet().isBip47()) {
-            try {
-                String strPaymentCode = node.getWallet().getKeystores().get(0).getExternalPaymentCode().toString();
-                HD_Address hdAddress = getBip47Wallet().getAccount(getBip47Account()).addressAt(node.getIndex());
-                PaymentAddress paymentAddress = Bip47UtilJava.getInstance().getPaymentAddress(new PaymentCode(strPaymentCode), 0, hdAddress, getParams());
-                cahootsUtxo = new CahootsUtxo(myTransactionOutPoint, node.getDerivationPath(), paymentAddress.getReceiveECKey());
-            } catch(Exception e) {
-                throw new IllegalStateException("Cannot add BIP47 UTXO", e);
-            }
-        } else {
-            HD_Address hdAddress = getBip84Wallet().getAddressAt(account, unspentOutput);
-            cahootsUtxo = new CahootsUtxo(myTransactionOutPoint, node.getDerivationPath(), hdAddress.getECKey());
-        }
-
-        addUtxo(account, cahootsUtxo);
     }
 
     public Wallet getWallet() {
@@ -77,28 +59,29 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
     }
 
     @Override
-    protected List<CahootsUtxo> fetchUtxos(int account) {
-        List<CahootsUtxo> utxos = super.fetchUtxos(account);
-        if(utxos == null) {
-            utxos = new LinkedList<>();
+    protected String doFetchAddressReceive(int account, boolean increment, BipFormat bipFormat) throws Exception {
+        if(account == StandardAccount.WHIRLPOOL_POSTMIX.getAccountNumber()) {
+            // force change chain
+            return getAddress(account, increment, KeyPurpose.CHANGE);
         }
 
+        return getAddress(account, increment, KeyPurpose.RECEIVE);
+    }
+
+    @Override
+    protected String doFetchAddressChange(int account, boolean increment, BipFormat bipFormat) throws Exception {
+        return getAddress(account, increment, KeyPurpose.CHANGE);
+    }
+
+    @Override
+    public List<CahootsUtxo> getUtxosWpkhByAccount(int account) {
         return utxos;
     }
 
-    @Override
-    public Pair<Integer, Integer> fetchReceiveIndex(int account) throws Exception {
-        if(account == StandardAccount.WHIRLPOOL_POSTMIX.getAccountNumber()) {
-            // force change chain
-            return Pair.of(getWallet(account).getFreshNode(KeyPurpose.CHANGE).getIndex(), 1);
-        }
-
-        return Pair.of(getWallet(account).getFreshNode(KeyPurpose.RECEIVE).getIndex(), 0);
-    }
-
-    @Override
-    public Pair<Integer, Integer> fetchChangeIndex(int account) throws Exception {
-        return Pair.of(getWallet(account).getFreshNode(KeyPurpose.CHANGE).getIndex(), 1);
+    private String getAddress(int account, boolean increment, KeyPurpose keyPurpose) {
+        WalletNode addressNode = getWallet(account).getFreshNode(keyPurpose, increment ? lastWalletNodes.get(keyPurpose) : null);
+        lastWalletNodes.put(keyPurpose, addressNode);
+        return addressNode.getAddress().getAddress();
     }
 
     private Wallet getWallet(int account) {
@@ -108,9 +91,30 @@ public class SparrowCahootsWallet extends SimpleCahootsWallet {
 
         return wallet;
     }
+    public void addUtxo(WalletNode node, BlockTransaction blockTransaction, int index) {
+        if(node.getWallet().getScriptType() != ScriptType.P2WPKH) {
+            return;
+        }
 
-    @Override
-    public int getBip47Account() {
-        return bip47Account;
+        NetworkParameters params = getBip47Account().getParams();
+        UnspentOutput unspentOutput = Whirlpool.getUnspentOutput(node, blockTransaction, index);
+        MyTransactionOutPoint myTransactionOutPoint = unspentOutput.computeOutpoint(params);
+
+        CahootsUtxo cahootsUtxo;
+        if(node.getWallet().isBip47()) {
+            try {
+                String strPaymentCode = node.getWallet().getKeystores().get(0).getExternalPaymentCode().toString();
+                HD_Address hdAddress = getBip47Account().addressAt(node.getIndex());
+                PaymentAddress paymentAddress = Bip47UtilJava.getInstance().getPaymentAddress(new PaymentCode(strPaymentCode), 0, hdAddress, params);
+                cahootsUtxo = new CahootsUtxo(myTransactionOutPoint, node.getDerivationPath(), null, paymentAddress.getReceiveECKey().getPrivKeyBytes());
+            } catch(Exception e) {
+                throw new IllegalStateException("Cannot add BIP47 UTXO", e);
+            }
+        } else {
+            HD_Address hdAddress = bip84w.getAddressAt(account, unspentOutput);
+            cahootsUtxo = new CahootsUtxo(myTransactionOutPoint, node.getDerivationPath(), null, hdAddress.getECKey().getPrivKeyBytes());
+        }
+
+        utxos.add(cahootsUtxo);
     }
 }

@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
+import javafx.application.Platform;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -92,7 +93,8 @@ public class WalletUtxosEntry extends Entry {
 
         calculateDuplicates();
         calculateDust();
-        updateMixProgress();
+        //Update mix status after SparrowUtxoSupplier has refreshed
+        Platform.runLater(this::updateMixProgress);
     }
 
     public long getBalance() {

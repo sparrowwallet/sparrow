@@ -1,24 +1,32 @@
 package com.sparrowwallet.sparrow.soroban;
 
-import com.samourai.soroban.cahoots.CahootsContext;
+import com.google.common.base.Throwables;
 import com.samourai.soroban.client.cahoots.OnlineCahootsMessage;
-import com.samourai.soroban.client.cahoots.SorobanCahootsService;
+import com.samourai.soroban.client.meeting.SorobanRequestMessage;
+import com.samourai.soroban.client.wallet.SorobanWalletService;
+import com.samourai.soroban.client.wallet.counterparty.SorobanWalletCounterparty;
 import com.samourai.wallet.bip47.rpc.PaymentCode;
 import com.samourai.wallet.cahoots.Cahoots;
+import com.samourai.wallet.cahoots.CahootsContext;
 import com.samourai.wallet.cahoots.CahootsType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
-import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
+import io.reactivex.functions.Consumer;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -31,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.soroban.Soroban.TIMEOUT_MS;
@@ -226,41 +235,52 @@ public class CounterpartyController extends SorobanController {
 
     private void startCounterpartyMeetingReceive() {
         Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-        SparrowCahootsWallet counterpartyCahootsWallet = soroban.getCahootsWallet(wallet, 1);
+        SorobanWalletService sorobanWalletService = soroban.getSorobanWalletService();
 
-        try {
-            SorobanCahootsService sorobanMeetingService = soroban.getSorobanCahootsService(counterpartyCahootsWallet);
-            sorobanMeetingService.receiveMeetingRequest(TIMEOUT_MS)
+        SparrowCahootsWallet cahootsWallet = soroban.getCahootsWallet(wallet);
+        SorobanWalletCounterparty sorobanWalletCounterparty = sorobanWalletService.getSorobanWalletCounterparty(cahootsWallet);
+        sorobanWalletCounterparty.setTimeoutMeetingMs(TIMEOUT_MS);
+
+        Service<SorobanRequestMessage> receiveMeetingService = new Service<>() {
+            @Override
+            protected Task<SorobanRequestMessage> createTask() {
+                return new Task<>() {
+                    @Override
+                    protected SorobanRequestMessage call() throws Exception {
+                        return sorobanWalletCounterparty.receiveMeetingRequest();
+                    }
+                };
+            }
+        };
+        receiveMeetingService.setOnSucceeded(event -> {
+            SorobanRequestMessage requestMessage = receiveMeetingService.getValue();
+            PaymentCode paymentCodeInitiator = requestMessage.getSender();
+            CahootsType cahootsType = requestMessage.getType();
+            updateMixPartner(paymentCodeInitiator, cahootsType);
+            Boolean accepted = (Boolean)Platform.enterNestedEventLoop(meetingAccepted);
+
+            sorobanWalletCounterparty.sendMeetingResponse(requestMessage, accepted)
                     .subscribeOn(Schedulers.io())
                     .observeOn(JavaFxScheduler.platform())
-                    .subscribe(requestMessage -> {
-                        String code = requestMessage.getSender();
-                        CahootsType cahootsType = requestMessage.getType();
-                        PaymentCode paymentCodeInitiator = new PaymentCode(code);
-                        updateMixPartner(paymentCodeInitiator, cahootsType);
-                        Boolean accepted = (Boolean)Platform.enterNestedEventLoop(meetingAccepted);
-                        sorobanMeetingService.sendMeetingResponse(paymentCodeInitiator, requestMessage, accepted)
-                                .subscribeOn(Schedulers.io())
-                                .observeOn(JavaFxScheduler.platform())
-                                .subscribe(responseMessage -> {
-                                    requestUserAttention();
-                                    if(accepted) {
-                                        startCounterpartyCollaboration(counterpartyCahootsWallet, paymentCodeInitiator, cahootsType);
-                                        followPaymentCode(paymentCodeInitiator);
-                                    }
-                                }, error -> {
-                                    log.error("Error sending meeting response", error);
-                                    mixingPartner.setVisible(false);
-                                    requestUserAttention();
-                                });
+                    .subscribe(responseMessage -> {
+                        requestUserAttention();
+                        if(accepted) {
+                            startCounterpartyCollaboration(sorobanWalletCounterparty, paymentCodeInitiator, cahootsType, cahootsWallet.getAccount());
+                            followPaymentCode(paymentCodeInitiator);
+                        }
                     }, error -> {
-                        log.error("Failed to receive meeting request", error);
+                        log.error("Error sending meeting response", error);
                         mixingPartner.setVisible(false);
                         requestUserAttention();
                     });
-        } catch(Exception e) {
-            log.error("Error sending meeting response", e);
-        }
+        });
+        receiveMeetingService.setOnFailed(event -> {
+            Throwable e = event.getSource().getException();
+            log.error("Failed to receive meeting request", e);
+            mixingPartner.setVisible(false);
+            requestUserAttention();
+        });
+        receiveMeetingService.start();
     }
 
     private void updateMixPartner(PaymentCode paymentCodeInitiator, CahootsType cahootsType) {
@@ -290,54 +310,67 @@ public class CounterpartyController extends SorobanController {
         meetingReceived.set(Boolean.TRUE);
     }
 
-    private void startCounterpartyCollaboration(SparrowCahootsWallet counterpartyCahootsWallet, PaymentCode initiatorPaymentCode, CahootsType cahootsType) {
+    private void startCounterpartyCollaboration(SorobanWalletCounterparty sorobanWalletCounterparty, PaymentCode initiatorPaymentCode, CahootsType cahootsType, int account) {
         sorobanProgressLabel.setText("Creating mix transaction...");
+        SparrowCahootsWallet cahootsWallet = (SparrowCahootsWallet)sorobanWalletCounterparty.getCahootsWallet();
 
-        Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
         Map<BlockTransactionHashIndex, WalletNode> walletUtxos = wallet.getSpendableUtxos();
         for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : walletUtxos.entrySet()) {
-            counterpartyCahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
+            cahootsWallet.addUtxo(entry.getValue(), wallet.getWalletTransaction(entry.getKey().getHash()), (int)entry.getKey().getIndex());
         }
 
         try {
-            SorobanCahootsService sorobanCahootsService = soroban.getSorobanCahootsService(counterpartyCahootsWallet);
-            CahootsContext cahootsContext = cahootsType == CahootsType.STONEWALLX2 ? CahootsContext.newCounterpartyStonewallx2() : CahootsContext.newCounterpartyStowaway();
-            sorobanCahootsService.contributor(counterpartyCahootsWallet.getAccount(), cahootsContext, initiatorPaymentCode, TIMEOUT_MS)
-                    .subscribeOn(Schedulers.io())
-                    .observeOn(JavaFxScheduler.platform())
-                    .subscribe(sorobanMessage -> {
-                                OnlineCahootsMessage cahootsMessage = (OnlineCahootsMessage)sorobanMessage;
-                                if(cahootsMessage != null) {
-                                    Cahoots cahoots = cahootsMessage.getCahoots();
-                                    sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
+            CahootsContext cahootsContext = CahootsContext.newCounterparty(cahootsWallet, cahootsType, account);
+            Consumer<OnlineCahootsMessage> onProgress = cahootsMessage -> {
+                if(cahootsMessage != null) {
+                    Platform.runLater(() -> {
+                        Cahoots cahoots = cahootsMessage.getCahoots();
+                        sorobanProgressBar.setProgress((double)(cahoots.getStep() + 1) / 5);
 
-                                    if(cahoots.getStep() == 3) {
-                                        sorobanProgressLabel.setText("Your mix partner is reviewing the transaction...");
-                                        step3Timer.start();
-                                    } else if(cahoots.getStep() >= 4) {
-                                        try {
-                                            Transaction transaction = getTransaction(cahoots);
-                                            if(transaction != null) {
-                                                transactionProperty.set(transaction);
-                                                updateTransactionDiagram(transactionDiagram, wallet, null, transaction);
-                                                next();
-                                            }
-                                        } catch(PSBTParseException e) {
-                                            log.error("Invalid collaborative PSBT created", e);
-                                            step3Desc.setText("Invalid transaction created.");
-                                            sorobanProgressLabel.setVisible(false);
-                                        }
-                                    }
+                        if(cahoots.getStep() == 3) {
+                            sorobanProgressLabel.setText("Your mix partner is reviewing the transaction...");
+                            step3Timer.start();
+                        } else if(cahoots.getStep() >= 4) {
+                            try {
+                                Transaction transaction = getTransaction(cahoots);
+                                if(transaction != null) {
+                                    transactionProperty.set(transaction);
+                                    updateTransactionDiagram(transactionDiagram, wallet, null, transaction);
+                                    next();
                                 }
-                            }, error -> {
-                                log.error("Error creating mix transaction", error);
-                                String cutFrom = "Exception: ";
-                                int index = error.getMessage().lastIndexOf(cutFrom);
-                                String msg = index < 0 ? error.getMessage() : error.getMessage().substring(index + cutFrom.length());
-                                msg = msg.replace("#Cahoots", "mix transaction");
-                                step3Desc.setText(msg);
+                            } catch(PSBTParseException e) {
+                                log.error("Invalid collaborative PSBT created", e);
+                                step3Desc.setText("Invalid transaction created.");
                                 sorobanProgressLabel.setVisible(false);
-                            });
+                            }
+                        }
+                    });
+                }
+            };
+
+            Service<Cahoots> cahootsService = new Service<>() {
+                @Override
+                protected Task<Cahoots> createTask() {
+                    return new Task<>() {
+                        @Override
+                        protected Cahoots call() throws Exception {
+                            return sorobanWalletCounterparty.counterparty(cahootsContext, initiatorPaymentCode, onProgress);
+                        }
+                    };
+                }
+            };
+            cahootsService.setOnFailed(event -> {
+                Throwable error = Throwables.getRootCause(event.getSource().getException());
+                log.error("Error creating mix transaction", error);
+                String cutFrom = "Exception: ";
+                String message = error.getMessage() == null ? (error instanceof TimeoutException || step3Timer.getProgress() == 0d ? "Timed out receiving response" : "Error receiving response") : error.getMessage();
+                int index = message.lastIndexOf(cutFrom);
+                String msg = index < 0 ? message : message.substring(index + cutFrom.length());
+                msg = msg.replace("#Cahoots", "mix transaction");
+                step3Desc.setText(msg);
+                sorobanProgressLabel.setVisible(false);
+            });
+            cahootsService.start();
         } catch(Exception e) {
             log.error("Error creating mix transaction", e);
             sorobanProgressLabel.setText(e.getMessage());

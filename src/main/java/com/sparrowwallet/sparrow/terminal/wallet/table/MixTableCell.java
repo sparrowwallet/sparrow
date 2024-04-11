@@ -43,7 +43,7 @@ public class MixTableCell extends TableCell {
 
     private String getMixFail(UtxoEntry.MixStatus mixStatus) {
         long elapsed = mixStatus.getMixErrorTimestamp() == null ? 0L : System.currentTimeMillis() - mixStatus.getMixErrorTimestamp();
-        if(mixStatus.getMixFailReason() == MixFailReason.CANCEL || elapsed >= ERROR_DISPLAY_MILLIS) {
+        if(!mixStatus.getMixFailReason().isError() || elapsed >= ERROR_DISPLAY_MILLIS) {
             return getMixCountOnly(mixStatus);
         }
 

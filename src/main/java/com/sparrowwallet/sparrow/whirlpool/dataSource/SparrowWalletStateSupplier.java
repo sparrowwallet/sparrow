@@ -1,10 +1,11 @@
 package com.sparrowwallet.sparrow.whirlpool.dataSource;
 
+import com.samourai.wallet.bipWallet.BipDerivation;
+import com.samourai.wallet.bipWallet.BipWallet;
 import com.samourai.wallet.client.indexHandler.IIndexHandler;
-import com.samourai.wallet.hd.AddressType;
+import com.samourai.wallet.constants.SamouraiAccount;
 import com.samourai.wallet.hd.Chain;
 import com.samourai.whirlpool.client.wallet.beans.ExternalDestination;
-import com.samourai.whirlpool.client.wallet.beans.WhirlpoolAccount;
 import com.samourai.whirlpool.client.wallet.data.walletState.WalletStateSupplier;
 import com.samourai.whirlpool.client.whirlpool.WhirlpoolClientConfig;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -30,11 +31,12 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
     }
 
     @Override
-    public IIndexHandler getIndexHandlerWallet(WhirlpoolAccount whirlpoolAccount, AddressType addressType, Chain chain) {
-        String key = mapKey(whirlpoolAccount, addressType, chain);
+    public IIndexHandler getIndexHandlerWallet(BipWallet bipWallet, Chain chain) {
+        SamouraiAccount samouraiAccount = bipWallet.getAccount();
+        String key = mapKey(bipWallet, chain);
         IIndexHandler indexHandler = indexHandlerWallets.get(key);
-        if (indexHandler == null) {
-            Wallet wallet = findWallet(whirlpoolAccount);
+        if(indexHandler == null) {
+            Wallet wallet = findWallet(samouraiAccount);
             KeyPurpose keyPurpose = (chain == Chain.RECEIVE ? KeyPurpose.RECEIVE : KeyPurpose.CHANGE);
             WalletNode walletNode = wallet.getNode(keyPurpose);
 
@@ -61,7 +63,8 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
 
         if(externalIndexHandler == null) {
             Wallet externalWallet = null;
-            if(externalDestination.getPostmixHandler() instanceof SparrowPostmixHandler sparrowPostmixHandler) {
+            if(externalDestination.getPostmixHandlerCustom() != null
+                    && externalDestination.getPostmixHandlerCustom() instanceof SparrowPostmixHandler sparrowPostmixHandler) {
                 externalWallet = sparrowPostmixHandler.getWallet();
             } else if(externalDestination.getXpub() != null) {
                 externalWallet = SparrowDataSource.getWallet(externalDestination.getXpub());
@@ -80,7 +83,7 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
 
             KeyPurpose keyPurpose = KeyPurpose.fromChildNumber(new ChildNumber(externalDestination.getChain()));
             WalletNode externalNode = externalWallet.getNode(keyPurpose);
-            externalIndexHandler = new SparrowIndexHandler(externalWallet, externalNode, externalDestination.getStartIndex());
+            externalIndexHandler = new SparrowIndexHandler(externalWallet, externalNode);
         }
 
         return externalIndexHandler;
@@ -97,6 +100,16 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
     }
 
     @Override
+    public boolean isNymClaimed() {
+        return false; // nothing required
+    }
+
+    @Override
+    public void setNymClaimed(boolean value) {
+        // nothing required
+    }
+
+    @Override
     public void load() throws Exception {
         // nothing required
     }
@@ -107,17 +120,19 @@ public class SparrowWalletStateSupplier implements WalletStateSupplier {
         return false;
     }
 
-    private String mapKey(WhirlpoolAccount whirlpoolAccount, AddressType addressType, Chain chain) {
-        return whirlpoolAccount.name()+"_"+addressType.getPurpose()+"_"+chain.getIndex();
+    private String mapKey(BipWallet bipWallet, Chain chain) {
+        SamouraiAccount samouraiAccount = bipWallet.getAccount();
+        BipDerivation derivation = bipWallet.getDerivation();
+        return samouraiAccount.name() + "_" + derivation.getPurpose() + "_" + chain.getIndex();
     }
 
-    private Wallet findWallet(WhirlpoolAccount whirlpoolAccount) {
+    private Wallet findWallet(SamouraiAccount samouraiAccount) {
         Wallet wallet = getWallet();
         if(wallet == null) {
             throw new IllegalStateException("Can't find wallet with walletId " + walletId);
         }
 
-        return Whirlpool.getStandardAccountWallet(whirlpoolAccount, wallet);
+        return Whirlpool.getStandardAccountWallet(samouraiAccount, wallet);
     }
 
     private Wallet getWallet() {

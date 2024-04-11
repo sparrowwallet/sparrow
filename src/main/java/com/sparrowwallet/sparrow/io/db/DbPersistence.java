@@ -256,7 +256,10 @@ public class DbPersistence implements Persistence {
                     }
                     for(Sha256Hash txid : referencedTxIds) {
                         BlockTransaction blkTx = wallet.getTransactions().get(txid);
-                        blockTransactionDao.addOrUpdate(wallet, txid, blkTx);
+                        //May be null for a nested wallet if still updating
+                        if(blkTx != null) {
+                            blockTransactionDao.addOrUpdate(wallet, txid, blkTx);
+                        }
                     }
                     if(!dirtyPersistables.clearHistory) {
                         DetachedLabelDao detachedLabelDao = handle.attach(DetachedLabelDao.class);

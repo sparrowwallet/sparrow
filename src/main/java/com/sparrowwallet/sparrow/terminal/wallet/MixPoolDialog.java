@@ -206,7 +206,7 @@ public class MixPoolDialog extends WalletDialog {
             });
             tx0PreviewsService.setOnSucceeded(workerStateEvent -> {
                 tx0Previews = tx0PreviewsService.getValue();
-                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(pool.getPoolId());
+                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(this.pool.getSelectedItem() == null ? pool.getPoolId() : this.pool.getSelectedItem().pool.getPoolId());
                 tx0PreviewProperty.set(tx0Preview);
             });
             tx0PreviewsService.setOnFailed(workerStateEvent -> {

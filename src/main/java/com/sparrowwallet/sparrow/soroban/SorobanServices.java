@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.soroban;
 
 import com.google.common.eventbus.Subscribe;
-import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
@@ -9,17 +8,12 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.WalletTabsClosedEvent;
-import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.net.TorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-
-import static com.sparrowwallet.sparrow.AppServices.getTorProxy;
 
 public class SorobanServices {
     private static final Logger log = LoggerFactory.getLogger(SorobanServices.class);
@@ -40,14 +34,8 @@ public class SorobanServices {
     public Soroban getSoroban(String walletId) {
         Soroban soroban = sorobanMap.get(walletId);
         if(soroban == null) {
-            HostAndPort torProxy = getTorProxy();
-            soroban = new Soroban(Network.get(), torProxy);
+            soroban = new Soroban();
             sorobanMap.put(walletId, soroban);
-        } else {
-            HostAndPort torProxy = getTorProxy();
-            if(!Objects.equals(soroban.getTorProxy(), torProxy)) {
-                soroban.setTorProxy(getTorProxy());
-            }
         }
 
         return soroban;
@@ -67,11 +55,7 @@ public class SorobanServices {
             String walletId = walletTabData.getStorage().getWalletId(walletTabData.getWallet());
             Soroban soroban = sorobanMap.remove(walletId);
             if(soroban != null) {
-                Soroban.ShutdownService shutdownService = new Soroban.ShutdownService(soroban);
-                shutdownService.setOnFailed(failedEvent -> {
-                    log.error("Failed to shutdown soroban", failedEvent.getSource().getException());
-                });
-                shutdownService.start();
+                soroban.close();
             }
         }
     }

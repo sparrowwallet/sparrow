@@ -167,6 +167,11 @@ public class AppServices {
                 connectionService.cancel();
                 ratesService.cancel();
                 versionCheckService.cancel();
+
+                if(httpClientService != null) {
+                    HttpClientService.ShutdownService shutdownService = new HttpClientService.ShutdownService(httpClientService);
+                    shutdownService.start();
+                }
             }
         }
     };
@@ -542,11 +547,10 @@ public class AppServices {
     }
 
     public static HttpClientService getHttpClientService() {
+        HostAndPort torProxy = getTorProxy();
         if(httpClientService == null) {
-            HostAndPort torProxy = getTorProxy();
             httpClientService = new HttpClientService(torProxy);
         } else {
-            HostAndPort torProxy = getTorProxy();
             if(!Objects.equals(httpClientService.getTorProxy(), torProxy)) {
                 httpClientService.setTorProxy(getTorProxy());
             }

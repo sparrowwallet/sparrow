@@ -2,7 +2,12 @@ package com.sparrowwallet.sparrow.whirlpool;
 
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
+import com.samourai.soroban.client.SorobanConfig;
+import com.samourai.soroban.client.rpc.RpcClientService;
+import com.samourai.wallet.constants.SamouraiNetwork;
+import com.samourai.wallet.util.ExtLibJConfig;
 import com.samourai.whirlpool.client.wallet.WhirlpoolEventService;
+import com.sparrowwallet.drongo.Drongo;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
@@ -14,6 +19,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.soroban.Soroban;
 import javafx.application.Platform;
 import javafx.scene.input.KeyCode;
@@ -24,17 +30,39 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.net.SocketTimeoutException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppServices.getHttpClientService;
 import static com.sparrowwallet.sparrow.AppServices.getTorProxy;
+import static org.bitcoinj.crypto.MnemonicCode.SPARROW_FIX_NFKD_MNEMONIC;
 
 public class WhirlpoolServices {
     private static final Logger log = LoggerFactory.getLogger(WhirlpoolServices.class);
 
     private final Map<String, Whirlpool> whirlpoolMap = new HashMap<>();
+
+    private final SorobanConfig sorobanConfig;
+
+    public WhirlpoolServices() {
+        ExtLibJConfig extLibJConfig = computeExtLibJConfig();
+        this.sorobanConfig = new SorobanConfig(extLibJConfig);
+        System.setProperty(SPARROW_FIX_NFKD_MNEMONIC, "true");
+    }
+
+    private ExtLibJConfig computeExtLibJConfig() {
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        boolean onion = (getTorProxy() != null);
+        SamouraiNetwork samouraiNetwork = getSamouraiNetwork();
+        return new ExtLibJConfig(samouraiNetwork, onion, Drongo.getProvider(), httpClientService);
+    }
+
+    public SamouraiNetwork getSamouraiNetwork() {
+        return SamouraiNetwork.valueOf(Network.get().getName().toUpperCase(Locale.ROOT));
+    }
 
     public Whirlpool getWhirlpool(Wallet wallet) {
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
@@ -50,14 +78,9 @@ public class WhirlpoolServices {
     public Whirlpool getWhirlpool(String walletId) {
         Whirlpool whirlpool = whirlpoolMap.get(walletId);
         if(whirlpool == null) {
-            HostAndPort torProxy = getTorProxy();
-            whirlpool = new Whirlpool(Network.get(), torProxy);
+            Wallet wallet = AppServices.get().getWallet(walletId);
+            whirlpool = new Whirlpool(wallet == null ? null : wallet.getStoredBlockHeight());
             whirlpoolMap.put(walletId, whirlpool);
-        } else if(!whirlpool.isStarted()) {
-            HostAndPort torProxy = getTorProxy();
-            if(!Objects.equals(whirlpool.getTorProxy(), torProxy)) {
-                whirlpool.setTorProxy(getTorProxy());
-            }
         }
 
         return whirlpool;
@@ -87,11 +110,6 @@ public class WhirlpoolServices {
 
     public void startWhirlpool(Wallet wallet, Whirlpool whirlpool, boolean notifyIfMixToMissing) {
         if(wallet.getMasterMixConfig().getMixOnStartup() != Boolean.FALSE) {
-            HostAndPort torProxy = getTorProxy();
-            if(!Objects.equals(whirlpool.getTorProxy(), torProxy)) {
-                whirlpool.setTorProxy(getTorProxy());
-            }
-
             try {
                 String mixToWalletId = getWhirlpoolMixToWalletId(wallet.getMasterMixConfig());
                 whirlpool.setMixToWallet(mixToWalletId, wallet.getMasterMixConfig().getMinMixes());
@@ -122,6 +140,7 @@ public class WhirlpoolServices {
                 }
                 if(exception instanceof TimeoutException || exception instanceof SocketTimeoutException) {
                     EventManager.get().post(new StatusEvent("Error connecting to Whirlpool server, will retry soon..."));
+                    HostAndPort torProxy = getTorProxy();
                     if(torProxy != null) {
                         whirlpool.refreshTorCircuits();
                     }
@@ -205,6 +224,10 @@ public class WhirlpoolServices {
 
     @Subscribe
     public void newConnection(ConnectionEvent event) {
+        ExtLibJConfig extLibJConfig = sorobanConfig.getExtLibJConfig();
+        extLibJConfig.setOnion(getTorProxy() != null);
+        getHttpClientService(); //Ensure proxy is updated
+
         startAllWhirlpool();
         bindDebugAccelerator();
     }
@@ -299,5 +322,9 @@ public class WhirlpoolServices {
                 stopWhirlpool(whirlpool, false);
             });
         }
+    }
+
+    public SorobanConfig getSorobanConfig() {
+        return sorobanConfig;
     }
 }

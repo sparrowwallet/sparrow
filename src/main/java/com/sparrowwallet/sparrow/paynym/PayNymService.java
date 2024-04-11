@@ -52,7 +52,7 @@ public class PayNymService {
         return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
-                .map(Optional::get);
+                .map(o -> o.get());
     }
 
     public static Observable<Map<String, Object>> updateToken(PaymentCode paymentCode) {
@@ -74,7 +74,7 @@ public class PayNymService {
         return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
-                .map(Optional::get);
+                .map(o -> o.get());
     }
 
     public static void claimPayNym(Wallet wallet, Map<String, Object> createMap, boolean segwit) {
@@ -123,7 +123,7 @@ public class PayNymService {
         return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
-                .map(Optional::get);
+                .map(o -> o.get());
     }
 
     public static Observable<Map<String, Object>> addPaymentCode(PaymentCode paymentCode, String authToken, String signature, boolean segwit) {
@@ -152,7 +152,7 @@ public class PayNymService {
         return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
-                .map(Optional::get);
+                .map(o -> o.get());
     }
 
     public static Observable<Map<String, Object>> followPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode, String authToken, String signature) {
@@ -176,7 +176,7 @@ public class PayNymService {
         return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
-                .map(Optional::get);
+                .map(o -> o.get());
     }
 
     public static Observable<Map<String, Object>> fetchPayNym(String nymIdentifier, boolean compact) {
@@ -194,7 +194,7 @@ public class PayNymService {
         return AppServices.getHttpClientService().postJson(url, Map.class, headers, body)
                 .subscribeOn(Schedulers.io())
                 .observeOn(JavaFxScheduler.platform())
-                .map(Optional::get);
+                .map(o -> o.get());
     }
 
     public static Observable<PayNym> getPayNym(String nymIdentifier) {

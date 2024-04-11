@@ -70,7 +70,7 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
     }
 
     private void setMixFail(MixFailReason mixFailReason, String mixError, Long mixErrorTimestamp) {
-        if(mixFailReason != MixFailReason.CANCEL) {
+        if(mixFailReason.isError()) {
             long elapsed = mixErrorTimestamp == null ? 0L : System.currentTimeMillis() - mixErrorTimestamp;
             if(elapsed >= ERROR_DISPLAY_MILLIS) {
                 //Old error, don't set again.
@@ -116,22 +116,10 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             progressIndicator.setProgress(mixProgress.getMixStep().getProgressPercent() == 100 ? -1 : mixProgress.getMixStep().getProgressPercent() / 100.0);
             setGraphic(progressIndicator);
             Tooltip tt = new Tooltip();
-            String status = mixProgress.getMixStep().getMessage().substring(0, 1).toUpperCase(Locale.ROOT) + mixProgress.getMixStep().getMessage().substring(1);
+            String status = mixProgress.getMixStep().getMessage().replaceAll("_", " ");
+            status = status.substring(0, 1).toUpperCase(Locale.ROOT) + status.substring(1).toLowerCase(Locale.ROOT);
             tt.setText(status);
             setTooltip(tt);
-
-            if(mixProgress.getMixStep() == MixStep.REGISTERED_INPUT) {
-                tt.setOnShowing(event -> {
-                    Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
-                    Whirlpool.RegisteredInputsService registeredInputsService = new Whirlpool.RegisteredInputsService(whirlpool, mixProgress.getPoolId());
-                    registeredInputsService.setOnSucceeded(eventStateHandler -> {
-                        if(registeredInputsService.getValue() != null) {
-                            tt.setText(status + " (1 of " + registeredInputsService.getValue() + ")");
-                        }
-                    });
-                    registeredInputsService.start();
-                });
-            }
         } else {
             setGraphic(null);
             setTooltip(null);

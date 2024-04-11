@@ -182,7 +182,7 @@ public class WhirlpoolController {
                 selectedPool.setVisible(false);
             } else {
                 poolFee.setValue(newValue.getFeeValue());
-                poolAnonset.setText(newValue.getMixAnonymitySet() + " UTXOs");
+                poolAnonset.setText(newValue.getAnonymitySet() + " UTXOs");
                 selectedPool.setVisible(true);
                 fetchTx0Preview(newValue);
             }
@@ -340,7 +340,7 @@ public class WhirlpoolController {
             });
             tx0PreviewsService.setOnSucceeded(workerStateEvent -> {
                 tx0Previews = tx0PreviewsService.getValue();
-                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(pool.getPoolId());
+                Tx0Preview tx0Preview = tx0Previews.getTx0Preview(this.pool.getValue() == null ? pool.getPoolId() : this.pool.getValue().getPoolId());
                 tx0PreviewProperty.set(tx0Preview);
             });
             tx0PreviewsService.setOnFailed(workerStateEvent -> {
