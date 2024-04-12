@@ -1386,7 +1386,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         if(id.getScene().getWindow().equals(event.getWindow()) && headersForm.getPsbt() != null && headersForm.getBlockTransaction() == null) {
-            List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSign(headersForm.getPsbt())).sorted(new WalletSignComparator()).collect(Collectors.toList());
+            List<Wallet> availableWallets = event.getWallets().stream().filter(wallet -> wallet.canSignAllInputs(headersForm.getPsbt())).sorted(new WalletSignComparator()).collect(Collectors.toList());
             if(availableWallets.isEmpty()) {
                 for(Wallet wallet : event.getWalletsMap().keySet()) {
                     if(wallet.isValid() && !wallet.getSigningKeystores(headersForm.getPsbt()).isEmpty()) {
