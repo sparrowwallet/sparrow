@@ -61,7 +61,11 @@ public class WhirlpoolServices {
     }
 
     public SamouraiNetwork getSamouraiNetwork() {
-        return SamouraiNetwork.valueOf(Network.get().getName().toUpperCase(Locale.ROOT));
+        try {
+            return SamouraiNetwork.valueOf(Network.get().getName().toUpperCase(Locale.ROOT));
+        } catch(IllegalArgumentException e) {
+            return SamouraiNetwork.TESTNET;
+        }
     }
 
     public Whirlpool getWhirlpool(Wallet wallet) {
