@@ -36,6 +36,31 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
     @Override
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            inputStream.transferTo(baos);
+            InputStream firstClone = new ByteArrayInputStream(baos.toByteArray());
+            InputStream secondClone = new ByteArrayInputStream(baos.toByteArray());
+
+            Keystore keystore;
+            try {
+                keystore = getKeystoreMultisig(scriptType, firstClone, password);
+            } catch(Exception e) {
+                keystore = getKeystoreSinglesig(scriptType, secondClone, password);
+            }
+
+            return keystore;
+        } catch(IOException e) {
+            throw new ImportException("Error importing keystore for " + scriptType, e);
+        }
+    }
+
+    private Keystore getKeystoreSinglesig(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        ColdcardSinglesig coldcardSinglesig = new ColdcardSinglesig();
+        return coldcardSinglesig.getKeystore(scriptType, inputStream, password);
+    }
+
+    public Keystore getKeystoreMultisig(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         ColdcardKeystore cck = JsonPersistence.getGson().fromJson(reader, ColdcardKeystore.class);
 
