@@ -15,9 +15,11 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -629,7 +631,9 @@ public class SettingsController extends WalletFormController implements Initiali
                             accountDiscoveryService.setOnSucceeded(event -> {
                                 addAndEncryptAccounts(masterWallet, accountDiscoveryService.getValue(), key);
                                 if(accountDiscoveryService.getValue().isEmpty()) {
-                                    AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                                    AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. " +
+                                                    (Config.get().getServerType() == ServerType.BITCOIN_CORE ? "Note the configured server type is Bitcoin Core, which does not support account discovery." : "Note only the next 10 accounts are scanned."),
+                                            Alert.AlertType.INFORMATION, ButtonType.OK);
                                 }
                             });
                             accountDiscoveryService.setOnFailed(event -> {
@@ -667,7 +671,9 @@ public class SettingsController extends WalletFormController implements Initiali
                     accountDiscoveryService.setOnSucceeded(event -> {
                         addAndSaveAccounts(masterWallet, accountDiscoveryService.getValue(), null);
                         if(accountDiscoveryService.getValue().isEmpty()) {
-                            AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. Note only the first 10 accounts are scanned.", Alert.AlertType.INFORMATION, ButtonType.OK);
+                            AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. " +
+                                    (Config.get().getServerType() == ServerType.BITCOIN_CORE ? "Note the configured server type is Bitcoin Core, which does not support account discovery." : "Note only the next 10 accounts are scanned."),
+                                    Alert.AlertType.INFORMATION, ButtonType.OK);
                         }
                     });
                     accountDiscoveryService.setOnFailed(event -> {
