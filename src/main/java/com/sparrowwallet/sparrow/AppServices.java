@@ -923,6 +923,7 @@ public class AppServices {
             }
 
             if(openWindow instanceof Stage) {
+                ((Stage)openWindow).setIconified(false);
                 ((Stage)openWindow).setAlwaysOnTop(true);
                 ((Stage)openWindow).setAlwaysOnTop(false);
             }
