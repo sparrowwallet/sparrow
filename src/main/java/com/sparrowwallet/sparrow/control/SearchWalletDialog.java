@@ -48,7 +48,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("search.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
-        dialogPane.setHeaderText(showWallet ? "Search All Wallets" : "Search Wallet");
+        dialogPane.setHeaderText(showWallet ? "Search All Wallets" : "Search Wallet " + walletForms.get(0).getMasterWallet().getName());
 
         Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
         if(!image.isError()) {
@@ -265,7 +265,19 @@ public class SearchWalletDialog extends Dialog<Entry> {
         @Override
         protected void updateItem(Entry entry, boolean empty) {
             super.updateItem(entry, empty);
-            setContextMenu(null);
+
+            ContextMenu copyMenu;
+            if(entry instanceof TransactionEntry transactionEntry) {
+                copyMenu = new TransactionContextMenu(getText(), transactionEntry.getBlockTransaction());
+            } else if(entry instanceof NodeEntry nodeEntry) {
+                copyMenu = new AddressContextMenu(nodeEntry.getAddress(), nodeEntry.getOutputDescriptor(), null, false, null);
+            } else if(entry instanceof UtxoEntry utxoEntry) {
+                copyMenu = new HashIndexEntryContextMenu(null, utxoEntry);
+            } else {
+                copyMenu = new ContextMenu();
+            }
+            copyMenu.getItems().removeIf(menuItem -> !menuItem.getText().startsWith("Copy"));
+            setContextMenu(copyMenu);
         }
     }
 }

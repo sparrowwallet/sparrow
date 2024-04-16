@@ -606,7 +606,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         }
     }
 
-    private static class TransactionContextMenu extends ContextMenu {
+    protected static class TransactionContextMenu extends ContextMenu {
         public TransactionContextMenu(String date, BlockTransaction blockTransaction) {
             MenuItem viewTransaction = new MenuItem("View Transaction");
             viewTransaction.setGraphic(getViewTransactionGlyph());
