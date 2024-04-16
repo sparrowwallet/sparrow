@@ -128,6 +128,8 @@
                         <MenuItem fx:id="searchAllWallets" mnemonicParsing="false" text="Search All Wallets" accelerator="Shortcut+Shift+Alt+S" onAction="#searchAllWallets"/>
                         <SeparatorMenuItem />
                         <MenuItem fx:id="showWalletSummary" mnemonicParsing="false" text="Show Wallet Summary" onAction="#showWalletSummary"/>
+                        <MenuItem fx:id="showAllWalletsSummary" mnemonicParsing="false" text="Show All Wallets Summary" onAction="#showAllWalletsSummary"/>
+                        <SeparatorMenuItem />
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>

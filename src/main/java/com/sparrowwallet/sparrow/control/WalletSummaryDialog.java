@@ -18,17 +18,21 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class WalletSummaryDialog extends Dialog<Void> {
-    public WalletSummaryDialog(List<WalletForm> walletForms) {
-        if(walletForms.isEmpty()) {
+    public WalletSummaryDialog(List<List<WalletForm>> summaryWalletFormsList) {
+        List<List<WalletForm>> walletFormsList = new ArrayList<>(summaryWalletFormsList);
+        walletFormsList.removeIf(List::isEmpty);
+        if(walletFormsList.isEmpty()) {
             throw new IllegalArgumentException("No wallets selected to summarize");
         }
 
-        Wallet masterWallet = walletForms.get(0).getMasterWallet();
+        boolean allOpenWallets = walletFormsList.size() > 1;
+        List<Wallet> masterWallets = walletFormsList.stream().map(walletForms -> walletForms.get(0).getMasterWallet()).toList();
 
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
@@ -37,7 +41,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("wallet/transactions.css").toExternalForm());
 
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
-        dialogPane.setHeaderText("Wallet Summary for " + masterWallet.getName());
+        dialogPane.setHeaderText("Wallet Summary for " + (allOpenWallets ? "All Open Wallets" : masterWallets.get(0).getName()));
 
         Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
         if(!image.isError()) {
@@ -64,7 +68,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         });
         balanceColumn.setCellFactory(p -> new CoinCell());
         table.getColumns().add(balanceColumn);
-        table.setUnitFormat(masterWallet);
+        table.setUnitFormat(masterWallets.get(0));
 
         CurrencyRate currencyRate = AppServices.getFiatCurrencyExchangeRate();
         if(currencyRate != null && currencyRate.isAvailable() && Config.get().getExchangeSource() != ExchangeSource.NONE) {
@@ -77,12 +81,20 @@ public class WalletSummaryDialog extends Dialog<Void> {
             table.setCurrencyRate(currencyRate);
         }
 
-        SummaryEntry rootEntry = new SummaryEntry(walletForms);
+        Entry rootEntry = allOpenWallets ? new AllSummaryEntry(walletFormsList) : new SummaryEntry(walletFormsList.get(0));
         TreeItem<Entry> rootItem = new TreeItem<>(rootEntry);
         for(Entry childEntry : rootEntry.getChildren()) {
             TreeItem<Entry> childItem = new TreeItem<>(childEntry);
             rootItem.getChildren().add(childItem);
-            childItem.getChildren().add(new TreeItem<>(new UnconfirmedEntry((WalletTransactionsEntry)childEntry)));
+            if(allOpenWallets) {
+                for(Entry walletEntry : childEntry.getChildren()) {
+                    TreeItem<Entry> walletItem = new TreeItem<>(walletEntry);
+                    childItem.getChildren().add(walletItem);
+                    walletItem.getChildren().add(new TreeItem<>(new UnconfirmedEntry((WalletTransactionsEntry)walletEntry)));
+                }
+            } else {
+                childItem.getChildren().add(new TreeItem<>(new UnconfirmedEntry((WalletTransactionsEntry)childEntry)));
+            }
         }
 
         table.setShowRoot(true);
@@ -97,6 +109,14 @@ public class WalletSummaryDialog extends Dialog<Void> {
 
         hBox.getChildren().add(vBox);
 
+        Wallet balanceWallet;
+        if(allOpenWallets) {
+            balanceWallet = new Wallet();
+            balanceWallet.getChildWallets().addAll(masterWallets.stream().flatMap(mws -> mws.getAllWallets().stream()).toList());
+        } else {
+            balanceWallet = masterWallets.get(0);
+        }
+
         NumberAxis xAxis = new NumberAxis();
         xAxis.setSide(Side.BOTTOM);
         xAxis.setForceZeroInRange(false);
@@ -104,7 +124,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         NumberAxis yAxis = new NumberAxis();
         yAxis.setSide(Side.LEFT);
         BalanceChart balanceChart = new BalanceChart(xAxis, yAxis);
-        balanceChart.initialize(new WalletTransactionsEntry(masterWallet, true));
+        balanceChart.initialize(new WalletTransactionsEntry(balanceWallet, true));
         balanceChart.setAnimated(false);
         balanceChart.setLegendVisible(false);
         balanceChart.setVerticalGridLinesVisible(false);
@@ -118,6 +138,32 @@ public class WalletSummaryDialog extends Dialog<Void> {
 
         setResizable(true);
         AppServices.moveToActiveWindowScreen(this);
+    }
+
+    public static class AllSummaryEntry extends Entry {
+        private AllSummaryEntry(List<List<WalletForm>> walletFormsList) {
+            super(null, "All Wallets", walletFormsList.stream().map(SummaryEntry::new).collect(Collectors.toList()));
+        }
+
+        @Override
+        public Long getValue() {
+            long value = 0;
+            for(Entry entry : getChildren()) {
+                value += entry.getValue();
+            }
+
+            return value;
+        }
+
+        @Override
+        public String getEntryType() {
+            return null;
+        }
+
+        @Override
+        public Function getWalletFunction() {
+            return Function.TRANSACTIONS;
+        }
     }
 
     public static class SummaryEntry extends Entry {

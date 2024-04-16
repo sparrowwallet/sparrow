@@ -1615,6 +1615,25 @@ public class AppController implements Initializable {
         }
     }
 
+    public void showAllWalletsSummary(ActionEvent event) {
+        List<List<WalletForm>> allWalletForms = new ArrayList<>();
+        for(Tab tab : tabs.getTabs()) {
+            if(tab.getUserData() instanceof WalletTabData) {
+                TabPane subTabs = (TabPane)tab.getContent();
+                allWalletForms.add(subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm())
+                        .filter(walletForm -> walletForm.getWallet().isValid() && !walletForm.isLocked()).collect(Collectors.toList()));
+            }
+        }
+
+        if(allWalletForms.isEmpty() || allWalletForms.stream().allMatch(List::isEmpty)) {
+            showErrorDialog("No wallets", "There are no open and unlocked wallets to summarize.");
+        } else {
+            WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(allWalletForms);
+            walletSummaryDialog.initOwner(rootStack.getScene().getWindow());
+            walletSummaryDialog.showAndWait();
+        }
+    }
+
     public void showWalletSummary(ActionEvent event) {
         Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
         if(selectedTab != null) {
@@ -1623,7 +1642,7 @@ public class AppController implements Initializable {
                 TabPane subTabs = (TabPane) selectedTab.getContent();
                 List<WalletForm> walletForms = subTabs.getTabs().stream().map(subTab -> ((WalletTabData)subTab.getUserData()).getWalletForm()).collect(Collectors.toList());
                 if(!walletForms.isEmpty()) {
-                    WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(walletForms);
+                    WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(List.of(walletForms));
                     walletSummaryDialog.initOwner(rootStack.getScene().getWindow());
                     walletSummaryDialog.showAndWait();
                 }
