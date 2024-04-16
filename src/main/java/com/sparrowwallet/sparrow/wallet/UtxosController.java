@@ -480,7 +480,7 @@ public class UtxosController extends WalletFormController implements Initializab
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
                 CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                writer.writeRecord(new String[] {"Date", "Output", "Address", "Label", "Value"});
+                writer.writeRecord(new String[] {"Date (UTC)", "Output", "Address", "Label", "Value"});
                 for(Entry entry : getWalletForm().getWalletUtxosEntry().getChildren()) {
                     UtxoEntry utxoEntry = (UtxoEntry)entry;
                     writer.write(utxoEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : WalletTransactions.DATE_FORMAT.format(utxoEntry.getBlockTransaction().getDate()));

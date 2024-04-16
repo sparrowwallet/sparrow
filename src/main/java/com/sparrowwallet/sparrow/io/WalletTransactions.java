@@ -31,6 +31,10 @@ public class WalletTransactions implements WalletExport {
 
     private final WalletForm walletForm;
 
+    static {
+        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("UTC"));
+    }
+
     public WalletTransactions(WalletForm walletForm) {
         this.walletForm = walletForm;
     }
@@ -72,7 +76,7 @@ public class WalletTransactions implements WalletExport {
         try {
             CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
 
-            writer.write("Date");
+            writer.write("Date (UTC)");
             writer.write("Label");
             writer.write("Value");
             writer.write("Balance");
