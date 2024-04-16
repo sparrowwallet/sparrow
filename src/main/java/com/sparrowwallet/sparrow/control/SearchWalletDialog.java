@@ -81,6 +81,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         results.setUnitFormat(walletForms.iterator().next().getWallet());
         results.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
         results.setPlaceholder(new Label("No results"));
+        results.setEditable(true);
 
         if(showWallet) {
             TreeTableColumn<Entry, String> walletColumn = new TreeTableColumn<>("Wallet");
@@ -117,7 +118,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         labelCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
             return param.getValue().getValue().labelProperty();
         });
-        labelCol.setCellFactory(p -> new SearchLabelCell());
+        labelCol.setCellFactory(p -> new LabelCell());
         results.getColumns().add(labelCol);
 
         TreeTableColumn<Entry, Number> amountCol = new TreeTableColumn<>("Value");
@@ -264,14 +265,6 @@ public class SearchWalletDialog extends Dialog<Entry> {
         @Override
         protected void updateItem(Entry entry, boolean empty) {
             super.updateItem(entry, empty);
-            setContextMenu(null);
-        }
-    }
-
-    private static class SearchLabelCell extends LabelCell {
-        @Override
-        public void updateItem(String label, boolean empty) {
-            super.updateItem(label, empty);
             setContextMenu(null);
         }
     }
