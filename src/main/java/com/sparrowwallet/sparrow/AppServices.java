@@ -502,7 +502,7 @@ public class AppServices {
     public static Proxy getProxy(String proxyCircuitId) {
         Config config = Config.get();
         Proxy proxy = null;
-        if(config.isUseProxy()) {
+        if(config.isUseProxy() && config.getProxyServer() != null) {
             HostAndPort proxyHostAndPort = HostAndPort.fromString(config.getProxyServer());
             InetSocketAddress proxyAddress = new InetSocketAddress(proxyHostAndPort.getHost(), proxyHostAndPort.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
             proxy = new Proxy(Proxy.Type.SOCKS, proxyAddress);
