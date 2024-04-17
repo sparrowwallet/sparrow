@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -20,10 +21,7 @@ import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
 import tornadofx.control.Form;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 public class SearchWalletDialog extends Dialog<Entry> {
     private static final Logger log = LoggerFactory.getLogger(SearchWalletDialog.class);
@@ -148,7 +146,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         });
 
         search.textProperty().addListener((observable, oldValue, newValue) -> {
-            searchWallets(newValue.toLowerCase(Locale.ROOT));
+            searchWallets(newValue);
         });
 
         setResizable(true);
@@ -158,42 +156,37 @@ public class SearchWalletDialog extends Dialog<Entry> {
         Platform.runLater(search::requestFocus);
     }
 
-    private void searchWallets(String searchText) {
-        List<Entry> matchingEntries = new ArrayList<>();
+    private void searchWallets(String searchPhrase) {
+        Set<Entry> matchingEntries = new LinkedHashSet<>();
 
-        if(!searchText.isEmpty()) {
-            Long searchValue = getSearchValue(searchText);
-            Address searchAddress = getSearchAddress(searchText);
+        if(!searchPhrase.isEmpty()) {
+            Set<String> searchWords = new LinkedHashSet<>(Arrays.stream(searchPhrase.split("\\s+"))
+                    .filter(text -> isAddress(text) || isHash(text) || isHashIndex(text)).toList());
+            String freeText = removeOccurrences(searchPhrase, searchWords).trim();
+            if(!freeText.isEmpty()) {
+                searchWords.add(freeText);
+            }
 
-            for(WalletForm walletForm : walletForms) {
-                WalletTransactionsEntry walletTransactionsEntry = walletForm.getWalletTransactionsEntry();
-                for(Entry entry : walletTransactionsEntry.getChildren()) {
-                    if(entry instanceof TransactionEntry transactionEntry) {
-                        if(transactionEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
-                                (transactionEntry.getLabel() != null && transactionEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
-                                (transactionEntry.getValue() != null && searchValue != null && Math.abs(transactionEntry.getValue()) == searchValue) ||
-                                (searchAddress != null && transactionEntry.getBlockTransaction().getTransaction().getOutputs().stream().map(output -> output.getScript().getToAddress()).filter(Objects::nonNull).anyMatch(address -> address.equals(searchAddress)))) {
-                            matchingEntries.add(entry);
-                        }
-                    }
-                }
+            for(String searchText : searchWords) {
+                Long searchValue = getSearchValue(searchText);
+                Address searchAddress = getSearchAddress(searchText);
+                searchText = searchText.toLowerCase(Locale.ROOT);
 
-                for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
-                    NodeEntry purposeEntry = walletForm.getNodeEntry(keyPurpose);
-                    for(Entry entry : purposeEntry.getChildren()) {
-                        if(entry instanceof NodeEntry nodeEntry) {
-                            if(nodeEntry.getAddress().toString().toLowerCase(Locale.ROOT).contains(searchText) ||
-                                    (nodeEntry.getLabel() != null && nodeEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
-                                    (nodeEntry.getValue() != null && searchValue != null && Math.abs(nodeEntry.getValue()) == searchValue)) {
+                for(WalletForm walletForm : walletForms) {
+                    WalletTransactionsEntry walletTransactionsEntry = walletForm.getWalletTransactionsEntry();
+                    for(Entry entry : walletTransactionsEntry.getChildren()) {
+                        if(entry instanceof TransactionEntry transactionEntry) {
+                            if(transactionEntry.getBlockTransaction().getHash().toString().equals(searchText) ||
+                                    (transactionEntry.getLabel() != null && transactionEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
+                                    (transactionEntry.getValue() != null && searchValue != null && Math.abs(transactionEntry.getValue()) == searchValue) ||
+                                    (searchAddress != null && transactionEntry.getBlockTransaction().getTransaction().getOutputs().stream().map(output -> output.getScript().getToAddress()).filter(Objects::nonNull).anyMatch(address -> address.equals(searchAddress)))) {
                                 matchingEntries.add(entry);
                             }
                         }
                     }
-                }
 
-                for(WalletForm nestedWalletForm : walletForm.getNestedWalletForms()) {
-                    for(KeyPurpose keyPurpose : nestedWalletForm.getWallet().getWalletKeyPurposes()) {
-                        NodeEntry purposeEntry = nestedWalletForm.getNodeEntry(keyPurpose);
+                    for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+                        NodeEntry purposeEntry = walletForm.getNodeEntry(keyPurpose);
                         for(Entry entry : purposeEntry.getChildren()) {
                             if(entry instanceof NodeEntry nodeEntry) {
                                 if(nodeEntry.getAddress().toString().toLowerCase(Locale.ROOT).contains(searchText) ||
@@ -204,22 +197,38 @@ public class SearchWalletDialog extends Dialog<Entry> {
                             }
                         }
                     }
-                }
 
-                WalletUtxosEntry walletUtxosEntry = walletForm.getWalletUtxosEntry();
-                for(Entry entry : walletUtxosEntry.getChildren()) {
-                    if(entry instanceof HashIndexEntry hashIndexEntry) {
-                        if(hashIndexEntry.getBlockTransaction().getHash().toString().toLowerCase(Locale.ROOT).equals(searchText) ||
-                                (hashIndexEntry.getLabel() != null && hashIndexEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
-                                (hashIndexEntry.getValue() != null && searchValue != null && Math.abs(hashIndexEntry.getValue()) == searchValue)) {
-                            matchingEntries.add(entry);
+                    for(WalletForm nestedWalletForm : walletForm.getNestedWalletForms()) {
+                        for(KeyPurpose keyPurpose : nestedWalletForm.getWallet().getWalletKeyPurposes()) {
+                            NodeEntry purposeEntry = nestedWalletForm.getNodeEntry(keyPurpose);
+                            for(Entry entry : purposeEntry.getChildren()) {
+                                if(entry instanceof NodeEntry nodeEntry) {
+                                    if(nodeEntry.getAddress().toString().toLowerCase(Locale.ROOT).contains(searchText) ||
+                                            (nodeEntry.getLabel() != null && nodeEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
+                                            (nodeEntry.getValue() != null && searchValue != null && Math.abs(nodeEntry.getValue()) == searchValue)) {
+                                        matchingEntries.add(entry);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    WalletUtxosEntry walletUtxosEntry = walletForm.getWalletUtxosEntry();
+                    for(Entry entry : walletUtxosEntry.getChildren()) {
+                        if(entry instanceof HashIndexEntry hashIndexEntry) {
+                            if(hashIndexEntry.getBlockTransaction().getHash().toString().toLowerCase(Locale.ROOT).equals(searchText) ||
+                                    hashIndexEntry.getHashIndex().toString().toLowerCase(Locale.ROOT).equals(searchText) ||
+                                    (hashIndexEntry.getLabel() != null && hashIndexEntry.getLabel().toLowerCase(Locale.ROOT).contains(searchText)) ||
+                                    (hashIndexEntry.getValue() != null && searchValue != null && Math.abs(hashIndexEntry.getValue()) == searchValue)) {
+                                matchingEntries.add(entry);
+                            }
                         }
                     }
                 }
             }
         }
 
-        SearchWalletEntry rootEntry = new SearchWalletEntry(walletForms.iterator().next().getWallet(), matchingEntries);
+        SearchWalletEntry rootEntry = new SearchWalletEntry(walletForms.iterator().next().getWallet(), new ArrayList<>(matchingEntries));
         RecursiveTreeItem<Entry> rootItem = new RecursiveTreeItem<>(rootEntry, Entry::getChildren);
         results.setRoot(rootItem);
     }
@@ -238,6 +247,41 @@ public class SearchWalletDialog extends Dialog<Entry> {
         } catch(InvalidAddressException e) {
             return null;
         }
+    }
+
+    private boolean isAddress(String text) {
+        try {
+            Address.fromString(text);
+            return true;
+        } catch(InvalidAddressException e) {
+            return false;
+        }
+    }
+
+    private boolean isHash(String text) {
+        return text.length() == 64 && Utils.isHex(text);
+    }
+
+    private boolean isHashIndex(String text) {
+        String[] parts = text.split(":");
+        if(parts.length == 2 && isHash(parts[0])) {
+            try {
+                Integer.parseInt(parts[1]);
+                return true;
+            } catch(NumberFormatException e) {
+                //ignore
+            }
+        }
+
+        return false;
+    }
+
+    public String removeOccurrences(String inputString, Collection<String> stringsToRemove) {
+        for(String str : stringsToRemove) {
+            inputString = inputString.replaceAll("(?i)" + str, "");
+        }
+
+        return inputString;
     }
 
     private static class SearchWalletEntry extends Entry {
