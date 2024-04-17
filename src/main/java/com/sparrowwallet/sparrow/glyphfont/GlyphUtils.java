@@ -203,4 +203,11 @@ public class GlyphUtils {
         busyGlyph.setFontSize(12);
         return busyGlyph;
     }
+
+    public static Glyph getDownArrowGlyph() {
+        Glyph downGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ARROW_DOWN);
+        downGlyph.getStyleClass().add("arrow-down");
+        downGlyph.setFontSize(12);
+        return downGlyph;
+    }
 }

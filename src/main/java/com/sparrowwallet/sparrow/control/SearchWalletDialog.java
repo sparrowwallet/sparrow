@@ -1,19 +1,27 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.csvreader.CsvWriter;
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.ListChangeListener;
+import javafx.event.ActionEvent;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.controlsfx.control.textfield.TextFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +29,10 @@ import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
 import tornadofx.control.Form;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class SearchWalletDialog extends Dialog<Entry> {
@@ -129,12 +141,20 @@ public class SearchWalletDialog extends Dialog<Entry> {
         vBox.getChildren().addAll(form, results);
         dialogPane.setContent(vBox);
 
+        ButtonType exportButtonType = new ButtonType("Export CSV", ButtonBar.ButtonData.LEFT);
         ButtonType showButtonType = new javafx.scene.control.ButtonType("Show", ButtonBar.ButtonData.APPLY);
         ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
-        dialogPane.getButtonTypes().addAll(cancelButtonType, showButtonType);
+        dialogPane.getButtonTypes().addAll(exportButtonType, cancelButtonType, showButtonType);
 
-        Button showButton = (Button) dialogPane.lookupButton(showButtonType);
+        Button exportButton = (Button)dialogPane.lookupButton(exportButtonType);
+        exportButton.setGraphic(GlyphUtils.getDownArrowGlyph());
+        exportButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            exportResults(showWallet);
+        });
+
+        Button showButton = (Button)dialogPane.lookupButton(showButtonType);
         showButton.setDefaultButton(true);
         showButton.setDisable(true);
 
@@ -286,6 +306,60 @@ public class SearchWalletDialog extends Dialog<Entry> {
         }
 
         return inputString;
+    }
+
+    public void exportResults(boolean showWallet) {
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export search results to CSV");
+        fileChooser.setInitialFileName(getDialogPane().getHeaderText() + ".csv");
+
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
+        File file = fileChooser.showSaveDialog(window);
+        if(file != null) {
+            try(FileOutputStream outputStream = new FileOutputStream(file)) {
+                CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
+                List<String> headers = new ArrayList<>(List.of("Wallet", "Account", "Type", "Date", "Txid / Address / Output", "Label", "Value"));
+                if(!showWallet) {
+                    headers.remove(0);
+                }
+                writer.writeRecord(headers.toArray(new String[0]));
+                for(TreeItem<Entry> item : results.getRoot().getChildren()) {
+                    Entry entry = item.getValue();
+                    if(showWallet) {
+                       writer.write(entry.getWallet().getMasterName());
+                    }
+                    writer.write(entry.getWallet().getDisplayName());
+                    writer.write(entry.getEntryType());
+                    if(entry instanceof TransactionEntry transactionEntry) {
+                        writer.write(transactionEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(transactionEntry.getBlockTransaction().getDate()));
+                        writer.write(transactionEntry.getBlockTransaction().getHash().toString());
+                    } else if(entry instanceof NodeEntry nodeEntry) {
+                        writer.write("");
+                        writer.write(nodeEntry.getAddress().toString());
+                    } else if(entry instanceof HashIndexEntry hashIndexEntry) {
+                        writer.write(hashIndexEntry.getBlockTransaction().getDate() == null ? "Unconfirmed" : EntryCell.DATE_FORMAT.format(hashIndexEntry.getBlockTransaction().getDate()));
+                        writer.write(hashIndexEntry.getHashIndex().toString());
+                    } else {
+                        writer.write("");
+                        writer.write("");
+                    }
+                    writer.write(entry.getLabel());
+                    writer.write(getCoinValue(entry.getValue() == null ? 0 : entry.getValue()));
+                    writer.endRecord();
+                }
+                writer.close();
+            } catch(IOException e) {
+                log.error("Error exporting search results as CSV", e);
+                AppServices.showErrorDialog("Error exporting search results as CSV", e.getMessage());
+            }
+        }
+    }
+
+    private String getCoinValue(Long value) {
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        return BitcoinUnit.BTC.equals(results.getBitcoinUnit()) ? format.tableFormatBtcValue(value) : String.format(Locale.ENGLISH, "%d", value);
     }
 
     private static class SearchWalletEntry extends Entry {
