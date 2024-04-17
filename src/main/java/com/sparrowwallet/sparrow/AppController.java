@@ -219,6 +219,8 @@ public class AppController implements Initializable {
 
     private Timeline statusTimeline;
 
+    private SearchWalletDialog searchWalletDialog;
+
     private SendToManyDialog sendToManyDialog;
 
     private DownloadVerifierDialog downloadVerifierDialog;
@@ -279,6 +281,15 @@ public class AppController implements Initializable {
 
     void initializeView() {
         setPlatformApplicationMenu();
+
+        rootStack.getScene().getWindow().setOnHiding(windowEvent -> {
+            if(searchWalletDialog != null && searchWalletDialog.isShowing()) {
+                searchWalletDialog.close();
+            }
+            if(sendToManyDialog != null && sendToManyDialog.isShowing()) {
+                sendToManyDialog.close();
+            }
+        });
 
         rootStack.setOnDragOver(event -> {
             if(event.getGestureSource() != rootStack && event.getDragboard().hasFiles()) {
@@ -1419,7 +1430,6 @@ public class AppController implements Initializable {
             }
 
             sendToManyDialog = new SendToManyDialog(bitcoinUnit);
-            sendToManyDialog.initOwner(rootStack.getScene().getWindow());
             sendToManyDialog.initModality(Modality.NONE);
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
             sendToManyDialog = null;
@@ -1605,14 +1615,28 @@ public class AppController implements Initializable {
     }
 
     private void searchWallets(List<WalletForm> walletForms) {
-        SearchWalletDialog searchWalletDialog = new SearchWalletDialog(walletForms);
-        searchWalletDialog.initOwner(rootStack.getScene().getWindow());
-        Optional<Entry> optEntry = searchWalletDialog.showAndWait();
-        if(optEntry.isPresent()) {
-            Entry entry = optEntry.get();
-            EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
-            Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
+        if(searchWalletDialog != null) {
+            if(!searchWalletDialog.getWalletForms().equals(walletForms)) {
+                searchWalletDialog.close();
+            } else {
+                Stage stage = (Stage)searchWalletDialog.getDialogPane().getScene().getWindow();
+                stage.setAlwaysOnTop(true);
+                stage.setAlwaysOnTop(false);
+                return;
+            }
         }
+
+        Platform.runLater(() -> {
+            searchWalletDialog = new SearchWalletDialog(walletForms);
+            searchWalletDialog.initModality(Modality.NONE);
+            Optional<Entry> optEntry = searchWalletDialog.showAndWait();
+            if(optEntry.isPresent()) {
+                Entry entry = optEntry.get();
+                EventManager.get().post(new FunctionActionEvent(entry.getWalletFunction(), entry.getWallet()));
+                Platform.runLater(() -> EventManager.get().post(new SelectEntryEvent(entry)));
+            }
+            searchWalletDialog = null;
+        });
     }
 
     public void showAllWalletsSummary(ActionEvent event) {

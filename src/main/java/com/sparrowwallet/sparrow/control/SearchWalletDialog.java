@@ -156,6 +156,10 @@ public class SearchWalletDialog extends Dialog<Entry> {
         Platform.runLater(search::requestFocus);
     }
 
+    public List<WalletForm> getWalletForms() {
+        return walletForms;
+    }
+
     private void searchWallets(String searchPhrase) {
         Set<Entry> matchingEntries = new LinkedHashSet<>();
 
@@ -276,7 +280,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         return false;
     }
 
-    public String removeOccurrences(String inputString, Collection<String> stringsToRemove) {
+    private String removeOccurrences(String inputString, Collection<String> stringsToRemove) {
         for(String str : stringsToRemove) {
             inputString = inputString.replaceAll("(?i)" + str, "");
         }
