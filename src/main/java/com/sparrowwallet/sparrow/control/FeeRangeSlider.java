@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class FeeRangeSlider extends Slider {
+    private static final double FEE_RATE_SCROLL_INCREMENT = 0.01;
+
     public FeeRangeSlider() {
         super(0, FEE_RATES_RANGE.size() - 1, 0);
         setMajorTickUnit(1);
@@ -44,6 +46,16 @@ public class FeeRangeSlider extends Slider {
             if(newValue != null) {
                 updateMaxFeeRange(newValue.doubleValue());
             }
+        });
+
+        setOnScroll(event -> {
+            double newFeeRate = getFeeRate() + (event.getDeltaY() > 0 ? FEE_RATE_SCROLL_INCREMENT : -FEE_RATE_SCROLL_INCREMENT);
+            if(newFeeRate < LONG_FEE_RATES_RANGE.get(0)) {
+                newFeeRate = LONG_FEE_RATES_RANGE.get(0);
+            } else if(newFeeRate > LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1)) {
+                newFeeRate = LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1);
+            }
+            setFeeRate(newFeeRate);
         });
     }
 
