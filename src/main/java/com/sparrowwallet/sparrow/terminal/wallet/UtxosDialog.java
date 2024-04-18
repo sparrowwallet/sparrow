@@ -166,7 +166,14 @@ public class UtxosDialog extends WalletDialog {
 
             AppServices.onlineProperty().addListener(new WeakChangeListener<>(mixingOnlineListener));
 
-            buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
+            if(WhirlpoolServices.canWalletMix(getWalletForm().getWallet())) {
+                mixSelected = new Button("Mix Selected", this::mixSelected);
+                mixSelected.setEnabled(false);
+                buttonPanel.addComponent(mixSelected);
+            } else {
+                buttonPanel.addComponent(new EmptySpace(new TerminalSize(15, 1)));
+            }
+
             buttonPanel.addComponent(new Button("Back", () -> onBack(Function.UTXOS)));
             buttonPanel.addComponent(new Button("Refresh", this::onRefresh));
         } else {

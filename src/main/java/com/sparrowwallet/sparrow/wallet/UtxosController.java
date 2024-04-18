@@ -179,6 +179,11 @@ public class UtxosController extends WalletFormController implements Initializab
             }
         }
 
+        selectAll.managedProperty().bind(selectAll.visibleProperty());
+        selectAll.setVisible(getWalletForm().getWallet().getStandardAccountType() != StandardAccount.WHIRLPOOL_POSTMIX);
+        clear.managedProperty().bind(clear.visibleProperty());
+        clear.setVisible(getWalletForm().getWallet().getStandardAccountType() != StandardAccount.WHIRLPOOL_POSTMIX);
+
         clear.setDisable(true);
         sendSelected.setDisable(true);
         sendSelected.setTooltip(new Tooltip("Send selected UTXOs. Use " + (org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX ? "Cmd" : "Ctrl") + "+click to select multiple." ));

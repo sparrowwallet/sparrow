@@ -18,7 +18,9 @@ public class WalletUtxosEntry extends Entry {
         super(wallet, wallet.getName(), wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(entry.getValue().getWallet(), entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
         calculateDuplicates();
         calculateDust();
-        updateMixProgress();
+        if(wallet.isWhirlpoolMixWallet()) {
+            updateMixProgress();
+        }
     }
 
     @Override
