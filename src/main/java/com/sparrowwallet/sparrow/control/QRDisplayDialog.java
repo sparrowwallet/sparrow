@@ -42,7 +42,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
     private static final int MIN_FRAGMENT_LENGTH = 10;
 
-    private static final int ANIMATION_PERIOD_MILLIS = 200;
+    private static final double ANIMATION_PERIOD_MILLIS = 200d;
 
     private static final int DEFAULT_QR_SIZE = 580;
     private static final int REDUCED_QR_SIZE = 520;
@@ -99,6 +99,16 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();
         stackPane.getChildren().add(qrImageView);
+
+        qrImageView.setOnScroll(scrollEvent -> {
+            if(animateQRService != null && animateQRService.isRunning()) {
+                Duration duration = animateQRService.getPeriod();
+                Duration newDuration = scrollEvent.getDeltaY() > 0 ? duration.multiply(1.1) : duration.multiply(0.9);
+                if(newDuration.lessThan(Duration.millis(ANIMATION_PERIOD_MILLIS*10)) && newDuration.greaterThan(Duration.millis(ANIMATION_PERIOD_MILLIS/2))) {
+                    animateQRService.setPeriod(newDuration);
+                }
+            }
+        });
 
         dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
 
