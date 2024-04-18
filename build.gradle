@@ -291,15 +291,15 @@ jlink {
     }
 }
 
-tasks.jpackage.finalizedBy "addUserWritePermission"
+tasks.jlink.finalizedBy "addUserWritePermission"
 
 task addUserWritePermission(type: Exec) {
     if(os.windows) {
-        commandLine 'icacls', "$buildDir\\jpackage\\Sparrow\\runtime\\legal\\*"
-    } else if(os.macOsX) {
-        commandLine 'chmod', '-R', 'u+w', "$buildDir/jpackage/Sparrow.app/Contents/runtime/Contents/Home/legal"
+        commandLine 'icacls', "$buildDir\\image\\legal", '/grant', 'Users:(OI)(CI)F', '/T'
+        commandLine 'icacls', "$buildDir\\image\\legal\\*"
+        commandLine 'icacls', "$buildDir\\image\\legal\\java.base\\*"
     } else {
-        commandLine 'chmod', '-R', 'u+w', "$buildDir/jpackage/Sparrow/lib/runtime/legal"
+        commandLine 'chmod', '-R', 'u+w', "$buildDir/image/legal"
     }
 }
 
