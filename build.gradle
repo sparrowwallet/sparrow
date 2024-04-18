@@ -296,8 +296,6 @@ tasks.jlink.finalizedBy "addUserWritePermission"
 task addUserWritePermission(type: Exec) {
     if(os.windows) {
         commandLine 'icacls', "$buildDir\\image\\legal", '/grant', 'Users:(OI)(CI)F', '/T'
-        commandLine 'icacls', "$buildDir\\image\\legal\\*"
-        commandLine 'icacls', "$buildDir\\image\\legal\\java.base\\*"
     } else {
         commandLine 'chmod', '-R', 'u+w', "$buildDir/image/legal"
     }
