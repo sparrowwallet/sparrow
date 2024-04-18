@@ -51,7 +51,8 @@ public class WalletImportDialog extends Dialog<Wallet> {
         AnchorPane.setRightAnchor(scrollPane, 0.0);
 
         importAccordion = new Accordion();
-        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new GordianSeedTool(), new SeedSigner(), new SpecterDIY(), new Krux(), new AirGapVault());
+        List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(),
+                new GordianSeedTool(), new SeedSigner(), new SpecterDIY(), new Krux(), new AirGapVault(), new Samourai());
         for(KeystoreFileImport importer : keystoreImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
@@ -59,7 +60,8 @@ public class WalletImportDialog extends Dialog<Wallet> {
             }
         }
 
-        List<WalletImport> walletImporters = new ArrayList<>(List.of(new Bip129(), new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new KeystoneMultisig(), new Descriptor(), new SpecterDesktop(), new BlueWalletMultisig(), new Sparrow(), new JadeMultisig()));
+        List<WalletImport> walletImporters = new ArrayList<>(List.of(new Bip129(), new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(),
+                new KeystoneMultisig(), new Descriptor(), new SpecterDesktop(), new BlueWalletMultisig(), new Sparrow(), new JadeMultisig()));
         if(!selectedWalletForms.isEmpty()) {
             walletImporters.add(new WalletLabels(selectedWalletForms));
         }
