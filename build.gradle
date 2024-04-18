@@ -291,6 +291,18 @@ jlink {
     }
 }
 
+tasks.jpackage.finalizedBy "addUserWritePermission"
+
+task addUserWritePermission(type: Exec) {
+    if(os.windows) {
+        commandLine 'icacls', "$buildDir\\jpackage\\Sparrow\\runtime\\legal\\*"
+    } else if(os.macOsX) {
+        commandLine 'chmod', '-R', 'u+w', "$buildDir/jpackage/Sparrow.app/Contents/runtime/Contents/Home/legal"
+    } else {
+        commandLine 'chmod', '-R', 'u+w', "$buildDir/jpackage/Sparrow/lib/runtime/legal"
+    }
+}
+
 task removeGroupWritePermission(type: Exec) {
     commandLine 'chmod', '-R', 'g-w', "$buildDir/jpackage/Sparrow"
 }
