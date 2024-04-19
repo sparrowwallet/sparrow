@@ -215,6 +215,8 @@ public class AppController implements Initializable {
     @FXML
     private UnlabeledToggleSwitch serverToggle;
 
+    private Storage.KeyDerivationService keyDerivationService;
+
     private PauseTransition wait;
 
     private Timeline statusTimeline;
@@ -1322,7 +1324,7 @@ public class AppController implements Initializable {
                     log.error("Error saving imported wallet", e);
                 }
             } else {
-                Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
+                keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()).getAbsolutePath(), TimedEvent.Action.END, "Done"));
                     ECKey encryptionFullKey = keyDerivationService.getValue();
@@ -1353,11 +1355,13 @@ public class AppController implements Initializable {
                         if(key != null) {
                             key.clear();
                         }
+                        keyDerivationService = null;
                     }
                 });
                 keyDerivationService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()).getAbsolutePath(), TimedEvent.Action.END, "Failed"));
                     showErrorDialog("Error encrypting wallet", keyDerivationService.getException().getMessage());
+                    keyDerivationService = null;
                 });
                 EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()).getAbsolutePath(), TimedEvent.Action.START, "Encrypting wallet..."));
                 keyDerivationService.start();
@@ -1468,7 +1472,7 @@ public class AppController implements Initializable {
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
                         Storage storage = selectedWalletForm.getStorage();
-                        Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+                        keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                         keyDerivationService.setOnSucceeded(workerStateEvent -> {
                             EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
                             ECKey encryptionFullKey = keyDerivationService.getValue();
@@ -1486,7 +1490,7 @@ public class AppController implements Initializable {
                             } finally {
                                 key.clear();
                                 encryptionFullKey.clear();
-                                password.get().clear();
+                                keyDerivationService = null;
                             }
                         });
                         keyDerivationService.setOnFailed(workerStateEvent -> {
@@ -1499,6 +1503,7 @@ public class AppController implements Initializable {
                             } else {
                                 log.error("Error deriving wallet key", keyDerivationService.getException());
                             }
+                            keyDerivationService = null;
                         });
                         EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
                         keyDerivationService.start();
@@ -2223,7 +2228,7 @@ public class AppController implements Initializable {
                 dlg.initOwner(rootStack.getScene().getWindow());
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
-                    Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
+                    keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
                         ECKey encryptionFullKey = keyDerivationService.getValue();
@@ -2233,7 +2238,7 @@ public class AppController implements Initializable {
                             deleteStorage(storage, true);
                         } finally {
                             encryptionFullKey.clear();
-                            password.get().clear();
+                            keyDerivationService = null;
                         }
                     });
                     keyDerivationService.setOnFailed(workerStateEvent -> {
@@ -2246,6 +2251,7 @@ public class AppController implements Initializable {
                         } else {
                             log.error("Error deriving wallet key", keyDerivationService.getException());
                         }
+                        keyDerivationService = null;
                     });
                     EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
                     keyDerivationService.start();

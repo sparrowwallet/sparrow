@@ -240,6 +240,8 @@ public abstract class FileImportPane extends TitledDescriptionPane {
         contentBox.setPadding(new Insets(10, 30, 10, 30));
         contentBox.setPrefHeight(60);
 
+        javafx.application.Platform.runLater(passwordField::requestFocus);
+
         return contentBox;
     }
 }

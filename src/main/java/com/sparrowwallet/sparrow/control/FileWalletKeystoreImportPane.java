@@ -12,6 +12,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletImportEvent;
 import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.sparrow.io.KeystoreFileImport;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -152,6 +153,8 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         contentBox.getChildren().addAll(label, fieldBox, region, importFileButton);
         contentBox.setPadding(new Insets(10, 30, 10, 30));
         contentBox.setPrefHeight(60);
+
+        Platform.runLater(scriptTypeComboBox::requestFocus);
 
         return contentBox;
     }
