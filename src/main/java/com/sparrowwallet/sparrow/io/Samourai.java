@@ -21,7 +21,7 @@ import java.util.Map;
 public class Samourai implements KeystoreFileImport {
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import the wallet backup file samourai.txt exported from the Samourai app.";
+        return "Import the wallet backup file samourai.txt exported from the Samourai app. Note that see the full balance, several script types may need to imported in separate wallets.";
     }
 
     @Override

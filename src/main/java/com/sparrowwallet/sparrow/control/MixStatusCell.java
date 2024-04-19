@@ -118,6 +118,11 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             Tooltip tt = new Tooltip();
             String status = mixProgress.getMixStep().getMessage().replaceAll("_", " ");
             status = status.substring(0, 1).toUpperCase(Locale.ROOT) + status.substring(1).toLowerCase(Locale.ROOT);
+            if(mixProgress.getMixStep() == MixStep.REGISTER_INPUT) {
+                status += "\n\nThis progress is normal for one mixing UTXO per pool while waiting to be randomly selected for a mix.\n" +
+                        "This may take hours or days, and time in the pool is generally more important than individual number of mixes.\n" +
+                        "Each UTXO's anonymity set is dependent not only on its own mix count, but that of its peers as well.";
+            }
             tt.setText(status);
             setTooltip(tt);
         } else {
