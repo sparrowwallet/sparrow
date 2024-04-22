@@ -27,7 +27,6 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.controlsfx.glyphfont.Glyph;
-import org.fxmisc.richtext.CodeArea;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +62,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     private ScriptArea scriptPubKeyArea;
 
     @FXML
-    private CodeArea outputDescriptor;
+    private SelectableCodeArea outputDescriptor;
 
     @FXML
     private Button displayAddress;

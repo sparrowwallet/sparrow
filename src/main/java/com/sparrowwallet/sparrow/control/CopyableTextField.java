@@ -10,6 +10,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.event.EventHandler;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -52,6 +53,7 @@ public class CopyableTextField extends CustomTextField {
                 selectedTextProperty().removeListener(selectionListener);
             }
         });
+        setContextMenu(new ContextMenu());
     }
 
     private void setupCopyButtonField(ObjectProperty<Node> rightProperty) {

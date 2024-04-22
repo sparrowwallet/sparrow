@@ -12,11 +12,11 @@
 <?import tornadofx.control.Field?>
 <?import javafx.scene.image.ImageView?>
 <?import org.fxmisc.flowless.VirtualizedScrollPane?>
-<?import org.fxmisc.richtext.CodeArea?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import com.sparrowwallet.sparrow.control.CopyableTextField?>
 <?import com.sparrowwallet.sparrow.control.ScriptArea?>
+<?import com.sparrowwallet.sparrow.control.SelectableCodeArea?>
 
 <BorderPane stylesheets="@receive.css, @wallet.css, @../script.css, @../descriptor.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.ReceiveController">
     <center>
@@ -72,7 +72,7 @@
                     <Field text="Descriptor:">
                         <VirtualizedScrollPane>
                             <content>
-                                <CodeArea fx:id="outputDescriptor" editable="false" wrapText="true" prefHeight="68" maxHeight="68" styleClass="uneditable-codearea" />
+                                <SelectableCodeArea fx:id="outputDescriptor" editable="false" wrapText="true" prefHeight="68" maxHeight="68" styleClass="uneditable-codearea" />
                             </content>
                         </VirtualizedScrollPane>
                     </Field>
