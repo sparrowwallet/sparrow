@@ -48,6 +48,7 @@ public class PayNymController {
     private String walletId;
     private boolean selectLinkedOnly;
     private PayNym walletPayNym;
+    private boolean requestingPassword;
 
     @FXML
     private CopyableTextField payNymName;
@@ -353,6 +354,43 @@ public class PayNymController {
     }
 
     private void addWalletIfNotificationTransactionPresent(List<PayNym> following) {
+        Unlinked unlinked = getUnlinkedPayNyms(following);
+
+        Wallet wallet = getMasterWallet();
+        if(!unlinked.unlinkedNotifications.isEmpty()) {
+            if(wallet.isEncrypted()) {
+                Storage storage = AppServices.get().getOpenWallets().get(wallet);
+                requestingPassword = true;
+                Optional<ButtonType> optButtonType = AppServices.showAlertDialog("Link contacts?", "Some contacts were found that may be already linked. Link these contacts? Your password is required to check.", Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
+                if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    dlg.initOwner(payNymName.getScene().getWindow());
+                    Optional<SecureString> password = dlg.showAndWait();
+                    if(password.isPresent()) {
+                        Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+                        decryptWalletService.setOnSucceeded(workerStateEvent -> {
+                            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
+                            Wallet decryptedWallet = decryptWalletService.getValue();
+                            addWalletIfNotificationTransactionPresent(decryptedWallet, getUnlinkedPayNyms(following));
+                            decryptedWallet.clearPrivate();
+                            requestingPassword = false;
+                        });
+                        decryptWalletService.setOnFailed(workerStateEvent -> {
+                            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
+                            AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
+                            requestingPassword = false;
+                        });
+                        EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
+                        decryptWalletService.start();
+                    }
+                }
+            } else {
+                addWalletIfNotificationTransactionPresent(wallet, unlinked);
+            }
+        }
+    }
+
+    private Unlinked getUnlinkedPayNyms(List<PayNym> following) {
         Map<BlockTransaction, PayNym> unlinkedPayNyms = new HashMap<>();
         Map<BlockTransaction, WalletNode> unlinkedNotifications = new HashMap<>();
         for(PayNym payNym : following) {
@@ -366,44 +404,16 @@ public class PayNymController {
             }
         }
 
-        Wallet wallet = getMasterWallet();
-        if(!unlinkedNotifications.isEmpty()) {
-            if(wallet.isEncrypted()) {
-                Storage storage = AppServices.get().getOpenWallets().get(wallet);
-                Optional<ButtonType> optButtonType = AppServices.showAlertDialog("Link contacts?", "Some contacts were found that may be already linked. Link these contacts? Your password is required to check.", Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
-                if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
-                    WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
-                    dlg.initOwner(payNymName.getScene().getWindow());
-                    Optional<SecureString> password = dlg.showAndWait();
-                    if(password.isPresent()) {
-                        Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
-                        decryptWalletService.setOnSucceeded(workerStateEvent -> {
-                            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
-                            Wallet decryptedWallet = decryptWalletService.getValue();
-                            addWalletIfNotificationTransactionPresent(decryptedWallet, unlinkedPayNyms, unlinkedNotifications);
-                            decryptedWallet.clearPrivate();
-                        });
-                        decryptWalletService.setOnFailed(workerStateEvent -> {
-                            EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
-                            AppServices.showErrorDialog("Incorrect Password", decryptWalletService.getException().getMessage());
-                        });
-                        EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
-                        decryptWalletService.start();
-                    }
-                }
-            } else {
-                addWalletIfNotificationTransactionPresent(wallet, unlinkedPayNyms, unlinkedNotifications);
-            }
-        }
+        return new Unlinked(unlinkedPayNyms, unlinkedNotifications);
     }
 
-    private void addWalletIfNotificationTransactionPresent(Wallet decryptedWallet, Map<BlockTransaction, PayNym> unlinkedPayNyms, Map<BlockTransaction, WalletNode> unlinkedNotifications) {
+    private void addWalletIfNotificationTransactionPresent(Wallet decryptedWallet, Unlinked unlinked) {
         List<Wallet> addedWallets = new ArrayList<>();
-        for(BlockTransaction blockTransaction : unlinkedNotifications.keySet()) {
+        for(BlockTransaction blockTransaction : unlinked.unlinkedNotifications.keySet()) {
             try {
-                PayNym payNym = unlinkedPayNyms.get(blockTransaction);
+                PayNym payNym = unlinked.unlinkedPayNyms.get(blockTransaction);
                 PaymentCode externalPaymentCode = payNym.paymentCode();
-                WalletNode input0Node = unlinkedNotifications.get(blockTransaction);
+                WalletNode input0Node = unlinked.unlinkedNotifications.get(blockTransaction);
                 Keystore keystore = input0Node.getWallet().isNested() ? decryptedWallet.getChildWallet(input0Node.getWallet().getName()).getKeystores().get(0) : decryptedWallet.getKeystores().get(0);
                 ECKey input0Key = keystore.getKey(input0Node);
                 TransactionOutPoint input0Outpoint = PaymentCode.getDesignatedInput(blockTransaction.getTransaction()).getOutpoint();
@@ -689,7 +699,7 @@ public class PayNymController {
             Platform.runLater(() -> EventManager.get().post(new WalletEntryLabelsChangedEvent(event.getWallet(), changedLabelEntries)));
         }
 
-        if(walletPayNym != null) {
+        if(walletPayNym != null && !requestingPassword) {
             //If we have just linked a PayNym wallet that paid for another notification transaction, attempt to link
             Platform.runLater(() -> addWalletIfNotificationTransactionPresent(walletPayNym.following()));
         }
@@ -761,4 +771,6 @@ public class PayNymController {
         public void selectNext() {
         }
     }
+
+    private record Unlinked(Map<BlockTransaction, PayNym> unlinkedPayNyms, Map<BlockTransaction, WalletNode> unlinkedNotifications) {}
 }
