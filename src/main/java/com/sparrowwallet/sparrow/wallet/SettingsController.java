@@ -464,6 +464,11 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     private void rederiveAndReplaceWallet(Wallet editedWallet) {
+        if(!walletForm.getWallet().isMasterWallet() && (editedWallet.getPolicyType() != walletForm.getMasterWallet().getPolicyType() || editedWallet.getScriptType() != walletForm.getMasterWallet().getScriptType())) {
+            AppServices.showErrorDialog("Policy or Script Type Mismatch", "The provided output descriptor does not match the policy or script type of this wallet.");
+            return;
+        }
+
         boolean rederive = false;
         for(Keystore keystore : editedWallet.getKeystores()) {
             Optional<Keystore> optExisting = walletForm.getWallet().getKeystores().stream()
@@ -769,7 +774,7 @@ public class SettingsController extends WalletFormController implements Initiali
         policyType.setDisable(disabled);
         scriptType.setDisable(disabled);
         multisigControl.setDisable(disabled);
-        editDescriptor.setVisible(!disabled);
+        editDescriptor.setVisible(!disabled || (!walletForm.getWallet().isValid() && walletForm.getMasterWallet().getKeystores().stream().allMatch(k -> k.getSource() == KeystoreSource.SW_WATCH)));
     }
 
     @Override
