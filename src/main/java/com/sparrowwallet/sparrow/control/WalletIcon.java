@@ -19,9 +19,10 @@ import javafx.scene.shape.Circle;
 import org.controlsfx.glyphfont.Glyph;
 import org.girod.javafx.svgimage.SVGImage;
 import org.girod.javafx.svgimage.SVGLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
@@ -176,6 +177,8 @@ public class WalletIcon extends StackPane {
     }
 
     public static class WalletIconStreamHandler extends URLStreamHandler {
+        private static final Logger log = LoggerFactory.getLogger(WalletIconStreamHandler.class);
+
         @Override
         protected URLConnection openConnection(URL url) throws IOException {
             return new URLConnection(url) {
@@ -191,12 +194,14 @@ public class WalletIcon extends StackPane {
 
                     Wallet wallet = AppServices.get().getWallet(walletId);
                     if(wallet == null) {
-                        throw new IOException("Cannot find wallet for wallet id " + walletId);
+                        log.warn("Cannot find wallet for wallet id " + walletId);
+                        return getFallbackIconStream();
                     }
 
                     if(query.startsWith(QUERY)) {
                         if(wallet.getWalletConfig() == null || wallet.getWalletConfig().getIconData() == null) {
-                            throw new IOException("No icon data for " + walletId);
+                            log.warn("No icon data for " + walletId);
+                            return getFallbackIconStream();
                         }
 
                         ByteArrayInputStream bais = new ByteArrayInputStream(wallet.getWalletConfig().getIconData());
@@ -207,7 +212,12 @@ public class WalletIcon extends StackPane {
                         }
                     }
 
-                    throw new MalformedURLException("Cannot load url " + url);
+                    log.warn("Cannot load url " + url);
+                    return getFallbackIconStream();
+                }
+
+                private static InputStream getFallbackIconStream() {
+                    return WalletIconStreamHandler.class.getResourceAsStream("/image/sparrow.png");
                 }
             };
         }
