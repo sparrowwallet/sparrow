@@ -137,7 +137,7 @@ public class WalletIcon extends StackPane {
     }
 
     private void addWalletIcon(String walletId) {
-        Image image = new Image(PROTOCOL + ":" + walletId + "?" + QUERY, WIDTH, HEIGHT, true, false);
+        Image image = new Image(PROTOCOL + ":" + walletId.replaceAll(" ", "%20").replaceAll("#", "%23") + "?" + QUERY, WIDTH, HEIGHT, true, false);
         getChildren().clear();
         Circle circle = new Circle(getPrefWidth() / 2,getPrefHeight() / 2,getPrefWidth() / 2);
         circle.setFill(new ImagePattern(image));
@@ -186,7 +186,7 @@ public class WalletIcon extends StackPane {
 
                 @Override
                 public InputStream getInputStream() throws IOException {
-                    String walletId = url.getPath();
+                    String walletId = url.getPath().replaceAll("%20", " ").replaceAll("%23", "#");
                     String query = url.getQuery();
 
                     Wallet wallet = AppServices.get().getWallet(walletId);
