@@ -14,8 +14,7 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static com.sparrowwallet.drongo.wallet.StandardAccount.*;
 
@@ -46,12 +45,14 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
         standardAccountCombo = new ComboBox<>();
         standardAccountCombo.setMaxWidth(Double.MAX_VALUE);
 
-        List<Integer> existingIndexes = new ArrayList<>();
+        Set<Integer> existingIndexes = new LinkedHashSet<>();
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         existingIndexes.add(masterWallet.getAccountIndex());
         for(Wallet childWallet : masterWallet.getChildWallets()) {
             if(!childWallet.isNested()) {
                 existingIndexes.add(childWallet.getAccountIndex());
+                Optional<StandardAccount> optStdAcc = Arrays.stream(StandardAccount.values()).filter(stdacc -> stdacc.getName().equals(childWallet.getName())).findFirst();
+                optStdAcc.ifPresent(standardAccount -> existingIndexes.add(standardAccount.getAccountNumber()));
             }
         }
 
