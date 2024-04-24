@@ -49,13 +49,15 @@ public class FeeRangeSlider extends Slider {
         });
 
         setOnScroll(event -> {
-            double newFeeRate = getFeeRate() + (event.getDeltaY() > 0 ? FEE_RATE_SCROLL_INCREMENT : -FEE_RATE_SCROLL_INCREMENT);
-            if(newFeeRate < LONG_FEE_RATES_RANGE.get(0)) {
-                newFeeRate = LONG_FEE_RATES_RANGE.get(0);
-            } else if(newFeeRate > LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1)) {
-                newFeeRate = LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1);
+            if(event.getDeltaY() != 0) {
+                double newFeeRate = getFeeRate() + (event.getDeltaY() > 0 ? FEE_RATE_SCROLL_INCREMENT : -FEE_RATE_SCROLL_INCREMENT);
+                if(newFeeRate < LONG_FEE_RATES_RANGE.get(0)) {
+                    newFeeRate = LONG_FEE_RATES_RANGE.get(0);
+                } else if(newFeeRate > LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1)) {
+                    newFeeRate = LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1);
+                }
+                setFeeRate(newFeeRate);
             }
-            setFeeRate(newFeeRate);
         });
     }
 

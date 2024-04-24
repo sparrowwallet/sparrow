@@ -101,7 +101,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         stackPane.getChildren().add(qrImageView);
 
         qrImageView.setOnScroll(scrollEvent -> {
-            if(animateQRService != null && animateQRService.isRunning()) {
+            if(animateQRService != null && animateQRService.isRunning() && scrollEvent.getDeltaY() != 0) {
                 Duration duration = animateQRService.getPeriod();
                 Duration newDuration = scrollEvent.getDeltaY() > 0 ? duration.multiply(1.1) : duration.multiply(0.9);
                 if(newDuration.lessThan(Duration.millis(ANIMATION_PERIOD_MILLIS*10)) && newDuration.greaterThan(Duration.millis(ANIMATION_PERIOD_MILLIS/2))) {
