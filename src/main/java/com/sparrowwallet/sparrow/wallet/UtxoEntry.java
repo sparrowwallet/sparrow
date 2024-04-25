@@ -1,18 +1,18 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.samourai.whirlpool.client.mix.listener.MixFailReason;
-import com.samourai.whirlpool.client.mix.listener.MixStep;
-import com.samourai.whirlpool.client.wallet.beans.MixProgress;
-import com.samourai.whirlpool.protocol.beans.Utxo;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class UtxoEntry extends HashIndexEntry {
     private final WalletNode node;
@@ -45,10 +45,6 @@ public class UtxoEntry extends HashIndexEntry {
     @Override
     public Function getWalletFunction() {
         return Function.UTXOS;
-    }
-
-    public boolean isMixing() {
-        return mixStatusProperty != null && ((mixStatusProperty.get().getMixProgress() != null && mixStatusProperty.get().getMixProgress().getMixStep() != MixStep.FAIL) || mixStatusProperty.get().getNextMixUtxo() != null);
     }
 
     public Address getAddress() {
@@ -121,51 +117,19 @@ public class UtxoEntry extends HashIndexEntry {
      */
     private ObjectProperty<MixStatus> mixStatusProperty;
 
-    public void setMixProgress(MixProgress mixProgress) {
-        mixStatusProperty().set(new MixStatus(mixProgress));
-    }
-
-    public void setMixFailReason(MixFailReason mixFailReason, String mixError) {
-        mixStatusProperty().set(new MixStatus(mixFailReason, mixError));
-    }
-
-    public void setNextMixUtxo(Utxo nextMixUtxo) {
-        mixStatusProperty().set(new MixStatus(nextMixUtxo));
-    }
-
     public final MixStatus getMixStatus() {
         return mixStatusProperty == null ? null : mixStatusProperty.get();
     }
 
     public final ObjectProperty<MixStatus> mixStatusProperty() {
         if(mixStatusProperty == null) {
-            mixStatusProperty = new SimpleObjectProperty<>(UtxoEntry.this, "mixStatus", null);
+            mixStatusProperty = new SimpleObjectProperty<>(UtxoEntry.this, "mixStatus", new MixStatus());
         }
 
         return mixStatusProperty;
     }
 
     public class MixStatus {
-        private MixProgress mixProgress;
-        private Utxo nextMixUtxo;
-        private MixFailReason mixFailReason;
-        private String mixError;
-        private Long mixErrorTimestamp;
-
-        public MixStatus(MixProgress mixProgress) {
-            this.mixProgress = mixProgress;
-        }
-
-        public MixStatus(Utxo nextMixUtxo) {
-            this.nextMixUtxo = nextMixUtxo;
-        }
-
-        public MixStatus(MixFailReason mixFailReason, String mixError) {
-            this.mixFailReason = mixFailReason;
-            this.mixError = mixError;
-            this.mixErrorTimestamp = System.currentTimeMillis();
-        }
-
         public UtxoEntry getUtxoEntry() {
             return UtxoEntry.this;
         }
@@ -177,38 +141,37 @@ public class UtxoEntry extends HashIndexEntry {
             }
 
             //Mix data not available - recount (and store if WhirlpoolWallet is running)
-            Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(wallet);
-            if(whirlpool != null && getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && node.getKeyPurpose() == KeyPurpose.RECEIVE) {
-                int mixesDone = whirlpool.recountMixesDone(getUtxoEntry().getWallet(), getHashIndex());
-                whirlpool.setMixesDone(getHashIndex(), mixesDone);
+            if(getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && node.getKeyPurpose() == KeyPurpose.RECEIVE) {
+                int mixesDone = recountMixesDone(getUtxoEntry().getWallet(), getHashIndex());
                 return new UtxoMixData(mixesDone, null);
             }
 
             return new UtxoMixData(getUtxoEntry().getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX ? 1 : 0, null);
         }
 
+        public int recountMixesDone(Wallet postmixWallet, BlockTransactionHashIndex postmixUtxo) {
+            int mixesDone = 0;
+            Set<BlockTransactionHashIndex> walletTxos = postmixWallet.getWalletTxos().entrySet().stream()
+                    .filter(entry -> entry.getValue().getKeyPurpose() == KeyPurpose.RECEIVE).map(Map.Entry::getKey).collect(Collectors.toSet());
+            BlockTransaction blkTx = postmixWallet.getTransactions().get(postmixUtxo.getHash());
+
+            while(blkTx != null) {
+                mixesDone++;
+                List<TransactionInput> inputs = blkTx.getTransaction().getInputs();
+                blkTx = null;
+                for(TransactionInput txInput : inputs) {
+                    BlockTransaction inputTx = postmixWallet.getTransactions().get(txInput.getOutpoint().getHash());
+                    if(inputTx != null && walletTxos.stream().anyMatch(txo -> txo.getHash().equals(inputTx.getHash()) && txo.getIndex() == txInput.getOutpoint().getIndex()) && inputTx.getTransaction() != null) {
+                        blkTx = inputTx;
+                    }
+                }
+            }
+
+            return mixesDone;
+        }
+
         public int getMixesDone() {
             return getUtxoMixData().getMixesDone();
-        }
-
-        public MixProgress getMixProgress() {
-            return mixProgress;
-        }
-
-        public Utxo getNextMixUtxo() {
-            return nextMixUtxo;
-        }
-
-        public MixFailReason getMixFailReason() {
-            return mixFailReason;
-        }
-
-        public String getMixError() {
-            return mixError;
-        }
-
-        public Long getMixErrorTimestamp() {
-            return mixErrorTimestamp;
         }
     }
 }

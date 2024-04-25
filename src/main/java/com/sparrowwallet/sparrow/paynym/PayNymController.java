@@ -46,7 +46,6 @@ public class PayNymController {
     public static final String INVALID_PAYMENT_CODE_LABEL = "Invalid Payment Code";
 
     private String walletId;
-    private boolean selectLinkedOnly;
     private PayNym walletPayNym;
     private boolean requestingPassword;
 
@@ -88,9 +87,8 @@ public class PayNymController {
 
     private final BooleanProperty closeProperty = new SimpleBooleanProperty(false);
 
-    public void initializeView(String walletId, boolean selectLinkedOnly) {
+    public void initializeView(String walletId) {
         this.walletId = walletId;
-        this.selectLinkedOnly = selectLinkedOnly;
 
         payNymName.managedProperty().bind(payNymName.visibleProperty());
         payNymRetrieve.managedProperty().bind(payNymRetrieve.visibleProperty());
@@ -666,10 +664,6 @@ public class PayNymController {
                 EventManager.get().post(new WalletConfigChangedEvent(wallet.isMasterWallet() ? wallet : wallet.getMasterWallet()));
             }
         }
-    }
-
-    public boolean isSelectLinkedOnly() {
-        return selectLinkedOnly;
     }
 
     public PayNym getPayNym() {

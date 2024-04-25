@@ -5,9 +5,6 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.net.ServerType;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.collections.FXCollections;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -63,9 +60,9 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
             }
         }
 
-        if(WhirlpoolServices.canWalletMix(masterWallet) && !masterWallet.isWhirlpoolMasterWallet()) {
+        if(AppServices.isWhirlpoolCompatible(masterWallet) && !masterWallet.isWhirlpoolMasterWallet()) {
             availableAccounts.add(WHIRLPOOL_PREMIX);
-        } else if(WhirlpoolServices.canWatchPostmix(masterWallet) && !existingIndexes.contains(WHIRLPOOL_POSTMIX.getAccountNumber())) {
+        } else if(AppServices.isWhirlpoolPostmixCompatible(masterWallet) && !existingIndexes.contains(WHIRLPOOL_POSTMIX.getAccountNumber())) {
             availableAccounts.add(WHIRLPOOL_POSTMIX);
         }
 

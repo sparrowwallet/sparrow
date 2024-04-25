@@ -5,7 +5,7 @@ import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
+import com.sparrowwallet.sparrow.AppServices;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +47,7 @@ final class AddAccountDialog extends DialogWindow {
             }
         }
 
-        if(WhirlpoolServices.canWalletMix(masterWallet) && !masterWallet.isWhirlpoolMasterWallet()) {
+        if(AppServices.isWhirlpoolCompatible(masterWallet) && !masterWallet.isWhirlpoolMasterWallet()) {
             availableAccounts.add(StandardAccount.WHIRLPOOL_PREMIX);
         }
 

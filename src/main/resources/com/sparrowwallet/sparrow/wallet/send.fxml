@@ -192,11 +192,6 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="SATELLITE_DISH" />
                     </graphic>
                 </Button>
-                <Button fx:id="premixButton" text="Broadcast Premix Transaction" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastPremix">
-                    <graphic>
-                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="RANDOM" />
-                    </graphic>
-                </Button>
                 <Button fx:id="createButton" text="Create Transaction" defaultButton="true" disable="true" contentDisplay="RIGHT" graphicTextGap="5" onAction="#createTransaction">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="ANGLE_DOUBLE_RIGHT" />

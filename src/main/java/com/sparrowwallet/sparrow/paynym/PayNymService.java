@@ -155,10 +155,6 @@ public class PayNymService {
                 .map(o -> o.get());
     }
 
-    public static Observable<Map<String, Object>> followPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode, String authToken, String signature) {
-        return followPaymentCode(PaymentCode.fromString(paymentCode.toString()), authToken, signature);
-    }
-
     public static Observable<Map<String, Object>> followPaymentCode(PaymentCode paymentCode, String authToken, String signature) {
         Map<String, String> headers = new HashMap<>();
         headers.put("content-type", "application/json");

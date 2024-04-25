@@ -10,11 +10,6 @@ public class PaymentCodeTextField extends CopyableTextField {
         setPaymentCodeString();
     }
 
-    public void setPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode) {
-        this.paymentCodeStr = paymentCode.toString();
-        setPaymentCodeString();
-    }
-
     private void setPaymentCodeString() {
         String abbrevPcode = paymentCodeStr.substring(0, 12) + "..." + paymentCodeStr.substring(paymentCodeStr.length() - 5);
         setText(abbrevPcode);

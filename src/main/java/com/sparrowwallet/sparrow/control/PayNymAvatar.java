@@ -79,10 +79,6 @@ public class PayNymAvatar extends StackPane {
         this.paymentCodeProperty.set(paymentCode);
     }
 
-    public void setPaymentCode(com.samourai.wallet.bip47.rpc.PaymentCode paymentCode) {
-        setPaymentCode(PaymentCode.fromString(paymentCode.toString()));
-    }
-
     public void clearPaymentCode() {
         this.paymentCodeProperty.set(null);
     }

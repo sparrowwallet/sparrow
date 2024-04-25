@@ -4,9 +4,8 @@ import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
-import com.samourai.wallet.crypto.AESUtil;
-import com.samourai.wallet.util.CharSequenceX;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.SamouraiUtil;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
 
@@ -46,9 +45,9 @@ public class Samourai implements KeystoreFileImport {
 
             String decrypted;
             if(version == 1) {
-                decrypted = AESUtil.decrypt(payload, new CharSequenceX(password), AESUtil.DefaultPBKDF2Iterations);
+                decrypted = SamouraiUtil.decrypt(payload, password, SamouraiUtil.DefaultPBKDF2Iterations);
             } else if(version == 2) {
-                decrypted = AESUtil.decryptSHA256(payload, new CharSequenceX(password));
+                decrypted = SamouraiUtil.decryptSHA256(payload, password);
             } else {
                 throw new ImportException("Unsupported backup version: " + version);
             }

@@ -68,28 +68,10 @@
                 </center>
                 <bottom>
                     <HBox>
-                        <HBox fx:id="mixButtonsBox" styleClass="utxos-buttons-box" spacing="20" alignment="BOTTOM_LEFT">
-                            <Button fx:id="startMix" text="Start Mixing" onAction="#startMixing">
-                                <graphic>
-                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="RANDOM" fontSize="12" />
-                                </graphic>
-                            </Button>
-                            <Button fx:id="stopMix" text="Stop Mixing" onAction="#stopMixing">
-                                <graphic>
-                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="STOP_CIRCLE" fontSize="12" />
-                                </graphic>
-                            </Button>
-                            <Button fx:id="mixTo" text="Mix to..." maxWidth="200" onAction="#showMixToDialog" />
-                        </HBox>
                         <Region HBox.hgrow="ALWAYS" />
                         <HBox styleClass="utxos-buttons-box" spacing="20" alignment="BOTTOM_RIGHT">
                             <Button fx:id="selectAll" text="Select All" onAction="#selectAll"/>
                             <Button fx:id="clear" text="Clear" onAction="#clear"/>
-                            <Button fx:id="mixSelected" text="Mix Selected" graphicTextGap="5" onAction="#mixSelected">
-                                <graphic>
-                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="RANDOM" fontSize="12" />
-                                </graphic>
-                            </Button>
                             <Button fx:id="sendSelected" text="Send Selected" graphicTextGap="5" onAction="#sendSelected">
                                 <graphic>
                                     <Glyph fontFamily="FontAwesome" icon="SEND" fontSize="12" />

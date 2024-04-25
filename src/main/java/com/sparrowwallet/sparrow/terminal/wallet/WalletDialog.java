@@ -22,7 +22,6 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import com.sparrowwallet.sparrow.wallet.Function;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +124,7 @@ public class WalletDialog extends DialogWindow {
     private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
         List<Wallet> childWallets;
         if(StandardAccount.isWhirlpoolAccount(standardAccount)) {
-            childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
+            childWallets = AppServices.addWhirlpoolWallets(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);
             EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));

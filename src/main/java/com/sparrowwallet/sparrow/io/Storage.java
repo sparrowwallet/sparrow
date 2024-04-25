@@ -8,8 +8,6 @@ import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.SparrowWallet;
-import com.sparrowwallet.sparrow.soroban.Soroban;
-import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -172,15 +170,6 @@ public class Storage {
                         copyKeystore.getSeed().setPassphrase("");
                     }
                 }
-            }
-
-            if(wallet.isWhirlpoolMasterWallet()) {
-                String walletId = getWalletId(wallet);
-                Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(walletId);
-                whirlpool.setScode(wallet.getMasterMixConfig().getScode());
-                whirlpool.setHDWallet(getWalletId(wallet), copy);
-                Soroban soroban = AppServices.getSorobanServices().getSoroban(walletId);
-                soroban.setHDWallet(copy);
             }
 
             StandardAccount standardAccount = wallet.getStandardAccountType();

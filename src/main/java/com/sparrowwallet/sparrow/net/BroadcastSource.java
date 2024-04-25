@@ -1,12 +1,12 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
-import com.samourai.wallet.httpClient.HttpResponseException;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.net.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

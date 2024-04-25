@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
-import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
@@ -26,14 +25,9 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
-import com.sparrowwallet.sparrow.soroban.InitiatorDialog;
-import com.sparrowwallet.sparrow.paynym.PayNymAddress;
-import com.sparrowwallet.sparrow.soroban.SorobanServices;
-import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.beans.binding.Bindings;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -49,7 +43,6 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.stage.Modality;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.glyphfont.Glyph;
@@ -149,9 +142,6 @@ public class SendController extends WalletFormController implements Initializabl
     private Button createButton;
 
     @FXML
-    private Button premixButton;
-
-    @FXML
     private Button notificationButton;
 
     private StackPane tabHeader;
@@ -161,8 +151,6 @@ public class SendController extends WalletFormController implements Initializabl
     private final ObjectProperty<UtxoSelector> utxoSelectorProperty = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<TxoFilter> txoFilterProperty = new SimpleObjectProperty<>(null);
-
-    private final ObjectProperty<Pool> whirlpoolProperty = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<PaymentCode> paymentCodeProperty = new SimpleObjectProperty<>(null);
 
@@ -234,7 +222,6 @@ public class SendController extends WalletFormController implements Initializabl
     };
 
     private final ChangeListener<Boolean> broadcastButtonsOnlineListener = (observable, oldValue, newValue) -> {
-        premixButton.setDisable(!newValue);
         notificationButton.setDisable(walletTransactionProperty.get() == null || isInsufficientFeeRate() || !newValue);
     };
 
@@ -269,7 +256,6 @@ public class SendController extends WalletFormController implements Initializabl
                 }
                 paymentTabs.getTabs().forEach(tab -> {
                     tab.setClosable(true);
-                    ((PaymentController)tab.getUserData()).updateMixOnlyStatus();
                 });
             } else {
                 paymentTabs.getStyleClass().remove("multiple-tabs");
@@ -400,7 +386,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
-            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || isPayNymMixOnlyPayment(walletTransaction.getPayments()));
+            createButton.setDisable(walletTransaction == null || isInsufficientFeeRate());
             notificationButton.setDisable(walletTransaction == null || isInsufficientFeeRate() || !AppServices.isConnected());
         });
 
@@ -432,10 +418,8 @@ public class SendController extends WalletFormController implements Initializabl
         optimizationHelp.visibleProperty().bind(privacyAnalysis.visibleProperty().not());
 
         createButton.managedProperty().bind(createButton.visibleProperty());
-        premixButton.managedProperty().bind(premixButton.visibleProperty());
         notificationButton.managedProperty().bind(notificationButton.visibleProperty());
-        createButton.visibleProperty().bind(Bindings.and(premixButton.visibleProperty().not(), notificationButton.visibleProperty().not()));
-        premixButton.setVisible(false);
+        createButton.visibleProperty().bind(notificationButton.visibleProperty().not());
         notificationButton.setVisible(false);
         AppServices.onlineProperty().addListener(new WeakChangeListener<>(broadcastButtonsOnlineListener));
     }
@@ -634,8 +618,7 @@ public class SendController extends WalletFormController implements Initializabl
         OptimizationStrategy optimizationStrategy = (OptimizationStrategy)optimizationToggleGroup.getSelectedToggle().getUserData();
         if(optimizationStrategy == OptimizationStrategy.PRIVACY
                 && payments.size() == 1
-                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType())
-                && !(payments.get(0).getAddress() instanceof PayNymAddress)) {
+                && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType())) {
             selectors.add(new StonewallUtxoSelector(payments.get(0).getAddress().getScriptType(), noInputsFee));
         }
 
@@ -991,28 +974,14 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
-    private boolean isPayNymMixOnlyPayment(List<Payment> payments) {
-        return payments.size() == 1 && payments.get(0).getAddress() instanceof PayNymAddress;
-    }
-
-    public void setPayNymMixOnlyPayment() {
-        optimizationToggleGroup.selectToggle(privacyToggle);
-        transactionDiagram.setOptimizationStrategy(OptimizationStrategy.PRIVACY);
-        efficiencyToggle.setDisable(true);
-        privacyToggle.setDisable(false);
-    }
-
-    private boolean isMixPossible(List<Payment> payments) {
-        return (utxoSelectorProperty.get() == null || SorobanServices.canWalletMix(walletForm.getWallet()))
-                && payments.size() == 1
+    private boolean isFakeMixPossible(List<Payment> payments) {
+        return utxoSelectorProperty.get() == null && payments.size() == 1
                 && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType())
                 && AppServices.getPayjoinURI(payments.get(0).getAddress()) == null;
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
-        if(isPayNymMixOnlyPayment(payments)) {
-            setPayNymMixOnlyPayment();
-        } else if(isMixPossible(payments)) {
+        if(isFakeMixPossible(payments)) {
             setPreferredOptimizationStrategy();
             efficiencyToggle.setDisable(false);
             privacyToggle.setDisable(false);
@@ -1091,11 +1060,9 @@ public class SendController extends WalletFormController implements Initializabl
         efficiencyToggle.setDisable(false);
         privacyToggle.setDisable(false);
 
-        premixButton.setVisible(false);
         notificationButton.setVisible(false);
         createButton.setDefaultButton(true);
 
-        whirlpoolProperty.set(null);
         paymentCodeProperty.set(null);
 
         addressNodeMap.clear();
@@ -1181,51 +1148,6 @@ public class SendController extends WalletFormController implements Initializabl
 
         //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
         walletForm.addWalletTransactionNodes(nodes);
-    }
-
-    public void broadcastPremix(ActionEvent event) {
-        //Ensure all child wallets have been saved
-        Wallet masterWallet = getWalletForm().getWallet().isMasterWallet() ? getWalletForm().getWallet() : getWalletForm().getWallet().getMasterWallet();
-        for(Wallet childWallet : masterWallet.getChildWallets()) {
-            if(!childWallet.isNested()) {
-                Storage storage = AppServices.get().getOpenWallets().get(childWallet);
-                if(!storage.isPersisted(childWallet)) {
-                    try {
-                        storage.saveWallet(childWallet);
-                        EventManager.get().post(new NewChildWalletSavedEvent(storage, masterWallet, childWallet));
-                    } catch(Exception e) {
-                        AppServices.showErrorDialog("Error saving wallet " + childWallet.getName(), e.getMessage());
-                    }
-                }
-            }
-        }
-
-        //The WhirlpoolWallet has already been configured for the tx0 preview
-        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWalletForm().getStorage().getWalletId(masterWallet));
-        Map<BlockTransactionHashIndex, WalletNode> utxos = walletTransactionProperty.get().getSelectedUtxos();
-        Whirlpool.Tx0BroadcastService tx0BroadcastService = new Whirlpool.Tx0BroadcastService(whirlpool, whirlpoolProperty.get(), utxos.keySet());
-        tx0BroadcastService.setOnRunning(workerStateEvent -> {
-            premixButton.setDisable(true);
-            addWalletTransactionNodes();
-        });
-        tx0BroadcastService.setOnSucceeded(workerStateEvent -> {
-            premixButton.setDisable(false);
-            Sha256Hash txid = tx0BroadcastService.getValue();
-            clear(null);
-        });
-        tx0BroadcastService.setOnFailed(workerStateEvent -> {
-            premixButton.setDisable(false);
-            Throwable exception = workerStateEvent.getSource().getException();
-            while(exception.getCause() != null) {
-                exception = exception.getCause();
-            }
-
-            AppServices.showErrorDialog("Error broadcasting premix transaction", exception.getMessage());
-        });
-        ServiceProgressDialog progressDialog = new ServiceProgressDialog("Whirlpool", "Broadcast Premix Transaction", "/image/whirlpool.png", tx0BroadcastService);
-        progressDialog.initOwner(premixButton.getScene().getWindow());
-        AppServices.moveToActiveWindowScreen(progressDialog);
-        tx0BroadcastService.start();
     }
 
     public void broadcastNotification(ActionEvent event) {
@@ -1487,7 +1409,7 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void spendUtxos(SpendUtxoEvent event) {
         if((event.getUtxos() == null || !event.getUtxos().isEmpty()) && event.getWallet().equals(getWalletForm().getWallet())) {
-            if(whirlpoolProperty.get() != null || paymentCodeProperty.get() != null) {
+            if(paymentCodeProperty.get() != null) {
                 clear(null);
             }
 
@@ -1516,19 +1438,14 @@ public class SendController extends WalletFormController implements Initializabl
             }
 
             txoFilterProperty.set(null);
-            whirlpoolProperty.set(event.getPool());
             paymentCodeProperty.set(event.getPaymentCode());
             updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
-
-            boolean isWhirlpoolPremix = (event.getPool() != null);
-            premixButton.setVisible(isWhirlpoolPremix);
-            premixButton.setDefaultButton(isWhirlpoolPremix);
 
             boolean isNotificationTransaction = (event.getPaymentCode() != null);
             notificationButton.setVisible(isNotificationTransaction);
             notificationButton.setDefaultButton(isNotificationTransaction);
 
-            setInputFieldsDisabled(isWhirlpoolPremix || isNotificationTransaction, isWhirlpoolPremix);
+            setInputFieldsDisabled(isNotificationTransaction, false);
         }
     }
 
@@ -1646,37 +1563,6 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
-    @Subscribe
-    public void sorobanInitiated(SorobanInitiatedEvent event) {
-        if(event.getWallet().equals(getWalletForm().getWallet())) {
-            if(!AppServices.onlineProperty().get()) {
-                Optional<ButtonType> optButtonType = AppServices.showErrorDialog("Cannot Mix Offline", "Sparrow needs to be connected to a server to perform collaborative mixes. Try to connect?", ButtonType.CANCEL, ButtonType.OK);
-                if(optButtonType.isPresent() && optButtonType.get() == ButtonType.OK) {
-                    AppServices.onlineProperty().set(true);
-                }
-                return;
-            }
-
-            Platform.runLater(() -> {
-                InitiatorDialog initiatorDialog = new InitiatorDialog(getWalletForm().getWalletId(), getWalletForm().getWallet(), walletTransactionProperty.get());
-                initiatorDialog.initOwner(paymentTabs.getScene().getWindow());
-                if(Config.get().isSameAppMixing()) {
-                    initiatorDialog.initModality(Modality.NONE);
-                }
-                Optional<Transaction> optTransaction = initiatorDialog.showAndWait();
-                if(optTransaction.isPresent()) {
-                    BlockTransaction blockTransaction = walletForm.getWallet().getWalletTransaction(optTransaction.get().getTxId());
-                    if(blockTransaction != null && blockTransaction.getLabel() == null && walletTransactionProperty.get() != null) {
-                        blockTransaction.setLabel(walletTransactionProperty.get().getPayments().stream().map(Payment::getLabel).findFirst().orElse(null));
-                        TransactionEntry transactionEntry = new TransactionEntry(walletForm.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap());
-                        EventManager.get().post(new WalletEntryLabelsChangedEvent(walletForm.getWallet(), List.of(transactionEntry)));
-                    }
-                    clear(null);
-                }
-            });
-        }
-    }
-
     private class PrivacyAnalysisTooltip extends VBox {
         private final List<Label> analysisLabels = new ArrayList<>();
 
@@ -1685,7 +1571,6 @@ public class SendController extends WalletFormController implements Initializabl
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
             Map<Address, WalletNode> walletAddresses = walletTransaction.getAddressNodeMap();
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
-            boolean payNymPresent = isPayNymMixOnlyPayment(payments);
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
             boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
@@ -1693,28 +1578,20 @@ public class SendController extends WalletFormController implements Initializabl
             boolean payjoinPresent = userPayments.stream().anyMatch(payment -> AppServices.getPayjoinURI(payment.getAddress()) != null);
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {
-                if(payNymPresent) {
-                    addLabel("Appears as a normal transaction, but actual value transferred is hidden", getPlusGlyph());
-                } else if(fakeMixPresent) {
+                if(fakeMixPresent) {
                     addLabel("Appears as a two person coinjoin", getPlusGlyph());
                 } else {
                     if(mixedAddressTypes) {
-                        addLabel("Cannot coinjoin due to mixed address types", getInfoGlyph());
+                        addLabel("Cannot fake coinjoin due to mixed address types", getInfoGlyph());
                     } else if(userPayments.size() > 1) {
-                        addLabel("Cannot coinjoin due to multiple payments", getInfoGlyph());
+                        addLabel("Cannot fake coinjoin due to multiple payments", getInfoGlyph());
                     } else if(payjoinPresent) {
-                        addLabel("Cannot coinjoin due to payjoin", getInfoGlyph());
+                        addLabel("Cannot fake coinjoin due to payjoin", getInfoGlyph());
                     } else {
                         if(utxoSelectorProperty().get() != null) {
                             addLabel("Cannot fake coinjoin due to coin control", getInfoGlyph());
                         } else {
                             addLabel("Cannot fake coinjoin due to insufficient funds", getInfoGlyph());
-                        }
-
-                        if(!SorobanServices.canWalletMix(getWalletForm().getWallet())) {
-                            addLabel("Can only add mix partner to Native Segwit software wallets", getInfoGlyph());
-                        } else {
-                            addLabel("Add a mix partner to create a two person coinjoin", getInfoGlyph());
                         }
                     }
                 }
@@ -1724,7 +1601,7 @@ public class SendController extends WalletFormController implements Initializabl
                 addLabel("Address types different to the wallet indicate external payments", getMinusGlyph());
             }
 
-            if(roundPaymentAmounts && !fakeMixPresent && !payNymPresent) {
+            if(roundPaymentAmounts && !fakeMixPresent) {
                 addLabel("Rounded payment amounts indicate external payments", getMinusGlyph());
             }
 

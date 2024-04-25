@@ -58,14 +58,6 @@ public class PayNym {
         return followers;
     }
 
-    public boolean isCollaborativeSend() {
-        return collaborativeSend;
-    }
-
-    public void setCollaborativeSend(boolean collaborativeSend) {
-        this.collaborativeSend = collaborativeSend;
-    }
-
     public List<ScriptType> getScriptTypes() {
         return segwit ? getSegwitScriptTypes() : getV1ScriptTypes();
     }

@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.event;
 
-import com.samourai.whirlpool.client.whirlpool.beans.Pool;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
@@ -17,7 +16,6 @@ public class SpendUtxoEvent {
     private final Long fee;
     private final boolean requireAllUtxos;
     private final BlockTransaction replacedTransaction;
-    private final Pool pool;
     private final PaymentCode paymentCode;
 
     public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos) {
@@ -32,19 +30,6 @@ public class SpendUtxoEvent {
         this.fee = fee;
         this.requireAllUtxos = requireAllUtxos;
         this.replacedTransaction = replacedTransaction;
-        this.pool = null;
-        this.paymentCode = null;
-    }
-
-    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, List<byte[]> opReturns, Long fee, Pool pool) {
-        this.wallet = wallet;
-        this.utxos = utxos;
-        this.payments = payments;
-        this.opReturns = opReturns;
-        this.fee = fee;
-        this.requireAllUtxos = false;
-        this.replacedTransaction = null;
-        this.pool = pool;
         this.paymentCode = null;
     }
 
@@ -56,7 +41,6 @@ public class SpendUtxoEvent {
         this.fee = null;
         this.requireAllUtxos = false;
         this.replacedTransaction = null;
-        this.pool = null;
         this.paymentCode = paymentCode;
     }
 
@@ -86,10 +70,6 @@ public class SpendUtxoEvent {
 
     public BlockTransaction getReplacedTransaction() {
         return replacedTransaction;
-    }
-
-    public Pool getPool() {
-        return pool;
     }
 
     public PaymentCode getPaymentCode() {

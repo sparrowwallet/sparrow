@@ -24,8 +24,6 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
-import com.sparrowwallet.sparrow.soroban.SorobanServices;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -95,11 +93,7 @@ public class AppServices {
 
     private static AppServices INSTANCE;
 
-    private final WhirlpoolServices whirlpoolServices = new WhirlpoolServices();
-
-    private final SorobanServices sorobanServices = new SorobanServices();
-
-    private InteractionServices interactionServices;
+    private final InteractionServices interactionServices;
 
     private static HttpClientService httpClientService;
 
@@ -188,8 +182,6 @@ public class AppServices {
         this.application = application;
         this.interactionServices = interactionServices;
         EventManager.get().register(this);
-        EventManager.get().register(whirlpoolServices);
-        EventManager.get().register(sorobanServices);
     }
 
     public void start() {
@@ -532,14 +524,6 @@ public class AppServices {
 
     public static AppServices get() {
         return INSTANCE;
-    }
-
-    public static WhirlpoolServices getWhirlpoolServices() {
-        return get().whirlpoolServices;
-    }
-
-    public static SorobanServices getSorobanServices() {
-        return get().sorobanServices;
     }
 
     public static InteractionServices getInteractionServices() {
@@ -1093,6 +1077,37 @@ public class AppServices {
         }
 
         return wallet;
+    }
+
+    public static final List<Network> WHIRLPOOL_NETWORKS = List.of(Network.MAINNET, Network.TESTNET);
+
+    public static boolean isWhirlpoolCompatible(Wallet wallet) {
+        return WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
+                && wallet.getKeystores().size() == 1
+                && wallet.getKeystores().get(0).hasSeed()
+                && wallet.getKeystores().get(0).getSeed().getType() == DeterministicSeed.Type.BIP39
+                && wallet.getStandardAccountType() != null
+                && StandardAccount.isMixableAccount(wallet.getStandardAccountType());
+    }
+
+    public static boolean isWhirlpoolPostmixCompatible(Wallet wallet) {
+        return WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
+                && wallet.getKeystores().size() == 1;
+    }
+
+    public static List<Wallet> addWhirlpoolWallets(Wallet decryptedWallet, String walletId, Storage storage) {
+        List<Wallet> childWallets = new ArrayList<>();
+        for(StandardAccount whirlpoolAccount : StandardAccount.WHIRLPOOL_ACCOUNTS) {
+            if(decryptedWallet.getChildWallet(whirlpoolAccount) == null) {
+                Wallet childWallet = decryptedWallet.addChildWallet(whirlpoolAccount);
+                childWallets.add(childWallet);
+                EventManager.get().post(new ChildWalletsAddedEvent(storage, decryptedWallet, childWallet));
+            }
+        }
+
+        return childWallets;
     }
 
     public static Font getMonospaceFont() {

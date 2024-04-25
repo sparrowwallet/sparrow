@@ -9,10 +9,10 @@ import java.io.IOException;
 
 public class PayNymDialog extends Dialog<PayNym> {
     public PayNymDialog(String walletId) {
-        this(walletId, Operation.SHOW, false);
+        this(walletId, Operation.SHOW);
     }
 
-    public PayNymDialog(String walletId, Operation operation, boolean selectLinkedOnly) {
+    public PayNymDialog(String walletId, Operation operation) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.onEscapePressed(dialogPane.getScene(), this::close);
@@ -21,7 +21,7 @@ public class PayNymDialog extends Dialog<PayNym> {
             FXMLLoader payNymLoader = new FXMLLoader(AppServices.class.getResource("paynym/paynym.fxml"));
             dialogPane.setContent(payNymLoader.load());
             PayNymController payNymController = payNymLoader.getController();
-            payNymController.initializeView(walletId, selectLinkedOnly);
+            payNymController.initializeView(walletId);
 
             EventManager.get().register(payNymController);
 
@@ -33,26 +33,13 @@ public class PayNymDialog extends Dialog<PayNym> {
             dialogPane.getStylesheets().add(AppServices.class.getResource("app.css").toExternalForm());
             dialogPane.getStylesheets().add(AppServices.class.getResource("paynym/paynym.css").toExternalForm());
 
-            final ButtonType sendDirectlyButtonType = new javafx.scene.control.ButtonType("Send Directly", ButtonBar.ButtonData.APPLY);
-            final ButtonType sendCollaborativelyButtonType = new javafx.scene.control.ButtonType("Send Collaboratively", ButtonBar.ButtonData.OK_DONE);
+            final ButtonType sendDirectlyButtonType = new javafx.scene.control.ButtonType("Send To Contact", ButtonBar.ButtonData.APPLY);
             final ButtonType selectButtonType = new javafx.scene.control.ButtonType("Select Contact", ButtonBar.ButtonData.APPLY);
             final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
             final ButtonType doneButtonType = new javafx.scene.control.ButtonType("Done", ButtonBar.ButtonData.OK_DONE);
 
             if(operation == Operation.SEND) {
-                if(selectLinkedOnly) {
-                    dialogPane.getButtonTypes().addAll(sendDirectlyButtonType, cancelButtonType);
-                } else {
-                    dialogPane.getButtonTypes().addAll(sendDirectlyButtonType, sendCollaborativelyButtonType, cancelButtonType);
-                    Button sendCollaborativelyButton = (Button)dialogPane.lookupButton(sendCollaborativelyButtonType);
-                    sendCollaborativelyButton.setDisable(true);
-                    sendCollaborativelyButton.setDefaultButton(false);
-                    payNymController.payNymProperty().addListener((observable, oldValue, payNym) -> {
-                        sendCollaborativelyButton.setDisable(payNym == null);
-                        sendCollaborativelyButton.setDefaultButton(payNym != null && !payNymController.isLinked(payNym));
-                    });
-                }
-
+                dialogPane.getButtonTypes().addAll(sendDirectlyButtonType, cancelButtonType);
                 Button sendDirectlyButton = (Button)dialogPane.lookupButton(sendDirectlyButtonType);
                 sendDirectlyButton.setDisable(true);
                 sendDirectlyButton.setDefaultButton(true);
@@ -66,7 +53,7 @@ public class PayNymDialog extends Dialog<PayNym> {
                 selectButton.setDisable(true);
                 selectButton.setDefaultButton(true);
                 payNymController.payNymProperty().addListener((observable, oldValue, payNym) -> {
-                    selectButton.setDisable(payNym == null || (selectLinkedOnly && !payNymController.isLinked(payNym)));
+                    selectButton.setDisable(payNym == null || !payNymController.isLinked(payNym));
                 });
             } else {
                 dialogPane.getButtonTypes().add(doneButtonType);
@@ -83,14 +70,8 @@ public class PayNymDialog extends Dialog<PayNym> {
             });
 
             setResultConverter(dialogButton -> {
-                if(dialogButton == sendCollaborativelyButtonType) {
-                    PayNym payNym = payNymController.getPayNym();
-                    payNym.setCollaborativeSend(true);
-                    return payNym;
-                } else if(dialogButton == sendDirectlyButtonType || dialogButton == selectButtonType) {
-                    PayNym payNym = payNymController.getPayNym();
-                    payNym.setCollaborativeSend(false);
-                    return payNym;
+                if(dialogButton == sendDirectlyButtonType || dialogButton == selectButtonType) {
+                    return payNymController.getPayNym();
                 }
 
                 return null;

@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -21,7 +20,6 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -623,31 +621,6 @@ public class WalletForm {
             if(!newNodes.isEmpty()) {
                 Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight(), newNodes));
             }
-        }
-    }
-
-    @Subscribe
-    public void whirlpoolMixSuccess(WhirlpoolMixSuccessEvent event) {
-        if(event.getWallet() == wallet && event.getWalletNode() != null) {
-            if(transactionMempoolService != null) {
-                transactionMempoolService.cancel();
-            }
-
-            transactionMempoolService = new ElectrumServer.TransactionMempoolService(event.getWallet(), Sha256Hash.wrap(event.getNextUtxo().getHash()), Set.of(event.getWalletNode()));
-            transactionMempoolService.setDelay(Duration.seconds(5));
-            transactionMempoolService.setPeriod(Duration.seconds(5));
-            transactionMempoolService.setRestartOnFailure(false);
-            transactionMempoolService.setOnSucceeded(mempoolWorkerStateEvent -> {
-                Set<String> scriptHashes = transactionMempoolService.getValue();
-                if(!scriptHashes.isEmpty()) {
-                    Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHashes.iterator().next())));
-                }
-
-                if(transactionMempoolService.getIterationCount() > 10) {
-                    transactionMempoolService.cancel();
-                }
-            });
-            transactionMempoolService.start();
         }
     }
 

@@ -27,10 +27,7 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
 import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
-import com.sparrowwallet.sparrow.soroban.CounterpartyDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
-import com.sparrowwallet.sparrow.soroban.Soroban;
-import com.sparrowwallet.sparrow.soroban.SorobanServices;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
@@ -186,9 +183,6 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem sweepPrivateKey;
-
-    @FXML
-    private MenuItem findMixingPartner;
 
     @FXML
     private MenuItem showPayNym;
@@ -423,10 +417,6 @@ public class AppController implements Initializable {
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
         sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
         showPayNym.setDisable(true);
-        findMixingPartner.setDisable(true);
-        AppServices.onlineProperty().addListener((observable, oldValue, newValue) -> {
-            findMixingPartner.setDisable(exportWallet.isDisable() || getSelectedWalletForm() == null || !SorobanServices.canWalletMix(getSelectedWalletForm().getWallet()) || !newValue);
-        });
 
         configureSwitchServer();
         setServerType(Config.get().getServerType());
@@ -1459,75 +1449,6 @@ public class AppController implements Initializable {
         optTransaction.ifPresent(transaction -> addTransactionTab(null, null, transaction));
     }
 
-    public void findMixingPartner(ActionEvent event) {
-        WalletForm selectedWalletForm = getSelectedWalletForm();
-        if(selectedWalletForm != null) {
-            Wallet wallet = selectedWalletForm.getWallet();
-            Soroban soroban = AppServices.getSorobanServices().getSoroban(selectedWalletForm.getWalletId());
-            if(soroban.getHdWallet() == null) {
-                if(wallet.isEncrypted()) {
-                    Wallet copy = wallet.copy();
-                    WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
-                    dlg.initOwner(rootStack.getScene().getWindow());
-                    Optional<SecureString> password = dlg.showAndWait();
-                    if(password.isPresent()) {
-                        Storage storage = selectedWalletForm.getStorage();
-                        keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
-                        keyDerivationService.setOnSucceeded(workerStateEvent -> {
-                            EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
-                            ECKey encryptionFullKey = keyDerivationService.getValue();
-                            Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                            copy.decrypt(key);
-
-                            try {
-                                soroban.setHDWallet(copy);
-                                CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
-                                counterpartyDialog.initOwner(rootStack.getScene().getWindow());
-                                if(Config.get().isSameAppMixing()) {
-                                    counterpartyDialog.initModality(Modality.NONE);
-                                }
-                                counterpartyDialog.showAndWait();
-                            } finally {
-                                key.clear();
-                                encryptionFullKey.clear();
-                                keyDerivationService = null;
-                            }
-                        });
-                        keyDerivationService.setOnFailed(workerStateEvent -> {
-                            EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Failed"));
-                            if(keyDerivationService.getException() instanceof InvalidPasswordException) {
-                                Optional<ButtonType> optResponse = showErrorDialog("Invalid Password", "The wallet password was invalid. Try again?", ButtonType.CANCEL, ButtonType.OK);
-                                if(optResponse.isPresent() && optResponse.get().equals(ButtonType.OK)) {
-                                    Platform.runLater(() -> findMixingPartner(null));
-                                }
-                            } else {
-                                log.error("Error deriving wallet key", keyDerivationService.getException());
-                            }
-                            keyDerivationService = null;
-                        });
-                        EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.START, "Decrypting wallet..."));
-                        keyDerivationService.start();
-                    }
-                } else {
-                    soroban.setHDWallet(wallet);
-                    CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
-                    counterpartyDialog.initOwner(rootStack.getScene().getWindow());
-                    if(Config.get().isSameAppMixing()) {
-                        counterpartyDialog.initModality(Modality.NONE);
-                    }
-                    counterpartyDialog.showAndWait();
-                }
-            } else {
-                CounterpartyDialog counterpartyDialog = new CounterpartyDialog(selectedWalletForm.getWalletId(), selectedWalletForm.getWallet());
-                counterpartyDialog.initOwner(rootStack.getScene().getWindow());
-                if(Config.get().isSameAppMixing()) {
-                    counterpartyDialog.initModality(Modality.NONE);
-                }
-                counterpartyDialog.showAndWait();
-            }
-        }
-    }
-
     public void showPayNym(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
@@ -1727,14 +1648,6 @@ public class AppController implements Initializable {
             tabLabel.setGraphicTextGap(5.0);
             tab.setGraphic(tabLabel);
             tab.setClosable(true);
-            tab.setOnCloseRequest(event -> {
-                if(AppServices.getWhirlpoolServices().getWhirlpoolForMixToWallet(((WalletTabData)tab.getUserData()).getWalletForm().getWalletId()) != null) {
-                    Optional<ButtonType> optType = AppServices.showWarningDialog("Close mix to wallet?", "This wallet has been configured as the final destination for mixes, and needs to be open for this to occur.\n\nAre you sure you want to close?", ButtonType.NO, ButtonType.YES);
-                    if(optType.isPresent() && optType.get() == ButtonType.NO) {
-                        event.consume();
-                    }
-                }
-            });
 
             TabPane subTabs = new TabPane();
             subTabs.setSide(Side.LEFT);
@@ -2554,7 +2467,6 @@ public class AppController implements Initializable {
                 showLoadingLog.setDisable(true);
                 showTxHex.setDisable(false);
                 showPayNym.setDisable(true);
-                findMixingPartner.setDisable(true);
             } else if(event instanceof WalletTabSelectedEvent) {
                 WalletTabSelectedEvent walletTabEvent = (WalletTabSelectedEvent)event;
                 WalletTabData walletTabData = walletTabEvent.getWalletTabData();
@@ -2566,7 +2478,6 @@ public class AppController implements Initializable {
                 showLoadingLog.setDisable(false);
                 showTxHex.setDisable(true);
                 showPayNym.setDisable(exportWallet.isDisable() || !walletTabData.getWallet().hasPaymentCode());
-                findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(walletTabData.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
     }
@@ -2592,7 +2503,6 @@ public class AppController implements Initializable {
             if(selectedWalletForm.getWalletId().equals(event.getWalletId())) {
                 exportWallet.setDisable(!event.getWallet().isValid() || selectedWalletForm.isLocked());
                 showPayNym.setDisable(exportWallet.isDisable() || !event.getWallet().hasPaymentCode());
-                findMixingPartner.setDisable(exportWallet.isDisable() || !SorobanServices.canWalletMix(event.getWallet()) || !AppServices.onlineProperty().get());
             }
         }
 

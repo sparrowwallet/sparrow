@@ -1,12 +1,10 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
-import com.samourai.http.client.JettyHttpClientService;
-import com.samourai.wallet.httpClient.HttpUsage;
-import com.samourai.wallet.httpClient.IHttpClient;
-import com.samourai.wallet.util.AsyncUtil;
-import com.samourai.wallet.util.ThreadUtil;
-import com.samourai.whirlpool.client.utils.ClientUtils;
+import com.sparrowwallet.sparrow.net.http.client.AsyncUtil;
+import com.sparrowwallet.sparrow.net.http.client.HttpUsage;
+import com.sparrowwallet.sparrow.net.http.client.IHttpClient;
+import com.sparrowwallet.sparrow.net.http.client.JettyHttpClientService;
 import io.reactivex.Observable;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -22,15 +20,15 @@ public class HttpClientService extends JettyHttpClientService {
     }
 
     public <T> T requestJson(String url, Class<T> responseType, Map<String, String> headers) throws Exception {
-        return getHttpClient(HttpUsage.BACKEND).getJson(url, responseType, headers);
+        return getHttpClient(HttpUsage.DEFAULT).getJson(url, responseType, headers);
     }
 
     public <T> Observable<Optional<T>> postJson(String url, Class<T> responseType, Map<String, String> headers, Object body) {
-        return getHttpClient(HttpUsage.BACKEND).postJson(url, responseType, headers, body).toObservable();
+        return getHttpClient(HttpUsage.DEFAULT).postJson(url, responseType, headers, body).toObservable();
     }
 
     public String postString(String url, Map<String, String> headers, String contentType, String content) throws Exception {
-        IHttpClient httpClient = getHttpClient(HttpUsage.BACKEND);
+        IHttpClient httpClient = getHttpClient(HttpUsage.DEFAULT);
         return AsyncUtil.getInstance().blockingGet(httpClient.postString(url, headers, contentType, content)).get();
     }
 

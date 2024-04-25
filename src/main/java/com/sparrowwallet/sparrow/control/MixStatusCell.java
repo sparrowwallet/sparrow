@@ -1,27 +1,11 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.samourai.whirlpool.client.mix.listener.MixFailReason;
-import com.samourai.whirlpool.client.mix.listener.MixStep;
-import com.samourai.whirlpool.client.wallet.beans.MixProgress;
-import com.samourai.whirlpool.protocol.beans.Utxo;
-import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
-import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolException;
-import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
-import javafx.util.Duration;
-import org.controlsfx.glyphfont.Glyph;
-import org.controlsfx.tools.Platform;
-
-import java.util.Locale;
 
 public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
-    private static final int ERROR_DISPLAY_MILLIS = 5 * 60 * 1000;
-
     public MixStatusCell() {
         super();
         setAlignment(Pos.CENTER_RIGHT);
@@ -41,167 +25,9 @@ public class MixStatusCell extends TreeTableCell<Entry, UtxoEntry.MixStatus> {
             setGraphic(null);
         } else {
             setText(Integer.toString(mixStatus.getMixesDone()));
-            if(mixStatus.getNextMixUtxo() == null) {
-                setContextMenu(new MixStatusContextMenu(mixStatus.getUtxoEntry(), mixStatus.getMixProgress() != null && mixStatus.getMixProgress().getMixStep() != MixStep.FAIL));
-            } else {
-                setContextMenu(null);
-            }
-
-            if(mixStatus.getNextMixUtxo() != null) {
-                setMixSuccess(mixStatus.getNextMixUtxo());
-            } else if(mixStatus.getMixFailReason() != null) {
-                setMixFail(mixStatus.getMixFailReason(), mixStatus.getMixError(), mixStatus.getMixErrorTimestamp());
-            } else if(mixStatus.getMixProgress() != null) {
-                setMixProgress(mixStatus.getUtxoEntry(), mixStatus.getMixProgress());
-            } else {
-                setGraphic(null);
-                setTooltip(null);
-            }
-        }
-    }
-
-    private void setMixSuccess(Utxo nextMixUtxo) {
-        ProgressIndicator progressIndicator = getProgressIndicator();
-        progressIndicator.setProgress(-1);
-        setGraphic(progressIndicator);
-        Tooltip tt = new Tooltip();
-        tt.setText("Waiting for broadcast of " + nextMixUtxo.getHash().substring(0, 8) + "..." + ":" + nextMixUtxo.getIndex() );
-        setTooltip(tt);
-    }
-
-    private void setMixFail(MixFailReason mixFailReason, String mixError, Long mixErrorTimestamp) {
-        if(mixFailReason.isError()) {
-            long elapsed = mixErrorTimestamp == null ? 0L : System.currentTimeMillis() - mixErrorTimestamp;
-            if(elapsed >= ERROR_DISPLAY_MILLIS) {
-                //Old error, don't set again.
-                return;
-            }
-
-            Glyph failGlyph = getFailGlyph();
-            setGraphic(failGlyph);
-            Tooltip tt = new Tooltip();
-            tt.setText(mixFailReason.getMessage() + (mixError == null ? "" : ": " + mixError) +
-                    "\nMix failures are generally caused by peers disconnecting during a mix." +
-                    "\nMake sure your internet connection is stable and the computer is configured to prevent sleeping." +
-                    "\nTo prevent sleeping, use the " + getPlatformSleepConfig() + " or enable the function in the Tools menu.");
-            setTooltip(tt);
-
-            Duration fadeDuration = Duration.millis(ERROR_DISPLAY_MILLIS - elapsed);
-            double fadeFromValue = 1.0 - ((double)elapsed / ERROR_DISPLAY_MILLIS);
-            Timeline timeline = AnimationUtil.getSlowFadeOut(failGlyph, fadeDuration, fadeFromValue, 10);
-            timeline.setOnFinished(event -> {
-                setTooltip(null);
-            });
-            timeline.play();
-        } else {
+            setContextMenu(null);
             setGraphic(null);
             setTooltip(null);
-        }
-    }
-
-    private String getPlatformSleepConfig() {
-        Platform platform = Platform.getCurrent();
-        if(platform == Platform.OSX) {
-            return "OSX System Preferences";
-        } else if(platform == Platform.WINDOWS) {
-            return "Windows Control Panel";
-        }
-
-        return "system power settings";
-    }
-
-    private void setMixProgress(UtxoEntry utxoEntry, MixProgress mixProgress) {
-        if(mixProgress.getMixStep() != MixStep.FAIL) {
-            ProgressIndicator progressIndicator = getProgressIndicator();
-            progressIndicator.setProgress(mixProgress.getMixStep().getProgressPercent() == 100 ? -1 : mixProgress.getMixStep().getProgressPercent() / 100.0);
-            setGraphic(progressIndicator);
-            Tooltip tt = new Tooltip();
-            String status = mixProgress.getMixStep().getMessage().replaceAll("_", " ");
-            status = status.substring(0, 1).toUpperCase(Locale.ROOT) + status.substring(1).toLowerCase(Locale.ROOT);
-            if(mixProgress.getMixStep() == MixStep.REGISTER_INPUT) {
-                status += "\n\nThis progress is normal for one mixing UTXO per pool while waiting to be randomly selected for a mix.\n" +
-                        "This may take hours or days, and time in the pool is generally more important than individual number of mixes.\n" +
-                        "Each UTXO's anonymity set is dependent not only on its own mix count, but that of its peers as well.";
-            }
-            tt.setText(status);
-            setTooltip(tt);
-        } else {
-            setGraphic(null);
-            setTooltip(null);
-        }
-    }
-
-    private ProgressIndicator getProgressIndicator() {
-        ProgressIndicator progressIndicator;
-        if(getGraphic() instanceof ProgressIndicator) {
-            progressIndicator = (ProgressIndicator)getGraphic();
-        } else {
-            progressIndicator = new ProgressBar();
-        }
-
-        return progressIndicator;
-    }
-
-    private static Glyph getMixGlyph() {
-        Glyph copyGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.RANDOM);
-        copyGlyph.setFontSize(12);
-        return copyGlyph;
-    }
-
-    private static Glyph getStopGlyph() {
-        Glyph copyGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.STOP_CIRCLE);
-        copyGlyph.setFontSize(12);
-        return copyGlyph;
-    }
-
-    public static Glyph getFailGlyph() {
-        Glyph failGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
-        failGlyph.getStyleClass().add("fail-warning");
-        failGlyph.setFontSize(12);
-        return failGlyph;
-    }
-
-    private static class MixStatusContextMenu extends ContextMenu {
-        public MixStatusContextMenu(UtxoEntry utxoEntry, boolean isMixing) {
-            Whirlpool pool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
-            if(isMixing) {
-                MenuItem mixStop = new MenuItem("Stop Mixing");
-                if(pool != null) {
-                    mixStop.disableProperty().bind(pool.mixingProperty().not());
-                }
-                mixStop.setGraphic(getStopGlyph());
-                mixStop.setOnAction(event -> {
-                    hide();
-                    Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
-                    if(whirlpool != null) {
-                        try {
-                            whirlpool.mixStop(utxoEntry.getHashIndex());
-                        } catch(WhirlpoolException e) {
-                            AppServices.showErrorDialog("Error stopping mixing UTXO", e.getMessage());
-                        }
-                    }
-                });
-                getItems().add(mixStop);
-            } else {
-                MenuItem mixNow = new MenuItem("Mix Now");
-                if(pool != null) {
-                    mixNow.disableProperty().bind(pool.mixingProperty().not());
-                }
-
-                mixNow.setGraphic(getMixGlyph());
-                mixNow.setOnAction(event -> {
-                    hide();
-                    Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(utxoEntry.getWallet());
-                    if(whirlpool != null) {
-                        try {
-                            whirlpool.mix(utxoEntry.getHashIndex());
-                        } catch(WhirlpoolException e) {
-                            AppServices.showErrorDialog("Error mixing UTXO", e.getMessage());
-                        }
-                    }
-                });
-                getItems().add(mixNow);
-            }
         }
     }
 }

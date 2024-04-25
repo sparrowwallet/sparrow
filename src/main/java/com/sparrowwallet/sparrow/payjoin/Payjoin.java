@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.payjoin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import com.samourai.wallet.httpClient.HttpResponseException;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
@@ -17,6 +16,7 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.net.Protocol;
+import com.sparrowwallet.sparrow.net.http.client.HttpResponseException;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.slf4j.Logger;

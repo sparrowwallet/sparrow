@@ -1,10 +1,10 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
-import com.samourai.http.client.IHttpProxySupplier;
-import com.samourai.wallet.httpClient.HttpProxy;
-import com.samourai.wallet.httpClient.HttpProxyProtocol;
-import com.samourai.wallet.httpClient.HttpUsage;
+import com.sparrowwallet.sparrow.net.http.client.HttpProxy;
+import com.sparrowwallet.sparrow.net.http.client.HttpProxyProtocol;
+import com.sparrowwallet.sparrow.net.http.client.HttpUsage;
+import com.sparrowwallet.sparrow.net.http.client.IHttpProxySupplier;
 
 import java.util.Optional;
 

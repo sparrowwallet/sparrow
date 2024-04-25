@@ -20,7 +20,6 @@ import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
-import com.sparrowwallet.sparrow.whirlpool.WhirlpoolServices;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
@@ -737,7 +736,7 @@ public class SettingsController extends WalletFormController implements Initiali
     private void addAndSaveAccount(Wallet masterWallet, StandardAccount standardAccount, Key key) {
         List<Wallet> childWallets;
         if(standardAccount == StandardAccount.WHIRLPOOL_PREMIX) {
-            childWallets = WhirlpoolServices.prepareWhirlpoolWallet(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
+            childWallets = AppServices.addWhirlpoolWallets(masterWallet, getWalletForm().getWalletId(), getWalletForm().getStorage());
         } else {
             Wallet childWallet = masterWallet.addChildWallet(standardAccount);
             EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));

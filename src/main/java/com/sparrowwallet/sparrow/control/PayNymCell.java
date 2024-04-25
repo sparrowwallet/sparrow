@@ -81,10 +81,7 @@ public class PayNymCell extends ListCell<PayNym> {
                         linkButton.setDisable(true);
                         payNymController.linkPayNym(payNym);
                     });
-
-                    if(payNymController.isSelectLinkedOnly()) {
-                        getStyleClass().add("unlinked");
-                    }
+                    getStyleClass().add("unlinked");
                 }
             }
 

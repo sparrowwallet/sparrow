@@ -1,12 +1,8 @@
 package com.sparrowwallet.sparrow.wallet;
 
-import com.samourai.whirlpool.client.wallet.beans.MixProgress;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
-import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.whirlpool.Whirlpool;
-import javafx.application.Platform;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -18,9 +14,6 @@ public class WalletUtxosEntry extends Entry {
         super(wallet, wallet.getName(), wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(entry.getValue().getWallet(), entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
         calculateDuplicates();
         calculateDust();
-        if(wallet.isWhirlpoolMixWallet()) {
-            updateMixProgress();
-        }
     }
 
     @Override
@@ -68,19 +61,6 @@ public class WalletUtxosEntry extends Entry {
         }
     }
 
-    public void updateMixProgress() {
-        Whirlpool whirlpool = AppServices.getWhirlpoolServices().getWhirlpool(getWallet());
-        if(whirlpool != null) {
-            for(Entry entry : getChildren()) {
-                UtxoEntry utxoEntry = (UtxoEntry)entry;
-                MixProgress mixProgress = whirlpool.getMixProgress(utxoEntry.getHashIndex());
-                if(mixProgress != null || utxoEntry.getMixStatus() == null || (utxoEntry.getMixStatus().getMixFailReason() == null && utxoEntry.getMixStatus().getNextMixUtxo() == null)) {
-                    utxoEntry.setMixProgress(mixProgress);
-                }
-            }
-        }
-    }
-
     public void updateUtxos() {
         List<Entry> current = getWallet().getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(entry.getValue().getWallet(), entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList());
         List<Entry> previous = new ArrayList<>(getChildren());
@@ -95,8 +75,6 @@ public class WalletUtxosEntry extends Entry {
 
         calculateDuplicates();
         calculateDust();
-        //Update mix status after SparrowUtxoSupplier has refreshed
-        Platform.runLater(this::updateMixProgress);
     }
 
     public long getBalance() {

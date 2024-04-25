@@ -77,7 +77,6 @@ public class Config {
     private int maxServerTimeout = DEFAULT_MAX_TIMEOUT;
     private int maxPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
-    private boolean sameAppMixing;
     private boolean mempoolFullRbf;
     private Double appWidth;
     private Double appHeight;
@@ -659,15 +658,6 @@ public class Config {
 
     public void setUsePayNym(boolean usePayNym) {
         this.usePayNym = usePayNym;
-        flush();
-    }
-
-    public boolean isSameAppMixing() {
-        return sameAppMixing;
-    }
-
-    public void setSameAppMixing(boolean sameAppMixing) {
-        this.sameAppMixing = sameAppMixing;
         flush();
     }
 
