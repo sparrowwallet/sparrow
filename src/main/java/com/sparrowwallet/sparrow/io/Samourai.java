@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.io.CharStreams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.SamouraiUtil;
@@ -57,6 +58,8 @@ public class Samourai implements KeystoreFileImport {
             Keystore keystore = Keystore.fromSeed(seed, scriptType.getDefaultDerivation());
             keystore.setLabel(getWalletModel().toDisplayString());
             return keystore;
+        } catch(JsonParseException e) {
+            throw new ImportException("Failed to decrypt the wallet backup file, check if the password is correct.");
         } catch(ImportException e) {
             throw e;
         } catch(Exception e) {
