@@ -35,7 +35,7 @@ public class BBQREncoder {
         BBQREncoding encoding = desiredEncoding;
 
         try {
-            encoded = encoding.encode(data);
+            encoded = encoding.encode(encoding.deflate(data));
             if(encoding == BBQREncoding.ZLIB) {
                 String uncompressed = BBQREncoding.BASE32.encode(data);
                 if(encoded.length() > uncompressed.length()) {

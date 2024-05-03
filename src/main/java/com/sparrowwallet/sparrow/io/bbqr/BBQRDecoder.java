@@ -37,6 +37,7 @@ public class BBQRDecoder {
 
             if(receivedParts.size() == totalParts) {
                 byte[] data = concatParts();
+                data = header.inflate(data);
 
                 if(type == BBQRType.PSBT) {
                     result = new Result(new PSBT(data));

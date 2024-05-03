@@ -42,6 +42,11 @@ public enum BBQREncoding {
     }, ZLIB("Z") {
         @Override
         public String encode(byte[] data) throws BBQREncodingException {
+            return BASE32.encode(data);
+        }
+
+        @Override
+        public byte[] deflate(byte[] data) throws BBQREncodingException {
             try {
                 Deflater deflater = new Deflater(JZlib.Z_BEST_COMPRESSION, 10, true);
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -49,7 +54,7 @@ public enum BBQREncoding {
                 zOut.write(data);
                 zOut.close();
 
-                return BASE32.encode(out.toByteArray());
+                return out.toByteArray();
             } catch(Exception e) {
                 throw new BBQREncodingException("Error deflating with zlib", e);
             }
@@ -57,9 +62,14 @@ public enum BBQREncoding {
 
         @Override
         public byte[] decode(String part) throws BBQREncodingException {
+            return BASE32.decode(part);
+        }
+
+        @Override
+        public byte[] inflate(byte[] data) throws BBQREncodingException {
             try {
                 Inflater inflater = new Inflater(10, true);
-                ByteArrayInputStream in = new ByteArrayInputStream(BASE32.decode(part));
+                ByteArrayInputStream in = new ByteArrayInputStream(data);
                 InflaterInputStream zIn = new InflaterInputStream(in, inflater);
                 byte[] decoded = zIn.readAllBytes();
                 zIn.close();
@@ -94,6 +104,14 @@ public enum BBQREncoding {
 
     public String getCode() {
         return code;
+    }
+
+    public byte[] deflate(byte[] data) throws BBQREncodingException {
+        return data;
+    }
+
+    public byte[] inflate(byte[] data) throws BBQREncodingException {
+        return data;
     }
 
     public abstract String encode(byte[] data) throws BBQREncodingException;

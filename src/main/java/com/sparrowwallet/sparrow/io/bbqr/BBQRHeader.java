@@ -13,6 +13,10 @@ public record BBQRHeader(BBQREncoding encoding, BBQRType type, int seqTotal, int
         return encoding.decode(part.substring(8));
     }
 
+    public byte[] inflate(byte[] data) {
+        return encoding.inflate(data);
+    }
+
     public static BBQRHeader fromString(String part) {
         if(part.length() < 8) {
             throw new IllegalArgumentException("Part too short");
