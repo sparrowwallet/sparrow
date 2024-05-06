@@ -28,7 +28,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
 
     @Override
     public String getName() {
-        return "Unchained or Caravan Multisig";
+        return "Caravan (Unchained Multisig)";
     }
 
     @Override
@@ -58,7 +58,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
                 if("Unknown".equals(extKey.bip32Path)) {
                     extKey.bip32Path = "m/0/0/0/0";
                 }
-
+                
                 try {
                     keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path));
                 } catch(NumberFormatException e) {
