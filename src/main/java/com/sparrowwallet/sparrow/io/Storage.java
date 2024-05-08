@@ -534,7 +534,7 @@ public class Storage {
                 File networkNameDir = new File(getSparrowHome(), network.getName());
                 if(networkNameDir.exists() && networkNameDir.isDirectory() && !Files.isSymbolicLink(networkNameDir.toPath())) {
                     try {
-                        if(networkNameDir.renameTo(sparrowDir)) {
+                        if(networkNameDir.renameTo(sparrowDir) && !isWindows()) {
                             Files.createSymbolicLink(networkNameDir.toPath(), Path.of(sparrowDir.getName()));
                         }
                     } catch(Exception e) {
@@ -550,7 +550,7 @@ public class Storage {
             createOwnerOnlyDirectory(sparrowDir);
         }
 
-        if(!network.getName().equals(network.getHome())) {
+        if(!network.getName().equals(network.getHome()) && !isWindows()) {
             try {
                 Path networkNamePath = getSparrowHome().toPath().resolve(network.getName());
                 if(Files.isSymbolicLink(networkNamePath)) {
@@ -579,7 +579,7 @@ public class Storage {
             return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
         }
 
-        if(Platform.getCurrent() == Platform.WINDOWS) {
+        if(isWindows()) {
             return new File(getHomeDir(), WINDOWS_SPARROW_DIR);
         }
 
@@ -587,7 +587,7 @@ public class Storage {
     }
 
     static File getHomeDir() {
-        if(Platform.getCurrent() == Platform.WINDOWS) {
+        if(isWindows()) {
             return new File(System.getenv("APPDATA"));
         }
 
@@ -596,7 +596,7 @@ public class Storage {
 
     public static boolean createOwnerOnlyDirectory(File directory) {
         try {
-            if(Platform.getCurrent() == Platform.WINDOWS) {
+            if(isWindows()) {
                 Files.createDirectories(directory.toPath());
                 return true;
             }
@@ -614,7 +614,7 @@ public class Storage {
 
     public static boolean createOwnerOnlyFile(File file) {
         try {
-            if(Platform.getCurrent() == Platform.WINDOWS) {
+            if(isWindows()) {
                 Files.createFile(file.toPath());
                 return true;
             }
@@ -643,6 +643,10 @@ public class Storage {
         ownerOnly.add(PosixFilePermission.OWNER_WRITE);
 
         return ownerOnly;
+    }
+
+    private static boolean isWindows() {
+        return Platform.getCurrent() == Platform.WINDOWS;
     }
 
     public static class LoadWalletService extends Service<WalletAndKey> {
