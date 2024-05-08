@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.cert.Certificate;
@@ -216,8 +217,8 @@ public class Storage {
     }
 
     private void checkWalletNetwork(Wallet wallet) {
-        if(wallet.getNetwork() != null && wallet.getNetwork() != Network.get()) {
-            throw new IllegalStateException("Provided " + wallet.getNetwork() + " wallet is invalid on a " + Network.get() + " network. Use a " + wallet.getNetwork() + " configuration to load this wallet.");
+        if(wallet.getNetwork() != null && wallet.getNetwork() != Network.getCanonical()) {
+            throw new IllegalStateException("Provided " + wallet.getNetwork() + " wallet is invalid on a " + Network.getCanonical() + " network. Use a " + wallet.getNetwork() + " configuration to load this wallet.");
         }
     }
 
@@ -526,14 +527,44 @@ public class Storage {
 
     public static File getSparrowDir() {
         File sparrowDir;
-        if(Network.get() != Network.MAINNET) {
-            sparrowDir = new File(getSparrowHome(), Network.get().getName());
+        Network network = Network.get();
+        if(network != Network.MAINNET) {
+            sparrowDir = new File(getSparrowHome(), network.getHome());
+            if(!network.getName().equals(network.getHome()) && !sparrowDir.exists()) {
+                File networkNameDir = new File(getSparrowHome(), network.getName());
+                if(networkNameDir.exists() && networkNameDir.isDirectory() && !Files.isSymbolicLink(networkNameDir.toPath())) {
+                    try {
+                        if(networkNameDir.renameTo(sparrowDir)) {
+                            Files.createSymbolicLink(networkNameDir.toPath(), Path.of(sparrowDir.getName()));
+                        }
+                    } catch(Exception e) {
+                        log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + sparrowDir.getName(), e);
+                    }
+                }
+            }
         } else {
             sparrowDir = getSparrowHome();
         }
 
         if(!sparrowDir.exists()) {
             createOwnerOnlyDirectory(sparrowDir);
+        }
+
+        if(!network.getName().equals(network.getHome())) {
+            try {
+                Path networkNamePath = getSparrowHome().toPath().resolve(network.getName());
+                if(Files.isSymbolicLink(networkNamePath)) {
+                    Path symlinkTarget = getSparrowHome().toPath().resolve(Files.readSymbolicLink(networkNamePath));
+                    if(!Files.isSameFile(sparrowDir.toPath(), symlinkTarget)) {
+                        Files.delete(networkNamePath);
+                        Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                    }
+                } else if(!Files.exists(networkNamePath)) {
+                    Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                }
+            } catch(Exception e) {
+                log.debug("Error updating symlink from " + network.getName() + " to " + sparrowDir.getName(), e);
+            }
         }
 
         return sparrowDir;

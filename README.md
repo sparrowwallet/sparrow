@@ -64,10 +64,12 @@ Usage: sparrow [options]
       Possible Values: [ERROR, WARN, INFO, DEBUG, TRACE]      
     --network, -n
       Network to use
-      Possible Values: [mainnet, testnet, regtest, signet]
+      Possible Values: [mainnet, testnet, regtest, signet, testnet4]
 ```
 
-As a fallback, the network (mainnet, testnet, regtest or signet) can also be set using an environment variable `SPARROW_NETWORK`. For example:
+Note that testnet currently refers to testnet3.
+
+As a fallback, the network (mainnet, testnet, testnet4, regtest or signet) can also be set using an environment variable `SPARROW_NETWORK`. For example:
 
 `export SPARROW_NETWORK=testnet`
 
@@ -83,7 +85,7 @@ When not explicitly configured using the command line argument above, Sparrow st
 | Linux    | ~/.sparrow |
 | Windows  | %APPDATA%/Sparrow |
 
-Testnet, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
+Testnet3, testnet4, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
 
 ## Reporting Issues
 

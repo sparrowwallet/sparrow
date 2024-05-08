@@ -107,7 +107,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
             CaravanFile cf = new CaravanFile();
             cf.name = wallet.getFullName();
             cf.addressType = wallet.getScriptType().toString().replace('-', '_');
-            cf.network = Network.get().getName();
+            cf.network = Network.getCanonical().getName();
             cf.client = new Client();
 
             Quorum quorum = new Quorum();

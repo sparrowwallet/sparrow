@@ -601,7 +601,7 @@ public class Hwi {
     private void addChainType(List<String> elements, boolean commandPresent) {
         if(Network.get() != Network.MAINNET) {
             elements.add(elements.size() - (commandPresent ? 1 : 0), "--chain");
-            elements.add(elements.size() - (commandPresent ? 1 : 0), getChainName(Network.get()));
+            elements.add(elements.size() - (commandPresent ? 1 : 0), getChainName(Network.getCanonical()));
         }
     }
 

@@ -119,7 +119,7 @@ public class Bwt {
      */
     private void start(Collection<String> outputDescriptors, Collection<String> addresses, Integer rescanSince, Boolean forceRescan, Integer gapLimit, CallbackNotifier callback) {
         BwtConfig bwtConfig = new BwtConfig();
-        bwtConfig.network = Network.get() == Network.MAINNET ? "bitcoin" : Network.get().getName();
+        bwtConfig.network = Network.get() == Network.MAINNET ? "bitcoin" : Network.getCanonical().getName();
 
         if(!outputDescriptors.isEmpty()) {
             bwtConfig.descriptors = outputDescriptors;

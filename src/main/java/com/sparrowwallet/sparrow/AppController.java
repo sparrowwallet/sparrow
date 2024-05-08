@@ -391,7 +391,7 @@ public class AppController implements Initializable {
         MenuItem homeItem = new MenuItem("Home Folder...");
         homeItem.setOnAction(this::restartInHome);
         restart.getItems().add(homeItem);
-        List<Network> networks = new ArrayList<>(List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET));
+        List<Network> networks = new ArrayList<>(List.of(Network.MAINNET, Network.TESTNET, Network.TESTNET4, Network.SIGNET));
         networks.remove(Network.get());
         for(Network network : networks) {
             MenuItem networkItem = new MenuItem(network.toDisplayString());
