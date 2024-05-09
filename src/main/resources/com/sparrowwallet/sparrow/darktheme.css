@@ -122,8 +122,8 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-bar-fill: rgba(135, 138, 149, 0.5);
 }
 
-.tab-label .failure {
-    -fx-fill: #e06c75;
+.root .tab-pane > .tab-header-area > .headers-region > .tab .tab-label .glyph-font.failure {
+    -fx-text-fill: #e06c75;
 }
 
 .status-bar .tor-status.failure .glyph-font {
