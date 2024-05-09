@@ -171,11 +171,18 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 } else if(exporter instanceof Bip129) {
                     UR ur = UR.fromBytes(outputStream.toByteArray());
                     BBQR bbqr = new BBQR(BBQRType.UNICODE, outputStream.toByteArray());
-                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, false);
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
                 } else if(exporter instanceof Descriptor) {
+                    boolean addBbqrOption = exportWallet.getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
+                    boolean selectBbqrOption = exportWallet.getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr());
                     OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(exportWallet, KeyPurpose.DEFAULT_PURPOSES, null);
                     CryptoOutput cryptoOutput = getCryptoOutput(exportWallet);
-                    qrDisplayDialog = new DescriptorQRDisplayDialog(exportWallet.getFullDisplayName(), outputDescriptor.toString(true), cryptoOutput.toUR());
+                    BBQR bbqr = addBbqrOption ? new BBQR(BBQRType.UNICODE, outputDescriptor.toString(true).getBytes(StandardCharsets.UTF_8)) : null;
+                    qrDisplayDialog = new DescriptorQRDisplayDialog(exportWallet.getFullDisplayName(), outputDescriptor.toString(true), cryptoOutput.toUR(), bbqr, selectBbqrOption);
+                } else if(exporter.getClass().equals(ColdcardMultisig.class)) {
+                    UR ur = UR.fromBytes(outputStream.toByteArray());
+                    BBQR bbqr = new BBQR(BBQRType.UNICODE, outputStream.toByteArray());
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, true);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
                 }

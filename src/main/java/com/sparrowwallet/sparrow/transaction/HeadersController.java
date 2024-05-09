@@ -905,9 +905,9 @@ public class HeadersController extends TransactionFormController implements Init
         toggleButton.setSelected(false);
 
         //TODO: Remove once Cobo Vault support has been removed
-        boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COBO_VAULT));
-        boolean addBbqrOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COLDCARD) || keystore.getSource().equals(KeystoreSource.SW_WATCH) || keystore.getSource().equals(KeystoreSource.SW_SEED));
-        boolean selectBbqrOption = headersForm.getSigningWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().equals(WalletModel.COLDCARD));
+        boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showLegacyQR());
+        boolean addBbqrOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
+        boolean selectBbqrOption = headersForm.getSigningWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr());
 
         //Don't include non witness utxo fields for segwit wallets when displaying the PSBT as a QR - it can add greatly to the time required for scanning
         boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType());

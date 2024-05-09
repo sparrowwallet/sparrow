@@ -22,6 +22,9 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.UREncoder;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQREncoder;
+import com.sparrowwallet.sparrow.io.bbqr.BBQREncoding;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -39,7 +42,7 @@ public class PdfUtils {
     private static final int QR_WIDTH = 480;
     private static final int QR_HEIGHT = 480;
 
-    public static void saveOutputDescriptor(String walletName, String outputDescriptor, UR ur) {
+    public static void saveOutputDescriptor(String walletName, String outputDescriptor, UR ur, BBQR bbqr) {
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save PDF");
@@ -56,9 +59,22 @@ public class PdfUtils {
                 Chunk title = new Chunk("Output descriptor for " + walletName, titleFont);
                 document.add(title);
 
-                UREncoder urEncoder = new UREncoder(ur, 2000, 10, 0);
-                String fragment = urEncoder.nextPart();
-                if(urEncoder.isSinglePart()) {
+                String fragment = null;
+                if(bbqr != null) {
+                    BBQREncoder bbqrEncoder = new BBQREncoder(bbqr.type(), BBQREncoding.ZLIB, bbqr.data(), 2000, 0);
+                    if(bbqrEncoder.isSinglePart()) {
+                        fragment = bbqrEncoder.nextPart();
+                    }
+                }
+
+                if(fragment == null) {
+                    UREncoder urEncoder = new UREncoder(ur, 2000, 10, 0);
+                    if(urEncoder.isSinglePart()) {
+                        fragment = urEncoder.nextPart();
+                    }
+                }
+
+                if(fragment != null) {
                     Image image = Image.getInstance(SwingFXUtils.fromFXImage(getQrCode(fragment), null), Color.WHITE);
                     document.add(image);
                 }

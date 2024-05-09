@@ -259,6 +259,10 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         }
     }
 
+    public boolean isUseBbqrEncoding() {
+        return useBbqrEncoding;
+    }
+
     private void setUseBbqrEncoding(boolean useBbqrEncoding) {
         if(useBbqrEncoding) {
             this.useBbqrEncoding = true;

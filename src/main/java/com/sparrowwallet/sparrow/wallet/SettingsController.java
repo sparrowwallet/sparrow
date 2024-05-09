@@ -18,6 +18,8 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
@@ -37,6 +39,7 @@ import tornadofx.control.Fieldset;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -376,8 +379,12 @@ public class SettingsController extends WalletFormController implements Initiali
             return;
         }
 
+        boolean addBbqrOption = walletForm.getWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
+        boolean selectBbqrOption = walletForm.getWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr());
+
         UR cryptoOutputUR = cryptoOutput.toUR();
-        QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR);
+        BBQR bbqr = addBbqrOption ? new BBQR(BBQRType.UNICODE, outputDescriptor.toString(true).getBytes(StandardCharsets.UTF_8)) : null;
+        QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR, bbqr, selectBbqrOption);
         qrDisplayDialog.initOwner(showDescriptorQR.getScene().getWindow());
         qrDisplayDialog.showAndWait();
     }

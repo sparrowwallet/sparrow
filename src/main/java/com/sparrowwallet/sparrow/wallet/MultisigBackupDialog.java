@@ -5,11 +5,15 @@ import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.PdfUtils;
+import com.sparrowwallet.sparrow.io.bbqr.BBQR;
+import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.controlsfx.glyphfont.Glyph;
+
+import java.nio.charset.StandardCharsets;
 
 public class MultisigBackupDialog extends Dialog<String> {
     private final Wallet wallet;
@@ -71,7 +75,12 @@ public class MultisigBackupDialog extends Dialog<String> {
                 final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
                 ButtonBar.setButtonData(pdfButton, buttonData);
                 pdfButton.setOnAction(event -> {
-                    PdfUtils.saveOutputDescriptor(wallet.getFullDisplayName(), descriptor, ur);
+                    BBQR bbqr = null;
+                    if(wallet.getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr())) {
+                        bbqr = new BBQR(BBQRType.UNICODE, descriptor.getBytes(StandardCharsets.UTF_8));
+                    }
+
+                    PdfUtils.saveOutputDescriptor(wallet.getFullDisplayName(), descriptor, ur, bbqr);
                 });
 
                 button = pdfButton;
