@@ -7,10 +7,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
-import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,8 +171,10 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             wallet.setDefaultPolicy(policy);
             wallet.setScriptType(scriptType);
 
-            if(!wallet.isValid()) {
-                throw new IllegalStateException("This file does not describe a valid wallet. " + getKeystoreImportDescription());
+            try {
+                wallet.checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("This file does not describe a valid wallet: " + e.getMessage());
             }
 
             return wallet;
