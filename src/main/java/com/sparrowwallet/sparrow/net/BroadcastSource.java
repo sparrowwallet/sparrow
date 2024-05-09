@@ -46,7 +46,7 @@ public enum BroadcastSource {
 
         @Override
         public List<Network> getSupportedNetworks() {
-            return List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET);
+            return List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET, Network.TESTNET4);
         }
 
         protected URL getURL(HostAndPort proxy) throws MalformedURLException {
@@ -56,6 +56,8 @@ public enum BroadcastSource {
                 return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
             } else if(Network.get() == Network.SIGNET) {
                 return new URL(getBaseUrl(proxy) + "/signet/api/tx");
+            } else if(Network.get() == Network.TESTNET4) {
+                return new URL(getBaseUrl(proxy) + "/testnet4/api/tx");
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
@@ -77,6 +79,8 @@ public enum BroadcastSource {
                 return new URL(getBaseUrl(proxy) + "/api/tx");
             } else if(Network.get() == Network.TESTNET) {
                 return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+            } else if(Network.get() == Network.SIGNET) {
+                return new URL(getBaseUrl(proxy) + "/signet/api/tx");
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
