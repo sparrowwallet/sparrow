@@ -328,8 +328,12 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     ek.derivation = keystore.getKeyDerivation().getDerivationPath();
                     ek.root_fingerprint = keystore.getKeyDerivation().getMasterFingerprint();
                     ek.xpub = keystore.getExtendedPublicKey().toString(xpubHeader);
-                    ek.type = "hardware";
-                    ek.hw_type = keystore.getWalletModel().getType();
+                    if(keystore.getWalletModel().hasUsb()) {
+                        ek.type = "hardware";
+                        ek.hw_type = keystore.getWalletModel().getType();
+                    } else {
+                        ek.type = "bip32";
+                    }
                     ew.use_encryption = false;
                 } else if(keystore.getSource() == KeystoreSource.SW_SEED) {
                     ek.type = "bip32";
