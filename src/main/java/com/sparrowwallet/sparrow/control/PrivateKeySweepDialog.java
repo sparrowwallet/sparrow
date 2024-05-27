@@ -407,6 +407,12 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             if(total - fee <= dustThreshold) {
                 AppServices.showErrorDialog("Insufficient funds", "The unspent outputs for this private key contain insufficient funds to spend (" + total + " sats).");
                 return;
+            } else {
+                Optional<ButtonType> optType = AppServices.showWarningDialog("Insufficient funds", "The unspent outputs for this private key contain insufficient funds (" + total + " sats) for a transaction at this fee rate." +
+                        "\n\nContinue with a minimum fee rate transaction?", ButtonType.YES, ButtonType.NO);
+                if(optType.isPresent() && optType.get() == ButtonType.NO) {
+                    return;
+                }
             }
         }
 
