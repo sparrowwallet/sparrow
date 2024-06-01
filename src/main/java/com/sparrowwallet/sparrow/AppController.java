@@ -7,9 +7,7 @@ import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.PolicyType;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTParseException;
@@ -1874,6 +1872,25 @@ public class AppController implements Initializable {
     }
 
     private void addTransactionTab(String name, File file, PSBT psbt) {
+        //Add any missing previous outputs if available in open wallets
+        for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
+            if(psbtInput.getUtxo() == null) {
+                for(Wallet wallet : AppServices.get().getOpenWallets().keySet().stream().filter(Wallet::isValid).toList()) {
+                    TransactionOutPoint outpoint = psbtInput.getInput().getOutpoint();
+                    BlockTransaction blockTransaction = wallet.getWalletTransaction(outpoint.getHash());
+                    if(blockTransaction != null && blockTransaction.getTransaction().getOutputs().size() > outpoint.getIndex()) {
+                        psbtInput.setNonWitnessUtxo(blockTransaction.getTransaction());
+                        ScriptType type = psbtInput.getScriptType();
+                        if(type != null && Arrays.asList(ScriptType.WITNESS_TYPES).contains(type)) {
+                            psbtInput.setWitnessUtxo(blockTransaction.getTransaction().getOutputs().get((int)outpoint.getIndex()));
+                            psbtInput.setNonWitnessUtxo(null);
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
         Window psbtWalletWindow = AppServices.get().getWindowForPSBT(psbt);
         if(psbtWalletWindow != null && !tabs.getScene().getWindow().equals(psbtWalletWindow)) {
             EventManager.get().post(new ViewPSBTEvent(psbtWalletWindow, name, file, psbt));
