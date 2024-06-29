@@ -52,7 +52,7 @@ public class MultisigBackupDialog extends Dialog<String> {
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         dialogPane.getStyleClass().add("text-input-dialog");
-        dialogPane.getButtonTypes().add(ButtonType.OK);
+        dialogPane.getButtonTypes().add(ButtonType.CLOSE);
 
         final ButtonType qrButtonType = new javafx.scene.control.ButtonType("Save PDF...", ButtonBar.ButtonData.LEFT);
         dialogPane.getButtonTypes().add(qrButtonType);
