@@ -3051,6 +3051,8 @@ public class AppController implements Initializable {
     public void requestWalletOpen(RequestWalletOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             if(event.getFile() != null) {
+                Optional<Tab> optExisting = tabs.getTabs().stream().filter(tab -> tab.getUserData() instanceof WalletTabData walletTabData && walletTabData.getStorage().getWalletFile().equals(event.getFile())).findFirst();
+                optExisting.ifPresent(tab -> tabs.getTabs().remove(tab));
                 openWalletFile(event.getFile(), true);
             } else {
                 openWallet(true);
