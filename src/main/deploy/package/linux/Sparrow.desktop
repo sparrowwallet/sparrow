@@ -8,3 +8,4 @@ Type=Application
 Categories=Finance;Network;
 MimeType=application/psbt;application/bitcoin-transaction;application/pgp-signature;x-scheme-handler/bitcoin;x-scheme-handler/auth47;x-scheme-handler/lightning
 StartupWMClass=Sparrow
+SingleMainWindow=true
