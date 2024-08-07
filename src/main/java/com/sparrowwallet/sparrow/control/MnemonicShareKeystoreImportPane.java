@@ -116,6 +116,12 @@ public class MnemonicShareKeystoreImportPane extends MnemonicKeystorePane {
         return List.of(backButton, nextButton, calculateButton);
     }
 
+    @Override
+    protected void enterMnemonic(int numWords) {
+        super.enterMnemonic(numWords);
+        setDescription("Enter existing share");
+    }
+
     private void resetShares() {
         currentShare = 0;
         mnemonicShares.clear();
