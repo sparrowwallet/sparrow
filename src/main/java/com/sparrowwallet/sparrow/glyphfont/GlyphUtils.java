@@ -183,6 +183,13 @@ public class GlyphUtils {
         return successGlyph;
     }
 
+    public static Glyph getInvalidGlyph() {
+        Glyph invalidGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+        invalidGlyph.getStyleClass().add("failure");
+        invalidGlyph.setFontSize(12);
+        return invalidGlyph;
+    }
+
     public static Glyph getWarningGlyph() {
         Glyph warningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_TRIANGLE);
         warningGlyph.getStyleClass().add("warn-icon");

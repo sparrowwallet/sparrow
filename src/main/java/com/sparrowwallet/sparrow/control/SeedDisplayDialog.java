@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.SeedQR;
 import com.sparrowwallet.sparrow.AppServices;
@@ -17,7 +18,7 @@ public class SeedDisplayDialog extends Dialog<Void> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
-        int lines = decryptedKeystore.getSeed().getMnemonicCode().size() / 3;
+        int lines = Math.ceilDiv(decryptedKeystore.getSeed().getMnemonicCode().size(), 3);
         int height = lines * 40;
 
         StackPane stackPane = new StackPane();
@@ -43,15 +44,19 @@ public class SeedDisplayDialog extends Dialog<Void> {
 
         stackPane.getChildren().addAll(anchorPane);
 
-        final ButtonType seedQRButtonType = new javafx.scene.control.ButtonType("Show SeedQR", ButtonBar.ButtonData.LEFT);
-        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialogPane.getButtonTypes().addAll(seedQRButtonType, cancelButtonType);
+        if(decryptedKeystore.getSeed().getType() == DeterministicSeed.Type.BIP39) {
+            final ButtonType seedQRButtonType = new javafx.scene.control.ButtonType("Show SeedQR", ButtonBar.ButtonData.LEFT);
+            dialogPane.getButtonTypes().add(seedQRButtonType);
 
-        Button seedQRButton = (Button)dialogPane.lookupButton(seedQRButtonType);
-        seedQRButton.addEventFilter(ActionEvent.ACTION, event -> {
-            event.consume();
-            showSeedQR(decryptedKeystore);
-        });
+            Button seedQRButton = (Button)dialogPane.lookupButton(seedQRButtonType);
+            seedQRButton.addEventFilter(ActionEvent.ACTION, event -> {
+                event.consume();
+                showSeedQR(decryptedKeystore);
+            });
+        }
+
+        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        dialogPane.getButtonTypes().add(cancelButtonType);
 
         dialogPane.setPrefWidth(500);
         dialogPane.setPrefHeight(150 + height);

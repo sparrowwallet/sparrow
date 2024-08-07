@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.beans.property.SimpleListProperty;
@@ -15,10 +16,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
+    private final DeterministicSeed.Type type;
+
     public MnemonicKeystoreDisplayPane(Keystore keystore) {
         super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() && (keystore.getSeed().getPassphrase() == null || keystore.getSeed().getPassphrase().length() > 0) ? "Passphrase entered" : "No passphrase", "", "image/" + WalletModel.SEED.getType() + ".png");
         showHideLink.setVisible(false);
         buttonBox.getChildren().clear();
+        this.type = keystore.getSeed().getType();
 
         showWordList(keystore.getSeed());
     }
@@ -29,7 +33,7 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
         vBox.setSpacing(10);
 
         wordsPane = new TilePane();
-        wordsPane.setPrefRows(numWords / 3);
+        wordsPane.setPrefRows(Math.ceilDiv(numWords, 3));
         wordsPane.setHgap(10);
         wordsPane.setVgap(10);
         wordsPane.setOrientation(Orientation.VERTICAL);
@@ -43,7 +47,7 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
         wordEntriesProperty = new SimpleListProperty<>(wordEntryList);
         List<WordEntry> wordEntries = new ArrayList<>(numWords);
         for(int i = 0; i < numWords; i++) {
-            wordEntries.add(new WordEntry(i, wordEntryList));
+            wordEntries.add(new WordEntry(i, wordEntryList, getWordlistProvider()));
         }
         for(int i = 0; i < numWords - 1; i++) {
             wordEntries.get(i).setNextEntry(wordEntries.get(i + 1));
@@ -56,5 +60,10 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
         StackPane stackPane = new StackPane();
         stackPane.getChildren().add(vBox);
         return stackPane;
+    }
+
+    @Override
+    protected WordlistProvider getWordlistProvider() {
+        return getWordListProvider(type);
     }
 }
