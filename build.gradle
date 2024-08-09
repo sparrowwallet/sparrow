@@ -271,7 +271,7 @@ jlink {
         if(os.windows) {
             installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-menu-group', 'Sparrow', '--win-shortcut', '--resource-dir', 'src/main/deploy/package/windows/']
             imageOptions += ['--icon', 'src/main/deploy/package/windows/sparrow.ico']
-            installerType = "exe"
+            installerType = "msi"
         }
         if(os.linux) {
             if(headless) {
