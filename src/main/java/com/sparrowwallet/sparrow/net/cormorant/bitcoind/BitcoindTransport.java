@@ -10,10 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.Proxy;
-import java.net.URL;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,8 +45,8 @@ public class BitcoindTransport implements Transport {
             if(!bitcoindServer.getHostAndPort().hasPort()) {
                 serverUrl += ":" + Network.get().getDefaultPort();
             }
-            this.bitcoindUrl = new URL(serverUrl + "/wallet/" + bitcoindWallet);
-        } catch(MalformedURLException e) {
+            this.bitcoindUrl = new URI(serverUrl + "/wallet/" + bitcoindWallet).toURL();
+        } catch(MalformedURLException | URISyntaxException e) {
             log.error("Malformed Bitcoin Core RPC URL", e);
         }
     }

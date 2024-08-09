@@ -11,8 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.SecureRandom;
 import java.util.List;
 
 public enum BroadcastSource {
@@ -28,11 +29,11 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET, Network.TESTNET);
         }
 
-        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException, URISyntaxException {
             if(Network.get() == Network.MAINNET) {
-                return new URL(getBaseUrl(proxy) + "/api/tx");
+                return new URI(getBaseUrl(proxy) + "/api/tx").toURL();
             } else if(Network.get() == Network.TESTNET) {
-                return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+                return new URI(getBaseUrl(proxy) + "/testnet/api/tx").toURL();
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
@@ -49,15 +50,15 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET, Network.TESTNET4);
         }
 
-        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException, URISyntaxException {
             if(Network.get() == Network.MAINNET) {
-                return new URL(getBaseUrl(proxy) + "/api/tx");
+                return new URI(getBaseUrl(proxy) + "/api/tx").toURL();
             } else if(Network.get() == Network.TESTNET) {
-                return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+                return new URI(getBaseUrl(proxy) + "/testnet/api/tx").toURL();
             } else if(Network.get() == Network.SIGNET) {
-                return new URL(getBaseUrl(proxy) + "/signet/api/tx");
+                return new URI(getBaseUrl(proxy) + "/signet/api/tx").toURL();
             } else if(Network.get() == Network.TESTNET4) {
-                return new URL(getBaseUrl(proxy) + "/testnet4/api/tx");
+                return new URI(getBaseUrl(proxy) + "/testnet4/api/tx").toURL();
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
@@ -74,13 +75,13 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET);
         }
 
-        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException, URISyntaxException {
             if(Network.get() == Network.MAINNET) {
-                return new URL(getBaseUrl(proxy) + "/api/tx");
+                return new URI(getBaseUrl(proxy) + "/api/tx").toURL();
             } else if(Network.get() == Network.TESTNET) {
-                return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+                return new URI(getBaseUrl(proxy) + "/testnet/api/tx").toURL();
             } else if(Network.get() == Network.SIGNET) {
-                return new URL(getBaseUrl(proxy) + "/signet/api/tx");
+                return new URI(getBaseUrl(proxy) + "/signet/api/tx").toURL();
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
@@ -97,11 +98,11 @@ public enum BroadcastSource {
             return List.of(Network.MAINNET);
         }
 
-        protected URL getURL(HostAndPort proxy) throws MalformedURLException {
+        protected URL getURL(HostAndPort proxy) throws MalformedURLException, URISyntaxException {
             if(Network.get() == Network.MAINNET) {
-                return new URL(getBaseUrl(proxy) + "/api/tx");
+                return new URI(getBaseUrl(proxy) + "/api/tx").toURL();
             } else if(Network.get() == Network.TESTNET) {
-                return new URL(getBaseUrl(proxy) + "/testnet/api/tx");
+                return new URI(getBaseUrl(proxy) + "/testnet/api/tx").toURL();
             } else {
                 throw new IllegalStateException("Cannot broadcast transaction to " + getName() + " on network " + Network.get());
             }
@@ -113,7 +114,6 @@ public enum BroadcastSource {
     private final String onionUrl;
 
     private static final Logger log = LoggerFactory.getLogger(BroadcastSource.class);
-    private static final SecureRandom secureRandom = new SecureRandom();
 
     BroadcastSource(String name, String tlsUrl, String onionUrl) {
         this.name = name;
@@ -141,7 +141,7 @@ public enum BroadcastSource {
 
     public abstract List<Network> getSupportedNetworks();
 
-    protected abstract URL getURL(HostAndPort proxy) throws MalformedURLException;
+    protected abstract URL getURL(HostAndPort proxy) throws MalformedURLException, URISyntaxException;
 
     public Sha256Hash postTransactionData(String data) throws BroadcastException {
         //If a Tor proxy is configured, ensure we use a new circuit by configuring a random proxy password

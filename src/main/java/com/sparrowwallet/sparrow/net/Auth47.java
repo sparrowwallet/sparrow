@@ -36,7 +36,7 @@ public class Auth47 {
     private String srbnName;
     private String resource;
 
-    public Auth47(URI uri) throws MalformedURLException {
+    public Auth47(URI uri) throws MalformedURLException, URISyntaxException {
         this.nonce = uri.getHost();
 
         Map<String, String> parameterMap = new LinkedHashMap<>();
@@ -64,12 +64,12 @@ public class Auth47 {
         }
         if(strCallback.startsWith(SRBN_PROTOCOL)) {
             String srbnCallback = HTTPS_PROTOCOL + strCallback.substring(SRBN_PROTOCOL.length());
-            URL srbnUrl = new URL(srbnCallback);
+            URL srbnUrl = new URI(srbnCallback).toURL();
             this.srbn = true;
             this.srbnName = srbnUrl.getUserInfo();
-            this.callback = new URL(HTTPS_PROTOCOL + srbnUrl.getHost());
+            this.callback = new URI(HTTPS_PROTOCOL + srbnUrl.getHost()).toURL();
         } else {
-            this.callback = new URL(strCallback);
+            this.callback = new URI(strCallback).toURL();
         }
 
         this.expiry = parameterMap.get("e");

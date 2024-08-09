@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.Proxy;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -124,7 +124,7 @@ public class PayNymAvatar extends StackPane {
                             log.debug("Requesting PayNym avatar from " + url);
                         }
 
-                        try(InputStream is = (proxy == null ? new URL(url).openStream() : new URL(url).openConnection(proxy).getInputStream())) {
+                        try(InputStream is = (proxy == null ? new URI(url).toURL().openStream() : new URI(url).toURL().openConnection(proxy).getInputStream())) {
                             Image image = new Image(is, 150, 150, true, false);
                             paymentCodeCache.put(cacheId, image);
                             Platform.runLater(() -> EventManager.get().post(new PayNymImageLoadedEvent(paymentCode, image)));
