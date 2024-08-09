@@ -214,7 +214,7 @@ jlink {
         uses 'org.eclipse.jetty.http.HttpFieldPreEncoder'
     }
 
-    options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', '2', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png', '--exclude-resources', 'glob:/com.sparrowwallet.merged.module/META-INF/*']
+    options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', 'zip-6', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png', '--exclude-resources', 'glob:/com.sparrowwallet.merged.module/META-INF/*']
     launcher {
         name = 'sparrow'
         jvmArgs = ["--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",

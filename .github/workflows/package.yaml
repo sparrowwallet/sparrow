@@ -15,11 +15,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Set up JDK 18.0.1
+      - name: Set up JDK 22.0.2
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '18.0.1'
+          java-version: '22.0.2'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Build with Gradle
