@@ -307,6 +307,7 @@ task removeGroupWritePermission(type: Exec) {
 task packageZipDistribution(type: Zip) {
     archiveFileName = "Sparrow-${sparrowVersion}.zip"
     destinationDirectory = file("$buildDir/jpackage")
+    preserveFileTimestamps = os.macOsX
     from("$buildDir/jpackage/") {
         include "Sparrow/**"
         include "Sparrow.app/**"
