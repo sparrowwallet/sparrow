@@ -10,6 +10,7 @@ import com.sparrowwallet.hummingbird.LegacyUREncoder;
 import com.sparrowwallet.hummingbird.registry.RegistryType;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.ImportException;
 import com.sparrowwallet.hummingbird.UR;
@@ -168,6 +169,11 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
         qrImageView.setImage(getQrCode(data));
+
+        if(qrImageView.getImage() == null) {
+            Label warning = new Label("Message is too long for display as a QR code");
+            stackPane.getChildren().add(warning);
+        }
 
         final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialogPane.getButtonTypes().addAll(cancelButtonType);
