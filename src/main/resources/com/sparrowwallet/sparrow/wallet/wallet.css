@@ -34,6 +34,16 @@
     -fx-font-family: 'Roboto Mono';
 }
 
+.cell > .hyperlink {
+    -fx-font-family: none;
+    -fx-font-size: none;
+}
+
+.cell > .tooltip {
+    -fx-font-family: none;
+    -fx-font-size: 0.85em;
+}
+
 .hashindex-row {
     -fx-opacity: 0.7;
 }
