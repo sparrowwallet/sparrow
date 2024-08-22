@@ -60,7 +60,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
                 }
 
                 try {
-                    keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path));
+                    keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, extKey.bip32Path, true));
                 } catch(NumberFormatException e) {
                     keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, scriptType.getDefaultDerivationPath()));
                 }

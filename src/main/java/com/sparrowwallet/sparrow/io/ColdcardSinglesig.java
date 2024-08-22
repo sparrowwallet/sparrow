@@ -78,7 +78,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                             keystore.setLabel(getName());
                             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                             keystore.setWalletModel(WalletModel.COLDCARD);
-                            keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, ck.deriv));
+                            keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, ck.deriv, true));
                             keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(ck.xpub));
 
                             return keystore;

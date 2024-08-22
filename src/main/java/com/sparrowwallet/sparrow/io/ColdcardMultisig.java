@@ -71,16 +71,16 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
                 if(header.getDefaultScriptType() != scriptType) {
                     throw new ImportException("This wallet's script type (" + scriptType + ") does not match the " + getName() + " script type (" + header.getDefaultScriptType() + ")");
                 }
-                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.path));
+                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.path, true));
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.xpub));
             } else if(scriptType.equals(ScriptType.P2SH)) {
-                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2sh_deriv));
+                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2sh_deriv, true));
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2sh));
             } else if(scriptType.equals(ScriptType.P2SH_P2WSH)) {
-                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_p2sh_deriv != null ? cck.p2wsh_p2sh_deriv : cck.p2sh_p2wsh_deriv));
+                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_p2sh_deriv != null ? cck.p2wsh_p2sh_deriv : cck.p2sh_p2wsh_deriv, true));
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh_p2sh != null ? cck.p2wsh_p2sh : cck.p2sh_p2wsh));
             } else if(scriptType.equals(ScriptType.P2WSH)) {
-                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_deriv));
+                keystore.setKeyDerivation(new KeyDerivation(cck.xfp, cck.p2wsh_deriv, true));
                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(cck.p2wsh));
             } else {
                 throw new ImportException("Correct derivation not found for script type: " + scriptType);
@@ -157,7 +157,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
                                 Keystore keystore = new Keystore("Coldcard");
                                 keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                                 keystore.setWalletModel(WalletModel.COLDCARD);
-                                keystore.setKeyDerivation(new KeyDerivation(key, derivation));
+                                keystore.setKeyDerivation(new KeyDerivation(key, derivation, true));
                                 keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(value));
                                 wallet.makeLabelsUnique(keystore);
                                 wallet.getKeystores().add(keystore);
