@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 
 import java.io.InputStream;
@@ -44,5 +45,26 @@ public class PassportMultisig extends ColdcardMultisig {
     @Override
     public boolean isWalletExportScannable() {
         return true;
+    }
+
+    @Override
+    public boolean isWalletImportScannable() {
+        return true;
+    }
+
+    @Override
+    public String getWalletImportDescription() {
+        return "Import file or QR created by using Settings > Bitcoin > Multisig > [Wallet Detail] > Export via QR/microSD on your Passport.";
+    }
+
+    @Override
+    public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
+        Wallet wallet = super.importWallet(inputStream, password);
+        for(Keystore keystore : wallet.getKeystores()) {
+            keystore.setLabel(keystore.getLabel().replace("Coldcard", "Passport"));
+            keystore.setWalletModel(WalletModel.PASSPORT);
+        }
+
+        return wallet;
     }
 }
