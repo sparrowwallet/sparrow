@@ -17,10 +17,13 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
@@ -32,16 +35,20 @@ import tornadofx.control.Field;
 import tornadofx.control.Fieldset;
 import tornadofx.control.Form;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.security.SignatureException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private static final Logger log = LoggerFactory.getLogger(MessageSignDialog.class);
+
+    private static final Pattern signedMessagePattern = Pattern.compile("-----BEGIN BITCOIN SIGNED MESSAGE-----\\r?\\n(.*)\\r?\\n-----BEGIN BITCOIN SIGNATURE-----\\r?\\n(.*)\\r?\\n(.*)\\r?\\n-----END BITCOIN SIGNATURE-----\r?\n?");
 
     private final TextField address;
     private final TextArea message;
@@ -104,7 +111,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         this.wallet = wallet;
         this.walletNode = walletNode;
 
-        final DialogPane dialogPane = getDialogPane();
+        final DialogPane dialogPane = new MessageSignDialogPane();
+        setDialogPane(dialogPane);
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
@@ -199,13 +207,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         } else {
             dialogPane.getButtonTypes().addAll(showQrButtonType, signButtonType, verifyButtonType, doneButtonType);
 
-            Button showQrButton = (Button) dialogPane.lookupButton(showQrButtonType);
-            showQrButton.setDisable(wallet == null);
-            showQrButton.setGraphic(getGlyph(new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QRCODE)));
-            showQrButton.setGraphicTextGap(5);
-            showQrButton.setOnAction(event -> {
-                showQr();
-            });
+            Node showQrButton = dialogPane.lookupButton(showQrButtonType);
 
             Button signButton = (Button) dialogPane.lookupButton(signButtonType);
             signButton.setDisable(!canSign);
@@ -267,7 +269,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         AppServices.onEscapePressed(dialogPane.getScene(), () -> setResult(ButtonBar.ButtonData.CANCEL_CLOSE));
         AppServices.moveToActiveWindowScreen(this);
-        setResultConverter(dialogButton -> dialogButton == showQrButtonType || dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : dialogButton.getButtonData());
+        setResultConverter(dialogButton -> dialogButton == signButtonType || dialogButton == verifyButtonType ? ButtonBar.ButtonData.APPLY : dialogButton.getButtonData());
 
         Platform.runLater(() -> {
             if(address.getText().isEmpty()) {
@@ -495,6 +497,81 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         }
     }
 
+    private void exportFile() {
+        if(walletNode == null) {
+            AppServices.showErrorDialog("Address not in wallet", "The provided address is not present in the currently selected wallet.");
+            return;
+        }
+
+        StringJoiner joiner = new StringJoiner("\n");
+        joiner.add(message.getText().trim().replaceAll("\r*\n*", ""));
+        //Note we can expect a single keystore due to the check in the constructor
+        KeyDerivation firstDerivation = walletNode.getWallet().getKeystores().get(0).getKeyDerivation();
+        joiner.add(KeyDerivation.writePath(firstDerivation.extend(walletNode.getDerivation()).getDerivation(), true));
+        joiner.add(walletNode.getWallet().getScriptType().toString());
+
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Text File");
+        fileChooser.setInitialFileName("signmessage.txt");
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
+        File file = fileChooser.showSaveDialog(window);
+        if(file != null) {
+            if(!file.getName().toLowerCase(Locale.ROOT).endsWith(".txt")) {
+                file = new File(file.getAbsolutePath() + ".txt");
+            }
+
+            try(BufferedWriter writer = new BufferedWriter(new FileWriter(file, StandardCharsets.UTF_8))) {
+                writer.write(joiner.toString());
+            } catch(IOException e) {
+                log.error("Error saving signing message", e);
+                AppServices.showErrorDialog("Error saving signing message", "Cannot write to " + file.getAbsolutePath());
+            }
+        }
+    }
+
+    private void importFile() {
+        Stage window = new Stage();
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Open Signed Text File");
+        fileChooser.getExtensionFilters().addAll(
+                new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                new FileChooser.ExtensionFilter("Text Files", "*.txt")
+        );
+
+        AppServices.moveToActiveWindowScreen(window, 800, 450);
+        File file = fileChooser.showOpenDialog(window);
+
+        if(file != null) {
+            try {
+                String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+                Matcher matcher = signedMessagePattern.matcher(content);
+                if(matcher.matches()) {
+                    String signedMessage = matcher.group(1);
+                    String signedAddress = matcher.group(2);
+                    String signedSignature = matcher.group(3);
+
+                    if(!signedMessage.trim().equals(message.getText().trim().replaceAll("\r*\n*", ""))) {
+                        AppServices.showErrorDialog("Incorrect Message", "The file contained a different message of:\n\n" + signedMessage);
+                        return;
+                    } else if(!signedAddress.trim().equals(address.getText().trim())) {
+                        AppServices.showErrorDialog("Incorrect Address", "The file contained a different address of:\n\n" + signedAddress);
+                        return;
+                    }
+
+                    signature.setText(signedSignature);
+                } else {
+                    signature.setText(content);
+                }
+            } catch(IOException e) {
+                log.error("Error loading signed message", e);
+                AppServices.showErrorDialog("Error loading signed message", e.getMessage());
+            }
+        }
+    }
+
     protected Glyph getSignGlyph() {
         if(wallet != null) {
             if(wallet.containsSource(KeystoreSource.HW_USB)) {
@@ -537,6 +614,39 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             });
             EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
             decryptWalletService.start();
+        }
+    }
+
+    private class MessageSignDialogPane extends DialogPane {
+        @Override
+        protected Node createButton(ButtonType buttonType) {
+            if(buttonType.getButtonData() == ButtonBar.ButtonData.LEFT) {
+                SplitMenuButton signByButton = new SplitMenuButton();
+                signByButton.setText("Sign by QR");
+                signByButton.setDisable(wallet == null);
+                signByButton.setGraphic(getGlyph(new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QRCODE)));
+                signByButton.setGraphicTextGap(5);
+                signByButton.setOnAction(event -> {
+                    showQr();
+                });
+                MenuItem exportFile = new MenuItem("Sign by File...");
+                exportFile.setGraphic(getGlyph(new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.FILE_EXPORT)));
+                exportFile.setOnAction(event -> {
+                    exportFile();
+                });
+                MenuItem importFile = new MenuItem("Load Signed File...");
+                importFile.setGraphic(getGlyph(new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.FILE_IMPORT)));
+                importFile.setOnAction(event -> {
+                    importFile();
+                });
+                signByButton.getItems().addAll(exportFile, importFile);
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(signByButton, buttonData);
+
+                return signByButton;
+            }
+
+            return super.createButton(buttonType);
         }
     }
 }

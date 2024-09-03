@@ -40,6 +40,7 @@ public class FontAwesome5 extends GlyphFont {
         FEATHER_ALT('\uf56b'),
         FILE_CSV('\uf6dd'),
         FILE_IMPORT('\uf56f'),
+        FILE_EXPORT('\uf56e'),
         FILE_PDF('\uf1c1'),
         HAND_HOLDING('\uf4bd'),
         HAND_HOLDING_MEDICAL('\ue05c'),
