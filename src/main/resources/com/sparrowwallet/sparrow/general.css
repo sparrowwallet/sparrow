@@ -36,6 +36,10 @@
     -fx-padding: 3 5;
 }
 
+.form .fieldset .legend, .table-view .column-header, .tree-table-view .column-header, VerticalHeader > Label {
+    -fx-font-weight: normal;
+}
+
 .form .fieldset.header .legend {
     -fx-padding: 0 0 15px 0;
 }
@@ -247,7 +251,7 @@
 }
 
 .number-field {
-    -fx-font-family: 'Helvetica Neue', 'System Regular';
+    -fx-font-family: 'Helvetica Neue Regular', 'System Regular';
 }
 
 VerticalHeader > Label.selected {

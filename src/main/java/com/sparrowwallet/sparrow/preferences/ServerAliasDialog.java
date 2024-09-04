@@ -28,6 +28,7 @@ public class ServerAliasDialog extends Dialog<Server> {
     private final TableView<ServerEntry> serverTable;
     private final Button closeButton;
 
+    @SuppressWarnings("deprecation")
     public ServerAliasDialog(ServerType serverType) {
         this.serverType = serverType;
 

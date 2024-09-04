@@ -31,6 +31,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
     private BitcoinUnit bitcoinUnit;
     private UnitFormat unitFormat;
     private CurrencyRate currencyRate;
+    protected static final double STANDARD_WIDTH = 100.0;
 
     public BitcoinUnit getBitcoinUnit() {
         return bitcoinUnit;
@@ -142,5 +143,13 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             column.setSortType(sortType == null ? TreeTableColumn.SortType.DESCENDING : sortType);
             getSortOrder().add(column);
         }
+    }
+
+    @SuppressWarnings("deprecation")
+    protected void setEqualPreferredColumnWidths() {
+        for(TreeTableColumn<?, ?> column : getColumns()) {
+            column.setPrefWidth(STANDARD_WIDTH);
+        }
+        setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
     }
 }

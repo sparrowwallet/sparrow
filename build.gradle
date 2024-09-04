@@ -53,7 +53,7 @@ tasks.withType(AbstractArchiveTask) {
 }
 
 javafx {
-    version = "18"
+    version = headless ? "18" : "22"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 

@@ -101,7 +101,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         table.setRoot(rootItem);
         rootItem.setExpanded(true);
 
-        table.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        table.setEqualPreferredColumnWidths();
         table.setPrefWidth(450);
 
         VBox vBox = new VBox();

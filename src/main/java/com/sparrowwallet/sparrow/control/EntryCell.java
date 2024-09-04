@@ -841,7 +841,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 }
             } else if(entry instanceof WalletSummaryDialog.UnconfirmedEntry) {
                 cell.getStyleClass().add("unconfirmed-row");
-            } else if(entry instanceof WalletSummaryDialog.SummaryEntry) {
+            } else if(entry instanceof WalletSummaryDialog.SummaryEntry || entry instanceof WalletSummaryDialog.AllSummaryEntry) {
                 cell.getStyleClass().add("summary-row");
             }
         }

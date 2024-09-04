@@ -1,9 +1,3 @@
-.utxos-treetable-label {
-    -fx-font-weight: bold;
-    -fx-font-size: 1.2em;
-    -fx-padding: 10 0 10 0;
-}
-
 .utxos-treetable .progress-bar > .bar {
     -fx-padding: 0.6em;
 }

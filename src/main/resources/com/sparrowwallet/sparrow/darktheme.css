@@ -16,11 +16,6 @@
     -fx-prompt-text-fill: gray;
 }
 
-.titulo{
-    -fx-font-weight: bold;
-    -fx-font-size: 18px;
-}
-
 .button{
     -fx-focus-traversable: false;
 }

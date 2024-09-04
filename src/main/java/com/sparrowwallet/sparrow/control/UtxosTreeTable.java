@@ -82,7 +82,7 @@ public class UtxosTreeTable extends CoinTreeTable {
 
         setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
-        setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        setEqualPreferredColumnWidths();
         setSortColumn(getColumns().size() - 1, TreeTableColumn.SortType.DESCENDING);
 
         getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);

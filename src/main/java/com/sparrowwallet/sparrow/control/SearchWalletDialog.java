@@ -89,7 +89,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         results.setShowRoot(false);
         results.setPrefWidth(showWallet || showAccount ? 950 : 850);
         results.setUnitFormat(walletForms.iterator().next().getWallet());
-        results.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        results.setEqualPreferredColumnWidths();
         results.setPlaceholder(new Label("No results"));
         results.setEditable(true);
 

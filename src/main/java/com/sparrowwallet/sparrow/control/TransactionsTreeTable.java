@@ -49,7 +49,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
 
         setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
-        setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        setEqualPreferredColumnWidths();
         setSortColumn(0, TreeTableColumn.SortType.DESCENDING);
     }
 
