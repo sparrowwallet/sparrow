@@ -275,7 +275,7 @@ jlink {
         }
         if(os.linux) {
             if(headless) {
-                installerOptions = ['--resource-dir', 'src/main/deploy/package/linux-headless/']
+                installerOptions = ['--license-file', 'LICENSE', '--resource-dir', 'src/main/deploy/package/linux-headless/']
             } else {
                 installerOptions += ['--resource-dir', 'src/main/deploy/package/linux/', '--linux-shortcut', '--linux-menu-group', 'Sparrow']
             }
