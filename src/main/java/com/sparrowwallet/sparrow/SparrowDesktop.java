@@ -89,28 +89,31 @@ public class SparrowDesktop extends Application {
 
         AppController appController = AppServices.newAppWindow(stage);
 
-        if(createNewWallet) {
-            appController.newWallet(null);
-        }
+        final boolean showNewWallet = createNewWallet;
+        javafx.application.Platform.runLater(() -> {
+            if(showNewWallet) {
+                appController.newWallet(null);
+            }
 
-        List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
-        if(recentWalletFiles != null) {
-            //Preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
-            List<File> encryptedWalletFiles = recentWalletFiles.stream().filter(Storage::isEncrypted).collect(Collectors.toList());
-            List<File> sortedWalletFiles = new ArrayList<>(recentWalletFiles);
-            sortedWalletFiles.removeAll(encryptedWalletFiles);
-            sortedWalletFiles.addAll(encryptedWalletFiles);
+            List<File> recentWalletFiles = Config.get().getRecentWalletFiles();
+            if(recentWalletFiles != null) {
+                //Preserve wallet order as far as possible. Unencrypted wallets will still be opened first.
+                List<File> encryptedWalletFiles = recentWalletFiles.stream().filter(Storage::isEncrypted).collect(Collectors.toList());
+                List<File> sortedWalletFiles = new ArrayList<>(recentWalletFiles);
+                sortedWalletFiles.removeAll(encryptedWalletFiles);
+                sortedWalletFiles.addAll(encryptedWalletFiles);
 
-            for(File walletFile : sortedWalletFiles) {
-                if(walletFile.exists()) {
-                    appController.openWalletFile(walletFile, false);
+                for(File walletFile : sortedWalletFiles) {
+                    if(walletFile.exists()) {
+                        appController.openWalletFile(walletFile, false);
+                    }
                 }
             }
-        }
 
-        AppServices.openFileUriArgumentsAfterWalletLoading(stage);
+            AppServices.openFileUriArgumentsAfterWalletLoading(stage);
 
-        AppServices.get().start();
+            AppServices.get().start();
+        });
     }
 
     @Override
