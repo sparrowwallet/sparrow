@@ -90,7 +90,8 @@ public class SparrowDesktop extends Application {
         AppController appController = AppServices.newAppWindow(stage);
 
         final boolean showNewWallet = createNewWallet;
-        javafx.application.Platform.runLater(() -> {
+        //Delay opening new dialogs on Wayland
+        AppServices.runAfterDelay(AppServices.isOnWayland() ? 1000 : 0, () -> {
             if(showNewWallet) {
                 appController.newWallet(null);
             }

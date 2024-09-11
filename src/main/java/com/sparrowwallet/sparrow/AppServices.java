@@ -573,6 +573,34 @@ public class AppServices {
         }
     }
 
+    public static void runAfterDelay(long delay, Runnable runnable) {
+        if(delay <= 0) {
+            if(Platform.isFxApplicationThread()) {
+                runnable.run();
+            } else {
+                Platform.runLater(runnable);
+            }
+        } else {
+            ScheduledService<Void> delayService = new ScheduledService<>() {
+                @Override
+                protected Task<Void> createTask() {
+                    return new Task<>() {
+                        @Override
+                        protected Void call() {
+                            return null;
+                        }
+                    };
+                }
+            };
+            delayService.setOnSucceeded(_ -> {
+                delayService.cancel();
+                runnable.run();
+            });
+            delayService.setDelay(Duration.millis(delay));
+            delayService.start();
+        }
+    }
+
     private static Image getWindowIcon() {
         if(windowIcon == null) {
             windowIcon = new Image(SparrowWallet.class.getResourceAsStream("/image/sparrow-icon.png"));
@@ -1112,6 +1140,15 @@ public class AppServices {
 
     public static Font getMonospaceFont() {
         return Font.font("Roboto Mono", 13);
+    }
+
+    public static boolean isOnWayland() {
+        if(org.controlsfx.tools.Platform.getCurrent() != org.controlsfx.tools.Platform.UNIX) {
+            return false;
+        }
+
+        String waylandDisplay = System.getenv("WAYLAND_DISPLAY");
+        return waylandDisplay != null && !waylandDisplay.isEmpty();
     }
 
     @Subscribe

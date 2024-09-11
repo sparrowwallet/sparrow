@@ -113,23 +113,9 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                     wordEntry.getEditor().setText(words.get(i));
                     wordEntry.getEditor().setEditable(false);
                 } else {
-                    ScheduledService<Void> service = new ScheduledService<>() {
-                        @Override
-                        protected Task<Void> createTask() {
-                            return new Task<>() {
-                                @Override
-                                protected Void call() {
-                                    return null;
-                                }
-                            };
-                        }
-                    };
-                    service.setDelay(Duration.millis(500));
-                    service.setOnSucceeded(event1 -> {
-                        service.cancel();
+                    AppServices.runAfterDelay(500, () -> {
                         Platform.runLater(() -> wordEntry.getEditor().requestFocus());
                     });
-                    service.start();
                 }
             }
         }
