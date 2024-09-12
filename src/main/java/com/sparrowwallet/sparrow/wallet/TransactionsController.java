@@ -35,6 +35,7 @@ public class TransactionsController extends WalletFormController implements Init
     private static final Logger log = LoggerFactory.getLogger(TransactionsController.class);
 
     private static final DateFormat LOG_DATE_FORMAT = new SimpleDateFormat("[MMM dd HH:mm:ss]");
+    private static final int LOADING_LOG_MAX_CHARS = 10000;
 
     @FXML
     private CopyableCoinLabel balance;
@@ -132,8 +133,14 @@ public class TransactionsController extends WalletFormController implements Init
             Platform.runLater(() -> {
                 int lastLineStart = loadingLog.getText().lastIndexOf("\n");
                 if(lastLineStart < 0 || !loadingLog.getText().substring(lastLineStart).equals(logLine)) {
-                    loadingLog.appendText(logLine);
-                    loadingLog.setScrollLeft(0);
+                    if(loadingLog.getLength() > LOADING_LOG_MAX_CHARS) {
+                        int start = loadingLog.getText().indexOf('\n', loadingLog.getLength() - LOADING_LOG_MAX_CHARS);
+                        loadingLog.replaceText(0, loadingLog.getLength(), "[truncated]" + loadingLog.getText().substring(start > -1 ? start : 0, loadingLog.getLength()) + logLine);
+                    } else {
+                        loadingLog.appendText(logLine);
+                    }
+
+                    loadingLog.positionCaret(loadingLog.getLength() - logLine.length() + 1);
                 }
             });
         }
