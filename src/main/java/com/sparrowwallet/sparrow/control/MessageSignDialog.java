@@ -553,7 +553,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                     String signedAddress = matcher.group(2);
                     String signedSignature = matcher.group(3);
 
-                    if(!signedMessage.trim().equals(message.getText().trim().replaceAll("\r*\n*", ""))) {
+                    if(!message.getText().isEmpty() && !signedMessage.trim().equals(message.getText().trim().replaceAll("\r*\n*", ""))) {
                         AppServices.showErrorDialog("Incorrect Message", "The file contained a different message of:\n\n" + signedMessage);
                         return;
                     } else if(!signedAddress.trim().equals(address.getText().trim())) {
@@ -561,6 +561,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                         return;
                     }
 
+                    message.setText(signedMessage);
                     signature.setText(signedSignature);
                 } else {
                     signature.setText(content);
