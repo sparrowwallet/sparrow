@@ -850,7 +850,11 @@ public class SendController extends WalletFormController implements Initializabl
 
     private Double getMinimumFeeRate() {
         Optional<Double> optMinFeeRate = getTargetBlocksFeeRates().values().stream().min(Double::compareTo);
-        Double minRate = optMinFeeRate.orElse(getFallbackFeeRate());
+        double minRate = optMinFeeRate.orElse(getFallbackFeeRate());
+        Double userFeeRate = getFeeRate();
+        if(userFeeRate != null) {
+            minRate = Math.min(userFeeRate, minRate);
+        }
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
     }
 
