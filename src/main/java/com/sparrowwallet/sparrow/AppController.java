@@ -141,7 +141,10 @@ public class AppController implements Initializable {
     private ToggleGroup theme;
 
     @FXML
-    private ToggleGroup language;
+    private ToggleGroup languages;
+
+    @FXML
+    private Menu languagesMenu;
 
     @FXML
     private CheckMenuItem openWalletsInNewWindows;
@@ -378,14 +381,7 @@ public class AppController implements Initializable {
         selectedThemeToggle.ifPresent(toggle -> theme.selectToggle(toggle));
         setTheme(null);
 
-        Language configLanguage = Config.get().getLanguage();
-        if(configLanguage == null) {
-            configLanguage = LanguagesManager.DEFAULT_LANGUAGE;
-            Config.get().setLanguage(configLanguage);
-        }
-        final Language selectedLanguage = configLanguage;
-        Optional<Toggle> selectedLanguageToggle = language.getToggles().stream().filter(toggle -> selectedLanguage.equals(toggle.getUserData())).findFirst();
-        selectedLanguageToggle.ifPresent(toggle -> language.selectToggle(toggle));
+        prepareLanguages();
 
         openWalletsInNewWindowsProperty.set(Config.get().isOpenWalletsInNewWindows());
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
@@ -442,6 +438,27 @@ public class AppController implements Initializable {
 
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
         setNetworkLabel();
+    }
+
+    private void prepareLanguages() {
+        Language[] languagesList = Language.values();
+        for(Language language : languagesList) {
+            RadioMenuItem languageItem = new RadioMenuItem(LanguagesManager.getMessage("language." + language.getCode()));
+            languageItem.setMnemonicParsing(false);
+            languageItem.setToggleGroup(languages);
+            languageItem.setOnAction(this::setLanguage);
+            languageItem.setUserData(language);
+            languagesMenu.getItems().add(languageItem);
+        }
+
+        Language configLanguage = Config.get().getLanguage();
+        if(configLanguage == null) {
+            configLanguage = LanguagesManager.DEFAULT_LANGUAGE;
+            Config.get().setLanguage(configLanguage);
+        }
+        final Language selectedLanguage = configLanguage;
+        Optional<Toggle> selectedLanguageToggle = languages.getToggles().stream().filter(toggle -> selectedLanguage.equals(toggle.getUserData())).findFirst();
+        selectedLanguageToggle.ifPresent(toggle -> languages.selectToggle(toggle));
     }
 
     private void registerShortcuts() {
@@ -2358,7 +2375,7 @@ public class AppController implements Initializable {
     }
 
     public void setLanguage(ActionEvent event) {
-        Language selectedLanguage = (Language)language.getSelectedToggle().getUserData();
+        Language selectedLanguage = (Language)languages.getSelectedToggle().getUserData();
         if(Config.get().getLanguage() != selectedLanguage) {
             Config.get().setLanguage(selectedLanguage);
         }

@@ -66,7 +66,7 @@
                     <ToggleGroup fx:id="theme"/>
                 </fx:define>
                 <fx:define>
-                    <ToggleGroup fx:id="language"/>
+                    <ToggleGroup fx:id="languages"/>
                 </fx:define>
                 <Menu fx:id="viewMenu" mnemonicParsing="false" text="View">
                     <items>
@@ -117,20 +117,7 @@
                                 </RadioMenuItem>
                             </items>
                         </Menu>
-                        <Menu mnemonicParsing="false" text="%language">
-                            <items>
-                                <RadioMenuItem mnemonicParsing="false" text="%language.en" toggleGroup="$language" onAction="#setLanguage">
-                                    <userData>
-                                        <Language fx:constant="ENGLISH" />
-                                    </userData>
-                                </RadioMenuItem>
-                                <RadioMenuItem mnemonicParsing="false" text="%language.es" toggleGroup="$language" onAction="#setLanguage">
-                                    <userData>
-                                        <Language fx:constant="SPANISH" />
-                                    </userData>
-                                </RadioMenuItem>
-                            </items>
-                        </Menu>
+                        <Menu fx:id="languagesMenu" mnemonicParsing="false" text="%language" />
                         <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets In New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
