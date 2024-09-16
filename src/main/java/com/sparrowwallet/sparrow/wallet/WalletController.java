@@ -8,6 +8,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.ViewPasswordField;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -95,7 +96,7 @@ public class WalletController extends WalletFormController implements Initializa
                         throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase(Locale.ROOT) + ".fxml");
                     }
 
-                    FXMLLoader functionLoader = new FXMLLoader(url);
+                    FXMLLoader functionLoader = new FXMLLoader(url, LanguagesManager.getResourceBundle());
                     Node walletFunction = functionLoader.load();
                     walletFunction.setUserData(function);
                     WalletFormController controller = functionLoader.getController();

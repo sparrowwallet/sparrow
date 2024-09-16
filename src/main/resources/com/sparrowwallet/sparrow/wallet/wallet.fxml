@@ -11,7 +11,7 @@
 <BorderPane stylesheets="@wallet.css, @../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.wallet.WalletController">
     <left>
         <VBox fx:id="walletMenuBox" styleClass="list-menu">
-            <ToggleButton VBox.vgrow="ALWAYS" text="Transactions" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity">
+            <ToggleButton VBox.vgrow="ALWAYS" text="%wallet.transactions" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity">
                 <toggleGroup>
                     <ToggleGroup fx:id="walletMenu" />
                 </toggleGroup>

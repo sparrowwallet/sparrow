@@ -14,6 +14,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -551,7 +552,7 @@ public class AppServices {
 
     public static AppController newAppWindow(Stage stage) {
         try {
-            FXMLLoader appLoader = new FXMLLoader(AppServices.class.getResource("app.fxml"));
+            FXMLLoader appLoader = new FXMLLoader(AppServices.class.getResource("app.fxml"), LanguagesManager.getResourceBundle());
             Parent root = appLoader.load();
             AppController appController = appLoader.getController();
 

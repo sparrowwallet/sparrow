@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.control.QRDensity;
+import com.sparrowwallet.sparrow.i18n.Language;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
@@ -43,6 +44,7 @@ public class Config {
     private boolean notifyNewTransactions = true;
     private boolean checkNewVersions = true;
     private Theme theme;
+    private Language language;
     private boolean openWalletsInNewWindows = false;
     private boolean hideEmptyUsedAddresses = false;
     private boolean showTransactionHex = true;
@@ -274,6 +276,15 @@ public class Config {
 
     public void setTheme(Theme theme) {
         this.theme = theme;
+        flush();
+    }
+
+    public Language getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(Language language) {
+        this.language = language;
         flush();
     }
 
