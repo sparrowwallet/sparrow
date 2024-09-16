@@ -522,6 +522,16 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             });
             sigHash.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue == SigHash.NONE || newValue == SigHash.ANYONECANPAY_NONE) {
+                    Optional<ButtonType> optType = AppServices.showWarningDialog("Confirm Sighash None",
+                            "A sighash value of none means the signature does not commit to any of the outputs, and can be reused on a transaction with different outputs.\n\nAre you sure?",
+                            ButtonType.NO, ButtonType.YES);
+                    if(optType.isPresent() && optType.get() == ButtonType.NO) {
+                        Platform.runLater(() -> sigHash.getSelectionModel().select(oldValue));
+                        return;
+                    }
+                }
+
                 for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
                     psbtInput.setSigHash(newValue == SigHash.DEFAULT && !psbtInput.isTaproot() ? SigHash.ALL : newValue);
                 }
