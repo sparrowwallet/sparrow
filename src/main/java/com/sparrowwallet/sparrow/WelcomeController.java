@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow;
 
-import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.LanguageChangedInWelcomeEvent;
 import com.sparrowwallet.sparrow.i18n.Language;
@@ -11,9 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.Event;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.DialogPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
@@ -21,7 +18,6 @@ import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.control.StatusBar;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
