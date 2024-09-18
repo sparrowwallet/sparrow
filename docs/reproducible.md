@@ -12,17 +12,18 @@ Work on resolving both of these issues is ongoing.
 ### Install Java
 
 Because Sparrow bundles a Java runtime in the release binaries, it is essential to have the same version of Java installed when creating the release.
-For v1.6.6 and later, this is Eclipse Temurin 18.0.1+10.
+For v1.6.6 to v1.9.1, this was Eclipse Temurin 18.0.1+10. For v2.0.0 and later, Eclipse Temurin 22.0.2+9 is used.
 
 #### Java from Adoptium github repo
 
-It is available for all supported platforms from [Eclipse Temurin 18.0.1+10](https://github.com/adoptium/temurin18-binaries/releases/tag/jdk-18.0.1%2B10).
+It is available for all supported platforms from [Eclipse Temurin 22.0.2+9](https://github.com/adoptium/temurin22-binaries/releases/tag/jdk-22.0.2%2B9).
 
 For reference, the downloads are as follows:
-- [Linux x64](https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_x64_linux_hotspot_18.0.1_10.tar.gz)
-- [MacOS x64](https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_x64_mac_hotspot_18.0.1_10.tar.gz)
-- [MacOS aarch64](https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_aarch64_mac_hotspot_18.0.1_10.tar.gz)
-- [Windows x64](https://github.com/adoptium/temurin18-binaries/releases/download/jdk-18.0.1%2B10/OpenJDK18U-jdk_x64_windows_hotspot_18.0.1_10.zip)
+- [Linux x64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_linux_hotspot_22.0.2_9.tar.gz)
+- [Linux aarch64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_aarch64_linux_hotspot_22.0.2_9.tar.gz)
+- [MacOS x64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_mac_hotspot_22.0.2_9.tar.gz)
+- [MacOS aarch64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_aarch64_mac_hotspot_22.0.2_9.tar.gz)
+- [Windows x64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_windows_hotspot_22.0.2_9.zip)
 
 #### Java from Adoptium deb repo
 
@@ -57,7 +58,7 @@ echo "deb [signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium
 Update cache, install the desired temurin version and configure java to be linked to this same version:
 ```
 sudo apt update -y
-sudo apt-get install -y temurin-18-jdk=18.0.1+10
+sudo apt-get install -y temurin-22-jdk=22.0.2+9
 sudo update-alternatives --config java
 ```
 
@@ -67,7 +68,7 @@ A alternative option for all platforms is to use the [sdkman.io](https://sdkman.
 See the installation [instructions here](https://sdkman.io/install).
 Once installed, run
 ```shell
-sdk install java 18.0.1-tem
+sdk install java 22.0.2-tem
 ```
 
 ### Other requirements
@@ -82,7 +83,7 @@ sudo apt install -y rpm fakeroot binutils
 First, assign a temporary variable in your shell for the specific release you want to build. For the current one specify:
 
 ```shell
-GIT_TAG="1.9.1"
+GIT_TAG="2.0.0"
 ```
 
 The project can then be initially cloned as follows:
