@@ -38,7 +38,7 @@ public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
     private static final String HWI_HOME_DIR = "hwi";
     private static final String HWI_VERSION_PREFIX = "hwi-";
-    private static final String HWI_VERSION = "3.0.0";
+    private static final String HWI_VERSION = "3.1.0";
     private static final String HWI_VERSION_DIR = HWI_VERSION_PREFIX + HWI_VERSION;
 
     private static boolean isPromptActive = false;
