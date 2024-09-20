@@ -1,0 +1,9 @@
+Package: sparrow
+Version: 2.0.1-1
+Section: utils
+Maintainer: Craig Raw <mail@sparrowwallet.com>
+Priority: optional
+Architecture: arm64
+Provides: sparrow
+Description: Sparrow
+Depends: libc6, zlib1g
