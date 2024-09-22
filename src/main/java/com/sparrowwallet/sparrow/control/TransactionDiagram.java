@@ -429,11 +429,18 @@ public class TransactionDiagram extends GridPane {
 
                 Tooltip tooltip = new Tooltip();
                 Long inputValue = null;
+                String inputLabel = input.getLabel();
                 if(walletNode != null) {
                     inputValue = input.getValue();
                     Wallet nodeWallet = walletNode.getWallet();
-                    tooltip.setText("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? nodeWallet.getFullDisplayName() : (nodeWallet.isNested() ? nodeWallet.getDisplayName() : "")) + " " + walletNode + "\n" +
-                            input.getHashAsString() + ":" + input.getIndex() + "\n" + walletNode.getAddress());
+                    StringJoiner joiner = new StringJoiner("\n");
+                    joiner.add("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? nodeWallet.getFullDisplayName() : (nodeWallet.isNested() ? nodeWallet.getDisplayName() : "")) + " " + walletNode);
+                    joiner.add(input.getHashAsString() + ":" + input.getIndex());
+                    joiner.add(walletNode.getAddress().toString());
+                    if (inputLabel != null) {
+                        joiner.add(inputLabel);
+                    }
+                    tooltip.setText(joiner.toString());
                     tooltip.getStyleClass().add("input-label");
 
                     if(input.getLabel() == null || input.getLabel().isEmpty()) {
@@ -448,12 +455,15 @@ public class TransactionDiagram extends GridPane {
                     ContextMenu contextMenu = new LabelContextMenu(walletNode.getAddress(), inputValue);
                     label.setContextMenu(contextMenu);
                 } else {
-                    if(input instanceof PayjoinBlockTransactionHashIndex) {
+                    if (input instanceof PayjoinBlockTransactionHashIndex) {
                         tooltip.setText("Added once transaction is signed and sent to the payjoin server");
                     } else if(input instanceof AdditionalBlockTransactionHashIndex additionalReference) {
                         inputValue = input.getValue();
                         StringJoiner joiner = new StringJoiner("\n");
                         joiner.add("Spending " + getSatsValue(inputValue) + " sats from" + (isExpanded() ? ":" : " (click to expand):"));
+                        if (inputLabel != null) {
+                            joiner.add(inputLabel);
+                        }
                         for(BlockTransactionHashIndex additionalInput : additionalReference.getAdditionalInputs()) {
                             joiner.add(getInputDescription(additionalInput));
                         }

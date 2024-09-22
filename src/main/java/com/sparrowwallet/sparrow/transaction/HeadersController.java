@@ -90,6 +90,9 @@ public class HeadersController extends TransactionFormController implements Init
     private IdLabel id;
 
     @FXML
+    private IdLabel txNotes;
+
+    @FXML
     private ToggleButton copyTxid;
 
     @FXML
@@ -860,7 +863,17 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void updateTxId() {
-        id.setText(headersForm.getTransaction().calculateTxId(false).toString());
+        Sha256Hash txid = headersForm.getTransaction().calculateTxId(false);
+        id.setText(txid.toString());
+        txNotes.setText(headersForm.getName());
+
+        Wallet w = getWalletFromTransactionInputs();
+        if (w != null) {
+            BlockTransaction txn = w.getWalletTransaction(txid);
+            if (txn != null) {
+                txNotes.setText(txn.getLabel());
+            }
+        }
         if(!headersForm.isTransactionFinalized()) {
             addStyleClass(id, UNFINALIZED_TXID_CLASS);
             addStyleClass(size, UNFINALIZED_TXID_CLASS);
