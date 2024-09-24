@@ -1908,7 +1908,7 @@ public class AppController implements Initializable {
     }
 
     private void addTransactionTab(BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
-        addTransactionTab(null, null, blockTransaction.getTransaction(), null, blockTransaction, initialView, initialIndex);
+        addTransactionTab(blockTransaction.getLabel(), null, blockTransaction.getTransaction(), null, blockTransaction, initialView, initialIndex);
     }
 
     private void addTransactionTab(String name, File file, Transaction transaction, PSBT psbt, BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
