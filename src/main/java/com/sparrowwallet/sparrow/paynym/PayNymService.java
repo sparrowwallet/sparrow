@@ -251,6 +251,9 @@ public class PayNymService {
     }
 
     public static String getHostUrl(boolean tor) {
-        return tor ? "http://paynym7bwekdtb2hzgkpl6y2waqcrs2dii7lwincvxme7mdpcpxzfsad.onion" : "https://paynym.is";
+        //Samourai PayNym server
+        //return tor ? "http://paynym7bwekdtb2hzgkpl6y2waqcrs2dii7lwincvxme7mdpcpxzfsad.onion" : "https://paynym.is";
+        //Ashigaru PayNym server
+        return tor ? "http://paynym25chftmsywv4v2r67agbrr62lcxagsf4tymbzpeeucucy2ivad.onion" : "https://paynym.rs";
     }
 }

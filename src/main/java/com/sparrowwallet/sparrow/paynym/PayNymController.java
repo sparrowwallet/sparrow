@@ -42,7 +42,8 @@ import static com.sparrowwallet.sparrow.wallet.PaymentController.MINIMUM_P2PKH_O
 public class PayNymController {
     private static final Logger log = LoggerFactory.getLogger(PayNymController.class);
 
-    public static final Pattern PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
+    public static final Pattern SAMOURAI_PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
+    public static final Pattern ASHIGARU_PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9]");
     public static final String INVALID_PAYMENT_CODE_LABEL = "Invalid Payment Code";
 
     private String walletId;
@@ -127,7 +128,7 @@ public class PayNymController {
                 } catch(Exception e) {
                     //ignore
                 }
-            } else if(PAYNYM_REGEX.matcher(input).matches()) {
+            } else if(ASHIGARU_PAYNYM_REGEX.matcher(input).matches()) {
                 findNymProperty.set(input);
             } else {
                 findNymProperty.set(null);
@@ -343,7 +344,12 @@ public class PayNymController {
                 PaymentCode externalPaymentCode = childWallet.getKeystores().get(0).getExternalPaymentCode();
                 String walletNymName = PayNym.getNymName(childWallet);
                 if(payNymMap.get(externalPaymentCode) == null || (walletNymName != null && !walletNymName.equals(payNymMap.get(externalPaymentCode).nymName()))) {
-                    payNymMap.put(externalPaymentCode, PayNym.fromWallet(childWallet));
+                    if(walletNymName != null && payNymMap.get(externalPaymentCode) != null && SAMOURAI_PAYNYM_REGEX.matcher(walletNymName).matches()) {
+                        childWallet.setLabel(payNymMap.get(externalPaymentCode).nymName() + " " + childWallet.getScriptType().getName());
+                        EventManager.get().post(new WalletLabelChangedEvent(childWallet));
+                    } else {
+                        payNymMap.put(externalPaymentCode, PayNym.fromWallet(childWallet));
+                    }
                 }
             }
         }
