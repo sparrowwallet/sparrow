@@ -132,6 +132,7 @@ public class TitledDescriptionPane extends TitledPane {
         contentBox.setAlignment(Pos.TOP_LEFT);
         contentBox.setPadding(new Insets(10, 30, 10, 30));
         contentBox.setPrefWidth(400);  // Set preferred width for wrapping
+        contentBox.setMinHeight(60);
 
         // Define the regex pattern to match URLs
         String urlPattern = "(\\[https?://\\S+])";
@@ -211,13 +212,7 @@ public class TitledDescriptionPane extends TitledPane {
         Hyperlink hyperlink = new Hyperlink(url);
         hyperlink.setMaxWidth(400);  // Set maximum width for wrapping
         hyperlink.setWrapText(true);  // Ensure text wrapping in the hyperlink
-        hyperlink.setOnAction(e -> {
-            try {
-                java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
-            } catch (Exception ex) {
-               // TODO: handle failure to launch link
-            }
-        });
+        hyperlink.setOnAction(_ -> AppServices.get().getApplication().getHostServices().showDocument(url));
         return hyperlink;
     }
 }
