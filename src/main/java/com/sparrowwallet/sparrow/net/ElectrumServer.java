@@ -823,7 +823,7 @@ public class ElectrumServer {
             if(AppServices.getTargetBlockFeeRates() != null) {
                 targetBlocksFeeRatesSats.putAll(AppServices.getTargetBlockFeeRates());
             }
-        } else if(Network.get().equals(Network.MAINNET)) {
+        } else if(feeRatesSource.supportsNetwork(Network.get())) {
             targetBlocksFeeRatesSats.putAll(feeRatesSource.getBlockTargetFeeRates(targetBlocksFeeRatesSats));
         }
 

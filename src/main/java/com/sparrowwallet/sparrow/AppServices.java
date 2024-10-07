@@ -293,7 +293,7 @@ public class AppServices {
 
             FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
             feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
-            if(event instanceof ConnectionEvent && Network.get().equals(Network.MAINNET) && feeRatesSource.isExternal()) {
+            if(event instanceof ConnectionEvent && feeRatesSource.supportsNetwork(Network.get()) && feeRatesSource.isExternal()) {
                 EventManager.get().post(new FeeRatesSourceChangedEvent(feeRatesSource));
             }
         });

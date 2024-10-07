@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +15,25 @@ public enum FeeRatesSource {
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             return Collections.emptyMap();
         }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return true;
+        }
     },
     MEMPOOL_SPACE("mempool.space", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/fees/recommended" : "https://mempool.space/api/v1/fees/recommended";
+            if(Network.get() != Network.MAINNET && supportsNetwork(Network.get())) {
+                url = url.replace("/api/", "/" + Network.get().getName() + "/api/");
+            }
             return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return network == Network.MAINNET || network == Network.TESTNET || network == Network.TESTNET4 || network == Network.SIGNET;
         }
     },
     BITCOINFEES_EARN_COM("bitcoinfees.earn.com", true) {
@@ -27,6 +41,11 @@ public enum FeeRatesSource {
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = "https://bitcoinfees.earn.com/api/v1/fees/recommended";
             return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return network == Network.MAINNET;
         }
     },
     MINIMUM("Minimum (1 sat/vB)", false) {
@@ -39,12 +58,22 @@ public enum FeeRatesSource {
 
             return blockTargetFeeRates;
         }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return true;
+        }
     },
     OXT_ME("oxt.me", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
             String url = AppServices.isUsingProxy() ? "http://oxtwshnfyktikbflierkwcxxksbonl6v73l5so5zky7ur72w52tktkid.onion/stats/global/mempool" : "https://api.oxt.me/stats/global/mempool";
             return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return network == Network.MAINNET;
         }
 
         @Override
@@ -71,6 +100,8 @@ public enum FeeRatesSource {
     }
 
     public abstract Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates);
+
+    public abstract boolean supportsNetwork(Network network);
 
     public String getName() {
         return name;
@@ -132,7 +163,7 @@ public enum FeeRatesSource {
         return name;
     }
 
-    private record ThreeTierRates(Double fastestFee, Double halfHourFee, Double hourFee, Double minimumFee) {}
+    protected record ThreeTierRates(Double fastestFee, Double halfHourFee, Double hourFee, Double minimumFee) {}
 
     private record OxtRates(OxtRatesData[] data) {}
 
