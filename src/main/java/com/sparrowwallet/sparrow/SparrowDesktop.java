@@ -5,6 +5,8 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.WalletIcon;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
+import com.sparrowwallet.sparrow.i18n.Language;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.PublicElectrumServer;
@@ -53,7 +55,7 @@ public class SparrowDesktop extends Application {
         boolean createNewWallet = false;
         Mode mode = Config.get().getMode();
         if(mode == null) {
-            WelcomeDialog welcomeDialog = new WelcomeDialog();
+            WelcomeDialog welcomeDialog = new WelcomeDialog(true);
             Optional<Mode> optionalMode = welcomeDialog.showAndWait();
             if(optionalMode.isPresent()) {
                 mode = optionalMode.get();
@@ -86,6 +88,13 @@ public class SparrowDesktop extends Application {
             mainStage.setWidth(Config.get().getAppWidth());
             mainStage.setHeight(Config.get().getAppHeight());
         }
+
+        Language configLanguage = Config.get().getLanguage();
+        if(configLanguage == null) {
+            configLanguage = LanguagesManager.DEFAULT_LANGUAGE;
+            Config.get().setLanguage(configLanguage);
+        }
+        LanguagesManager.loadLanguage(configLanguage.getCode());
 
         AppController appController = AppServices.newAppWindow(stage);
 
