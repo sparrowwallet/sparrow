@@ -13,6 +13,7 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.*;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.*;
 import java.util.regex.Pattern;
@@ -168,6 +169,10 @@ abstract public class ExtraModuleInfoTransform implements TransformAction<ExtraM
         }
         for (String usesName : moduleInfo.getUses()) {
             moduleVisitor.visitUse(usesName.replace('.', '/'));
+        }
+        for (Map.Entry<String, List<String>> providesEntry : moduleInfo.getProvides().entrySet()) {
+            moduleVisitor.visitProvide(providesEntry.getKey().replace('.', '/'),
+                    providesEntry.getValue().stream().map(name -> name.replace('.', '/')).toArray(String[]::new));
         }
         moduleVisitor.visitEnd();
         classWriter.visitEnd();

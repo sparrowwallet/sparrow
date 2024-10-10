@@ -76,7 +76,7 @@ dependencies {
     implementation('org.jdbi:jdbi3-sqlobject:3.20.0') {
         exclude group: 'org.slf4j'
     }
-    implementation('org.flywaydb:flyway-core:7.10.7-SNAPSHOT')
+    implementation('org.flywaydb:flyway-core:9.1.3')
     implementation('org.fxmisc.richtext:richtextfx:0.10.4')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('com.google.zxing:javase:3.4.0') {
@@ -189,7 +189,8 @@ application {
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.io=com.google.gson",
                                  "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
-                                 "--add-reads=kotlin.stdlib=kotlinx.coroutines.core"]
+                                 "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
+                                 "--add-reads=org.flywaydb.core=java.desktop"]
 
     if(os.macOsX) {
         applicationDefaultJvmArgs += ["-Dprism.lcdtext=false", "-Xdock:name=Sparrow", "-Xdock:icon=/Users/scy/git/sparrow/src/main/resources/sparrow-large.png",
@@ -210,8 +211,6 @@ jlink {
         requires 'jdk.crypto.cryptoki'
         requires 'java.management'
         requires 'io.leangen.geantyref'
-        uses 'org.flywaydb.core.extensibility.FlywayExtension'
-        uses 'org.flywaydb.core.internal.database.DatabaseType'
         uses 'org.eclipse.jetty.http.HttpFieldPreEncoder'
     }
 
@@ -249,7 +248,8 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor",
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.pg",
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.provider",
-                   "--add-reads=kotlin.stdlib=kotlinx.coroutines.core"]
+                   "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
+                   "--add-reads=org.flywaydb.core=java.desktop"]
 
         if(os.windows) {
             jvmArgs += ["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"]
@@ -487,6 +487,15 @@ extraJavaModuleInfo {
         exports('io.reactivex.rxjavafx.schedulers')
         requires('io.reactivex.rxjava2')
         requires('javafx.graphics')
+    }
+    module('flyway-core-9.1.3.jar', 'org.flywaydb.core', '9.1.3') {
+        exports('org.flywaydb.core')
+        exports('org.flywaydb.core.api')
+        exports('org.flywaydb.core.api.exception')
+        exports('org.flywaydb.core.api.configuration')
+        uses('org.flywaydb.core.extensibility.Plugin')
+        provides('org.flywaydb.core.extensibility.Plugin', 'org.flywaydb.core.internal.database.h2.H2DatabaseType', 'org.flywaydb.core.internal.schemahistory.BaseAppliedMigration', 'org.flywaydb.core.internal.resource.CoreResourceTypeProvider')
+        requires('java.sql')
     }
     module('wellbehavedfx-0.3.3.jar', 'org.fxmisc.wellbehaved', '0.3.3') {
         requires('javafx.base')

@@ -1,8 +1,7 @@
 package org.gradle.sample.transform.javamodules;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Data class to hold the information that should be added as module-info.class to an existing Jar file.
@@ -14,6 +13,7 @@ public class ModuleInfo implements Serializable {
     private List<String> requires = new ArrayList<>();
     private List<String> requiresTransitive = new ArrayList<>();
     private List<String> uses = new ArrayList<>();
+    private Map<String, List<String>> provides = new LinkedHashMap<>();
 
     ModuleInfo(String moduleName, String moduleVersion) {
         this.moduleName = moduleName;
@@ -34,6 +34,10 @@ public class ModuleInfo implements Serializable {
 
     public void uses(String uses) {
         this.uses.add(uses);
+    }
+
+    public void provides(String service, String... providers) {
+        this.provides.put(service, Arrays.asList(providers));
     }
 
     public String getModuleName() {
@@ -58,5 +62,9 @@ public class ModuleInfo implements Serializable {
 
     protected List<String> getUses() {
         return uses;
+    }
+
+    public Map<String, List<String>> getProvides() {
+        return provides;
     }
 }

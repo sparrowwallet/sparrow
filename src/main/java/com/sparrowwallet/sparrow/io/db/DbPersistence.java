@@ -624,7 +624,7 @@ public class DbPersistence implements Persistence {
     }
 
     private Flyway getFlyway(Storage storage, String schema, String password, File resourcesDir) throws StorageException {
-        return Flyway.configure().dataSource(getDataSource(storage, password)).locations("filesystem:" + resourcesDir.getAbsolutePath()).schemas(schema).failOnMissingLocations(true).load();
+        return Flyway.configure().cleanDisabled(false).dataSource(getDataSource(storage, password)).locations("filesystem:" + resourcesDir.getAbsolutePath()).schemas(schema).failOnMissingLocations(true).load();
     }
 
     //Flyway does not support JPMS yet, so the migration files are extracted to a temp dir in order to avoid classloader encapsulation issues
