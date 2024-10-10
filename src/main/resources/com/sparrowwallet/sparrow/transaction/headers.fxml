@@ -67,6 +67,9 @@
                     </buttons>
                 </SegmentedButton>
             </Field>
+            <Field text="Notes:" styleClass="label-button">
+                <IdLabel fx:id="txNotes"/>
+            </Field>
         </Fieldset>
     </Form>
 
