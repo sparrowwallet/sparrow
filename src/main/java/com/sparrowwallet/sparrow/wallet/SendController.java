@@ -20,6 +20,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.*;
@@ -356,7 +357,7 @@ public class SendController extends WalletFormController implements Initializabl
         });
 
         utxoLabelSelectionProperty.addListener((observable, oldValue, newValue) -> {
-            clearButton.setText("Clear" + newValue);
+            clearButton.setText(LanguagesManager.getMessage("wallet.send.clear") + newValue);
         });
 
         utxoSelectorProperty.addListener((observable, oldValue, utxoSelector) -> {
@@ -475,7 +476,7 @@ public class SendController extends WalletFormController implements Initializabl
         Tab tab = new Tab(" " + (highestTabNo.isPresent() ? highestTabNo.getAsInt() + 1 : 1) + " ");
 
         try {
-            FXMLLoader paymentLoader = new FXMLLoader(AppServices.class.getResource("wallet/payment.fxml"));
+            FXMLLoader paymentLoader = new FXMLLoader(AppServices.class.getResource("wallet/payment.fxml"), LanguagesManager.getResourceBundle());
             tab.setContent(paymentLoader.load());
             PaymentController controller = paymentLoader.getController();
             controller.setSendController(this);
@@ -896,8 +897,8 @@ public class SendController extends WalletFormController implements Initializabl
         if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
             if(minFeeRate > 1.0 && feeRateAmt < minFeeRate) {
-                feeRatePriority.setText("Below Minimum");
-                feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate are currently being purged from the default sized mempool"));
+                feeRatePriority.setText(LanguagesManager.getMessage("wallet.send.fee.rate.below-minimum"));
+                feeRatePriority.setTooltip(new Tooltip(LanguagesManager.getMessage("wallet.send.fee.rate.below-minimum.tooltip")));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
                 return;
@@ -905,8 +906,8 @@ public class SendController extends WalletFormController implements Initializabl
 
             Double lowestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(TARGET_BLOCKS_RANGE.size() - 1));
             if(lowestBlocksRate >= minFeeRate && feeRateAmt < (minFeeRate + ((lowestBlocksRate - minFeeRate) / 2)) && !isPayjoinTx()) {
-                feeRatePriority.setText("Try Then Replace");
-                feeRatePriority.setTooltip(new Tooltip("Send a transaction, verify it appears in the destination wallet, then RBF to get it confirmed or sent to another address"));
+                feeRatePriority.setText(LanguagesManager.getMessage("wallet.send.fee.rate.replace"));
+                feeRatePriority.setTooltip(new Tooltip(LanguagesManager.getMessage("wallet.send.fee.rate.replace.tooltip")));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #7eb7c9cc");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.PLUS_CIRCLE);
                 return;
@@ -918,24 +919,24 @@ public class SendController extends WalletFormController implements Initializabl
                 Double maxFeeRate = FEE_RATES_RANGE.get(FEE_RATES_RANGE.size() - 1).doubleValue();
                 Double highestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(0));
                 if(highestBlocksRate < maxFeeRate && feeRateAmt > (highestBlocksRate + ((maxFeeRate - highestBlocksRate) / 10))) {
-                    feeRatePriority.setText("Overpaid");
-                    feeRatePriority.setTooltip(new Tooltip("Transaction fees at this rate are likely higher than necessary"));
+                    feeRatePriority.setText(LanguagesManager.getMessage("wallet.send.fee.rate.overpaid"));
+                    feeRatePriority.setTooltip(new Tooltip(LanguagesManager.getMessage("wallet.send.fee.rate.overpaid.tooltip")));
                     feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
                     feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
                 } else {
-                    feeRatePriority.setText("High Priority");
-                    feeRatePriority.setTooltip(new Tooltip("Typically confirms within minutes"));
+                    feeRatePriority.setText(LanguagesManager.getMessage("wallet.send.fee.rate.high-priority"));
+                    feeRatePriority.setTooltip(new Tooltip(LanguagesManager.getMessage("wallet.send.fee.rate.high-priority.tooltip")));
                     feeRatePriorityGlyph.setStyle("-fx-text-fill: #c8416499");
                     feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
                 }
             } else if(targetBlocks < FeeRatesSource.BLOCKS_IN_HOUR) {
-                feeRatePriority.setText("Medium Priority");
-                feeRatePriority.setTooltip(new Tooltip("Typically confirms within an hour or two"));
+                feeRatePriority.setText(LanguagesManager.getMessage("wallet.send.fee.rate.medium-priority"));
+                feeRatePriority.setTooltip(new Tooltip(LanguagesManager.getMessage("wallet.send.fee.rate.medium-priority.tooltip")));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #fba71b99");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
             } else {
-                feeRatePriority.setText("Low Priority");
-                feeRatePriority.setTooltip(new Tooltip("Typically confirms in a day or longer"));
+                feeRatePriority.setText(LanguagesManager.getMessage("wallet.send.fee.rate.low-priority"));
+                feeRatePriority.setTooltip(new Tooltip(LanguagesManager.getMessage("wallet.send.fee.rate.low-priority.tooltip")));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #41a9c999");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.CIRCLE);
             }
@@ -963,11 +964,11 @@ public class SendController extends WalletFormController implements Initializabl
     private void updateMaxClearButtons(UtxoSelector utxoSelector, TxoFilter txoFilter) {
         if(utxoSelector instanceof PresetUtxoSelector presetUtxoSelector) {
             int num = presetUtxoSelector.getPresetUtxos().size();
-            String selection = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " selected)";
+            String selection = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " " + LanguagesManager.getMessage("common.selected") + ")";
             utxoLabelSelectionProperty.set(selection);
         } else if(txoFilter instanceof ExcludeTxoFilter excludeTxoFilter) {
             int num = excludeTxoFilter.getExcludedTxos().size();
-            String exclusion = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " excluded)";
+            String exclusion = " (" + num + " UTXO" + (num != 1 ? "s" : "") + " " + LanguagesManager.getMessage("common.excluded") + ")";
             utxoLabelSelectionProperty.set(exclusion);
         } else {
             utxoLabelSelectionProperty.set("");
@@ -1579,38 +1580,38 @@ public class SendController extends WalletFormController implements Initializabl
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {
                 if(fakeMixPresent) {
-                    addLabel("Appears as a two person coinjoin", getPlusGlyph());
+                    addLabel(LanguagesManager.getMessage("wallet.send.optimize.coinjoin"), getPlusGlyph());
                 } else {
                     if(mixedAddressTypes) {
-                        addLabel("Cannot fake coinjoin due to mixed address types", getInfoGlyph());
+                        addLabel(LanguagesManager.getMessage("wallet.send.optimize.coinjoin.mixes-address-types"), getInfoGlyph());
                     } else if(userPayments.size() > 1) {
-                        addLabel("Cannot fake coinjoin due to multiple payments", getInfoGlyph());
+                        addLabel(LanguagesManager.getMessage("wallet.send.optimize.coinjoin.multiple-payments"), getInfoGlyph());
                     } else if(payjoinPresent) {
-                        addLabel("Cannot fake coinjoin due to payjoin", getInfoGlyph());
+                        addLabel(LanguagesManager.getMessage("wallet.send.optimize.coinjoin.payjoin"), getInfoGlyph());
                     } else {
                         if(utxoSelectorProperty().get() != null) {
-                            addLabel("Cannot fake coinjoin due to coin control", getInfoGlyph());
+                            addLabel(LanguagesManager.getMessage("wallet.send.optimize.coinjoin.coincontrol"), getInfoGlyph());
                         } else {
-                            addLabel("Cannot fake coinjoin due to insufficient funds", getInfoGlyph());
+                            addLabel(LanguagesManager.getMessage("wallet.send.optimize.coinjoin.insufficient-funds"), getInfoGlyph());
                         }
                     }
                 }
             }
 
             if(mixedAddressTypes) {
-                addLabel("Address types different to the wallet indicate external payments", getMinusGlyph());
+                addLabel(LanguagesManager.getMessage("wallet.send.optimize.mixes-address-types"), getMinusGlyph());
             }
 
             if(roundPaymentAmounts && !fakeMixPresent) {
-                addLabel("Rounded payment amounts indicate external payments", getMinusGlyph());
+                addLabel(LanguagesManager.getMessage("wallet.send.optimize.external-payments"), getMinusGlyph());
             }
 
             if(addressReuse) {
-                addLabel("Address reuse detected", getMinusGlyph());
+                addLabel(LanguagesManager.getMessage("wallet.send.optimize.reuse"), getMinusGlyph());
             }
 
             if(!fakeMixPresent && !mixedAddressTypes && !roundPaymentAmounts) {
-                addLabel("Appears as a possible self transfer", getPlusGlyph());
+                addLabel(LanguagesManager.getMessage("wallet.send.optimize.self-transfer"), getPlusGlyph());
             }
 
             analysisLabels.sort(Comparator.comparingInt(o -> (Integer)o.getGraphic().getUserData()));

@@ -22,7 +22,7 @@
                     <Function fx:constant="TRANSACTIONS"/>
                 </userData>
             </ToggleButton>
-            <ToggleButton VBox.vgrow="ALWAYS" text="Send" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
+            <ToggleButton VBox.vgrow="ALWAYS" text="%wallet.send" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$walletMenu">
                 <graphic>
                     <Glyph fontFamily="FontAwesome" icon="SEND" fontSize="20" />
                 </graphic>
