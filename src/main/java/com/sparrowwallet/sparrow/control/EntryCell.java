@@ -811,12 +811,11 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         cell.getStyleClass().remove("negative-amount");
         cell.getStyleClass().remove("spent");
         cell.getStyleClass().remove("unspendable");
+        cell.getStyleClass().remove("number-field");
 
         if(entry != null) {
-            if(entry instanceof TransactionEntry) {
+            if(entry instanceof TransactionEntry transactionEntry) {
                 cell.getStyleClass().add("transaction-row");
-                TransactionEntry transactionEntry = (TransactionEntry)entry;
-
                 if(cell instanceof ConfirmationsListener confirmationsListener) {
                     if(transactionEntry.isConfirming()) {
                         cell.getStyleClass().add("confirming");
@@ -825,17 +824,21 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                         confirmationsListener.getConfirmationsProperty().unbind();
                     }
                 }
+                if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX && transactionEntry.getBlockTransaction().getHeight() > 0) {
+                    cell.getStyleClass().add("number-field");
+                }
             } else if(entry instanceof NodeEntry) {
                 cell.getStyleClass().add("node-row");
-            } else if(entry instanceof UtxoEntry) {
+            } else if(entry instanceof UtxoEntry utxoEntry) {
                 cell.getStyleClass().add("utxo-row");
-                UtxoEntry utxoEntry = (UtxoEntry)entry;
                 if(!utxoEntry.isSpendable()) {
                     cell.getStyleClass().add("unspendable");
                 }
-            } else if(entry instanceof HashIndexEntry) {
+                if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.OSX && utxoEntry.getHashIndex().getHeight() > 0) {
+                    cell.getStyleClass().add("number-field");
+                }
+            } else if(entry instanceof HashIndexEntry hashIndexEntry) {
                 cell.getStyleClass().add("hashindex-row");
-                HashIndexEntry hashIndexEntry = (HashIndexEntry)entry;
                 if(hashIndexEntry.isSpent()) {
                     cell.getStyleClass().add("spent");
                 }

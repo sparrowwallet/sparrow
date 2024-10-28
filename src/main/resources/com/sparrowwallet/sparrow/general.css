@@ -251,7 +251,7 @@
 }
 
 .number-field {
-    -fx-font-family: 'Helvetica Neue Regular', 'System Regular';
+    -fx-font-family: 'Liberation Sans';
 }
 
 VerticalHeader > Label.selected {

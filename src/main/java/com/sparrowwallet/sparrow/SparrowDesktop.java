@@ -42,10 +42,7 @@ public class SparrowDesktop extends Application {
     public void start(Stage stage) throws Exception {
         this.mainStage = stage;
 
-        GlyphFontRegistry.register(new FontAwesome5());
-        GlyphFontRegistry.register(new FontAwesome5Brands());
-        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
-        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Italic.ttf"), 11);
+        initializeFonts();
         URL.setURLStreamHandlerFactory(protocol -> WalletIcon.PROTOCOL.equals(protocol) ? new WalletIcon.WalletIconStreamHandler() : null);
 
         AppServices.initialize(this);
@@ -115,6 +112,16 @@ public class SparrowDesktop extends Application {
 
             AppServices.get().start();
         });
+    }
+
+    private void initializeFonts() {
+        GlyphFontRegistry.register(new FontAwesome5());
+        GlyphFontRegistry.register(new FontAwesome5Brands());
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Italic.ttf"), 11);
+        if(Platform.getCurrent() == Platform.OSX) {
+            Font.loadFont(AppServices.class.getResourceAsStream("/font/LiberationSans-Regular.ttf"), 13);
+        }
     }
 
     @Override
