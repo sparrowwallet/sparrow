@@ -91,7 +91,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('com.fasterxml.jackson.core:jackson-databind:2.17.2')
-    implementation('com.sparrowwallet:hummingbird:1.7.3')
+    implementation('com.sparrowwallet:hummingbird:1.7.4')
     implementation('co.nstant.in:cbor:0.9')
     implementation("com.nativelibs4java:bridj${targetName}:0.7-20140918-3") {
         exclude group: 'com.google.android.tools', module: 'dx'
@@ -502,11 +502,6 @@ extraJavaModuleInfo {
         requires('javafx.graphics')
     }
     module('jai-imageio-core-1.4.0.jar', 'com.github.jai.imageio.jai.imageio.core', '1.4.0')
-    module('hummingbird-1.6.3.jar', 'com.sparrowwallet.hummingbird', '1.6.3') {
-        exports('com.sparrowwallet.hummingbird')
-        exports('com.sparrowwallet.hummingbird.registry')
-        requires('co.nstant.in.cbor')
-    }
     module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
         exports('co.nstant.in.cbor')
         exports('co.nstant.in.cbor.model')
