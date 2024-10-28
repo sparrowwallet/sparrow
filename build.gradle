@@ -41,10 +41,7 @@ version "${sparrowVersion}"
 
 repositories {
     mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/groups/public' }
-    maven { url 'https://mymavenrepo.com/repo/29EACwkkGcoOKnbx3bxN/' }
-    maven { url 'https://jitpack.io' }
-    maven { url 'https://maven.ecs.soton.ac.uk/content/groups/maven.openimaj.org/' }
+    maven { url 'https://code.sparrowwallet.com/api/packages/sparrowwallet/maven' }
 }
 
 tasks.withType(AbstractArchiveTask) {
