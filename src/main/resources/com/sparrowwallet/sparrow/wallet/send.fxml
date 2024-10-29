@@ -45,7 +45,7 @@
                 <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="3">
                     <top>
                         <Form styleClass="title-form">
-                            <Fieldset inputGrow="ALWAYS" text="Send"/>
+                            <Fieldset inputGrow="ALWAYS" text="%wallet.send"/>
                         </Form>
                     </top>
                     <center>
@@ -53,7 +53,7 @@
                     </center>
                 </BorderPane>
                 <Form styleClass="title-form" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                    <Fieldset inputGrow="ALWAYS" text="Fee"/>
+                    <Fieldset inputGrow="ALWAYS" text="%wallet.send.fee"/>
                 </Form>
                 <HBox GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.halignment="RIGHT" alignment="CENTER_RIGHT">
                     <padding>
@@ -64,17 +64,17 @@
                             <ToggleGroup fx:id="feeSelectionToggleGroup" />
                         </toggleGroup>
                         <buttons>
-                            <ToggleButton fx:id="targetBlocksToggle" text="Target Blocks" toggleGroup="$feeSelectionToggleGroup">
+                            <ToggleButton fx:id="targetBlocksToggle" text="%wallet.send.fee.target-block" toggleGroup="$feeSelectionToggleGroup">
                                 <tooltip>
-                                    <Tooltip text="Determine fee via estimated number of blocks"/>
+                                    <Tooltip text="%wallet.send.fee.target-block.tooltip"/>
                                 </tooltip>
                                 <userData>
                                     <FeeRatesSelection fx:constant="BLOCK_TARGET"/>
                                 </userData>
                             </ToggleButton>
-                            <ToggleButton fx:id="mempoolSizeToggle" text="Mempool Size" toggleGroup="$feeSelectionToggleGroup">
+                            <ToggleButton fx:id="mempoolSizeToggle" text="%wallet.send.fee.mempool-size" toggleGroup="$feeSelectionToggleGroup">
                                 <tooltip>
-                                    <Tooltip text="Determine fee via current mempool size"/>
+                                    <Tooltip text="%wallet.send.fee.mempool-size.tooltip"/>
                                 </tooltip>
                                 <userData>
                                     <FeeRatesSelection fx:constant="MEMPOOL_SIZE"/>
@@ -85,13 +85,13 @@
                 </HBox>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="2">
                     <Fieldset inputGrow="SOMETIMES">
-                        <Field fx:id="targetBlocksField" text="Blocks:">
+                        <Field fx:id="targetBlocksField" text="%wallet.send.fee.blocks">
                             <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
                         </Field>
-                        <Field fx:id="feeRangeField" text="Range:">
+                        <Field fx:id="feeRangeField" text="%wallet.send.fee.range">
                             <FeeRangeSlider fx:id="feeRange" />
                         </Field>
-                        <Field fx:id="feeRateField" text="Rate:">
+                        <Field fx:id="feeRateField" text="%wallet.send.fee.rate">
                             <CopyableLabel fx:id="feeRate" />
                             <Label fx:id="cpfpFeeRate" text="CPFP">
                                 <graphic>
@@ -108,7 +108,7 @@
                                 </graphic>
                             </Label>
                         </Field>
-                        <Field text="Fee:">
+                        <Field text="%wallet.send.fee.fee">
                             <TextField fx:id="fee" styleClass="amount-field"/>
                             <ComboBox fx:id="feeAmountUnit" styleClass="amount-unit">
                                 <items>
@@ -153,23 +153,23 @@
                 <Insets left="25.0" right="25.0" bottom="25.0" />
             </padding>
             <HBox AnchorPane.leftAnchor="5" alignment="CENTER_LEFT">
-                <Label text="Optimize:" styleClass="buttonRowLabel" />
+                <Label text="%wallet.send.optimize" styleClass="buttonRowLabel" />
                 <SegmentedButton>
                     <toggleGroup>
                         <ToggleGroup fx:id="optimizationToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton fx:id="efficiencyToggle" text="Efficiency" toggleGroup="$optimizationToggleGroup">
+                        <ToggleButton fx:id="efficiencyToggle" text="%wallet.send.optimize.efficiency" toggleGroup="$optimizationToggleGroup">
                             <tooltip>
-                                <Tooltip text="Smallest transaction size for lowest fees"/>
+                                <Tooltip text="%wallet.send.optimize.efficiency.tootip"/>
                             </tooltip>
                             <userData>
                                 <OptimizationStrategy fx:constant="EFFICIENCY"/>
                             </userData>
                         </ToggleButton>
-                        <ToggleButton fx:id="privacyToggle" text="Privacy" toggleGroup="$optimizationToggleGroup">
+                        <ToggleButton fx:id="privacyToggle" text="%wallet.send.optimize.privacy" toggleGroup="$optimizationToggleGroup">
                             <tooltip>
-                                <Tooltip text="Higher entropy transactions that reduce probabilities in blockchain analysis"/>
+                                <Tooltip text="%wallet.send.optimize.privacy.tooltip"/>
                             </tooltip>
                             <userData>
                                 <OptimizationStrategy fx:constant="PRIVACY"/>
@@ -177,22 +177,22 @@
                         </ToggleButton>
                     </buttons>
                 </SegmentedButton>
-                <HelpLabel fx:id="optimizationHelp" helpText="Determines whether to optimize the transaction for low fees or greater privacy" />
-                <Label fx:id="privacyAnalysis" graphicTextGap="5" text="Analysis..." styleClass="help-label">
+                <HelpLabel fx:id="optimizationHelp" helpText="%wallet.send.optimize.help" />
+                <Label fx:id="privacyAnalysis" graphicTextGap="5" text="%wallet.send.optimize.analysis" styleClass="help-label">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="11" icon="INFO_CIRCLE" />
                     </graphic>
                 </Label>
             </HBox>
             <HBox AnchorPane.rightAnchor="10">
-                <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
+                <Button fx:id="clearButton" text="%wallet.send.clear" cancelButton="true" onAction="#clear" />
                 <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
-                <Button fx:id="notificationButton" text="Broadcast Notification" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastNotification">
+                <Button fx:id="notificationButton" text="%wallet.send.broadcast-notification" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastNotification">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="SATELLITE_DISH" />
                     </graphic>
                 </Button>
-                <Button fx:id="createButton" text="Create Transaction" defaultButton="true" disable="true" contentDisplay="RIGHT" graphicTextGap="5" onAction="#createTransaction">
+                <Button fx:id="createButton" text="%wallet.send.create-transaction" defaultButton="true" disable="true" contentDisplay="RIGHT" graphicTextGap="5" onAction="#createTransaction">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="ANGLE_DOUBLE_RIGHT" />
                     </graphic>
