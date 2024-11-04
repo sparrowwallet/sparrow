@@ -5,9 +5,9 @@ import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputControl;
 
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
 import java.util.function.UnaryOperator;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CoinTextFormatter extends TextFormatter<String> {
@@ -51,8 +51,14 @@ public class CoinTextFormatter extends TextFormatter<String> {
                 commasRemoved = newText.length() - noFractionCommaText.length();
             }
 
-            if(!coinValidation.matcher(noFractionCommaText).matches()) {
-                return null;
+            Matcher matcher = coinValidation.matcher(noFractionCommaText);
+            if(!matcher.matches()) {
+                matcher.reset();
+                if(matcher.find()) {
+                    noFractionCommaText = matcher.group();
+                } else {
+                    return null;
+                }
             }
 
             if(unitFormat.getGroupingSeparator().equals(change.getText())) {
