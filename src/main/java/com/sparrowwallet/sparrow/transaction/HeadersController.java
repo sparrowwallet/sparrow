@@ -993,7 +993,7 @@ public class HeadersController extends TransactionFormController implements Init
         fileChooser.setTitle("Save PSBT");
 
         if(headersForm.getName() != null && !headersForm.getName().isEmpty()) {
-            fileChooser.setInitialFileName(headersForm.getName() + ".psbt");
+            fileChooser.setInitialFileName(headersForm.getName().replace('/', '_') + ".psbt");
         }
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);

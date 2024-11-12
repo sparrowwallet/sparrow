@@ -798,6 +798,7 @@ public class AppController implements Initializable {
 
             String fileName = ((Label)selectedTab.getGraphic()).getText();
             if(fileName != null && !fileName.isEmpty()) {
+                fileName = fileName.replace('/', '_');
                 if(!fileName.endsWith(".psbt")) {
                     fileName += ".psbt";
                 }
