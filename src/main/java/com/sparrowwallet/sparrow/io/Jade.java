@@ -30,7 +30,7 @@ public class Jade implements KeystoreFileImport {
 
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import QR created on your Jade by selecting Xpub Export from the Settings menu once you have loaded your seed.";
+        return "Import QR created on your Jade by selecting Options > Wallet > Export Xpub once you have loaded your seed. Make sure to select Singlesig as the Wallet type in the Options menu there.";
     }
 
     @Override
