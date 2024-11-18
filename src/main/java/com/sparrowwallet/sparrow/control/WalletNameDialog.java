@@ -10,6 +10,8 @@ import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.textfield.CustomTextField;
@@ -56,6 +58,11 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
         dialogPane.getButtonTypes().addAll(ButtonType.CANCEL);
         dialogPane.setPrefWidth(460);
         dialogPane.setPrefHeight(requestBirthDate ? 250 : 200);
+        dialogPane.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE) {
+                WalletNameDialog.this.close();
+            }
+        });
         AppServices.moveToActiveWindowScreen(this);
 
         Glyph wallet = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.WALLET);
