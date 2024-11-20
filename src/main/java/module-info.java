@@ -44,7 +44,7 @@ open module com.sparrowwallet.sparrow {
     requires org.fxmisc.flowless;
     requires com.github.sarxos.webcam.capture;
     requires centerdevice.nsmenufx;
-    requires com.beust.jcommander;
+    requires org.jcommander;
     requires jul.to.slf4j;
     requires net.sourceforge.javacsv;
     requires com.nativelibs4java.bridj;
