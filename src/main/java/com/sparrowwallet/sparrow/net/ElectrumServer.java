@@ -5,6 +5,7 @@ import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.Version;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;

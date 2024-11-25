@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.sparrowwallet.drongo.Version;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;

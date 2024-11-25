@@ -9,7 +9,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.MempoolEntriesInitializedEvent;
-import com.sparrowwallet.sparrow.net.Version;
+import com.sparrowwallet.drongo.Version;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.*;
 import com.sparrowwallet.sparrow.net.cormorant.index.TxEntry;
