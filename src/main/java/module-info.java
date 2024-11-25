@@ -64,8 +64,5 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.bokmakierie;
     requires java.smartcardio;
     requires com.jcraft.jzlib;
-    requires org.eclipse.jetty.client;
-    requires org.eclipse.jetty.http;
-    requires org.eclipse.jetty.util;
-    requires org.eclipse.jetty.io;
+    requires com.sparrowwallet.tern;
 }

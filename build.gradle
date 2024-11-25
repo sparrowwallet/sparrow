@@ -122,7 +122,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('com.sparrowwallet.bokmakierie:bokmakierie:1.0')
-    implementation('org.eclipse.jetty:jetty-client:9.4.54.v20240208')
+    implementation('com.sparrowwallet:tern:1.0.2')
     implementation('io.reactivex.rxjava2:rxjava:2.2.15')
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.7')
@@ -158,7 +158,7 @@ processResources {
 
 test {
     useJUnitPlatform()
-    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--add-opens=java.base/java.io=com.google.gson"]
+    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--add-opens=java.base/java.io=com.google.gson", "--add-reads=org.flywaydb.core=java.desktop"]
 }
 
 application {

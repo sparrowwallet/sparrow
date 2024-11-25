@@ -2,7 +2,7 @@ package com.sparrowwallet.sparrow.net;
 
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
-import com.sparrowwallet.sparrow.net.http.client.HttpResponseException;
+import com.sparrowwallet.tern.http.client.HttpResponseException;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
