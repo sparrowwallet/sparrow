@@ -1,8 +1,9 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.tern.http.client.TorHttpProxySupplier;
 
-public class HttpProxySupplier extends com.sparrowwallet.tern.http.client.HttpProxySupplier {
+public class HttpProxySupplier extends TorHttpProxySupplier {
     public HttpProxySupplier(HostAndPort torProxy) {
         super(torProxy);
     }
