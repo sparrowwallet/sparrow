@@ -126,6 +126,9 @@ public class PayNymAvatar extends StackPane {
 
                         try(InputStream is = (proxy == null ? new URI(url).toURL().openStream() : new URI(url).toURL().openConnection(proxy).getInputStream())) {
                             Image image = new Image(is, 150, 150, true, true);
+                            if(image.getException() != null) {
+                                throw image.getException();
+                            }
                             paymentCodeCache.put(cacheId, image);
                             Platform.runLater(() -> EventManager.get().post(new PayNymImageLoadedEvent(paymentCode, image)));
                             return image;
