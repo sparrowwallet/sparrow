@@ -333,11 +333,11 @@ task packageTarDistribution(type: Tar) {
 }
 
 extraJavaModuleInfo {
-    module('tornadofx-controls-1.0.4.jar', 'tornadofx.controls', '1.0.4') {
+    module('no.tornado:tornadofx-controls', 'tornadofx.controls') {
         exports('tornadofx.control')
         requires('javafx.controls')
     }
-    module('simple-json-rpc-core-1.3.jar', 'simple.json.rpc.core', '1.3') {
+    module('com.github.arteam:simple-json-rpc-core', 'simple.json.rpc.core') {
         exports('com.github.arteam.simplejsonrpc.core.annotation')
         exports('com.github.arteam.simplejsonrpc.core.domain')
         requires('com.fasterxml.jackson.core')
@@ -345,7 +345,7 @@ extraJavaModuleInfo {
         requires('com.fasterxml.jackson.databind')
         requires('org.jetbrains.annotations')
     }
-    module('simple-json-rpc-client-1.3.jar', 'simple.json.rpc.client', '1.3') {
+    module('com.github.arteam:simple-json-rpc-client', 'simple.json.rpc.client') {
         exports('com.github.arteam.simplejsonrpc.client')
         exports('com.github.arteam.simplejsonrpc.client.builder')
         exports('com.github.arteam.simplejsonrpc.client.exception')
@@ -353,19 +353,19 @@ extraJavaModuleInfo {
         requires('com.fasterxml.jackson.databind')
         requires('simple.json.rpc.core')
     }
-    module('simple-json-rpc-server-1.3.jar', 'simple.json.rpc.server', '1.3') {
+    module('com.github.arteam:simple-json-rpc-server', 'simple.json.rpc.server') {
         exports('com.github.arteam.simplejsonrpc.server')
         requires('simple.json.rpc.core')
         requires('com.google.common')
         requires('org.slf4j')
         requires('com.fasterxml.jackson.databind')
     }
-    module("bridj${targetName}-0.7-20140918-3.jar", 'com.nativelibs4java.bridj', '0.7-20140918-3') {
+    module("com.nativelibs4java:bridj${targetName}", 'com.nativelibs4java.bridj') {
         exports('org.bridj')
         exports('org.bridj.cpp')
         requires('java.logging')
     }
-    module("webcam-capture${targetName}-0.3.13-SNAPSHOT.jar", 'com.github.sarxos.webcam.capture', '0.3.13-SNAPSHOT') {
+    module("com.github.sarxos:webcam-capture${targetName}", 'com.github.sarxos.webcam.capture') {
         exports('com.github.sarxos.webcam')
         exports('com.github.sarxos.webcam.ds.buildin')
         exports('com.github.sarxos.webcam.ds.buildin.natives')
@@ -373,19 +373,19 @@ extraJavaModuleInfo {
         requires('com.nativelibs4java.bridj')
         requires('org.slf4j')
     }
-    module('centerdevice-nsmenufx-2.1.7.jar', 'centerdevice.nsmenufx', '2.1.7') {
+    module('de.codecentric.centerdevice:centerdevice-nsmenufx', 'centerdevice.nsmenufx') {
         exports('de.codecentric.centerdevice')
         requires('javafx.base')
         requires('javafx.controls')
         requires('javafx.graphics')
     }
-    module('javacsv-2.0.jar', 'net.sourceforge.javacsv', '2.0') {
+    module('net.sourceforge.javacsv:javacsv', 'net.sourceforge.javacsv') {
         exports('com.csvreader')
     }
-    module('listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar', 'com.google.guava.listenablefuture', '9999.0-empty-to-avoid-conflict-with-guava')
-    module('jsr305-3.0.2.jar', 'com.google.code.findbugs.jsr305', '3.0.2')
+    module('com.google.guava:listenablefuture|empty-to-avoid-conflict-with-guava', 'com.google.guava.listenablefuture')
+    module('com.google.code.findbugs:jsr305', 'com.google.code.findbugs.jsr305')
     module('j2objc-annotations-2.8.jar', 'com.google.j2objc.j2objc.annotations', '2.8')
-    module('jdbi3-core-3.20.0.jar', 'org.jdbi.v3.core', '3.20.0') {
+    module('org.jdbi:jdbi3-core', 'org.jdbi.v3.core') {
         exports('org.jdbi.v3.core')
         exports('org.jdbi.v3.core.mapper')
         exports('org.jdbi.v3.core.statement')
@@ -397,10 +397,10 @@ extraJavaModuleInfo {
         requires('org.slf4j')
         requires('com.github.benmanes.caffeine')
     }
-    module('geantyref-1.3.11.jar', 'io.leangen.geantyref', '1.3.11') {
+    module('io.leangen.geantyref:geantyref', 'io.leangen.geantyref') {
         exports('io.leangen.geantyref')
     }
-    module('richtextfx-0.10.4.jar', 'org.fxmisc.richtext', '0.10.4') {
+    module('org.fxmisc.richtext:richtextfx', 'org.fxmisc.richtext') {
         exports('org.fxmisc.richtext')
         exports('org.fxmisc.richtext.event')
         exports('org.fxmisc.richtext.model')
@@ -412,20 +412,20 @@ extraJavaModuleInfo {
         requires('org.fxmisc.undo.undofx')
         requires('org.fxmisc.wellbehaved')
     }
-    module('undofx-2.1.0.jar', 'org.fxmisc.undo.undofx', '2.1.0') {
+    module('org.fxmisc.undo:undofx', 'org.fxmisc.undo.undofx') {
         requires('javafx.base')
         requires('javafx.controls')
         requires('javafx.graphics')
         requires('org.reactfx.reactfx')
     }
-    module('flowless-0.6.1.jar', 'org.fxmisc.flowless', '0.6.1') {
+    module('org.fxmisc.flowless:flowless', 'org.fxmisc.flowless') {
         exports('org.fxmisc.flowless')
         requires('javafx.base')
         requires('javafx.controls')
         requires('javafx.graphics')
         requires('org.reactfx.reactfx')
     }
-    module('reactfx-2.0-M5.jar', 'org.reactfx.reactfx', '2.0-M5') {
+    module('org.reactfx:reactfx', 'org.reactfx.reactfx') {
         exports('org.reactfx')
         exports('org.reactfx.value')
         exports('org.reactfx.collection')
@@ -434,12 +434,12 @@ extraJavaModuleInfo {
         requires('javafx.graphics')
         requires('javafx.controls')
     }
-    module('rxjavafx-2.2.2.jar', 'io.reactivex.rxjava2fx', '2.2.2') {
+    module('io.reactivex.rxjava2:rxjavafx', 'io.reactivex.rxjava2fx') {
         exports('io.reactivex.rxjavafx.schedulers')
         requires('io.reactivex.rxjava2')
         requires('javafx.graphics')
     }
-    module('flyway-core-9.1.3.jar', 'org.flywaydb.core', '9.1.3') {
+    module('org.flywaydb:flyway-core', 'org.flywaydb.core') {
         exports('org.flywaydb.core')
         exports('org.flywaydb.core.api')
         exports('org.flywaydb.core.api.exception')
@@ -447,27 +447,29 @@ extraJavaModuleInfo {
         uses('org.flywaydb.core.extensibility.Plugin')
         requires('java.sql')
     }
-    module('wellbehavedfx-0.3.3.jar', 'org.fxmisc.wellbehaved', '0.3.3') {
+    module('org.fxmisc.wellbehaved:wellbehavedfx', 'org.fxmisc.wellbehaved') {
         requires('javafx.base')
         requires('javafx.graphics')
     }
-    module('jai-imageio-core-1.4.0.jar', 'com.github.jai.imageio.jai.imageio.core', '1.4.0')
-    module('cbor-0.9.jar', 'co.nstant.in.cbor', '0.9') {
+    module('com.github.jai-imageio:jai-imageio-core', 'com.github.jai.imageio.jai.imageio.core') {
+        requires('java.desktop')
+    }
+    module('co.nstant.in:cbor', 'co.nstant.in.cbor') {
         exports('co.nstant.in.cbor')
         exports('co.nstant.in.cbor.model')
         exports('co.nstant.in.cbor.builder')
     }
-    module('streamsupport-1.7.0.jar', 'net.sourceforge.streamsupport', '1.7.0') {
+    module('net.sourceforge.streamsupport:streamsupport', 'net.sourceforge.streamsupport') {
         requires('jdk.unsupported')
         exports('java8.util')
         exports('java8.util.function')
         exports('java8.util.stream')
     }
-    module('thumbnailator-0.4.18.jar', 'net.coobird.thumbnailator', '0.4.18') {
+    module('net.coobird:thumbnailator', 'net.coobird.thumbnailator') {
         exports('net.coobird.thumbnailator')
         requires('java.desktop')
     }
-    module("kmp-tor-jvm-${vKmpTor}.jar", 'kmp.tor.jvm', "${vTor}-${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-jvm", 'kmp.tor.jvm') {
         exports('io.matthewnelson.kmp.tor')
         requires('kmp.tor.binary.extract.jvm')
         requires('kmp.tor.manager.jvm')
@@ -478,24 +480,24 @@ extraJavaModuleInfo {
         requires('java.management')
     }
     if(kmpOs == "linux" && kmpArch == "arm64") {
-        module("kmp-tor-binary-${kmpOs}${kmpArch}-jvm-${vTor}.jar", "kmp.tor.binary.${kmpOs}${kmpArch}", "${vTor}") {
+        module("io.matthewnelson.kotlin-components:kmp-tor-binary-${kmpOs}${kmpArch}-jvm", "kmp.tor.binary.${kmpOs}${kmpArch}") {
             exports("io.matthewnelson.kmp.tor.resource.${kmpOs}.${kmpArch}")
             exports("kmptor.${kmpOs}.${kmpArch}")
         }
     } else {
-        module("kmp-tor-binary-${kmpOs}${kmpArch}-jvm-${vTor}.jar", "kmp.tor.binary.${kmpOs}${kmpArch}", "${vTor}") {
+        module("io.matthewnelson.kotlin-components:kmp-tor-binary-${kmpOs}${kmpArch}-jvm", "kmp.tor.binary.${kmpOs}${kmpArch}") {
             exports("io.matthewnelson.kmp.tor.binary.${kmpOs}.${kmpArch}")
             exports("kmptor.${kmpOs}.${kmpArch}")
         }
     }
-    module("kmp-tor-binary-extract-jvm-${vTor}.jar", 'kmp.tor.binary.extract.jvm', "${vTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-binary-extract-jvm", 'kmp.tor.binary.extract.jvm') {
         exports('io.matthewnelson.kmp.tor.binary.extract')
         exports('io.matthewnelson.kmp.tor.binary.extract.internal')
         requires('kotlin.stdlib')
         requires("kmp.tor.binary.${kmpOs}${kmpArch}")
         requires('kmp.tor.binary.geoip.jvm')
     }
-    module("kmp-tor-manager-jvm-${vKmpTor}.jar", 'kmp.tor.manager.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-manager-jvm", 'kmp.tor.manager.jvm') {
         exports('io.matthewnelson.kmp.tor.manager')
         exports('io.matthewnelson.kmp.tor.manager.util')
         requires('kmp.tor.controller.common.jvm')
@@ -506,7 +508,7 @@ extraJavaModuleInfo {
         requires('kmp.tor.controller.jvm')
         requires('kmp.tor.common.jvm')
     }
-    module("kmp-tor-manager-common-jvm-${vKmpTor}.jar", 'kmp.tor.manager.common.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-manager-common-jvm", 'kmp.tor.manager.common.jvm') {
         exports('io.matthewnelson.kmp.tor.manager.common')
         exports('io.matthewnelson.kmp.tor.manager.common.event')
         exports('io.matthewnelson.kmp.tor.manager.common.state')
@@ -514,7 +516,7 @@ extraJavaModuleInfo {
         requires('kmp.tor.common.jvm')
         requires('kotlin.stdlib')
     }
-    module("kmp-tor-controller-common-jvm-${vKmpTor}.jar", 'kmp.tor.controller.common.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-controller-common-jvm", 'kmp.tor.controller.common.jvm') {
         exports('io.matthewnelson.kmp.tor.controller.common.config')
         exports('io.matthewnelson.kmp.tor.controller.common.file')
         exports('io.matthewnelson.kmp.tor.controller.common.control')
@@ -525,12 +527,12 @@ extraJavaModuleInfo {
         requires('kotlin.stdlib')
         requires('kotlinx.atomicfu')
     }
-    module("kmp-tor-common-jvm-${vKmpTor}.jar", 'kmp.tor.common.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-common-jvm", 'kmp.tor.common.jvm') {
         exports('io.matthewnelson.kmp.tor.common.address')
         requires('parcelize.jvm')
         requires('kotlin.stdlib')
     }
-    module("kmp-tor-controller-jvm-${vKmpTor}.jar", 'kmp.tor.controller.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-controller-jvm", 'kmp.tor.controller.jvm') {
         exports('io.matthewnelson.kmp.tor.controller.internal.controller')
         requires('kmp.tor.common.jvm')
         requires('kmp.tor.controller.common.jvm')
@@ -540,10 +542,10 @@ extraJavaModuleInfo {
         requires('encoding.core.jvm')
         requires('encoding.base16.jvm')
     }
-    module("kmp-tor-ext-callback-common-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.common.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-common-jvm", 'kmp.tor.ext.callback.common.jvm') {
         exports('io.matthewnelson.kmp.tor.ext.callback.common')
     }
-    module("kmp-tor-ext-callback-manager-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.manager.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-manager-jvm", 'kmp.tor.ext.callback.manager.jvm') {
         exports('io.matthewnelson.kmp.tor.ext.callback.manager')
         requires('kmp.tor.manager.jvm')
         requires('kmp.tor.ext.callback.common.jvm')
@@ -554,15 +556,15 @@ extraJavaModuleInfo {
         requires('kotlin.stdlib')
         requires('kotlinx.coroutines.core')
     }
-    module("kmp-tor-ext-callback-manager-common-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.manager.common.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-manager-common-jvm", 'kmp.tor.ext.callback.manager.common.jvm') {
         exports('io.matthewnelson.kmp.tor.ext.callback.manager.common')
         requires('kmp.tor.ext.callback.controller.common.jvm')
     }
-    module("kmp-tor-ext-callback-controller-common-jvm-${vKmpTor}.jar", 'kmp.tor.ext.callback.controller.common.jvm', "${vKmpTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-controller-common-jvm", 'kmp.tor.ext.callback.controller.common.jvm') {
         exports('io.matthewnelson.kmp.tor.ext.callback.controller.common.control')
         exports('io.matthewnelson.kmp.tor.ext.callback.controller.common.control.usecase')
     }
-    module("kmp-tor-binary-geoip-jvm-${vTor}.jar", 'kmp.tor.binary.geoip.jvm', "${vTor}") {
+    module("io.matthewnelson.kotlin-components:kmp-tor-binary-geoip-jvm", 'kmp.tor.binary.geoip.jvm') {
         exports('io.matthewnelson.kmp.tor.binary.geoip')
         exports('kmptor')
     }
@@ -580,10 +582,10 @@ extraJavaModuleInfo {
     module("parcelize-jvm-0.1.2.jar", 'parcelize.jvm', "0.1.2") {
         exports('io.matthewnelson.component.parcelize')
     }
-    module('jcommander-2.0.jar', 'org.jcommander', '2.0') {
+    module('org.jcommander:jcommander', 'org.jcommander') {
         exports('com.beust.jcommander')
     }
-    module('jzlib-1.1.3.jar', 'com.jcraft.jzlib', '1.1.3') {
+    module('com.jcraft:jzlib', 'com.jcraft.jzlib') {
         exports('com.jcraft.jzlib')
     }
 }
