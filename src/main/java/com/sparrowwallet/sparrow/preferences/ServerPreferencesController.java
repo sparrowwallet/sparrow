@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.Mode;
@@ -344,7 +345,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Select Electrum Server certificate");
             fileChooser.getExtensionFilters().addAll(
-                    new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                    new FileChooser.ExtensionFilter("All Files", OsType.getCurrent().equals(OsType.UNIX) ? "*" : "*.*"),
                     new FileChooser.ExtensionFilter("CRT", "*.crt")
             );
 
@@ -866,10 +867,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private File getDefaultCoreDataDir() {
-        org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
-        if(platform == org.controlsfx.tools.Platform.OSX) {
+        OsType osType = OsType.getCurrent();
+        if(osType == OsType.MACOS) {
             return new File(System.getProperty("user.home") + "/Library/Application Support/Bitcoin");
-        } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
+        } else if(osType == OsType.WINDOWS) {
             return new File(System.getenv("APPDATA") + "/Bitcoin");
         } else {
             return new File(System.getProperty("user.home") + "/.bitcoin");
@@ -877,10 +878,10 @@ public class ServerPreferencesController extends PreferencesDetailController {
     }
 
     private void setTestResultsFont() {
-        org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
-        if(platform == org.controlsfx.tools.Platform.OSX) {
+        OsType osType = OsType.getCurrent();
+        if(osType == OsType.MACOS) {
             testResults.setFont(Font.font("Monaco", 11));
-        } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
+        } else if(osType == OsType.WINDOWS) {
             testResults.setFont(Font.font("Lucida Console", 11));
         } else {
             testResults.setFont(Font.font("monospace", 11));

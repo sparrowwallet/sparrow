@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -57,7 +58,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 stage.setResizable(false);
 
                 StackPane scenePane = new StackPane();
-                if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+                if(OsType.getCurrent() == OsType.WINDOWS) {
                     scenePane.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
                 }
 

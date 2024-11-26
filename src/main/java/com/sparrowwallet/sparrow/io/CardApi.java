@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.base.Throwables;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
@@ -13,7 +14,6 @@ import com.sparrowwallet.sparrow.io.ckcard.CkCardApi;
 import com.sparrowwallet.sparrow.io.satochip.SatoCardApi;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
-import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +171,7 @@ public abstract class CardApi {
     }
 
     private static void setLibrary() {
-        if(!initialized && Platform.getCurrent() == Platform.UNIX) {
+        if(!initialized && OsType.getCurrent() == OsType.UNIX) {
             for(File lib : LINUX_PCSC_LIBS) {
                 if(lib.exists()) {
                     System.setProperty("sun.security.smartcardio.library", lib.getAbsolutePath());

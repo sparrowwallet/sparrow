@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -44,7 +45,6 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
-import org.controlsfx.tools.Platform;
 
 import javax.imageio.ImageIO;
 import java.awt.image.*;
@@ -89,7 +89,7 @@ public class TransactionDiagram extends GridPane {
                 stage.setResizable(false);
 
                 StackPane scenePane = new StackPane();
-                if(Platform.getCurrent() == Platform.WINDOWS || Platform.getCurrent() == Platform.UNIX) {
+                if(OsType.getCurrent() == OsType.WINDOWS || OsType.getCurrent() == OsType.UNIX) {
                     scenePane.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
                 }
 

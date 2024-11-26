@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.OsType;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -31,7 +32,7 @@ public class TrayManager {
 
         try {
             List<Image> imgList = new ArrayList<>();
-            if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+            if(OsType.getCurrent() == OsType.WINDOWS) {
                 imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-black-small.png")));
                 imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-black-small@2x.png")));
                 imgList.add(ImageIO.read(getClass().getResource("/image/sparrow-black-small@3x.png")));

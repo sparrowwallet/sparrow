@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
@@ -42,13 +43,13 @@ public class Bwt {
     public synchronized static void initialize() {
         if(!initialized) {
             try {
-                org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
+                OsType osType = OsType.getCurrent();
                 String osArch = System.getProperty("os.arch");
-                if(platform == org.controlsfx.tools.Platform.OSX && osArch.equals("aarch64")) {
+                if(osType == OsType.MACOS && osArch.equals("aarch64")) {
                     NativeUtils.loadLibraryFromJar("/native/osx/aarch64/libbwt_jni.dylib");
-                } else if(platform == org.controlsfx.tools.Platform.OSX) {
+                } else if(osType == OsType.MACOS) {
                     NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
-                } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
+                } else if(osType == OsType.WINDOWS) {
                     NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");
                 } else if(osArch.equals("aarch64")) {
                     NativeUtils.loadLibraryFromJar("/native/linux/aarch64/libbwt_jni.so");

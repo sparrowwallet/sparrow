@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.CharStreams;
 import com.google.gson.*;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -16,7 +17,6 @@ import javafx.concurrent.Task;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -358,7 +358,7 @@ public class Hwi {
             String tmpDir = System.getProperty("java.io.tmpdir");
             String hwiPath = hwiExecutable.getAbsolutePath();
             if(command.isTestFirst() && (hwiPath.contains(tmpDir) || hwiPath.startsWith(homeDir.getAbsolutePath())) && (!hwiPath.contains(HWI_VERSION_DIR) || !testHwi(hwiExecutable))) {
-                if(Platform.getCurrent() == Platform.OSX) {
+                if(OsType.getCurrent() == OsType.MACOS) {
                     IOUtils.deleteDirectory(hwiExecutable.getParentFile());
                 } else {
                     hwiExecutable.delete();
@@ -368,7 +368,7 @@ public class Hwi {
 
         if(hwiExecutable == null || !hwiExecutable.exists()) {
             try {
-                Platform platform = Platform.getCurrent();
+                OsType osType = OsType.getCurrent();
                 String osArch = System.getProperty("os.arch");
                 Set<PosixFilePermission> ownerExecutableWritable = PosixFilePermissions.fromString("rwxr--r--");
 
@@ -376,7 +376,7 @@ public class Hwi {
                 //To avoid doing these with every invocation, use a --onedir packaging and expand into a temp folder on OSX
                 //The check will still happen on first invocation, but will not thereafter
                 //See https://github.com/bitcoin-core/HWI/issues/327 for details
-                if(platform == Platform.OSX) {
+                if(osType == OsType.MACOS) {
                     InputStream inputStream;
                     if(osArch.equals("aarch64")) {
                         inputStream = Hwi.class.getResourceAsStream("/native/osx/aarch64/" + HWI_VERSION_DIR + "-mac-aarch64-signed.tar.bz2");
@@ -425,7 +425,7 @@ public class Hwi {
                 } else {
                     InputStream inputStream;
                     Path tempExecPath;
-                    if(platform == Platform.WINDOWS) {
+                    if(osType == OsType.WINDOWS) {
                         Files.createDirectories(getHwiHomeDir().toPath());
                         inputStream = Hwi.class.getResourceAsStream("/native/windows/x64/hwi.exe");
                         tempExecPath = Files.createTempFile(getHwiHomeDir().toPath(), HWI_VERSION_DIR, null);
@@ -462,7 +462,7 @@ public class Hwi {
     }
 
     private File getHwiHomeDir() {
-        if(Platform.getCurrent() == Platform.OSX || Platform.getCurrent() == Platform.WINDOWS) {
+        if(OsType.getCurrent() == OsType.MACOS || OsType.getCurrent() == OsType.WINDOWS) {
             return new File(Storage.getSparrowDir(), HWI_HOME_DIR);
         }
 
@@ -534,7 +534,7 @@ public class Hwi {
 
     private void deleteExtractionOnFailure(Process process, long after) {
         try {
-            if(Platform.getCurrent() != Platform.OSX && process != null && process.waitFor(100, TimeUnit.MILLISECONDS) && process.exitValue() != 0) {
+            if(OsType.getCurrent() != OsType.MACOS && process != null && process.waitFor(100, TimeUnit.MILLISECONDS) && process.exitValue() != 0) {
                 File extraction = getTemporaryExtraction(after);
                 if(extraction != null) {
                     IOUtils.deleteDirectory(extraction);
@@ -616,8 +616,8 @@ public class Hwi {
     }
 
     private String escape(String passphrase) {
-        Platform platform = Platform.getCurrent();
-        if(platform == Platform.WINDOWS) {
+        OsType osType = OsType.getCurrent();
+        if(osType == OsType.WINDOWS) {
             return passphrase.replace("\"", "\\\"");
         }
 

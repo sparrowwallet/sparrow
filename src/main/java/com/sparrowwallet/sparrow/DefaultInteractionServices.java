@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow;
 
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.sparrow.control.KeystorePassphraseDialog;
 import com.sparrowwallet.sparrow.control.TextUtils;
@@ -48,7 +49,7 @@ public class DefaultInteractionServices implements InteractionServices {
         }
 
         String[] lines = content.split("\r\n|\r|\n");
-        if(lines.length > 3 || org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+        if(lines.length > 3 || OsType.getCurrent() == OsType.WINDOWS) {
             double numLines = Arrays.stream(lines).mapToDouble(line -> Math.ceil(TextUtils.computeTextWidth(Font.getDefault(), line, 0) / 300)).sum();
             alert.getDialogPane().setPrefHeight(200 + numLines * 20);
         }

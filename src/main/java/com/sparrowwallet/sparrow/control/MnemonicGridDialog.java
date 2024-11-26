@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
 import com.sparrowwallet.sparrow.AppServices;
@@ -256,7 +257,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                     FileChooser fileChooser = new FileChooser();
                     fileChooser.setTitle("Open PDF");
                     fileChooser.getExtensionFilters().addAll(
-                            new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                            new FileChooser.ExtensionFilter("All Files", OsType.getCurrent().equals(OsType.UNIX) ? "*" : "*.*"),
                             new FileChooser.ExtensionFilter("PDF", "*.pdf")
                     );
 

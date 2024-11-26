@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
@@ -379,7 +380,7 @@ public class AppServices {
                 exchangeSource == null ? DEFAULT_EXCHANGE_SOURCE : exchangeSource,
                 currency == null ? DEFAULT_FIAT_CURRENCY : currency);
         //Delay startup on first run, Windows requires a longer delay
-        ratesService.setDelay(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS ? Duration.seconds(RATES_DELAY_SECS_WINDOWS) : Duration.seconds(RATES_DELAY_SECS_DEFAULT));
+        ratesService.setDelay(OsType.getCurrent() == OsType.WINDOWS ? Duration.seconds(RATES_DELAY_SECS_WINDOWS) : Duration.seconds(RATES_DELAY_SECS_DEFAULT));
         ratesService.setPeriod(Duration.seconds(RATES_PERIOD_SECS));
         ratesService.setRestartOnFailure(true);
 
@@ -619,7 +620,7 @@ public class AppServices {
     }
 
     private static double getReducedWindowHeight() {
-        return org.controlsfx.tools.Platform.getCurrent() != org.controlsfx.tools.Platform.OSX ? 802d : 768d;  //Check for menu bar of ~34px
+        return OsType.getCurrent() != OsType.MACOS ? 802d : 768d;  //Check for menu bar of ~34px
     }
 
     public Application getApplication() {
@@ -1143,7 +1144,7 @@ public class AppServices {
     }
 
     public static boolean isOnWayland() {
-        if(org.controlsfx.tools.Platform.getCurrent() != org.controlsfx.tools.Platform.UNIX) {
+        if(OsType.getCurrent() != OsType.UNIX) {
             return false;
         }
 

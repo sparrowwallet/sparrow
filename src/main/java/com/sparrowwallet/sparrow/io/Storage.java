@@ -12,7 +12,6 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
-import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -646,7 +645,7 @@ public class Storage {
     }
 
     private static boolean isWindows() {
-        return Platform.getCurrent() == Platform.WINDOWS;
+        return OsType.getCurrent() == OsType.WINDOWS;
     }
 
     public static class LoadWalletService extends Service<WalletAndKey> {

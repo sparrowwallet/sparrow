@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
@@ -14,7 +15,6 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
-import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public class TorStatusLabel extends Label {
 
     public TorStatusLabel() {
         getStyleClass().add("tor-status");
-        setPadding(Platform.getCurrent() == Platform.WINDOWS ? new Insets(0, 0, 1, 3) : new Insets(1, 0, 0, 3));
+        setPadding(OsType.getCurrent() == OsType.WINDOWS ? new Insets(0, 0, 1, 3) : new Insets(1, 0, 0, 3));
         setGraphic(getIcon());
         update();
     }
@@ -62,7 +62,7 @@ public class TorStatusLabel extends Label {
 
     private Node getIcon() {
         Glyph adjust = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ADJUST);
-        adjust.setFontSize(Platform.getCurrent() == Platform.WINDOWS ? 14 : 15);
+        adjust.setFontSize(OsType.getCurrent() == OsType.WINDOWS ? 14 : 15);
         adjust.setRotate(180);
 
         Glyph bullseye = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.BULLSEYE);

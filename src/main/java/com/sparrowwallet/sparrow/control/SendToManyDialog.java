@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.csvreader.CsvReader;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -20,7 +21,6 @@ import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import org.controlsfx.control.spreadsheet.*;
 import org.controlsfx.glyphfont.Glyph;
-import org.controlsfx.tools.Platform;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -105,7 +105,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             SpreadsheetCell amountCell = SpreadsheetCellType.DOUBLE.createCell(row, 1, 1, 1, amount < 0 ? null : amount);
             amountCell.setFormat(bitcoinUnit == BitcoinUnit.BTC ? "0.00000000" : "###,###");
             amountCell.getStyleClass().add("number-value");
-            if(Platform.getCurrent() == Platform.OSX) {
+            if(OsType.getCurrent() == OsType.MACOS) {
                 amountCell.getStyleClass().add("number-field");
             }
             list.add(amountCell);
@@ -161,7 +161,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                     FileChooser fileChooser = new FileChooser();
                     fileChooser.setTitle("Open CSV");
                     fileChooser.getExtensionFilters().addAll(
-                            new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                            new FileChooser.ExtensionFilter("All Files", OsType.getCurrent().equals(OsType.UNIX) ? "*" : "*.*"),
                             new FileChooser.ExtensionFilter("CSV", "*.csv")
                     );
 

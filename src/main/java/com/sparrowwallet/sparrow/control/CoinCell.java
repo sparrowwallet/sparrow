@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.UnitFormat;
@@ -16,7 +17,6 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.Region;
 import javafx.util.Duration;
-import org.controlsfx.tools.Platform;
 
 import java.text.DecimalFormat;
 
@@ -32,7 +32,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
         tooltip.setShowDelay(Duration.millis(500));
         contextMenu = new CoinContextMenu();
         getStyleClass().add("coin-cell");
-        if(Platform.getCurrent() == Platform.OSX) {
+        if(OsType.getCurrent() == OsType.MACOS) {
             getStyleClass().add("number-field");
         }
     }

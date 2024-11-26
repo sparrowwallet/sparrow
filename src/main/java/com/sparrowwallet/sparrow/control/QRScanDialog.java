@@ -1,10 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.github.sarxos.webcam.*;
-import com.sparrowwallet.drongo.ExtendedKey;
-import com.sparrowwallet.drongo.KeyDerivation;
-import com.sparrowwallet.drongo.OutputDescriptor;
-import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.address.P2SHAddress;
@@ -138,7 +135,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             while(nested.getCause() != null) {
                 nested = nested.getCause();
             }
-            if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS &&
+            if(OsType.getCurrent() == OsType.WINDOWS &&
                     nested.getMessage().startsWith("Library 'OpenIMAJGrabber' was not loaded successfully from file")) {
                 exception = new WebcamDependencyException("Your system is missing a dependency required for the webcam. Follow the link below for more details.\n\n[https://sparrowwallet.com/docs/faq.html#your-system-is-missing-a-dependency-for-the-webcam]", exception);
             } else if(nested.getMessage().startsWith("Cannot start native grabber") && Config.get().getWebcamDevice() != null) {

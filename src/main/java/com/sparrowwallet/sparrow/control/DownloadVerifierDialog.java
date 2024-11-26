@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.pgp.PGPKeySource;
 import com.sparrowwallet.drongo.pgp.PGPUtils;
@@ -24,7 +25,6 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.controlsfx.tools.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tornadofx.control.Field;
@@ -500,9 +500,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private List<String> getReleaseFileExtensions() {
-        Platform platform = Platform.getCurrent();
-        switch(platform) {
-            case OSX -> {
+        OsType osType = OsType.getCurrent();
+        switch(osType) {
+            case MACOS -> {
                 return MACOS_RELEASE_EXTENSIONS;
             }
             case WINDOWS -> {
@@ -515,10 +515,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private String getReleaseFileExample(String version) {
-        Platform platform = Platform.getCurrent();
+        OsType osType = OsType.getCurrent();
         String arch = System.getProperty("os.arch");
-        switch(platform) {
-            case OSX -> {
+        switch(osType) {
+            case MACOS -> {
                 return "Sparrow-" + version + "-" + arch;
             }
             case WINDOWS -> {

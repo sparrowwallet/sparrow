@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow;
 
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.control.WalletIcon;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -15,7 +16,6 @@ import javafx.application.Application;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.controlsfx.glyphfont.GlyphFontRegistry;
-import org.controlsfx.tools.Platform;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -72,7 +72,7 @@ public class SparrowDesktop extends Application {
             Config.get().setServerType(ServerType.ELECTRUM_SERVER);
         }
 
-        if(Config.get().getHdCapture() == null && Platform.getCurrent() == Platform.OSX) {
+        if(Config.get().getHdCapture() == null && OsType.getCurrent() == OsType.MACOS) {
             Config.get().setHdCapture(Boolean.TRUE);
         }
 
@@ -119,7 +119,7 @@ public class SparrowDesktop extends Application {
         GlyphFontRegistry.register(new FontAwesome5Brands());
         Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
         Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Italic.ttf"), 11);
-        if(Platform.getCurrent() == Platform.OSX) {
+        if(OsType.getCurrent() == OsType.MACOS) {
             Font.loadFont(AppServices.class.getResourceAsStream("/font/LiberationSans-Regular.ttf"), 13);
         }
     }

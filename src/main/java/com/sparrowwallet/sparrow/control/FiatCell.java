@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.UnitFormat;
@@ -10,7 +11,6 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import org.controlsfx.tools.Platform;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -24,7 +24,7 @@ public class FiatCell extends TreeTableCell<Entry, Number> {
         tooltip = new Tooltip();
         contextMenu = new FiatContextMenu();
         getStyleClass().add("coin-cell");
-        if(Platform.getCurrent() == Platform.OSX) {
+        if(OsType.getCurrent() == OsType.MACOS) {
             getStyleClass().add("number-field");
         }
     }

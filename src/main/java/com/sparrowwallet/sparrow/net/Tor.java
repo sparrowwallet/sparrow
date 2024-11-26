@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.TorStatusEvent;
 import com.sparrowwallet.sparrow.io.Storage;
@@ -16,7 +17,6 @@ import io.matthewnelson.kmp.tor.ext.callback.manager.CallbackTorManager;
 import io.matthewnelson.kmp.tor.manager.TorManager;
 import io.matthewnelson.kmp.tor.manager.common.event.TorManagerEvent;
 import io.matthewnelson.kmp.tor.manager.util.PortUtil;
-import org.controlsfx.tools.Platform;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,20 +38,20 @@ public class Tor {
     private ProxyAddress socksAddress;
 
     public Tor() {
-        Platform platform = Platform.getCurrent();
+        OsType osType = OsType.getCurrent();
         String arch = System.getProperty("os.arch");
         PlatformInstaller installer;
         PlatformInstaller.InstallOption installOption = PlatformInstaller.InstallOption.CleanInstallIfMissing;
 
-        if(platform == Platform.OSX) {
+        if(osType == OsType.MACOS) {
             if(arch.equals("aarch64")) {
                 installer = PlatformInstaller.macosArm64(installOption);
             } else {
                 installer = PlatformInstaller.macosX64(installOption);
             }
-        } else if(platform == Platform.WINDOWS) {
+        } else if(osType == OsType.WINDOWS) {
             installer = PlatformInstaller.mingwX64(installOption);
-        } else if(platform == Platform.UNIX) {
+        } else if(osType == OsType.UNIX) {
             if(arch.equals("aarch64")) {
                 TorBinaryResource linuxArm64 = TorBinaryResource.from(TorBinaryResource.OS.Linux, "arm64",
                         "588496f3164d52b91f17e4db3372d8dfefa6366a8df265eebd4a28d4128992aa",
@@ -61,7 +61,7 @@ public class Tor {
                 installer = PlatformInstaller.linuxX64(installOption);
             }
         } else {
-            throw new UnsupportedOperationException("Sparrow's bundled Tor is not supported on " + platform + " " + arch);
+            throw new UnsupportedOperationException("Sparrow's bundled Tor is not supported on " + osType + " " + arch);
         }
 
         TorConfigProviderJvm torConfigProviderJvm = new TorConfigProviderJvm() {

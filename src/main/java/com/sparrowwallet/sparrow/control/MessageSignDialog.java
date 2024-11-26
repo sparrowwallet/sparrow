@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
@@ -537,7 +538,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Signed Text File");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                new FileChooser.ExtensionFilter("All Files", OsType.getCurrent().equals(OsType.UNIX) ? "*" : "*.*"),
                 new FileChooser.ExtensionFilter("Text Files", "*.txt")
         );
 

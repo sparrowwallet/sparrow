@@ -431,8 +431,8 @@ public class AppController implements Initializable {
     }
 
     private void registerShortcuts() {
-        org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
-        if(platform == org.controlsfx.tools.Platform.OSX) {
+        OsType osType = OsType.getCurrent();
+        if(osType == OsType.MACOS) {
             tabs.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
                 if(event.isShortcutDown() && event.isAltDown() && (event.getCode() == KeyCode.LEFT || event.getCode() == KeyCode.RIGHT)) {
                     int currentIndex = tabs.getSelectionModel().getSelectedIndex();
@@ -447,8 +447,8 @@ public class AppController implements Initializable {
     }
 
     private void setPlatformApplicationMenu() {
-        org.controlsfx.tools.Platform platform = org.controlsfx.tools.Platform.getCurrent();
-        if(platform == org.controlsfx.tools.Platform.OSX) {
+        OsType osType = OsType.getCurrent();
+        if(osType == OsType.MACOS) {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem preferences = new MenuItem("Preferences...");
             preferences.setOnAction(this::openPreferences);
@@ -462,11 +462,11 @@ public class AppController implements Initializable {
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
             toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
             helpMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
-        } else if(platform == org.controlsfx.tools.Platform.WINDOWS) {
+        } else if(osType == OsType.WINDOWS) {
             toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("windowsHide"));
         }
 
-        if(platform == org.controlsfx.tools.Platform.UNIX || !TrayManager.isSupported()) {
+        if(osType == OsType.UNIX || !TrayManager.isSupported()) {
             viewMenu.getItems().remove(minimizeToTray);
         }
     }
@@ -538,7 +538,7 @@ public class AppController implements Initializable {
             StackPane root = loader.load();
             AboutController controller = loader.getController();
 
-            if(org.controlsfx.tools.Platform.getCurrent() == org.controlsfx.tools.Platform.WINDOWS) {
+            if(OsType.getCurrent() == OsType.WINDOWS) {
                 root.setBorder(new Border(new BorderStroke(Color.DARKGRAY, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)));
             }
 
@@ -590,7 +590,7 @@ public class AppController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Transaction");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                new FileChooser.ExtensionFilter("All Files", OsType.getCurrent().equals(OsType.UNIX) ? "*" : "*.*"),
                 new FileChooser.ExtensionFilter("PSBT", "*.psbt"),
                 new FileChooser.ExtensionFilter("TXN", "*.txn")
         );
@@ -2098,7 +2098,7 @@ public class AppController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Image");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All Files", org.controlsfx.tools.Platform.getCurrent().equals(org.controlsfx.tools.Platform.UNIX) ? "*" : "*.*"),
+                new FileChooser.ExtensionFilter("All Files", OsType.getCurrent().equals(OsType.UNIX) ? "*" : "*.*"),
                 new FileChooser.ExtensionFilter("Images", "*.png", "*.jpg", "*.jpeg", "*.gif")
         );
 
