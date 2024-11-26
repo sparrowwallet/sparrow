@@ -480,7 +480,7 @@ extraJavaModuleInfo {
         requires('java.management')
     }
     if(kmpOs == "linux" && kmpArch == "arm64") {
-        module("io.matthewnelson.kotlin-components:kmp-tor-binary-${kmpOs}${kmpArch}-jvm", "kmp.tor.binary.${kmpOs}${kmpArch}") {
+        module("com.sparrowwallet.kmp-tor-binary:kmp-tor-binary-${kmpOs}${kmpArch}-jvm", "kmp.tor.binary.${kmpOs}${kmpArch}") {
             exports("io.matthewnelson.kmp.tor.resource.${kmpOs}.${kmpArch}")
             exports("kmptor.${kmpOs}.${kmpArch}")
         }
