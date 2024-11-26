@@ -1,10 +1,8 @@
-import java.awt.GraphicsEnvironment
-
 plugins {
     id 'application'
-    id 'extra-java-module-info'
     id 'org-openjfx-javafxplugin'
     id 'org.beryx.jlink' version '3.0.1'
+    id 'org.gradlex.extra-java-module-info' version '1.9'
 }
 
 def sparrowVersion = '2.0.1'
@@ -96,15 +94,27 @@ dependencies {
     implementation("com.github.sarxos:webcam-capture${targetName}:0.3.13-SNAPSHOT") {
         exclude group: 'com.nativelibs4java', module: 'bridj'
     }
-    implementation "io.matthewnelson.kotlin-components:kmp-tor:${vTor}-${vKmpTor}"
-    if(kmpOs == "linux" && kmpArch == "arm64") {
-        implementation("com.sparrowwallet.kmp-tor-binary:kmp-tor-binary-${kmpOs}${kmpArch}-jvm:${vTor}")
-    } else {
-        implementation("io.matthewnelson.kotlin-components:kmp-tor-binary-${kmpOs}${kmpArch}:${vTor}")
+    implementation("io.matthewnelson.kotlin-components:kmp-tor:${vTor}-${vKmpTor}") {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
-    implementation("io.matthewnelson.kotlin-components:kmp-tor-binary-extract:${vTor}")
-    implementation("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-manager:${vKmpTor}")
-    implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.7.1')
+    if(kmpOs == "linux" && kmpArch == "arm64") {
+        implementation("com.sparrowwallet.kmp-tor-binary:kmp-tor-binary-${kmpOs}${kmpArch}-jvm:${vTor}") {
+            exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
+        }
+    } else {
+        implementation("io.matthewnelson.kotlin-components:kmp-tor-binary-${kmpOs}${kmpArch}:${vTor}") {
+            exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
+        }
+    }
+    implementation("io.matthewnelson.kotlin-components:kmp-tor-binary-extract:${vTor}") {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
+    }
+    implementation("io.matthewnelson.kotlin-components:kmp-tor-ext-callback-manager:${vKmpTor}") {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
+    }
+    implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.7.1') {
+        exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
+    }
     implementation('de.codecentric.centerdevice:centerdevice-nsmenufx:2.1.7')
     implementation('org.controlsfx:controlsfx:11.1.0' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'
@@ -323,55 +333,6 @@ task packageTarDistribution(type: Tar) {
 }
 
 extraJavaModuleInfo {
-    module('jackson-core-2.17.2.jar', 'com.fasterxml.jackson.core', '2.17.2') {
-        exports('com.fasterxml.jackson.core')
-        exports('com.fasterxml.jackson.core.async')
-        exports('com.fasterxml.jackson.core.base')
-        exports('com.fasterxml.jackson.core.exc')
-        exports('com.fasterxml.jackson.core.filter')
-        exports('com.fasterxml.jackson.core.format')
-        exports('com.fasterxml.jackson.core.io')
-        exports('com.fasterxml.jackson.core.json')
-        exports('com.fasterxml.jackson.core.json.async')
-        exports('com.fasterxml.jackson.core.sym')
-        exports('com.fasterxml.jackson.core.type')
-        exports('com.fasterxml.jackson.core.util')
-        uses('com.fasterxml.jackson.core.ObjectCodec')
-    }
-    module('jackson-annotations-2.17.2.jar', 'com.fasterxml.jackson.annotation', '2.17.2') {
-        requires('com.fasterxml.jackson.core')
-        exports('com.fasterxml.jackson.annotation')
-    }
-    module('jackson-databind-2.17.2.jar', 'com.fasterxml.jackson.databind', '2.17.2') {
-        requires('java.desktop')
-        requires('java.logging')
-        requires('com.fasterxml.jackson.annotation')
-        requires('com.fasterxml.jackson.core')
-        requires('java.sql')
-        requires('java.xml')
-        exports('com.fasterxml.jackson.databind')
-        exports('com.fasterxml.jackson.databind.annotation')
-        exports('com.fasterxml.jackson.databind.cfg')
-        exports('com.fasterxml.jackson.databind.deser')
-        exports('com.fasterxml.jackson.databind.deser.impl')
-        exports('com.fasterxml.jackson.databind.deser.std')
-        exports('com.fasterxml.jackson.databind.exc')
-        exports('com.fasterxml.jackson.databind.ext')
-        exports('com.fasterxml.jackson.databind.introspect')
-        exports('com.fasterxml.jackson.databind.json')
-        exports('com.fasterxml.jackson.databind.jsonFormatVisitors')
-        exports('com.fasterxml.jackson.databind.jsonschema')
-        exports('com.fasterxml.jackson.databind.jsontype')
-        exports('com.fasterxml.jackson.databind.jsontype.impl')
-        exports('com.fasterxml.jackson.databind.module')
-        exports('com.fasterxml.jackson.databind.node')
-        exports('com.fasterxml.jackson.databind.ser')
-        exports('com.fasterxml.jackson.databind.ser.impl')
-        exports('com.fasterxml.jackson.databind.ser.std')
-        exports('com.fasterxml.jackson.databind.type')
-        exports('com.fasterxml.jackson.databind.util')
-        uses('com.fasterxml.jackson.databind.Module')
-    }
     module('tornadofx-controls-1.0.4.jar', 'tornadofx.controls', '1.0.4') {
         exports('tornadofx.control')
         requires('javafx.controls')
@@ -420,13 +381,6 @@ extraJavaModuleInfo {
     }
     module('javacsv-2.0.jar', 'net.sourceforge.javacsv', '2.0') {
         exports('com.csvreader')
-    }
-    module('jeromq-0.5.0.jar', 'jeromq', '0.5.0') {
-        exports('org.zeromq')
-    }
-    module('json-simple-1.1.1.jar', 'json.simple', '1.1.1') {
-        exports('org.json.simple')
-        exports('org.json.simple.parser')
     }
     module('listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar', 'com.google.guava.listenablefuture', '9999.0-empty-to-avoid-conflict-with-guava')
     module('jsr305-3.0.2.jar', 'com.google.code.findbugs.jsr305', '3.0.2')
@@ -491,7 +445,6 @@ extraJavaModuleInfo {
         exports('org.flywaydb.core.api.exception')
         exports('org.flywaydb.core.api.configuration')
         uses('org.flywaydb.core.extensibility.Plugin')
-        provides('org.flywaydb.core.extensibility.Plugin', 'org.flywaydb.core.internal.database.h2.H2DatabaseType', 'org.flywaydb.core.internal.schemahistory.BaseAppliedMigration', 'org.flywaydb.core.internal.resource.CoreResourceTypeProvider')
         requires('java.sql')
     }
     module('wellbehavedfx-0.3.3.jar', 'org.fxmisc.wellbehaved', '0.3.3') {
@@ -504,48 +457,15 @@ extraJavaModuleInfo {
         exports('co.nstant.in.cbor.model')
         exports('co.nstant.in.cbor.builder')
     }
-    module('commons-codec-1.10.jar', 'commons.codec', '1.10') {
-        exports('org.apache.commons.codec')
-    }
-    module('logback-core-1.2.13.jar', 'ch.qos.logback.core', '1.2.13') {
-        exports('ch.qos.logback.core')
-    }
-    module('jackson-datatype-jsr310-2.13.2.jar', 'jackson-datatype-jsr310', '2.13.2') {
-        exports('com.fasterxml.jackson.datatype.jsr310')
-    }
-    module('json-20240205.jar', 'org.json', '20240205') {
-        exports('org.json')
-    }
-    module('scrypt-1.4.0.jar', 'scrypt', '1.4.0') {
-        exports('com.lambdaworks.codec')
-        exports('com.lambdaworks.crypto')
-    }
-    module('okio-1.6.0.jar', 'com.squareup.okio', '1.6.0') {
-        exports('okio')
-    }
-    module('java-jwt-3.8.1.jar', 'com.auth0.jwt', '3.8.1') {
-        exports('com.auth0.jwt')
-    }
     module('streamsupport-1.7.0.jar', 'net.sourceforge.streamsupport', '1.7.0') {
         requires('jdk.unsupported')
         exports('java8.util')
         exports('java8.util.function')
         exports('java8.util.stream')
     }
-    module('commons-text-1.2.jar', 'org.apache.commons.text', '1.2') {
-        exports('org.apache.commons.text')
-    }
-    module('jcip-annotations-1.0.jar', 'net.jcip.annotations', '1.0') {
-        exports('net.jcip.annotations')
-    }
     module('thumbnailator-0.4.18.jar', 'net.coobird.thumbnailator', '0.4.18') {
         exports('net.coobird.thumbnailator')
         requires('java.desktop')
-    }
-    module('fxsvgimage-1.1.jar', 'com.github.hervegirod', '1.1') {
-        exports('org.girod.javafx.svgimage')
-        requires('javafx.graphics')
-        requires('java.xml')
     }
     module("kmp-tor-jvm-${vKmpTor}.jar", 'kmp.tor.jvm', "${vTor}-${vKmpTor}") {
         exports('io.matthewnelson.kmp.tor')
@@ -660,7 +580,6 @@ extraJavaModuleInfo {
     module("parcelize-jvm-0.1.2.jar", 'parcelize.jvm', "0.1.2") {
         exports('io.matthewnelson.component.parcelize')
     }
-    module('jnacl-1.0.0.jar', 'eu.neilalexander.jnacl', '1.0.0')
     module('jcommander-2.0.jar', 'org.jcommander', '2.0') {
         exports('com.beust.jcommander')
     }

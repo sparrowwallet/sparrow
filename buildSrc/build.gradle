@@ -5,7 +5,6 @@ plugins {
 dependencies {
     implementation 'com.google.gradle:osdetector-gradle-plugin:1.7.3'
     implementation 'org.javamodularity:moduleplugin:1.8.14'
-    implementation 'org.ow2.asm:asm:9.6'
 }
 
 repositories {
@@ -17,11 +16,6 @@ repositories {
 
 gradlePlugin {
     plugins {
-        // here we register our plugin with an ID
-        register("extra-java-module-info") {
-            id = "extra-java-module-info"
-            implementationClass = "org.gradle.sample.transform.javamodules.ExtraModuleInfoPlugin"
-        }
         register("org-openjfx-javafxplugin") {
             id = "org-openjfx-javafxplugin"
             implementationClass = "org.openjfx.gradle.JavaFXPlugin"

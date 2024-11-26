@@ -59,7 +59,7 @@ open module com.sparrowwallet.sparrow {
     requires com.github.librepdf.openpdf;
     requires com.googlecode.lanterna;
     requires net.coobird.thumbnailator;
-    requires com.github.hervegirod;
+    requires org.girod.javafx.svgimage;
     requires com.sparrowwallet.toucan;
     requires com.sparrowwallet.bokmakierie;
     requires java.smartcardio;
