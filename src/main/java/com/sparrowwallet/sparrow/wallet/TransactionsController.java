@@ -5,6 +5,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.WalletTransactions;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
@@ -97,7 +98,7 @@ public class TransactionsController extends WalletFormController implements Init
         });
 
         transactionsMasterDetail.setShowDetailNode(Config.get().isShowLoadingLog());
-        loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getFullDisplayName());
+        loadingLog.appendText(LanguagesManager.getMessage("wallet.transactions.loading-history") + " " + getWalletForm().getWallet().getFullDisplayName());
         loadingLog.setEditable(false);
     }
 
@@ -110,7 +111,7 @@ public class TransactionsController extends WalletFormController implements Init
 
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export Transactions as CSV");
+        fileChooser.setTitle(LanguagesManager.getMessage("wallet.transactions.csv-export"));
         fileChooser.setInitialFileName(wallet.getFullName() + "-transactions.csv");
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
@@ -119,7 +120,7 @@ public class TransactionsController extends WalletFormController implements Init
             exportService.setOnFailed(failedEvent -> {
                 Throwable e = failedEvent.getSource().getException();
                 log.error("Error exporting transactions as CSV", e);
-                AppServices.showErrorDialog("Error exporting transactions as CSV", e.getMessage());
+                AppServices.showErrorDialog(LanguagesManager.getMessage("wallet.transactions.csv-export.error"), e.getMessage());
             });
             exportService.start();
         }
@@ -219,7 +220,7 @@ public class TransactionsController extends WalletFormController implements Init
             String logMessage = event.getStatusMessage();
             if(logMessage == null) {
                 if(event instanceof WalletHistoryFinishedEvent) {
-                    logMessage = "Finished loading.";
+                    logMessage = LanguagesManager.getMessage("wallet.transactions.loading-finish");
                 } else if(event instanceof WalletHistoryFailedEvent) {
                     logMessage = event.getErrorMessage();
                 }
