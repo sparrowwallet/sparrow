@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
 import javafx.beans.property.BooleanProperty;
@@ -806,7 +807,7 @@ public class TransactionDiagram extends GridPane {
         txPane.setAlignment(Pos.CENTER);
         txPane.getChildren().add(createSpacer());
 
-        String txDesc = "Transaction";
+        String txDesc = LanguagesManager.getMessage("diagram.transaction");
         Label txLabel = new Label(txDesc);
         boolean isFinalized = walletTx.getTransaction().hasScriptSigs() || walletTx.getTransaction().hasWitnesses();
         Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n"

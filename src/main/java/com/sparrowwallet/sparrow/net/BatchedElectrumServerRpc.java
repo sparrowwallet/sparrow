@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @SuppressWarnings("unchecked")
     public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
         PagedBatchRequestBuilder<String, ScriptHashTx[]> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(ScriptHashTx[].class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions for " + nodeRangesToString(pathScriptHashes.keySet())));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.loading-transactions") + " " + nodeRangesToString(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.get_history", pathScriptHashes.get(path));
@@ -137,7 +138,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @SuppressWarnings("unchecked")
     public Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes) {
         PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(String.class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + nodeRangesToString(pathScriptHashes.keySet())));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.finding-transactions") + " " + nodeRangesToString(pathScriptHashes.keySet())));
 
         for(String path : pathScriptHashes.keySet()) {
             batchRequest.add(path, "blockchain.scripthash.subscribe", pathScriptHashes.get(path));
@@ -157,7 +158,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @SuppressWarnings("unchecked")
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
         PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(String.class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + blockHeights.size() + " block headers"));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.retrieving") + " " + blockHeights.size() + " " + LanguagesManager.getMessage("wallet.transactions.retrieving-headers")));
 
         for(Integer height : blockHeights) {
             batchRequest.add(height, "blockchain.block.header", height);
@@ -176,7 +177,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @SuppressWarnings("unchecked")
     public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
         PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(String.class);
-        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + txids.size() + " transactions"));
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.retrieving") + " " + txids.size() + " " + LanguagesManager.getMessage("wallet.transactions.retrieving-transactions")));
 
         for(String txid : txids) {
             batchRequest.add(txid, "blockchain.transaction.get", txid);

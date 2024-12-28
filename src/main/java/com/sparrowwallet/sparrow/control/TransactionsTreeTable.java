@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
@@ -15,7 +16,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         updateAll(rootEntry);
         setShowRoot(false);
 
-        TreeTableColumn<Entry, Entry> dateCol = new TreeTableColumn<>("Date");
+        TreeTableColumn<Entry, Entry> dateCol = new TreeTableColumn<>(LanguagesManager.getMessage("wallet.transactions.table.date"));
         dateCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
         });
@@ -23,7 +24,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         dateCol.setSortable(true);
         getColumns().add(dateCol);
 
-        TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>("Label");
+        TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>(LanguagesManager.getMessage("wallet.transactions.table.label"));
         labelCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
             return param.getValue().getValue().labelProperty();
         });
@@ -31,7 +32,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         labelCol.setSortable(true);
         getColumns().add(labelCol);
 
-        TreeTableColumn<Entry, Number> amountCol = new TreeTableColumn<>("Value");
+        TreeTableColumn<Entry, Number> amountCol = new TreeTableColumn<>(LanguagesManager.getMessage("wallet.transactions.table.value"));
         amountCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue().getValue());
         });
@@ -39,7 +40,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
         amountCol.setSortable(true);
         getColumns().add(amountCol);
 
-        TreeTableColumn<Entry, Number> balanceCol = new TreeTableColumn<>("Balance");
+        TreeTableColumn<Entry, Number> balanceCol = new TreeTableColumn<>(LanguagesManager.getMessage("wallet.transactions.table.balance"));
         balanceCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Number> param) -> {
             return param.getValue().getValue() instanceof TransactionEntry ? ((TransactionEntry)param.getValue().getValue()).balanceProperty() : new ReadOnlyObjectWrapper<>(null);
         });

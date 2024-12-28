@@ -33,21 +33,21 @@
                     <RowConstraints />
                 </rowConstraints>
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
-                    <Fieldset inputGrow="SOMETIMES" text="Transactions" styleClass="header">
-                        <Field text="Balance:">
+                    <Fieldset inputGrow="SOMETIMES" text="%wallet.transactions" styleClass="header">
+                        <Field text="%wallet.transactions.balance">
                             <CopyableCoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
                         </Field>
                         <Field text="Mempool:">
                             <CopyableCoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" minWidth="110" />
                         </Field>
-                        <Field text="Transactions:">
+                        <Field text="%wallet.transactions.transactions">
                             <CopyableLabel fx:id="transactionCount" />
                             <Button fx:id="exportCsv" maxHeight="25" onAction="#exportCSV" translateY="-1" styleClass="icon-button">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
                                 </graphic>
                                 <tooltip>
-                                    <Tooltip text="Export transactions as CSV" />
+                                    <Tooltip text="%wallet.transactions.csv-export" />
                                 </tooltip>
                             </Button>
                         </Field>

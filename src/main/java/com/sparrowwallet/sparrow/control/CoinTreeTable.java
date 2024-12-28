@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletDataChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ServerType;
@@ -86,12 +87,12 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             if(entry != null && event.getWallet() != null && entry.getWallet() == event.getWallet()) {
                 Platform.runLater(() -> {
                     if(event.getErrorMessage() != null) {
-                        setPlaceholder(new Label("Error loading transactions: " + event.getErrorMessage()));
+                        setPlaceholder(new Label(LanguagesManager.getMessage("wallet.transactions.table.loading.error")+ " " + event.getErrorMessage()));
                     } else if(event.isLoading()) {
                         if(event.getStatusMessage() != null) {
                             setPlaceholder(new Label(event.getStatusMessage() + "..."));
                         } else {
-                            setPlaceholder(new Label("Loading transactions..."));
+                            setPlaceholder(new Label(LanguagesManager.getMessage("wallet.transactions.table.loading")));
                         }
                     } else {
                         setPlaceholder(getDefaultPlaceholder(event.getWallet()));
@@ -103,7 +104,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
 
     protected Node getDefaultPlaceholder(Wallet wallet) {
         StackPane stackPane = new StackPane();
-        stackPane.getChildren().add(AppServices.isConnecting() ? new Label("Loading transactions...") : new Label("No transactions"));
+        stackPane.getChildren().add(AppServices.isConnecting() ? new Label(LanguagesManager.getMessage("wallet.transactions.table.loading")) : new Label(LanguagesManager.getMessage("wallet.transactions.table.no-transactions")));
 
         if(Config.get().getServerType() == ServerType.BITCOIN_CORE && !AppServices.isConnecting()) {
             Hyperlink hyperlink = new Hyperlink();

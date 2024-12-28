@@ -18,6 +18,8 @@ import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.i18n.Language;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.io.bbqr.BBQR;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
@@ -137,6 +139,12 @@ public class AppController implements Initializable {
 
     @FXML
     private ToggleGroup theme;
+
+    @FXML
+    private ToggleGroup languages;
+
+    @FXML
+    private Menu languagesMenu;
 
     @FXML
     private CheckMenuItem openWalletsInNewWindows;
@@ -373,6 +381,8 @@ public class AppController implements Initializable {
         selectedThemeToggle.ifPresent(toggle -> theme.selectToggle(toggle));
         setTheme(null);
 
+        prepareLanguages();
+
         openWalletsInNewWindowsProperty.set(Config.get().isOpenWalletsInNewWindows());
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
         hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
@@ -428,6 +438,27 @@ public class AppController implements Initializable {
 
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
         setNetworkLabel();
+    }
+
+    private void prepareLanguages() {
+        Language[] languagesList = Language.values();
+        for(Language language : languagesList) {
+            RadioMenuItem languageItem = new RadioMenuItem(LanguagesManager.getMessage("language." + language.getCode()));
+            languageItem.setMnemonicParsing(false);
+            languageItem.setToggleGroup(languages);
+            languageItem.setOnAction(this::setLanguage);
+            languageItem.setUserData(language);
+            languagesMenu.getItems().add(languageItem);
+        }
+
+        Language configLanguage = Config.get().getLanguage();
+        if(configLanguage == null) {
+            configLanguage = LanguagesManager.DEFAULT_LANGUAGE;
+            Config.get().setLanguage(configLanguage);
+        }
+        final Language selectedLanguage = configLanguage;
+        Optional<Toggle> selectedLanguageToggle = languages.getToggles().stream().filter(toggle -> selectedLanguage.equals(toggle.getUserData())).findFirst();
+        selectedLanguageToggle.ifPresent(toggle -> languages.selectToggle(toggle));
     }
 
     private void registerShortcuts() {
@@ -488,7 +519,7 @@ public class AppController implements Initializable {
     }
 
     public void showIntroduction(ActionEvent event) {
-        WelcomeDialog welcomeDialog = new WelcomeDialog();
+        WelcomeDialog welcomeDialog = new WelcomeDialog(false);
         welcomeDialog.initOwner(rootStack.getScene().getWindow());
         Optional<Mode> optionalMode = welcomeDialog.showAndWait();
         if(optionalMode.isPresent() && optionalMode.get().equals(Mode.ONLINE)) {
@@ -997,13 +1028,19 @@ public class AppController implements Initializable {
         }
     }
 
+    public void restart(ActionEvent event) {
+        restart(event, (Network) null);
+    }
+
     public void restart(ActionEvent event, Network network) {
         if(System.getProperty(JPACKAGE_APP_PATH) == null) {
             throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
         }
 
         Args args = getRestartArgs();
-        args.network = network;
+        if(network != null) {
+            args.network = network;
+        }
         restart(event, args);
     }
 
@@ -1761,7 +1798,7 @@ public class AppController implements Initializable {
                 subTabLabel.setTooltip(new Tooltip(label));
             }
             subTab.setGraphic(subTabLabel);
-            FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
+            FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"), LanguagesManager.getResourceBundle());
             subTab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
 
@@ -2336,6 +2373,15 @@ public class AppController implements Initializable {
         }
 
         EventManager.get().post(new ThemeChangedEvent(selectedTheme));
+    }
+
+    public void setLanguage(ActionEvent event) {
+        Language selectedLanguage = (Language)languages.getSelectedToggle().getUserData();
+        if(Config.get().getLanguage() != selectedLanguage) {
+            Config.get().setLanguage(selectedLanguage);
+        }
+
+        restart(event);
     }
 
     private void serverToggleStartAnimation() {

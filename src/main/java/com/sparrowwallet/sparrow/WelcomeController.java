@@ -1,21 +1,25 @@
 package com.sparrowwallet.sparrow;
 
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
+import com.sparrowwallet.sparrow.event.LanguageChangedInWelcomeEvent;
+import com.sparrowwallet.sparrow.i18n.Language;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.animation.PauseTransition;
-import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.Event;
-import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.fxml.FXML;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Tooltip;
-import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.VBox;
 import javafx.util.Duration;
+import javafx.util.StringConverter;
 import org.controlsfx.control.StatusBar;
+
+import java.util.Arrays;
+import java.util.List;
 
 public class WelcomeController {
     @FXML
@@ -37,9 +41,12 @@ public class WelcomeController {
     private StatusBar serverStatus;
 
     @FXML
+    private ComboBox<Language> languages;
+
+    @FXML
     private UnlabeledToggleSwitch serverToggle;
 
-    public void initializeView() {
+    public void initializeView(boolean isFirstExecution) {
         step1.managedProperty().bind(step1.visibleProperty());
         step2.managedProperty().bind(step2.visibleProperty());
         step3.managedProperty().bind(step3.visibleProperty());
@@ -50,14 +57,51 @@ public class WelcomeController {
         step4.setVisible(false);
 
         welcomeBox.getStyleClass().add("offline");
-        serverStatus.setText("Offline");
+        serverStatus.setText(LanguagesManager.getMessage("welcome.offline"));
         serverToggle.addEventFilter(MouseEvent.MOUSE_RELEASED, Event::consume);
-        Tooltip tooltip = new Tooltip("Demonstration only - you are not connected!");
+        Tooltip tooltip = new Tooltip(LanguagesManager.getMessage("welcome.offline.tooltip"));
         tooltip.setShowDelay(Duration.ZERO);
         serverToggle.setTooltip(tooltip);
         serverToggle.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            serverStatus.setText(newValue ? "Connected (demonstration only)" : "Offline");
+            serverStatus.setText(newValue ? LanguagesManager.getMessage("welcome.server-status.online") : LanguagesManager.getMessage("welcome.offline"));
         });
+
+        if(isFirstExecution) {
+            languages.setItems(getLanguagesList());
+            languages.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(Language language) {
+                    if(language != null) {
+                        return LanguagesManager.getMessage("language." + language.getCode());
+                    } else {
+                        return null;
+                    }
+                }
+
+                @Override
+                public Language fromString(String code) {
+                    return Language.getFromCode(code);
+                }
+            });
+
+            Language configuredLanguage = Config.get().getLanguage();
+            if(configuredLanguage  != null) {
+                languages.setValue(configuredLanguage);
+            } else {
+                languages.setValue(LanguagesManager.DEFAULT_LANGUAGE);
+            }
+
+            languages.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if(Config.get().getLanguage() != newValue) {
+                    Config.get().setLanguage(newValue);
+                    LanguagesManager.loadLanguage(newValue.getCode());
+
+                    EventManager.get().post(new LanguageChangedInWelcomeEvent(newValue));
+                }
+            });
+        } else {
+            languages.setVisible(false);
+        }
     }
 
     public boolean next() {
@@ -69,7 +113,7 @@ public class WelcomeController {
             PauseTransition wait = new PauseTransition(Duration.millis(200));
             wait.setOnFinished((e) -> {
                 serverToggle.setSelected(true);
-                serverStatus.setText("Connected to a Public Server (demonstration only)");
+                serverStatus.setText(LanguagesManager.getMessage("welcome.server-status.online.public-server"));
             });
             wait.play();
             return true;
@@ -81,7 +125,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("bitcoin-core");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to Bitcoin Core (demonstration only)");
+            serverStatus.setText(LanguagesManager.getMessage("welcome.server-status.online.bitcoin-core"));
             return true;
         }
 
@@ -91,7 +135,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("private-electrum");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to a Private Electrum Server (demonstration only)");
+            serverStatus.setText(LanguagesManager.getMessage("welcome.server-status.online.private-electrum"));
         }
 
         return false;
@@ -106,7 +150,7 @@ public class WelcomeController {
             PauseTransition wait = new PauseTransition(Duration.millis(200));
             wait.setOnFinished((e) -> {
                 serverToggle.setSelected(false);
-                serverStatus.setText("Offline");
+                serverStatus.setText(LanguagesManager.getMessage("welcome.offline"));
             });
             wait.play();
             return false;
@@ -118,7 +162,7 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("public-electrum");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to a Public Server (demonstration only)");
+            serverStatus.setText(LanguagesManager.getMessage("welcome.server-status.online.public-server"));
             return true;
         }
 
@@ -128,10 +172,15 @@ public class WelcomeController {
             welcomeBox.getStyleClass().clear();
             welcomeBox.getStyleClass().add("bitcoin-core");
             serverToggle.setSelected(true);
-            serverStatus.setText("Connected to Bitcoin Core (demonstration only)");
+            serverStatus.setText(LanguagesManager.getMessage("welcome.server-status.online.bitcoin-core"));
             return true;
         }
 
         return false;
+    }
+
+    private ObservableList<Language> getLanguagesList() {
+        List<Language> languages = Arrays.asList(Language.values());
+        return FXCollections.observableList(languages);
     }
 }

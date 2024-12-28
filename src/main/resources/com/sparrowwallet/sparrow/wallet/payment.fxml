@@ -30,24 +30,24 @@
     </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset inputGrow="ALWAYS">
-            <Field text="Pay to:">
+            <Field text="%wallet.send.pay-to">
                 <StackPane>
                     <ComboBox fx:id="openWallets" />
                     <ComboBoxTextField fx:id="address" styleClass="address-text-field" comboProperty="$openWallets">
                         <tooltip>
-                            <Tooltip text="Address, payment code or bitcoin: URI"/>
+                            <Tooltip text="%wallet.send.pay-to.tooltip"/>
                         </tooltip>
                     </ComboBoxTextField>
                 </StackPane>
             </Field>
-            <Field text="Label:">
-                <TextField fx:id="label" promptText="Required">
+            <Field text="%wallet.send.label">
+                <TextField fx:id="label" promptText="%wallet.send.label.required">
                     <tooltip>
-                        <Tooltip text="Required to label the transaction (privately in this wallet)"/>
+                        <Tooltip text="%wallet.send.label.tooltip"/>
                     </tooltip>
                 </TextField>
             </Field>
-            <Field text="Amount:">
+            <Field text="%wallet.send.amount">
                 <TextField fx:id="amount" styleClass="amount-field" />
                 <ComboBox fx:id="amountUnit" styleClass="amount-unit">
                     <items>
@@ -60,17 +60,17 @@
                 <Label style="-fx-pref-width: 15" />
                 <FiatLabel fx:id="fiatAmount" />
                 <Group managed="false" translateY="38">
-                    <Label fx:id="amountStatus" text="Insufficient funds">
+                    <Label fx:id="amountStatus" text="%wallet.send.amount.insuficient">
                         <tooltip>
-                            <Tooltip text="Insufficient confirmed transaction value" />
+                            <Tooltip text="%wallet.send.amount.insuficient.tootip" />
                         </tooltip>
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" styleClass="failure" />
                         </graphic>
                     </Label>
-                    <Label fx:id="dustStatus" text="Amount too low">
+                    <Label fx:id="dustStatus" text="%wallet.send.amount.dust">
                         <tooltip>
-                            <Tooltip text="Amount below the Bitcoin network dust threshold for this address type" />
+                            <Tooltip text="%wallet.send.amount.dust.tooltip" />
                         </tooltip>
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_CIRCLE" styleClass="failure" />
@@ -91,7 +91,7 @@
                     </graphic>
                 </Button>
                 <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="addPaymentButton" text="Add" onAction="#addPayment" prefHeight="30">
+                <Button fx:id="addPaymentButton" text="%wallet.send.pay-to.add-address" onAction="#addPayment" prefHeight="30">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="PLUS" />
                     </graphic>

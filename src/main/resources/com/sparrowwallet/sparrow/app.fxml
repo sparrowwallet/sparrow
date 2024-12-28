@@ -9,6 +9,7 @@
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.UnitFormat?>
 <?import com.sparrowwallet.sparrow.Theme?>
+<?import com.sparrowwallet.sparrow.i18n.Language?>
 <?import impl.org.controlsfx.skin.DecorationPane?>
 
 <VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1070.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
@@ -64,6 +65,9 @@
                 <fx:define>
                     <ToggleGroup fx:id="theme"/>
                 </fx:define>
+                <fx:define>
+                    <ToggleGroup fx:id="languages"/>
+                </fx:define>
                 <Menu fx:id="viewMenu" mnemonicParsing="false" text="View">
                     <items>
                         <Menu mnemonicParsing="false" text="Bitcoin Unit">
@@ -113,6 +117,7 @@
                                 </RadioMenuItem>
                             </items>
                         </Menu>
+                        <Menu fx:id="languagesMenu" mnemonicParsing="false" text="%language" />
                         <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets In New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>

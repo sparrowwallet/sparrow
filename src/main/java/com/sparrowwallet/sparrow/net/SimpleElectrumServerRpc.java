@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
+import com.sparrowwallet.sparrow.i18n.LanguagesManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<String, ScriptHashTx[]> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
-            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Loading transactions for " + path));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.loading-transactions") + " " + path));
             try {
                 ScriptHashTx[] scriptHashTxes = new RetryLogic<ScriptHashTx[]>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(ScriptHashTx[].class).method("blockchain.scripthash.get_history").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).execute());
@@ -121,7 +122,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<String, String> result = new LinkedHashMap<>();
         for(String path : pathScriptHashes.keySet()) {
-            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + path));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.finding-transactions") + " " + path));
             try {
                 String scriptHash = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable());
@@ -141,7 +142,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<Integer, String> result = new LinkedHashMap<>();
         for(Integer blockHeight : blockHeights) {
-            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving block at height " + blockHeight));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.retrieving-block-height") + " " + blockHeight));
             try {
                 String blockHeader = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.block.header").id(idCounter.incrementAndGet()).params(blockHeight).execute());
@@ -165,7 +166,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
         Map<String, String> result = new LinkedHashMap<>();
         for(String txid : txids) {
-            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving transaction [" + txid.substring(0, 6) + "]"));
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, LanguagesManager.getMessage("wallet.transactions.retrieving-transaction") + " [" + txid.substring(0, 6) + "]"));
             try {
                 String rawTxHex = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.transaction.get").id(idCounter.incrementAndGet()).params(txid).execute());
