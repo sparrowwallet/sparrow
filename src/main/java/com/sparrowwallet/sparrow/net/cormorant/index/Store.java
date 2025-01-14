@@ -35,7 +35,7 @@ public class Store {
                 mempoolEntries.put(txid, null);
             }
             entries.removeIf(txe -> txe.height > 0 && txe.tx_hash.equals(listTransaction.txid()));
-            txEntry = new TxEntry(0, 0, listTransaction.txid());
+            txEntry = new TxEntry(0, 0, listTransaction.txid(), listTransaction.fee());
         } else {
             mempoolEntries.remove(txid);
             entries.removeIf(txe -> txe.height != listTransaction.blockheight() && txe.tx_hash.equals(listTransaction.txid()));
