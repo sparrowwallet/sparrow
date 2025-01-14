@@ -114,7 +114,7 @@ public class BitcoindClient {
         tip = blockHeader.getBlockHeader();
         timer.schedule(new PollTask(), 5000, 5000);
 
-        if(blockchainInfo.initialblockdownload()) {
+        if(blockchainInfo.initialblockdownload() && networkInfo.networkactive()) {
             syncingLock.lock();
             try {
                 syncing = true;
