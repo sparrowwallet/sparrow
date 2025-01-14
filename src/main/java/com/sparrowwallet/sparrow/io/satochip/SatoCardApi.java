@@ -165,12 +165,25 @@ public class SatoCardApi extends CardApi {
             if(!psbtInput.isSigned()) {
                 WalletNode signingNode = signingNodes.get(psbtInput);
                 List<Keystore> keystores = wallet.getKeystores();
-                // recover full derivation path
-                Keystore keystore = keystores.get(0);
-                String basePath = keystore.getKeyDerivation().getDerivationPath();
-                String extendedPath = signingNode.getDerivationPath().substring(1);
-                String fullPath = basePath + extendedPath;
-
+                // recover derivation path from Satochip keystore
+                String fullPath = null;
+                for(int i = 0; i < keystores.size(); i++) {
+                    Keystore keystore = keystores.get(i);
+                    WalletModel walletModel = keystore.getWalletModel();
+                    if(walletModel == WalletModel.SATOCHIP) {
+                        String basePath = keystore.getKeyDerivation().getDerivationPath();
+                        String extendedPath = signingNode.getDerivationPath().substring(1);
+                        fullPath = basePath + extendedPath;
+                        break;
+                    }
+                }
+                if (fullPath == null) {
+                    // recover a default derivation path from first keystore
+                    Keystore keystore = keystores.get(0);
+                    String basePath = keystore.getKeyDerivation().getDerivationPath();
+                    String extendedPath = signingNode.getDerivationPath().substring(1);
+                    fullPath = basePath + extendedPath;
+                }
                 psbtInput.sign(new CardPSBTInputSigner(signingNode, fullPath));
             }
         }
