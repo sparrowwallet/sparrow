@@ -17,6 +17,7 @@ import com.sparrowwallet.sparrow.event.CormorantScanStatusEvent;
 import com.sparrowwallet.sparrow.event.CormorantSyncStatusEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.Bwt;
+import com.sparrowwallet.sparrow.net.ConfigurationException;
 import com.sparrowwallet.sparrow.net.CoreAuthType;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.drongo.address.Address;
@@ -94,8 +95,10 @@ public class BitcoindClient {
         Config config = Config.get();
         if((config.getCoreAuthType() == CoreAuthType.COOKIE || config.getCoreAuth() == null || config.getCoreAuth().length() < 2) && config.getCoreDataDir() != null) {
             bitcoindTransport = new BitcoindTransport(config.getCoreServer(), CORE_WALLET_NAME, config.getCoreDataDir());
-        } else {
+        } else if(config.getCoreAuth() != null) {
             bitcoindTransport = new BitcoindTransport(config.getCoreServer(), CORE_WALLET_NAME, config.getCoreAuth());
+        } else {
+            throw new ConfigurationException("Bitcoin Core data folder or user and password is required");
         }
 
         this.jsonRpcClient = new JsonRpcClient(bitcoindTransport);
@@ -114,7 +117,7 @@ public class BitcoindClient {
         tip = blockHeader.getBlockHeader();
         timer.schedule(new PollTask(), 5000, 5000);
 
-        if(blockchainInfo.initialblockdownload()) {
+        if(blockchainInfo.initialblockdownload() && networkInfo.networkactive()) {
             syncingLock.lock();
             try {
                 syncing = true;

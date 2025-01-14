@@ -877,18 +877,23 @@ public class SendController extends WalletFormController implements Initializabl
                 walletTransaction.getSelectedUtxos().keySet().stream().filter(ref -> ref.getHeight() <= 0)
                         .map(ref -> getWalletForm().getWallet().getWalletTransaction(ref.getHash()))
                         .filter(Objects::nonNull).distinct().collect(Collectors.toList());
-        if(!unconfirmedUtxoTxs.isEmpty()) {
+        if(!unconfirmedUtxoTxs.isEmpty() && unconfirmedUtxoTxs.stream().allMatch(blkTx -> blkTx.getFee() != null && blkTx.getFee() > 0)) {
             long utxoTxFee = unconfirmedUtxoTxs.stream().mapToLong(BlockTransaction::getFee).sum();
             double utxoTxSize = unconfirmedUtxoTxs.stream().mapToDouble(blkTx -> blkTx.getTransaction().getVirtualSize()).sum();
             long thisFee = walletTransaction.getFee();
             double thisSize = walletTransaction.getTransaction().getVirtualSize();
+            double thisRate = thisFee / thisSize;
             double effectiveRate = (utxoTxFee + thisFee) / (utxoTxSize + thisSize);
-            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-            String strEffectiveRate = format.getCurrencyFormat().format(effectiveRate);
-            Tooltip tooltip = new Tooltip("CPFP (Child Pays For Parent)\n" + strEffectiveRate + " sats/vB effective rate");
-            cpfpFeeRate.setTooltip(tooltip);
-            cpfpFeeRate.setVisible(true);
-            cpfpFeeRate.setText(strEffectiveRate + " sats/vB (CPFP)");
+            if(thisRate > effectiveRate) {
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                String strEffectiveRate = format.getCurrencyFormat().format(effectiveRate);
+                Tooltip tooltip = new Tooltip("CPFP (Child Pays For Parent)\n" + strEffectiveRate + " sats/vB effective rate");
+                cpfpFeeRate.setTooltip(tooltip);
+                cpfpFeeRate.setVisible(true);
+                cpfpFeeRate.setText(strEffectiveRate + " sats/vB (CPFP)");
+            } else {
+                cpfpFeeRate.setVisible(false);
+            }
         } else {
             cpfpFeeRate.setVisible(false);
         }

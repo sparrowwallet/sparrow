@@ -1,14 +1,29 @@
 package com.sparrowwallet.sparrow.net.cormorant.index;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sparrowwallet.drongo.protocol.Transaction;
+
+import java.util.Objects;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TxEntry implements Comparable<TxEntry> {
     public final int height;
     private final transient int index;
     public final String tx_hash;
+    public final Long fee;
 
     public TxEntry(int height, int index, String tx_hash) {
         this.height = height;
         this.index = index;
         this.tx_hash = tx_hash;
+        this.fee = null;
+    }
+
+    public TxEntry(int height, int index, String tx_hash, double btcFee) {
+        this.height = height;
+        this.index = index;
+        this.tx_hash = tx_hash;
+        this.fee = btcFee > 0.0 ? (long)(btcFee * Transaction.SATOSHIS_PER_BITCOIN) : null;
     }
 
     @Override
@@ -16,22 +31,18 @@ public class TxEntry implements Comparable<TxEntry> {
         if(this == o) {
             return true;
         }
-        if(o == null || getClass() != o.getClass()) {
+        if(!(o instanceof TxEntry txEntry)) {
             return false;
         }
 
-        TxEntry txEntry = (TxEntry) o;
-
-        if(height != txEntry.height) {
-            return false;
-        }
-        return tx_hash.equals(txEntry.tx_hash);
+        return height == txEntry.height && tx_hash.equals(txEntry.tx_hash) && Objects.equals(fee, txEntry.fee);
     }
 
     @Override
     public int hashCode() {
         int result = height;
         result = 31 * result + tx_hash.hashCode();
+        result = 31 * result + Objects.hashCode(fee);
         return result;
     }
 
@@ -62,6 +73,7 @@ public class TxEntry implements Comparable<TxEntry> {
                 "height=" + height +
                 ", index=" + index +
                 ", tx_hash='" + tx_hash + '\'' +
+                ", fee=" + fee +
                 '}';
     }
 }

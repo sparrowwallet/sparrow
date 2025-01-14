@@ -274,7 +274,7 @@ public class AppController implements Initializable {
     }
 
     void initializeView() {
-        setPlatformApplicationMenu();
+        Platform.runLater(this::setPlatformApplicationMenu);
 
         rootStack.getScene().getWindow().setOnHiding(windowEvent -> {
             if(searchWalletDialog != null && searchWalletDialog.isShowing()) {
@@ -450,7 +450,7 @@ public class AppController implements Initializable {
         OsType osType = OsType.getCurrent();
         if(osType == OsType.MACOS) {
             MenuToolkit tk = MenuToolkit.toolkit();
-            MenuItem preferences = new MenuItem("Preferences...");
+            MenuItem preferences = new MenuItem("Settings...");
             preferences.setOnAction(this::openPreferences);
             preferences.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
             Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(SparrowWallet.APP_NAME, getAboutStage()), new SeparatorMenuItem(),
