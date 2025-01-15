@@ -603,7 +603,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.CHECK_CIRCLE, "success"));
         if(serverVersion != null) {
             testResults.setText("Connected to " + serverVersion.get(0) + " on protocol version " + serverVersion.get(1));
-            if(ElectrumServer.supportsBatching(serverVersion)) {
+            ServerCapability serverCapability = ElectrumServer.getServerCapability(serverVersion);
+            if(serverCapability.supportsBatching()) {
                 testResults.setText(testResults.getText() + "\nBatched RPC enabled.");
             }
         }

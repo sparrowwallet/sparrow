@@ -47,6 +47,8 @@ public class ElectrumServer {
 
     private static final Version FULCRUM_MIN_BATCHING_VERSION = new Version("1.6.0");
 
+    private static final Version MEMPOOL_ELECTRS_MIN_BATCHING_VERSION = new Version("3.1.0");
+
     public static final String CORE_ELECTRUM_HOST = "127.0.0.1";
 
     private static final int MINIMUM_BROADCASTS = 2;
@@ -1021,15 +1023,15 @@ public class ElectrumServer {
         existingStatuses.add(status);
     }
 
-    public static boolean supportsBatching(List<String> serverVersion) {
-        if(serverVersion.size() > 0) {
-            String server = serverVersion.get(0).toLowerCase(Locale.ROOT);
+    public static ServerCapability getServerCapability(List<String> serverVersion) {
+        if(!serverVersion.isEmpty()) {
+            String server = serverVersion.getFirst().toLowerCase(Locale.ROOT);
             if(server.contains("electrumx")) {
-                return true;
+                return new ServerCapability(true);
             }
 
             if(server.startsWith("cormorant")) {
-                return true;
+                return new ServerCapability(true);
             }
 
             if(server.startsWith("electrs/")) {
@@ -1041,7 +1043,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(electrsVersion);
                     if(version.compareTo(ELECTRS_MIN_BATCHING_VERSION) >= 0) {
-                        return true;
+                        return new ServerCapability(true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1057,7 +1059,26 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(fulcrumVersion);
                     if(version.compareTo(FULCRUM_MIN_BATCHING_VERSION) >= 0) {
-                        return true;
+                        return new ServerCapability(true);
+                    }
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+
+            if(server.startsWith("mempool-electrs")) {
+                String mempoolElectrsVersion = server.substring("mempool-electrs".length()).trim();
+                int dashIndex = mempoolElectrsVersion.indexOf('-');
+                String mempoolElectrsSuffix = "";
+                if(dashIndex > -1) {
+                    mempoolElectrsSuffix = mempoolElectrsVersion.substring(dashIndex);
+                    mempoolElectrsVersion = mempoolElectrsVersion.substring(0, dashIndex);
+                }
+                try {
+                    Version version = new Version(mempoolElectrsVersion);
+                    if(version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) > 0 ||
+                            (version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) == 0 && (!mempoolElectrsSuffix.contains("dev") || mempoolElectrsSuffix.contains("dev-249848d")))) {
+                        return new ServerCapability(true, 25);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1065,7 +1086,7 @@ public class ElectrumServer {
             }
         }
 
-        return false;
+        return new ServerCapability(false);
     }
 
     public static class ServerVersionService extends Service<List<String>> {
@@ -1196,9 +1217,10 @@ public class ElectrumServer {
                         firstCall = false;
 
                         //If electrumx is detected, we can upgrade to batched RPC. Electrs/EPS do not support batching.
-                        if(supportsBatching(serverVersion)) {
+                        ServerCapability serverCapability = getServerCapability(serverVersion);
+                        if(serverCapability.supportsBatching()) {
                             log.debug("Upgrading to batched JSON-RPC");
-                            electrumServerRpc = new BatchedElectrumServerRpc(electrumServerRpc.getIdCounterValue());
+                            electrumServerRpc = new BatchedElectrumServerRpc(electrumServerRpc.getIdCounterValue(), serverCapability.getMaxTargetBlocks());
                         }
 
                         BlockHeaderTip tip;

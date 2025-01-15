@@ -25,13 +25,11 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     static final int RETRY_DELAY_SECS = 1;
 
     private final AtomicLong idCounter;
+    private final int maxTargetBlocks;
 
-    public BatchedElectrumServerRpc() {
-        this.idCounter = new AtomicLong();
-    }
-
-    public BatchedElectrumServerRpc(long idCounterValue) {
+    public BatchedElectrumServerRpc(long idCounterValue, int maxTargetBlocks) {
         this.idCounter = new AtomicLong(idCounterValue);
+        this.maxTargetBlocks = maxTargetBlocks;
     }
 
     @Override
@@ -222,11 +220,19 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public Map<Integer, Double> getFeeEstimates(Transport transport, List<Integer> targetBlocks) {
         PagedBatchRequestBuilder<Integer, Double> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(Double.class);
         for(Integer targetBlock : targetBlocks) {
-            batchRequest.add(targetBlock, "blockchain.estimatefee", targetBlock);
+            if(targetBlock <= maxTargetBlocks) {
+                batchRequest.add(targetBlock, "blockchain.estimatefee", targetBlock);
+            }
         }
 
         try {
-            return batchRequest.execute();
+            Map<Integer, Double> result = batchRequest.execute();
+            for(Integer targetBlock : targetBlocks) {
+                if(targetBlock > maxTargetBlocks) {
+                    result.put(targetBlock, result.values().stream().mapToDouble(v -> v).min().orElse(0.0001d));
+                }
+            }
+            return result;
         } catch(JsonRpcBatchException e) {
             throw new ElectrumServerRpcException("Error getting fee estimates from connected server: " + e.getErrors(), e);
         } catch(Exception e) {
