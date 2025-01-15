@@ -1647,6 +1647,19 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
+    @Subscribe
+    public void connection(ConnectionEvent event) {
+        broadcastProgressBar.setDisable(false);
+    }
+
+    @Subscribe
+    public void disconnection(DisconnectionEvent event) {
+        broadcastProgressBar.setDisable(true);
+        if(broadcastProgressBar.getProgress() < 0) {
+            broadcastProgressBar.setProgress(0);
+        }
+    }
+
     private static class WalletSignComparator implements Comparator<Wallet> {
         private static final List<KeystoreSource> sourceOrder = List.of(KeystoreSource.SW_WATCH, KeystoreSource.HW_AIRGAPPED, KeystoreSource.HW_USB, KeystoreSource.SW_SEED);
 
