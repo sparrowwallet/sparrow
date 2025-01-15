@@ -113,10 +113,13 @@
                                 </RadioMenuItem>
                             </items>
                         </Menu>
+                        <Menu mnemonicParsing="false" text="Camera">
+                            <CheckMenuItem fx:id="useHdCameraResolution" mnemonicParsing="false" text="Use HD Resolution" onAction="#useHdCameraResolution"/>
+                            <CheckMenuItem fx:id="mirrorCameraImage" mnemonicParsing="false" text="Mirror Image" onAction="#mirrorCameraImage"/>
+                        </Menu>
                         <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets In New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
-                        <CheckMenuItem fx:id="useHdCameraResolution" mnemonicParsing="false" text="Use HD Camera Resolution" onAction="#useHdCameraResolution"/>
                         <CheckMenuItem fx:id="showLoadingLog" mnemonicParsing="false" text="Show Wallet Loading Log" onAction="#showLoadingLog" />
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                         <SeparatorMenuItem />

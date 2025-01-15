@@ -1,8 +1,13 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WebcamMirroredChangedEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Node;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -21,12 +26,26 @@ public class WebcamView {
 
     private final ObjectProperty<Image> imageProperty = new SimpleObjectProperty<>(null);
 
-    public WebcamView(WebcamService service) {
+    public WebcamView(WebcamService service, boolean mirrored) {
         this.service = service ;
         this.imageView = new ImageView();
         imageView.setPreserveRatio(true);
-        // make the cam behave like a mirror:
-        imageView.setScaleX(-1);
+        if(mirrored) {
+            setMirrored(true);
+        }
+
+        ContextMenu contextMenu = new ContextMenu();
+        CheckMenuItem mirrorItem = new CheckMenuItem("Mirror Camera");
+        mirrorItem.setSelected(mirrored);
+        mirrorItem.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            setMirrored(newValue);
+            Config.get().setMirrorCapture(newValue);
+            EventManager.get().post(new WebcamMirroredChangedEvent(newValue));
+        });
+        contextMenu.getItems().add(mirrorItem);
+        imageView.setOnContextMenuRequested(event -> {
+            contextMenu.show(imageView, event.getScreenX(), event.getScreenY());
+        });
 
         service.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
@@ -111,5 +130,9 @@ public class WebcamView {
 
     public Node getView() {
         return view;
+    }
+
+    public void setMirrored(boolean mirrored) {
+        imageView.setScaleX(mirrored ? -1 : 1);
     }
 }

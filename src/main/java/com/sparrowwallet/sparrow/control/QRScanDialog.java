@@ -25,6 +25,8 @@ import com.sparrowwallet.hummingbird.URDecoder;
 import com.sparrowwallet.hummingbird.registry.pathcomponent.IndexPathComponent;
 import com.sparrowwallet.hummingbird.registry.pathcomponent.PathComponent;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WebcamResolutionChangedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRDecoder;
@@ -92,7 +94,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         this.webcamService = new WebcamService(webcamResolutionProperty.get(), null, new QRScanListener(), new ScanDelayCalculator());
         webcamService.setPeriod(Duration.millis(SCAN_PERIOD_MILLIS));
         webcamService.setRestartOnFailure(false);
-        WebcamView webcamView = new WebcamView(webcamService);
+        WebcamView webcamView = new WebcamView(webcamService, Config.get().isMirrorCapture());
 
         final DialogPane dialogPane = new QRScanDialogPane();
         setDialogPane(dialogPane);
@@ -150,6 +152,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         webcamResolutionProperty.addListener((observable, oldValue, newResolution) -> {
             if(newResolution != null) {
                 setHeight(newResolution == WebcamResolution.HD ? (getHeight() - 100) : (getHeight() + 100));
+                EventManager.get().post(new WebcamResolutionChangedEvent(newResolution == WebcamResolution.HD));
             }
             webcamService.cancel();
         });

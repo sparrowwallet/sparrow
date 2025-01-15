@@ -151,6 +151,10 @@ public class AppController implements Initializable {
     private static final BooleanProperty useHdCameraResolutionProperty = new SimpleBooleanProperty();
 
     @FXML
+    private CheckMenuItem mirrorCameraImage;
+    private static final BooleanProperty mirrorCameraImageProperty = new SimpleBooleanProperty();
+
+    @FXML
     private CheckMenuItem showLoadingLog;
     private static final BooleanProperty showLoadingLogProperty = new SimpleBooleanProperty();
 
@@ -379,6 +383,8 @@ public class AppController implements Initializable {
         hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
         useHdCameraResolutionProperty.set(Config.get().isHdCapture());
         useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
+        mirrorCameraImageProperty.set(Config.get().isMirrorCapture());
+        mirrorCameraImage.selectedProperty().bindBidirectional(mirrorCameraImageProperty);
         showTxHexProperty.set(Config.get().isShowTransactionHex());
         showTxHex.selectedProperty().bindBidirectional(showTxHexProperty);
         showLoadingLogProperty.set(Config.get().isShowLoadingLog());
@@ -944,6 +950,11 @@ public class AppController implements Initializable {
     public void useHdCameraResolution(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setHdCapture(item.isSelected());
+    }
+
+    public void mirrorCameraImage(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setMirrorCapture(item.isSelected());
     }
 
     public void showLoadingLog(ActionEvent event) {
@@ -3135,5 +3146,15 @@ public class AppController implements Initializable {
                 }
             }
         }
+    }
+
+    @Subscribe
+    public void webcamResolutionChanged(WebcamResolutionChangedEvent event) {
+        useHdCameraResolutionProperty.set(event.isHdResolution());
+    }
+
+    @Subscribe
+    public void webcamMirroredChanged(WebcamMirroredChangedEvent event) {
+        mirrorCameraImageProperty.set(event.isMirrored());
     }
 }

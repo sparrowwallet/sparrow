@@ -58,6 +58,7 @@ public class Config {
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
     private Boolean hdCapture;
+    private boolean mirrorCapture = true;
     private boolean useZbar = true;
     private String webcamDevice;
     private ServerType serverType;
@@ -402,6 +403,15 @@ public class Config {
 
     public void setHdCapture(Boolean hdCapture) {
         this.hdCapture = hdCapture;
+        flush();
+    }
+
+    public boolean isMirrorCapture() {
+        return mirrorCapture;
+    }
+
+    public void setMirrorCapture(boolean mirrorCapture) {
+        this.mirrorCapture = mirrorCapture;
         flush();
     }
 
