@@ -174,8 +174,13 @@ public class PaymentController extends WalletFormController implements Initializ
                     label.requestFocus();
                 }
             } else if(newValue != null) {
+                List<Address> existingAddresses = getOtherAddresses();
                 WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
                 Address freshAddress = freshNode.getAddress();
+                while(existingAddresses.contains(freshAddress)) {
+                    freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE, freshNode);
+                    freshAddress = freshNode.getAddress();
+                }
                 address.setText(freshAddress.toString());
                 label.requestFocus();
             }
@@ -624,6 +629,22 @@ public class PaymentController extends WalletFormController implements Initializ
             AppServices.addPayjoinURI(bitcoinURI);
         }
         sendController.updateTransaction();
+    }
+
+    private List<Address> getOtherAddresses() {
+        List<Address> otherAddresses = new ArrayList<>();
+        for(Tab tab : sendController.getPaymentTabs().getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            if(controller != this) {
+                try {
+                    otherAddresses.add(controller.getRecipientAddress());
+                } catch(InvalidAddressException e) {
+                    //ignore
+                }
+            }
+        }
+
+        return otherAddresses;
     }
 
     public void addPayment(ActionEvent event) {
