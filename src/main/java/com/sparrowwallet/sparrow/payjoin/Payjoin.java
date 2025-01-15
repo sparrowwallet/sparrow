@@ -160,10 +160,6 @@ public class Payjoin {
                 if(proposedPSBTInput.isFinalized()) {
                     throw new PayjoinReceiverException("The receiver finalized one of the original inputs");
                 }
-                // Verify that non_witness_utxo and witness_utxo are not specified.
-                if(proposedPSBTInput.getNonWitnessUtxo() != null || proposedPSBTInput.getWitnessUtxo() != null) {
-                    throw new PayjoinReceiverException("The receiver added non_witness_utxo or witness_utxo to one of the original inputs");
-                }
                 sequences.add(proposedTxIn.getSequenceNumber());
 
                 PSBTInput originalPSBTInput = originalInput.getValue();
