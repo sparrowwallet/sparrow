@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.control.ComboBoxTextField;
+import com.sparrowwallet.sparrow.control.QRScanDialog;
 import com.sparrowwallet.sparrow.control.TextFieldValidator;
 import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import com.sparrowwallet.sparrow.event.*;
@@ -55,6 +56,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private static final Logger log = LoggerFactory.getLogger(ServerPreferencesController.class);
 
     private static final Server MANAGE_ALIASES_SERVER = new Server("tcp://localhost", "Manage Aliases...");
+    private static final Server SCAN_QR_SERVER = new Server("ssl://localhost", "Scan QR...");
 
     @FXML
     private ToggleGroup serverTypeToggleGroup;
@@ -288,6 +290,26 @@ public class ServerPreferencesController extends PreferencesDetailController {
                     recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
                     Server selectedServer = optServer.orElseGet(() -> Config.get().getCoreServer());
                     Platform.runLater(() -> recentCoreServers.setValue(selectedServer));
+                } else if(newValue == SCAN_QR_SERVER) {
+                    QRScanDialog qrScanDialog = new QRScanDialog();
+                    qrScanDialog.initOwner(recentCoreServers.getScene().getWindow());
+                    Optional<QRScanDialog.Result> optResult = qrScanDialog.showAndWait();
+                    if(optResult.isPresent()) {
+                        if(optResult.get().payload != null) {
+                            String url = optResult.get().payload;
+                            if(Protocol.getProtocol(url) == null) {
+                                url = Protocol.HTTP.toUrlString() + url;
+                            }
+                            try {
+                                Server qrServer = new Server(url);
+                                Platform.runLater(() -> recentCoreServers.setValue(qrServer));
+                            } catch(Exception e) {
+                                AppServices.showErrorDialog("Invalid server URL", e.getMessage());
+                            }
+                        } else {
+                            AppServices.showErrorDialog("Invalid server QR", "Could not find a valid server URL in the QR code.");
+                        }
+                    }
                 } else if(newValue.getHostAndPort() != null) {
                     HostAndPort hostAndPort = newValue.getHostAndPort();
                     corePort.setText(hostAndPort.hasPort() ? Integer.toString(hostAndPort.getPort()) : "");
@@ -313,6 +335,26 @@ public class ServerPreferencesController extends PreferencesDetailController {
                     recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
                     Server selectedServer = optServer.orElseGet(() -> Config.get().getElectrumServer());
                     Platform.runLater(() -> recentElectrumServers.setValue(selectedServer));
+                } else if(newValue == SCAN_QR_SERVER) {
+                    QRScanDialog qrScanDialog = new QRScanDialog();
+                    qrScanDialog.initOwner(recentElectrumServers.getScene().getWindow());
+                    Optional<QRScanDialog.Result> optResult = qrScanDialog.showAndWait();
+                    if(optResult.isPresent()) {
+                        if(optResult.get().payload != null) {
+                            String url = optResult.get().payload;
+                            if(Protocol.getProtocol(url) == null) {
+                                url = (electrumUseSsl.isSelected() ? Protocol.SSL.toUrlString() : Protocol.TCP.toUrlString()) + url;
+                            }
+                            try {
+                                Server qrServer = new Server(url);
+                                Platform.runLater(() -> recentElectrumServers.setValue(qrServer));
+                            } catch(Exception e) {
+                                AppServices.showErrorDialog("Invalid server URL", e.getMessage());
+                            }
+                        } else {
+                            AppServices.showErrorDialog("Invalid server QR", "Could not find a valid server URL in the QR code.");
+                        }
+                    }
                 } else if(newValue.getHostAndPort() != null) {
                     HostAndPort hostAndPort = newValue.getHostAndPort();
                     electrumPort.setText(hostAndPort.hasPort() ? Integer.toString(hostAndPort.getPort()) : "");
@@ -892,6 +934,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
     private ObservableList<Server> getObservableServerList(List<Server> servers) {
         ObservableList<Server> serverObservableList = FXCollections.observableList(new ArrayList<>(servers));
         serverObservableList.add(MANAGE_ALIASES_SERVER);
+        serverObservableList.add(SCAN_QR_SERVER);
         return serverObservableList;
     }
 
@@ -948,7 +991,7 @@ public class ServerPreferencesController extends PreferencesDetailController {
             } else {
                 String serverAlias = server.getAlias();
 
-                if(server == MANAGE_ALIASES_SERVER) {
+                if(server == MANAGE_ALIASES_SERVER || server == SCAN_QR_SERVER) {
                     setText(serverAlias);
                     setStyle("-fx-font-style: italic");
                     setGraphic(null);
