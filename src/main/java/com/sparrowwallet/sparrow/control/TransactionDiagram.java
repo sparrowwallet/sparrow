@@ -432,8 +432,14 @@ public class TransactionDiagram extends GridPane {
                 if(walletNode != null) {
                     inputValue = input.getValue();
                     Wallet nodeWallet = walletNode.getWallet();
-                    tooltip.setText("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? nodeWallet.getFullDisplayName() : (nodeWallet.isNested() ? nodeWallet.getDisplayName() : "")) + " " + walletNode + "\n" +
-                            input.getHashAsString() + ":" + input.getIndex() + "\n" + walletNode.getAddress());
+                    StringJoiner joiner = new StringJoiner("\n");
+                    joiner.add("Spending " + getSatsValue(inputValue) + " sats from " + (isFinal() ? nodeWallet.getFullDisplayName() : (nodeWallet.isNested() ? nodeWallet.getDisplayName() : "")) + " " + walletNode);
+                    joiner.add(input.getHashAsString() + ":" + input.getIndex());
+                    joiner.add(walletNode.getAddress().toString());
+                    if(input.getLabel() != null) {
+                        joiner.add(input.getLabel());
+                    }
+                    tooltip.setText(joiner.toString());
                     tooltip.getStyleClass().add("input-label");
 
                     if(input.getLabel() == null || input.getLabel().isEmpty()) {
