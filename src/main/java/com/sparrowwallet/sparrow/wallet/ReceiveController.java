@@ -199,6 +199,9 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     public void refreshAddress() {
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
+        while(freshEntry.getLabel() != null && !freshEntry.getLabel().isEmpty()) {
+            freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, freshEntry);
+        }
         setNodeEntry(freshEntry);
         if(addressQrDialog != null) {
             addressQrDialog.close();

@@ -177,7 +177,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 List<Address> existingAddresses = getOtherAddresses();
                 WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
                 Address freshAddress = freshNode.getAddress();
-                while(existingAddresses.contains(freshAddress)) {
+                while(existingAddresses.contains(freshAddress) || (freshNode.getLabel() != null && !freshNode.getLabel().isEmpty())) {
                     freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE, freshNode);
                     freshAddress = freshNode.getAddress();
                 }
