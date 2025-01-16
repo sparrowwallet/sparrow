@@ -52,9 +52,6 @@ public class SparrowTerminal extends Application {
 
         AppServices.initialize(this, new TerminalInteractionServices());
 
-        //Restore pre Java 22 behaviour, see https://www.oracle.com/java/technologies/javase/22-relnote-issues.html#JDK-8308591
-        System.setProperty("jdk.console", "java.base");
-
         this.terminal = new DefaultTerminalFactory().createTerminal();
         this.screen = new TerminalScreen(terminal);
         this.gui = new SparrowTextGui(this, screen, new DefaultWindowManager(), new EmptySpace(TextColor.ANSI.BLUE));
