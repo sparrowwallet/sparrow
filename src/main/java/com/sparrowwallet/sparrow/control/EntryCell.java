@@ -460,7 +460,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             Double feeRate = transactionEntry.getBlockTransaction().getFeeRate();
             Long vSizefromTip = transactionEntry.getVSizeFromTip();
             if(feeRate != null && vSizefromTip != null) {
-                long blocksFromTip = (long)Math.ceil((double)vSizefromTip / Transaction.MAX_BLOCK_SIZE);
+                long blocksFromTip = (long)Math.ceil((double)vSizefromTip / Transaction.MAX_BLOCK_SIZE_VBYTES);
 
                 String amount = vSizefromTip + " vB";
                 if(vSizefromTip > 1000 * 1000) {
