@@ -54,7 +54,6 @@ public class Config {
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
-    private File hwi;
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
     private Boolean hdCapture;
@@ -369,15 +368,6 @@ public class Config {
 
     public long getDustAttackThreshold() {
         return dustAttackThreshold;
-    }
-
-    public File getHwi() {
-        return hwi;
-    }
-
-    public void setHwi(File hwi) {
-        this.hwi = hwi;
-        flush();
     }
 
     public int getEnumerateHwPeriod() {

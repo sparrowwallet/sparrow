@@ -572,21 +572,27 @@ public class AppController implements Initializable {
     }
 
     public void installUdevRules(ActionEvent event) {
-        Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(null);
-        enumerateService.setOnSucceeded(workerStateEvent -> {
-            Platform.runLater(this::showInstallUdevMessage);
-        });
-        enumerateService.setOnFailed(workerStateEvent -> {
-            Platform.runLater(this::showInstallUdevMessage);
-        });
-        enumerateService.start();
-    }
+        String commands = """
+                sudo install -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
+                sudo udevadm control --reload
+                sudo udevadm trigger
+                sudo groupadd -f plugdev
+                sudo usermod -aG plugdev `whoami`
+                """;
+        String home = System.getProperty(JPACKAGE_APP_PATH);
+        if(home != null && !home.startsWith("/opt/sparrow") && home.endsWith("bin/Sparrow")) {
+            home = home.replace("bin/Sparrow", "");
+            commands = commands.replace("/opt/sparrow/", home);
+        }
 
-    public void showInstallUdevMessage() {
-        TextAreaDialog dialog = new TextAreaDialog("sudo " + Config.get().getHwi().getAbsolutePath() + " installudevrules", false);
+        TextAreaDialog dialog = new TextAreaDialog(commands, false);
         dialog.initOwner(rootStack.getScene().getWindow());
-        dialog.setTitle("Install Udev Rules");
-        dialog.getDialogPane().setHeaderText("Installing udev rules ensures devices can connect over USB.\nThis command requires root privileges.\nOpen a shell and enter the following:");
+        dialog.setTitle("Install udev Rules");
+        dialog.getDialogPane().setHeaderText("""
+                Installing udev rules ensures devices can connect over USB.
+                These commands require root privileges.
+                Open a shell and enter the following.
+                """);
         dialog.showAndWait();
     }
 
