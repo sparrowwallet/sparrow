@@ -233,7 +233,8 @@ public class ReceiveController extends WalletFormController implements Initializ
                     dlg.showAndWait();
                 } else {
                     Device actualDevice = possibleDevices.get(0);
-                    Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(actualDevice, "", wallet.getScriptType(), addressDescriptor);
+                    Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(actualDevice, "", wallet.getScriptType(), addressDescriptor,
+                            OutputDescriptor.getOutputDescriptor(walletForm.getWallet()), walletForm.getWallet().getFullName());
                     displayAddressService.setOnFailed(failedEvent -> {
                         Platform.runLater(() -> {
                             DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);

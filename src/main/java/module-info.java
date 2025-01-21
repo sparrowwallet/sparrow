@@ -65,4 +65,5 @@ open module com.sparrowwallet.sparrow {
     requires java.smartcardio;
     requires com.jcraft.jzlib;
     requires com.sparrowwallet.tern;
+    requires com.sparrowwallet.lark;
 }

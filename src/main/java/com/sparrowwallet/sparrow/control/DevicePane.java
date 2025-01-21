@@ -778,7 +778,7 @@ public class DevicePane extends TitledDescriptionPane {
                 signButton.setDisable(false);
             }
         } else {
-            Hwi.SignPSBTService signPSBTService = new Hwi.SignPSBTService(device, passphrase.get(), psbt);
+            Hwi.SignPSBTService signPSBTService = new Hwi.SignPSBTService(device, passphrase.get(), psbt, OutputDescriptor.getOutputDescriptor(wallet), wallet.getFullName());
             signPSBTService.setOnSucceeded(workerStateEvent -> {
                 PSBT signedPsbt = signPSBTService.getValue();
                 EventManager.get().post(new PSBTSignedEvent(psbt, signedPsbt));
@@ -820,7 +820,8 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void displayAddress() {
-        Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(device, passphrase.get(), wallet.getScriptType(), outputDescriptor);
+        Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(device, passphrase.get(), wallet.getScriptType(), outputDescriptor,
+                OutputDescriptor.getOutputDescriptor(wallet), wallet.getFullName());
         displayAddressService.setOnSucceeded(successEvent -> {
             String address = displayAddressService.getValue();
             EventManager.get().post(new AddressDisplayedEvent(address));

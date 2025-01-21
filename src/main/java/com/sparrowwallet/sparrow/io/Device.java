@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.lark.HardwareClient;
 
 import java.util.Objects;
 
@@ -121,5 +122,19 @@ public class Device {
     @Override
     public int hashCode() {
         return Objects.hash(type, path);
+    }
+
+    public static Device fromHardwareClient(HardwareClient hardwareClient) {
+        Device device = new Device();
+        device.type = hardwareClient.getType();
+        device.path = hardwareClient.getPath();
+        device.model = hardwareClient.getModel();
+        device.needsPinSent = hardwareClient.needsPinSent();
+        device.needsPassphraseSent = hardwareClient.needsPassphraseSent();
+        device.fingerprint = hardwareClient.fingerprint();
+        device.card = hardwareClient.card();
+        device.warnings = hardwareClient.warnings();
+        device.error = hardwareClient.error();
+        return device;
     }
 }

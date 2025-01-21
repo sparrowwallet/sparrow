@@ -59,6 +59,7 @@ java {
 dependencies {
     //Any changes to the dependencies must be reflected in the module definitions below!
     implementation(project(':drongo'))
+    implementation(project(':lark'))
     implementation('com.google.guava:guava:33.0.0-jre')
     implementation('com.google.code.gson:gson:2.9.1')
     implementation('com.h2database:h2:2.1.214')
@@ -584,6 +585,14 @@ extraJavaModuleInfo {
     }
     module('org.jcommander:jcommander', 'org.jcommander') {
         exports('com.beust.jcommander')
+    }
+    module('com.sparrowwallet:hid4java', 'org.hid4java') {
+        requires('com.sun.jna')
+        exports('org.hid4java')
+        exports('org.hid4java.jna')
+    }
+    module('com.sparrowwallet:usb4java', 'org.usb4java') {
+        exports('org.usb4java')
     }
     module('com.jcraft:jzlib', 'com.jcraft.jzlib') {
         exports('com.jcraft.jzlib')
