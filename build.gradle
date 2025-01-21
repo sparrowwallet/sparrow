@@ -297,11 +297,20 @@ jlink {
             installerType = "dmg"
         }
     }
+    if(os.linux) {
+        jpackageImage {
+            dependsOn('prepareModulesDir', 'copyUdevRules')
+        }
+    }
 }
 
-tasks.jlink.finalizedBy "addUserWritePermission"
+if(os.linux) {
+    tasks.jlink.finalizedBy('addUserWritePermission', 'copyUdevRules')
+} else {
+    tasks.jlink.finalizedBy('addUserWritePermission')
+}
 
-task addUserWritePermission(type: Exec) {
+tasks.register('addUserWritePermission', Exec) {
     if(os.windows) {
         commandLine 'icacls', "$buildDir\\image\\legal", '/grant', 'Users:(OI)(CI)F', '/T'
     } else {
@@ -309,11 +318,17 @@ task addUserWritePermission(type: Exec) {
     }
 }
 
-task removeGroupWritePermission(type: Exec) {
+tasks.register('copyUdevRules', Copy) {
+    from('lark/src/main/resources/udev')
+    into(layout.buildDirectory.dir('image/conf/udev'))
+    include('*')
+}
+
+tasks.register('removeGroupWritePermission', Exec) {
     commandLine 'chmod', '-R', 'g-w', "$buildDir/jpackage/Sparrow"
 }
 
-task packageZipDistribution(type: Zip) {
+tasks.register('packageZipDistribution', Zip) {
     archiveFileName = "Sparrow-${sparrowVersion}.zip"
     destinationDirectory = file("$buildDir/jpackage")
     preserveFileTimestamps = os.macOsX
@@ -323,7 +338,7 @@ task packageZipDistribution(type: Zip) {
     }
 }
 
-task packageTarDistribution(type: Tar) {
+tasks.register('packageTarDistribution', Tar) {
     dependsOn removeGroupWritePermission
     archiveFileName = "sparrow-${sparrowVersion}-${releaseArch}.tar.gz"
     destinationDirectory = file("$buildDir/jpackage")
