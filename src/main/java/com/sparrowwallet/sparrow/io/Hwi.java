@@ -36,6 +36,8 @@ public class Hwi {
 
     private static boolean isPromptActive = false;
 
+    private final Set<byte[]> newDeviceRegistrations = new HashSet<>();
+
     static {
         //deleteHwiDir();
     }
@@ -161,7 +163,10 @@ public class Hwi {
 
             isPromptActive = true;
             Lark lark = getLark(passphrase, walletDescriptor, walletName, walletRegistration);
-            return lark.displayAddress(device.getType(), device.getPath(), addressDescriptor);
+            String address = lark.displayAddress(device.getType(), device.getPath(), addressDescriptor);
+            newDeviceRegistrations.addAll(lark.getWalletRegistrations().values());
+            newDeviceRegistrations.remove(walletRegistration);
+            return address;
         } catch(DeviceException e) {
             throw new DisplayAddressException(e.getMessage(), e);
         } catch(RuntimeException e) {
@@ -192,7 +197,10 @@ public class Hwi {
         try {
             isPromptActive = true;
             Lark lark = getLark(passphrase, walletDescriptor, walletName, walletRegistration);
-            return lark.signTransaction(device.getType(), device.getPath(), psbt);
+            PSBT signed = lark.signTransaction(device.getType(), device.getPath(), psbt);
+            newDeviceRegistrations.addAll(lark.getWalletRegistrations().values());
+            newDeviceRegistrations.remove(walletRegistration);
+            return signed;
         } catch(DeviceException e) {
             throw new SignTransactionException(e.getMessage(), e);
         } catch(RuntimeException e) {
@@ -346,16 +354,7 @@ public class Hwi {
         private final OutputDescriptor walletDescriptor;
         private final String walletName;
         private final byte[] walletRegistration;
-
-        public DisplayAddressService(Device device, String passphrase, ScriptType scriptType, OutputDescriptor addressDescriptor, OutputDescriptor walletDescriptor, String walletName) {
-            this.device = device;
-            this.passphrase = passphrase;
-            this.scriptType = scriptType;
-            this.addressDescriptor = addressDescriptor;
-            this.walletDescriptor = walletDescriptor;
-            this.walletName = walletName;
-            this.walletRegistration = null;
-        }
+        private final Set<byte[]> newDeviceRegistrations = new HashSet<>();
 
         public DisplayAddressService(Device device, String passphrase, ScriptType scriptType, OutputDescriptor addressDescriptor, OutputDescriptor walletDescriptor, String walletName, byte[] walletRegistration) {
             this.device = device;
@@ -367,12 +366,18 @@ public class Hwi {
             this.walletRegistration = walletRegistration;
         }
 
+        public Set<byte[]> getNewDeviceRegistrations() {
+            return newDeviceRegistrations;
+        }
+
         @Override
         protected Task<String> createTask() {
             return new Task<>() {
                 protected String call() throws DisplayAddressException {
                     Hwi hwi = new Hwi();
-                    return hwi.displayAddress(device, passphrase, scriptType, addressDescriptor, walletDescriptor, walletName, walletRegistration);
+                    String address = hwi.displayAddress(device, passphrase, scriptType, addressDescriptor, walletDescriptor, walletName, walletRegistration);
+                    newDeviceRegistrations.addAll(hwi.newDeviceRegistrations);
+                    return address;
                 }
             };
         }
@@ -453,15 +458,7 @@ public class Hwi {
         private final OutputDescriptor walletDescriptor;
         private final String walletName;
         private final byte[] walletRegistration;
-
-        public SignPSBTService(Device device, String passphrase, PSBT psbt, OutputDescriptor walletDescriptor, String walletName) {
-            this.device = device;
-            this.passphrase = passphrase;
-            this.psbt = psbt;
-            this.walletDescriptor = walletDescriptor;
-            this.walletName = walletName;
-            this.walletRegistration = null;
-        }
+        private final Set<byte[]> newDeviceRegistrations = new HashSet<>();
 
         public SignPSBTService(Device device, String passphrase, PSBT psbt, OutputDescriptor walletDescriptor, String walletName, byte[] walletRegistration) {
             this.device = device;
@@ -472,12 +469,18 @@ public class Hwi {
             this.walletRegistration = walletRegistration;
         }
 
+        public Set<byte[]> getNewDeviceRegistrations() {
+            return newDeviceRegistrations;
+        }
+
         @Override
         protected Task<PSBT> createTask() {
             return new Task<>() {
                 protected PSBT call() throws SignTransactionException {
                     Hwi hwi = new Hwi();
-                    return hwi.signPSBT(device, passphrase, psbt, walletDescriptor, walletName, walletRegistration);
+                    PSBT signed = hwi.signPSBT(device, passphrase, psbt, walletDescriptor, walletName, walletRegistration);
+                    newDeviceRegistrations.addAll(hwi.newDeviceRegistrations);
+                    return signed;
                 }
             };
         }

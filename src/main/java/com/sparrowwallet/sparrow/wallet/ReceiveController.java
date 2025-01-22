@@ -10,6 +10,7 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -234,7 +235,10 @@ public class ReceiveController extends WalletFormController implements Initializ
                 } else {
                     Device actualDevice = possibleDevices.get(0);
                     Hwi.DisplayAddressService displayAddressService = new Hwi.DisplayAddressService(actualDevice, "", wallet.getScriptType(), addressDescriptor,
-                            OutputDescriptor.getOutputDescriptor(walletForm.getWallet()), walletForm.getWallet().getFullName());
+                            OutputDescriptor.getOutputDescriptor(walletForm.getWallet()), walletForm.getWallet().getFullName(), getDeviceRegistration(actualDevice));
+                    displayAddressService.setOnSucceeded(successEvent -> {
+                        updateDeviceRegistrations(actualDevice, displayAddressService.getNewDeviceRegistrations());
+                    });
                     displayAddressService.setOnFailed(failedEvent -> {
                         Platform.runLater(() -> {
                             DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(wallet, addressDescriptor);
@@ -250,6 +254,26 @@ public class ReceiveController extends WalletFormController implements Initializ
                 dlg.showAndWait();
             }
         }
+    }
+
+    private byte[] getDeviceRegistration(Device device) {
+        Optional<Keystore> optKeystore = getWalletForm().getWallet().getKeystores().stream()
+                .filter(keystore -> keystore.getKeyDerivation().getMasterFingerprint().equals(device.getFingerprint()) && keystore.getDeviceRegistration() != null).findFirst();
+        return optKeystore.map(Keystore::getDeviceRegistration).orElse(null);
+    }
+
+    private void updateDeviceRegistrations(Device device, Set<byte[]> newDeviceRegistrations) {
+        if(!newDeviceRegistrations.isEmpty()) {
+            List<Keystore> registrationKeystores = getDeviceRegistrationKeystores(device);
+            if(!registrationKeystores.isEmpty()) {
+                registrationKeystores.forEach(keystore -> keystore.setDeviceRegistration(newDeviceRegistrations.iterator().next()));
+                EventManager.get().post(new KeystoreDeviceRegistrationsChangedEvent(getWalletForm().getWallet(), registrationKeystores));
+            }
+        }
+    }
+
+    private List<Keystore> getDeviceRegistrationKeystores(Device device) {
+        return getWalletForm().getWallet().getKeystores().stream().filter(keystore -> keystore.getKeyDerivation().getMasterFingerprint().equals(device.getFingerprint())).toList();
     }
 
     public void clear() {

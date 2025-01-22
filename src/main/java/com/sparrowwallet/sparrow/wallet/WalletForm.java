@@ -641,6 +641,13 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void keystoreDeviceRegistrationsChanged(KeystoreDeviceRegistrationsChangedEvent event) {
+        if(event.getWallet() == wallet) {
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {

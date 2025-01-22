@@ -355,6 +355,13 @@ public class DbPersistence implements Persistence {
                     }
                 }
 
+                if(!dirtyPersistables.registrationKeystores.isEmpty()) {
+                    KeystoreDao keystoreDao = handle.attach(KeystoreDao.class);
+                    for(Keystore keystore : dirtyPersistables.registrationKeystores) {
+                        keystoreDao.updateDeviceRegistration(keystore.getDeviceRegistration(), keystore.getId());
+                    }
+                }
+
                 dirtyPersistablesMap.remove(wallet);
             } finally {
                 walletDao.setSchema(DEFAULT_SCHEMA);
@@ -793,6 +800,13 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
+    public void keystoreDeviceRegistrationsChanged(KeystoreDeviceRegistrationsChangedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).registrationKeystores.addAll(event.getChangedKeystores()));
+        }
+    }
+
+    @Subscribe
     public void walletWatchLastChanged(WalletWatchLastChangedEvent event) {
         if(persistsFor(event.getWallet())) {
             updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).watchLast = event.getWatchLast());
@@ -815,6 +829,7 @@ public class DbPersistence implements Persistence {
         public final Map<Sha256Hash, UtxoMixData> removedUtxoMixes = new HashMap<>();
         public final List<Keystore> labelKeystores = new ArrayList<>();
         public final List<Keystore> encryptionKeystores = new ArrayList<>();
+        public final List<Keystore> registrationKeystores = new ArrayList<>();
 
         public String toString() {
             return "Dirty Persistables" +
@@ -834,7 +849,8 @@ public class DbPersistence implements Persistence {
                     "\nUTXO mixes changed:" + changedUtxoMixes +
                     "\nUTXO mixes removed:" + removedUtxoMixes +
                     "\nKeystore labels:" + labelKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
-                    "\nKeystore encryptions:" + encryptionKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList());
+                    "\nKeystore encryptions:" + encryptionKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
+                    "\nKeystore registrations:" + registrationKeystores.stream().map(Keystore::getDeviceRegistration).collect(Collectors.toList());
         }
     }
 }

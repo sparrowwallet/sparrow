@@ -1,0 +1,1 @@
+alter table keystore add column deviceRegistration varbinary(32) after externalPaymentCode;
