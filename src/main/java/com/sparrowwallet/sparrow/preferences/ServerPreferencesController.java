@@ -914,7 +914,8 @@ public class ServerPreferencesController extends PreferencesDetailController {
         if(osType == OsType.MACOS) {
             return new File(System.getProperty("user.home") + "/Library/Application Support/Bitcoin");
         } else if(osType == OsType.WINDOWS) {
-            return new File(System.getenv("APPDATA") + "/Bitcoin");
+            File oldDir = new File(System.getenv("APPDATA") + "/Bitcoin");
+            return oldDir.exists() ? oldDir : new File(System.getenv("LOCALAPPDATA") + "/Bitcoin");
         } else {
             return new File(System.getProperty("user.home") + "/.bitcoin");
         }
