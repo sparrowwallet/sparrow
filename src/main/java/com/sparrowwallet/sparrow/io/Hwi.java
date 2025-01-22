@@ -11,11 +11,11 @@ import com.sparrowwallet.lark.DeviceException;
 import com.sparrowwallet.lark.Lark;
 import com.sparrowwallet.lark.bitbox02.BitBoxFileNoiseConfig;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.control.BitBoxPairingDialog;
 import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Hwi {
     private static final Logger log = LoggerFactory.getLogger(Hwi.class);
     private static final String HWI_HOME_DIR = "hwi";
+    private static final String LARK_HOME_DIR = "lark";
+    private static final String BITBOX_FILENAME = "bitbox02.json";
 
     private static boolean isPromptActive = false;
 
@@ -482,32 +484,34 @@ public class Hwi {
     }
 
     private static final class BitBoxFxNoiseConfig extends BitBoxFileNoiseConfig {
+        private BitBoxPairingDialog pairingDialog;
+
         public BitBoxFxNoiseConfig() {
-            super(Path.of(Storage.getSparrowDir().getAbsolutePath(), "lark", "bitbox02.json").toFile());
+            super(Path.of(Storage.getSparrowHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
         }
 
         @Override
         public boolean showPairing(String code, DeviceResponse response) throws DeviceException {
-            CountDownLatch latch = new CountDownLatch(2);
+            CountDownLatch latch = new CountDownLatch(1);
             AtomicBoolean confirmedDevice = new AtomicBoolean(false);
-            AtomicBoolean confirmedApp = new AtomicBoolean(false);
 
             Thread showPairingDeviceThread = new Thread(() -> {
                 try {
+                    isPromptActive = true;
                     confirmedDevice.set(response.call());
                     latch.countDown();
                 } catch(DeviceException e) {
                     throw new RuntimeException(e);
+                } finally {
+                    isPromptActive = false;
                 }
             });
             showPairingDeviceThread.start();
 
             Platform.runLater(() -> {
-                Optional<ButtonType> optConfirm = AppServices.showAlertDialog("Confirm Pairing", "Confirm the following code is shown on BitBox02:\n\n" + code, Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
-                if(optConfirm.isPresent() && optConfirm.get() == ButtonType.YES) {
-                    confirmedApp.set(true);
-                }
-                latch.countDown();
+                pairingDialog = new BitBoxPairingDialog(code);
+                pairingDialog.initOwner(AppServices.getActiveWindow());
+                pairingDialog.show();
             });
 
             try {
@@ -516,7 +520,16 @@ public class Hwi {
                 Thread.currentThread().interrupt();
             }
 
-            return confirmedDevice.get() && confirmedApp.get();
+            Platform.runLater(() -> {
+                if(pairingDialog != null && pairingDialog.isShowing()) {
+                    pairingDialog.setResult(ButtonType.APPLY);
+                }
+                if(!confirmedDevice.get()) {
+                    AppServices.showWarningDialog("Pairing Refused", "Pairing was refused on the device.");
+                }
+            });
+
+            return confirmedDevice.get();
         }
     }
 }
