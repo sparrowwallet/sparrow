@@ -328,3 +328,7 @@ CellView > .text-input.text-field {
     -fx-text-fill: rgb(238, 210, 2);
     -fx-padding: 0 0 0 12;
 }
+
+.tooltip {
+    -fx-show-delay: 400ms;
+}
