@@ -1,11 +1,11 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.TreeTableColumn;
-import javafx.scene.control.TreeTableView;
 
 public class TransactionsTreeTable extends CoinTreeTable {
     public void initialize(WalletTransactionsEntry rootEntry) {
@@ -49,7 +49,7 @@ public class TransactionsTreeTable extends CoinTreeTable {
 
         setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
-        setEqualPreferredColumnWidths();
+        setupColumnWidths(TableType.TRANSACTIONS);
         setSortColumn(0, TreeTableColumn.SortType.DESCENDING);
     }
 

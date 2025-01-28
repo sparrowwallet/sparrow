@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.CurrencyRate;
@@ -101,7 +102,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         table.setRoot(rootItem);
         rootItem.setExpanded(true);
 
-        table.setEqualPreferredColumnWidths();
+        table.setupColumnWidths(TableType.WALLET_SUMMARY);
         table.setPrefWidth(450);
 
         VBox vBox = new VBox();

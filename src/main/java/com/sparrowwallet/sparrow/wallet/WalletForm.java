@@ -594,6 +594,14 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void walletTableColumnsResized(WalletTableColumnsResizedEvent event) {
+        if(event.getWallet() == wallet && event.getTableType() != null) {
+            wallet.getWalletTables().put(event.getTableType(), event.getWalletTable());
+            Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
+        }
+    }
+
+    @Subscribe
     public void walletMixConfigChanged(WalletMixConfigChangedEvent event) {
         if(event.getWallet() == wallet) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));

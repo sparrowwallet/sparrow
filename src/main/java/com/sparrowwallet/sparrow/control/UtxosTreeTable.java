@@ -1,10 +1,10 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.sparrow.wallet.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeTableColumn;
-import javafx.scene.control.TreeTableView;
 
 import java.util.Comparator;
 
@@ -82,7 +82,7 @@ public class UtxosTreeTable extends CoinTreeTable {
 
         setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
-        setEqualPreferredColumnWidths();
+        setupColumnWidths(TableType.UTXOS);
         setSortColumn(getColumns().size() - 1, TreeTableColumn.SortType.DESCENDING);
 
         getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);

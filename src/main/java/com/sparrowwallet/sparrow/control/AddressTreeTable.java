@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -77,7 +79,7 @@ public class AddressTreeTable extends CoinTreeTable {
         getColumns().forEach(col -> col.setContextMenu(contextMenu));
 
         setEditable(true);
-        setEqualPreferredColumnWidths();
+        setupColumnWidths(rootEntry.getNode().getIndex() == KeyPurpose.RECEIVE.getPathIndex().num() ? TableType.RECEIVE_ADDRESSES : TableType.CHANGE_ADDRESSES);
 
         addressCol.setSortType(TreeTableColumn.SortType.ASCENDING);
         getSortOrder().add(addressCol);

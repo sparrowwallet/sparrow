@@ -34,6 +34,9 @@ public interface WalletDao {
     WalletConfigDao createWalletConfigDao();
 
     @CreateSqlObject
+    WalletTableDao createWalletTableDao();
+
+    @CreateSqlObject
     MixConfigDao createMixConfigDao();
 
     @CreateSqlObject
@@ -119,6 +122,10 @@ public interface WalletDao {
         wallet.getDetachedLabels().putAll(detachedLabels);
 
         wallet.setWalletConfig(createWalletConfigDao().getForWalletId(wallet.getId()));
+
+        Map<TableType, WalletTable> walletTables = createWalletTableDao().getForWalletId(wallet.getId());
+        wallet.getWalletTables().putAll(walletTables);
+
         wallet.setMixConfig(createMixConfigDao().getForWalletId(wallet.getId()));
 
         Map<Sha256Hash, UtxoMixData> utxoMixes = createUtxoMixDataDao().getForWalletId(wallet.getId());
@@ -138,6 +145,7 @@ public interface WalletDao {
             createBlockTransactionDao().addBlockTransactions(wallet);
             createDetachedLabelDao().clearAndAddAll(wallet);
             createWalletConfigDao().addWalletConfig(wallet);
+            createWalletTableDao().addWalletTables(wallet);
             createMixConfigDao().addMixConfig(wallet);
             createUtxoMixDataDao().addUtxoMixData(wallet);
         } finally {

@@ -1,0 +1,2 @@
+create table walletTable (id identity not null, type integer not null, widths double precision array not null, wallet bigint not null);
+alter table keystore add column deviceRegistration varbinary(32) after externalPaymentCode;
