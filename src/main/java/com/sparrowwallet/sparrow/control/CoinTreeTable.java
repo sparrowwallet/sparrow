@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.wallet.SortDirection;
 import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletTable;
@@ -8,7 +9,7 @@ import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.event.WalletTableColumnsResizedEvent;
+import com.sparrowwallet.sparrow.event.WalletTableChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletAddressesChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletDataChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
@@ -19,6 +20,7 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -31,13 +33,22 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class CoinTreeTable extends TreeTableView<Entry> {
+    private TableType tableType;
     private BitcoinUnit bitcoinUnit;
     private UnitFormat unitFormat;
     private CurrencyRate currencyRate;
     protected static final double STANDARD_WIDTH = 100.0;
 
-    private final PublishSubject<WalletTableColumnsResizedEvent> columnResizeSubject = PublishSubject.create();
-    private final Observable<WalletTableColumnsResizedEvent> columnResizeEvents = columnResizeSubject.debounce(1, TimeUnit.SECONDS);
+    private final PublishSubject<WalletTableChangedEvent> walletTableSubject = PublishSubject.create();
+    private final Observable<WalletTableChangedEvent> walletTableEvents = walletTableSubject.debounce(1, TimeUnit.SECONDS);
+
+    public TableType getTableType() {
+        return tableType;
+    }
+
+    public void setTableType(TableType tableType) {
+        this.tableType = tableType;
+    }
 
     public BitcoinUnit getBitcoinUnit() {
         return bitcoinUnit;
@@ -143,17 +154,63 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         return stackPane;
     }
 
-    public void setSortColumn(int columnIndex, TreeTableColumn.SortType sortType) {
-        if(columnIndex >= 0 && columnIndex < getColumns().size() && getSortOrder().isEmpty() && !getRoot().getChildren().isEmpty()) {
-            TreeTableColumn<Entry, ?> column = getColumns().get(columnIndex);
-            column.setSortType(sortType == null ? TreeTableColumn.SortType.DESCENDING : sortType);
+    protected void setupColumnSort(int defaultColumnIndex, TreeTableColumn.SortType defaultSortType) {
+        WalletTable.Sort columnSort = getSavedColumnSort();
+        if(columnSort == null) {
+            columnSort = new WalletTable.Sort(defaultColumnIndex, getSortDirection(defaultSortType));
+        }
+
+        setSortColumn(columnSort);
+
+        getSortOrder().addListener((ListChangeListener<? super TreeTableColumn<Entry, ?>>) c -> {
+            if(c.next()) {
+                walletTableChanged();
+            }
+        });
+        for(TreeTableColumn<Entry, ?> column : getColumns()) {
+            column.sortTypeProperty().addListener((_, _, _) -> walletTableChanged());
+        }
+    }
+
+    protected void resetSortColumn() {
+        setSortColumn(getColumnSort());
+    }
+
+    protected void setSortColumn(WalletTable.Sort sort) {
+        if(sort.sortColumn() >= 0 && sort.sortColumn() < getColumns().size() && getSortOrder().isEmpty() && !getRoot().getChildren().isEmpty()) {
+            TreeTableColumn<Entry, ?> column = getColumns().get(sort.sortColumn());
+            column.setSortType(sort.sortDirection() == SortDirection.DESCENDING ? TreeTableColumn.SortType.DESCENDING : TreeTableColumn.SortType.ASCENDING);
             getSortOrder().add(column);
         }
     }
 
+    private WalletTable.Sort getColumnSort() {
+        if(getSortOrder().isEmpty() || !getColumns().contains(getSortOrder().getFirst())) {
+            return new WalletTable.Sort(tableType == TableType.UTXOS ? getColumns().size() - 1 : 0, SortDirection.DESCENDING);
+        }
+
+        return new WalletTable.Sort(getColumns().indexOf(getSortOrder().getFirst()), getSortDirection(getSortOrder().getFirst().getSortType()));
+    }
+
+    private SortDirection getSortDirection(TreeTableColumn.SortType sortType) {
+        return sortType == TreeTableColumn.SortType.ASCENDING ? SortDirection.ASCENDING : SortDirection.DESCENDING;
+    }
+
+    private WalletTable.Sort getSavedColumnSort() {
+        if(getRoot() != null && getRoot().getValue() != null && getRoot().getValue().getWallet() != null) {
+            Wallet wallet = getRoot().getValue().getWallet();
+            WalletTable walletTable = wallet.getWalletTable(tableType);
+            if(walletTable != null) {
+                return walletTable.getSort();
+            }
+        }
+
+        return null;
+    }
+
     @SuppressWarnings("deprecation")
-    protected void setupColumnWidths(TableType tableType) {
-        Double[] savedWidths = getSavedColumnWidths(tableType);
+    protected void setupColumnWidths() {
+        Double[] savedWidths = getSavedColumnWidths();
         for(int i = 0; i < getColumns().size(); i++) {
             TreeTableColumn<Entry, ?> column = getColumns().get(i);
             column.setPrefWidth(savedWidths != null && getColumns().size() == savedWidths.length ? savedWidths[i] : STANDARD_WIDTH);
@@ -162,18 +219,27 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         //TODO: Replace with TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN when JavaFX 20+ has headless support
         setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
 
-        getColumns().getLast().widthProperty().addListener((_, _, _) -> {
-            if(getRoot() != null && getRoot().getValue() != null && getRoot().getValue().getWallet() != null) {
-                Double[] widths = getColumns().stream().map(TableColumnBase::getWidth).toArray(Double[]::new);
-                WalletTable walletTable = new WalletTable(tableType, widths);
-                columnResizeSubject.onNext(new WalletTableColumnsResizedEvent(getRoot().getValue().getWallet(), walletTable));
-            }
-        });
+        getColumns().getLast().widthProperty().addListener((_, _, _) -> walletTableChanged());
 
-        columnResizeEvents.skip(3, TimeUnit.SECONDS).subscribe(event -> EventManager.get().post(event));
+        //Ignore initial resizes during layout
+        walletTableEvents.skip(3, TimeUnit.SECONDS).subscribe(event -> {
+            event.getWallet().getWalletTables().put(event.getTableType(), event.getWalletTable());
+            EventManager.get().post(event);
+        });
     }
 
-    private Double[] getSavedColumnWidths(TableType tableType) {
+    private void walletTableChanged() {
+        if(getRoot() != null && getRoot().getValue() != null && getRoot().getValue().getWallet() != null) {
+            WalletTable walletTable = new WalletTable(tableType, getColumnWidths(), getColumnSort());
+            walletTableSubject.onNext(new WalletTableChangedEvent(getRoot().getValue().getWallet(), walletTable));
+        }
+    }
+
+    private Double[] getColumnWidths() {
+        return getColumns().stream().map(TableColumnBase::getWidth).toArray(Double[]::new);
+    }
+
+    private Double[] getSavedColumnWidths() {
         if(getRoot() != null && getRoot().getValue() != null && getRoot().getValue().getWallet() != null) {
             Wallet wallet = getRoot().getValue().getWallet();
             WalletTable walletTable = wallet.getWalletTable(tableType);

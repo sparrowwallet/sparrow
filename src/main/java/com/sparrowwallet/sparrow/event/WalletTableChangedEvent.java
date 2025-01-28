@@ -4,10 +4,10 @@ import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletTable;
 
-public class WalletTableColumnsResizedEvent extends WalletChangedEvent {
+public class WalletTableChangedEvent extends WalletChangedEvent {
     private final WalletTable walletTable;
 
-    public WalletTableColumnsResizedEvent(Wallet wallet, WalletTable walletTable) {
+    public WalletTableChangedEvent(Wallet wallet, WalletTable walletTable) {
         super(wallet);
         this.walletTable = walletTable;
     }

@@ -64,7 +64,7 @@
             </GridPane>
             <BorderPane VBox.vgrow="ALWAYS">
                 <center>
-                    <UtxosTreeTable fx:id="utxosTable" />
+                    <UtxosTreeTable fx:id="utxosTable" tableType="UTXOS" />
                 </center>
                 <bottom>
                     <HBox>

@@ -806,7 +806,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         cell.getStyleClass().remove("utxo-row");
         cell.getStyleClass().remove("unconfirmed-row");
         cell.getStyleClass().remove("summary-row");
-        cell.getStyleClass().remove("address-cell");
+        boolean addressCell = cell.getStyleClass().remove("address-cell");
         cell.getStyleClass().remove("hashindex-row");
         cell.getStyleClass().remove("confirming");
         cell.getStyleClass().remove("negative-amount");
@@ -835,7 +835,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 if(!utxoEntry.isSpendable()) {
                     cell.getStyleClass().add("unspendable");
                 }
-                if(OsType.getCurrent() == OsType.MACOS && utxoEntry.getHashIndex().getHeight() > 0) {
+                if(OsType.getCurrent() == OsType.MACOS && utxoEntry.getHashIndex().getHeight() > 0 && !addressCell) {
                     cell.getStyleClass().add("number-field");
                 }
             } else if(entry instanceof HashIndexEntry hashIndexEntry) {

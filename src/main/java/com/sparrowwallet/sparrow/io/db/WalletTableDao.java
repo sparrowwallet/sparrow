@@ -12,20 +12,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface WalletTableDao {
-    @SqlQuery("select id, type, widths from walletTable where wallet = ?")
+    @SqlQuery("select id, type, widths, sortColumn, sortDirection from walletTable where wallet = ?")
     @RegisterRowMapper(WalletTableMapper.class)
     Map<TableType, WalletTable> getForWalletId(Long id);
 
-    @SqlQuery("select id, type, widths from walletTable where type = ?")
+    @SqlQuery("select id, type, widths, sortColumn, sortDirection from walletTable where type = ?")
     @RegisterRowMapper(WalletTableMapper.class)
     Map<TableType, WalletTable> getForTypeId(int tableTypeId);
 
-    @SqlUpdate("insert into walletTable (type, widths, wallet) values (?, ?, ?)")
+    @SqlUpdate("insert into walletTable (type, widths, sortColumn, sortDirection, wallet) values (?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insertWalletTable(int tableType, Double[] widths, long wallet);
+    long insertWalletTable(int tableType, Double[] widths, int sortColumn, int sortDirection, long wallet);
 
-    @SqlUpdate("update walletTable set type = ?, widths = ?, wallet = ? where id = ?")
-    void updateWalletTable(int tableType, Double[] widths, long wallet, long id);
+    @SqlUpdate("update walletTable set type = ?, widths = ?, sortColumn = ?, sortDirection = ?, wallet = ? where id = ?")
+    void updateWalletTable(int tableType, Double[] widths, int sortColumn, int sortDirection, long wallet, long id);
 
     default void addWalletTables(Wallet wallet) {
         Map<TableType, WalletTable> walletTables = new HashMap<>(wallet.getWalletTables());
@@ -39,11 +39,13 @@ public interface WalletTableDao {
         Map<TableType, WalletTable> existing = getForTypeId(tableType.ordinal());
 
         if(existing.isEmpty() && walletTable.getId() == null) {
-            long id = insertWalletTable(walletTable.getTableType().ordinal(), walletTable.getWidths(), wallet.getId());
+            long id = insertWalletTable(walletTable.getTableType().ordinal(), walletTable.getWidths(),
+                    walletTable.getSortColumn(), walletTable.getSortDirection().ordinal(), wallet.getId());
             walletTable.setId(id);
         } else {
             Long existingId = existing.get(tableType) != null ? existing.get(tableType).getId() : walletTable.getId();
-            updateWalletTable(walletTable.getTableType().ordinal(), walletTable.getWidths(), wallet.getId(), existingId);
+            updateWalletTable(walletTable.getTableType().ordinal(), walletTable.getWidths(),
+                    walletTable.getSortColumn(), walletTable.getSortDirection().ordinal(), wallet.getId(), existingId);
             walletTable.setId(existingId);
         }
     }

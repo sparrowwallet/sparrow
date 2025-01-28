@@ -45,7 +45,7 @@
             </HBox>
         </top>
         <center>
-            <AddressTreeTable fx:id="receiveTable" />
+            <AddressTreeTable fx:id="receiveTable" tableType="RECEIVE_ADDRESSES" />
         </center>
     </BorderPane>
     <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="1">
@@ -63,7 +63,7 @@
             </HBox>
         </top>
         <center>
-            <AddressTreeTable fx:id="changeTable" />
+            <AddressTreeTable fx:id="changeTable" tableType="CHANGE_ADDRESSES" />
         </center>
     </BorderPane>
 </GridPane>

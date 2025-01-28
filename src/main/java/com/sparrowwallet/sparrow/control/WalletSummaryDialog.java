@@ -55,6 +55,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         HBox hBox = new HBox(40);
 
         CoinTreeTable table = new CoinTreeTable();
+        table.setTableType(TableType.WALLET_SUMMARY);
 
         TreeTableColumn<Entry, String> nameColumn = new TreeTableColumn<>("Wallet");
         nameColumn.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, String> param) -> {
@@ -102,7 +103,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         table.setRoot(rootItem);
         rootItem.setExpanded(true);
 
-        table.setupColumnWidths(TableType.WALLET_SUMMARY);
+        table.setupColumnWidths();
         table.setPrefWidth(450);
 
         VBox vBox = new VBox();

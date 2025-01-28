@@ -87,6 +87,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         form.getChildren().add(fieldset);
 
         results = new CoinTreeTable();
+        results.setTableType(TableType.SEARCH_WALLET);
         results.setShowRoot(false);
         results.setPrefWidth(showWallet || showAccount ? 950 : 850);
         results.setUnitFormat(walletForms.iterator().next().getWallet());
@@ -174,7 +175,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         results.setRoot(rootItem);
 
         setResizable(true);
-        results.setupColumnWidths(TableType.SEARCH_WALLET);
+        results.setupColumnWidths();
 
         AppServices.moveToActiveWindowScreen(this);
 

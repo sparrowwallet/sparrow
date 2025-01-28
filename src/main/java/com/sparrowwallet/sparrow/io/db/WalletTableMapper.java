@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io.db;
 
+import com.sparrowwallet.drongo.wallet.SortDirection;
 import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.WalletTable;
 import org.jdbi.v3.core.mapper.RowMapper;
@@ -16,8 +17,10 @@ public class WalletTableMapper implements RowMapper<Map.Entry<TableType, WalletT
         TableType tableType = TableType.values()[rs.getInt("type")];
         Object[] objWidths = (Object[])rs.getArray("widths").getArray();
         Double[] widths = Arrays.copyOf(objWidths, objWidths.length, Double[].class);
+        int sortColumn = rs.getInt("sortColumn");
+        SortDirection sortDirection = SortDirection.values()[rs.getInt("sortDirection")];
 
-        WalletTable walletTable = new WalletTable(tableType, widths);
+        WalletTable walletTable = new WalletTable(tableType, widths, sortColumn, sortDirection);
         walletTable.setId(rs.getLong("id"));
 
         return new Map.Entry<>() {

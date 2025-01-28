@@ -774,7 +774,7 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
-    public void walletTableColumnsResized(WalletTableColumnsResizedEvent event) {
+    public void walletTableChanged(WalletTableChangedEvent event) {
         if(persistsFor(event.getWallet()) && event.getTableType() != null && event.getWallet().getWalletTable(event.getTableType()) != null) {
             updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).walletTable = event.getWalletTable());
         }
