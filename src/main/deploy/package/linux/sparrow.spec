@@ -56,22 +56,22 @@ if [ "$(echo %{_sourcedir}/lib/systemd/system/*.service)" != '%{_sourcedir}/lib/
   install -d -m 755 %{buildroot}/lib/systemd/system
   cp %{_sourcedir}/lib/systemd/system/*.service %{buildroot}/lib/systemd/system
 fi
-%if "x/home/scy/git/sparrow/LICENSE" != "x"
-  %define license_install_file %{_defaultlicensedir}/%{name}-%{version}/%{basename:/home/scy/git/sparrow/LICENSE}
+%if "x%{_rpmdir}/../../LICENSE" != "x"
+  %define license_install_file %{_defaultlicensedir}/%{name}-%{version}/%{basename:%{_rpmdir}/../../LICENSE}
   install -d -m 755 "%{buildroot}%{dirname:%{license_install_file}}"
-  install -m 644 "/home/scy/git/sparrow/LICENSE" "%{buildroot}%{license_install_file}"
+  install -m 644 "%{_rpmdir}/../../LICENSE" "%{buildroot}%{license_install_file}"
 %endif
 (cd %{buildroot} && find . -path ./lib/systemd -prune -o -type d -print) | sed -e 's/^\.//' -e '/^$/d' | sort > %{app_filelist}
 { rpm -ql filesystem || echo %{default_filesystem}; } | sort > %{filesystem_filelist}
 comm -23 %{app_filelist} %{filesystem_filelist} > %{package_filelist}
 sed -i -e 's/.*/%dir "&"/' %{package_filelist}
 (cd %{buildroot} && find . -not -type d) | sed -e 's/^\.//' -e 's/.*/"&"/' >> %{package_filelist}
-%if "x/home/scy/git/sparrow/LICENSE" != "x"
+%if "x%{_rpmdir}/../../LICENSE" != "x"
   sed -i -e 's|"%{license_install_file}"||' -e '/^$/d' %{package_filelist}
 %endif
 
 %files -f %{package_filelist}
-%if "x/home/scy/git/sparrow/LICENSE" != "x"
+%if "x%{_rpmdir}/../../LICENSE" != "x"
   %license "%{license_install_file}"
 %endif
 
