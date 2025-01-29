@@ -10,7 +10,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, macos-13]
+        os: [windows-2022, ubuntu-20.04, ubuntu-22.04-arm, macos-13, macos-14]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,7 +33,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Sparrow Build - ${{ runner.os }}
+          name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }}
           path: |
             build/jpackage/*
             !build/jpackage/Sparrow/
@@ -50,7 +50,7 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Sparrow Build - ${{ runner.os }} Headless
+          name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }} Headless
           path: |
             build/jpackage/*
             !build/jpackage/Sparrow/
