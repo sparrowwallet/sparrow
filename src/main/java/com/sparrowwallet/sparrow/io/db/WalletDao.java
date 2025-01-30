@@ -154,6 +154,6 @@ public interface WalletDao {
     }
 
     default String truncate(String label) {
-        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
+        return (label != null && label.length() > Wallet.MAX_LABEL_LENGTH ? label.substring(0, Wallet.MAX_LABEL_LENGTH) : label);
     }
 }

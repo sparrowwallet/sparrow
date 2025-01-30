@@ -268,7 +268,7 @@ public class DbPersistence implements Persistence {
                 }
 
                 if(dirtyPersistables.label != null) {
-                    walletDao.updateLabel(wallet.getId(), dirtyPersistables.label.length() > 255 ? dirtyPersistables.label.substring(0, 255) : dirtyPersistables.label);
+                    walletDao.updateLabel(wallet.getId(), dirtyPersistables.label.length() > Wallet.MAX_LABEL_LENGTH ? dirtyPersistables.label.substring(0, Wallet.MAX_LABEL_LENGTH) : dirtyPersistables.label);
                 }
 
                 if(dirtyPersistables.blockHeight != null) {

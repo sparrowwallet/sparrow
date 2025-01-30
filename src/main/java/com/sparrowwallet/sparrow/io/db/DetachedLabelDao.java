@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io.db;
 
+import com.sparrowwallet.drongo.wallet.Persistable;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.statement.SqlBatch;
@@ -26,7 +27,7 @@ public interface DetachedLabelDao {
         List<String> labels = new ArrayList<>();
         for(Map.Entry<String, String> labelEntry : new HashSet<>(wallet.getDetachedLabels().entrySet())) {
             entries.add(truncate(labelEntry.getKey(), 80));
-            labels.add(truncate(labelEntry.getValue(), 255));
+            labels.add(truncate(labelEntry.getValue(), Persistable.MAX_LABEL_LENGTH));
         }
 
         insertDetachedLabels(entries, labels);

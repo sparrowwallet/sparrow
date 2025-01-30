@@ -1,16 +1,20 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
+import com.sparrowwallet.drongo.wallet.Persistable;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.event.Event;
+import javafx.geometry.Point2D;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTreeTableCell;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
+import javafx.util.Duration;
 import javafx.util.converter.DefaultStringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +51,20 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> implements Confirm
     public void commitEdit(String label) {
         if(label != null) {
             label = label.trim();
+            if(label.length() > Persistable.MAX_LABEL_LENGTH) {
+                label = label.substring(0, Persistable.MAX_LABEL_LENGTH);
+                Platform.runLater(() -> {
+                    Point2D p = this.localToScene(0.0, 0.0);
+                    final Tooltip truncateTooltip = new Tooltip();
+                    truncateTooltip.setText("Labels are truncated at " + Persistable.MAX_LABEL_LENGTH + " characters");
+                    truncateTooltip.setAutoHide(true);
+                    truncateTooltip.show(this, p.getX() + this.getScene().getX() + this.getScene().getWindow().getX() + this.getHeight(),
+                            p.getY() + this.getScene().getY() + this.getScene().getWindow().getY() + this.getHeight());
+                    PauseTransition pt = new PauseTransition(Duration.millis(2000));
+                    pt.setOnFinished(_ -> truncateTooltip.hide());
+                    pt.play();
+                });
+            }
         }
 
         // This block is necessary to support commit on losing focus, because

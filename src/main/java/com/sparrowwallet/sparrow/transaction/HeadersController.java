@@ -1599,7 +1599,7 @@ public class HeadersController extends TransactionFormController implements Init
                         name += matcher.group(2);
                     }
                 }
-                blockTransaction.setLabel(name != null && name.length() > 255 ? name.substring(0, 255) : name);
+                blockTransaction.setLabel(name != null && name.length() > BlockTransaction.MAX_LABEL_LENGTH ? name.substring(0, BlockTransaction.MAX_LABEL_LENGTH) : name);
                 changedLabelEntries.add(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()));
             }
 

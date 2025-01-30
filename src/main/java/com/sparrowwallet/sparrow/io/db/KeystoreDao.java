@@ -1,10 +1,7 @@
 package com.sparrowwallet.sparrow.io.db;
 
 import com.sparrowwallet.drongo.crypto.EncryptedData;
-import com.sparrowwallet.drongo.wallet.DeterministicSeed;
-import com.sparrowwallet.drongo.wallet.Keystore;
-import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
-import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.*;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapper;
 import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
@@ -106,6 +103,6 @@ public interface KeystoreDao {
     }
 
     default String truncate(String label) {
-        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
+        return (label != null && label.length() > Persistable.MAX_LABEL_LENGTH ? label.substring(0, Persistable.MAX_LABEL_LENGTH) : label);
     }
 }

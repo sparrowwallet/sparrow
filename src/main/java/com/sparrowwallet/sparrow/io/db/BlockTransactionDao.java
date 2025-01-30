@@ -61,6 +61,6 @@ public interface BlockTransactionDao {
     }
 
     default String truncate(String label) {
-        return (label != null && label.length() > 255 ? label.substring(0, 255) : label);
+        return (label != null && label.length() > BlockTransaction.MAX_LABEL_LENGTH ? label.substring(0, BlockTransaction.MAX_LABEL_LENGTH) : label);
     }
 }
