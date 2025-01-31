@@ -39,7 +39,7 @@ public class Hwi {
     private final Set<byte[]> newDeviceRegistrations = new HashSet<>();
 
     static {
-        //deleteHwiDir();
+        deleteHwiDir();
     }
 
     public List<Device> enumerate(String passphrase) throws ImportException {
