@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.terminal.preferences;
+package com.sparrowwallet.sparrow.terminal.settings;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
@@ -41,7 +41,7 @@ public class GeneralDialog extends DialogWindow {
     };
 
     public GeneralDialog() {
-        super("General Preferences");
+        super("General Settings");
 
         setHints(List.of(Hint.CENTERED));
 

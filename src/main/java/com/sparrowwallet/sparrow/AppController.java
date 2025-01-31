@@ -23,8 +23,8 @@ import com.sparrowwallet.sparrow.io.bbqr.BBQR;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
-import com.sparrowwallet.sparrow.preferences.PreferenceGroup;
-import com.sparrowwallet.sparrow.preferences.PreferencesDialog;
+import com.sparrowwallet.sparrow.settings.SettingsGroup;
+import com.sparrowwallet.sparrow.settings.SettingsDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
@@ -456,11 +456,11 @@ public class AppController implements Initializable {
         OsType osType = OsType.getCurrent();
         if(osType == OsType.MACOS) {
             MenuToolkit tk = MenuToolkit.toolkit();
-            MenuItem preferences = new MenuItem("Settings...");
-            preferences.setOnAction(this::openPreferences);
-            preferences.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
+            MenuItem settings = new MenuItem("Settings...");
+            settings.setOnAction(this::openSettings);
+            settings.setAccelerator(new KeyCodeCombination(KeyCode.COMMA, KeyCombination.META_DOWN));
             Menu defaultApplicationMenu = new Menu("Apple", null, tk.createAboutMenuItem(SparrowWallet.APP_NAME, getAboutStage()), new SeparatorMenuItem(),
-                    preferences, new SeparatorMenuItem(),
+                    settings, new SeparatorMenuItem(),
                     tk.createHideMenuItem(SparrowWallet.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
                     tk.createQuitMenuItem(SparrowWallet.APP_NAME));
             tk.setApplicationMenu(defaultApplicationMenu);
@@ -498,7 +498,7 @@ public class AppController implements Initializable {
         welcomeDialog.initOwner(rootStack.getScene().getWindow());
         Optional<Mode> optionalMode = welcomeDialog.showAndWait();
         if(optionalMode.isPresent() && optionalMode.get().equals(Mode.ONLINE)) {
-            openPreferences(PreferenceGroup.SERVER);
+            openSettings(SettingsGroup.SERVER);
         }
     }
 
@@ -1387,18 +1387,18 @@ public class AppController implements Initializable {
         }
     }
 
-    public void openPreferences(ActionEvent event) {
-        openPreferences(PreferenceGroup.GENERAL);
+    public void openSettings(ActionEvent event) {
+        openSettings(SettingsGroup.GENERAL);
     }
 
-    public void openServerPreferences(ActionEvent event) {
-        openPreferences(PreferenceGroup.SERVER);
+    public void openServerSettings(ActionEvent event) {
+        openSettings(SettingsGroup.SERVER);
     }
 
-    private void openPreferences(PreferenceGroup preferenceGroup) {
-        PreferencesDialog preferencesDialog = new PreferencesDialog(preferenceGroup);
-        preferencesDialog.initOwner(rootStack.getScene().getWindow());
-        preferencesDialog.showAndWait();
+    private void openSettings(SettingsGroup settingsGroup) {
+        SettingsDialog settingsDialog = new SettingsDialog(settingsGroup);
+        settingsDialog.initOwner(rootStack.getScene().getWindow());
+        settingsDialog.showAndWait();
         configureSwitchServer();
         serverToggle.setDisable(!Config.get().hasServer());
     }
@@ -2758,8 +2758,8 @@ public class AppController implements Initializable {
     @Subscribe
     public void connectionFailed(ConnectionFailedEvent event) {
         String status = CONNECTION_FAILED_PREFIX + event.getMessage();
-        Hyperlink hyperlink = new Hyperlink("Server Preferences");
-        hyperlink.setOnAction(this::openServerPreferences);
+        Hyperlink hyperlink = new Hyperlink("Server Settings");
+        hyperlink.setOnAction(this::openServerSettings);
         statusUpdated(new StatusEvent(status, hyperlink));
         serverToggleStopAnimation();
         setTorIcon();

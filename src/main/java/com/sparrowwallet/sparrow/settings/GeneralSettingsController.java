@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.preferences;
+package com.sparrowwallet.sparrow.settings;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class GeneralPreferencesController extends PreferencesDetailController {
-    private static final Logger log = LoggerFactory.getLogger(GeneralPreferencesController.class);
+public class GeneralSettingsController extends SettingsDetailController {
+    private static final Logger log = LoggerFactory.getLogger(GeneralSettingsController.class);
 
     private static final Server CUSTOM_BLOCK_EXPLORER = new Server("http://custom.block.explorer");
 

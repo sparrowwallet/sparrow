@@ -1,10 +1,9 @@
-package com.sparrowwallet.sparrow.preferences;
+package com.sparrowwallet.sparrow.settings;
 
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.RequestConnectEvent;
 import com.sparrowwallet.sparrow.io.Config;
-import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -14,28 +13,28 @@ import org.controlsfx.tools.Borders;
 
 import java.io.IOException;
 
-public class PreferencesDialog extends Dialog<Boolean> {
-    public PreferencesDialog() {
+public class SettingsDialog extends Dialog<Boolean> {
+    public SettingsDialog() {
         this(null);
     }
 
-    public PreferencesDialog(PreferenceGroup initialGroup) {
+    public SettingsDialog(SettingsGroup initialGroup) {
         this(initialGroup, false);
     }
 
-    public PreferencesDialog(PreferenceGroup initialGroup, boolean initialSetup) {
+    public SettingsDialog(SettingsGroup initialGroup, boolean initialSetup) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
         try {
-            FXMLLoader preferencesLoader = new FXMLLoader(AppServices.class.getResource("preferences/preferences.fxml"));
-            dialogPane.setContent(Borders.wrap(preferencesLoader.load()).emptyBorder().buildAll());
-            PreferencesController preferencesController = preferencesLoader.getController();
-            preferencesController.initializeView(Config.get());
+            FXMLLoader settingsLoader = new FXMLLoader(AppServices.class.getResource("settings/settings.fxml"));
+            dialogPane.setContent(Borders.wrap(settingsLoader.load()).emptyBorder().buildAll());
+            SettingsController settingsController = settingsLoader.getController();
+            settingsController.initializeView(Config.get());
             if(initialGroup != null) {
-                preferencesController.selectGroup(initialGroup);
+                settingsController.selectGroup(initialGroup);
             } else {
-                preferencesController.selectGroup(PreferenceGroup.GENERAL);
+                settingsController.selectGroup(SettingsGroup.GENERAL);
             }
 
             final ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -51,10 +50,10 @@ public class PreferencesDialog extends Dialog<Boolean> {
             dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
-            preferencesController.reconnectOnClosingProperty().set(AppServices.isConnecting() || AppServices.isConnected());
+            settingsController.reconnectOnClosingProperty().set(AppServices.isConnecting() || AppServices.isConnected());
             setOnCloseRequest(event -> {
-                preferencesController.closingProperty().set(true);
-                if(preferencesController.isReconnectOnClosing() && !(AppServices.isConnecting() || AppServices.isConnected())) {
+                settingsController.closingProperty().set(true);
+                if(settingsController.isReconnectOnClosing() && !(AppServices.isConnecting() || AppServices.isConnected())) {
                     EventManager.get().post(new RequestConnectEvent());
                 }
             });

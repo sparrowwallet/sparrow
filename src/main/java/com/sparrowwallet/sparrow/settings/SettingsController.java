@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.preferences;
+package com.sparrowwallet.sparrow.settings;
 
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
@@ -18,14 +18,14 @@ import java.net.URL;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-public class PreferencesController implements Initializable {
+public class SettingsController implements Initializable {
     private Config config;
 
     @FXML
-    private ToggleGroup preferencesMenu;
+    private ToggleGroup settingsMenu;
 
     @FXML
-    private StackPane preferencesPane;
+    private StackPane settingsPane;
 
     private final BooleanProperty closing = new SimpleBooleanProperty(false);
 
@@ -42,22 +42,22 @@ public class PreferencesController implements Initializable {
 
     public void initializeView(Config config) {
         this.config = config;
-        preferencesMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
+        settingsMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
             if(selectedToggle == null) {
                 oldValue.setSelected(true);
                 return;
             }
 
-            PreferenceGroup preferenceGroup = (PreferenceGroup) selectedToggle.getUserData();
-            String fxmlName = preferenceGroup.toString().toLowerCase(Locale.ROOT);
+            SettingsGroup settingsGroup = (SettingsGroup) selectedToggle.getUserData();
+            String fxmlName = settingsGroup.toString().toLowerCase(Locale.ROOT);
             setPreferencePane(fxmlName);
         });
     }
 
-    public void selectGroup(PreferenceGroup preferenceGroup) {
-        for(Toggle toggle : preferencesMenu.getToggles()) {
-            if(toggle.getUserData().equals(preferenceGroup)) {
-                Platform.runLater(() -> preferencesMenu.selectToggle(toggle));
+    public void selectGroup(SettingsGroup settingsGroup) {
+        for(Toggle toggle : settingsMenu.getToggles()) {
+            if(toggle.getUserData().equals(settingsGroup)) {
+                Platform.runLater(() -> settingsMenu.selectToggle(toggle));
                 return;
             }
         }
@@ -76,17 +76,17 @@ public class PreferencesController implements Initializable {
     }
 
     FXMLLoader setPreferencePane(String fxmlName) {
-        preferencesPane.getChildren().removeAll(preferencesPane.getChildren());
+        settingsPane.getChildren().removeAll(settingsPane.getChildren());
 
         try {
-            FXMLLoader preferencesDetailLoader = new FXMLLoader(AppServices.class.getResource("preferences/" + fxmlName + ".fxml"));
-            Node preferenceGroupNode = preferencesDetailLoader.load();
-            PreferencesDetailController controller = preferencesDetailLoader.getController();
+            FXMLLoader settingsDetailLoader = new FXMLLoader(AppServices.class.getResource("settings/" + fxmlName + ".fxml"));
+            Node preferenceGroupNode = settingsDetailLoader.load();
+            SettingsDetailController controller = settingsDetailLoader.getController();
             controller.setMasterController(this);
             controller.initializeView(config);
-            preferencesPane.getChildren().add(preferenceGroupNode);
+            settingsPane.getChildren().add(preferenceGroupNode);
 
-            return preferencesDetailLoader;
+            return settingsDetailLoader;
         } catch (IOException e) {
             throw new IllegalStateException("Can't find pane", e);
         }

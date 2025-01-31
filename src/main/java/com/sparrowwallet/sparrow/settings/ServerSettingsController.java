@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.preferences;
+package com.sparrowwallet.sparrow.settings;
 
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.google.common.base.Throwables;
@@ -52,8 +52,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
-public class ServerPreferencesController extends PreferencesDetailController {
-    private static final Logger log = LoggerFactory.getLogger(ServerPreferencesController.class);
+public class ServerSettingsController extends SettingsDetailController {
+    private static final Logger log = LoggerFactory.getLogger(ServerSettingsController.class);
 
     private static final Server MANAGE_ALIASES_SERVER = new Server("tcp://localhost", "Manage Aliases...");
     private static final Server SCAN_QR_SERVER = new Server("ssl://localhost", "Scan QR...");

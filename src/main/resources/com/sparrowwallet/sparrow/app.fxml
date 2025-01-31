@@ -47,7 +47,7 @@
                         <MenuItem mnemonicParsing="false" text="Import Wallet..." onAction="#importWallet"/>
                         <MenuItem fx:id="exportWallet" mnemonicParsing="false" text="Export Wallet..." onAction="#exportWallet"/>
                         <SeparatorMenuItem styleClass="osxHide" />
-                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Preferences..." accelerator="Shortcut+P" onAction="#openPreferences"/>
+                        <MenuItem styleClass="osxHide" mnemonicParsing="false" text="Settings..." accelerator="Shortcut+," onAction="#openSettings"/>
                         <SeparatorMenuItem />
                         <MenuItem fx:id="renameWallet" mnemonicParsing="false" text="Rename Wallet..." onAction="#renameWallet"/>
                         <MenuItem fx:id="deleteWallet" mnemonicParsing="false" text="Delete Wallet..." onAction="#deleteWallet"/>

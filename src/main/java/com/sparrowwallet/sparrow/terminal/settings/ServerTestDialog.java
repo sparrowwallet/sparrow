@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.terminal.preferences;
+package com.sparrowwallet.sparrow.terminal.settings;
 
 import com.google.common.eventbus.Subscribe;
 import com.googlecode.lanterna.TerminalSize;

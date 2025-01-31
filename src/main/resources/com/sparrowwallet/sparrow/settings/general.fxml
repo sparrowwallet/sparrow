@@ -17,7 +17,7 @@
 <?import com.sparrowwallet.sparrow.net.FeeRatesSource?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
-<GridPane hgap="10.0" vgap="10.0" stylesheets="@preferences.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.preferences.GeneralPreferencesController">
+<GridPane hgap="10.0" vgap="10.0" stylesheets="@settings.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.settings.GeneralSettingsController">
     <padding>
         <Insets left="25.0" right="25.0" top="25.0" />
     </padding>

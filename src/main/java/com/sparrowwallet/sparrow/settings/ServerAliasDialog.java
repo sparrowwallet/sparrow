@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.preferences;
+package com.sparrowwallet.sparrow.settings;
 
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;

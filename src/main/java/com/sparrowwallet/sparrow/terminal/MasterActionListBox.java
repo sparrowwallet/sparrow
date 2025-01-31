@@ -14,9 +14,9 @@ import com.sparrowwallet.sparrow.event.StorageEvent;
 import com.sparrowwallet.sparrow.event.TimedEvent;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
-import com.sparrowwallet.sparrow.terminal.preferences.GeneralDialog;
-import com.sparrowwallet.sparrow.terminal.preferences.ServerStatusDialog;
-import com.sparrowwallet.sparrow.terminal.preferences.ServerTypeDialog;
+import com.sparrowwallet.sparrow.terminal.settings.GeneralDialog;
+import com.sparrowwallet.sparrow.terminal.settings.ServerStatusDialog;
+import com.sparrowwallet.sparrow.terminal.settings.ServerTypeDialog;
 import com.sparrowwallet.sparrow.terminal.wallet.Bip39Dialog;
 import com.sparrowwallet.sparrow.terminal.wallet.LoadWallet;
 import com.sparrowwallet.sparrow.terminal.wallet.WatchOnlyDialog;
@@ -71,9 +71,9 @@ public class MasterActionListBox extends ActionListBox {
             builder.build().showDialog(SparrowTerminal.get().getGui());
         });
 
-        addItem("Preferences", () -> {
+        addItem("Settings", () -> {
             new ActionListDialogBuilder()
-                    .setTitle("Preferences")
+                    .setTitle("Settings")
                     .addAction("General", () -> {
                         GeneralDialog generalDialog = new GeneralDialog();
                         generalDialog.showDialog(sparrowTerminal.getGui());

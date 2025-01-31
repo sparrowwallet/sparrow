@@ -1178,7 +1178,7 @@ public class ElectrumServer {
                                         if(bwtStartException != null) {
                                             Matcher walletLoadingMatcher = RPC_WALLET_LOADING_PATTERN.matcher(bwtStartException.getMessage());
                                             if(bwtStartException.getMessage().contains("Wallet file not specified")) {
-                                                throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Preferences");
+                                                throw new ServerException("Bitcoin Core requires Multi-Wallet to be enabled in the Server Settings");
                                             } else if(bwtStartException.getMessage().contains("Upgrade Bitcoin Core to v24 or later for Taproot wallet support")) {
                                                 throw new ServerException(bwtStartException.getMessage());
                                             } else if(bwtStartException.getMessage().contains("Wallet file verification failed. Refusing to load database.")) {

@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.terminal.preferences;
+package com.sparrowwallet.sparrow.terminal.settings;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
@@ -17,7 +17,7 @@ public class ServerStatusDialog extends DialogWindow {
     private final ComboBox<String> connect;
 
     public ServerStatusDialog() {
-        super("Server Preferences");
+        super("Server Settings");
 
         setHints(List.of(Hint.CENTERED));
 
