@@ -1,6 +1,6 @@
 Summary: Sparrow
 Name: sparrow
-Version: 2.0.1
+Version: 2.1.0
 Release: 1
 License: ASL 2.0
 Vendor: Unknown
