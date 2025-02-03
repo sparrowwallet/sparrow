@@ -770,6 +770,20 @@ public class ServerSettingsController extends SettingsDetailController {
                 existingServer = null;
             }
             coreHost.setLeft(existingServer == null ? null : getGlyph(FontAwesome5.Glyph.TAG, null));
+
+            Protocol protocol = Protocol.getProtocol(newValue);
+            if(existingServer == null && protocol != null) {
+                if(Protocol.getProtocol(oldValue) == null) {
+                    HostAndPort hostAndPort = protocol.getServerHostAndPort(newValue);
+                    if(!hostAndPort.getHost().isEmpty()) {
+                        coreHost.setText(hostAndPort.getHost());
+                        corePort.setText(hostAndPort.hasPort() ? String.valueOf(hostAndPort.getPort()) : "");
+                    }
+                } else {
+                    return;
+                }
+            }
+
             setCoreServerInConfig(config);
         };
     }
@@ -809,6 +823,21 @@ public class ServerSettingsController extends SettingsDetailController {
                 existingServer = null;
             }
             electrumHost.setLeft(existingServer == null ? null : getGlyph(FontAwesome5.Glyph.TAG, null));
+
+            Protocol protocol = Protocol.getProtocol(newValue);
+            if(existingServer == null && protocol != null) {
+                if(Protocol.getProtocol(oldValue) == null) {
+                    HostAndPort hostAndPort = protocol.getServerHostAndPort(newValue);
+                    if(!hostAndPort.getHost().isEmpty()) {
+                        electrumHost.setText(hostAndPort.getHost());
+                        electrumPort.setText(hostAndPort.hasPort() ? String.valueOf(hostAndPort.getPort()) : "");
+                        electrumUseSsl.setSelected(protocol == Protocol.SSL);
+                    }
+                } else {
+                    return;
+                }
+            }
+
             setElectrumServerInConfig(config);
         };
     }
