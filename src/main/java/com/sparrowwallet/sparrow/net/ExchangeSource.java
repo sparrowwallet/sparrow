@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import com.sparrowwallet.tern.http.client.HttpResponseException;
@@ -186,6 +188,75 @@ public enum ExchangeSource {
 
             return historicalRates;
         }
+    },
+    MEMPOOL_SPACE("mempool.space") {
+        @Override
+        public List<Currency> getSupportedCurrencies() {
+            return getRates().rates.entrySet().stream().filter(price -> isValidISO4217Code(price.getKey().toUpperCase(Locale.ROOT)))
+                    .map(rate -> Currency.getInstance(rate.getKey().toUpperCase(Locale.ROOT))).collect(Collectors.toList());
+        }
+
+        @Override
+        public Double getExchangeRate(Currency currency) {
+            String currencyCode = currency.getCurrencyCode();
+            OptionalDouble optRate = getRates().rates.entrySet().stream().filter(price -> currencyCode.equalsIgnoreCase(price.getKey())).mapToDouble(Map.Entry::getValue).findFirst();
+            if(optRate.isPresent()) {
+                return optRate.getAsDouble();
+            }
+
+            return null;
+        }
+
+        private MempoolSpaceRates getRates() {
+            String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/prices" : "https://mempool.space/api/v1/prices";
+
+            if(log.isInfoEnabled()) {
+                log.info("Requesting exchange rates from " + url);
+            }
+
+            HttpClientService httpClientService = AppServices.getHttpClientService();
+            try {
+                return httpClientService.requestJson(url, MempoolSpaceRates.class, null);
+            } catch(Exception e) {
+                if(log.isDebugEnabled()) {
+                    log.warn("Error retrieving currency rates", e);
+                } else {
+                    log.warn("Error retrieving currency rates (" + e.getMessage() + ")");
+                }
+                return new MempoolSpaceRates();
+            }
+        }
+
+        @Override
+        public Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end) {
+            String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/historical-price?currency=" + currency.getCurrencyCode() :
+                    "https://mempool.space/api/v1/historical-price?currency=" + currency.getCurrencyCode();
+
+            if(log.isInfoEnabled()) {
+                log.info("Requesting historical exchange rates from " + url);
+            }
+
+            Map<Date, Double> historicalRates = new TreeMap<>();
+            HttpClientService httpClientService = AppServices.getHttpClientService();
+            try {
+                MempoolSpaceHistoricalRates mempoolSpaceHistoricalRates = httpClientService.requestJson(url, MempoolSpaceHistoricalRates.class, null);
+                Collections.reverse(mempoolSpaceHistoricalRates.prices); //Use "closing" rates
+                for(MempoolSpaceRates historicalRate : mempoolSpaceHistoricalRates.prices) {
+                    Date date = new Date(historicalRate.time * 1000);
+                    if(date.after(start) && date.before(end) && historicalRate.rates.containsKey(currency.getCurrencyCode())) {
+                        historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), historicalRate.rates.get(currency.getCurrencyCode()));
+                    }
+                }
+            } catch(Exception e) {
+                if(log.isDebugEnabled()) {
+                    log.warn("Error retrieving historical currency rates", e);
+                } else {
+                    log.warn("Error retrieving historical currency rates (" + e.getMessage() + ")");
+                }
+            }
+
+            return historicalRates;
+        }
     };
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
@@ -278,5 +349,25 @@ public enum ExchangeSource {
 
     private static class CoinGeckoHistoricalRates {
         public List<List<Number>> prices = new ArrayList<>();
+    }
+
+    private static class MempoolSpaceRates {
+        public long time;
+        public final Map<String, Double> rates = new LinkedHashMap<>();
+
+        // Capture all other fields that Jackson do not match other members
+        @JsonAnyGetter
+        public Map<String, Double> getPrices() {
+            return rates;
+        }
+
+        @JsonAnySetter
+        public void setPrice(String name, Double value) {
+            rates.put(name, value);
+        }
+    }
+
+    private static class MempoolSpaceHistoricalRates {
+        public List<MempoolSpaceRates> prices = new ArrayList<>();
     }
 }

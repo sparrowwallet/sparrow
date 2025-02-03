@@ -58,6 +58,7 @@
                             <ExchangeSource fx:constant="NONE" />
                             <ExchangeSource fx:constant="COINBASE" />
                             <ExchangeSource fx:constant="COINGECKO" />
+                            <ExchangeSource fx:constant="MEMPOOL_SPACE" />
                         </FXCollections>
                     </items>
                 </ComboBox>
