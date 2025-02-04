@@ -22,27 +22,19 @@ package_type=deb
 
 case "$1" in
     configure)
-        # Install desktop menu
         xdg-desktop-menu install /opt/sparrow/lib/sparrow-Sparrow.desktop
-
-        # Install mime info
         xdg-mime install /opt/sparrow/lib/sparrow-Sparrow-MimeInfo.xml
-
-        # Install the udev rules
-        install -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
-
-        # Reload the udev rules
-        udevadm control --reload
-
-        # Optionally trigger udev rules for currently connected devices
-        udevadm trigger
-
-        # Make sure the plugdev group exists
-        groupadd -f plugdev
-
-        # Make sure the current user is added to plugdev
-        usermod -aG plugdev `whoami`
-
+        install -D -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
+        if ! getent group plugdev > /dev/null; then
+            groupadd plugdev
+        fi
+        if ! groups "${SUDO_USER:-$(whoami)}" | grep -q plugdev; then
+            usermod -aG plugdev "${SUDO_USER:-$(whoami)}"
+        fi
+        if [ -x /bin/udevadm ]; then
+            /bin/udevadm control --reload
+            /bin/udevadm trigger
+        fi
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)
