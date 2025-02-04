@@ -69,31 +69,17 @@ sed -i -e 's/.*/%dir "&"/' %{package_filelist}
 %if "x%{_rpmdir}/../../LICENSE" != "x"
   sed -i -e 's|"%{license_install_file}"||' -e '/^$/d' %{package_filelist}
 %endif
-install -D -m 644 %{_sourcedir}/opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
-echo "/etc/udev/rules.d/20-hw1.rules" >> %{package_filelist}
-echo "/etc/udev/rules.d/51-coinkite.rules" >> %{package_filelist}
-echo "/etc/udev/rules.d/51-trezor.rules" >> %{package_filelist}
-echo "/etc/udev/rules.d/51-usb-keepkey.rules" >> %{package_filelist}
-echo "/etc/udev/rules.d/53-hid-bitbox02.rules" >> %{package_filelist}
-echo "/etc/udev/rules.d/54-hid-bitbox02.rules" >> %{package_filelist}
-echo "/etc/udev/rules.d/55-usb-jade.rules" >> %{package_filelist}
 
 %files -f %{package_filelist}
 %if "x%{_rpmdir}/../../LICENSE" != "x"
   %license "%{license_install_file}"
 %endif
-%config(noreplace) /etc/udev/rules.d/20-hw1.rules
-%config(noreplace) /etc/udev/rules.d/51-coinkite.rules
-%config(noreplace) /etc/udev/rules.d/51-trezor.rules
-%config(noreplace) /etc/udev/rules.d/51-usb-keepkey.rules
-%config(noreplace) /etc/udev/rules.d/53-hid-bitbox02.rules
-%config(noreplace) /etc/udev/rules.d/54-hid-bitbox02.rules
-%config(noreplace) /etc/udev/rules.d/55-usb-jade.rules
 
 %post
 package_type=rpm
 xdg-desktop-menu install /opt/sparrow/lib/sparrow-Sparrow.desktop
 xdg-mime install /opt/sparrow/lib/sparrow-Sparrow-MimeInfo.xml
+install -D -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
 if ! getent group plugdev > /dev/null; then
     groupadd plugdev
 fi
