@@ -288,7 +288,7 @@ jlink {
             } else {
                 installerOptions += ['--resource-dir', 'src/main/deploy/package/linux/', '--linux-shortcut', '--linux-menu-group', 'Sparrow']
             }
-            installerOptions += ['--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com']
+            installerOptions += ['--verbose', '--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com']
             imageOptions += ['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/']
         }
         if(os.macOsX) {
