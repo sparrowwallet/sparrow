@@ -825,7 +825,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                         confirmationsListener.getConfirmationsProperty().unbind();
                     }
                 }
-                if(OsType.getCurrent() == OsType.MACOS && transactionEntry.getBlockTransaction().getHeight() > 0) {
+                if(OsType.getCurrent() == OsType.MACOS && transactionEntry.getBlockTransaction().getHeight() > 0 && !cell.getStyleClass().contains("label-cell")) {
                     cell.getStyleClass().add("number-field");
                 }
             } else if(entry instanceof NodeEntry) {
@@ -835,7 +835,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 if(!utxoEntry.isSpendable()) {
                     cell.getStyleClass().add("unspendable");
                 }
-                if(OsType.getCurrent() == OsType.MACOS && utxoEntry.getHashIndex().getHeight() > 0 && !addressCell) {
+                if(OsType.getCurrent() == OsType.MACOS && utxoEntry.getHashIndex().getHeight() > 0 && !addressCell && !cell.getStyleClass().contains("label-cell")) {
                     cell.getStyleClass().add("number-field");
                 }
             } else if(entry instanceof HashIndexEntry hashIndexEntry) {
