@@ -31,7 +31,7 @@ case "$1" in
         if ! groups "${SUDO_USER:-$(whoami)}" | grep -q plugdev; then
             usermod -aG plugdev "${SUDO_USER:-$(whoami)}"
         fi
-        if [ -x /bin/udevadm ]; then
+        if [ -w /sys/devices ] && [ -w /sys/kernel/uevent_seqnum ] && [ -x /bin/udevadm ]; then
             /bin/udevadm control --reload
             /bin/udevadm trigger
         fi
