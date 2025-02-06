@@ -13,6 +13,7 @@
     <logger name="org.flywaydb.core.internal.command.DbValidate" level="WARN" />
     <logger name="org.flywaydb.core.internal.command.DbMigrate" level="WARN" />
     <logger name="org.flywaydb.core.internal.command.DbClean" level="ERROR" />
+    <logger name="org.flywaydb.core.internal.command.clean.CleanExecutor" level="ERROR" />
     <logger name="org.flywaydb.core.internal.database.base.BaseDatabaseType" level="WARN" />
     <logger name="org.flywaydb.core.internal.database.base.Schema" level="WARN" />
     <logger name="org.flywaydb.core.internal.schemahistory.JdbcTableSchemaHistory" level="WARN" />
