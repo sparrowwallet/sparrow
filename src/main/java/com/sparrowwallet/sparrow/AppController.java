@@ -633,19 +633,10 @@ public class AppController implements Initializable {
                 byte[] bytes = Files.readAllBytes(file.toPath());
                 String name = file.getName();
 
-                try {
+                if(Utils.isHex(bytes) || Utils.isBase64(bytes)) {
+                    addTransactionTab(name, file, new String(bytes, StandardCharsets.UTF_8).trim());
+                } else {
                     addTransactionTab(name, file, bytes);
-                } catch(ParseException e) {
-                    ByteArrayInputStream inputStream = new ByteArrayInputStream(bytes);
-                    ByteSource byteSource = new ByteSource() {
-                        @Override
-                        public InputStream openStream() {
-                            return inputStream;
-                        }
-                    };
-
-                    String text = byteSource.asCharSource(Charsets.UTF_8).read().trim();
-                    addTransactionTab(name, file, text);
                 }
             } catch(IOException e) {
                 showErrorDialog("Error opening file", e.getMessage());
