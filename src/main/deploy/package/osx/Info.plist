@@ -35,6 +35,8 @@
   <string>true</string>
   <key>NSCameraUsageDescription</key>
   <string>Sparrow requires access to the camera in order to scan QR codes</string>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>Sparrow requires access to the local network in order to connect to your configured server</string>
   <key>CFBundleURLTypes</key>
   <array>
       <dict>
