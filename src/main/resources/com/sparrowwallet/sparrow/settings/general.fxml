@@ -52,7 +52,7 @@
                 <ComboBox fx:id="fiatCurrency" />
             </Field>
             <Field text="Exchange rate source:">
-                <ComboBox fx:id="exchangeSource" prefWidth="150">
+                <ComboBox fx:id="exchangeSource" prefWidth="160">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <ExchangeSource fx:constant="NONE" />
