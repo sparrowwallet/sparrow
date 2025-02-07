@@ -19,6 +19,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,6 +159,9 @@ public class GeneralSettingsController extends SettingsDetailController {
             config.setExchangeSource(exchangeSource.getValue());
         }
 
+        exchangeSource.setButtonCell(new ExchangeSourceButtonCell());
+        exchangeSource.setCellFactory(_ -> new ExchangeSourceListCell());
+
         exchangeSource.valueProperty().addListener((observable, oldValue, source) -> {
             config.setExchangeSource(source);
             updateCurrencies(source);
@@ -252,5 +256,33 @@ public class GeneralSettingsController extends SettingsDetailController {
         EventManager.get().post(new FiatCurrencySelectedEvent(exchangeSource.getValue(), fiatCurrency.getValue()));
 
         fiatCurrency.valueProperty().addListener(fiatCurrencyListener);
+    }
+
+    private static class ExchangeSourceButtonCell extends ListCell<ExchangeSource> {
+        @Override
+        protected void updateItem(ExchangeSource exchangeSource, boolean empty) {
+            super.updateItem(exchangeSource, empty);
+            if(exchangeSource == null || empty) {
+                setText("");
+            } else {
+                setText(exchangeSource.getName());
+            }
+        }
+    }
+
+    private static class ExchangeSourceListCell extends ListCell<ExchangeSource> {
+        @Override
+        protected void updateItem(ExchangeSource exchangeSource, boolean empty) {
+            super.updateItem(exchangeSource, empty);
+            if(exchangeSource == null || empty) {
+                setText("");
+            } else {
+                String text = exchangeSource.getName();
+                if(exchangeSource.getDescription() != null && !exchangeSource.getDescription().isEmpty()) {
+                    text += " (" + exchangeSource.getDescription() + ")";
+                }
+                setText(text);
+            }
+        }
     }
 }

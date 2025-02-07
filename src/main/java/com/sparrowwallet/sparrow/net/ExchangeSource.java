@@ -21,7 +21,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public enum ExchangeSource {
-    NONE("None") {
+    NONE("None", null) {
         @Override
         public List<Currency> getSupportedCurrencies() {
             return Collections.emptyList();
@@ -37,7 +37,7 @@ public enum ExchangeSource {
             return Collections.emptyMap();
         }
     },
-    COINBASE("Coinbase") {
+    COINBASE("Coinbase", "No historical rates") {
         @Override
         public List<Currency> getSupportedCurrencies() {
             return getRates().data.rates.keySet().stream().filter(code -> isValidISO4217Code(code.toUpperCase(Locale.ROOT)))
@@ -121,7 +121,7 @@ public enum ExchangeSource {
             return historicalRates;
         }
     },
-    COINGECKO("Coingecko") {
+    COINGECKO("Coingecko", "No historical rates") {
         @Override
         public List<Currency> getSupportedCurrencies() {
             return getRates().rates.entrySet().stream().filter(rate -> "fiat".equals(rate.getValue().type) && isValidISO4217Code(rate.getKey().toUpperCase(Locale.ROOT)))
@@ -189,7 +189,7 @@ public enum ExchangeSource {
             return historicalRates;
         }
     },
-    MEMPOOL_SPACE("mempool.space") {
+    MEMPOOL_SPACE("mempool.space", "Historical rates from Apr 2023") {
         @Override
         public List<Currency> getSupportedCurrencies() {
             return getRates().rates.entrySet().stream().filter(price -> isValidISO4217Code(price.getKey().toUpperCase(Locale.ROOT)))
@@ -262,9 +262,11 @@ public enum ExchangeSource {
     private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
 
     private final String name;
+    private final String description;
 
-    ExchangeSource(String name) {
+    ExchangeSource(String name, String description) {
         this.name = name;
+        this.description = description;
     }
 
     public abstract List<Currency> getSupportedCurrencies();
@@ -280,6 +282,14 @@ public enum ExchangeSource {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     @Override
