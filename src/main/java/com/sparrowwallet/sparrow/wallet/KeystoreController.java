@@ -256,6 +256,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             launchImportDialog(keystoreSource);
         } else {
             fingerprint.setText(DEFAULT_WATCH_ONLY_FINGERPRINT);
+            derivation.setText(getWalletForm().getWallet().getScriptType().getDefaultDerivationPath());
             selectSourcePane.setVisible(false);
         }
     }
@@ -653,6 +654,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     @Subscribe
     public void update(SettingsChangedEvent event) {
         if(walletForm.getWallet().equals(event.getWallet()) && event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE)) {
+            if(keystore.getSource() == KeystoreSource.SW_WATCH && derivation.getPromptText().equals(derivation.getText())) {
+                derivation.setText(event.getWallet().getScriptType().getDefaultDerivationPath());
+            }
             derivation.setPromptText(event.getWallet().getScriptType().getDefaultDerivationPath());
             if(derivation.getText() != null && !derivation.getText().isEmpty()) {
                 String derivationPath = derivation.getText();
