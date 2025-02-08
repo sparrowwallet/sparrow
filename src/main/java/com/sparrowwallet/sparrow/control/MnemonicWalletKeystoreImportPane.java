@@ -196,6 +196,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         HBox.setHgrow(region, Priority.SOMETIMES);
 
         Button importMnemonicButton = new Button("Import");
+        importMnemonicButton.setDefaultButton(true);
         importMnemonicButton.setOnAction(event -> {
             showHideLink.setVisible(true);
             setExpanded(false);
