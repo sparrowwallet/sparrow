@@ -591,7 +591,7 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         if(walletForm instanceof SettingsWalletForm settingsWalletForm) {
-            WalletExportDialog dlg = new WalletExportDialog(settingsWalletForm.getAppWalletForm());
+            WalletExportDialog dlg = new WalletExportDialog(settingsWalletForm.getAppWalletForm(), List.of(settingsWalletForm.getAppWalletForm()));
             dlg.initOwner(export.getScene().getWindow());
             dlg.showAndWait();
         } else {
