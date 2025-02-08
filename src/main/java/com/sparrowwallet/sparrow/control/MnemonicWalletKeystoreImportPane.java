@@ -55,7 +55,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
     protected List<Node> createRightButtons() {
         discoverButton = new Button("Discover Wallet");
         discoverButton.setDisable(true);
-        discoverButton.setDefaultButton(true);
+        discoverButton.setDefaultButton(AppServices.onlineProperty().get());
         discoverButton.managedProperty().bind(discoverButton.visibleProperty());
         discoverButton.setOnAction(event -> {
             discoverWallet();
@@ -66,6 +66,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
 
         importButton = new Button("Import Wallet");
         importButton.setDisable(true);
+        importButton.setDefaultButton(!AppServices.onlineProperty().get());
         importButton.managedProperty().bind(importButton.visibleProperty());
         importButton.visibleProperty().bind(discoverButton.visibleProperty().not());
         importButton.setOnAction(event -> {
