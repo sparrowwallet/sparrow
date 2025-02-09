@@ -293,6 +293,11 @@
                             <Tooltip text="Connect to a server (bottom right toggle) to broadcast a transaction" />
                         </tooltip>
                     </Button>
+                    <Button fx:id="showTransactionButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Show Transaction as QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showTransaction">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="QRCODE" />
+                        </graphic>
+                    </Button>
                     <Button fx:id="payjoinButton" defaultButton="true" HBox.hgrow="ALWAYS" text="Get Payjoin Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#getPayjoinTransaction">
                         <graphic>
                             <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="RANDOM" />
