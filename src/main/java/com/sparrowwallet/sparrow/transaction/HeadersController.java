@@ -229,10 +229,10 @@ public class HeadersController extends TransactionFormController implements Init
     private Button broadcastButton;
 
     @FXML
-    private Button saveFinalButton;
+    private Button showTransactionButton;
 
     @FXML
-    private Button showTransactionButton;
+    private Button saveFinalButton;
 
     @FXML
     private Button payjoinButton;
@@ -465,10 +465,10 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastProgressBar.visibleProperty().bind(signaturesProgressBar.visibleProperty().not());
 
         broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
-        saveFinalButton.managedProperty().bind(saveFinalButton.visibleProperty());
-        saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
         showTransactionButton.managedProperty().bind(showTransactionButton.visibleProperty());
         showTransactionButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
+        saveFinalButton.managedProperty().bind(saveFinalButton.visibleProperty());
+        saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
         broadcastButton.visibleProperty().bind(AppServices.onlineProperty());
 
         BitcoinURI payjoinURI = getPayjoinURI();
@@ -1261,6 +1261,19 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastTransactionService.start();
     }
 
+    public void showTransaction(ActionEvent event) {
+        try {
+            Transaction transaction = headersForm.getPsbt().extractTransaction();
+            byte[] txBytes = transaction.bitcoinSerialize();
+            UR ur = UR.fromBytes(txBytes);
+            BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
+            QRDisplayDialog.of(ur, bbqr, false, false, false).showAndWait();
+        } catch (Exception exception) {
+            log.error("Error creating UR", exception);
+            AppServices.showErrorDialog("Error displaying transaction QR code", exception.getMessage());
+        }
+    }
+
     public void saveFinalTransaction(ActionEvent event) {
         Stage window = new Stage();
 
@@ -1283,20 +1296,6 @@ public class HeadersController extends TransactionFormController implements Init
                 log.error("Error saving transaction", e);
                 AppServices.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
             }
-        }
-    }
-
-    public void showTransaction(ActionEvent event) {
-        try {
-            Transaction transaction = headersForm.getPsbt().extractTransaction();
-            byte[] txBytes = transaction.bitcoinSerialize();
-            UR ur = UR.fromBytes(txBytes);
-            BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
-            qrDisplayDialog.showAndWait();
-        } catch (Exception exception) {
-            log.error("Error creating UR", exception);
-            AppServices.showErrorDialog("Error displaying transaction QR code", exception.getMessage());
         }
     }
 
