@@ -1123,7 +1123,8 @@ public class AppServices {
     public static boolean isWhirlpoolPostmixCompatible(Wallet wallet) {
         return WHIRLPOOL_NETWORKS.contains(Network.get())
                 && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
-                && wallet.getKeystores().size() == 1;
+                && wallet.getKeystores().size() == 1
+                && wallet.getKeystores().getFirst().getWalletModel() != WalletModel.BITBOX_02; //BitBox02 does not support high account numbers
     }
 
     public static List<Wallet> addWhirlpoolWallets(Wallet decryptedWallet, String walletId, Storage storage) {
