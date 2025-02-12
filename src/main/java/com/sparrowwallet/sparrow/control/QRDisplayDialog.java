@@ -191,10 +191,6 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         setResultConverter(dialogButton -> dialogButton);
     }
 
-    public static QRDisplayDialog of(UR ur, BBQR bbqr, boolean addLegacyEncodingOption, boolean addScanButton, boolean selectBbqrButton) {
-        return new QRDisplayDialog(ur, bbqr, addLegacyEncodingOption, addScanButton, selectBbqrButton);
-    }
-
     private int getQRSize() {
         return AppServices.isReducedWindowHeight() ? REDUCED_QR_SIZE : DEFAULT_QR_SIZE;
     }

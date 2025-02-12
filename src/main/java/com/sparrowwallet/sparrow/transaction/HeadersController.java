@@ -1267,7 +1267,9 @@ public class HeadersController extends TransactionFormController implements Init
             byte[] txBytes = transaction.bitcoinSerialize();
             UR ur = UR.fromBytes(txBytes);
             BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
-            QRDisplayDialog.of(ur, bbqr, false, false, false).showAndWait();
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+            qrDisplayDialog.initOwner(showTransactionButton.getScene().getWindow());
+            qrDisplayDialog.showAndWait();
         } catch (Exception exception) {
             log.error("Error creating UR", exception);
             AppServices.showErrorDialog("Error displaying transaction QR code", exception.getMessage());
