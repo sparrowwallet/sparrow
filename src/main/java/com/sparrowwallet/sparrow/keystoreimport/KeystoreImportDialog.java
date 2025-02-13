@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.keystoreimport;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -10,6 +11,7 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
+import com.sparrowwallet.sparrow.wallet.KeystoreController;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import org.controlsfx.tools.Borders;
@@ -20,16 +22,18 @@ import java.util.List;
 public class KeystoreImportDialog extends Dialog<Keystore> {
     private final KeystoreImportController keystoreImportController;
     private Keystore keystore;
+    private final ScriptType scriptType;
+    private final String existingLabel;
 
     public KeystoreImportDialog(Wallet wallet) {
         this(wallet, KeystoreSource.HW_USB);
     }
 
     public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource) {
-        this(wallet, initialSource, null, null, false);
+        this(wallet, initialSource, null, null, Keystore.DEFAULT_LABEL, false);
     }
 
-    public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource, KeyDerivation currentDerivation, WalletModel currentModel, boolean restrictImport) {
+    public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource, KeyDerivation currentDerivation, WalletModel currentModel, String currentLabel, boolean restrictImport) {
         EventManager.get().register(this);
         setOnCloseRequest(event -> {
             EventManager.get().unregister(this);
@@ -37,6 +41,8 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        scriptType = wallet.getScriptType();
+        existingLabel = currentLabel;
 
         try {
             FXMLLoader ksiLoader = new FXMLLoader(AppServices.class.getResource("keystoreimport/keystoreimport.fxml"));
@@ -73,9 +79,10 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
     private Keystore getWatchOnlyKeystore() {
         this.keystore = new Keystore();
+        keystore.setLabel(existingLabel);
         keystore.setSource(KeystoreSource.SW_WATCH);
         keystore.setWalletModel(WalletModel.SPARROW);
-        keystore.setKeyDerivation(new KeyDerivation("",""));
+        keystore.setKeyDerivation(new KeyDerivation(KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath()));
         return keystore;
     }
 

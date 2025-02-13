@@ -36,10 +36,7 @@ import tornadofx.control.Field;
 
 import javax.smartcardio.CardException;
 import java.net.URL;
-import java.util.Base64;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
@@ -371,7 +368,8 @@ public class KeystoreController extends WalletFormController implements Initiali
         boolean restrictImport = keystore.getSource() != KeystoreSource.SW_WATCH && keystoreSourceToggleGroup.getToggles().stream().anyMatch(toggle -> ((ToggleButton)toggle).isDisabled());
         KeyDerivation currentDerivation = keystore.getKeyDerivation();
         WalletModel currentModel = keystore.getWalletModel();
-        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, currentDerivation, currentModel, restrictImport);
+        String currentLabel = keystore.getLabel();
+        KeystoreImportDialog dlg = new KeystoreImportDialog(getWalletForm().getWallet(), initialSource, currentDerivation, currentModel, currentLabel, restrictImport);
         dlg.initOwner(selectSourcePane.getScene().getWindow());
         Optional<Keystore> result = dlg.showAndWait();
         if(result.isPresent()) {
@@ -386,7 +384,12 @@ public class KeystoreController extends WalletFormController implements Initiali
                     return;
                 }
             }
-            walletForm.getWallet().makeLabelsUnique(importedKeystore);
+            if(!keystore.getLabel().equals(importedKeystore.getLabel())) {
+                List<Keystore> changedKeystores = walletForm.getWallet().makeLabelsUnique(importedKeystore);
+                if(!changedKeystores.isEmpty()) {
+                    EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_LABEL));
+                }
+            }
             keystore.setSource(importedKeystore.getSource());
             keystore.setWalletModel(importedKeystore.getWalletModel());
             keystore.setLabel(importedKeystore.getLabel());
@@ -396,7 +399,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             keystore.setSeed(importedKeystore.getSeed());
             keystore.setBip47ExtendedPrivateKey(importedKeystore.getBip47ExtendedPrivateKey());
 
-            updateType(true);
+            updateType(keystore.isValid());
             label.setText(keystore.getLabel());
             fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
             derivation.setText(keystore.getKeyDerivation().getDerivationPath());
@@ -653,18 +656,31 @@ public class KeystoreController extends WalletFormController implements Initiali
 
     @Subscribe
     public void update(SettingsChangedEvent event) {
-        if(walletForm.getWallet().equals(event.getWallet()) && event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE)) {
-            if(keystore.getSource() == KeystoreSource.SW_WATCH && derivation.getPromptText().equals(derivation.getText())) {
-                derivation.setText(event.getWallet().getScriptType().getDefaultDerivationPath());
+        if(walletForm.getWallet().equals(event.getWallet())) {
+            if(event.getType().equals(SettingsChangedEvent.Type.SCRIPT_TYPE)) {
+                if(keystore.getSource() == KeystoreSource.SW_WATCH && derivation.getPromptText().equals(derivation.getText())) {
+                    derivation.setText(event.getWallet().getScriptType().getDefaultDerivationPath());
+                }
+                derivation.setPromptText(event.getWallet().getScriptType().getDefaultDerivationPath());
+                if(derivation.getText() != null && !derivation.getText().isEmpty()) {
+                    String derivationPath = derivation.getText();
+                    derivation.setText(derivationPath + " ");
+                    derivation.setText(derivationPath);
+                }
+                if(keystore.getExtendedPublicKey() != null) {
+                    setXpubContext(keystore.getExtendedPublicKey());
+                }
+            } else if(event.getType().equals(SettingsChangedEvent.Type.KEYSTORE_LABEL)) {
+                if(!keystore.getLabel().equals(label.getText())) {
+                    label.setText(keystore.getLabel());
+                }
             }
-            derivation.setPromptText(event.getWallet().getScriptType().getDefaultDerivationPath());
-            if(derivation.getText() != null && !derivation.getText().isEmpty()) {
-                String derivationPath = derivation.getText();
-                derivation.setText(derivationPath + " ");
-                derivation.setText(derivationPath);
-            }
-            if(keystore.getExtendedPublicKey() != null) {
-                setXpubContext(keystore.getExtendedPublicKey());
+
+            if(event.getType().equals(SettingsChangedEvent.Type.KEYSTORE_LABEL) || event.getType().equals(SettingsChangedEvent.Type.KEYSTORE_FINGERPRINT) ||
+                    event.getType().equals(SettingsChangedEvent.Type.KEYSTORE_DERIVATION) || event.getType().equals(SettingsChangedEvent.Type.KEYSTORE_XPUB)) {
+                if(keystore.getSource() == KeystoreSource.SW_WATCH) {
+                    exportButton.setVisible(keystore.isValid() && getWalletForm().getWallet().getPolicyType() == PolicyType.MULTI);
+                }
             }
         }
     }
