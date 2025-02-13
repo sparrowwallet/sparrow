@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -226,6 +227,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private Button broadcastButton;
+
+    @FXML
+    private Button showTransactionButton;
 
     @FXML
     private Button saveFinalButton;
@@ -461,6 +465,8 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastProgressBar.visibleProperty().bind(signaturesProgressBar.visibleProperty().not());
 
         broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
+        showTransactionButton.managedProperty().bind(showTransactionButton.visibleProperty());
+        showTransactionButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
         saveFinalButton.managedProperty().bind(saveFinalButton.visibleProperty());
         saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
         broadcastButton.visibleProperty().bind(AppServices.onlineProperty());
@@ -1253,6 +1259,21 @@ public class HeadersController extends TransactionFormController implements Init
         signaturesProgressBar.setVisible(false);
         broadcastProgressBar.setProgress(-1);
         broadcastTransactionService.start();
+    }
+
+    public void showTransaction(ActionEvent event) {
+        try {
+            Transaction transaction = headersForm.getPsbt().extractTransaction();
+            byte[] txBytes = transaction.bitcoinSerialize();
+            UR ur = UR.fromBytes(txBytes);
+            BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+            qrDisplayDialog.initOwner(showTransactionButton.getScene().getWindow());
+            qrDisplayDialog.showAndWait();
+        } catch (Exception exception) {
+            log.error("Error creating UR", exception);
+            AppServices.showErrorDialog("Error displaying transaction QR code", exception.getMessage());
+        }
     }
 
     public void saveFinalTransaction(ActionEvent event) {
