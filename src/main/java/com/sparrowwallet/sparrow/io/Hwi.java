@@ -56,7 +56,7 @@ public class Hwi {
             return lark.enumerate().stream().map(Device::fromHardwareClient).toList();
         } catch(Throwable e) {
             log.error("Error enumerating USB devices", e);
-            throw new ImportException("Error scanning" + (e.getMessage() == null || e.getMessage().isEmpty() ? ", check devices are ready" : ": " + e.getMessage()), e);
+            throw new ImportException(e.getMessage() == null || e.getMessage().isEmpty() ? "Error scanning, check devices are ready" : e.getMessage(), e);
         } finally {
             isPromptActive = false;
         }
