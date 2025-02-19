@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -702,7 +703,9 @@ public class TransactionDiagram extends GridPane {
                 paymentBox.getChildren().addAll(region, amountLabel);
             }
 
-            outputNodes.add(new OutputNode(paymentBox, payment.getAddress(), payment.getAmount()));
+            Wallet bip47Wallet = toWallet != null && toWallet.isBip47() ? toWallet : (toBip47Wallet != null && toBip47Wallet.isBip47() ? toBip47Wallet : null);
+            PaymentCode paymentCode = bip47Wallet == null ? null : bip47Wallet.getKeystores().getFirst().getExternalPaymentCode();
+            outputNodes.add(new OutputNode(paymentBox, payment.getAddress(), payment.getAmount(), paymentCode));
         }
 
         Set<Integer> seenIndexes = new HashSet<>();
@@ -766,7 +769,7 @@ public class TransactionDiagram extends GridPane {
             outputsBox.getChildren().add(outputNode.outputLabel);
             outputsBox.getChildren().add(createSpacer());
 
-            ContextMenu contextMenu = new LabelContextMenu(outputNode.address, outputNode.amount);
+            ContextMenu contextMenu = new LabelContextMenu(outputNode.address, outputNode.amount, outputNode.paymentCode);
             if(!outputNode.outputLabel.getChildren().isEmpty() && outputNode.outputLabel.getChildren().get(0) instanceof Label outputLabelControl) {
                 outputLabelControl.setContextMenu(contextMenu);
             }
@@ -1073,16 +1076,26 @@ public class TransactionDiagram extends GridPane {
         public Pane outputLabel;
         public Address address;
         public long amount;
+        public PaymentCode paymentCode;
 
         public OutputNode(Pane outputLabel, Address address, long amount) {
+            this(outputLabel, address, amount, null);
+        }
+
+        public OutputNode(Pane outputLabel, Address address, long amount, PaymentCode paymentCode) {
             this.outputLabel = outputLabel;
             this.address = address;
             this.amount = amount;
+            this.paymentCode = paymentCode;
         }
     }
 
     private class LabelContextMenu extends ContextMenu {
         public LabelContextMenu(Address address, long value) {
+            this(address, value, null);
+        }
+
+        public LabelContextMenu(Address address, long value, PaymentCode paymentCode) {
             if(address != null) {
                 MenuItem copyAddress = new MenuItem("Copy Address");
                 copyAddress.setOnAction(event -> {
@@ -1119,6 +1132,17 @@ public class TransactionDiagram extends GridPane {
                 Clipboard.getSystemClipboard().setContent(content);
             });
             getItems().addAll(copySatsValue, copyBtcValue);
+
+            if(paymentCode != null) {
+                MenuItem copyPaymentCode = new MenuItem("Copy Payment Code");
+                copyPaymentCode.setOnAction(AE -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(paymentCode.toString());
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().add(copyPaymentCode);
+            }
         }
     }
 }
