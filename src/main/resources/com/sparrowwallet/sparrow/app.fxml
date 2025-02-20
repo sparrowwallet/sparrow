@@ -101,6 +101,11 @@
                         </Menu>
                         <Menu mnemonicParsing="false" text="Theme">
                             <items>
+                                <RadioMenuItem mnemonicParsing="false" text="System Default" toggleGroup="$theme" onAction="#setTheme">
+                                    <userData>
+                                        <Theme fx:constant="SYSTEM_DEFAULT" />
+                                    </userData>
+                                </RadioMenuItem>
                                 <RadioMenuItem mnemonicParsing="false" text="Light" toggleGroup="$theme" onAction="#setTheme">
                                     <userData>
                                         <Theme fx:constant="LIGHT" />
