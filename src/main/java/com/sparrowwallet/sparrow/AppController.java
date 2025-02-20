@@ -369,8 +369,8 @@ public class AppController implements Initializable {
 
         Theme configTheme = Config.get().getTheme();
         if(configTheme == null) {
-            configTheme = Theme.LIGHT;
-            Config.get().setTheme(Theme.LIGHT);
+            configTheme = Theme.SYSTEM_DEFAULT;
+            Config.get().setTheme(Theme.SYSTEM_DEFAULT);
         }
         final Theme selectedTheme = configTheme;
         Optional<Toggle> selectedThemeToggle = theme.getToggles().stream().filter(toggle -> selectedTheme.equals(toggle.getUserData())).findFirst();
@@ -2339,11 +2339,35 @@ public class AppController implements Initializable {
 
     public void setTheme(ActionEvent event) {
         Theme selectedTheme = (Theme)theme.getSelectedToggle().getUserData();
-        if(Config.get().getTheme() != selectedTheme) {
+        Theme themeToApply = selectedTheme;
+        if (selectedTheme == Theme.SYSTEM_DEFAULT) {
+            themeToApply = detectSystemTheme();
+        }
+
+        if (Config.get().getTheme() != selectedTheme) {
             Config.get().setTheme(selectedTheme);
         }
 
-        EventManager.get().post(new ThemeChangedEvent(selectedTheme));
+        EventManager.get().post(new ThemeChangedEvent(themeToApply));
+    }
+
+    private Theme detectSystemTheme() {
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.contains("mac")) {
+            return isMacDarkMode() ? Theme.DARK : Theme.LIGHT;
+        }
+        return Theme.LIGHT;
+    }
+
+    private boolean isMacDarkMode() {
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(
+                    new ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start().getInputStream()))) {
+            String result = reader.readLine();
+            return result != null && result.trim().equalsIgnoreCase("Dark");
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private void serverToggleStartAnimation() {
