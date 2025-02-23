@@ -7,6 +7,7 @@ permissions:
 
 jobs:
   build:
+    needs: gradle_wrapper_validate
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
