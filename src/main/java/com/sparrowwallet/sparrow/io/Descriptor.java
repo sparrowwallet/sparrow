@@ -1,9 +1,12 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.sparrow.wallet.KeystoreController;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -92,7 +95,7 @@ public class Descriptor implements WalletImport, WalletExport {
             InputStream secondClone = new ByteArrayInputStream(baos.toByteArray());
 
             try {
-                return PdfUtils.getOutputDescriptor(firstClone).toWallet();
+                return ensureKeyDerivations(PdfUtils.getOutputDescriptor(firstClone).toWallet());
             } catch(Exception e) {
                 //ignore
             }
@@ -100,7 +103,7 @@ public class Descriptor implements WalletImport, WalletExport {
             List<String> paragraphs = getParagraphs(secondClone);
             for(String paragraph : paragraphs) {
                 OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(paragraph);
-                return descriptor.toWallet();
+                return ensureKeyDerivations(descriptor.toWallet());
             }
 
             throw new ImportException("Could not find an output descriptor in the file");
@@ -116,7 +119,7 @@ public class Descriptor implements WalletImport, WalletExport {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         for(String line : reader.lines().map(String::trim).toArray(String[]::new)) {
             if(line.isEmpty()) {
-                if(paragraph.length() > 0) {
+                if(!paragraph.isEmpty()) {
                     paragraphs.add(paragraph.toString());
                     paragraph.setLength(0);
                 }
@@ -127,11 +130,21 @@ public class Descriptor implements WalletImport, WalletExport {
             }
         }
 
-        if(paragraph.length() > 0) {
+        if(!paragraph.isEmpty()) {
             paragraphs.add(paragraph.toString());
         }
 
         return paragraphs;
+    }
+
+    private static Wallet ensureKeyDerivations(Wallet wallet) {
+        for(Keystore keystore : wallet.getKeystores()) {
+            if(keystore.getKeyDerivation().getMasterFingerprint() == null || keystore.getKeyDerivation().getDerivationPath() == null) {
+                keystore.setKeyDerivation(new KeyDerivation(KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT, wallet.getScriptType().getDefaultDerivationPath()));
+            }
+        }
+
+        return wallet;
     }
 
     @Override
