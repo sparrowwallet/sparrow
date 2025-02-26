@@ -5,6 +5,7 @@ import com.google.gson.*;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -69,6 +70,7 @@ public class WalletLabels implements WalletImport, WalletExport {
                 }
             }
 
+            Set<Sha256Hash> confirmingTxs = new HashSet<>();
             WalletTransactionsEntry walletTransactionsEntry = exportWalletForm.getWalletTransactionsEntry();
             for(Entry entry : walletTransactionsEntry.getChildren()) {
                 TransactionEntry txEntry = (TransactionEntry)entry;
@@ -77,24 +79,28 @@ public class WalletLabels implements WalletImport, WalletExport {
                         txEntry.isConfirming() ? null : blkTx.getHeight(), blkTx.getDate(),
                         blkTx.getFee() == null || blkTx.getFee() == 0 ? null : blkTx.getFee(), txEntry.getValue(),
                         getFiatValue(blkTx.getDate(), Transaction.SATOSHIS_PER_BITCOIN, fiatRates)));
+                if(txEntry.isConfirming()) {
+                    confirmingTxs.add(blkTx.getHash());
+                }
             }
 
             for(WalletNode addressNode : exportWallet.getWalletAddresses().values()) {
                 labels.add(new AddressLabel(addressNode.getAddress().toString(), addressNode.getLabel(), origin, addressNode.getDerivationPath().substring(1),
-                        addressNode.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo, txo.getSpentBy()) : Stream.of(txo)).map(BlockTransactionHash::getHeight).toList()));
+                        addressNode.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo, txo.getSpentBy()) : Stream.of(txo))
+                                .filter(ref -> !confirmingTxs.contains(ref.getHash())).map(BlockTransactionHash::getHeight).toList()));
             }
 
             for(Map.Entry<BlockTransactionHashIndex, WalletNode> txoEntry : exportWallet.getWalletTxos().entrySet()) {
                 BlockTransactionHashIndex txo = txoEntry.getKey();
                 WalletNode addressNode = txoEntry.getValue();
                 Boolean spendable = (txo.isSpent() ? null : txo.getStatus() != Status.FROZEN);
-                labels.add(new InputOutputLabel(Type.output, txo.toString(), txo.getLabel(), origin, spendable, addressNode.getDerivationPath().substring(1),
-                        txo.getValue(), txo.getHeight(), txo.getDate(), getFiatValue(txo, fiatRates)));
+                labels.add(new InputOutputLabel(Type.output, txo.toString(), txo.getLabel(), origin, spendable, addressNode.getDerivationPath().substring(1), txo.getValue(),
+                        confirmingTxs.contains(txo.getHash()) ? null : txo.getHeight(), txo.getDate(), getFiatValue(txo, fiatRates)));
 
                 if(txo.isSpent()) {
                     BlockTransactionHashIndex txi = txo.getSpentBy();
-                    labels.add(new InputOutputLabel(Type.input, txi.toString(), txi.getLabel(), origin, null, addressNode.getDerivationPath().substring(1),
-                            txi.getValue(), null, null, getFiatValue(txi, fiatRates)));
+                    labels.add(new InputOutputLabel(Type.input, txi.toString(), txi.getLabel(), origin, null, addressNode.getDerivationPath().substring(1), txi.getValue(),
+                            confirmingTxs.contains(txi.getHash()) ? null : txi.getHeight(), txi.getDate(), getFiatValue(txi, fiatRates)));
                 }
             }
         }
