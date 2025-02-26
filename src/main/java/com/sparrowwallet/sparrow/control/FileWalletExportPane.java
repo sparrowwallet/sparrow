@@ -168,7 +168,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), true);
                 } else if(exporter instanceof PassportMultisig || exporter instanceof KeystoneMultisig || exporter instanceof JadeMultisig) {
                     qrDisplayDialog = new QRDisplayDialog(RegistryType.BYTES.toString(), outputStream.toByteArray(), false);
-                } else if(exporter instanceof Bip129) {
+                } else if(exporter instanceof Bip129 || exporter instanceof WalletLabels) {
                     UR ur = UR.fromBytes(outputStream.toByteArray());
                     BBQR bbqr = new BBQR(BBQRType.UNICODE, outputStream.toByteArray());
                     qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);

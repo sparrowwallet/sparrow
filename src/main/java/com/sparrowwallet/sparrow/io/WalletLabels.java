@@ -132,7 +132,7 @@ public class WalletLabels implements WalletImport, WalletExport {
 
     @Override
     public boolean isWalletExportScannable() {
-        return false;
+        return true;
     }
 
     @Override
@@ -334,7 +334,7 @@ public class WalletLabels implements WalletImport, WalletExport {
 
     @Override
     public boolean isWalletImportScannable() {
-        return false;
+        return true;
     }
 
     @Override
