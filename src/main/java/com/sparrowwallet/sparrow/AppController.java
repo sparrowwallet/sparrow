@@ -1,9 +1,7 @@
 package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.JCommander;
-import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
-import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -1471,6 +1469,7 @@ public class AppController implements Initializable {
             stage.setAlwaysOnTop(true);
             stage.setAlwaysOnTop(false);
             if(event.getSource() instanceof File file) {
+                downloadVerifierDialog.setInitialFile(file);
                 downloadVerifierDialog.setSignatureFile(file);
             }
             return;

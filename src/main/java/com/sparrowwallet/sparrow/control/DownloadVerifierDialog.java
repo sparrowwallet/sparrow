@@ -62,6 +62,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private static final List<String> ARCHIVE_EXTENSIONS = List.of("zip", "tar.gz", "tar.bz2", "tar.xz", "rar", "7z");
 
     private static final String SPARROW_RELEASE_PREFIX = "sparrow-";
+    private static final String SPARROW_RELEASE_ALT_PREFIX = "sparrow_";
     private static final String SPARROW_SIGNATURE_SUFFIX = "-manifest.txt.asc";
     private static final Pattern SPARROW_RELEASE_VERSION = Pattern.compile("[0-9]+(\\.[0-9]+)*");
     private static final long MIN_VALID_SPARROW_RELEASE_SIZE = 10 * 1024 * 1024;
@@ -70,6 +71,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private final ObjectProperty<File> manifest = new SimpleObjectProperty<>();
     private final ObjectProperty<File> publicKey = new SimpleObjectProperty<>();
     private final ObjectProperty<File> release = new SimpleObjectProperty<>();
+    private final ObjectProperty<File> initial = new SimpleObjectProperty<>();
 
     private final BooleanProperty manifestDisabled = new SimpleBooleanProperty();
     private final BooleanProperty publicKeyDisabled = new SimpleBooleanProperty();
@@ -81,7 +83,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
     private static File lastFileParent;
 
-    public DownloadVerifierDialog(File initialSignatureFile) {
+    public DownloadVerifierDialog(File initialFile) {
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
@@ -223,11 +225,17 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         });
 
         release.addListener((observable, oldValue, releaseFile) -> {
+            if(releaseFile != null) {
+                initial.set(null);
+            }
             verify();
         });
 
-        if(initialSignatureFile != null) {
-            javafx.application.Platform.runLater(() -> signature.set(initialSignatureFile));
+        if(initialFile != null) {
+            javafx.application.Platform.runLater(() -> {
+                initial.set(initialFile);
+                signature.set(initialFile);
+            });
         }
     }
 
@@ -455,7 +463,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             }
         }
 
-        if(providedFile.getName().toLowerCase(Locale.ROOT).startsWith(SPARROW_RELEASE_PREFIX)) {
+        String providedName = providedFile.getName().toLowerCase(Locale.ROOT);
+        if(providedName.startsWith(SPARROW_RELEASE_PREFIX) || providedName.startsWith(SPARROW_RELEASE_ALT_PREFIX)) {
             Matcher matcher = SPARROW_RELEASE_VERSION.matcher(providedFile.getName());
             if(matcher.find()) {
                 String version = matcher.group();
@@ -482,6 +491,15 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private File findReleaseFile(File manifestFile, Map<File, String> manifestMap) {
+        File initialFile = initial.get();
+        if(initialFile != null) {
+            for(File file : manifestMap.keySet()) {
+                if(initialFile.getName().equals(file.getName())) {
+                    return initialFile;
+                }
+            }
+        }
+
         List<String> releaseExtensions = getReleaseFileExtensions();
         List<List<String>> extensionLists = List.of(releaseExtensions, DISK_IMAGE_EXTENSIONS, ARCHIVE_EXTENSIONS, List.of(""));
 
@@ -565,7 +583,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 }
             }
 
-            if(name.startsWith(SPARROW_RELEASE_PREFIX) && file.length() >= MIN_VALID_SPARROW_RELEASE_SIZE) {
+            if((name.startsWith(SPARROW_RELEASE_PREFIX) || name.startsWith(SPARROW_RELEASE_ALT_PREFIX)) && file.length() >= MIN_VALID_SPARROW_RELEASE_SIZE) {
                 Matcher matcher = SPARROW_RELEASE_VERSION.matcher(name);
                 return matcher.find();
             }
@@ -576,6 +594,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
     public void setSignatureFile(File signatureFile) {
         signature.set(signatureFile);
+    }
+
+    public void setInitialFile(File initialFile) {
+        initial.set(initialFile);
     }
 
     private static class Header extends GridPane {
