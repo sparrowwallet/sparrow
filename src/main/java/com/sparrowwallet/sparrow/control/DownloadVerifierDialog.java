@@ -56,14 +56,15 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private static final List<String> MANIFEST_EXTENSIONS = List.of("txt");
     private static final List<String> PUBLIC_KEY_EXTENSIONS = List.of("asc");
     private static final List<String> MACOS_RELEASE_EXTENSIONS = List.of("dmg");
-    private static final List<String> WINDOWS_RELEASE_EXTENSIONS = List.of("exe", "zip");
+    private static final List<String> WINDOWS_RELEASE_EXTENSIONS = List.of("exe", "msi", "zip");
     private static final List<String> LINUX_RELEASE_EXTENSIONS = List.of("deb", "rpm", "tar.gz");
     private static final List<String> DISK_IMAGE_EXTENSIONS = List.of("img", "bin", "dfu");
     private static final List<String> ARCHIVE_EXTENSIONS = List.of("zip", "tar.gz", "tar.bz2", "tar.xz", "rar", "7z");
 
     private static final String SPARROW_RELEASE_PREFIX = "sparrow-";
     private static final String SPARROW_RELEASE_ALT_PREFIX = "sparrow_";
-    private static final String SPARROW_SIGNATURE_SUFFIX = "-manifest.txt.asc";
+    private static final String SPARROW_MANIFEST_SUFFIX = "-manifest.txt";
+    private static final String SPARROW_SIGNATURE_SUFFIX = SPARROW_MANIFEST_SUFFIX + ".asc";
     private static final Pattern SPARROW_RELEASE_VERSION = Pattern.compile("[0-9]+(\\.[0-9]+)*");
     private static final long MIN_VALID_SPARROW_RELEASE_SIZE = 10 * 1024 * 1024;
 
@@ -300,7 +301,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 publicKeyDisabled.set(true);
             }
 
-            if(manifest.get().equals(release.get())) {
+            if(manifest.get().equals(release.get()) && !isSparrowManifest(manifest.get())) {
                 manifestDisabled.set(true);
                 releaseHash.setText("No hash required, signature signs release file directly");
                 releaseHash.setGraphic(GlyphUtils.getSuccessGlyph());
@@ -492,9 +493,16 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
     private File findReleaseFile(File manifestFile, Map<File, String> manifestMap) {
         File initialFile = initial.get();
-        if(initialFile != null) {
+        if(initialFile != null && initialFile.exists()) {
             for(File file : manifestMap.keySet()) {
                 if(initialFile.getName().equals(file.getName())) {
+                    return initialFile;
+                }
+            }
+
+            List<List<String>> allExtensionLists = List.of(MACOS_RELEASE_EXTENSIONS, WINDOWS_RELEASE_EXTENSIONS, LINUX_RELEASE_EXTENSIONS, DISK_IMAGE_EXTENSIONS, ARCHIVE_EXTENSIONS);
+            for(List<String> extensions : allExtensionLists) {
+                if(extensions.stream().anyMatch(ext -> initialFile.getName().toLowerCase(Locale.ROOT).endsWith(ext))) {
                     return initialFile;
                 }
             }
@@ -590,6 +598,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         return false;
+    }
+
+    public static boolean isSparrowManifest(File manifestFile) {
+        return manifestFile.getName().startsWith(SPARROW_RELEASE_PREFIX) && manifestFile.getName().endsWith(SPARROW_MANIFEST_SUFFIX);
     }
 
     public void setSignatureFile(File signatureFile) {
