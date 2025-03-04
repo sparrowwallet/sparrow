@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io.db;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;

@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.FileType;
+import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
