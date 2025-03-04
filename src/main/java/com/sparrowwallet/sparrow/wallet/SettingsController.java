@@ -475,6 +475,10 @@ public class SettingsController extends WalletFormController implements Initiali
             return;
         }
 
+        if(AppServices.disallowAnyInvalidDerivationPaths(editedWallet)) {
+            return;
+        }
+
         boolean rederive = false;
         for(Keystore keystore : editedWallet.getKeystores()) {
             Optional<Keystore> optExisting = walletForm.getWallet().getKeystores().stream()

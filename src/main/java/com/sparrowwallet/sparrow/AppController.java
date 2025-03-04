@@ -1252,6 +1252,10 @@ public class AppController implements Initializable {
     }
 
     private void addImportedWallet(Wallet wallet) {
+        if(AppServices.disallowAnyInvalidDerivationPaths(wallet)) {
+            return;
+        }
+
         WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getBirthDate());
         nameDlg.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
