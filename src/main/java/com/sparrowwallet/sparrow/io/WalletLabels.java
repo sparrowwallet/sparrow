@@ -2,9 +2,11 @@ package com.sparrowwallet.sparrow.io;
 
 import com.csvreader.CsvReader;
 import com.google.gson.*;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.*;
@@ -27,6 +29,8 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -203,7 +207,7 @@ public class WalletLabels implements WalletImport, WalletExport {
             }
 
             OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
-            String origin = outputDescriptor.toString(true, false, false);
+            Origin origin = Origin.fromOutputDescriptor(outputDescriptor);
 
             List<Entry> transactionEntries = walletForm.getWalletTransactionsEntry().getChildren();
             List<Entry> addressEntries = new ArrayList<>();
@@ -212,7 +216,7 @@ public class WalletLabels implements WalletImport, WalletExport {
             List<Entry> utxoEntries = walletForm.getWalletUtxosEntry().getChildren();
 
             for(Label label : labels) {
-                if(label.origin != null && !label.origin.equals(origin)) {
+                if(label.origin != null && !Origin.fromString(label.origin).equals(origin)) {
                     continue;
                 }
 
@@ -492,6 +496,51 @@ public class WalletLabels implements WalletImport, WalletExport {
             } catch (ParseException e) {
                 throw new JsonParseException(e);
             }
+        }
+    }
+
+    private static class Origin {
+        private static final Pattern KEY_ORIGIN_PATTERN = Pattern.compile("\\[([A-Fa-f0-9]{8})([/\\d'hH]+)?\\]");
+
+        private ScriptType scriptType;
+        private Set<KeyDerivation> keyDerivations;
+
+        @Override
+        public final boolean equals(Object o) {
+            if(this == o) {
+                return true;
+            }
+            if(!(o instanceof Origin origin)) {
+                return false;
+            }
+
+            return scriptType == origin.scriptType && keyDerivations.equals(origin.keyDerivations);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hashCode(scriptType);
+            result = 31 * result + keyDerivations.hashCode();
+            return result;
+        }
+
+        public static Origin fromOutputDescriptor(OutputDescriptor outputDescriptor) {
+            Origin origin = new Origin();
+            origin.scriptType = outputDescriptor.getScriptType();
+            origin.keyDerivations = new HashSet<>(outputDescriptor.getExtendedPublicKeysMap().values());
+            return origin;
+        }
+
+        public static Origin fromString(String strOrigin) {
+            Origin origin = new Origin();
+            origin.scriptType = ScriptType.fromDescriptor(strOrigin);
+            origin.keyDerivations = new HashSet<>();
+            Matcher keyOriginMatcher = KEY_ORIGIN_PATTERN.matcher(strOrigin);
+            while(keyOriginMatcher.find()) {
+                byte[] masterFingerprintBytes = keyOriginMatcher.group(1) != null ? Utils.hexToBytes(keyOriginMatcher.group(1)) : new byte[4];
+                origin.keyDerivations.add(new KeyDerivation(Utils.bytesToHex(masterFingerprintBytes), KeyDerivation.writePath(KeyDerivation.parsePath(keyOriginMatcher.group(2)))));
+            }
+            return origin;
         }
     }
 }
