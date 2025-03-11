@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.control;
 
-import com.github.sarxos.webcam.*;
 import com.google.zxing.*;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
@@ -11,11 +10,18 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import net.sourceforge.zbar.ZBar;
+import org.openpnp.capture.CaptureDevice;
+import org.openpnp.capture.CaptureFormat;
+import org.openpnp.capture.CaptureStream;
+import org.openpnp.capture.OpenPnpCapture;
+import org.openpnp.capture.library.OpenpnpCaptureLibrary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,38 +29,59 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class WebcamService extends ScheduledService<Image> {
     private static final Logger log = LoggerFactory.getLogger(WebcamService.class);
 
     private WebcamResolution resolution;
-    private WebcamDevice device;
-    private final WebcamListener listener;
-    private final WebcamUpdater.DelayCalculator delayCalculator;
+    private CaptureDevice device;
     private final BooleanProperty opening = new SimpleBooleanProperty(false);
+    private final BooleanProperty closed = new SimpleBooleanProperty(false);
 
     private final ObjectProperty<Result> resultProperty = new SimpleObjectProperty<>(null);
 
     private static final int QR_SAMPLE_PERIOD_MILLIS = 200;
 
-    private Webcam cam;
+    private final OpenPnpCapture capture;
+    private CaptureStream stream;
     private long lastQrSampleTime;
+    private final ObservableList<CaptureDevice> foundDevices = FXCollections.observableList(new ArrayList<>());
     private final Reader qrReader;
     private final Bokmakierie bokmakierie;
 
     static {
-        Webcam.setDriver(new WebcamScanDriver());
+        OpenpnpCaptureLibrary.INSTANCE.Cap_installCustomLogFunction((level, ptr) -> {
+            switch(level) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    log.error(ptr.getString(0).trim());
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                    log.info(ptr.getString(0).trim());
+                    break;
+                case 7:
+                    log.debug(ptr.getString(0).trim());
+                    break;
+                case 8:
+                    log.trace(ptr.getString(0).trim());
+                    break;
+            }
+        });
     }
 
-    public WebcamService(WebcamResolution resolution, WebcamDevice device, WebcamListener listener, WebcamUpdater.DelayCalculator delayCalculator) {
-        this.resolution = resolution;
-        this.device = device;
-        this.listener = listener;
-        this.delayCalculator = delayCalculator;
+    public WebcamService(WebcamResolution requestedResolution, CaptureDevice requestedDevice) {
+        this.capture = new OpenPnpCapture();
+        this.resolution = requestedResolution;
+        this.device = requestedDevice;
         this.lastQrSampleTime = System.currentTimeMillis();
         this.qrReader = new QRCodeReader();
         this.bokmakierie = new Bokmakierie();
@@ -62,50 +89,66 @@ public class WebcamService extends ScheduledService<Image> {
 
     @Override
     public Task<Image> createTask() {
-        return new Task<Image>() {
+        return new Task<>() {
             @Override
             protected Image call() throws Exception {
                 try {
-                    if(cam == null) {
-                        List<Webcam> webcams = Webcam.getWebcams(1, TimeUnit.MINUTES);
-                        if(webcams.isEmpty()) {
-                            throw new UnsupportedOperationException("No camera available.");
+                    if(stream == null) {
+                        List<CaptureDevice> devices = capture.getDevices();
+
+                        List<CaptureDevice> newDevices = new ArrayList<>(devices);
+                        newDevices.removeAll(foundDevices);
+                        foundDevices.addAll(newDevices);
+                        foundDevices.removeIf(device -> !devices.contains(device));
+
+                        if(foundDevices.isEmpty()) {
+                            throw new UnsupportedOperationException("No cameras available");
                         }
 
-                        cam = webcams.get(0);
+                        CaptureDevice selectedDevice = foundDevices.getFirst();
 
                         if(device != null) {
-                            for(Webcam webcam : webcams) {
-                                if(webcam.getDevice().getName().equals(device.getName())) {
-                                    cam = webcam;
+                            for(CaptureDevice webcam : foundDevices) {
+                                if(webcam.getName().equals(device.getName())) {
+                                    selectedDevice = webcam;
                                 }
                             }
                         } else if(Config.get().getWebcamDevice() != null) {
-                            for(Webcam webcam : webcams) {
-                                if(webcam.getDevice().getName().equals(Config.get().getWebcamDevice())) {
-                                    cam = webcam;
+                            for(CaptureDevice webcam : foundDevices) {
+                                if(webcam.getName().equals(Config.get().getWebcamDevice())) {
+                                    selectedDevice = webcam;
                                 }
                             }
                         }
 
-                        device = cam.getDevice();
+                        device = selectedDevice;
 
-                        cam.setCustomViewSizes(resolution.getSize());
-                        cam.setViewSize(resolution.getSize());
-                        if(!Arrays.asList(cam.getWebcamListeners()).contains(listener)) {
-                            cam.addWebcamListener(listener);
+                        if(device.getFormats().isEmpty()) {
+                            throw new UnsupportedOperationException("No resolutions supported by camera " + device.getName());
+                        }
+
+                        Map<WebcamResolution, CaptureFormat> supportedResolutions = device.getFormats().stream()
+                                .filter(f -> WebcamResolution.from(f) != null)
+                                .collect(Collectors.toMap(WebcamResolution::from, Function.identity(), (u, v) -> u));
+
+                        CaptureFormat format = supportedResolutions.get(resolution);
+                        if(format == null) {
+                            if(!supportedResolutions.isEmpty()) {
+                                format = supportedResolutions.values().iterator().next();
+                            } else {
+                                format = device.getFormats().getFirst();
+                            }
+
+                            log.warn("Could not get requested capture resolution, using " + format.getFormatInfo().width + "x" + format.getFormatInfo().height);
                         }
 
                         opening.set(true);
-                        cam.open(true, delayCalculator);
+                        stream = device.openStream(format);
                         opening.set(false);
+                        closed.set(false);
                     }
 
-                    BufferedImage originalImage = cam.getImage();
-                    if(originalImage == null) {
-                        return null;
-                    }
-
+                    BufferedImage originalImage = stream.capture();
                     CroppedDimension cropped = getCroppedDimension(originalImage);
                     BufferedImage croppedImage = originalImage.getSubimage(cropped.x, cropped.y, cropped.length, cropped.length);
                     BufferedImage framedImage = getFramedImage(originalImage, cropped);
@@ -128,17 +171,22 @@ public class WebcamService extends ScheduledService<Image> {
 
     @Override
     public void reset() {
-        cam = null;
+        stream = null;
         super.reset();
     }
 
     @Override
     public boolean cancel() {
-        if(cam != null && !cam.close()) {
-            cam.close();
+        if(stream != null) {
+            stream.close();
+            closed.set(true);
         }
 
         return super.cancel();
+    }
+
+    public void close() {
+        capture.close();
     }
 
     private void readQR(BufferedImage wideImage, BufferedImage croppedImage) {
@@ -235,31 +283,44 @@ public class WebcamService extends ScheduledService<Image> {
     }
 
     public int getCamWidth() {
-        return resolution.getSize().width;
+        return resolution.getWidth();
     }
 
     public int getCamHeight() {
-        return resolution.getSize().height;
+        return resolution.getHeight();
     }
 
     public void setResolution(WebcamResolution resolution) {
         this.resolution = resolution;
     }
 
-    public WebcamDevice getDevice() {
+    public CaptureDevice getDevice() {
         return device;
     }
 
-    public void setDevice(WebcamDevice device) {
+    public void setDevice(CaptureDevice device) {
         this.device = device;
     }
 
-    public boolean isOpening() {
-        return opening.get();
+    public ObservableList<CaptureDevice> getFoundDevices() {
+        return foundDevices;
     }
 
     public BooleanProperty openingProperty() {
         return opening;
+    }
+
+    public BooleanProperty closedProperty() {
+        return closed;
+    }
+
+    public static String fourCCToString(int fourCC) {
+        return new String(new char[] {
+                (char) (fourCC >> 24 & 0xFF),
+                (char) ((fourCC >> 16) & 0xFF),
+                (char) ((fourCC >> 8) & 0xFF),
+                (char) ((fourCC) & 0xFF)
+        });
     }
 
     private static class CroppedDimension {

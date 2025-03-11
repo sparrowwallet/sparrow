@@ -11,13 +11,11 @@ def osName = os.getFamilyName()
 if(os.macOsX) {
     osName = "osx"
 }
-def targetName = ""
 def osArch = "x64"
 def releaseArch = "x86_64"
 if(System.getProperty("os.arch") == "aarch64") {
     osArch = "aarch64"
     releaseArch = "aarch64"
-    targetName = "-" + osArch
 }
 def headless = "true".equals(System.getProperty("java.awt.headless"))
 
@@ -89,12 +87,7 @@ dependencies {
     implementation('com.fasterxml.jackson.core:jackson-databind:2.17.2')
     implementation('com.sparrowwallet:hummingbird:1.7.4')
     implementation('co.nstant.in:cbor:0.9')
-    implementation("com.nativelibs4java:bridj${targetName}:0.7-20140918-3") {
-        exclude group: 'com.google.android.tools', module: 'dx'
-    }
-    implementation("com.github.sarxos:webcam-capture${targetName}:0.3.13-SNAPSHOT") {
-        exclude group: 'com.nativelibs4java', module: 'bridj'
-    }
+    implementation('org.openpnp:openpnp-capture-java:0.0.28-2')
     implementation("io.matthewnelson.kotlin-components:kmp-tor:${vTor}-${vKmpTor}") {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
@@ -378,18 +371,11 @@ extraJavaModuleInfo {
         requires('org.slf4j')
         requires('com.fasterxml.jackson.databind')
     }
-    module("com.nativelibs4java:bridj${targetName}", 'com.nativelibs4java.bridj') {
-        exports('org.bridj')
-        exports('org.bridj.cpp')
-        requires('java.logging')
-    }
-    module("com.github.sarxos:webcam-capture${targetName}", 'com.github.sarxos.webcam.capture') {
-        exports('com.github.sarxos.webcam')
-        exports('com.github.sarxos.webcam.ds.buildin')
-        exports('com.github.sarxos.webcam.ds.buildin.natives')
+    module('org.openpnp:openpnp-capture-java', 'openpnp.capture.java') {
+        exports('org.openpnp.capture')
+        exports('org.openpnp.capture.library')
         requires('java.desktop')
-        requires('com.nativelibs4java.bridj')
-        requires('org.slf4j')
+        requires('com.sun.jna')
     }
     module('de.codecentric.centerdevice:centerdevice-nsmenufx', 'centerdevice.nsmenufx') {
         exports('de.codecentric.centerdevice')
