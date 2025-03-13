@@ -60,7 +60,7 @@ public class WebcamService extends ScheduledService<Image> {
                 case 2:
                 case 3:
                     String err = ptr.getString(0).trim();
-                    if(err.equals("tjDecompressHeader2 failed: No error")) { //Safe to ignore
+                    if(err.equals("tjDecompressHeader2 failed: No error") || err.matches("getPropertyLimits.*failed on.*")) { //Safe to ignore
                         log.debug(err);
                     } else {
                         log.error(err);
