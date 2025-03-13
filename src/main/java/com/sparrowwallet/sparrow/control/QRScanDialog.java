@@ -98,21 +98,26 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         this.webcamService = new WebcamService(webcamResolutionProperty.get(), null);
         webcamService.setPeriod(Duration.millis(SCAN_PERIOD_MILLIS));
         webcamService.setRestartOnFailure(false);
-        WebcamView webcamView = new WebcamView(webcamService, Config.get().isMirrorCapture());
 
         final DialogPane dialogPane = new QRScanDialogPane();
         setDialogPane(dialogPane);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
 
-        StackPane stackPane = new StackPane();
-        stackPane.getChildren().add(webcamView.getView());
-        Node wrappedView = Borders.wrap(stackPane).lineBorder().buildAll();
+        WebcamView webcamView = new WebcamView(webcamService, Config.get().isMirrorCapture());
 
         ProgressBar progressBar = new ProgressBar();
         progressBar.setMinHeight(20);
         progressBar.setPadding(new Insets(0, 10, 0, 10));
         progressBar.setPrefWidth(Integer.MAX_VALUE);
         progressBar.progressProperty().bind(percentComplete);
+
+        VBox vBox = new VBox(20);
+        StackPane stackPane = new StackPane();
+        stackPane.getChildren().add(webcamView.getView());
+        Node wrappedView = Borders.wrap(stackPane).lineBorder().buildAll();
+        vBox.getChildren().addAll(wrappedView, progressBar);
+        dialogPane.setContent(vBox);
+
         webcamService.openingProperty().addListener((_, _, opening) -> {
             if(percentComplete.get() <= 0.0) {
                 Platform.runLater(() -> percentComplete.set(opening ? 0.0 : -1.0));
@@ -155,24 +160,25 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                });
            }
         });
-
-        VBox vBox = new VBox(20);
-        vBox.getChildren().addAll(wrappedView, progressBar);
-
-        dialogPane.setContent(vBox);
-
         webcamService.resultProperty().addListener(new QRResultListener());
         webcamService.setOnFailed(failedEvent -> {
             Throwable exception = Throwables.getRootCause(failedEvent.getSource().getException());
             Platform.runLater(() -> setResult(new Result(exception)));
         });
         webcamService.start();
+
         webcamResolutionProperty.addListener((_, oldResolution, newResolution) -> {
             if(newResolution != null) {
                 if(newResolution.isStandardAspect() && oldResolution.isWidescreenAspect()) {
                     setHeight(getHeight() + 100);
+                    dialogPane.setMaxHeight(dialogPane.getPrefHeight() + 100);
+                    dialogPane.setPrefHeight(dialogPane.getMaxHeight());
+                    dialogPane.setMinHeight(dialogPane.getMaxHeight());
                 } else if(newResolution.isWidescreenAspect() && oldResolution.isStandardAspect()) {
                     setHeight(getHeight() - 100);
+                    dialogPane.setMaxHeight(dialogPane.getPrefHeight() - 100);
+                    dialogPane.setPrefHeight(dialogPane.getMaxHeight());
+                    dialogPane.setMinHeight(dialogPane.getMaxHeight());
                 }
                 EventManager.get().post(new WebcamResolutionChangedEvent(newResolution));
             }
