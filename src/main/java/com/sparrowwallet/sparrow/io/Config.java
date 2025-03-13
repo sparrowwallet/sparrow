@@ -6,6 +6,7 @@ import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.control.QRDensity;
+import com.sparrowwallet.sparrow.control.WebcamResolution;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
@@ -56,7 +57,7 @@ public class Config {
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
-    private Boolean hdCapture;
+    private WebcamResolution webcamResolution;
     private boolean mirrorCapture = true;
     private boolean useZbar = true;
     private String webcamDevice;
@@ -383,16 +384,12 @@ public class Config {
         flush();
     }
 
-    public Boolean getHdCapture() {
-        return hdCapture;
+    public WebcamResolution getWebcamResolution() {
+        return webcamResolution;
     }
 
-    public Boolean isHdCapture() {
-        return hdCapture != null && hdCapture;
-    }
-
-    public void setHdCapture(Boolean hdCapture) {
-        this.hdCapture = hdCapture;
+    public void setWebcamResolution(WebcamResolution webcamResolution) {
+        this.webcamResolution = webcamResolution;
         flush();
     }
 

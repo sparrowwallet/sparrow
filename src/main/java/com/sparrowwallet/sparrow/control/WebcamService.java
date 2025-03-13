@@ -10,8 +10,6 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
@@ -29,14 +27,17 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class WebcamService extends ScheduledService<Image> {
     private static final Logger log = LoggerFactory.getLogger(WebcamService.class);
+
+    private List<CaptureDevice> devices;
+    private Set<WebcamResolution> resolutions;
 
     private WebcamResolution resolution;
     private CaptureDevice device;
@@ -50,7 +51,6 @@ public class WebcamService extends ScheduledService<Image> {
     private final OpenPnpCapture capture;
     private CaptureStream stream;
     private long lastQrSampleTime;
-    private final ObservableList<CaptureDevice> foundDevices = FXCollections.observableList(new ArrayList<>());
     private final Reader qrReader;
     private final Bokmakierie bokmakierie;
 
@@ -94,27 +94,22 @@ public class WebcamService extends ScheduledService<Image> {
             protected Image call() throws Exception {
                 try {
                     if(stream == null) {
-                        List<CaptureDevice> devices = capture.getDevices();
+                        devices = capture.getDevices();
 
-                        List<CaptureDevice> newDevices = new ArrayList<>(devices);
-                        newDevices.removeAll(foundDevices);
-                        foundDevices.addAll(newDevices);
-                        foundDevices.removeIf(device -> !devices.contains(device));
-
-                        if(foundDevices.isEmpty()) {
+                        if(devices.isEmpty()) {
                             throw new UnsupportedOperationException("No cameras available");
                         }
 
-                        CaptureDevice selectedDevice = foundDevices.getFirst();
+                        CaptureDevice selectedDevice = devices.getFirst();
 
                         if(device != null) {
-                            for(CaptureDevice webcam : foundDevices) {
+                            for(CaptureDevice webcam : devices) {
                                 if(webcam.getName().equals(device.getName())) {
                                     selectedDevice = webcam;
                                 }
                             }
                         } else if(Config.get().getWebcamDevice() != null) {
-                            for(CaptureDevice webcam : foundDevices) {
+                            for(CaptureDevice webcam : devices) {
                                 if(webcam.getName().equals(Config.get().getWebcamDevice())) {
                                     selectedDevice = webcam;
                                 }
@@ -129,17 +124,22 @@ public class WebcamService extends ScheduledService<Image> {
 
                         Map<WebcamResolution, CaptureFormat> supportedResolutions = device.getFormats().stream()
                                 .filter(f -> WebcamResolution.from(f) != null)
-                                .collect(Collectors.toMap(WebcamResolution::from, Function.identity(), (u, v) -> u));
+                                .collect(Collectors.toMap(WebcamResolution::from, Function.identity(), (u, v) -> u, TreeMap::new));
+                        resolutions = supportedResolutions.keySet();
 
                         CaptureFormat format = supportedResolutions.get(resolution);
                         if(format == null) {
                             if(!supportedResolutions.isEmpty()) {
-                                format = supportedResolutions.values().iterator().next();
+                                resolution = getNearestEnum(resolution, supportedResolutions.keySet().toArray(new WebcamResolution[0]));
+                                format = supportedResolutions.get(resolution);
                             } else {
                                 format = device.getFormats().getFirst();
+                                log.warn("Could not get standard capture resolution, using " + format.getFormatInfo().width + "x" + format.getFormatInfo().height);
                             }
+                        }
 
-                            log.warn("Could not get requested capture resolution, using " + format.getFormatInfo().width + "x" + format.getFormatInfo().height);
+                        if(log.isDebugEnabled()) {
+                            log.debug("Opening capture stream with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + fourCCToString(format.getFormatInfo().fourcc) + ")");
                         }
 
                         opening.set(true);
@@ -237,7 +237,7 @@ public class WebcamService extends ScheduledService<Image> {
         g2d.drawImage(image, 0, 0, null);
         float[] dash1 = {10.0f};
         g2d.setColor(Color.BLACK);
-        g2d.setStroke(new BasicStroke(resolution == WebcamResolution.HD ? 3.0f : 1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
+        g2d.setStroke(new BasicStroke(resolution.isWidescreenAspect() ? 3.0f : 1.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, dash1, 0.0f));
         g2d.draw(new RoundRectangle2D.Double(cropped.x, cropped.y, cropped.length, cropped.length, 10, 10));
         g2d.dispose();
         return clone;
@@ -274,6 +274,14 @@ public class WebcamService extends ScheduledService<Image> {
         }
     }
 
+    public List<CaptureDevice> getDevices() {
+        return devices;
+    }
+
+    public Set<WebcamResolution> getResolutions() {
+        return resolutions;
+    }
+
     public Result getResult() {
         return resultProperty.get();
     }
@@ -290,6 +298,10 @@ public class WebcamService extends ScheduledService<Image> {
         return resolution.getHeight();
     }
 
+    public WebcamResolution getResolution() {
+        return resolution;
+    }
+
     public void setResolution(WebcamResolution resolution) {
         this.resolution = resolution;
     }
@@ -300,10 +312,6 @@ public class WebcamService extends ScheduledService<Image> {
 
     public void setDevice(CaptureDevice device) {
         this.device = device;
-    }
-
-    public ObservableList<CaptureDevice> getFoundDevices() {
-        return foundDevices;
     }
 
     public BooleanProperty openingProperty() {
@@ -321,6 +329,17 @@ public class WebcamService extends ScheduledService<Image> {
                 (char) ((fourCC >> 8) & 0xFF),
                 (char) ((fourCC) & 0xFF)
         });
+    }
+
+    public static <T extends Enum<T>> T getNearestEnum(T target) {
+        return getNearestEnum(target, target.getDeclaringClass().getEnumConstants());
+    }
+
+    public static <T extends Enum<T>> T getNearestEnum(T target, T[] values) {
+        int ordinal = target.ordinal();
+        return Stream.concat(ordinal > 0 ? Stream.of(values[ordinal - 1]) : Stream.empty(), ordinal < values.length - 1 ? Stream.of(values[ordinal + 1]) : Stream.empty())
+                .findFirst()
+                .orElse(null);
     }
 
     private static class CroppedDimension {

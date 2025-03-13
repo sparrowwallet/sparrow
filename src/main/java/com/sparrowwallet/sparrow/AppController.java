@@ -379,7 +379,7 @@ public class AppController implements Initializable {
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
         hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
         hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
-        useHdCameraResolutionProperty.set(Config.get().isHdCapture());
+        useHdCameraResolutionProperty.set(Config.get().getWebcamResolution() == null || Config.get().getWebcamResolution().isWidescreenAspect());
         useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
         mirrorCameraImageProperty.set(Config.get().isMirrorCapture());
         mirrorCameraImage.selectedProperty().bindBidirectional(mirrorCameraImageProperty);
@@ -944,7 +944,11 @@ public class AppController implements Initializable {
 
     public void useHdCameraResolution(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
-        Config.get().setHdCapture(item.isSelected());
+        if(Config.get().getWebcamResolution().isStandardAspect() && item.isSelected()) {
+            Config.get().setWebcamResolution(WebcamResolution.HD);
+        } else if(Config.get().getWebcamResolution().isWidescreenAspect() && !item.isSelected()) {
+            Config.get().setWebcamResolution(WebcamResolution.VGA);
+        }
     }
 
     public void mirrorCameraImage(ActionEvent event) {
@@ -3150,7 +3154,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void webcamResolutionChanged(WebcamResolutionChangedEvent event) {
-        useHdCameraResolutionProperty.set(event.isHdResolution());
+        useHdCameraResolutionProperty.set(event.getResolution().isWidescreenAspect());
     }
 
     @Subscribe

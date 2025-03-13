@@ -1,13 +1,15 @@
 package com.sparrowwallet.sparrow.event;
 
-public class WebcamResolutionChangedEvent {
-    private final boolean hdResolution;
+import com.sparrowwallet.sparrow.control.WebcamResolution;
 
-    public WebcamResolutionChangedEvent(boolean hdResolution) {
-        this.hdResolution = hdResolution;
+public class WebcamResolutionChangedEvent {
+    private final WebcamResolution resolution;
+
+    public WebcamResolutionChangedEvent(WebcamResolution resolution) {
+        this.resolution = resolution;
     }
 
-    public boolean isHdResolution() {
-        return hdResolution;
+    public WebcamResolution getResolution() {
+        return resolution;
     }
 }

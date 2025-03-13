@@ -72,10 +72,6 @@ public class SparrowDesktop extends Application {
             Config.get().setServerType(ServerType.ELECTRUM_SERVER);
         }
 
-        if(Config.get().getHdCapture() == null && OsType.getCurrent() == OsType.MACOS) {
-            Config.get().setHdCapture(Boolean.TRUE);
-        }
-
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
 
