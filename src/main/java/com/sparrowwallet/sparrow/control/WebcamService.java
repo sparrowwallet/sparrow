@@ -15,10 +15,7 @@ import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
 import net.sourceforge.zbar.ZBar;
-import org.openpnp.capture.CaptureDevice;
-import org.openpnp.capture.CaptureFormat;
-import org.openpnp.capture.CaptureStream;
-import org.openpnp.capture.OpenPnpCapture;
+import org.openpnp.capture.*;
 import org.openpnp.capture.library.OpenpnpCaptureLibrary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +47,7 @@ public class WebcamService extends ScheduledService<Image> {
 
     private final OpenPnpCapture capture;
     private CaptureStream stream;
+    private PropertyLimits zoomLimits;
     private long lastQrSampleTime;
     private final Reader qrReader;
     private final Bokmakierie bokmakierie;
@@ -151,6 +149,12 @@ public class WebcamService extends ScheduledService<Image> {
                         stream = device.openStream(format);
                         opening.set(false);
                         closed.set(false);
+
+                        try {
+                            zoomLimits = stream.getPropertyLimits(CaptureProperty.Zoom);
+                        } catch(Throwable e) {
+                            log.debug("Error getting zoom limits on " + device + ", assuming no zoom function");
+                        }
                     }
 
                     BufferedImage originalImage = stream.capture();
@@ -177,6 +181,7 @@ public class WebcamService extends ScheduledService<Image> {
     @Override
     public void reset() {
         stream = null;
+        zoomLimits = null;
         super.reset();
     }
 
@@ -192,6 +197,32 @@ public class WebcamService extends ScheduledService<Image> {
 
     public void close() {
         capture.close();
+    }
+
+    public PropertyLimits getZoomLimits() {
+        return zoomLimits;
+    }
+
+    public int getZoom() {
+        if(stream != null && zoomLimits != null) {
+            try {
+                return stream.getProperty(CaptureProperty.Zoom);
+            } catch(Exception e) {
+                log.error("Error getting zoom property on " + device, e);
+            }
+        }
+
+        return -1;
+    }
+
+    public void setZoom(int value) {
+        if(stream != null && zoomLimits != null) {
+            try {
+                stream.setProperty(CaptureProperty.Zoom, value);
+            } catch(Exception e) {
+                log.error("Error setting zoom property on " + device, e);
+            }
+        }
     }
 
     private void readQR(BufferedImage wideImage, BufferedImage croppedImage) {
