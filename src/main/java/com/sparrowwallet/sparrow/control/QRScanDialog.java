@@ -170,11 +170,13 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         webcamResolutionProperty.addListener((_, oldResolution, newResolution) -> {
             if(newResolution != null) {
                 if(newResolution.isStandardAspect() && oldResolution.isWidescreenAspect()) {
+                    setWidth(getWidth());
                     setHeight(getHeight() + 100);
                     dialogPane.setMaxHeight(dialogPane.getPrefHeight() + 100);
                     dialogPane.setPrefHeight(dialogPane.getMaxHeight());
                     dialogPane.setMinHeight(dialogPane.getMaxHeight());
                 } else if(newResolution.isWidescreenAspect() && oldResolution.isStandardAspect()) {
+                    setWidth(getWidth());
                     setHeight(getHeight() - 100);
                     dialogPane.setMaxHeight(dialogPane.getPrefHeight() - 100);
                     dialogPane.setPrefHeight(dialogPane.getMaxHeight());

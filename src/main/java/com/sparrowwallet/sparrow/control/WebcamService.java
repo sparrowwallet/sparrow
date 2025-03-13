@@ -61,7 +61,12 @@ public class WebcamService extends ScheduledService<Image> {
                 case 1:
                 case 2:
                 case 3:
-                    log.error(ptr.getString(0).trim());
+                    String err = ptr.getString(0).trim();
+                    if(err.equals("tjDecompressHeader2 failed: No error")) { //Safe to ignore
+                        log.debug(err);
+                    } else {
+                        log.error(err);
+                    }
                     break;
                 case 4:
                 case 5:

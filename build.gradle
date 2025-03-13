@@ -87,7 +87,7 @@ dependencies {
     implementation('com.fasterxml.jackson.core:jackson-databind:2.17.2')
     implementation('com.sparrowwallet:hummingbird:1.7.4')
     implementation('co.nstant.in:cbor:0.9')
-    implementation('org.openpnp:openpnp-capture-java:0.0.28-2')
+    implementation('org.openpnp:openpnp-capture-java:0.0.28-3')
     implementation("io.matthewnelson.kotlin-components:kmp-tor:${vTor}-${vKmpTor}") {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
@@ -182,7 +182,6 @@ application {
                                  "--add-opens=javafx.graphics/com.sun.javafx.tk=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.javafx.tk.quantum=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.glass.ui=centerdevice.nsmenufx",
-                                 "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx",
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
                                  "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
@@ -231,7 +230,6 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.javafx.tk=centerdevice.nsmenufx",
                    "--add-opens=javafx.graphics/com.sun.javafx.tk.quantum=centerdevice.nsmenufx",
                    "--add-opens=javafx.graphics/com.sun.glass.ui=centerdevice.nsmenufx",
-                   "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx",
                    "--add-opens=javafx.controls/com.sun.javafx.scene.control=centerdevice.nsmenufx",
                    "--add-opens=javafx.graphics/com.sun.javafx.menu=centerdevice.nsmenufx",
                    "--add-opens=javafx.graphics/com.sun.glass.ui=com.sparrowwallet.sparrow",
@@ -258,7 +256,7 @@ jlink {
             jvmArgs += ["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"]
         }
         if(os.macOsX) {
-            jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
+            jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=centerdevice.nsmenufx"]
         }
         if(headless) {
             jvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
