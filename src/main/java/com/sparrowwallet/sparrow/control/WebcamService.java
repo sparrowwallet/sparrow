@@ -45,7 +45,7 @@ public class WebcamService extends ScheduledService<Image> {
 
     private static final int QR_SAMPLE_PERIOD_MILLIS = 200;
 
-    private OpenPnpCapture capture;
+    private final OpenPnpCapture capture;
     private CaptureStream stream;
     private PropertyLimits zoomLimits;
     private long lastQrSampleTime;
@@ -53,6 +53,14 @@ public class WebcamService extends ScheduledService<Image> {
     private final Bokmakierie bokmakierie;
 
     static {
+        if(log.isTraceEnabled()) {
+            OpenpnpCaptureLibrary.INSTANCE.Cap_setLogLevel(8);
+        } else if(log.isDebugEnabled()) {
+            OpenpnpCaptureLibrary.INSTANCE.Cap_setLogLevel(7);
+        } else if(log.isInfoEnabled()) {
+            OpenpnpCaptureLibrary.INSTANCE.Cap_setLogLevel(6);
+        }
+
         OpenpnpCaptureLibrary.INSTANCE.Cap_installCustomLogFunction((level, ptr) -> {
             switch(level) {
                 case 0:
@@ -75,6 +83,7 @@ public class WebcamService extends ScheduledService<Image> {
                     log.debug(ptr.getString(0).trim());
                     break;
                 case 8:
+                default:
                     log.trace(ptr.getString(0).trim());
                     break;
             }
@@ -82,6 +91,7 @@ public class WebcamService extends ScheduledService<Image> {
     }
 
     public WebcamService(WebcamResolution requestedResolution, CaptureDevice requestedDevice) {
+        this.capture = new OpenPnpCapture();
         this.resolution = requestedResolution;
         this.device = requestedDevice;
         this.lastQrSampleTime = System.currentTimeMillis();
@@ -95,8 +105,6 @@ public class WebcamService extends ScheduledService<Image> {
             @Override
             protected Image call() throws Exception {
                 try {
-                    createCapture();
-
                     if(stream == null) {
                         devices = capture.getDevices();
 
@@ -143,7 +151,7 @@ public class WebcamService extends ScheduledService<Image> {
                         }
 
                         if(log.isDebugEnabled()) {
-                            log.debug("Opening capture stream with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + fourCCToString(format.getFormatInfo().fourcc) + ")");
+                            log.debug("Opening capture stream  on " + device + " with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + fourCCToString(format.getFormatInfo().fourcc) + ")");
                         }
 
                         opening.set(true);
@@ -177,12 +185,6 @@ public class WebcamService extends ScheduledService<Image> {
                 }
             }
         };
-    }
-
-    private synchronized void createCapture() {
-        if(capture == null) {
-            capture = new OpenPnpCapture();
-        }
     }
 
     @Override
