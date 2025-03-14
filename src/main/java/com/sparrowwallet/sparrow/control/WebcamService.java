@@ -45,7 +45,7 @@ public class WebcamService extends ScheduledService<Image> {
 
     private static final int QR_SAMPLE_PERIOD_MILLIS = 200;
 
-    private final OpenPnpCapture capture;
+    private OpenPnpCapture capture;
     private CaptureStream stream;
     private PropertyLimits zoomLimits;
     private long lastQrSampleTime;
@@ -82,7 +82,6 @@ public class WebcamService extends ScheduledService<Image> {
     }
 
     public WebcamService(WebcamResolution requestedResolution, CaptureDevice requestedDevice) {
-        this.capture = new OpenPnpCapture();
         this.resolution = requestedResolution;
         this.device = requestedDevice;
         this.lastQrSampleTime = System.currentTimeMillis();
@@ -96,6 +95,8 @@ public class WebcamService extends ScheduledService<Image> {
             @Override
             protected Image call() throws Exception {
                 try {
+                    createCapture();
+
                     if(stream == null) {
                         devices = capture.getDevices();
 
@@ -176,6 +177,12 @@ public class WebcamService extends ScheduledService<Image> {
                 }
             }
         };
+    }
+
+    private synchronized void createCapture() {
+        if(capture == null) {
+            capture = new OpenPnpCapture();
+        }
     }
 
     @Override
