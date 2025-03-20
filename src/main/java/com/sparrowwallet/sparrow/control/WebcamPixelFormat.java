@@ -34,7 +34,7 @@ public enum WebcamPixelFormat {
     public static WebcamPixelFormat fromFourCC(int fourCC) {
         String strFourCC = fourCCToString(fourCC);
         for(WebcamPixelFormat pixelFormat : WebcamPixelFormat.values()) {
-            if(pixelFormat.name().equalsIgnoreCase(strFourCC)) {
+            if(pixelFormat.getName().equalsIgnoreCase(strFourCC)) {
                 return pixelFormat;
             }
         }
