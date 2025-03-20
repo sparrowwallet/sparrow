@@ -7,7 +7,7 @@ public enum WebcamPixelFormat {
     PIX_FMT_YUVS("yuvs", true),
     PIX_FMT_RGB24("RGB3", true),
     PIX_FMT_YUYV("YUYV", true),
-    PIX_FMT_MPJG("MPJG", true),
+    PIX_FMT_MJPG("MJPG", true),
     PIX_FMT_YUY2("YUY2", true),
     PIX_FMT_NV12("NV12", false);
 
