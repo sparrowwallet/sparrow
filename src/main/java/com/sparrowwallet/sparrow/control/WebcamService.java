@@ -112,7 +112,7 @@ public class WebcamService extends ScheduledService<Image> {
                             throw new UnsupportedOperationException("No cameras available");
                         }
 
-                        CaptureDevice selectedDevice = devices.getFirst();
+                        CaptureDevice selectedDevice = devices.stream().filter(d -> !d.getFormats().isEmpty()).findFirst().orElse(devices.getFirst());
 
                         if(device != null) {
                             for(CaptureDevice webcam : devices) {
@@ -134,7 +134,14 @@ public class WebcamService extends ScheduledService<Image> {
                             throw new UnsupportedOperationException("No resolutions supported by camera " + device.getName());
                         }
 
-                        Map<WebcamResolution, CaptureFormat> supportedResolutions = device.getFormats().stream()
+                        List<CaptureFormat> deviceFormats = new ArrayList<>(device.getFormats());
+                        deviceFormats.sort((f1, f2) -> {
+                            WebcamPixelFormat pf1 = WebcamPixelFormat.fromFourCC(f1.getFormatInfo().fourcc);
+                            WebcamPixelFormat pf2 = WebcamPixelFormat.fromFourCC(f2.getFormatInfo().fourcc);
+                            return Integer.compare(WebcamPixelFormat.getPriority(pf1), WebcamPixelFormat.getPriority(pf2));
+                        });
+
+                        Map<WebcamResolution, CaptureFormat> supportedResolutions = deviceFormats.stream()
                                 .filter(f -> WebcamResolution.from(f) != null)
                                 .collect(Collectors.toMap(WebcamResolution::from, Function.identity(), (u, v) -> u, TreeMap::new));
                         resolutions = supportedResolutions.keySet();
@@ -151,7 +158,7 @@ public class WebcamService extends ScheduledService<Image> {
                         }
 
                         if(log.isDebugEnabled()) {
-                            log.debug("Opening capture stream  on " + device + " with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + fourCCToString(format.getFormatInfo().fourcc) + ")");
+                            log.debug("Opening capture stream  on " + device + " with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + WebcamPixelFormat.fourCCToString(format.getFormatInfo().fourcc) + ")");
                         }
 
                         opening.set(true);
@@ -365,15 +372,6 @@ public class WebcamService extends ScheduledService<Image> {
 
     public BooleanProperty closedProperty() {
         return closed;
-    }
-
-    public static String fourCCToString(int fourCC) {
-        return new String(new char[] {
-                (char) (fourCC >> 24 & 0xFF),
-                (char) ((fourCC >> 16) & 0xFF),
-                (char) ((fourCC >> 8) & 0xFF),
-                (char) ((fourCC) & 0xFF)
-        });
     }
 
     public static <T extends Enum<T>> T getNearestEnum(T target) {
