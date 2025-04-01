@@ -249,6 +249,7 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=co.nstant.in.cbor",
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.pg",
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.provider",
+                   "--add-reads=com.sparrowwallet.merged.module=kotlin.stdlib",
                    "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
                    "--add-reads=org.flywaydb.core=java.desktop"]
 
