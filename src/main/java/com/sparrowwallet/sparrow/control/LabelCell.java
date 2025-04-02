@@ -38,12 +38,23 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> implements Confirm
         if(empty) {
             setText(null);
             setGraphic(null);
+            setTooltip(null);
         } else {
             Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
             EntryCell.applyRowStyles(this, entry);
 
             setText(label);
             setContextMenu(new LabelContextMenu(entry, label));
+
+            double width = label == null || label.length() < 20 ? 0.0 : TextUtils.computeTextWidth(getFont(), label, 0.0D);
+            if(width > getTableColumn().getWidth()) {
+                Tooltip tooltip = new Tooltip(label);
+                tooltip.setPrefWidth(getTreeTableView().getWidth());
+                tooltip.setWrapText(true);
+                setTooltip(tooltip);
+            } else {
+                setTooltip(null);
+            }
         }
     }
 
@@ -121,7 +132,7 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> implements Confirm
         return confirmationsProperty;
     }
 
-    private static class LabelContextMenu extends ContextMenu {
+    private class LabelContextMenu extends ContextMenu {
         public LabelContextMenu(Entry entry, String label) {
             MenuItem copyLabel = new MenuItem("Copy Label");
             copyLabel.setOnAction(AE -> {
@@ -141,6 +152,13 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> implements Confirm
                 }
             });
             getItems().add(pasteLabel);
+
+            MenuItem editLabel = new MenuItem("Edit Label...");
+            editLabel.setOnAction(AE -> {
+                hide();
+                startEdit();
+            });
+            getItems().add(editLabel);
         }
     }
 }
