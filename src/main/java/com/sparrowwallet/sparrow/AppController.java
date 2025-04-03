@@ -1994,12 +1994,10 @@ public class AppController implements Initializable {
             tabLabel.setMaxWidth(TAB_LABEL_MAX_WIDTH);
             tabLabel.setGraphic(glyph);
             tabLabel.setGraphicTextGap(5.0);
-            tabLabel.textTruncatedProperty().addListener((_, _, newValue) -> {
-                if(newValue && name != null && !name.isEmpty()) {
-                    Tooltip tooltip = new Tooltip(name);
-                    tabLabel.setTooltip(tooltip);
-                }
-            });
+            if(TextUtils.computeTextWidth(tabLabel.getFont(), tabName, 0.0D) > TAB_LABEL_MAX_WIDTH) {
+                Tooltip tooltip = new Tooltip(tabName);
+                tabLabel.setTooltip(tooltip);
+            }
             tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
