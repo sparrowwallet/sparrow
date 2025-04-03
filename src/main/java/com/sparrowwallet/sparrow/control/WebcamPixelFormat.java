@@ -3,20 +3,22 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.OsType;
 
 public enum WebcamPixelFormat {
-    PIX_FMT_420V("420v", true),
-    PIX_FMT_YUVS("yuvs", true),
-    PIX_FMT_RGB24("RGB3", true),
-    PIX_FMT_YUYV("YUYV", true),
-    PIX_FMT_MJPG("MJPG", true),
-    PIX_FMT_YUY2("YUY2", true),
-    PIX_FMT_NV12("NV12", false);
+    PIX_FMT_420V("420v", true, true),
+    PIX_FMT_YUVS("yuvs", true, true),
+    PIX_FMT_RGB24("RGB3", true, true),
+    PIX_FMT_YUYV("YUYV", true, true),
+    PIX_FMT_MJPG("MJPG", true, false),
+    PIX_FMT_YUY2("YUY2", true, true),
+    PIX_FMT_NV12("NV12", false, false);
 
     private final String name;
     private final boolean supported;
+    private final boolean preferred;
 
-    WebcamPixelFormat(String name, boolean supported) {
+    WebcamPixelFormat(String name, boolean supported, boolean preferred) {
         this.name = name;
         this.supported = supported;
+        this.preferred = preferred;
     }
 
     public String getName() {
@@ -25,6 +27,10 @@ public enum WebcamPixelFormat {
 
     public boolean isSupported() {
         return supported;
+    }
+
+    public boolean isPreferred() {
+        return preferred;
     }
 
     public String toString() {
@@ -65,11 +71,13 @@ public enum WebcamPixelFormat {
 
     public static int getPriority(WebcamPixelFormat pixelFormat) {
         if(pixelFormat == null) {
-            return 1;
-        } else if(pixelFormat.isSupported()) {
-            return 0;
-        } else {
             return 2;
+        } else if(pixelFormat.isPreferred()) {
+            return 0;
+        } else if(pixelFormat.isSupported()) {
+            return 1;
+        } else {
+            return 3;
         }
     }
 }
