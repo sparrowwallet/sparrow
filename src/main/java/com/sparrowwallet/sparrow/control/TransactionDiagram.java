@@ -40,10 +40,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.CubicCurve;
 import javafx.scene.shape.Line;
-import javafx.stage.FileChooser;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
-import javafx.stage.StageStyle;
+import javafx.stage.*;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 
@@ -491,6 +488,11 @@ public class TransactionDiagram extends GridPane {
                 }
                 tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
                 tooltip.setShowDuration(Duration.INDEFINITE);
+                tooltip.setWrapText(true);
+                Window activeWindow = AppServices.getActiveWindow();
+                if(activeWindow != null) {
+                    tooltip.setMaxWidth(activeWindow.getWidth());
+                }
                 if(!tooltip.getText().isEmpty()) {
                     label.setTooltip(tooltip);
                 }
@@ -688,6 +690,11 @@ public class TransactionDiagram extends GridPane {
             recipientTooltip.getStyleClass().add("recipient-label");
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
+            recipientTooltip.setWrapText(true);
+            Window activeWindow = AppServices.getActiveWindow();
+            if(activeWindow != null) {
+                recipientTooltip.setMaxWidth(activeWindow.getWidth());
+            }
             recipientLabel.setTooltip(recipientTooltip);
             HBox paymentBox = new HBox();
             paymentBox.setAlignment(Pos.CENTER_LEFT);

@@ -78,6 +78,7 @@ public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
 
     public static final String DRAG_OVER_CLASS = "drag-over";
+    public static final int TAB_LABEL_MAX_WIDTH = 300;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_INACTIVE = 0.8;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
@@ -1990,8 +1991,15 @@ public class AppController implements Initializable {
             glyph.setFontSize(10.0);
             glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
             Label tabLabel = new Label(tabName);
+            tabLabel.setMaxWidth(TAB_LABEL_MAX_WIDTH);
             tabLabel.setGraphic(glyph);
             tabLabel.setGraphicTextGap(5.0);
+            tabLabel.textTruncatedProperty().addListener((_, _, newValue) -> {
+                if(newValue && name != null && !name.isEmpty()) {
+                    Tooltip tooltip = new Tooltip(name);
+                    tabLabel.setTooltip(tooltip);
+                }
+            });
             tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
