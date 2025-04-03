@@ -225,6 +225,13 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         walletTableEvents.skip(3, TimeUnit.SECONDS).subscribe(event -> {
             event.getWallet().getWalletTables().put(event.getTableType(), event.getWalletTable());
             EventManager.get().post(event);
+
+            //Reset pref widths here so window resizes don't cause reversion to previously set pref widths
+            Double[] widths = event.getWalletTable().getWidths();
+            for(int i = 0; i < getColumns().size(); i++) {
+                TreeTableColumn<Entry, ?> column = getColumns().get(i);
+                column.setPrefWidth(widths != null && getColumns().size() == widths.length ? widths[i] : STANDARD_WIDTH);
+            }
         });
     }
 
