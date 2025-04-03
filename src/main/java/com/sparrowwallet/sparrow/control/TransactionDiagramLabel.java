@@ -227,7 +227,8 @@ public class TransactionDiagramLabel extends HBox {
         }
 
         Glyph glyph = GlyphUtils.getFeeGlyph();
-        String text = "Fee of " + transactionDiagram.getSatsValue(walletTx.getFee()) + " sats (" + String.format("%.2f", walletTx.getFeePercentage() * 100.0) + "%)";
+        String percentage = walletTx.getFeePercentage() < 0.0001d ? "<0.01" : String.format("%.2f", walletTx.getFeePercentage() * 100.0);
+        String text = "Fee of " + transactionDiagram.getSatsValue(walletTx.getFee()) + " sats (" + percentage + "%)";
 
         return getOutputLabel(glyph, text);
     }
