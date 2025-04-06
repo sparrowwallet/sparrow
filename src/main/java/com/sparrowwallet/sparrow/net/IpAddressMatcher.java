@@ -16,6 +16,10 @@ package com.sparrowwallet.sparrow.net;
  * limitations under the License.
  */
 
+import com.sparrowwallet.sparrow.AppServices;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
@@ -32,6 +36,8 @@ import java.net.UnknownHostException;
  * Slightly modified by omidzk to have zero dependency to any frameworks other than the JRE.
  */
 public final class IpAddressMatcher {
+    private static final Logger log = LoggerFactory.getLogger(IpAddressMatcher.class);
+
     private static final IpAddressMatcher LOCAL_RANGE_1 = new IpAddressMatcher("10.0.0.0/8");
     private static final IpAddressMatcher LOCAL_RANGE_2 = new IpAddressMatcher("172.16.0.0/12");
     private static final IpAddressMatcher LOCAL_RANGE_3 = new IpAddressMatcher("192.168.0.0/16");
@@ -102,6 +108,15 @@ public final class IpAddressMatcher {
     }
 
     public static boolean isLocalNetworkAddress(String address) {
-        return "localhost".equals(address) || "127.0.0.1".equals(address) || LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address) || LOCAL_RANGE_4.matches(address);
+        try {
+            return "localhost".equals(address) || "127.0.0.1".equals(address) || LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address) || LOCAL_RANGE_4.matches(address);
+        } catch(IllegalArgumentException e) {
+            if(AppServices.isUsingProxy()) {
+                log.info(e.getMessage() + ", assuming it is a non-local address to be resolved by the configured proxy");
+                return false;
+            }
+
+            throw e;
+        }
     }
 }

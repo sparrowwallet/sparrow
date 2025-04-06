@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.io.Server;
 
@@ -59,6 +60,16 @@ public enum PublicElectrumServer {
         }
 
         return null;
+    }
+
+    public static boolean isPublicServer(HostAndPort hostAndPort) {
+        for(PublicElectrumServer publicServer : values()) {
+            if(publicServer.getServer().getHostAndPort().equals(hostAndPort)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override

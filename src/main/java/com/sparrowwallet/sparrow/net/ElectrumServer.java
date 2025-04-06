@@ -118,7 +118,8 @@ public class ElectrumServer {
                 previousServer = electrumServer;
 
                 HostAndPort hostAndPort = electrumServer.getHostAndPort();
-                boolean localNetworkAddress = !protocol.isOnionAddress(hostAndPort) && IpAddressMatcher.isLocalNetworkAddress(hostAndPort.getHost());
+                boolean localNetworkAddress = !Protocol.isOnionAddress(hostAndPort) && !PublicElectrumServer.isPublicServer(hostAndPort)
+                        && IpAddressMatcher.isLocalNetworkAddress(hostAndPort.getHost());
 
                 if(!localNetworkAddress && Config.get().isUseProxy() && proxyServer != null && !proxyServer.isBlank()) {
                     HostAndPort proxy = HostAndPort.fromString(proxyServer);
