@@ -137,7 +137,7 @@ public class WebcamService extends ScheduledService<Image> {
 
                         List<CaptureFormat> deviceFormats = new ArrayList<>(device.getFormats());
 
-                        //On *nix prioritise supported camera pixel formats, preferring RGB3 and YUYV over MJPG
+                        //On *nix prioritise supported camera pixel formats, preferring RGB3, then YUYV, then MJPG
                         //On macOS and Windows, camera pixel format is largely abstracted away
                         if(OsType.getCurrent() == OsType.UNIX) {
                             deviceFormats.sort((f1, f2) -> {
