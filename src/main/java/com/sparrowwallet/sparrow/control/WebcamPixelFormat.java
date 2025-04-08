@@ -3,12 +3,10 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.OsType;
 
 public enum WebcamPixelFormat {
-    PIX_FMT_420V("420v", true, true),
-    PIX_FMT_YUVS("yuvs", true, true),
+    //Only V4L2 formats defined in linux/videodev2.h are required here
     PIX_FMT_RGB24("RGB3", true, true),
     PIX_FMT_YUYV("YUYV", true, true),
     PIX_FMT_MJPG("MJPG", true, false),
-    PIX_FMT_YUY2("YUY2", true, true),
     PIX_FMT_NV12("NV12", false, false);
 
     private final String name;

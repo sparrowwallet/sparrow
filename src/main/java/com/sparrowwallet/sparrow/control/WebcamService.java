@@ -5,6 +5,7 @@ import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.google.zxing.qrcode.QRCodeReader;
 import com.sparrowwallet.bokmakierie.Bokmakierie;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -135,11 +136,16 @@ public class WebcamService extends ScheduledService<Image> {
                         }
 
                         List<CaptureFormat> deviceFormats = new ArrayList<>(device.getFormats());
-                        deviceFormats.sort((f1, f2) -> {
-                            WebcamPixelFormat pf1 = WebcamPixelFormat.fromFourCC(f1.getFormatInfo().fourcc);
-                            WebcamPixelFormat pf2 = WebcamPixelFormat.fromFourCC(f2.getFormatInfo().fourcc);
-                            return Integer.compare(WebcamPixelFormat.getPriority(pf1), WebcamPixelFormat.getPriority(pf2));
-                        });
+
+                        //On *nix prioritise supported camera pixel formats, preferring RGB3 and YUYV over MJPG
+                        //On macOS and Windows, camera pixel format is largely abstracted away
+                        if(OsType.getCurrent() == OsType.UNIX) {
+                            deviceFormats.sort((f1, f2) -> {
+                                WebcamPixelFormat pf1 = WebcamPixelFormat.fromFourCC(f1.getFormatInfo().fourcc);
+                                WebcamPixelFormat pf2 = WebcamPixelFormat.fromFourCC(f2.getFormatInfo().fourcc);
+                                return Integer.compare(WebcamPixelFormat.getPriority(pf1), WebcamPixelFormat.getPriority(pf2));
+                            });
+                        }
 
                         Map<WebcamResolution, CaptureFormat> supportedResolutions = deviceFormats.stream()
                                 .filter(f -> WebcamResolution.from(f) != null)
