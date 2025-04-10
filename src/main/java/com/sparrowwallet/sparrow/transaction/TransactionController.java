@@ -9,19 +9,19 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.Label;
-import javafx.scene.control.TreeCell;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import org.controlsfx.control.MasterDetailPane;
@@ -45,6 +45,9 @@ public class TransactionController implements Initializable {
     private MasterDetailPane transactionMasterDetail;
 
     @FXML
+    private SplitPane txSplitPane;
+
+    @FXML
     private TreeView<TransactionForm> txtree;
 
     @FXML
@@ -66,6 +69,8 @@ public class TransactionController implements Initializable {
 
     private TreeItem<TransactionForm> draggedItem;
     private TreeCell<TransactionForm> dropZone;
+
+    private final DoubleProperty txTreeWidthProperty = new SimpleDoubleProperty();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -99,6 +104,8 @@ public class TransactionController implements Initializable {
     }
 
     private void initializeTxTree() {
+        txTreeWidthProperty.bind(txSplitPane.widthProperty().multiply(txSplitPane.getDividers().getFirst().positionProperty()));
+
         HeadersForm headersForm = new HeadersForm(txdata);
         TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
@@ -159,8 +166,16 @@ public class TransactionController implements Initializable {
 
                 if(form != null) {
                     Label label = form.getLabel();
-                    label.setMaxWidth(115);
+                    label.maxWidthProperty().bind(txTreeWidthProperty.subtract(70));
                     setGraphic(label);
+
+                    double width = TextUtils.computeTextWidth(label.getFont(), label.getText(), 0.0D);
+                    if(width > label.getMaxWidth()) {
+                        Tooltip tooltip = new Tooltip(label.getText());
+                        tooltip.setMaxWidth(transactionMasterDetail.getWidth());
+                        tooltip.setWrapText(true);
+                        label.setTooltip(tooltip);
+                    }
 
                     if(form.getSigningWallet() != null) {
                         setOnDragDetected(null);

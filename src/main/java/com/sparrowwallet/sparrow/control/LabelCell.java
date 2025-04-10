@@ -49,7 +49,7 @@ class LabelCell extends TextFieldTreeTableCell<Entry, String> implements Confirm
             double width = label == null || label.length() < 20 ? 0.0 : TextUtils.computeTextWidth(getFont(), label, 0.0D);
             if(width > getTableColumn().getWidth()) {
                 Tooltip tooltip = new Tooltip(label);
-                tooltip.setPrefWidth(getTreeTableView().getWidth());
+                tooltip.setMaxWidth(getTreeTableView().getWidth());
                 tooltip.setWrapText(true);
                 setTooltip(tooltip);
             } else {
