@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.address.Address;
+
 public abstract class IndexedTransactionForm extends TransactionForm {
     private int index;
 
@@ -15,4 +17,6 @@ public abstract class IndexedTransactionForm extends TransactionForm {
     public void setIndex(int index) {
         this.index = index;
     }
+
+    public abstract Address getAddress();
 }

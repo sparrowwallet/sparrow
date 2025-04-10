@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -9,7 +10,6 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
-import com.sparrowwallet.sparrow.control.TextUtils;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -166,12 +166,16 @@ public class TransactionController implements Initializable {
 
                 if(form != null) {
                     Label label = form.getLabel();
-                    label.maxWidthProperty().bind(txTreeWidthProperty.subtract(70));
+                    label.maxWidthProperty().bind(txTreeWidthProperty.subtract(62));
                     setGraphic(label);
 
-                    double width = TextUtils.computeTextWidth(label.getFont(), label.getText(), 0.0D);
-                    if(width > label.getMaxWidth()) {
-                        Tooltip tooltip = new Tooltip(label.getText());
+                    Address address = null;
+                    if(form instanceof IndexedTransactionForm indexedForm) {
+                        address = indexedForm.getAddress();
+                    }
+
+                    if(address != null) {
+                        Tooltip tooltip = new Tooltip(label.getText() + (label.getText().equals(address.toString()) ? "" : "\n" + address));
                         tooltip.setMaxWidth(transactionMasterDetail.getWidth());
                         tooltip.setWrapText(true);
                         label.setTooltip(tooltip);

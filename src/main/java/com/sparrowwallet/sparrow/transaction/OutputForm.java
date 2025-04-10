@@ -46,6 +46,15 @@ public class OutputForm extends IndexedTransactionForm {
     }
 
     @Override
+    public Address getAddress() {
+        if(getTransactionOutput() != null) {
+            return getTransactionOutput().getScript().getToAddress();
+        }
+
+        return null;
+    }
+
+    @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("output.fxml"));
         Node node = loader.load();
@@ -61,7 +70,7 @@ public class OutputForm extends IndexedTransactionForm {
     }
 
     public String toString() {
-        Address address = getTransactionOutput().getScript().getToAddress();
+        Address address = getAddress();
         return address != null ? address.toString() : "Output #" + getIndex();
     }
 
