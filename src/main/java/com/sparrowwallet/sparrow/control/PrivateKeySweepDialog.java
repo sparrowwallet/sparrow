@@ -61,6 +61,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final TextArea key;
     private final ComboBox<ScriptType> keyScriptType;
     private final CopyableLabel keyAddress;
+    private final CopyableLabel keyUtxos;
     private final ComboBoxTextField toAddress;
     private final ComboBox<Wallet> toWallet;
     private final FeeRangeSlider feeRange;
@@ -135,6 +136,12 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         keyAddress = new CopyableLabel();
         keyAddress.getStyleClass().add("fixed-width");
         addressField.getInputs().add(keyAddress);
+
+        Field utxosField = new Field();
+        utxosField.setText("UTXOs:");
+        keyUtxos = new CopyableLabel();
+        utxosField.getInputs().add(keyUtxos);
+
 
         Field toAddressField = new Field();
         toAddressField.setText("Sweep to:");
@@ -355,6 +362,8 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                 Optional<Date> optSince = addressScanDateDialog.showAndWait();
                 if(optSince.isPresent()) {
                     since = optSince.get();
+                } else {
+                    return;
                 }
             }
 

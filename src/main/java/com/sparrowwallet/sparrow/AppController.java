@@ -2887,6 +2887,7 @@ public class AppController implements Initializable {
             }
         } else if(event.isCompleted()) {
             serverToggle.setDisable(false);
+            statusBar.setProgress(0);
             if(statusBar.getText().startsWith("Scanning...")) {
                 statusBar.setText("");
             }
