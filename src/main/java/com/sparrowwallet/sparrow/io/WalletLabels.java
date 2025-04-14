@@ -6,9 +6,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.protocol.ScriptType;
-import com.sparrowwallet.drongo.protocol.Sha256Hash;
-import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -81,7 +79,7 @@ public class WalletLabels implements WalletImport, WalletExport {
                 BlockTransaction blkTx = txEntry.getBlockTransaction();
                 labels.add(new TransactionLabel(blkTx.getHashAsString(), blkTx.getLabel(), origin,
                         txEntry.isConfirming() ? null : blkTx.getHeight(), blkTx.getDate(),
-                        blkTx.getFee() == null || blkTx.getFee() == 0 ? null : blkTx.getFee(), txEntry.getValue(),
+                        getFee(walletTransactionsEntry.getWallet(), blkTx), txEntry.getValue(),
                         getFiatValue(blkTx.getDate(), Transaction.SATOSHIS_PER_BITCOIN, fiatRates)));
                 if(txEntry.isConfirming()) {
                     confirmingTxs.add(blkTx.getHash());
@@ -344,6 +342,28 @@ public class WalletLabels implements WalletImport, WalletExport {
     @Override
     public boolean exportsAllWallets() {
         return true;
+    }
+
+    private Long getFee(Wallet wallet, BlockTransaction blockTransaction) {
+        long fee = 0L;
+        for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
+            if(txInput.isCoinBase()) {
+                return 0L;
+            }
+
+            BlockTransaction inputTx = wallet.getWalletTransaction(txInput.getOutpoint().getHash());
+            if(inputTx == null || inputTx.getTransaction().getOutputs().size() <= txInput.getOutpoint().getIndex()) {
+                return null;
+            }
+            TransactionOutput spentOutput = inputTx.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+            fee += spentOutput.getValue();
+        }
+
+        for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
+            fee -= txOutput.getValue();
+        }
+
+        return fee;
     }
 
     private Map<Date, Double> getFiatRates(List<WalletForm> walletForms) {
