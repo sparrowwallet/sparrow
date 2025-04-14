@@ -13,6 +13,8 @@ public class GlyphUtils {
             return getMixGlyph();
         } else if(payment.getType().equals(Payment.Type.FAKE_MIX)) {
             return getFakeMixGlyph();
+        } else if(payment.getType().equals(Payment.Type.ANCHOR)) {
+            return getAnchorGlyph();
         } else if(walletTx.isConsolidationSend(payment)) {
             return getConsolidationGlyph();
         } else if(walletTx.isPremixSend(payment)) {
@@ -216,5 +218,12 @@ public class GlyphUtils {
         downGlyph.getStyleClass().add("arrow-down");
         downGlyph.setFontSize(12);
         return downGlyph;
+    }
+
+    public static Glyph getAnchorGlyph() {
+        Glyph anchorGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ANCHOR);
+        anchorGlyph.getStyleClass().add("anchor-icon");
+        anchorGlyph.setFontSize(12);
+        return anchorGlyph;
     }
 }
