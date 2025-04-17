@@ -261,7 +261,7 @@ public class AppServices {
         }
 
         if(Tor.getDefault() != null) {
-            Tor.getDefault().getTorManager().destroy(true, success -> {});
+            Tor.getDefault().close();
         }
     }
 
