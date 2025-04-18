@@ -74,6 +74,9 @@ public interface BitcoindClientService {
                                         @JsonRpcParam("load_on_startup") boolean loadOnStartup, @JsonRpcParam("external_signer") boolean externalSigner);
 
     @JsonRpcMethod("loadwallet")
+    CreateLoadWalletResult loadWallet(@JsonRpcParam("filename") String name);
+
+    @JsonRpcMethod("loadwallet")
     CreateLoadWalletResult loadWallet(@JsonRpcParam("filename") String name, @JsonRpcParam("load_on_startup") boolean loadOnStartup);
 
     @JsonRpcMethod("unloadwallet")
