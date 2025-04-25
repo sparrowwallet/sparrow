@@ -42,8 +42,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         setTitle("Send to Many");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.setHeaderText("Send to many recipients by specifying addresses and amounts.\nOnly the first row's label is necessary.");
-        Image image = new Image("/image/sparrow-small.png");
-        dialogPane.setGraphic(new ImageView(image));
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         List<Payment> initialPayments = IntStream.range(0, 100).mapToObj(i -> new Payment(null, null, -1, false)).collect(Collectors.toList());
         Grid grid = getGrid(initialPayments);

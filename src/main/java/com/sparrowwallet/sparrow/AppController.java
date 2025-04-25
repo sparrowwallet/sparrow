@@ -2634,7 +2634,6 @@ public class AppController implements Initializable {
                     }
                 });
 
-                Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
                 String walletName = event.getWallet().getFullDisplayName();
                 if(walletName.length() > 40) {
                     walletName = walletName.substring(0, 40) + "...";
@@ -2643,10 +2642,10 @@ public class AppController implements Initializable {
                 Notifications notificationBuilder = Notifications.create()
                         .title("Sparrow - " + walletName)
                         .text(text)
-                        .graphic(new ImageView(image))
+                        .graphic(new DialogImage(DialogImage.Type.SPARROW))
                         .hideAfter(Duration.seconds(15))
                         .position(Pos.TOP_RIGHT)
-                        .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
+                        .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new DialogImage(DialogImage.Type.SPARROW)))
                         .onAction(e -> selectTab(event.getWallet()));
 
                 //If controlsfx can't find our window, we must set the window ourselves (unfortunately notification is then shown within this window)

@@ -36,7 +36,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
     private ExtendedKey xprv;
 
     public XprvKeystoreImportPane(Wallet wallet, KeystoreXprvImport importer, KeyDerivation defaultDerivation) {
-        super(importer.getName(), "Extended key import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Extended key import", importer.getKeystoreImportDescription(), importer.getWalletModel());
         this.wallet = wallet;
         this.importer = importer;
         this.defaultDerivation = defaultDerivation;
@@ -46,7 +46,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
     }
 
     public XprvKeystoreImportPane(Keystore keystore) {
-        super("Master Private Key", "BIP32 key", "", "image/" + WalletModel.SEED.getType() + ".png");
+        super("Master Private Key", "BIP32 key", "", WalletModel.SEED);
         this.wallet = null;
         this.importer = null;
         this.defaultDerivation = keystore.getKeyDerivation();

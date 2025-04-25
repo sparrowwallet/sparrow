@@ -44,7 +44,7 @@ public class MnemonicShareKeystoreImportPane extends MnemonicKeystorePane {
     private int currentShare;
 
     public MnemonicShareKeystoreImportPane(Wallet wallet, KeystoreMnemonicShareImport importer, KeyDerivation defaultDerivation) {
-        super(importer.getName(), "Enter seed share", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Enter seed share", importer.getKeystoreImportDescription(), importer.getWalletModel());
         this.wallet = wallet;
         this.importer = importer;
         this.defaultDerivation = defaultDerivation;

@@ -498,7 +498,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                         log.error("Error communicating with card", e);
                         AppServices.showErrorDialog("Error communicating with card", e.getMessage());
                     });
-                    ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Authentication Delay", "Waiting for authentication delay to clear...", "/image/" + cardApi.getCardType().getType() + ".png", authDelayService);
+                    ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Authentication Delay", "Waiting for authentication delay to clear...", new WalletModelImage(cardApi.getCardType()), authDelayService);
                     serviceProgressDialog.initOwner(cardServiceButtons.getScene().getWindow());
                     AppServices.moveToActiveWindowScreen(serviceProgressDialog);
                     authDelayService.start();

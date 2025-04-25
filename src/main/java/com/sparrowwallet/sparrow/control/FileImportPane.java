@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.FileImport;
@@ -44,8 +45,8 @@ public abstract class FileImportPane extends TitledDescriptionPane {
     private final boolean fileFormatAvailable;
     protected List<Wallet> wallets;
 
-    public FileImportPane(FileImport importer, String title, String description, String content, String imageUrl, boolean scannable, boolean fileFormatAvailable) {
-        super(title, description, content, imageUrl);
+    public FileImportPane(FileImport importer, String title, String description, String content, WalletModel walletModel, boolean scannable, boolean fileFormatAvailable) {
+        super(title, description, content, walletModel);
         this.importer = importer;
         this.scannable = scannable;
         this.fileFormatAvailable = fileFormatAvailable;

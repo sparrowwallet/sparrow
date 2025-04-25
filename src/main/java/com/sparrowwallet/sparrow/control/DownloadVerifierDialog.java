@@ -632,15 +632,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             vBox.getChildren().addAll(headerLabel, descriptionLabel);
             add(vBox, 0, 0);
 
-            StackPane graphicContainer = new StackPane();
+            StackPane graphicContainer = new DialogImage(DialogImage.Type.SPARROW);
             graphicContainer.getStyleClass().add("graphic-container");
-            Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-            if (!image.isError()) {
-                ImageView imageView = new ImageView();
-                imageView.setSmooth(false);
-                imageView.setImage(image);
-                graphicContainer.getChildren().add(imageView);
-            }
             add(graphicContainer, 1, 0);
 
             ColumnConstraints textColumn = new ColumnConstraints();

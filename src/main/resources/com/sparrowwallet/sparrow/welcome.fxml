@@ -9,8 +9,8 @@
 <?import org.controlsfx.control.StatusBar?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import org.controlsfx.glyphfont.Glyph?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
+<?import com.sparrowwallet.sparrow.control.DialogImage?>
+
 <StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@welcome.css, @general.css" styleClass="welcome-pane" fx:controller="com.sparrowwallet.sparrow.WelcomeController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="20">
         <HBox styleClass="title-area">
@@ -18,9 +18,7 @@
                 <Label fx:id="title" text="Welcome to Sparrow" styleClass="title-label" />
             </HBox>
             <Region HBox.hgrow="ALWAYS"/>
-            <ImageView AnchorPane.rightAnchor="0">
-                <Image url="/image/sparrow-small.png" requestedWidth="50" requestedHeight="50" smooth="false" />
-            </ImageView>
+            <DialogImage type="SPARROW" AnchorPane.rightAnchor="0"/>
         </HBox>
         <VBox fx:id="welcomeBox" styleClass="content-area" spacing="20" prefHeight="370">
             <VBox fx:id="step1" spacing="15">

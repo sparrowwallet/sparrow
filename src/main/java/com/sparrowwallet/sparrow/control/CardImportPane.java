@@ -48,7 +48,7 @@ public class CardImportPane extends TitledDescriptionPane {
     private final SimpleStringProperty pin = new SimpleStringProperty("");
 
     public CardImportPane(Wallet wallet, KeystoreCardImport importer, KeyDerivation requiredDerivation) {
-        super(importer.getName(), "Place card on reader", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Place card on reader", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), importer.getWalletModel());
         this.importer = importer;
         this.derivation = requiredDerivation == null ? wallet.getScriptType().getDefaultDerivation() : requiredDerivation.getDerivation();
     }

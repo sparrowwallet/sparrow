@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.control.DialogImage;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.Auth47;
@@ -1095,8 +1096,7 @@ public class AppServices {
             walletChoiceDialog.initOwner(getActiveWindow());
             walletChoiceDialog.setTitle("Choose Wallet");
             walletChoiceDialog.setHeaderText("Choose a wallet to " + actionDescription);
-            Image image = new Image("/image/sparrow-small.png");
-            walletChoiceDialog.getDialogPane().setGraphic(new ImageView(image));
+            walletChoiceDialog.getDialogPane().setGraphic(new DialogImage(DialogImage.Type.SPARROW));
             setStageIcon(walletChoiceDialog.getDialogPane().getScene().getWindow());
             moveToActiveWindowScreen(walletChoiceDialog);
             Optional<Wallet> optWallet = walletChoiceDialog.showAndWait();

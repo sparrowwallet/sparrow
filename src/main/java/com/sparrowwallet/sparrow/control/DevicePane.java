@@ -75,7 +75,7 @@ public class DevicePane extends TitledDescriptionPane {
     private boolean defaultDevice;
 
     public DevicePane(Wallet wallet, Device device, boolean defaultDevice, KeyDerivation requiredDerivation) {
-        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.IMPORT;
         this.wallet = wallet;
         this.psbt = null;
@@ -102,7 +102,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public DevicePane(Wallet wallet, PSBT psbt, Device device, boolean defaultDevice) {
-        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.SIGN;
         this.wallet = wallet;
         this.psbt = psbt;
@@ -129,7 +129,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public DevicePane(Wallet wallet, OutputDescriptor outputDescriptor, Device device, boolean defaultDevice) {
-        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.DISPLAY_ADDRESS;
         this.wallet = wallet;
         this.psbt = null;
@@ -152,7 +152,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public DevicePane(Wallet wallet, String message, KeyDerivation keyDerivation, Device device, boolean defaultDevice) {
-        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.SIGN_MESSAGE;
         this.wallet = wallet;
         this.psbt = null;
@@ -179,7 +179,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public DevicePane(Wallet wallet, List<StandardAccount> availableAccounts, Device device, boolean defaultDevice) {
-        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.DISCOVER_KEYSTORES;
         this.wallet = wallet;
         this.psbt = null;
@@ -202,7 +202,7 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     public DevicePane(DeviceOperation deviceOperation, Device device, boolean defaultDevice) {
-        super(device.getModel().toDisplayString(), "", "", "image/" + device.getType() + ".png");
+        super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = deviceOperation;
         this.wallet = null;
         this.psbt = null;

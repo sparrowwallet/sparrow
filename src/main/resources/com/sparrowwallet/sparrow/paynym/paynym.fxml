@@ -5,13 +5,12 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.PayNymAvatar?>
 <?import com.sparrowwallet.sparrow.control.CopyableTextField?>
 <?import com.sparrowwallet.sparrow.control.PaymentCodeTextField?>
 <?import org.controlsfx.glyphfont.Glyph?>
+<?import com.sparrowwallet.sparrow.control.DialogImage?>
 
 <StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@paynym.css, @../general.css" styleClass="paynym-pane" fx:controller="com.sparrowwallet.sparrow.paynym.PayNymController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="10">
@@ -20,9 +19,7 @@
                 <Label text="PayNym" styleClass="title-label" />
             </HBox>
             <Region HBox.hgrow="ALWAYS"/>
-            <ImageView AnchorPane.rightAnchor="0">
-                <Image url="/image/paynym.png" requestedWidth="50" requestedHeight="50" smooth="false" />
-            </ImageView>
+            <DialogImage type="PAYNYM" AnchorPane.rightAnchor="0"/>
         </HBox>
         <BorderPane>
             <padding>

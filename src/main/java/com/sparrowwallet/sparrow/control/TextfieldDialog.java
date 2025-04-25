@@ -29,8 +29,7 @@ public class TextfieldDialog extends Dialog<String> {
         final DialogPane dialogPane = getDialogPane();
         setDialogPane(dialogPane);
 
-        Image image = new Image("/image/sparrow-small.png");
-        dialogPane.setGraphic(new ImageView(image));
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         HBox hbox = new HBox();
         this.textField = new TextField(defaultValue);

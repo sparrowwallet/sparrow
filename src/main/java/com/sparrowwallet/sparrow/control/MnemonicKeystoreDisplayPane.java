@@ -19,7 +19,7 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
     private final DeterministicSeed.Type type;
 
     public MnemonicKeystoreDisplayPane(Keystore keystore) {
-        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() && (keystore.getSeed().getPassphrase() == null || keystore.getSeed().getPassphrase().length() > 0) ? "Passphrase entered" : "No passphrase", "", "image/" + WalletModel.SEED.getType() + ".png");
+        super(keystore.getSeed().getType().getName(), keystore.getSeed().needsPassphrase() && (keystore.getSeed().getPassphrase() == null || keystore.getSeed().getPassphrase().length() > 0) ? "Passphrase entered" : "No passphrase", "", WalletModel.SEED);
         showHideLink.setVisible(false);
         buttonBox.getChildren().clear();
         this.type = keystore.getSeed().getType();

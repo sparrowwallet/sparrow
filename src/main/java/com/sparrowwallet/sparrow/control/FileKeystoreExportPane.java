@@ -37,7 +37,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
     private final boolean file;
 
     public FileKeystoreExportPane(Keystore keystore, KeystoreFileExport exporter) {
-        super(exporter.getName(), "Keystore export", exporter.getKeystoreExportDescription(), "image/" + exporter.getWalletModel().getType() + ".png");
+        super(exporter.getName(), "Keystore export", exporter.getKeystoreExportDescription(), exporter.getWalletModel());
         this.keystore = keystore;
         this.exporter = exporter;
         this.scannable = exporter.isKeystoreExportScannable();

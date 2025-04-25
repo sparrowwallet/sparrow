@@ -43,14 +43,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
 
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText("Wallet Summary for " + (allOpenWallets ? "All Open Wallets" : masterWallets.get(0).getName()));
-
-        Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-        if(!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setSmooth(false);
-            imageView.setImage(image);
-            dialogPane.setGraphic(imageView);
-        }
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         HBox hBox = new HBox(40);
 

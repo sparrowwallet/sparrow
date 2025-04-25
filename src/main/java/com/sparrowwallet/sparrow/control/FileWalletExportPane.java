@@ -41,7 +41,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
     private final boolean file;
 
     public FileWalletExportPane(Wallet wallet, WalletExport exporter) {
-        super(exporter.getName(), "Wallet export", exporter.getWalletExportDescription(), "image/" + exporter.getWalletModel().getType() + ".png");
+        super(exporter.getName(), "Wallet export", exporter.getWalletExportDescription(), exporter.getWalletModel());
         this.wallet = wallet;
         this.exporter = exporter;
         this.scannable = exporter.isWalletExportScannable();

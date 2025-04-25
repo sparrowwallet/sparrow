@@ -19,7 +19,7 @@ public class MnemonicKeystoreEntryPane extends MnemonicKeystorePane {
     private boolean generated;
 
     public MnemonicKeystoreEntryPane(String name, int numWords) {
-        super(name, "Enter seed words", "", "image/" + WalletModel.SEED.getType() + ".png");
+        super(name, "Enter seed words", "", WalletModel.SEED);
         showHideLink.setVisible(false);
         buttonBox.getChildren().clear();
 

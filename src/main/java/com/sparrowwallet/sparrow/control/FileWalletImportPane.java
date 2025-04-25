@@ -12,7 +12,7 @@ public class FileWalletImportPane extends FileImportPane {
     private final WalletImport importer;
 
     public FileWalletImportPane(WalletImport importer) {
-        super(importer, importer.getName(), "Wallet import", importer.getWalletImportDescription(), "image/" + importer.getWalletModel().getType() + ".png", importer.isWalletImportScannable(), importer.isWalletImportFileFormatAvailable());
+        super(importer, importer.getName(), "Wallet import", importer.getWalletImportDescription(), importer.getWalletModel(), importer.isWalletImportScannable(), importer.isWalletImportFileFormatAvailable());
         this.importer = importer;
     }
 

@@ -74,32 +74,14 @@ public class WalletIcon extends StackPane {
 
                 SVGImage svgImage;
                 if(Config.get().getTheme() == Theme.DARK) {
-                    svgImage = loadSVGImage("/image/" + walletModel.getType() + "-icon-invert.svg");
+                    svgImage = loadSVGImage("/image/walletmodel/" + walletModel.getType() + "-icon-invert.svg");
                 } else {
-                    svgImage = loadSVGImage("/image/" + walletModel.getType() + "-icon.svg");
+                    svgImage = loadSVGImage("/image/walletmodel/" + walletModel.getType() + "-icon.svg");
                 }
 
                 if(svgImage != null) {
                     getChildren().add(svgImage);
                     return;
-                }
-
-                Image image = null;
-                if(Config.get().getTheme() == Theme.DARK) {
-                    image = loadImage("image/" + walletModel.getType() + "-icon-invert.png");
-                }
-
-                if(image == null) {
-                    image = loadImage("image/" + walletModel.getType() + "-icon.png");
-                }
-
-                if(image == null) {
-                    image = loadImage("image/" + walletModel.getType() + ".png");
-                }
-
-                if(image != null && !image.isError()) {
-                    ImageView imageView = new ImageView(image);
-                    getChildren().add(imageView);
                 }
             }
         }
@@ -120,16 +102,6 @@ public class WalletIcon extends StackPane {
             if(url != null) {
                 return SVGLoader.load(url);
             }
-        } catch(Exception e) {
-            //ignore
-        }
-
-        return null;
-    }
-
-    private Image loadImage(String imageName) {
-        try {
-            return new Image(imageName, 15, 15, true, true);
         } catch(Exception e) {
             //ignore
         }

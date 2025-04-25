@@ -5,9 +5,8 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import com.sparrowwallet.sparrow.control.DialogImage?>
 
-<?import javafx.scene.image.ImageView?>
-<?import javafx.scene.image.Image?>
 <StackPane prefHeight="460.0" prefWidth="600.0" stylesheets="@about.css, @general.css" fx:controller="com.sparrowwallet.sparrow.AboutController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <VBox spacing="20">
         <HBox styleClass="title-area">
@@ -15,9 +14,7 @@
                 <Label fx:id="title" text="Sparrow" styleClass="title-label" />
             </HBox>
             <Region HBox.hgrow="ALWAYS"/>
-            <ImageView AnchorPane.rightAnchor="0">
-                <Image url="/image/sparrow-small.png" requestedWidth="50" requestedHeight="50" smooth="false" />
-            </ImageView>
+            <DialogImage type="SPARROW" AnchorPane.rightAnchor="0"/>
         </HBox>
         <VBox spacing="10" styleClass="content-area">
             <Label text="Sparrow is a Bitcoin wallet with the goal of providing greater transparency and usability on the path to full financial self-sovereignty. It attempts to provide all of the detail about your wallet setup, transactions and UTXOs so that you can transact with a full understanding of your money." wrapText="true" />

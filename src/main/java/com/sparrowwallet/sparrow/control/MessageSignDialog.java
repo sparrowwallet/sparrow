@@ -118,14 +118,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText(title == null ? (wallet == null ? "Verify Message" : "Sign/Verify Message") : title);
-
-        Image image = new Image("image/seed.png", 50, 50, false, false);
-        if (!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setSmooth(false);
-            imageView.setImage(image);
-            dialogPane.setGraphic(imageView);
-        }
+        dialogPane.setGraphic(new WalletModelImage(WalletModel.SEED));
 
         VBox vBox = new VBox();
         vBox.setSpacing(20);
