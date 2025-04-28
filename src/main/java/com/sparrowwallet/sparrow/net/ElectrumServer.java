@@ -61,11 +61,13 @@ public class ElectrumServer {
 
     private static Server previousServer;
 
-    private static Map<String, String> retrievedScriptHashes = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, String> retrievedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
-    private static Map<Sha256Hash, BlockTransaction> retrievedTransactions = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<Sha256Hash, BlockTransaction> retrievedTransactions = Collections.synchronizedMap(new HashMap<>());
 
-    private static Set<String> sameHeightTxioScriptHashes = Collections.synchronizedSet(new HashSet<>());
+    private static final Map<Integer, BlockHeader> retrievedBlockHeaders = Collections.synchronizedMap(new HashMap<>());
+
+    private static final Set<String> sameHeightTxioScriptHashes = Collections.synchronizedSet(new HashSet<>());
 
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
@@ -113,6 +115,7 @@ public class ElectrumServer {
                 if(previousServer != null && !electrumServer.equals(previousServer)) {
                     retrievedScriptHashes.clear();
                     retrievedTransactions.clear();
+                    retrievedBlockHeaders.clear();
                     TransactionHistoryService.walletLocks.values().forEach(walletLock -> walletLock.initialized = false);
                 }
                 previousServer = electrumServer;
@@ -555,22 +558,29 @@ public class ElectrumServer {
     }
 
     public void getReferencedTransactions(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) throws ServerException {
-        Set<BlockTransactionHash> references = new TreeSet<>();
+        Map<BlockTransactionHash, Transaction> references = new TreeMap<>();
         for(Set<BlockTransactionHash> nodeReferences : nodeTransactionMap.values()) {
-            references.addAll(nodeReferences);
+            for(BlockTransactionHash nodeReference : nodeReferences) {
+                references.put(nodeReference, null);
+            }
         }
 
-        for(Iterator<BlockTransactionHash> iter = references.iterator(); iter.hasNext(); ) {
-            BlockTransactionHash reference = iter.next();
-            BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
-            if(blockTransaction != null && reference.getHeight() == blockTransaction.getHeight()) {
-                iter.remove();
+        for(Iterator<Map.Entry<BlockTransactionHash, Transaction>> iter = references.entrySet().iterator(); iter.hasNext(); ) {
+            Map.Entry<BlockTransactionHash, Transaction> entry = iter.next();
+            BlockTransactionHash reference = entry.getKey();
+            BlockTransaction blockTransaction = wallet.getWalletTransaction(reference.getHash());
+            if(blockTransaction != null) {
+                if(reference.getHeight() == blockTransaction.getHeight()) {
+                    iter.remove();
+                } else {
+                    entry.setValue(blockTransaction.getTransaction());
+                }
             }
         }
 
         Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
         if(!references.isEmpty()) {
-            Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, references);
+            Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, references.keySet());
             transactionMap = getTransactions(wallet, references, blockHeaderMap);
         }
 
@@ -581,24 +591,29 @@ public class ElectrumServer {
 
     public Map<Integer, BlockHeader> getBlockHeaders(Wallet wallet, Set<BlockTransactionHash> references) throws ServerException {
         try {
+            Map<Integer, BlockHeader> blockHeaderMap = new TreeMap<>();
             Set<Integer> blockHeights = new TreeSet<>();
             for(BlockTransactionHash reference : references) {
                 if(reference.getHeight() > 0) {
-                    blockHeights.add(reference.getHeight());
+                    if(retrievedBlockHeaders.get(reference.getHeight()) != null) {
+                        blockHeaderMap.put(reference.getHeight(), retrievedBlockHeaders.get(reference.getHeight()));
+                    } else {
+                        blockHeights.add(reference.getHeight());
+                    }
                 }
             }
 
             if(blockHeights.isEmpty()) {
-                return Collections.emptyMap();
+                return blockHeaderMap;
             }
 
             Map<Integer, String> result = electrumServerRpc.getBlockHeaders(getTransport(), wallet, blockHeights);
 
-            Map<Integer, BlockHeader> blockHeaderMap = new TreeMap<>();
             for(Integer height : result.keySet()) {
                 byte[] blockHeaderBytes = Utils.hexToBytes(result.get(height));
                 BlockHeader blockHeader = new BlockHeader(blockHeaderBytes);
                 blockHeaderMap.put(height, blockHeader);
+                updateRetrievedBlockHeaders(height, blockHeader);
                 blockHeights.remove(height);
             }
 
@@ -616,51 +631,61 @@ public class ElectrumServer {
         }
     }
 
-    public Map<Sha256Hash, BlockTransaction> getTransactions(Wallet wallet, Set<BlockTransactionHash> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
+    public Map<Sha256Hash, BlockTransaction> getTransactions(Wallet wallet, Map<BlockTransactionHash, Transaction> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
         try {
-            Set<BlockTransactionHash> checkReferences = new TreeSet<>(references);
+            Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
+            Set<BlockTransactionHash> checkReferences = new TreeSet<>(references.keySet());
 
             Set<String> txids = new LinkedHashSet<>(references.size());
-            for(BlockTransactionHash reference : references) {
-                txids.add(reference.getHashAsString());
+            for(BlockTransactionHash reference : references.keySet()) {
+                if(references.get(reference) == null) {
+                    txids.add(reference.getHashAsString());
+                }
             }
 
-            Map<String, String> result = electrumServerRpc.getTransactions(getTransport(), wallet, txids);
+            if(!txids.isEmpty()) {
+                Map<String, String> result = electrumServerRpc.getTransactions(getTransport(), wallet, txids);
 
-            String strErrorTx = Sha256Hash.ZERO_HASH.toString();
-            Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
-            for(String txid : result.keySet()) {
-                Sha256Hash hash = Sha256Hash.wrap(txid);
-                String strRawTx = result.get(txid);
+                String strErrorTx = Sha256Hash.ZERO_HASH.toString();
+                for(String txid : result.keySet()) {
+                    Sha256Hash hash = Sha256Hash.wrap(txid);
+                    String strRawTx = result.get(txid);
 
-                if(strRawTx.equals(strErrorTx)) {
-                    transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
-                    checkReferences.removeIf(ref -> ref.getHash().equals(hash));
-                    continue;
+                    if(strRawTx.equals(strErrorTx)) {
+                        transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
+                        checkReferences.removeIf(ref -> ref.getHash().equals(hash));
+                        continue;
+                    }
+
+                    byte[] rawtx = Utils.hexToBytes(strRawTx);
+                    Transaction transaction;
+
+                    try {
+                        transaction = new Transaction(rawtx);
+                    } catch(ProtocolException e) {
+                        log.error("Could not parse tx: " + strRawTx);
+                        continue;
+                    }
+
+                    Optional<BlockTransactionHash> optionalReference = references.keySet().stream().filter(reference -> reference.getHash().equals(hash)).findFirst();
+                    if(optionalReference.isEmpty()) {
+                        throw new IllegalStateException("Returned transaction " + hash.toString() + " that was not requested");
+                    }
+                    BlockTransactionHash reference = optionalReference.get();
+
+                    references.put(reference, transaction);
                 }
+            }
 
-                byte[] rawtx = Utils.hexToBytes(strRawTx);
-                Transaction transaction;
-
-                try {
-                    transaction = new Transaction(rawtx);
-                } catch(ProtocolException e) {
-                    log.error("Could not parse tx: " + strRawTx);
-                    continue;
-                }
-
-                Optional<BlockTransactionHash> optionalReference = references.stream().filter(reference -> reference.getHash().equals(hash)).findFirst();
-                if(optionalReference.isEmpty()) {
-                    throw new IllegalStateException("Returned transaction " + hash.toString() + " that was not requested");
-                }
-                BlockTransactionHash reference = optionalReference.get();
+            for(BlockTransactionHash reference : references.keySet()) {
+                Transaction transaction = references.get(reference);
 
                 Date blockDate = null;
                 if(reference.getHeight() > 0) {
                     BlockHeader blockHeader = blockHeaderMap.get(reference.getHeight());
                     if(blockHeader == null) {
-                        transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
-                        checkReferences.removeIf(ref -> ref.getHash().equals(hash));
+                        transactionMap.put(reference.getHash(), UNFETCHABLE_BLOCK_TRANSACTION);
+                        checkReferences.removeIf(ref -> ref.getHash().equals(reference.getHash()));
                         continue;
                     }
                     blockDate = blockHeader.getTimeAsDate();
@@ -668,7 +693,7 @@ public class ElectrumServer {
 
                 BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockDate, reference.getFee(), transaction);
 
-                transactionMap.put(hash, blockchainTransaction);
+                transactionMap.put(reference.getHash(), blockchainTransaction);
                 checkReferences.remove(reference);
             }
 
@@ -1022,6 +1047,10 @@ public class ElectrumServer {
     public static void updateSubscribedScriptHashStatus(String scriptHash, String status) {
         List<String> existingStatuses = subscribedScriptHashes.computeIfAbsent(scriptHash, k -> new ArrayList<>());
         existingStatuses.add(status);
+    }
+
+    public static void updateRetrievedBlockHeaders(Integer blockHeight, BlockHeader blockHeader) {
+        retrievedBlockHeaders.put(blockHeight, blockHeader);
     }
 
     public static ServerCapability getServerCapability(List<String> serverVersion) {
@@ -1630,15 +1659,17 @@ public class ElectrumServer {
                     ElectrumServer electrumServer = new ElectrumServer();
                     List<Set<BlockTransactionHash>> outputTransactionReferences = electrumServer.getOutputTransactionReferences(transaction, indexStart, indexEnd, blockTransactionHashes);
 
-                    Set<BlockTransactionHash> setReferences = new HashSet<>();
+                    Map<BlockTransactionHash, Transaction> setReferences = new HashMap<>();
                     for(Set<BlockTransactionHash> outputReferences : outputTransactionReferences) {
                         if(outputReferences != null) {
-                            setReferences.addAll(outputReferences);
+                            for(BlockTransactionHash outputReference : outputReferences) {
+                                setReferences.put(outputReference, null);
+                            }
                         }
                     }
                     setReferences.remove(null);
                     setReferences.remove(UNFETCHABLE_BLOCK_TRANSACTION);
-                    setReferences.removeIf(ref -> transactionMap.get(ref.getHash()) != null);
+                    setReferences.keySet().removeIf(ref -> transactionMap.get(ref.getHash()) != null);
 
                     List<BlockTransaction> blockTransactions = new ArrayList<>(transaction.getOutputs().size());
                     for(int i = 0; i < transaction.getOutputs().size(); i++) {
@@ -1646,7 +1677,7 @@ public class ElectrumServer {
                     }
 
                     if(!setReferences.isEmpty()) {
-                        Map<Integer, BlockHeader> blockHeaderMap = electrumServer.getBlockHeaders(null, setReferences);
+                        Map<Integer, BlockHeader> blockHeaderMap = electrumServer.getBlockHeaders(null, setReferences.keySet());
                         transactionMap.putAll(electrumServer.getTransactions(null, setReferences, blockHeaderMap));
                     }
 

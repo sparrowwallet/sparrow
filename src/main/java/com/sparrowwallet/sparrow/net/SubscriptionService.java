@@ -20,6 +20,7 @@ public class SubscriptionService {
 
     @JsonRpcMethod("blockchain.headers.subscribe")
     public void newBlockHeaderTip(@JsonRpcParam("header") final BlockHeaderTip header) {
+        ElectrumServer.updateRetrievedBlockHeaders(header.height, header.getBlockHeader());
         Platform.runLater(() -> EventManager.get().post(new NewBlockEvent(header.height, header.getBlockHeader())));
     }
 
