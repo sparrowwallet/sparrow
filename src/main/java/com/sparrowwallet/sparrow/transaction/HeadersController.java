@@ -1176,7 +1176,7 @@ public class HeadersController extends TransactionFormController implements Init
                         Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHashes.iterator().next())));
                     }
 
-                    if(transactionMempoolService.getIterationCount() > 3) {
+                    if(transactionMempoolService.getIterationCount() > 3 && !transactionMempoolService.isCancelled()) {
                         transactionMempoolService.cancel();
                         broadcastProgressBar.setProgress(0);
                         log.error("Timeout searching for broadcasted transaction");
@@ -1185,11 +1185,13 @@ public class HeadersController extends TransactionFormController implements Init
                     }
                 });
                 transactionMempoolService.setOnFailed(mempoolWorkerStateEvent -> {
-                    transactionMempoolService.cancel();
-                    broadcastProgressBar.setProgress(0);
-                    log.error("Timeout searching for broadcasted transaction");
-                    AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not indicate it had entered the mempool. It is safe to try broadcasting again.");
-                    broadcastButton.setDisable(false);
+                    if(!transactionMempoolService.isCancelled()) {
+                        transactionMempoolService.cancel();
+                        broadcastProgressBar.setProgress(0);
+                        log.error("Timeout searching for broadcasted transaction");
+                        AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not indicate it had entered the mempool. It is safe to try broadcasting again.");
+                        broadcastButton.setDisable(false);
+                    }
                 });
                 transactionMempoolService.start();
             } else {
@@ -1329,6 +1331,14 @@ public class HeadersController extends TransactionFormController implements Init
 
         if(blockTransaction != null && AppServices.getCurrentBlockHeight() != null) {
             updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
+        }
+    }
+
+    @Override
+    public void close() {
+        super.close();
+        if(transactionMempoolService != null) {
+            transactionMempoolService.cancel();
         }
     }
 
@@ -1577,24 +1587,18 @@ public class HeadersController extends TransactionFormController implements Init
             if(transactionMempoolService != null) {
                 transactionMempoolService.cancel();
             }
+        }
+    }
 
+    @Subscribe
+    public void walletHistoryFinished(WalletHistoryFinishedEvent event) {
+        if(headersForm.getSigningWallet() != null && headersForm.getSigningWallet().equals(event.getWallet()) && headersForm.isTransactionFinalized()) {
             Sha256Hash txid = headersForm.getTransaction().getTxId();
-            ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(Set.of(txid), event.getScriptHash());
-            transactionReferenceService.setOnSucceeded(successEvent -> {
-                Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
-                BlockTransaction blockTransaction = transactionMap.get(txid);
-                if(blockTransaction != null) {
-                    headersForm.setBlockTransaction(blockTransaction);
-                    updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
-                }
-                EventManager.get().post(new TransactionReferencesFinishedEvent(headersForm.getTransaction(), blockTransaction));
-            });
-            transactionReferenceService.setOnFailed(failEvent -> {
-                log.error("Could not update block transaction", failEvent.getSource().getException());
-                EventManager.get().post(new TransactionReferencesFailedEvent(headersForm.getTransaction(), failEvent.getSource().getException()));
-            });
-            EventManager.get().post(new TransactionReferencesStartedEvent(headersForm.getTransaction()));
-            transactionReferenceService.start();
+            BlockTransaction blockTransaction = event.getWallet().getWalletTransaction(txid);
+            if(blockTransaction != null && !blockTransaction.equals(headersForm.getBlockTransaction())) {
+                headersForm.setBlockTransaction(blockTransaction);
+                updateBlockchainForm(blockTransaction, AppServices.getCurrentBlockHeight());
+            }
         }
     }
 

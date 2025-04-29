@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ElectrumServer {
     private static final Logger log = LoggerFactory.getLogger(ElectrumServer.class);
@@ -224,6 +225,11 @@ public class ElectrumServer {
     }
 
     private static String getScriptHashStatus(String scriptHash, WalletNode walletNode) {
+        List<ScriptHashTx> scriptHashTxes = getScriptHashes(scriptHash, walletNode);
+        return getScriptHashStatus(scriptHashTxes);
+    }
+
+    private static List<ScriptHashTx> getScriptHashes(String scriptHash, WalletNode walletNode) {
         List<BlockTransactionHashIndex> txos  = new ArrayList<>(walletNode.getTransactionOutputs());
         txos.addAll(walletNode.getTransactionOutputs().stream().filter(BlockTransactionHashIndex::isSpent).map(BlockTransactionHashIndex::getSpentBy).collect(Collectors.toList()));
         Set<Sha256Hash> unique = new HashSet<>(txos.size());
@@ -246,10 +252,15 @@ public class ElectrumServer {
             sameHeightTxioScriptHashes.add(scriptHash);
             return 0;
         });
-        if(!txos.isEmpty()) {
+
+        return txos.stream().map(txo -> new ScriptHashTx(txo.getHeight(), txo.getHashAsString(), txo.getFee())).toList();
+    }
+
+    private static String getScriptHashStatus(List<ScriptHashTx> scriptHashTxes) {
+        if(!scriptHashTxes.isEmpty()) {
             StringBuilder scriptHashStatus = new StringBuilder();
-            for(BlockTransactionHashIndex txo : txos) {
-                scriptHashStatus.append(txo.getHash().toString()).append(":").append(txo.getHeight()).append(":");
+            for(ScriptHashTx scriptHashTx : scriptHashTxes) {
+                scriptHashStatus.append(scriptHashTx.tx_hash).append(":").append(scriptHashTx.height).append(":");
             }
 
             return Utils.bytesToHex(Sha256Hash.hash(scriptHashStatus.toString().getBytes(StandardCharsets.UTF_8)));
@@ -393,10 +404,12 @@ public class ElectrumServer {
 
     public void getReferences(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {
         try {
+            Map<WalletNode, ScriptHashTx[]> nodeHashHistory = new LinkedHashMap<>(nodes.size());
             Map<String, String> pathScriptHashes = new LinkedHashMap<>(nodes.size());
             for(WalletNode node : nodes) {
                 if(node.getIndex() >= startIndex) {
                     pathScriptHashes.put(node.getDerivationPath(), getScriptHash(node));
+                    nodeHashHistory.put(node, null);
                 }
             }
 
@@ -404,43 +417,75 @@ public class ElectrumServer {
                 return;
             }
 
-            //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed if that's the case.
-            Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), wallet, pathScriptHashes, true);
+            //Optimistic optimization for confirming transactions by matching against the script hash status should all mempool transactions confirm at the current block height
+            for(Map.Entry<WalletNode, ScriptHashTx[]> entry : nodeHashHistory.entrySet()) {
+                WalletNode node = entry.getKey();
+                String scriptHash = pathScriptHashes.get(node.getDerivationPath());
+                List<String> statuses = subscribedScriptHashes.get(scriptHash);
 
-            for(String path : result.keySet()) {
-                ScriptHashTx[] txes = result.get(path);
+                if(statuses != null && !statuses.isEmpty() && AppServices.getCurrentBlockHeight() != null &&
+                    node.getTransactionOutputs().stream().flatMap(txo -> txo.isSpent() ? Stream.of(txo, txo.getSpentBy()) : Stream.of(txo))
+                            .anyMatch(txo -> txo.getHeight() <= 0)) {
+                    List<ScriptHashTx> scriptHashTxes = getScriptHashes(scriptHash, node);
+                    for(ScriptHashTx scriptHashTx : scriptHashTxes) {
+                        if(scriptHashTx.height <= 0) {
+                            scriptHashTx.height = AppServices.getCurrentBlockHeight();
+                            scriptHashTx.fee = 0;
+                        }
+                    }
 
-                Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
-                if(optionalNode.isPresent()) {
-                    WalletNode node = optionalNode.get();
+                    String status = getScriptHashStatus(scriptHashTxes);
+                    if(Objects.equals(status, statuses.getLast())) {
+                        entry.setValue(scriptHashTxes.toArray(new ScriptHashTx[0]));
+                        pathScriptHashes.remove(node.getDerivationPath());
+                    }
+                }
+            }
 
-                    //Some servers can return the same tx as multiple ScriptHashTx entries with different heights. Take the highest height only
-                    Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash)
-                            .collect(TreeSet::new, (set, ref) -> {
-                                Optional<BlockTransactionHash> optExisting = set.stream().filter(prev -> prev.getHash().equals(ref.getHash())).findFirst();
-                                if(optExisting.isPresent()) {
-                                    if(optExisting.get().getHeight() < ref.getHeight()) {
-                                        set.remove(optExisting.get());
-                                        set.add(ref);
-                                    }
-                                } else {
+            if(!pathScriptHashes.isEmpty()) {
+                //Even if we have some successes, failure to retrieve all references will result in an incomplete wallet history. Don't proceed if that's the case.
+                Map<String, ScriptHashTx[]> result = electrumServerRpc.getScriptHashHistory(getTransport(), wallet, pathScriptHashes, true);
+
+                for(String path : result.keySet()) {
+                    ScriptHashTx[] txes = result.get(path);
+
+                    Optional<WalletNode> optionalNode = nodes.stream().filter(n -> n.getDerivationPath().equals(path)).findFirst();
+                    if(optionalNode.isPresent()) {
+                        WalletNode node = optionalNode.get();
+                        nodeHashHistory.put(node, txes);
+                    }
+                }
+            }
+
+            for(WalletNode node : nodeHashHistory.keySet()) {
+                ScriptHashTx[] txes = nodeHashHistory.get(node);
+
+                //Some servers can return the same tx as multiple ScriptHashTx entries with different heights. Take the highest height only
+                Set<BlockTransactionHash> references = Arrays.stream(txes).map(ScriptHashTx::getBlockchainTransactionHash)
+                        .collect(TreeSet::new, (set, ref) -> {
+                            Optional<BlockTransactionHash> optExisting = set.stream().filter(prev -> prev.getHash().equals(ref.getHash())).findFirst();
+                            if(optExisting.isPresent()) {
+                                if(optExisting.get().getHeight() < ref.getHeight()) {
+                                    set.remove(optExisting.get());
                                     set.add(ref);
                                 }
-                            }, TreeSet::addAll);
-                    Set<BlockTransactionHash> existingReferences = nodeTransactionMap.get(node);
+                            } else {
+                                set.add(ref);
+                            }
+                        }, TreeSet::addAll);
+                Set<BlockTransactionHash> existingReferences = nodeTransactionMap.get(node);
 
-                    if(existingReferences == null) {
-                        nodeTransactionMap.put(node, references);
-                    } else {
-                        for(BlockTransactionHash reference : references) {
-                            if(!existingReferences.add(reference)) {
-                                Optional<BlockTransactionHash> optionalReference = existingReferences.stream().filter(tr -> tr.getHash().equals(reference.getHash())).findFirst();
-                                if(optionalReference.isPresent()) {
-                                    BlockTransactionHash existingReference = optionalReference.get();
-                                    if(existingReference.getHeight() < reference.getHeight()) {
-                                        existingReferences.remove(existingReference);
-                                        existingReferences.add(reference);
-                                    }
+                if(existingReferences == null) {
+                    nodeTransactionMap.put(node, references);
+                } else {
+                    for(BlockTransactionHash reference : references) {
+                        if(!existingReferences.add(reference)) {
+                            Optional<BlockTransactionHash> optionalReference = existingReferences.stream().filter(tr -> tr.getHash().equals(reference.getHash())).findFirst();
+                            if(optionalReference.isPresent()) {
+                                BlockTransactionHash existingReference = optionalReference.get();
+                                if(existingReference.getHeight() < reference.getHeight()) {
+                                    existingReferences.remove(existingReference);
+                                    existingReferences.add(reference);
                                 }
                             }
                         }
@@ -1539,6 +1584,7 @@ public class ElectrumServer {
         private final Sha256Hash txId;
         private final Set<WalletNode> nodes;
         private final IntegerProperty iterationCount = new SimpleIntegerProperty(0);
+        private boolean cancelled;
 
         public TransactionMempoolService(Wallet wallet, Sha256Hash txId, Set<WalletNode> nodes) {
             this.wallet = wallet;
@@ -1552,6 +1598,22 @@ public class ElectrumServer {
 
         public IntegerProperty iterationCountProperty() {
             return iterationCount;
+        }
+
+        public boolean isCancelled() {
+            return cancelled;
+        }
+
+        @Override
+        public void start() {
+            this.cancelled = false;
+            super.start();
+        }
+
+        @Override
+        public boolean cancel() {
+            this.cancelled = true;
+            return super.cancel();
         }
 
         @Override

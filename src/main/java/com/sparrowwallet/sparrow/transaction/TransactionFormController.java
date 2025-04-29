@@ -76,11 +76,15 @@ public abstract class TransactionFormController extends BaseController {
         });
     }
 
+    public void close() {
+        EventManager.get().unregister(this);
+    }
+
     @Subscribe
     public void transactionTabsClosed(TransactionTabsClosedEvent event) {
         for(TransactionTabData tabData : event.getClosedTransactionTabData()) {
             if(tabData.getTransactionData() == getTransactionForm().getTransactionData()) {
-                EventManager.get().unregister(this);
+                close();
             }
         }
     }
