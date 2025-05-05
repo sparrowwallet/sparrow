@@ -330,5 +330,5 @@ CellView > .text-input.text-field {
 }
 
 .tooltip {
-    -fx-show-delay: 400ms;
+    -fx-show-delay: 200ms;
 }
