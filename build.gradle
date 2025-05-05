@@ -75,8 +75,8 @@ dependencies {
     implementation('com.sparrowwallet:hummingbird:1.7.4')
     implementation('co.nstant.in:cbor:0.9')
     implementation('org.openpnp:openpnp-capture-java:0.0.28-5')
-    implementation("io.matthewnelson.kmp-tor:runtime:2.2.0")
-    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.15.0")
+    implementation("io.matthewnelson.kmp-tor:runtime:2.2.1")
+    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.0")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.1') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
@@ -161,10 +161,6 @@ application {
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.io=com.google.gson",
                                  "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
-                                 "--add-opens=io.matthewnelson.kmp.tor.resource.geoip/io.matthewnelson.kmp.tor.resource.geoip=io.matthewnelson.kmp.tor.common.core",
-                                 "--add-exports=io.matthewnelson.kmp.tor.runtime.ctrl/io.matthewnelson.kmp.tor.runtime.ctrl.internal=io.matthewnelson.kmp.tor.runtime",
-                                 "--add-reads=io.matthewnelson.kmp.tor.runtime=io.matthewnelson.kmp.tor.common.core",
-                                 "--add-reads=io.matthewnelson.kmp.tor.runtime.ctrl=io.matthewnelson.kmp.process",
                                  "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
                                  "--add-reads=org.flywaydb.core=java.desktop"]
 
@@ -213,10 +209,6 @@ jlink {
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.io=com.google.gson",
                    "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
-                   "--add-opens=io.matthewnelson.kmp.tor.resource.geoip/io.matthewnelson.kmp.tor.resource.geoip=io.matthewnelson.kmp.tor.common.core",
-                   "--add-exports=io.matthewnelson.kmp.tor.runtime.ctrl/io.matthewnelson.kmp.tor.runtime.ctrl.internal=io.matthewnelson.kmp.tor.runtime",
-                   "--add-reads=io.matthewnelson.kmp.tor.runtime=io.matthewnelson.kmp.tor.common.core",
-                   "--add-reads=io.matthewnelson.kmp.tor.runtime.ctrl=io.matthewnelson.kmp.process",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop",
                    "--add-reads=com.sparrowwallet.merged.module=java.sql",
                    "--add-reads=com.sparrowwallet.merged.module=com.sparrowwallet.sparrow",
