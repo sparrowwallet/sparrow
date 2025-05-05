@@ -1,5 +1,5 @@
 Summary: Sparrow
-Name: sparrow
+Name: sparrowwallet
 Version: 2.1.4
 Release: 1
 License: ASL 2.0
@@ -13,7 +13,8 @@ URL:
 Prefix: /opt
 %endif
 
-Provides: sparrow
+Provides: sparrowwallet
+Obsoletes: sparrow <= 2.1.3
 
 %if "xutils" != "x"
 Group: utils
@@ -40,7 +41,7 @@ Requires: xdg-utils
 %define default_filesystem / /opt /usr /usr/bin /usr/lib /usr/local /usr/local/bin /usr/local/lib
 
 %description
-Sparrow
+Sparrow Wallet
 
 %global __os_install_post %{nil}
 
