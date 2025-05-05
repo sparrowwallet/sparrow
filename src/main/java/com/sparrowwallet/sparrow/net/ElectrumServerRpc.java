@@ -22,6 +22,8 @@ public interface ElectrumServerRpc {
 
     Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes);
 
+    Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes);
+
     Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights);
 
     Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids);

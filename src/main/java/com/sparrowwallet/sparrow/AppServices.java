@@ -26,6 +26,8 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
+import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
+import io.reactivex.subjects.PublishSubject;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -43,7 +45,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
@@ -67,6 +68,8 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
@@ -105,6 +108,8 @@ public class AppServices {
 
     private TrayManager trayManager;
 
+    private final PublishSubject<NewBlockEvent> newBlockSubject = PublishSubject.create();
+
     private static Image windowIcon;
 
     private static final BooleanProperty onlineProperty = new SimpleBooleanProperty(false);
@@ -126,6 +131,8 @@ public class AppServices {
     private static Integer currentBlockHeight;
 
     private static BlockHeader latestBlockHeader;
+
+    private static final Map<Integer, BlockSummary> blockSummaries = new ConcurrentHashMap<>();
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
@@ -183,6 +190,12 @@ public class AppServices {
     private AppServices(Application application, InteractionServices interactionServices) {
         this.application = application;
         this.interactionServices = interactionServices;
+
+        newBlockSubject.buffer(4, TimeUnit.SECONDS)
+                .filter(newBlockEvents -> !newBlockEvents.isEmpty())
+                .observeOn(JavaFxScheduler.platform())
+                .subscribe(this::fetchBlockSummaries, exception -> log.error("Error fetching block summaries", exception));
+
         EventManager.get().register(this);
     }
 
@@ -481,6 +494,19 @@ public class AppServices {
         }
     }
 
+    private void fetchBlockSummaries(List<NewBlockEvent> newBlockEvents) {
+        if(isConnected()) {
+            ElectrumServer.BlockSummaryService blockSummaryService = new ElectrumServer.BlockSummaryService(newBlockEvents);
+            blockSummaryService.setOnSucceeded(_ -> {
+                EventManager.get().post(blockSummaryService.getValue());
+            });
+            blockSummaryService.setOnFailed(failedState -> {
+                log.error("Error fetching block summaries", failedState.getSource().getException());
+            });
+            blockSummaryService.start();
+        }
+    }
+
     public static boolean isTorRunning() {
         return Tor.getDefault() != null;
     }
@@ -704,6 +730,10 @@ public class AppServices {
 
     public static BlockHeader getLatestBlockHeader() {
         return latestBlockHeader;
+    }
+
+    public static Map<Integer, BlockSummary> getBlockSummaries() {
+        return blockSummaries;
     }
 
     public static Double getDefaultFeeRate() {
@@ -1185,6 +1215,10 @@ public class AppServices {
         minimumRelayFeeRate = Math.max(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
+
+        if(!blockSummaries.containsKey(currentBlockHeight)) {
+            fetchBlockSummaries(Collections.emptyList());
+        }
     }
 
     @Subscribe
@@ -1199,6 +1233,15 @@ public class AppServices {
         latestBlockHeader = event.getBlockHeader();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
+        newBlockSubject.onNext(event);
+    }
+
+    @Subscribe
+    public void blockSummary(BlockSummaryEvent event) {
+        blockSummaries.putAll(event.getBlockSummaryMap());
+        if(AppServices.currentBlockHeight != null) {
+            blockSummaries.keySet().removeIf(height -> AppServices.currentBlockHeight - height > 5);
+        }
     }
 
     @Subscribe

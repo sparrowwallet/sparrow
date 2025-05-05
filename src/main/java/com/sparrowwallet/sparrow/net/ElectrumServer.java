@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.BlockSummary;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -32,11 +33,13 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class ElectrumServer {
@@ -946,6 +949,71 @@ public class ElectrumServer {
         return Transaction.DEFAULT_MIN_RELAY_FEE;
     }
 
+    public Map<Integer, BlockSummary> getRecentBlockSummaryMap() throws ServerException {
+        return getBlockSummaryMap(null, null);
+    }
+
+    public Map<Integer, BlockSummary> getBlockSummaryMap(Integer height, BlockHeader blockHeader) throws ServerException {
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+
+        if(feeRatesSource.supportsNetwork(Network.get())) {
+            try {
+                if(blockHeader == null) {
+                    return feeRatesSource.getRecentBlockSummaries();
+                } else {
+                    Map<Integer, BlockSummary> blockSummaryMap = new HashMap<>();
+                    BlockSummary blockSummary = feeRatesSource.getBlockSummary(Sha256Hash.twiceOf(blockHeader.bitcoinSerialize()));
+                    if(blockSummary != null && blockSummary.getHeight() != null) {
+                        blockSummaryMap.put(blockSummary.getHeight(), blockSummary);
+                    }
+                    return blockSummaryMap;
+                }
+            } catch(Exception e) {
+                return getServerBlockSummaryMap(height, blockHeader);
+            }
+        } else {
+            return getServerBlockSummaryMap(height, blockHeader);
+        }
+    }
+
+    private Map<Integer, BlockSummary> getServerBlockSummaryMap(Integer height, BlockHeader blockHeader) throws ServerException {
+        if(blockHeader == null || height == null) {
+            Integer current = AppServices.getCurrentBlockHeight();
+            if(current == null) {
+                return Collections.emptyMap();
+            }
+            Set<BlockTransactionHash> references = IntStream.range(current - 4, current + 1)
+                    .mapToObj(i -> new BlockTransaction(null, i, null, null, null)).collect(Collectors.toSet());
+            Map<Integer, BlockHeader> blockHeaders = getBlockHeaders(null, references);
+            return blockHeaders.keySet().stream()
+                    .collect(Collectors.toMap(java.util.function.Function.identity(), v -> new BlockSummary(v, blockHeaders.get(v).getTimeAsDate())));
+        } else {
+            Map<Integer, BlockSummary> blockSummaryMap = new HashMap<>();
+            blockSummaryMap.put(height, new BlockSummary(height, blockHeader.getTimeAsDate()));
+            return blockSummaryMap;
+        }
+    }
+
+    public List<BlockTransaction> getRecentMempoolTransactions() {
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+
+        if(feeRatesSource.supportsNetwork(Network.get())) {
+            try {
+                List<BlockTransactionHash> recentTransactions = feeRatesSource.getRecentMempoolTransactions();
+                Map<BlockTransactionHash, Transaction> setReferences = new HashMap<>();
+                setReferences.put(recentTransactions.getFirst(), null);
+                Map<Sha256Hash, BlockTransaction> transactions = getTransactions(null, setReferences, Collections.emptyMap());
+                return transactions.values().stream().filter(blxTx -> blxTx.getTransaction() != null).toList();
+            } catch(Exception e) {
+                return Collections.emptyList();
+            }
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     public Sha256Hash broadcastTransactionPrivately(Transaction transaction) throws ServerException {
         //If Tor proxy is configured, try all external broadcast sources in random order before falling back to connected Electrum server
         if(AppServices.isUsingProxy()) {
@@ -1806,6 +1874,85 @@ public class ElectrumServer {
                     return new FeeRatesUpdatedEvent(blockTargetFeeRates, null);
                 }
             };
+        }
+    }
+
+    public static class BlockSummaryService extends Service<BlockSummaryEvent> {
+        private final List<NewBlockEvent> newBlockEvents;
+
+        public BlockSummaryService(List<NewBlockEvent> newBlockEvents) {
+            this.newBlockEvents = newBlockEvents;
+        }
+
+        @Override
+        protected Task<BlockSummaryEvent> createTask() {
+            return new Task<>() {
+                protected BlockSummaryEvent call() throws ServerException {
+                    ElectrumServer electrumServer = new ElectrumServer();
+                    Map<Integer, BlockSummary> blockSummaryMap = new LinkedHashMap<>();
+
+                    int maxHeight = AppServices.getBlockSummaries().keySet().stream().mapToInt(Integer::intValue).max().orElse(0);
+                    int startHeight = newBlockEvents.stream().mapToInt(NewBlockEvent::getHeight).min().orElse(0);
+                    int endHeight = newBlockEvents.stream().mapToInt(NewBlockEvent::getHeight).max().orElse(0);
+                    int totalBlocks = Math.max(0, endHeight - maxHeight);
+
+                    if(startHeight == 0 || totalBlocks > 1 || startHeight > maxHeight + 1) {
+                        if(isBlockstorm(totalBlocks)) {
+                            for(int height = maxHeight + 1; height < endHeight; height++) {
+                                blockSummaryMap.put(height, new BlockSummary(height, new Date()));
+                            }
+                        } else {
+                            blockSummaryMap.putAll(electrumServer.getRecentBlockSummaryMap());
+                        }
+                    } else {
+                        for(NewBlockEvent event : newBlockEvents) {
+                            blockSummaryMap.putAll(electrumServer.getBlockSummaryMap(event.getHeight(), event.getBlockHeader()));
+                        }
+                    }
+
+                    Config config = Config.get();
+                    if(!isBlockstorm(totalBlocks) && !AppServices.isUsingProxy() && config.getServer().getProtocol().equals(Protocol.SSL)
+                            && (config.getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER || config.getServerType() == ServerType.ELECTRUM_SERVER)) {
+                        subscribeRecent(electrumServer);
+                    }
+
+                    return new BlockSummaryEvent(blockSummaryMap);
+                }
+            };
+        }
+
+        private boolean isBlockstorm(int totalBlocks) {
+            return Network.get() != Network.MAINNET && totalBlocks > 2;
+        }
+
+        private final static Set<String> subscribedRecent = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+        private void subscribeRecent(ElectrumServer electrumServer) {
+            Set<String> unsubscribeScriptHashes = new HashSet<>(subscribedRecent);
+            unsubscribeScriptHashes.removeIf(subscribedScriptHashes::containsKey);
+            electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
+            subscribedRecent.removeAll(unsubscribeScriptHashes);
+
+            Map<String, String> subscribeScriptHashes = new HashMap<>();
+            List<BlockTransaction> recentTransactions = electrumServer.getRecentMempoolTransactions();
+            for(BlockTransaction blkTx : recentTransactions) {
+                for(int i = 0; i < blkTx.getTransaction().getOutputs().size() && subscribeScriptHashes.size() < 10; i++) {
+                    TransactionOutput txOutput = blkTx.getTransaction().getOutputs().get(i);
+                    String scriptHash = getScriptHash(txOutput);
+                    if(!subscribedScriptHashes.containsKey(scriptHash)) {
+                        subscribeScriptHashes.put("m/" + i, getScriptHash(txOutput));
+                    }
+                }
+            }
+
+            if(!subscribeScriptHashes.isEmpty()) {
+                try {
+                    electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
+                    subscribedRecent.addAll(subscribeScriptHashes.values());
+                } catch(ElectrumServerRpcException e) {
+                    log.debug("Error subscribing to recent mempool transactions", e);
+                }
+            }
         }
     }
 
