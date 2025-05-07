@@ -550,7 +550,7 @@ public class PayNymController {
             decryptedWallet.finalise(psbt);
             Transaction transaction = psbt.extractTransaction();
 
-            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction);
+            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction, psbt.getFee());
             broadcastTransactionService.setOnSucceeded(successEvent -> {
                 ElectrumServer.TransactionMempoolService transactionMempoolService = new ElectrumServer.TransactionMempoolService(walletTransaction.getWallet(), transaction.getTxId(), new HashSet<>(walletTransaction.getSelectedUtxos().values()));
                 transactionMempoolService.setDelay(Duration.seconds(2));
