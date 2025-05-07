@@ -1,5 +1,5 @@
 Summary: Sparrow
-Name: sparrowwallet
+Name: sparrow
 Version: 2.1.4
 Release: 1
 License: ASL 2.0
@@ -13,8 +13,7 @@ URL:
 Prefix: /opt
 %endif
 
-Provides: sparrowwallet
-Obsoletes: sparrow <= 2.1.3
+Provides: sparrow
 
 %if "xutils" != "x"
 Group: utils
