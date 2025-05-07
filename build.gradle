@@ -3,6 +3,7 @@ plugins {
     id 'org-openjfx-javafxplugin'
     id 'org.beryx.jlink' version '3.1.1'
     id 'org.gradlex.extra-java-module-info' version '1.9'
+    id 'com.sparrowwallet.filterjar'
 }
 
 def sparrowVersion = '2.1.4'
@@ -456,5 +457,13 @@ extraJavaModuleInfo {
     }
     module('com.jcraft:jzlib', 'com.jcraft.jzlib') {
         exports('com.jcraft.jzlib')
+    }
+}
+
+String torOs = os.macOsX ? "macos" : (os.windows ? "mingw" : "linux-libc")
+filterInfo {
+    filter('io.matthewnelson.kmp-tor', 'resource-lib-tor-gpl-jvm') {
+        include("io/matthewnelson/kmp/tor/resource/lib/tor/native/${torOs}/${releaseArch}")
+        exclude('io/matthewnelson/kmp/tor/resource/lib/tor/native/')
     }
 }
