@@ -21,7 +21,7 @@ public class WelcomeDialog extends Dialog<Mode> {
             welcomeController.initializeView();
 
             dialogPane.setPrefWidth(600);
-            dialogPane.setPrefHeight(520);
+            dialogPane.setPrefHeight(540);
             dialogPane.setMinHeight(dialogPane.getPrefHeight());
             AppServices.moveToActiveWindowScreen(this);
 
