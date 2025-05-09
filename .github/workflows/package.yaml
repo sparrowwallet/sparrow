@@ -54,3 +54,10 @@ jobs:
           path: |
             build/jpackage/*
             !build/jpackage/Sparrow/
+
+  gradle_wrapper_validate:
+    name: "Validate Gradle Wrapper"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
