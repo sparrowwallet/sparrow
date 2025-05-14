@@ -10,7 +10,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import java.util.Date;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class VerboseTransaction {
+public class VerboseTransaction {
     public String blockhash;
     public long blocktime;
     public int confirmations;

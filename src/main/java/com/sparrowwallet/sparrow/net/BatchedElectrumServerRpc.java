@@ -4,7 +4,6 @@ import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
-import com.github.arteam.simplejsonrpc.core.domain.ErrorMessage;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -188,6 +187,24 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             return (Map<Integer, String>)e.getSuccesses();
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve block headers for block heights: " + blockHeights, e);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<Integer, BlockStats> getBlockStats(Transport transport, Set<Integer> blockHeights) {
+        PagedBatchRequestBuilder<Integer, BlockStats> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(BlockStats.class);
+
+        for(Integer height : blockHeights) {
+            batchRequest.add(height, "blockchain.block.stats", height);
+        }
+
+        try {
+            return batchRequest.execute();
+        } catch(JsonRpcBatchException e) {
+            return (Map<Integer, BlockStats>)e.getSuccesses();
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve block stats for block heights: " + blockHeights, e);
         }
     }
 

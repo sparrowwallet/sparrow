@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.MempoolEntriesInitializedEvent;
 import com.sparrowwallet.drongo.Version;
+import com.sparrowwallet.sparrow.net.BlockStats;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.*;
 import com.sparrowwallet.sparrow.net.cormorant.index.TxEntry;
@@ -150,6 +151,17 @@ public class ElectrumServerService {
             }
 
             return bitcoindClient.getBitcoindService().getBlockHeader(blockHash, false);
+        } catch(JsonRpcException e) {
+            throw new BlockNotFoundException(e.getErrorMessage());
+        } catch(IllegalStateException e) {
+            throw new BitcoindIOException(e);
+        }
+    }
+
+    @JsonRpcMethod("blockchain.block.stats")
+    public BlockStats getBlockStats(@JsonRpcParam("height") int height) throws BitcoindIOException, BlockNotFoundException {
+        try {
+            return bitcoindClient.getBitcoindService().getBlockStats(height);
         } catch(JsonRpcException e) {
             throw new BlockNotFoundException(e.getErrorMessage());
         } catch(IllegalStateException e) {

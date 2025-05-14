@@ -4,7 +4,7 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 
-class ScriptHashTx {
+public class ScriptHashTx {
     public static final ScriptHashTx ERROR_TX = new ScriptHashTx() {
         @Override
         public BlockTransactionHash getBlockchainTransactionHash() {
