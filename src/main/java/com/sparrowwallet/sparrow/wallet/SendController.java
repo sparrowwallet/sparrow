@@ -1213,7 +1213,7 @@ public class SendController extends WalletFormController implements Initializabl
             Transaction transaction = psbt.extractTransaction();
 
             ServiceProgressDialog.ProxyWorker proxyWorker = new ServiceProgressDialog.ProxyWorker();
-            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction);
+            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction, psbt.getFee());
             broadcastTransactionService.setOnSucceeded(successEvent -> {
                 ElectrumServer.TransactionMempoolService transactionMempoolService = new ElectrumServer.TransactionMempoolService(walletTransaction.getWallet(), transaction.getTxId(), new HashSet<>(walletTransaction.getSelectedUtxos().values()));
                 transactionMempoolService.setDelay(Duration.seconds(2));

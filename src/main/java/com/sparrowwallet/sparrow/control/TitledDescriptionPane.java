@@ -25,6 +25,7 @@ public class TitledDescriptionPane extends TitledPane {
     public TitledDescriptionPane(String title, String description, String content, WalletModel walletModel) {
         getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         getStyleClass().add("titled-description-pane");
+        setAccessibleText(title);
 
         setPadding(Insets.EMPTY);
         setGraphic(getTitle(title, description, walletModel));

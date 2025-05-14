@@ -152,6 +152,27 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
+    public Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes) {
+        PagedBatchRequestBuilder<String, Boolean> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(Boolean.class);
+
+        for(String scriptHash : scriptHashes) {
+            batchRequest.add(scriptHash, "blockchain.scripthash.unsubscribe", scriptHash);
+        }
+
+        try {
+            return batchRequest.execute();
+        } catch(JsonRpcBatchException e) {
+            log.warn("Failed to unsubscribe from script hashes: " + e.getErrors().keySet(), e);
+            Map<String, Boolean> unsubscribedScriptHashes = scriptHashes.stream().collect(Collectors.toMap(s -> s, _ -> true));
+            unsubscribedScriptHashes.keySet().removeIf(scriptHash -> e.getErrors().containsKey(scriptHash));
+            return unsubscribedScriptHashes;
+        } catch(Exception e) {
+            log.warn("Failed to unsubscribe from script hashes: " + scriptHashes, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
         PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(String.class);

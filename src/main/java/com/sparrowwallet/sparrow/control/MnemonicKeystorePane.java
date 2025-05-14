@@ -321,6 +321,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                 }
             };
             wordField.setMaxWidth(100);
+            wordField.setAccessibleText("Word " + (wordNumber + 1));
             TextFormatter<?> formatter = new TextFormatter<>((TextFormatter.Change change) -> {
                 String text = change.getText();
                 // if text was added, fix the text to fit the requirements

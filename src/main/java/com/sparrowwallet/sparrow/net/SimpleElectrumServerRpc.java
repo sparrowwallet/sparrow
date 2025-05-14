@@ -123,12 +123,30 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
         for(String path : pathScriptHashes.keySet()) {
             EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + path));
             try {
-                String scriptHash = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                String scriptHashStatus = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable());
-                result.put(path, scriptHash);
+                result.put(path, scriptHashStatus);
             } catch(Exception e) {
                 //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
                 throw new ElectrumServerRpcException("Failed to subscribe to path: " + path, e);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        for(String scriptHash : scriptHashes) {
+            try {
+                Boolean wasSubscribed = new RetryLogic<Boolean>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                        client.createRequest().returnAs(Boolean.class).method("blockchain.scripthash.unsubscribe").id(idCounter.incrementAndGet()).params(scriptHash).executeNullable());
+                result.put(scriptHash, wasSubscribed);
+            } catch(Exception e) {
+                log.warn("Failed to unsubscribe from script hash: " + scriptHash, e);
             }
         }
 

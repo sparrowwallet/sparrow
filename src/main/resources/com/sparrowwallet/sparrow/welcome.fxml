@@ -20,7 +20,7 @@
             <Region HBox.hgrow="ALWAYS"/>
             <DialogImage type="SPARROW" AnchorPane.rightAnchor="0"/>
         </HBox>
-        <VBox fx:id="welcomeBox" styleClass="content-area" spacing="20" prefHeight="370">
+        <VBox fx:id="welcomeBox" styleClass="content-area" spacing="20" prefHeight="390">
             <VBox fx:id="step1" spacing="15">
                 <Label text="Introduction" styleClass="title-text">
                     <graphic>

@@ -1,13 +1,16 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.BlockSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public enum FeeRatesSource {
     ELECTRUM_SERVER("Server", false) {
@@ -24,11 +27,34 @@ public enum FeeRatesSource {
     MEMPOOL_SPACE("mempool.space", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
-            String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/v1/fees/recommended" : "https://mempool.space/api/v1/fees/recommended";
+            String url = getApiUrl() + "v1/fees/recommended";
+            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        public BlockSummary getBlockSummary(Sha256Hash blockId) throws Exception {
+            String url = getApiUrl() + "v1/block/" + Utils.bytesToHex(blockId.getReversedBytes());
+            return requestBlockSummary(this, url);
+        }
+
+        @Override
+        public Map<Integer, BlockSummary> getRecentBlockSummaries() throws Exception {
+            String url = getApiUrl() + "v1/blocks";
+            return requestBlockSummaries(this, url);
+        }
+
+        @Override
+        public List<BlockTransactionHash> getRecentMempoolTransactions() throws Exception {
+            String url = getApiUrl() + "mempool/recent";
+            return requestRecentMempoolTransactions(this, url);
+        }
+
+        private String getApiUrl() {
+            String url = AppServices.isUsingProxy() ? "http://mempoolhqx4isw62xs7abwphsq7ldayuidyx2v2oethdhhj6mlo2r6ad.onion/api/" : "https://mempool.space/api/";
             if(Network.get() != Network.MAINNET && supportsNetwork(Network.get())) {
                 url = url.replace("/api/", "/" + Network.get().getName() + "/api/");
             }
-            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+            return url;
         }
 
         @Override
@@ -101,6 +127,18 @@ public enum FeeRatesSource {
 
     public abstract Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates);
 
+    public BlockSummary getBlockSummary(Sha256Hash blockId) throws Exception {
+        throw new UnsupportedOperationException(name + " does not support block summaries");
+    }
+
+    public Map<Integer, BlockSummary> getRecentBlockSummaries() throws Exception {
+        throw new UnsupportedOperationException(name + " does not support block summaries");
+    }
+
+    public List<BlockTransactionHash> getRecentMempoolTransactions() throws Exception {
+        throw new UnsupportedOperationException(name + " does not support recent mempool transactions");
+    }
+
     public abstract boolean supportsNetwork(Network network);
 
     public String getName() {
@@ -158,6 +196,80 @@ public enum FeeRatesSource {
         return httpClientService.requestJson(url, ThreeTierRates.class, null);
     }
 
+    protected static BlockSummary requestBlockSummary(FeeRatesSource feeRatesSource, String url) throws Exception {
+        if(log.isInfoEnabled()) {
+            log.info("Requesting block summary from " + url);
+        }
+
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        try {
+            MempoolBlockSummary mempoolBlockSummary = feeRatesSource.requestBlockSummary(url, httpClientService);
+            return mempoolBlockSummary.toBlockSummary();
+        } catch (Exception e) {
+            if(log.isDebugEnabled()) {
+                log.warn("Error retrieving block summary from " + url, e);
+            } else {
+                log.warn("Error retrieving block summary from " + url + " (" + e.getMessage() + ")");
+            }
+
+            throw e;
+        }
+    }
+
+    protected MempoolBlockSummary requestBlockSummary(String url, HttpClientService httpClientService) throws Exception {
+        return httpClientService.requestJson(url, MempoolBlockSummary.class, null);
+    }
+
+    protected static Map<Integer, BlockSummary> requestBlockSummaries(FeeRatesSource feeRatesSource, String url) throws Exception {
+        if(log.isInfoEnabled()) {
+            log.info("Requesting block summaries from " + url);
+        }
+
+        Map<Integer, BlockSummary> blockSummaryMap = new LinkedHashMap<>();
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        try {
+            MempoolBlockSummary[] blockSummaries = feeRatesSource.requestBlockSummaries(url, httpClientService);
+            for(MempoolBlockSummary blockSummary : blockSummaries) {
+                if(blockSummary.height != null) {
+                    blockSummaryMap.put(blockSummary.height, blockSummary.toBlockSummary());
+                }
+            }
+            return blockSummaryMap;
+        } catch (Exception e) {
+            if(log.isDebugEnabled()) {
+                log.warn("Error retrieving block summaries from " + url, e);
+            } else {
+                log.warn("Error retrieving block summaries from " + url + " (" + e.getMessage() + ")");
+            }
+
+            throw e;
+        }
+    }
+
+    protected MempoolBlockSummary[] requestBlockSummaries(String url, HttpClientService httpClientService) throws Exception {
+        return httpClientService.requestJson(url, MempoolBlockSummary[].class, null);
+    }
+
+    protected List<BlockTransactionHash> requestRecentMempoolTransactions(FeeRatesSource feeRatesSource, String url) throws Exception {
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        try {
+            MempoolRecentTransaction[] recentTransactions = feeRatesSource.requestRecentMempoolTransactions(url, httpClientService);
+            return Arrays.stream(recentTransactions).sorted().map(tx -> (BlockTransactionHash)new BlockTransaction(tx.txid, 0, null, tx.fee, null)).toList();
+        } catch (Exception e) {
+            if(log.isDebugEnabled()) {
+                log.warn("Error retrieving recent mempool transactions from " + url, e);
+            } else {
+                log.warn("Error retrieving recent mempool from " + url + " (" + e.getMessage() + ")");
+            }
+
+            throw e;
+        }
+    }
+
+    protected MempoolRecentTransaction[] requestRecentMempoolTransactions(String url, HttpClientService httpClientService) throws Exception {
+        return httpClientService.requestJson(url, MempoolRecentTransaction[].class, null);
+    }
+
     @Override
     public String toString() {
         return name;
@@ -170,6 +282,32 @@ public enum FeeRatesSource {
     private record OxtRatesData(Double recommended_fee_099, Double recommended_fee_090, Double recommended_fee_050) {
         public ThreeTierRates getThreeTierRates() {
             return new ThreeTierRates(recommended_fee_099/1000, recommended_fee_090/1000, recommended_fee_050/1000, null);
+        }
+    }
+
+    protected record MempoolBlockSummary(String id, Integer height, Long timestamp, Integer tx_count, MempoolBlockSummaryExtras extras) {
+        public Double getMedianFee() {
+            return extras == null ? null : extras.medianFee();
+        }
+
+        public BlockSummary toBlockSummary() {
+            if(height == null || timestamp == null) {
+                throw new IllegalStateException("Height = " + height + ", timestamp = " + timestamp + ": both must be specified");
+            }
+            return new BlockSummary(height, new Date(timestamp * 1000), getMedianFee(), tx_count);
+        }
+    }
+
+    private record MempoolBlockSummaryExtras(Double medianFee) {}
+
+    protected record MempoolRecentTransaction(Sha256Hash txid, Long fee, Long vsize) implements Comparable<MempoolRecentTransaction> {
+        private Double getFeeRate() {
+            return fee == null || vsize == null ? 0.0d : (double)fee / vsize;
+        }
+
+        @Override
+        public int compareTo(MempoolRecentTransaction o) {
+            return Double.compare(o.getFeeRate(), getFeeRate());
         }
     }
 }

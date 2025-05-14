@@ -28,8 +28,7 @@ public class SubscriptionService {
     public void scriptHashStatusUpdated(@JsonRpcParam("scripthash") final String scriptHash, @JsonRpcOptional @JsonRpcParam("status") final String status) {
         List<String> existingStatuses = ElectrumServer.getSubscribedScriptHashes().get(scriptHash);
         if(existingStatuses == null) {
-            log.debug("Received script hash status update for unsubscribed script hash: " + scriptHash);
-            ElectrumServer.updateSubscribedScriptHashStatus(scriptHash, status);
+            log.trace("Received script hash status update for non-wallet script hash: " + scriptHash);
         } else if(status != null && existingStatuses.contains(status)) {
             log.debug("Received script hash status update, but status has not changed");
             return;

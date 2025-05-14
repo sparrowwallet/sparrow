@@ -40,7 +40,7 @@ Requires: xdg-utils
 %define default_filesystem / /opt /usr /usr/bin /usr/lib /usr/local /usr/local/bin /usr/local/lib
 
 %description
-Sparrow
+Sparrow Wallet
 
 %global __os_install_post %{nil}
 
