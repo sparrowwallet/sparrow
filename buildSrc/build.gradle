@@ -20,9 +20,5 @@ gradlePlugin {
             id = "org-openjfx-javafxplugin"
             implementationClass = "org.openjfx.gradle.JavaFXPlugin"
         }
-        register("com.sparrowwallet.filterjar") {
-            id = "com.sparrowwallet.filterjar"
-            implementationClass = "com.sparrowwallet.filterjar.FilterJarPlugin"
-        }
     }
 }
