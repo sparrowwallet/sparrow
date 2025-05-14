@@ -1945,13 +1945,18 @@ public class ElectrumServer {
 
                     if(startHeight == 0 || totalBlocks > 1 || startHeight > maxHeight + 1) {
                         if(isBlockstorm(totalBlocks)) {
-                            for(int height = maxHeight + 1; height < endHeight; height++) {
-                                blockSummaryMap.put(height, new BlockSummary(height, new Date()));
+                            int start = Math.max(maxHeight + 1, endHeight - 15);
+                            for(int height = start; height <= endHeight; height++) {
+                                blockSummaryMap.put(height, new BlockSummary(height, new Date(), 1.0d, 0, 0));
                             }
                         } else {
                             blockSummaryMap.putAll(electrumServer.getRecentBlockSummaryMap());
                         }
-                    } else {
+                    }
+
+                    List<NewBlockEvent> events = new ArrayList<>(newBlockEvents);
+                    events.removeIf(event -> blockSummaryMap.containsKey(event.getHeight()));
+                    if(!events.isEmpty()) {
                         for(NewBlockEvent event : newBlockEvents) {
                             blockSummaryMap.putAll(electrumServer.getBlockSummaryMap(event.getHeight(), event.getBlockHeader()));
                         }

@@ -132,6 +132,66 @@
     -fx-text-fill: -fx-accent;
 }
 
+.block-used {
+    -fx-fill: linear-gradient(from 0% 0% to 0% 100%, -top 0%, -bottom 100%);
+}
+
+.block-mainnet {
+    -top: rgb(155, 79, 174);
+    -bottom: rgb(77, 96, 154);
+}
+
+.block-testnet {
+    -top: rgb(30, 136, 229);
+    -bottom: rgba(57, 73, 171);
+}
+
+.block-signet {
+    -top: rgb(136, 14, 79);
+    -bottom: rgb(64, 7, 39);
+}
+
+.block-regtest {
+    -top: rgb(0, 137, 123);
+    -bottom: rgb(0, 96, 100);
+}
+
+.block-confirmed .block-unused {
+    -fx-fill: #8c8c98;
+}
+
+.block-confirmed .block-top {
+    -fx-fill: #696d7c;
+}
+
+.block-confirmed .block-left {
+    -fx-fill: #616475;
+}
+
+.block-unconfirmed .block-top {
+    -fx-fill: #807976;
+}
+
+.block-unconfirmed .block-left {
+    -fx-fill: #6f6a69;
+}
+
+.block-unconfirmed .block-unused {
+    -fx-opacity: 70%;
+}
+
+.block-height {
+    -fx-fill: derive(-fx-text-background-color, 40%);
+}
+
+.block-text {
+    -fx-fill: #ffffff;
+}
+
+.blocks-separator {
+    -fx-stroke: -fx-text-background-color;
+}
+
 .vsizeChart {
     VSIZE1-2_COLOR: rgb(216, 27, 96);
     VSIZE2-3_COLOR: rgb(142, 36, 170);
@@ -164,3 +224,45 @@
     VSIZE600-700_COLOR: rgb(51, 105, 30);
     VSIZE700-800_COLOR: rgb(130, 119, 23);
 }
+
+.block-cube {
+    VSIZE1-2_COLOR: #557d00;
+    VSIZE2-3_COLOR: #5d7d01;
+    VSIZE3-4_COLOR: #637d02;
+    VSIZE4-5_COLOR: #6d7d04;
+    VSIZE5-6_COLOR: #757d05;
+    VSIZE6-8_COLOR: #7d7d06;
+    VSIZE8-10_COLOR: #867d08;
+    VSIZE10-12_COLOR: #8c7d09;
+    VSIZE12-15_COLOR: #957d0b;
+    VSIZE15-20_COLOR: #9b7d0c;
+    VSIZE20-30_COLOR: #a67d0e;
+    VSIZE30-40_COLOR: #aa7d0f;
+    VSIZE40-50_COLOR: #b27d10;
+    VSIZE50-60_COLOR: #bb7d11;
+    VSIZE60-70_COLOR: #bf7d12;
+    VSIZE70-80_COLOR: #bf7815;
+    VSIZE80-90_COLOR: #bf7319;
+    VSIZE90-100_COLOR: #be6c1e;
+    VSIZE100-125_COLOR: #be6820;
+    VSIZE125-150_COLOR: #bd6125;
+    VSIZE150-175_COLOR: #bd5c28;
+    VSIZE175-200_COLOR: #bc552d;
+    VSIZE200-250_COLOR: #bc4f30;
+    VSIZE250-300_COLOR: #bc4a34;
+    VSIZE300-350_COLOR: #bb4339;
+    VSIZE350-400_COLOR: #bb3d3c;
+    VSIZE400-500_COLOR: #bb373f;
+    VSIZE500-600_COLOR: #ba3243;
+    VSIZE600-700_COLOR: #b92b48;
+    VSIZE700-800_COLOR: #b9254b;
+    VSIZE800-900_COLOR: #b8214d;
+    VSIZE900-1000_COLOR: #b71d4f;
+    VSIZE1000-1200_COLOR: #b61951;
+    VSIZE1200-1400_COLOR: #b41453;
+    VSIZE1400-1600_COLOR: #b30e55;
+    VSIZE1600-1800_COLOR: #b10857;
+    VSIZE1800-2000_COLOR: #b00259;
+    VSIZE2000-2200_COLOR: #ae005b;
+}
+
