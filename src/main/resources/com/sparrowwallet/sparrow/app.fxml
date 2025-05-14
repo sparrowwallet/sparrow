@@ -11,7 +11,7 @@
 <?import com.sparrowwallet.sparrow.Theme?>
 <?import impl.org.controlsfx.skin.DecorationPane?>
 
-<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1070.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
+<VBox maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1070.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
     <children>
         <MenuBar useSystemMenuBar="true">
             <menus>
@@ -148,6 +148,8 @@
                     <MenuItem styleClass="osxHide,windowsHide" mnemonicParsing="false" text="Install Udev Rules" onAction="#installUdevRules"/>
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
                     <Menu fx:id="restart" mnemonicParsing="false" text="Restart In" />
+                    <SeparatorMenuItem />
+                    <MenuItem text="Joinstr..." onAction="#showJoinstr"/>
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>

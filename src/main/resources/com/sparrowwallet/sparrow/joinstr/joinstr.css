@@ -1,0 +1,34 @@
+
+.spacerV50 {
+    -fx-padding:50, 0, 0, 0;
+}
+
+.spacerV25 {
+    -fx-padding:25, 0, 0, 0;
+}
+
+.balance-container {
+    -fx-padding:30, 0, 30, 0;
+    -fx-background-color: #164768;
+    -fx-text-alignment: center;
+}
+
+.title {
+    -fx-padding:0, 10, 0, 10;
+    -fx-font-size: 2em;
+    -fx-font-weight: bold;
+}
+
+.sub-title {
+    -fx-padding:0, 10, 0, 10;
+    -fx-font-size: 1.5em;
+}
+
+.list-menu {
+    -fx-background-color: #3da0e3;
+}
+
+.list-item * {
+    -fx-fill: #fff;
+    -fx-font-size: 1.5em;
+}
