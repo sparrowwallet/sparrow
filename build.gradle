@@ -296,12 +296,15 @@ tasks.register('prepareResourceDir', Copy) {
     from("src/main/deploy/package/linux${headless ? '-headless' : ''}")
     into(layout.buildDirectory.dir('deploy/package'))
     include('*')
-    exclude('*.png')
-    filter { String line ->
-        if(line.contains('${size')) {
-            line = line.replace('${size}', getDirectorySize(layout.buildDirectory.dir('jpackage/Sparrow').get().asFile))
+    eachFile { file ->
+        if(file.name.equals('control') || file.name.endsWith('.spec')) {
+            filter { line ->
+                if(line.contains('${size}')) {
+                    line = line.replace('${size}', getDirectorySize(layout.buildDirectory.dir('jpackage/Sparrow').get().asFile))
+                }
+                return line.replace('${version}', "${version}").replace('${arch}', osArch == 'aarch64' ? 'arm64' : 'amd64')
+            }
         }
-        return line.replace('${version}', "${version}").replace('${arch}', osArch == 'aarch64' ? 'arm64' : 'amd64')
     }
 }
 
