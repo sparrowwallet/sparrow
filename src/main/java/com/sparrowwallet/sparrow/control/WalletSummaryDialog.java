@@ -17,6 +17,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
@@ -103,6 +104,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         vBox.getChildren().add(table);
 
         hBox.getChildren().add(vBox);
+        HBox.setHgrow(vBox, Priority.ALWAYS);
 
         Wallet balanceWallet;
         if(allOpenWallets) {
