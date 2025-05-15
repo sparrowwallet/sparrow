@@ -13,6 +13,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
 import java.time.Instant;
@@ -38,6 +39,8 @@ public class BlockCube extends Group {
 
     private final Text heightText = new Text();
     private final Text medianFeeText = new Text();
+    private final Text unitsText = new Text(" s/vb");
+    private final TextFlow medianFeeTextFlow = new TextFlow();
     private final Text txCountText = new Text();
     private final Text elapsedText = new Text();
 
@@ -51,8 +54,8 @@ public class BlockCube extends Group {
             }
         });
         this.medianFeeProperty.addListener((_, _, newValue) -> {
-            medianFeeText.setText("~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)) + " s/vb");
-            medianFeeText.setX((CUBE_SIZE - medianFeeText.getLayoutBounds().getWidth()) / 2);
+            medianFeeText.setText("~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)));
+            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsText.getLayoutBounds().getWidth())) / 2);
         });
         this.txCountProperty.addListener((_, _, newValue) -> {
             txCountText.setText(newValue.intValue() == 0 ? "" : newValue + " txes");
@@ -128,8 +131,11 @@ public class BlockCube extends Group {
 
         medianFeeText.getStyleClass().add("block-text");
         medianFeeText.setFont(Font.font(null, FontWeight.BOLD, 11));
-        medianFeeText.setX((CUBE_SIZE - medianFeeText.getLayoutBounds().getWidth()) / 2);
-        medianFeeText.setY(16);
+        unitsText.getStyleClass().add("block-text");
+        unitsText.setFont(new Font(10));
+        medianFeeTextFlow.getChildren().addAll(medianFeeText, unitsText);
+        medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsText.getLayoutBounds().getWidth())) / 2);
+        medianFeeTextFlow.setTranslateY(7);
 
         txCountText.getStyleClass().add("block-text");
         txCountText.setFont(new Font(10));
@@ -142,7 +148,7 @@ public class BlockCube extends Group {
         elapsedText.setX((CUBE_SIZE - elapsedText.getLayoutBounds().getWidth()) / 2);
         elapsedText.setY(50);
 
-        getChildren().addAll(frontFaceGroup, top, left, heightText, medianFeeText, txCountText, elapsedText);
+        getChildren().addAll(frontFaceGroup, top, left, heightText, medianFeeTextFlow, txCountText, elapsedText);
     }
 
     private void updateFill() {
