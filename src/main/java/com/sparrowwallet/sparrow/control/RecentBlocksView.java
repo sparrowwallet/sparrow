@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.event;
+package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.BlockSummary;
 import io.reactivex.Observable;

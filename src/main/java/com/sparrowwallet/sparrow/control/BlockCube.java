@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.event;
+package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -26,7 +26,7 @@ public class BlockCube extends Group {
     public static final double CUBE_SIZE = 60;
 
     private final IntegerProperty weightProperty = new SimpleIntegerProperty(0);
-    private final DoubleProperty medianFeeProperty = new SimpleDoubleProperty(0);
+    private final DoubleProperty medianFeeProperty = new SimpleDoubleProperty(-1.0d);
     private final IntegerProperty heightProperty = new SimpleIntegerProperty(0);
     private final IntegerProperty txCountProperty = new SimpleIntegerProperty(0);
     private final LongProperty timestampProperty = new SimpleLongProperty(System.currentTimeMillis());
@@ -56,7 +56,8 @@ public class BlockCube extends Group {
         this.medianFeeProperty.addListener((_, _, newValue) -> {
             medianFeeText.setText("~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)));
             unitsText.setText(" s/vb");
-            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsText.getLayoutBounds().getWidth())) / 2);
+            double unitsWidth = TextUtils.computeTextWidth(unitsText.getFont(), unitsText.getText(), 0.0d);
+            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsWidth)) / 2);
         });
         this.txCountProperty.addListener((_, _, newValue) -> {
             txCountText.setText(newValue.intValue() == 0 ? "" : newValue + " txes");
@@ -324,7 +325,7 @@ public class BlockCube extends Group {
     }
 
     public static BlockCube fromBlockSummary(BlockSummary blockSummary) {
-        return new BlockCube(blockSummary.getWeight().orElse(0), blockSummary.getMedianFee().orElse(0.0d), blockSummary.getHeight(),
+        return new BlockCube(blockSummary.getWeight().orElse(0), blockSummary.getMedianFee().orElse(1.0d), blockSummary.getHeight(),
                 blockSummary.getTransactionCount().orElse(0), blockSummary.getTimestamp().getTime(), true);
     }
 }

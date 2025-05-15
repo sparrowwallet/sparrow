@@ -161,12 +161,12 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         try {
             return batchRequest.execute();
         } catch(JsonRpcBatchException e) {
-            log.warn("Failed to unsubscribe from script hashes: " + e.getErrors().keySet(), e);
+            log.info("Failed to unsubscribe from script hashes: " + e.getErrors().keySet(), e);
             Map<String, Boolean> unsubscribedScriptHashes = scriptHashes.stream().collect(Collectors.toMap(s -> s, _ -> true));
             unsubscribedScriptHashes.keySet().removeIf(scriptHash -> e.getErrors().containsKey(scriptHash));
             return unsubscribedScriptHashes;
         } catch(Exception e) {
-            log.warn("Failed to unsubscribe from script hashes: " + scriptHashes, e);
+            log.info("Failed to unsubscribe from script hashes: " + scriptHashes, e);
             return Collections.emptyMap();
         }
     }
