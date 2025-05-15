@@ -572,16 +572,16 @@ public class AppController implements Initializable {
 
     public void installUdevRules(ActionEvent event) {
         String commands = """
-                sudo install -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
+                sudo install -m 644 /opt/sparrowwallet/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
                 sudo udevadm control --reload
                 sudo udevadm trigger
                 sudo groupadd -f plugdev
                 sudo usermod -aG plugdev `whoami`
                 """;
         String home = System.getProperty(JPACKAGE_APP_PATH);
-        if(home != null && !home.startsWith("/opt/sparrow") && home.endsWith("bin/Sparrow")) {
+        if(home != null && !home.startsWith("/opt/sparrowwallet") && home.endsWith("bin/Sparrow")) {
             home = home.replace("bin/Sparrow", "");
-            commands = commands.replace("/opt/sparrow/", home);
+            commands = commands.replace("/opt/sparrowwallet/", home);
         }
 
         TextAreaDialog dialog = new TextAreaDialog(commands, false);

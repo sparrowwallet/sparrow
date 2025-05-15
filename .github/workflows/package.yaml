@@ -30,7 +30,7 @@ jobs:
       - name: Package tar distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew packageTarDistribution
-      - name: Upload Artifacts
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }}
@@ -43,9 +43,6 @@ jobs:
       - name: Package headless tar distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew -Djava.awt.headless=true packageTarDistribution
-      - name: Rename Headless Artifacts
-        if: ${{ runner.os == 'Linux' }}
-        run: for f in build/jpackage/sparrow*; do mv -v "$f" "${f/sparrow/sparrow-server}"; done;
       - name: Upload Headless Artifact
         if: ${{ runner.os == 'Linux' }}
         uses: actions/upload-artifact@v4

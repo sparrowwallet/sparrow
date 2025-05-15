@@ -1,0 +1,12 @@
+Package: sparrowwallet
+Version: ${version}-1
+Section: utils
+Maintainer: Craig Raw <mail@sparrowwallet.com>
+Priority: optional
+Architecture: ${arch}
+Provides: sparrowwallet
+Conflicts: sparrow (<= 2.1.4)
+Replaces: sparrow (<= 2.1.4)
+Description: Sparrow Wallet
+Depends: libasound2, libbsd0, libc6, libmd0, libx11-6, libxau6, libxcb1, libxdmcp6, libxext6, libxi6, libxrender1, libxtst6, xdg-utils
+Installed-Size: ${size}
