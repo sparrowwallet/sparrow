@@ -39,7 +39,7 @@ public class BlockCube extends Group {
 
     private final Text heightText = new Text();
     private final Text medianFeeText = new Text();
-    private final Text unitsText = new Text(" s/vb");
+    private final Text unitsText = new Text();
     private final TextFlow medianFeeTextFlow = new TextFlow();
     private final Text txCountText = new Text();
     private final Text elapsedText = new Text();
@@ -55,6 +55,7 @@ public class BlockCube extends Group {
         });
         this.medianFeeProperty.addListener((_, _, newValue) -> {
             medianFeeText.setText("~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)));
+            unitsText.setText(" s/vb");
             medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsText.getLayoutBounds().getWidth())) / 2);
         });
         this.txCountProperty.addListener((_, _, newValue) -> {
