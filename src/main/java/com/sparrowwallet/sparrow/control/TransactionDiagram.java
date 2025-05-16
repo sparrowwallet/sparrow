@@ -227,8 +227,9 @@ public class TransactionDiagram extends GridPane {
         getChildren().clear();
         getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
 
-        if(!isFinal() && walletTx.getPayments().size() > 1) {
-            Pane totalsPane = getTotalsPane();
+        List<Payment> defaultPayments = getDefaultPayments();
+        if(!isFinal() && defaultPayments.size() > 1) {
+            Pane totalsPane = getTotalsPane(defaultPayments);
             GridPane.setConstraints(totalsPane, 2, 0, 3, 1);
             getChildren().add(totalsPane);
         }
@@ -620,6 +621,10 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
+    private List<Payment> getDefaultPayments() {
+        return walletTx.getPayments().stream().filter(payment -> payment.getType() == Payment.Type.DEFAULT).toList();
+    }
+
     private Pane getOutputsLines(List<Payment> displayedPayments) {
         VBox pane = new VBox();
         Group group = new Group();
@@ -843,19 +848,18 @@ public class TransactionDiagram extends GridPane {
         return txPane;
     }
 
-    private Pane getTotalsPane() {
+    private Pane getTotalsPane(List<Payment> defaultPayments) {
         VBox totalsBox = new VBox();
         totalsBox.setPadding(new Insets(0, 0, 15, 0));
         totalsBox.setAlignment(Pos.CENTER);
 
-        long amount = walletTx.getPayments().stream().mapToLong(Payment::getAmount).sum();
-        long count = walletTx.getPayments().size();
+        long amount = defaultPayments.stream().mapToLong(Payment::getAmount).sum();
 
         HBox coinLabelBox = new HBox();
         coinLabelBox.setAlignment(Pos.CENTER);
         CoinLabel totalCoinLabel = new CoinLabel();
         totalCoinLabel.setValue(amount);
-        coinLabelBox.getChildren().addAll(totalCoinLabel, new Label(" in "), new Label(Long.toString(count)), new Label(" payments"));
+        coinLabelBox.getChildren().addAll(totalCoinLabel, new Label(" in "), new Label(Long.toString(defaultPayments.size())), new Label(" payments"));
         totalsBox.getChildren().addAll(createSpacer(), coinLabelBox);
 
         CurrencyRate currencyRate = AppServices.getFiatCurrencyExchangeRate();
