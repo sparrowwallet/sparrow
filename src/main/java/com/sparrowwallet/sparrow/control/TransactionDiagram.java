@@ -8,15 +8,13 @@ import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.UnitFormat;
-import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.Theme;
+import com.sparrowwallet.sparrow.*;
 import com.sparrowwallet.sparrow.event.ExcludeUtxoEvent;
 import com.sparrowwallet.sparrow.event.ReplaceChangeAddressEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
@@ -228,6 +226,12 @@ public class TransactionDiagram extends GridPane {
 
         getChildren().clear();
         getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
+
+        if(!isFinal() && walletTx.getPayments().size() > 1) {
+            Pane totalsPane = getTotalsPane();
+            GridPane.setConstraints(totalsPane, 2, 0, 3, 1);
+            getChildren().add(totalsPane);
+        }
 
         if(contextMenu == null) {
             contextMenu = new ContextMenu();
@@ -837,6 +841,34 @@ public class TransactionDiagram extends GridPane {
         txPane.getChildren().add(createSpacer());
 
         return txPane;
+    }
+
+    private Pane getTotalsPane() {
+        VBox totalsBox = new VBox();
+        totalsBox.setPadding(new Insets(0, 0, 15, 0));
+        totalsBox.setAlignment(Pos.CENTER);
+
+        long amount = walletTx.getPayments().stream().mapToLong(Payment::getAmount).sum();
+        long count = walletTx.getPayments().size();
+
+        HBox coinLabelBox = new HBox();
+        coinLabelBox.setAlignment(Pos.CENTER);
+        CoinLabel totalCoinLabel = new CoinLabel();
+        totalCoinLabel.setValue(amount);
+        coinLabelBox.getChildren().addAll(totalCoinLabel, new Label(" in "), new Label(Long.toString(count)), new Label(" payments"));
+        totalsBox.getChildren().addAll(createSpacer(), coinLabelBox);
+
+        CurrencyRate currencyRate = AppServices.getFiatCurrencyExchangeRate();
+        if(currencyRate != null && currencyRate.isAvailable() && Config.get().getExchangeSource() != ExchangeSource.NONE) {
+            HBox fiatLabelBox = new HBox();
+            fiatLabelBox.setAlignment(Pos.CENTER);
+            FiatLabel fiatLabel = new FiatLabel();
+            fiatLabel.set(currencyRate, amount);
+            fiatLabelBox.getChildren().add(fiatLabel);
+            totalsBox.getChildren().add(fiatLabelBox);
+        }
+
+        return totalsBox;
     }
 
     private void saveAsImage() {

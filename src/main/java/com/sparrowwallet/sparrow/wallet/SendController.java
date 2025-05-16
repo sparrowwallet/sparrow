@@ -981,7 +981,7 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void setFiatFeeAmount(CurrencyRate currencyRate, Long amount) {
-        if(amount != null && currencyRate != null && currencyRate.isAvailable()) {
+        if(amount != null && currencyRate != null && currencyRate.isAvailable() && Config.get().getExchangeSource() != ExchangeSource.NONE) {
             fiatFeeAmount.set(currencyRate, amount);
         }
     }
@@ -1519,12 +1519,18 @@ public class SendController extends WalletFormController implements Initializabl
         if(event.getExchangeSource() == ExchangeSource.NONE) {
             fiatFeeAmount.setCurrency(null);
             fiatFeeAmount.setBtcRate(0.0);
+            if(paymentTabs.getTabs().size() > 1) {
+                updateTransaction();
+            }
         }
     }
 
     @Subscribe
     public void exchangeRatesUpdated(ExchangeRatesUpdatedEvent event) {
         setFiatFeeAmount(event.getCurrencyRate(), getFeeValueSats());
+        if(paymentTabs.getTabs().size() > 1) {
+            updateTransaction();
+        }
     }
 
     @Subscribe
