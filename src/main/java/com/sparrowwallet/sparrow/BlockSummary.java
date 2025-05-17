@@ -5,21 +5,23 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
 
-public class BlockSummary {
+public class BlockSummary implements Comparable<BlockSummary> {
     private final Integer height;
     private final Date timestamp;
     private final Double medianFee;
     private final Integer transactionCount;
+    private final Integer weight;
 
     public BlockSummary(Integer height, Date timestamp) {
-        this(height, timestamp, null, null);
+        this(height, timestamp, null, null, null);
     }
 
-    public BlockSummary(Integer height, Date timestamp, Double medianFee, Integer transactionCount) {
+    public BlockSummary(Integer height, Date timestamp, Double medianFee, Integer transactionCount, Integer weight) {
         this.height = height;
         this.timestamp = timestamp;
         this.medianFee = medianFee;
         this.transactionCount = transactionCount;
+        this.weight = weight;
     }
 
     public Integer getHeight() {
@@ -36,6 +38,10 @@ public class BlockSummary {
 
     public Optional<Integer> getTransactionCount() {
         return transactionCount == null ? Optional.empty() : Optional.of(transactionCount);
+    }
+
+    public Optional<Integer> getWeight() {
+        return weight == null ? Optional.empty() : Optional.of(weight);
     }
 
     private static long calculateElapsedSeconds(long timestampUtc) {
@@ -61,5 +67,10 @@ public class BlockSummary {
 
     public String toString() {
         return getElapsed() + ":" + getMedianFee();
+    }
+
+    @Override
+    public int compareTo(BlockSummary o) {
+        return o.height - height;
     }
 }

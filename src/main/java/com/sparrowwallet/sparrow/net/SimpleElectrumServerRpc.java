@@ -178,6 +178,29 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
+    public Map<Integer, BlockStats> getBlockStats(Transport transport, Set<Integer> blockHeights) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+
+        Map<Integer, BlockStats> result = new LinkedHashMap<>();
+        for(Integer blockHeight : blockHeights) {
+            try {
+                BlockStats blockStats = new RetryLogic<BlockStats>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                        client.createRequest().returnAs(BlockStats.class).method("blockchain.block.stats").id(idCounter.incrementAndGet()).params(blockHeight).execute());
+                result.put(blockHeight, blockStats);
+            } catch(ServerException e) {
+                //If there is an error with the server connection, don't keep trying - this may take too long given many blocks
+                throw new ElectrumServerRpcException("Failed to retrieve block stats for block height: " + blockHeight, e);
+            } catch(JsonRpcException e) {
+                log.warn("Failed to retrieve block stats for block height: " + blockHeight + (e.getErrorMessage() != null ? " (" + e.getErrorMessage().getMessage() + ")" : ""));
+            } catch(Exception e) {
+                log.warn("Failed to retrieve block stats for block height: " + blockHeight + " (" + e.getMessage() + ")");
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
         JsonRpcClient client = new JsonRpcClient(transport);
 

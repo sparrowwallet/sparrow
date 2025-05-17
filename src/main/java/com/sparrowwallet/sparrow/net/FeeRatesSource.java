@@ -285,7 +285,7 @@ public enum FeeRatesSource {
         }
     }
 
-    protected record MempoolBlockSummary(String id, Integer height, Long timestamp, Integer tx_count, MempoolBlockSummaryExtras extras) {
+    protected record MempoolBlockSummary(String id, Integer height, Long timestamp, Integer tx_count, Integer weight, MempoolBlockSummaryExtras extras) {
         public Double getMedianFee() {
             return extras == null ? null : extras.medianFee();
         }
@@ -294,7 +294,7 @@ public enum FeeRatesSource {
             if(height == null || timestamp == null) {
                 throw new IllegalStateException("Height = " + height + ", timestamp = " + timestamp + ": both must be specified");
             }
-            return new BlockSummary(height, new Date(timestamp * 1000), getMedianFee(), tx_count);
+            return new BlockSummary(height, new Date(timestamp * 1000), getMedianFee(), tx_count, weight);
         }
     }
 

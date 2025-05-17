@@ -305,12 +305,6 @@ public class AppServices {
             if(event != null) {
                 EventManager.get().post(event);
             }
-
-            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
-            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
-            if(event instanceof ConnectionEvent && feeRatesSource.supportsNetwork(Network.get()) && feeRatesSource.isExternal()) {
-                EventManager.get().post(new FeeRatesSourceChangedEvent(feeRatesSource));
-            }
         });
         connectionService.setOnFailed(failEvent -> {
             //Close connection here to create a new transport next time we try
@@ -491,6 +485,13 @@ public class AppServices {
             } else {
                 preventSleepService.cancel();
             }
+        }
+    }
+
+    private void fetchFeeRates() {
+        if(feeRatesService != null && !feeRatesService.isRunning() && Config.get().getMode() != Mode.OFFLINE) {
+            feeRatesService = createFeeRatesService();
+            feeRatesService.start();
         }
     }
 
@@ -1216,6 +1217,12 @@ public class AppServices {
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
 
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        if(feeRatesSource.supportsNetwork(Network.get()) && feeRatesSource.isExternal()) {
+            fetchFeeRates();
+        }
+
         if(!blockSummaries.containsKey(currentBlockHeight)) {
             fetchBlockSummaries(Collections.emptyList());
         }
@@ -1259,10 +1266,8 @@ public class AppServices {
     @Subscribe
     public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
         //Perform once-off fee rates retrieval to immediately change displayed rates
-        if(feeRatesService != null && !feeRatesService.isRunning() && Config.get().getMode() != Mode.OFFLINE) {
-            feeRatesService = createFeeRatesService();
-            feeRatesService.start();
-        }
+        fetchFeeRates();
+        fetchBlockSummaries(Collections.emptyList());
     }
 
     @Subscribe

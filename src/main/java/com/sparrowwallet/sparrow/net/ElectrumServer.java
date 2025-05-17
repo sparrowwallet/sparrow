@@ -82,6 +82,8 @@ public class ElectrumServer {
 
     private static Server coreElectrumServer;
 
+    private static ServerCapability serverCapability;
+
     private static final Pattern RPC_WALLET_LOADING_PATTERN = Pattern.compile(".*\"(Wallet loading failed[:.][^\"]*)\".*");
 
     private static synchronized CloseableTransport getTransport() throws ServerException {
@@ -981,6 +983,21 @@ public class ElectrumServer {
     }
 
     public Map<Integer, BlockSummary> getBlockSummaryMap(Integer height, BlockHeader blockHeader) throws ServerException {
+        if(serverCapability.supportsBlockStats()) {
+            if(height == null) {
+                Integer current = AppServices.getCurrentBlockHeight();
+                if(current == null) {
+                    return Collections.emptyMap();
+                }
+                Set<Integer> heights = IntStream.range(current - 1, current + 1).boxed().collect(Collectors.toSet());
+                Map<Integer, BlockStats> blockStats = electrumServerRpc.getBlockStats(getTransport(), heights);
+                return blockStats.keySet().stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> blockStats.get(v).toBlockSummary()));
+            } else {
+                Map<Integer, BlockStats> blockStats = electrumServerRpc.getBlockStats(getTransport(), Set.of(height));
+                return blockStats.keySet().stream().collect(Collectors.toMap(java.util.function.Function.identity(), v -> blockStats.get(v).toBlockSummary()));
+            }
+        }
+
         FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
         feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
 
@@ -1010,7 +1027,7 @@ public class ElectrumServer {
             if(current == null) {
                 return Collections.emptyMap();
             }
-            Set<BlockTransactionHash> references = IntStream.range(current - 4, current + 1)
+            Set<BlockTransactionHash> references = IntStream.range(current - 1, current + 1)
                     .mapToObj(i -> new BlockTransaction(null, i, null, null, null)).collect(Collectors.toSet());
             Map<Integer, BlockHeader> blockHeaders = getBlockHeaders(null, references);
             return blockHeaders.keySet().stream()
@@ -1219,7 +1236,7 @@ public class ElectrumServer {
             }
 
             if(server.startsWith("cormorant")) {
-                return new ServerCapability(true);
+                return new ServerCapability(true, false, true);
             }
 
             if(server.startsWith("electrs/")) {
@@ -1405,7 +1422,7 @@ public class ElectrumServer {
                         firstCall = false;
 
                         //If electrumx is detected, we can upgrade to batched RPC. Electrs/EPS do not support batching.
-                        ServerCapability serverCapability = getServerCapability(serverVersion);
+                        serverCapability = getServerCapability(serverVersion);
                         if(serverCapability.supportsBatching()) {
                             log.debug("Upgrading to batched JSON-RPC");
                             electrumServerRpc = new BatchedElectrumServerRpc(electrumServerRpc.getIdCounterValue(), serverCapability.getMaxTargetBlocks());
@@ -1945,13 +1962,18 @@ public class ElectrumServer {
 
                     if(startHeight == 0 || totalBlocks > 1 || startHeight > maxHeight + 1) {
                         if(isBlockstorm(totalBlocks)) {
-                            for(int height = maxHeight + 1; height < endHeight; height++) {
-                                blockSummaryMap.put(height, new BlockSummary(height, new Date()));
+                            int start = Math.max(maxHeight + 1, endHeight - 15);
+                            for(int height = start; height <= endHeight; height++) {
+                                blockSummaryMap.put(height, new BlockSummary(height, new Date(), 1.0d, 0, 0));
                             }
                         } else {
                             blockSummaryMap.putAll(electrumServer.getRecentBlockSummaryMap());
                         }
-                    } else {
+                    }
+
+                    List<NewBlockEvent> events = new ArrayList<>(newBlockEvents);
+                    events.removeIf(event -> blockSummaryMap.containsKey(event.getHeight()));
+                    if(!events.isEmpty()) {
                         for(NewBlockEvent event : newBlockEvents) {
                             blockSummaryMap.putAll(electrumServer.getBlockSummaryMap(event.getHeight(), event.getBlockHeader()));
                         }

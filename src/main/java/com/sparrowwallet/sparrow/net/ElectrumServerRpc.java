@@ -26,6 +26,8 @@ public interface ElectrumServerRpc {
 
     Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights);
 
+    Map<Integer, BlockStats> getBlockStats(Transport transport, Set<Integer> blockHeights);
+
     Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids);
 
     Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash);

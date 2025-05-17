@@ -344,3 +344,31 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 #grid .spreadsheet-cell.selection {
     -fx-text-fill: -fx-base;
 }
+
+.root .block-height {
+    -fx-fill: derive(lightgray, -20%);
+}
+
+.root .blocks-separator {
+    -fx-stroke: derive(lightgray, -20%);
+}
+
+.root .block-confirmed .block-unused {
+    -fx-fill: #5a5a65;
+}
+
+.root .block-confirmed .block-top {
+    -fx-fill: #474c5e;
+}
+
+.root .block-confirmed .block-left {
+    -fx-fill: #3c4055;
+}
+
+.root .block-unconfirmed .block-top {
+    -fx-fill: #635b57;
+}
+
+.root .block-unconfirmed .block-left {
+    -fx-fill: #4e4846;
+}

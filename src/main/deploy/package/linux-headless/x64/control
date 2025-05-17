@@ -1,9 +1,0 @@
-Package: sparrow
-Version: 2.1.4-1
-Section: utils
-Maintainer: Craig Raw <mail@sparrowwallet.com>
-Priority: optional
-Architecture: amd64
-Provides: sparrow
-Description: Sparrow
-Depends: libc6, zlib1g

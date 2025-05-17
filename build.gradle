@@ -3,10 +3,9 @@ plugins {
     id 'org-openjfx-javafxplugin'
     id 'org.beryx.jlink' version '3.1.1'
     id 'org.gradlex.extra-java-module-info' version '1.9'
-    id 'com.sparrowwallet.filterjar'
+    id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.16.2'
 }
 
-def sparrowVersion = '2.1.4'
 def os = org.gradle.internal.os.OperatingSystem.current()
 def osName = os.getFamilyName()
 if(os.macOsX) {
@@ -20,8 +19,8 @@ if(System.getProperty("os.arch") == "aarch64") {
 }
 def headless = "true".equals(System.getProperty("java.awt.headless"))
 
-group "com.sparrowwallet"
-version "${sparrowVersion}"
+group 'com.sparrowwallet'
+version '2.1.4'
 
 repositories {
     mavenCentral()
@@ -77,7 +76,7 @@ dependencies {
     implementation('co.nstant.in:cbor:0.9')
     implementation('org.openpnp:openpnp-capture-java:0.0.28-5')
     implementation("io.matthewnelson.kmp-tor:runtime:2.2.1")
-    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.0")
+    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.2")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.1') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
@@ -239,7 +238,7 @@ jlink {
     jpackage {
         imageName = "Sparrow"
         installerName = "Sparrow"
-        appVersion = "${sparrowVersion}"
+        appVersion = "${version}"
         skipInstaller = os.macOsX || properties.skipInstallers
         imageOptions = []
         installerOptions = ['--file-associations', 'src/main/deploy/psbt.properties', '--file-associations', 'src/main/deploy/txn.properties', '--file-associations', 'src/main/deploy/asc.properties', '--file-associations', 'src/main/deploy/bitcoin.properties', '--file-associations', 'src/main/deploy/auth47.properties', '--file-associations', 'src/main/deploy/lightning.properties', '--license-file', 'LICENSE']
@@ -250,11 +249,13 @@ jlink {
         }
         if(os.linux) {
             if(headless) {
-                installerOptions = ['--license-file', 'LICENSE', '--resource-dir', "src/main/deploy/package/linux-headless/${osArch}"]
+                installerName = "sparrowserver"
+                installerOptions = ['--license-file', 'LICENSE']
             } else {
-                installerOptions += ['--resource-dir', 'src/main/deploy/package/linux/', '--linux-shortcut', '--linux-menu-group', 'Sparrow']
+                installerName = "sparrowwallet"
+                installerOptions += ['--linux-shortcut', '--linux-menu-group', 'Sparrow']
             }
-            installerOptions += ['--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com']
+            installerOptions += ['--resource-dir', layout.buildDirectory.dir('deploy/package').get().asFile.toString(), '--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com']
             imageOptions += ['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/']
         }
         if(os.macOsX) {
@@ -272,6 +273,7 @@ jlink {
 
 if(os.linux) {
     tasks.jlink.finalizedBy('addUserWritePermission', 'copyUdevRules')
+    tasks.jpackageImage.finalizedBy('prepareResourceDir')
 } else {
     tasks.jlink.finalizedBy('addUserWritePermission')
 }
@@ -290,12 +292,42 @@ tasks.register('copyUdevRules', Copy) {
     include('*')
 }
 
+tasks.register('prepareResourceDir', Copy) {
+    from("src/main/deploy/package/linux${headless ? '-headless' : ''}")
+    into(layout.buildDirectory.dir('deploy/package'))
+    include('*')
+    eachFile { file ->
+        if(file.name.equals('control') || file.name.endsWith('.spec')) {
+            filter { line ->
+                if(line.contains('${size}')) {
+                    line = line.replace('${size}', getDirectorySize(layout.buildDirectory.dir('jpackage/Sparrow').get().asFile))
+                }
+                return line.replace('${version}', "${version}").replace('${arch}', osArch == 'aarch64' ? 'arm64' : 'amd64')
+            }
+        }
+    }
+}
+
+static def getDirectorySize(File directory) {
+    long size = 0
+    if(directory.isFile()) {
+        size = directory.length()
+    } else if(directory.isDirectory()) {
+        directory.eachFileRecurse { file ->
+            if(file.isFile()) {
+                size += file.length()
+            }
+        }
+    }
+    return Long.toString(size/1024 as long)
+}
+
 tasks.register('removeGroupWritePermission', Exec) {
     commandLine 'chmod', '-R', 'g-w', "$buildDir/jpackage/Sparrow"
 }
 
 tasks.register('packageZipDistribution', Zip) {
-    archiveFileName = "Sparrow-${sparrowVersion}.zip"
+    archiveFileName = "Sparrow-${version}.zip"
     destinationDirectory = file("$buildDir/jpackage")
     preserveFileTimestamps = os.macOsX
     from("$buildDir/jpackage/") {
@@ -306,7 +338,7 @@ tasks.register('packageZipDistribution', Zip) {
 
 tasks.register('packageTarDistribution', Tar) {
     dependsOn removeGroupWritePermission
-    archiveFileName = "sparrow-${sparrowVersion}-${releaseArch}.tar.gz"
+    archiveFileName = "sparrow${headless ? 'server': 'wallet'}-${version}-${releaseArch}.tar.gz"
     destinationDirectory = file("$buildDir/jpackage")
     compression = Compression.GZIP
     from("$buildDir/jpackage/") {
@@ -460,10 +492,6 @@ extraJavaModuleInfo {
     }
 }
 
-String torOs = os.macOsX ? "macos" : (os.windows ? "mingw" : "linux-libc")
-filterInfo {
-    filter('io.matthewnelson.kmp-tor', 'resource-lib-tor-gpl-jvm') {
-        include("io/matthewnelson/kmp/tor/resource/lib/tor/native/${torOs}/${releaseArch}")
-        exclude('io/matthewnelson/kmp/tor/resource/lib/tor/native/')
-    }
+kmpTorResourceFilterJar {
+    keepTorCompilation("current","current")
 }

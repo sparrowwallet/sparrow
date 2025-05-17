@@ -1,19 +1,20 @@
 Summary: Sparrow
-Name: sparrow
-Version: 2.1.4
+Name: sparrowwallet
+Version: ${version}
 Release: 1
 License: ASL 2.0
 Vendor: Unknown
 
 %if "x" != "x"
-URL: 
+URL: https://sparrowwallet.com
 %endif
 
 %if "x/opt" != "x"
 Prefix: /opt
 %endif
 
-Provides: sparrow
+Provides: sparrowwallet
+Obsoletes: sparrow <= 2.1.4
 
 %if "xutils" != "x"
 Group: utils
@@ -50,8 +51,8 @@ Sparrow Wallet
 
 %install
 rm -rf %{buildroot}
-install -d -m 755 %{buildroot}/opt/sparrow
-cp -r %{_sourcedir}/opt/sparrow/* %{buildroot}/opt/sparrow
+install -d -m 755 %{buildroot}/opt/sparrowwallet
+cp -r %{_sourcedir}/opt/sparrowwallet/* %{buildroot}/opt/sparrowwallet
 if [ "$(echo %{_sourcedir}/lib/systemd/system/*.service)" != '%{_sourcedir}/lib/systemd/system/*.service' ]; then
   install -d -m 755 %{buildroot}/lib/systemd/system
   cp %{_sourcedir}/lib/systemd/system/*.service %{buildroot}/lib/systemd/system
@@ -77,9 +78,9 @@ sed -i -e 's/.*/%dir "&"/' %{package_filelist}
 
 %post
 package_type=rpm
-xdg-desktop-menu install /opt/sparrow/lib/sparrow-Sparrow.desktop
-xdg-mime install /opt/sparrow/lib/sparrow-Sparrow-MimeInfo.xml
-install -D -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
+xdg-desktop-menu install /opt/sparrowwallet/lib/sparrowwallet-Sparrow.desktop
+xdg-mime install /opt/sparrowwallet/lib/sparrowwallet-Sparrow-MimeInfo.xml
+install -D -m 644 /opt/sparrowwallet/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
 if ! getent group plugdev > /dev/null; then
     groupadd plugdev
 fi
@@ -251,9 +252,9 @@ desktop_trace ()
   echo "$@"
 }
 
-do_if_file_belongs_to_single_package /opt/sparrow/lib/sparrow-Sparrow.desktop xdg-desktop-menu uninstall /opt/sparrow/lib/sparrow-Sparrow.desktop
-do_if_file_belongs_to_single_package /opt/sparrow/lib/sparrow-Sparrow-MimeInfo.xml xdg-mime uninstall /opt/sparrow/lib/sparrow-Sparrow-MimeInfo.xml
-do_if_file_belongs_to_single_package /opt/sparrow/lib/sparrow-Sparrow.desktop desktop_uninstall_default_mime_handler sparrow-Sparrow.desktop application/psbt application/bitcoin-transaction application/pgp-signature x-scheme-handler/bitcoin x-scheme-handler/auth47 x-scheme-handler/lightning
+do_if_file_belongs_to_single_package /opt/sparrowwallet/lib/sparrowwallet-Sparrow.desktop xdg-desktop-menu uninstall /opt/sparrowwallet/lib/sparrowwallet-Sparrow.desktop
+do_if_file_belongs_to_single_package /opt/sparrowwallet/lib/sparrowwallet-Sparrow-MimeInfo.xml xdg-mime uninstall /opt/sparrowwallet/lib/sparrowwallet-Sparrow-MimeInfo.xml
+do_if_file_belongs_to_single_package /opt/sparrowwallet/lib/sparrowwallet-Sparrow.desktop desktop_uninstall_default_mime_handler sparrowwallet-Sparrow.desktop application/psbt application/bitcoin-transaction application/pgp-signature x-scheme-handler/bitcoin x-scheme-handler/auth47 x-scheme-handler/lightning
 
 
 %clean
