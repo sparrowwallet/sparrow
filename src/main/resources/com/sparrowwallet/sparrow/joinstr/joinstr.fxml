@@ -8,8 +8,8 @@
 <?import com.sparrowwallet.sparrow.joinstr.JoinstrDisplay?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
-<BorderPane stylesheets="@joinstr.css, @../general.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.JoinstrController"
-    maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1070.0">
+<BorderPane stylesheets="@joinstr.css, @../wallet/wallet.css" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.JoinstrController"
+    maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="770.0" prefWidth="1070.0">
     <left>
             <VBox fx:id="joinstrMenuBox" styleClass="list-menu">
                 <Pane styleClass="spacerV50" />
@@ -39,11 +39,11 @@
                     <VBox>
                         <Pane styleClass="spacerV25" />
                         <HBox>
-                            <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="balance-container">
-                                <Label fx:id="joinstrBalanceTitle" styleClass="balance-label">
+                            <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" styleClass="joinstr-balance-container">
+                                <Label fx:id="joinstrBalanceTitle" styleClass="joinstr-balance-label">
                                     Current balance:
                                 </Label>
-                                <Label fx:id="joinstrBalanceValue" styleClass="balance-label">
+                                <Label fx:id="joinstrBalanceValue" styleClass="joinstr-balance-label">
                                     0.00000001
                                     <graphic>
                                         <Glyph fontFamily="FontAwesome" icon="BTC" fontSize="20" />
@@ -51,7 +51,7 @@
                                 </Label>
                             </VBox>
                         </HBox>
-                        <Pane styleClass="spacer25" />
+                        <Pane styleClass="spacerV25" />
                     </VBox>
             </VBox>
     </left>

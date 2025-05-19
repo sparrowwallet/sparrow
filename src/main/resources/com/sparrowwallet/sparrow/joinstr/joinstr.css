@@ -7,9 +7,17 @@
     -fx-padding:25, 0, 0, 0;
 }
 
-.balance-container {
+.joinstr-balance-label {
+    -fx-text-fill: white;
+}
+
+.joinstr-balance-label Glyph {
+    -fx-text-fill: white;
+}
+
+.joinstr-balance-container {
     -fx-padding:30, 0, 30, 0;
-    -fx-background-color: #164768;
+    -fx-background-color: #1A6BA2;
     -fx-text-alignment: center;
 }
 

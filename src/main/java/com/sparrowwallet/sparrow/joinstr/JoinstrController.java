@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.joinstr;
-
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.Theme;
+import com.sparrowwallet.sparrow.io.Config;
 
 import java.io.IOException;
 import java.net.URL;
@@ -30,6 +31,9 @@ public class JoinstrController extends JoinstrFormController {
     @FXML
     private ToggleGroup joinstrMenu;
 
+    public JoinstrController() {
+
+    }
 
     public void initializeView() {
         joinstrMenu.selectedToggleProperty().addListener((observable, oldValue, selectedToggle) -> {
@@ -51,7 +55,6 @@ public class JoinstrController extends JoinstrFormController {
             }
 
             try {
-                if(!existing) {
                     URL url = AppServices.class.getResource("joinstr/" + display.toString().toLowerCase(Locale.ROOT) + ".fxml");
                     if(url == null) {
                         throw new IllegalStateException("Cannot find joinstr/" + display.toString().toLowerCase(Locale.ROOT) + ".fxml");
@@ -60,15 +63,22 @@ public class JoinstrController extends JoinstrFormController {
                     FXMLLoader displayLoader = new FXMLLoader(url);
                     Node joinstrDisplay = displayLoader.load();
 
-                    joinstrDisplay.setUserData(display);
-                    joinstrDisplay.setViewOrder(1);
+                    if(!existing) {
 
-                    JoinstrFormController controller = displayLoader.getController();
-                    JoinstrForm joinstrForm = getJoinstrForm();
-                    controller.setJoinstrForm(joinstrForm);
+                        joinstrDisplay.setUserData(display);
+                        joinstrDisplay.setViewOrder(1);
 
-                    joinstrPane.getChildren().add(joinstrDisplay);
-                }
+                        JoinstrFormController controller = displayLoader.getController();
+                        JoinstrForm joinstrForm = getJoinstrForm();
+                        controller.setJoinstrForm(joinstrForm);
+                        controller.initializeView();
+
+                        joinstrPane.getChildren().add(joinstrDisplay);
+                    }
+                    else {
+                        JoinstrFormController controller = displayLoader.getController();
+                        controller.initializeView();
+                    }
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
             }
@@ -82,6 +92,16 @@ public class JoinstrController extends JoinstrFormController {
 
         joinstrMenuBox.managedProperty().bind(joinstrMenuBox.visibleProperty());
         joinstrMenuBox.visibleProperty().bind(getJoinstrForm().lockedProperty().not());
+
+        // Set theme CSS
+        String darkCss = getClass().getResource("../darktheme.css").toExternalForm();
+        if(Config.get().getTheme() == Theme.DARK) {
+            if(!stage.getScene().getStylesheets().contains(darkCss)) {
+                stage.getScene().getStylesheets().add(darkCss);
+            }
+        } else {
+            stage.getScene().getStylesheets().remove(darkCss);
+        }
 
     }
 

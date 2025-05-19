@@ -105,6 +105,12 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-background-color: rgb(159, 142, 0);
 }
 
+.joinstr-balance-container {
+    -fx-padding:30, 0, 30, 0;
+    -fx-background-color: #164768;
+    -fx-text-alignment: center;
+}
+
 .status-bar {
     -fx-background-color: derive(-fx-color,-15%), -fx-body-color;
 }
