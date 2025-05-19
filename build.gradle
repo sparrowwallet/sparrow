@@ -20,7 +20,7 @@ if(System.getProperty("os.arch") == "aarch64") {
 def headless = "true".equals(System.getProperty("java.awt.headless"))
 
 group 'com.sparrowwallet'
-version '2.1.4'
+version '2.2.0'
 
 repositories {
     mavenCentral()
