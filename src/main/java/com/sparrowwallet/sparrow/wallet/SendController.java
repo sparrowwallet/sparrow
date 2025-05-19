@@ -1625,7 +1625,9 @@ public class SendController extends WalletFormController implements Initializabl
                     } else if(payjoinPresent) {
                         addLabel("Cannot fake coinjoin due to payjoin", getInfoGlyph());
                     } else {
-                        if(utxoSelectorProperty().get() != null && !(utxoSelectorProperty().get() instanceof MaxUtxoSelector)) {
+                        if(utxoSelectorProperty().get() instanceof MaxUtxoSelector) {
+                            addLabel("Cannot fake coinjoin with max amount selected", getInfoGlyph());
+                        } else if(utxoSelectorProperty().get() != null) {
                             addLabel("Cannot fake coinjoin due to coin control", getInfoGlyph());
                         } else {
                             addLabel("Cannot fake coinjoin due to insufficient funds", getInfoGlyph());
