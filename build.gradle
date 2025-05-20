@@ -76,7 +76,7 @@ dependencies {
     implementation('co.nstant.in:cbor:0.9')
     implementation('org.openpnp:openpnp-capture-java:0.0.28-5')
     implementation("io.matthewnelson.kmp-tor:runtime:2.2.1")
-    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.2")
+    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.3")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.1') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
