@@ -1,48 +1,39 @@
 package com.sparrowwallet.sparrow.joinstr.control;
 
-import com.sparrowwallet.sparrow.AppController;
+import com.sparrowwallet.sparrow.joinstr.JoinstrAction;
+import com.sparrowwallet.sparrow.joinstr.JoinstrPool;
 
-import java.io.IOException;
+import javafx.scene.layout.*;
 
-import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.layout.VBox;
-import javafx.scene.layout.Pane;
+public class JoinstrPoolList extends VBox {
 
-public class JoinstrPoolList extends Pane {
+    public JoinstrPoolList(JoinstrAction action) {
+        super();
 
-    @FXML
-    private VBox listVBox;
+        setPrefHeight(500);
+        setPrefWidth(500);
+        setSpacing(10);
 
-    public JoinstrPoolList() {
+        setMaxWidth(Double.MAX_VALUE);
+        setMaxHeight(Double.MAX_VALUE);
 
-        FXMLLoader loader = new FXMLLoader(AppController.class.getResource("joinstr/control/joinstrpoollist.fxml"));
-        loader.setRoot(this);
-        loader.setController(this);
+        JoinstrPoolListRow header = new JoinstrPoolListRow();
+        getChildren().add(header);
 
-        try {
-            loader.load();
+        JoinstrPool[] poolsDummy = getDummyData();
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        for (JoinstrPool joinstrPool : poolsDummy) {
+            JoinstrPoolListRow joinstrRow = new JoinstrPoolListRow(joinstrPool, action);
+            getChildren().add(joinstrRow);
         }
 
     }
 
-    public void fillList() {
+    private JoinstrPool[] getDummyData() {
 
-        JoinstrPoolListItem listItem1 = new JoinstrPoolListItem();
-        listItem1.setLabel("Pool #1");
-        listVBox.getChildren().add(listItem1);
-
-        JoinstrPoolListItem listItem2 = new JoinstrPoolListItem();
-        listItem2.setLabel("Pool #2");
-        listVBox.getChildren().add(listItem2);
-
-        JoinstrPoolListItem listItem3 = new JoinstrPoolListItem();
-        listItem3.setLabel("Pool #3");
-        listVBox.getChildren().add(listItem3);
-
+        return new JoinstrPool[]{ new JoinstrPool("Relay1", 1234, "pubkey1", 0.001),
+                               new JoinstrPool("Relay2", 1234, "pubkey2", 0.002),
+                               new JoinstrPool("Relay3", 1234, "pubkey3", 0.005)};
     }
 
 }

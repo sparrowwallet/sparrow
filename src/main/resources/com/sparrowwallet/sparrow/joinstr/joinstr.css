@@ -7,6 +7,49 @@
     -fx-padding:25, 0, 0, 0;
 }
 
+.joinstr-list-action-button {
+    -fx-background-color: #3DA0E3;
+    -fx-padding:10, 30, 10, 30;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.joinstr-list-header {
+    -fx-padding:10, 0, 10, 0;
+    -fx-font-weight: bold;
+    -fx-font-size: 1.3em;
+    -fx-background-color: lightgray;
+    -fx-background-radius: 5px;
+}
+
+.joinstr-list-item-subtitle {
+    -fx-font-size: 1em;
+}
+
+.joinstr-list-item {
+    -fx-font-size: 1.2em;
+}
+
+.joinstr-list-row {
+    -fx-padding:10, 0, 10, 0;
+    -fx-background-color: #DDDDDD;
+    -fx-background-radius: 5px;
+    -fx-border-style:solid;
+    -fx-border-width: 3px;
+    -fx-border-radius: 5px;
+    -fx-border-color: #DDDDDD;
+}
+
+.joinstr-list-row:hover {
+    -fx-padding:10, 0, 10, 0;
+    -fx-background-color: lightgray;
+    -fx-background-radius: 5px;
+    -fx-border-style:solid;
+    -fx-border-width: 3px;
+    -fx-border-radius: 5px;
+    -fx-border-color: #1A6BA2;
+}
+
 .joinstr-balance-label {
     -fx-text-fill: white;
 }

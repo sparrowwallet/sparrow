@@ -2,9 +2,26 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
 
 <BorderPane stylesheets="@joinstr.css, @../wallet/wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.HistoryController">
+    <padding>
+        <Insets top="30" right="30" bottom="30" left="30"/>
+    </padding>
     <center>
-        <Label>HISTORY</Label>
+        <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" fx:id="contentVBox">
+            <GridPane maxWidth="Infinity" HBox.hgrow="ALWAYS" hgap="10.0" vgap="10.0">
+                <columnConstraints>
+                    <ColumnConstraints percentWidth="80" />
+                    <ColumnConstraints percentWidth="20" />
+                </columnConstraints>
+                <children>
+                    <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Label styleClass="title">History</Label>
+                    </VBox>
+                    <TextField GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="searchTextField" promptText="Search pools..." onAction="#handleSearchButton" />
+                </children>
+            </GridPane>
+        </VBox>
     </center>
 </BorderPane>

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-
-<fx:root type="javafx.scene.layout.Pane" stylesheets="@control.css" styleClass="pool-list-item" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml">
-    <Label fx:id="lblTest" />
-</fx:root>

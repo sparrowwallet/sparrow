@@ -2,22 +2,17 @@
 <?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.layout.ColumnConstraints?>
-<?import javafx.scene.layout.RowConstraints?>
 <?import javafx.geometry.Insets?>
 
 <?import com.sparrowwallet.sparrow.joinstr.control.JoinstrPoolList ?>
+<?import com.sparrowwallet.sparrow.joinstr.control.JoinstrInfoPane ?>
 
 <BorderPane stylesheets="@joinstr.css, @../wallet/wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.OtherPoolsController">
     <padding>
         <Insets top="30" right="30" bottom="30" left="30"/>
     </padding>
     <center>
-        <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS">
-            <Pane maxWidth="Infinity" HBox.hgrow="ALWAYS">
-                <padding>
-                    <Insets top="0" right="0" bottom="10" left="0"/>
-                </padding>
+        <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" fx:id="contentVBox">
                 <GridPane maxWidth="Infinity" HBox.hgrow="ALWAYS" hgap="10.0" vgap="10.0">
                     <columnConstraints>
                         <ColumnConstraints percentWidth="80" />
@@ -28,11 +23,9 @@
                             <Label styleClass="title">Available Pools</Label>
                             <Label styleClass="sub-title">Select a pool to join</Label>
                         </VBox>
-                        <TextField GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="searchPoolsTextField" promptText="Search pools..." />
+                        <TextField GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="searchTextField" promptText="Search pools..." onAction="#handleSearchButton" />
                     </children>
                 </GridPane>
-            </Pane>
-            <JoinstrPoolList fx:id="joinstrPoolList"/>
         </VBox>
     </center>
 </BorderPane>
