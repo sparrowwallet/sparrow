@@ -62,8 +62,9 @@ public class BlockCube extends Group {
         this.medianFeeProperty.addListener((_, _, newValue) -> {
             medianFeeText.setText(newValue.doubleValue() < 0.0d ? "" : "~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)));
             unitsText.setText(newValue.doubleValue() < 0.0d ? "" : " s/vb");
+            double medianFeeWidth = TextUtils.computeTextWidth(medianFeeText.getFont(), medianFeeText.getText(), 0.0d);
             double unitsWidth = TextUtils.computeTextWidth(unitsText.getFont(), unitsText.getText(), 0.0d);
-            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsWidth)) / 2);
+            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeWidth + unitsWidth)) / 2);
         });
         this.txCountProperty.addListener((_, _, newValue) -> {
             txCountText.setText(newValue.intValue() == 0 ? "" : newValue + " txes");

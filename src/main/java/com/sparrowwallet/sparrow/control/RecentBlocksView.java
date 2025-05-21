@@ -91,12 +91,12 @@ public class RecentBlocksView extends Pane {
             } else {
                 for(int i = 1; i < getCubes().size() && i < latestBlocks.size(); i++) {
                     BlockCube blockCube = getCubes().get(i);
-                    BlockSummary latestBlock = latestBlocks.get(i);
+                    BlockSummary latestBlock = latestBlocks.get(i-1);
                     blockCube.setConfirmed(true);
                     blockCube.setHeight(latestBlock.getHeight());
                     blockCube.setTimestamp(latestBlock.getTimestamp().getTime());
                     blockCube.setWeight(latestBlock.getWeight().orElse(0));
-                    blockCube.setMedianFee(latestBlock.getMedianFee().orElse(0.0d));
+                    blockCube.setMedianFee(latestBlock.getMedianFee().orElse(-1.0d));
                     blockCube.setTxCount(latestBlock.getTransactionCount().orElse(0));
                 }
                 updateFeeRate(currentFeeRate);
@@ -116,7 +116,7 @@ public class RecentBlocksView extends Pane {
             blockCube.setHeight(latestBlock.getHeight());
             blockCube.setTimestamp(latestBlock.getTimestamp().getTime());
             blockCube.setWeight(latestBlock.getWeight().orElse(0));
-            blockCube.setMedianFee(latestBlock.getMedianFee().orElse(0.0d));
+            blockCube.setMedianFee(latestBlock.getMedianFee().orElse(-1.0d));
             blockCube.setTxCount(latestBlock.getTransactionCount().orElse(0));
         }
 
