@@ -89,9 +89,9 @@ public class RecentBlocksView extends Pane {
             if(latestTip > knownTip) {
                 addNewBlock(latestBlocks, currentFeeRate);
             } else {
-                for(int i = 1; i < getCubes().size() && i < latestBlocks.size(); i++) {
+                for(int i = 1; i < getCubes().size() && i <= latestBlocks.size(); i++) {
                     BlockCube blockCube = getCubes().get(i);
-                    BlockSummary latestBlock = latestBlocks.get(i-1);
+                    BlockSummary latestBlock = latestBlocks.get(i - 1);
                     blockCube.setConfirmed(true);
                     blockCube.setHeight(latestBlock.getHeight());
                     blockCube.setTimestamp(latestBlock.getTimestamp().getTime());
