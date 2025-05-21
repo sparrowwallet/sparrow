@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="14px" height="14px" viewBox="0 0 14 14" version="1.1">
+<defs>
+<linearGradient id="linear0" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1" y2="0" gradientTransform="matrix(0,10.538675,-10.538675,0,6.999808,4.639967)">
+<stop offset="0" style="stop-color:rgb(42.941176%,42.941176%,42.941176%);stop-opacity:0.8;"/>
+<stop offset="0.998812" style="stop-color:rgb(96.078431%,96.078431%,96.078431%);stop-opacity:0.8;"/>
+</linearGradient>
+<filter id="alpha" filterUnits="objectBoundingBox" x="0%" y="0%" width="100%" height="100%">
+  <feColorMatrix type="matrix" in="SourceGraphic" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0"/>
+</filter>
+<mask id="mask0">
+  <g filter="url(#alpha)">
+<rect x="0" y="0" width="14" height="14" style="fill:rgb(0%,0%,0%);fill-opacity:0.301961;stroke:none;"/>
+  </g>
+</mask>
+<clipPath id="clip1">
+  <rect x="0" y="0" width="15" height="15"/>
+</clipPath>
+<g id="surface5" clip-path="url(#clip1)">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(100%,100%,100%);fill-opacity:0.6;" d="M 11.160156 11.003906 C 11.160156 11.171875 11.046875 11.304688 10.90625 11.304688 L 9.492188 11.304688 C 9.351562 11.304688 9.238281 11.171875 9.238281 11.003906 L 9.238281 2.996094 C 9.238281 2.828125 9.351562 2.695312 9.492188 2.695312 L 10.90625 2.695312 C 11.046875 2.695312 11.160156 2.828125 11.160156 2.996094 Z M 11.160156 11.003906 "/>
+</g>
+</defs>
+<g id="surface1">
+<path style=" stroke:none;fill-rule:nonzero;fill:rgb(20.392157%,20.392157%,20.392157%);fill-opacity:0.9;" d="M 12.453125 11.101562 C 12.453125 11.855469 11.847656 12.460938 11.09375 12.460938 L 2.898438 12.460938 C 2.148438 12.460938 1.542969 11.855469 1.542969 11.101562 L 1.542969 2.898438 C 1.542969 2.144531 2.152344 1.539062 2.898438 1.539062 L 11.09375 1.539062 C 11.847656 1.539062 12.453125 2.144531 12.453125 2.898438 Z M 12.453125 11.101562 "/>
+<path style=" stroke:none;fill-rule:nonzero;fill:url(#linear0);" d="M 1.542969 7.011719 L 1.542969 11.101562 C 1.542969 11.855469 2.152344 12.460938 2.90625 12.460938 L 11.09375 12.460938 C 11.847656 12.460938 12.457031 11.855469 12.457031 11.101562 L 12.457031 7.011719 Z M 1.542969 7.011719 "/>
+<use xlink:href="#surface5" mask="url(#mask0)"/>
+</g>
+</svg>

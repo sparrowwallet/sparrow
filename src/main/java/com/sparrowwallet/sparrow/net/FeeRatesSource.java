@@ -7,9 +7,12 @@ import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.BlockSummary;
+import org.girod.javafx.svgimage.SVGImage;
+import org.girod.javafx.svgimage.SVGLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URL;
 import java.util.*;
 
 public enum FeeRatesSource {
@@ -273,6 +276,27 @@ public enum FeeRatesSource {
     @Override
     public String toString() {
         return name;
+    }
+
+    public String getDescription() {
+        return switch(this) {
+            case ELECTRUM_SERVER -> "server";
+            case MINIMUM -> "settings";
+            default -> getName().toLowerCase(Locale.ROOT);
+        };
+    }
+
+    public SVGImage getSVGImage() {
+        try {
+            URL url = AppServices.class.getResource("/image/feeratesource/" + getDescription() + "-icon.svg");
+            if(url != null) {
+                return SVGLoader.load(url);
+            }
+        } catch(Exception e) {
+            log.error("Could not load fee rates source image for " + name);
+        }
+
+        return null;
     }
 
     protected record ThreeTierRates(Double fastestFee, Double halfHourFee, Double hourFee, Double minimumFee) {}

@@ -261,7 +261,7 @@ public class ElectrumServer {
             return 0;
         });
 
-        return txos.stream().map(txo -> new ScriptHashTx(txo.getHeight(), txo.getHashAsString(), txo.getFee())).toList();
+        return txos.stream().map(txo -> new ScriptHashTx(txo.getHeight(), txo.getHashAsString(), txo.getFee() == null ? 0 : txo.getFee())).toList();
     }
 
     private static String getScriptHashStatus(List<ScriptHashTx> scriptHashTxes) {
@@ -439,7 +439,7 @@ public class ElectrumServer {
                             blkTx.getTransaction().getInputs().stream().map(txInput -> getPrevOutput(wallet, txInput))
                                     .filter(Objects::nonNull).map(ElectrumServer::getScriptHash).anyMatch(scriptHash::equals)) {
                             List<ScriptHashTx> scriptHashTxes = new ArrayList<>(getScriptHashes(scriptHash, node));
-                            scriptHashTxes.add(new ScriptHashTx(0, txid.toString(), blkTx.getFee()));
+                            scriptHashTxes.add(new ScriptHashTx(0, txid.toString(), blkTx.getFee() == null ? 0 : blkTx.getFee()));
 
                             String status = getScriptHashStatus(scriptHashTxes);
                             if(Objects.equals(status, statuses.getLast())) {

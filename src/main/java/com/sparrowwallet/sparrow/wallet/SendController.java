@@ -1411,6 +1411,7 @@ public class SendController extends WalletFormController implements Initializabl
             setFeeRatePriority(getFeeRangeRate());
         }
         feeRange.updateTrackHighlight();
+        recentBlocksView.updateFeeRate(event.getTargetBlockFeeRates());
 
         if(updateDefaultFeeRate) {
             if(getFeeRate() != null && Long.valueOf((long)getFallbackFeeRate()).equals(getFeeRate().longValue())) {
@@ -1600,6 +1601,11 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    @Subscribe
+    public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
+        recentBlocksView.updateFeeRatesSource(event.getFeeRateSource());
+    }
+
     private class PrivacyAnalysisTooltip extends VBox {
         private final List<Label> analysisLabels = new ArrayList<>();
 
@@ -1625,7 +1631,9 @@ public class SendController extends WalletFormController implements Initializabl
                     } else if(payjoinPresent) {
                         addLabel("Cannot fake coinjoin due to payjoin", getInfoGlyph());
                     } else {
-                        if(utxoSelectorProperty().get() != null && !(utxoSelectorProperty().get() instanceof MaxUtxoSelector)) {
+                        if(utxoSelectorProperty().get() instanceof MaxUtxoSelector) {
+                            addLabel("Cannot fake coinjoin with max amount selected", getInfoGlyph());
+                        } else if(utxoSelectorProperty().get() != null) {
                             addLabel("Cannot fake coinjoin due to coin control", getInfoGlyph());
                         } else {
                             addLabel("Cannot fake coinjoin due to insufficient funds", getInfoGlyph());

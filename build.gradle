@@ -3,7 +3,7 @@ plugins {
     id 'org-openjfx-javafxplugin'
     id 'org.beryx.jlink' version '3.1.1'
     id 'org.gradlex.extra-java-module-info' version '1.9'
-    id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.16.2'
+    id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.16.3'
 }
 
 def os = org.gradle.internal.os.OperatingSystem.current()
@@ -20,7 +20,7 @@ if(System.getProperty("os.arch") == "aarch64") {
 def headless = "true".equals(System.getProperty("java.awt.headless"))
 
 group 'com.sparrowwallet'
-version '2.1.4'
+version '2.2.2'
 
 repositories {
     mavenCentral()
@@ -76,7 +76,7 @@ dependencies {
     implementation('co.nstant.in:cbor:0.9')
     implementation('org.openpnp:openpnp-capture-java:0.0.28-5')
     implementation("io.matthewnelson.kmp-tor:runtime:2.2.1")
-    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.2")
+    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.3")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.1') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
