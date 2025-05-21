@@ -149,7 +149,7 @@
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
                     <Menu fx:id="restart" mnemonicParsing="false" text="Restart In" />
                     <SeparatorMenuItem />
-                    <MenuItem text="Joinstr..." onAction="#showJoinstr"/>
+                    <MenuItem text="Coinjoin" onAction="#showJoinstr"/>
                 </Menu>
                 <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>
