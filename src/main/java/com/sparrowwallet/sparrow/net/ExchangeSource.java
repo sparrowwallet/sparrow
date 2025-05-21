@@ -9,9 +9,12 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.commons.lang3.time.DateUtils;
+import org.girod.javafx.svgimage.SVGImage;
+import org.girod.javafx.svgimage.SVGLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -295,6 +298,19 @@ public enum ExchangeSource {
     @Override
     public String toString() {
         return name;
+    }
+
+    public SVGImage getSVGImage() {
+        try {
+            URL url = AppServices.class.getResource("/image/exchangesource/" + name.toLowerCase(Locale.ROOT) + "-icon.svg");
+            if(url != null) {
+                return SVGLoader.load(url);
+            }
+        } catch(Exception e) {
+            log.error("Could not load exchange source image for " + name);
+        }
+
+        return null;
     }
 
     public static class CurrenciesService extends Service<List<Currency>> {

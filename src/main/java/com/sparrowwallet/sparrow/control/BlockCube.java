@@ -3,6 +3,8 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.BlockSummary;
+import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.FeeRatesSource;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -15,6 +17,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
+import org.girod.javafx.svgimage.SVGImage;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -26,12 +29,13 @@ public class BlockCube extends Group {
     public static final double CUBE_SIZE = 60;
 
     private final IntegerProperty weightProperty = new SimpleIntegerProperty(0);
-    private final DoubleProperty medianFeeProperty = new SimpleDoubleProperty(-1.0d);
+    private final DoubleProperty medianFeeProperty = new SimpleDoubleProperty(-Double.MAX_VALUE);
     private final IntegerProperty heightProperty = new SimpleIntegerProperty(0);
     private final IntegerProperty txCountProperty = new SimpleIntegerProperty(0);
     private final LongProperty timestampProperty = new SimpleLongProperty(System.currentTimeMillis());
     private final StringProperty elapsedProperty = new SimpleStringProperty("");
     private final BooleanProperty confirmedProperty = new SimpleBooleanProperty(false);
+    private final ObjectProperty<FeeRatesSource> feeRatesSource = new SimpleObjectProperty<>(null);
 
     private Polygon front;
     private Rectangle unusedArea;
@@ -43,10 +47,12 @@ public class BlockCube extends Group {
     private final TextFlow medianFeeTextFlow = new TextFlow();
     private final Text txCountText = new Text();
     private final Text elapsedText = new Text();
+    private final Group feeRateIcon = new Group();
 
     public BlockCube(Integer weight, Double medianFee, Integer height, Integer txCount, Long timestamp, boolean confirmed) {
         getStyleClass().addAll("block-" + Network.getCanonical().getName(), "block-cube");
         this.confirmedProperty.set(confirmed);
+        this.feeRatesSource.set(Config.get().getFeeRatesSource());
 
         this.weightProperty.addListener((_, _, _) -> {
             if(front != null) {
@@ -54,10 +60,11 @@ public class BlockCube extends Group {
             }
         });
         this.medianFeeProperty.addListener((_, _, newValue) -> {
-            medianFeeText.setText("~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)));
-            unitsText.setText(" s/vb");
+            medianFeeText.setText(newValue.doubleValue() < 0.0d ? "" : "~" + Math.round(Math.max(newValue.doubleValue(), 1.0d)));
+            unitsText.setText(newValue.doubleValue() < 0.0d ? "" : " s/vb");
+            double medianFeeWidth = TextUtils.computeTextWidth(medianFeeText.getFont(), medianFeeText.getText(), 0.0d);
             double unitsWidth = TextUtils.computeTextWidth(unitsText.getFont(), unitsText.getText(), 0.0d);
-            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeText.getLayoutBounds().getWidth() + unitsWidth)) / 2);
+            medianFeeTextFlow.setTranslateX((CUBE_SIZE - (medianFeeWidth + unitsWidth)) / 2);
         });
         this.txCountProperty.addListener((_, _, newValue) -> {
             txCountText.setText(newValue.intValue() == 0 ? "" : newValue + " txes");
@@ -75,6 +82,11 @@ public class BlockCube extends Group {
             heightText.setX(((CUBE_SIZE * 0.7) - heightText.getLayoutBounds().getWidth()) / 2);
         });
         this.confirmedProperty.addListener((_, _, _) -> {
+            if(front != null) {
+                updateFill();
+            }
+        });
+        this.feeRatesSource.addListener((_, _, _) -> {
             if(front != null) {
                 updateFill();
             }
@@ -145,12 +157,15 @@ public class BlockCube extends Group {
         txCountText.setX((CUBE_SIZE - txCountText.getLayoutBounds().getWidth()) / 2);
         txCountText.setY(34);
 
+        feeRateIcon.setTranslateX(((CUBE_SIZE * 0.7) - 14) / 2);
+        feeRateIcon.setTranslateY(-36);
+
         elapsedText.getStyleClass().add("block-text");
         elapsedText.setFont(new Font(10));
         elapsedText.setX((CUBE_SIZE - elapsedText.getLayoutBounds().getWidth()) / 2);
         elapsedText.setY(50);
 
-        getChildren().addAll(frontFaceGroup, top, left, heightText, medianFeeTextFlow, txCountText, elapsedText);
+        getChildren().addAll(frontFaceGroup, top, left, heightText, medianFeeTextFlow, txCountText, feeRateIcon, elapsedText);
     }
 
     private void updateFill() {
@@ -167,6 +182,7 @@ public class BlockCube extends Group {
             usedArea.setHeight(CUBE_SIZE - startYAbsolute);
             usedArea.setVisible(true);
             heightText.setVisible(true);
+            feeRateIcon.getChildren().clear();
         } else {
             getStyleClass().removeAll("block-confirmed");
             if(!getStyleClass().contains("block-unconfirmed")) {
@@ -175,6 +191,14 @@ public class BlockCube extends Group {
             usedArea.setVisible(false);
             unusedArea.setStyle("-fx-fill: " + getFeeRateStyleName() + ";");
             heightText.setVisible(false);
+            if(feeRatesSource.get() != null) {
+                SVGImage svgImage = feeRatesSource.get().getSVGImage();
+                if(svgImage != null) {
+                    feeRateIcon.getChildren().setAll(feeRatesSource.get().getSVGImage());
+                } else {
+                    feeRateIcon.getChildren().clear();
+                }
+            }
         }
     }
 
@@ -324,8 +348,20 @@ public class BlockCube extends Group {
         confirmedProperty.set(confirmed);
     }
 
+    public FeeRatesSource getFeeRatesSource() {
+        return feeRatesSource.get();
+    }
+
+    public ObjectProperty<FeeRatesSource> feeRatesSourceProperty() {
+        return feeRatesSource;
+    }
+
+    public void setFeeRatesSource(FeeRatesSource feeRatesSource) {
+        this.feeRatesSource.set(feeRatesSource);
+    }
+
     public static BlockCube fromBlockSummary(BlockSummary blockSummary) {
-        return new BlockCube(blockSummary.getWeight().orElse(0), blockSummary.getMedianFee().orElse(1.0d), blockSummary.getHeight(),
+        return new BlockCube(blockSummary.getWeight().orElse(0), blockSummary.getMedianFee().orElse(-1.0d), blockSummary.getHeight(),
                 blockSummary.getTransactionCount().orElse(0), blockSummary.getTimestamp().getTime(), true);
     }
 }

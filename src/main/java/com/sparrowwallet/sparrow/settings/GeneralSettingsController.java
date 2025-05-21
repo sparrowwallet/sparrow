@@ -87,6 +87,8 @@ public class GeneralSettingsController extends SettingsDetailController {
             config.setFeeRatesSource(feeRatesSource.getValue());
         }
 
+        feeRatesSource.setCellFactory(_ -> new FeeRatesSourceListCell());
+        feeRatesSource.setButtonCell(feeRatesSource.getCellFactory().call(null));
         feeRatesSource.valueProperty().addListener((observable, oldValue, newValue) -> {
             config.setFeeRatesSource(newValue);
             EventManager.get().post(new FeeRatesSourceChangedEvent(newValue));
@@ -96,25 +98,8 @@ public class GeneralSettingsController extends SettingsDetailController {
         currenciesLoadWarning.setVisible(false);
 
         blockExplorers.setItems(getBlockExplorerList());
-        blockExplorers.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(Server server) {
-                if(server == null || server == BlockExplorer.NONE.getServer()) {
-                    return "None";
-                }
-
-                if(server == CUSTOM_BLOCK_EXPLORER) {
-                    return "Custom...";
-                }
-
-                return server.getHost();
-            }
-
-            @Override
-            public Server fromString(String string) {
-                return null;
-            }
-        });
+        blockExplorers.setCellFactory(_ -> new BlockExplorerListCell());
+        blockExplorers.setButtonCell(blockExplorers.getCellFactory().call(null));
         blockExplorers.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
                 if(newValue == CUSTOM_BLOCK_EXPLORER) {
@@ -258,14 +243,50 @@ public class GeneralSettingsController extends SettingsDetailController {
         fiatCurrency.valueProperty().addListener(fiatCurrencyListener);
     }
 
+    private static class FeeRatesSourceListCell extends ListCell<FeeRatesSource> {
+        @Override
+        protected void updateItem(FeeRatesSource item, boolean empty) {
+            super.updateItem(item, empty);
+            if(empty || item == null) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                setText(item.toString());
+                setGraphic(item.getSVGImage());
+                setGraphicTextGap(8.0d);
+            }
+        }
+    }
+
+    private static class BlockExplorerListCell extends ListCell<Server> {
+        @Override
+        protected void updateItem(Server server, boolean empty) {
+            super.updateItem(server, empty);
+            if(empty || server == null || server == BlockExplorer.NONE.getServer()) {
+                setText("None");
+                setGraphic(null);
+            } else if(server == CUSTOM_BLOCK_EXPLORER) {
+                setText("Custom...");
+                setGraphic(null);
+            } else {
+                setText(server.getHost());
+                setGraphic(BlockExplorer.getSVGImage(server));
+                setGraphicTextGap(8.0d);
+            }
+        }
+    }
+
     private static class ExchangeSourceButtonCell extends ListCell<ExchangeSource> {
         @Override
         protected void updateItem(ExchangeSource exchangeSource, boolean empty) {
             super.updateItem(exchangeSource, empty);
             if(exchangeSource == null || empty) {
                 setText("");
+                setGraphic(null);
             } else {
                 setText(exchangeSource.getName());
+                setGraphic(exchangeSource.getSVGImage());
+                setGraphicTextGap(8.0d);
             }
         }
     }
@@ -276,12 +297,15 @@ public class GeneralSettingsController extends SettingsDetailController {
             super.updateItem(exchangeSource, empty);
             if(exchangeSource == null || empty) {
                 setText("");
+                setGraphic(null);
             } else {
                 String text = exchangeSource.getName();
                 if(exchangeSource.getDescription() != null && !exchangeSource.getDescription().isEmpty()) {
                     text += " (" + exchangeSource.getDescription() + ")";
                 }
                 setText(text);
+                setGraphic(exchangeSource.getSVGImage());
+                setGraphicTextGap(8.0d);
             }
         }
     }
