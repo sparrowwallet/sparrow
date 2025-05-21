@@ -4,28 +4,26 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<?import com.sparrowwallet.sparrow.joinstr.control.JoinstrPoolList ?>
-<?import com.sparrowwallet.sparrow.joinstr.control.JoinstrInfoPane ?>
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.OtherPoolsController">
 
-<BorderPane stylesheets="@joinstr.css, @../wallet/wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.OtherPoolsController">
-    <padding>
-        <Insets top="30" right="30" bottom="30" left="30"/>
-    </padding>
-    <center>
-        <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" fx:id="contentVBox">
-                <GridPane maxWidth="Infinity" HBox.hgrow="ALWAYS" hgap="10.0" vgap="10.0">
-                    <columnConstraints>
-                        <ColumnConstraints percentWidth="80" />
-                        <ColumnConstraints percentWidth="20" />
-                    </columnConstraints>
-                    <children>
-                        <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" GridPane.rowIndex="0" GridPane.columnIndex="0">
-                            <Label styleClass="title">Available Pools</Label>
-                            <Label styleClass="sub-title">Select a pool to join</Label>
-                        </VBox>
-                        <TextField GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="searchTextField" promptText="Search pools..." onAction="#handleSearchButton" />
-                    </children>
-                </GridPane>
-        </VBox>
-    </center>
-</BorderPane>
+    <BorderPane HBox.hgrow="ALWAYS" style="-fx-background-color: #333333;">
+        <padding>
+            <Insets top="20" right="20" bottom="20" left="20"/>
+        </padding>
+        <top>
+            <VBox spacing="10">
+                <HBox alignment="CENTER_LEFT" spacing="20">
+                    <Label text="Available Pools" style="-fx-font-size: 24px; -fx-text-fill: white;"/>
+                    <Region HBox.hgrow="ALWAYS" />
+                    <TextField fx:id="searchTextField" promptText="Search pools..." prefWidth="250" style="-fx-background-color: #444444; -fx-text-fill: white; -fx-prompt-text-fill: #888888;" onAction="#handleSearchButton"/>
+                </HBox>
+                <Label text="Select a pool to join" style="-fx-font-size: 14px; -fx-text-fill: #aaaaaa;"/>
+            </VBox>
+        </top>
+
+        <center>
+            <VBox fx:id="contentVBox" spacing="10">
+            </VBox>
+        </center>
+    </BorderPane>
+</HBox>
