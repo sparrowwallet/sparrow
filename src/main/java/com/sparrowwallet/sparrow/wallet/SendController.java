@@ -1600,6 +1600,11 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    @Subscribe
+    public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
+        recentBlocksView.updateFeeRatesSource(event.getFeeRateSource());
+    }
+
     private class PrivacyAnalysisTooltip extends VBox {
         private final List<Label> analysisLabels = new ArrayList<>();
 

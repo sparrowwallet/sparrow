@@ -1,12 +1,15 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.BlockSummary;
+import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.FeeRatesSource;
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import javafx.animation.TranslateTransition;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Line;
 import javafx.scene.shape.Rectangle;
@@ -16,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.sparrowwallet.sparrow.control.BlockCube.CUBE_SIZE;
+
 public class RecentBlocksView extends Pane {
     private static final double CUBE_SPACING = 100;
     private static final double ANIMATION_DURATION_MILLIS = 1000;
@@ -24,6 +29,7 @@ public class RecentBlocksView extends Pane {
     private final CompositeDisposable disposables = new CompositeDisposable();
 
     private final ObjectProperty<List<BlockCube>> cubesProperty = new SimpleObjectProperty<>(new ArrayList<>());
+    private final Tooltip tooltip = new Tooltip();
 
     public RecentBlocksView() {
         cubesProperty.addListener((_, _, newValue) -> {
@@ -41,6 +47,16 @@ public class RecentBlocksView extends Pane {
                 cube.setElapsed(BlockCube.getElapsed(cube.getTimestamp()));
             }
         }));
+
+        updateFeeRatesSource(Config.get().getFeeRatesSource());
+        Tooltip.install(this, tooltip);
+    }
+
+    public void updateFeeRatesSource(FeeRatesSource feeRatesSource) {
+        tooltip.setText("Fee rate estimate from " + feeRatesSource.getDescription());
+        if(getCubes() != null && !getCubes().isEmpty()) {
+            getCubes().getFirst().setFeeRatesSource(feeRatesSource);
+        }
     }
 
     public void drawView() {
@@ -54,7 +70,7 @@ public class RecentBlocksView extends Pane {
     }
 
     private void createSeparator() {
-        Line separator = new Line(SEPARATOR_X, -9, SEPARATOR_X, 80);
+        Line separator = new Line(SEPARATOR_X, -9, SEPARATOR_X, CUBE_SIZE);
         separator.getStyleClass().add("blocks-separator");
         separator.getStrokeDashArray().addAll(5.0, 5.0); // Create dotted line pattern
         separator.setStrokeWidth(1.0);
