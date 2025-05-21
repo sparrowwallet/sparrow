@@ -1411,6 +1411,7 @@ public class SendController extends WalletFormController implements Initializabl
             setFeeRatePriority(getFeeRangeRate());
         }
         feeRange.updateTrackHighlight();
+        recentBlocksView.updateFeeRate(event.getTargetBlockFeeRates());
 
         if(updateDefaultFeeRate) {
             if(getFeeRate() != null && Long.valueOf((long)getFallbackFeeRate()).equals(getFeeRate().longValue())) {

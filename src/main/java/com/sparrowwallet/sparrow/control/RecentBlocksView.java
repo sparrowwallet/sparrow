@@ -17,8 +17,10 @@ import javafx.util.Duration;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.sparrowwallet.sparrow.AppServices.TARGET_BLOCKS_RANGE;
 import static com.sparrowwallet.sparrow.control.BlockCube.CUBE_SIZE;
 
 public class RecentBlocksView extends Pane {
@@ -134,6 +136,12 @@ public class RecentBlocksView extends Pane {
             getChildren().remove(lastCube);
             getCubes().remove(lastCube);
         }
+    }
+
+    public void updateFeeRate(Map<Integer, Double> targetBlockFeeRates) {
+        int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
+        Double defaultRate = targetBlockFeeRates.get(defaultTarget);
+        updateFeeRate(defaultRate);
     }
 
     public void updateFeeRate(Double currentFeeRate) {
