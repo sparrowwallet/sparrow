@@ -1048,6 +1048,10 @@ public class ElectrumServer {
                 List<BlockTransactionHash> recentTransactions = feeRatesSource.getRecentMempoolTransactions();
                 Map<BlockTransactionHash, Transaction> setReferences = new HashMap<>();
                 setReferences.put(recentTransactions.getFirst(), null);
+                Random random = new Random();
+                if(random.nextBoolean()) {
+                    setReferences.put(recentTransactions.get(random.nextInt(recentTransactions.size())), null);
+                }
                 Map<Sha256Hash, BlockTransaction> transactions = getTransactions(null, setReferences, Collections.emptyMap());
                 return transactions.values().stream().filter(blxTx -> blxTx.getTransaction() != null).toList();
             } catch(Exception e) {
@@ -2005,11 +2009,14 @@ public class ElectrumServer {
             Map<String, String> subscribeScriptHashes = new HashMap<>();
             List<BlockTransaction> recentTransactions = electrumServer.getRecentMempoolTransactions();
             for(BlockTransaction blkTx : recentTransactions) {
-                for(int i = 0; i < blkTx.getTransaction().getOutputs().size() && subscribeScriptHashes.size() < 10; i++) {
+                for(int i = 0; i < blkTx.getTransaction().getOutputs().size(); i++) {
                     TransactionOutput txOutput = blkTx.getTransaction().getOutputs().get(i);
                     String scriptHash = getScriptHash(txOutput);
                     if(!subscribedScriptHashes.containsKey(scriptHash)) {
                         subscribeScriptHashes.put("m/" + i, getScriptHash(txOutput));
+                    }
+                    if(Math.random() < 0.1d) {
+                        break;
                     }
                 }
             }
@@ -2023,21 +2030,31 @@ public class ElectrumServer {
                 }
             }
 
+            if(!recentTransactions.isEmpty()) {
+                broadcastRecent(electrumServer, recentTransactions);
+            }
+        }
+
+        private void broadcastRecent(ElectrumServer electrumServer, List<BlockTransaction> recentTransactions) {
             ScheduledService<Void> broadcastService = new ScheduledService<>() {
                 @Override
                 protected Task<Void> createTask() {
                     return new Task<>() {
                         @Override
                         protected Void call() throws Exception {
-                            for(BlockTransaction blkTx : recentTransactions) {
-                                electrumServer.broadcastTransaction(blkTx.getTransaction());
+                            if(!recentTransactions.isEmpty()) {
+                                Random random = new Random();
+                                if(random.nextBoolean()) {
+                                    BlockTransaction blkTx = recentTransactions.get(random.nextInt(recentTransactions.size()));
+                                    electrumServer.broadcastTransaction(blkTx.getTransaction());
+                                }
                             }
                             return null;
                         }
                     };
                 }
             };
-            broadcastService.setDelay(Duration.seconds(Math.random() * 60 * 10));
+            broadcastService.setDelay(Duration.seconds(Math.random() * 60 ));
             broadcastService.setPeriod(Duration.hours(1));
             broadcastService.setOnSucceeded(_ -> broadcastService.cancel());
             broadcastService.setOnFailed(_ -> broadcastService.cancel());
