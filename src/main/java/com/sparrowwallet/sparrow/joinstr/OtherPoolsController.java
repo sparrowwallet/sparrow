@@ -25,7 +25,7 @@ public class OtherPoolsController extends JoinstrFormController {
     @Override
     public void initializeView() {
         try {
-            joinstrPoolList = new JoinstrPoolList(JoinstrAction.JOIN);
+            joinstrPoolList = new JoinstrPoolList();
 
             joinstrPoolList.configureWithJoinButtons();
 

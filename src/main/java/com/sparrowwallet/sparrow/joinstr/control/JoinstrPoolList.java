@@ -18,14 +18,12 @@ import java.util.function.Consumer;
 
 public class JoinstrPoolList extends VBox {
 
-    private final JoinstrAction action;
     private TableView<JoinstrPool> poolTableView;
     private ObservableList<JoinstrPool> poolData;
     private FilteredList<JoinstrPool> filteredData;
     private Consumer<JoinstrPool> onPoolSelectedListener;
 
-    public JoinstrPoolList(JoinstrAction action) {
-        this.action = action;
+    public JoinstrPoolList() {
         initialize();
     }
 
