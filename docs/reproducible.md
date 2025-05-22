@@ -83,7 +83,7 @@ sudo apt install -y rpm fakeroot binutils
 First, assign a temporary variable in your shell for the specific release you want to build. For the current one specify:
 
 ```shell
-GIT_TAG="2.2.1"
+GIT_TAG="2.2.2"
 ```
 
 The project can then be initially cloned as follows:
