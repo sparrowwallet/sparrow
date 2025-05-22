@@ -136,6 +136,8 @@ public class AppServices {
 
     private static Map<Integer, Double> targetBlockFeeRates;
 
+    private static Double nextBlockMedianFeeRate;
+
     private static final TreeMap<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
 
     private static Double minimumRelayFeeRate;
@@ -748,6 +750,10 @@ public class AppServices {
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
     }
 
+    public static Double getNextBlockMedianFeeRate() {
+        return nextBlockMedianFeeRate == null ? getDefaultFeeRate() : nextBlockMedianFeeRate;
+    }
+
     public static double getFallbackFeeRate() {
         return Network.get() == Network.MAINNET ? FALLBACK_FEE_RATE : TESTNET_FALLBACK_FEE_RATE;
     }
@@ -1249,11 +1255,13 @@ public class AppServices {
         if(AppServices.currentBlockHeight != null) {
             blockSummaries.keySet().removeIf(height -> AppServices.currentBlockHeight - height > 5);
         }
+        nextBlockMedianFeeRate = event.getNextBlockMedianFeeRate();
     }
 
     @Subscribe
     public void feesUpdated(FeeRatesUpdatedEvent event) {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
+        nextBlockMedianFeeRate = event.getNextBlockMedianFeeRate();
     }
 
     @Subscribe

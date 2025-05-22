@@ -57,7 +57,7 @@ public class RecentBlocksView extends Pane {
     }
 
     public void updateFeeRatesSource(FeeRatesSource feeRatesSource) {
-        tooltip.setText("Fee rate estimate from " + feeRatesSource.getDescription());
+        tooltip.setText("Fee rates from " + feeRatesSource.getDescription());
         if(getCubes() != null && !getCubes().isEmpty()) {
             getCubes().getFirst().setFeeRatesSource(feeRatesSource);
         }
@@ -108,7 +108,7 @@ public class RecentBlocksView extends Pane {
         }
     }
 
-    public void addNewBlock(List<BlockSummary> latestBlocks, Double currentFeeRate) {
+    private void addNewBlock(List<BlockSummary> latestBlocks, Double currentFeeRate) {
         if(getCubes().isEmpty()) {
             return;
         }

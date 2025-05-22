@@ -936,6 +936,20 @@ public class ElectrumServer {
         return targetBlocksFeeRatesSats;
     }
 
+    public Double getNextBlockMedianFeeRate() {
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        if(feeRatesSource.supportsNetwork(Network.get())) {
+            try {
+                return feeRatesSource.getNextBlockMedianFeeRate();
+            } catch(Exception e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
     public Map<Integer, Double> getDefaultFeeEstimates(List<Integer> targetBlocks) throws ServerException {
         try {
             Map<Integer, Double> targetBlocksFeeRatesBtcKb = electrumServerRpc.getFeeEstimates(getTransport(), targetBlocks);
@@ -1460,8 +1474,9 @@ public class ElectrumServer {
                             if(elapsed > FEE_RATES_PERIOD) {
                                 Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
                                 Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
+                                Double nextBlockMedianFeeRate = electrumServer.getNextBlockMedianFeeRate();
                                 feeRatesRetrievedAt = System.currentTimeMillis();
-                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
+                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes, nextBlockMedianFeeRate);
                             }
                         } else {
                             closeConnection();
@@ -1939,7 +1954,8 @@ public class ElectrumServer {
                 protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
                     Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
-                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, null);
+                    Double nextBlockMedianFeeRate = electrumServer.getNextBlockMedianFeeRate();
+                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, null, nextBlockMedianFeeRate);
                 }
             };
         }
@@ -1989,7 +2005,11 @@ public class ElectrumServer {
                         subscribeRecent(electrumServer);
                     }
 
-                    return new BlockSummaryEvent(blockSummaryMap);
+                    Double nextBlockMedianFeeRate = null;
+                    if(!isBlockstorm(totalBlocks)) {
+                        nextBlockMedianFeeRate = electrumServer.getNextBlockMedianFeeRate();
+                    }
+                    return new BlockSummaryEvent(blockSummaryMap, nextBlockMedianFeeRate);
                 }
             };
         }
@@ -2054,7 +2074,7 @@ public class ElectrumServer {
                     };
                 }
             };
-            broadcastService.setDelay(Duration.seconds(Math.random() * 60 ));
+            broadcastService.setDelay(Duration.seconds(Math.random() * 60 * 10));
             broadcastService.setPeriod(Duration.hours(1));
             broadcastService.setOnSucceeded(_ -> broadcastService.cancel());
             broadcastService.setOnFailed(_ -> broadcastService.cancel());

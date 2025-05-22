@@ -326,7 +326,7 @@ public class SendController extends WalletFormController implements Initializabl
         recentBlocksView.visibleProperty().bind(Bindings.equal(feeRatesSelectionProperty, FeeRatesSelection.RECENT_BLOCKS));
         List<BlockSummary> blockSummaries = AppServices.getBlockSummaries().values().stream().sorted().toList();
         if(!blockSummaries.isEmpty()) {
-            recentBlocksView.update(blockSummaries, AppServices.getDefaultFeeRate());
+            recentBlocksView.update(blockSummaries, AppServices.getNextBlockMedianFeeRate());
         }
 
         feeRatesSelectionProperty.addListener((_, oldValue, newValue) -> {
@@ -1411,7 +1411,12 @@ public class SendController extends WalletFormController implements Initializabl
             setFeeRatePriority(getFeeRangeRate());
         }
         feeRange.updateTrackHighlight();
-        recentBlocksView.updateFeeRate(event.getTargetBlockFeeRates());
+
+        if(event.getNextBlockMedianFeeRate() != null) {
+            recentBlocksView.updateFeeRate(event.getNextBlockMedianFeeRate());
+        } else {
+            recentBlocksView.updateFeeRate(event.getTargetBlockFeeRates());
+        }
 
         if(updateDefaultFeeRate) {
             if(getFeeRate() != null && Long.valueOf((long)getFallbackFeeRate()).equals(getFeeRate().longValue())) {
@@ -1435,7 +1440,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void blockSummary(BlockSummaryEvent event) {
-        Platform.runLater(() -> recentBlocksView.update(AppServices.getBlockSummaries().values().stream().sorted().toList(), AppServices.getDefaultFeeRate()));
+        Platform.runLater(() -> recentBlocksView.update(AppServices.getBlockSummaries().values().stream().sorted().toList(), AppServices.getNextBlockMedianFeeRate()));
     }
 
     @Subscribe
