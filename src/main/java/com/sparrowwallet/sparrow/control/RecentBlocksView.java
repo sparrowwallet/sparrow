@@ -50,7 +50,9 @@ public class RecentBlocksView extends Pane {
             }
         }));
 
-        updateFeeRatesSource(Config.get().getFeeRatesSource());
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        updateFeeRatesSource(feeRatesSource);
         Tooltip.install(this, tooltip);
     }
 
@@ -140,8 +142,10 @@ public class RecentBlocksView extends Pane {
 
     public void updateFeeRate(Map<Integer, Double> targetBlockFeeRates) {
         int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
-        Double defaultRate = targetBlockFeeRates.get(defaultTarget);
-        updateFeeRate(defaultRate);
+        if(targetBlockFeeRates.get(defaultTarget) != null) {
+            Double defaultRate = targetBlockFeeRates.get(defaultTarget);
+            updateFeeRate(defaultRate);
+        }
     }
 
     public void updateFeeRate(Double currentFeeRate) {

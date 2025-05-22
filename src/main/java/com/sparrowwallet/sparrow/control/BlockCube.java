@@ -52,7 +52,10 @@ public class BlockCube extends Group {
     public BlockCube(Integer weight, Double medianFee, Integer height, Integer txCount, Long timestamp, boolean confirmed) {
         getStyleClass().addAll("block-" + Network.getCanonical().getName(), "block-cube");
         this.confirmedProperty.set(confirmed);
-        this.feeRatesSource.set(Config.get().getFeeRatesSource());
+
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        this.feeRatesSource.set(feeRatesSource);
 
         this.weightProperty.addListener((_, _, _) -> {
             if(front != null) {
@@ -198,6 +201,8 @@ public class BlockCube extends Group {
                 } else {
                     feeRateIcon.getChildren().clear();
                 }
+            } else {
+                feeRateIcon.getChildren().clear();
             }
         }
     }
