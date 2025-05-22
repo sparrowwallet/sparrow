@@ -552,7 +552,7 @@ public class AppController implements Initializable {
             }
 
             Stage stage = new Stage(StageStyle.DECORATED);
-            stage.setTitle("Joinstr with " + getSelectedWalletForm().getWallet().getFullName());
+            stage.setTitle("Coinjoin with " + getSelectedWalletForm().getWallet().getFullName());
             stage.initOwner(tabs.getScene().getWindow());
 
             JoinstrController controller = loader.getController();

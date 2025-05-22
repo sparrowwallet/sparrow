@@ -6,18 +6,18 @@
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.OtherPoolsController">
 
-    <BorderPane HBox.hgrow="ALWAYS" style="-fx-background-color: #333333;">
+    <BorderPane HBox.hgrow="ALWAYS" styleClass="wallet-pane">
         <padding>
             <Insets top="20" right="20" bottom="20" left="20"/>
         </padding>
         <top>
             <VBox spacing="10">
                 <HBox alignment="CENTER_LEFT" spacing="20">
-                    <Label text="Available Pools" style="-fx-font-size: 24px; -fx-text-fill: white;"/>
+                    <Label text="Available Pools" styleClass="title"/>
                     <Region HBox.hgrow="ALWAYS" />
-                    <TextField fx:id="searchTextField" promptText="Search pools..." prefWidth="250" style="-fx-background-color: #444444; -fx-text-fill: white; -fx-prompt-text-fill: #888888;" onAction="#handleSearchButton"/>
+                    <TextField fx:id="searchTextField" styleClass="search-pool" promptText="Search pools..." prefWidth="250" onAction="#handleSearchButton"/>
                 </HBox>
-                <Label text="Select a pool to join" style="-fx-font-size: 14px; -fx-text-fill: #aaaaaa;"/>
+                <Label styleClass="sub-title" text="Select a pool to join"/>
             </VBox>
         </top>
 

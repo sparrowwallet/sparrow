@@ -105,6 +105,22 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-background-color: rgb(159, 142, 0);
 }
 
+.search-pool {
+    -fx-background-color: #444444;
+    -fx-text-fill: white;
+    -fx-prompt-text-fill: #888888;
+}
+
+.title {
+    -fx-font-size: 24px;
+    -fx-text-fill: white;
+}
+
+.sub-title {
+    -fx-font-size: 14px;
+    -fx-text-fill: #aaaaaa;
+}
+
 .joinstr-balance-container {
     -fx-padding:30, 0, 30, 0;
     -fx-background-color: #164768;

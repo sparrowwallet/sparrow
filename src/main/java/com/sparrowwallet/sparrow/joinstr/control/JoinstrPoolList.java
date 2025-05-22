@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.joinstr.control;
 
-import com.sparrowwallet.sparrow.joinstr.JoinstrAction;
 import com.sparrowwallet.sparrow.joinstr.OtherPoolsController.JoinstrPool;
 
 import javafx.collections.FXCollections;
@@ -81,7 +80,7 @@ public class JoinstrPoolList extends VBox {
     public void configureWithJoinButtons() {
         TableColumn<JoinstrPool, Void> joinButtonColumn = new TableColumn<>("");
         joinButtonColumn.setPrefWidth(100);
-
+        joinButtonColumn.setStyle("-fx-alignment:CENTER;");
         joinButtonColumn.setCellFactory(new Callback<>() {
             @Override
             public TableCell<JoinstrPool, Void> call(final TableColumn<JoinstrPool, Void> param) {
