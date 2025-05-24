@@ -5,5 +5,5 @@ public enum JoinstrDisplay {
     MY_POOLS,
     OTHER_POOLS,
     HISTORY,
-    LOCK
+    SETTINGS
 }

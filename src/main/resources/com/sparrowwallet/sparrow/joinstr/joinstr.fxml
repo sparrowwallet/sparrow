@@ -36,6 +36,11 @@
                     <JoinstrDisplay fx:constant="HISTORY"/>
                 </userData>
             </ToggleButton>
+            <ToggleButton VBox.vgrow="ALWAYS" text="Settings" contentDisplay="CENTER" styleClass="list-item" maxHeight="Infinity" toggleGroup="$joinstrMenu">
+                <userData>
+                    <JoinstrDisplay fx:constant="SETTINGS"/>
+                </userData>
+            </ToggleButton>
         </VBox>
     </left>
     <center>

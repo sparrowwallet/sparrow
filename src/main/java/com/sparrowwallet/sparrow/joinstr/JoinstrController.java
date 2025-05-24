@@ -22,6 +22,8 @@ public class JoinstrController extends JoinstrFormController {
 
     private Stage stage;
 
+    protected String selectedWallet;
+
     @FXML
     private StackPane joinstrPane;
 
@@ -49,7 +51,7 @@ public class JoinstrController extends JoinstrFormController {
                 if(joinstrDisplay.getUserData().equals(display)) {
                     existing = true;
                     joinstrDisplay.setViewOrder(0);
-                } else if(display != JoinstrDisplay.LOCK) {
+                } else {
                     joinstrDisplay.setViewOrder(1);
                 }
             }
@@ -68,17 +70,14 @@ public class JoinstrController extends JoinstrFormController {
                         joinstrDisplay.setUserData(display);
                         joinstrDisplay.setViewOrder(1);
 
-                        JoinstrFormController controller = displayLoader.getController();
-                        JoinstrForm joinstrForm = getJoinstrForm();
-                        controller.setJoinstrForm(joinstrForm);
-                        controller.initializeView();
-
                         joinstrPane.getChildren().add(joinstrDisplay);
                     }
-                    else {
-                        JoinstrFormController controller = displayLoader.getController();
-                        controller.initializeView();
-                    }
+
+                    JoinstrFormController controller = displayLoader.getController();
+                    JoinstrForm joinstrForm = getJoinstrForm();
+                    controller.setJoinstrForm(joinstrForm);
+                    controller.initializeView();
+
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
             }

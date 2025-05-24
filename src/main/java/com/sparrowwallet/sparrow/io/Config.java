@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.control.QRDensity;
 import com.sparrowwallet.sparrow.control.WebcamResolution;
+import com.sparrowwallet.sparrow.joinstr.VpnGateway;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
@@ -81,6 +82,18 @@ public class Config {
     private boolean mempoolFullRbf;
     private Double appWidth;
     private Double appHeight;
+
+    // Joinstr settings
+
+    private VpnGateway vpnGateway;
+
+    private String nostrRelay;
+
+    private String nodeUsername;
+
+    private String nodePassword;
+
+    // ================
 
     private static Config INSTANCE;
 
@@ -682,6 +695,41 @@ public class Config {
 
     public void setAppHeight(Double appHeight) {
         this.appHeight = appHeight;
+        flush();
+    }
+
+    public VpnGateway getVpnGateway() {
+        return vpnGateway;
+    }
+
+    public void setVpnGateway(VpnGateway vpnGateway) {
+        this.vpnGateway = vpnGateway;
+        flush();
+    }
+
+    public String getNostrRelay() {
+        return nostrRelay;
+    }
+
+    public void setNostrRelay(String nostrRelay) {
+        this.nostrRelay = nostrRelay;
+        flush();
+    }
+
+    public String getNodeUsername() {
+        return nodeUsername;
+    }
+
+    public void setNodeUsername(String nodeUsername) {
+        this.nodeUsername = nodeUsername;
+        flush();
+    }
+
+    public String getNodePassword() {
+        return nodePassword;
+    }
+    public void setNodePassword(String nodePassword) {
+        this.nodePassword = nodePassword;
         flush();
     }
 

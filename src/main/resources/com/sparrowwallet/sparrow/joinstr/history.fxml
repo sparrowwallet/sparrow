@@ -9,7 +9,7 @@
         <Insets top="30" right="30" bottom="30" left="30"/>
     </padding>
     <center>
-        <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS" fx:id="contentVBox">
+        <VBox maxWidth="Infinity" fx:id="contentVBox">
             <GridPane maxWidth="Infinity" HBox.hgrow="ALWAYS" hgap="10.0" vgap="10.0">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="80" />
