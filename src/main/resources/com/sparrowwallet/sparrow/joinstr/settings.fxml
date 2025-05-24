@@ -21,38 +21,8 @@
                 </columnConstraints>
                 <children>
 
-                    <Label GridPane.rowIndex="0" GridPane.columnIndex="0">Node URL:</Label>
-                    <Label GridPane.rowIndex="0" GridPane.columnIndex="1" fx:id="urlLabel" />
-
-                    <Label GridPane.rowIndex="1" GridPane.columnIndex="0">Selected Wallet:</Label>
-                    <Label GridPane.rowIndex="1" GridPane.columnIndex="1" fx:id="selectedWalletLabel" />
-
-                    <Label GridPane.rowIndex="2" GridPane.columnIndex="0">Username:</Label>
-                    <TextField prefWidth="50" maxWidth="100" GridPane.rowIndex="2" GridPane.columnIndex="1" fx:id="usernameTextField" />
-
-                    <Label GridPane.rowIndex="3" GridPane.columnIndex="0">Password:</Label>
-                    <PasswordField prefWidth="50" maxWidth="100" GridPane.rowIndex="3" GridPane.columnIndex="1" fx:id="passwordTextField" />
-
                     <Label GridPane.rowIndex="4" GridPane.columnIndex="0">Nostr Relay:</Label>
                     <TextField prefWidth="100" maxWidth="150" GridPane.rowIndex="4" GridPane.columnIndex="1" fx:id="nostrRelayTextField">wss://nostr.fmt.wiz.biz</TextField>
-
-
-                    <Label GridPane.rowIndex="6" GridPane.columnIndex="0" styleClass="sub-title">VPN Gateway</Label>
-
-                    <Label GridPane.rowIndex="7" GridPane.columnIndex="0">Host:</Label>
-                    <TextField prefWidth="100" maxWidth="150" GridPane.rowIndex="7" GridPane.columnIndex="1" fx:id="hostTextField" />
-
-                    <Label GridPane.rowIndex="8" GridPane.columnIndex="0">Location:</Label>
-                    <TextField prefWidth="100" maxWidth="150" GridPane.rowIndex="8" GridPane.columnIndex="1" fx:id="locationTextField" />
-
-                    <Label GridPane.rowIndex="11" GridPane.columnIndex="0">Protocol:</Label>
-                    <TextField prefWidth="100" maxWidth="150" GridPane.rowIndex="11" GridPane.columnIndex="1" fx:id="protocolTextField" />
-
-                    <Label GridPane.rowIndex="9" GridPane.columnIndex="0">IP Address:</Label>
-                    <TextField prefWidth="100" maxWidth="150" GridPane.rowIndex="9" GridPane.columnIndex="1" fx:id="ipAddressTextField" />
-
-                    <Label GridPane.rowIndex="10" GridPane.columnIndex="0">Port:</Label>
-                    <TextField prefWidth="25" maxWidth="50" GridPane.rowIndex="10" GridPane.columnIndex="1" fx:id="portTextField" />
 
                 </children>
             </GridPane>
