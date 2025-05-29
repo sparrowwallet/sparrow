@@ -122,19 +122,21 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             if(percentComplete.get() <= 0.0) {
                 Platform.runLater(() -> percentComplete.set(opening ? 0.0 : -1.0));
             }
+        });
 
-            if(opening) {
+        webcamService.openedProperty().addListener((_, _, opened) -> {
+            if(opened) {
                 Platform.runLater(() -> {
                     try {
                         postOpenUpdate = true;
-                        List<CaptureDevice> newDevices = new ArrayList<>(webcamService.getDevices());
+                        List<CaptureDevice> newDevices = new ArrayList<>(webcamService.getAvailableDevices());
                         newDevices.removeAll(foundDevices);
                         foundDevices.addAll(newDevices);
                         foundDevices.removeIf(device -> !webcamService.getDevices().contains(device));
 
-                        if(Config.get().getWebcamDevice() != null && webcamDeviceProperty.get() == null) {
+                        if(webcamService.getDevice() != null) {
                             for(CaptureDevice device : foundDevices) {
-                                if(device.getName().equals(Config.get().getWebcamDevice())) {
+                                if(device.equals(webcamService.getDevice())) {
                                     webcamDeviceProperty.set(device);
                                 }
                             }
@@ -146,10 +148,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         postOpenUpdate = false;
                     }
                 });
-            }
-        });
-        webcamService.closedProperty().addListener((_, _, closed) -> {
-           if(closed && webcamResolutionProperty.get() != null) {
+            } else if(webcamResolutionProperty.get() != null) {
                webcamService.setResolution(webcamResolutionProperty.get());
                webcamService.setDevice(webcamDeviceProperty.get());
                Platform.runLater(() -> {
