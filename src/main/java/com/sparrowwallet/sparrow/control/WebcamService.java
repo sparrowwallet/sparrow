@@ -27,12 +27,16 @@ import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WebcamService extends ScheduledService<Image> {
     private static final Logger log = LoggerFactory.getLogger(WebcamService.class);
+
+    private final Semaphore taskSemaphore = new Semaphore(1, true);
 
     private List<CaptureDevice> devices;
     private List<CaptureDevice> availableDevices;
@@ -106,6 +110,7 @@ public class WebcamService extends ScheduledService<Image> {
         return new Task<>() {
             @Override
             protected Image call() throws Exception {
+                taskSemaphore.acquire();
                 try {
                     if(devices == null) {
                         devices = capture.getDevices();
@@ -207,6 +212,7 @@ public class WebcamService extends ScheduledService<Image> {
                     return image;
                 } finally {
                     opening.set(false);
+                    taskSemaphore.release();
                 }
             }
         };
@@ -221,12 +227,24 @@ public class WebcamService extends ScheduledService<Image> {
 
     @Override
     public boolean cancel() {
+        boolean cancelled = super.cancel();
+
+        try {
+            if(taskSemaphore.tryAcquire(1, TimeUnit.SECONDS)) {
+                taskSemaphore.release();
+            } else {
+                log.error("Timed out waiting for task semaphore to be available to cancel, cancelling anyway");
+            }
+        } catch(InterruptedException e) {
+            log.error("Interrupted while waiting for task semaphore to be available to cancel, cancelling anyway");
+        }
+
         if(stream != null) {
             stream.close();
             opened.set(false);
         }
 
-        return super.cancel();
+        return cancelled;
     }
 
     public void close() {
