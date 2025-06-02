@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.joinstr;
 
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
@@ -19,6 +20,7 @@ public class NewPoolController extends JoinstrFormController {
     @FXML
     private void handleCreateButton() {
         try {
+
             String denomination = denominationField.getText().trim();
             String peers = peersField.getText().trim();
 
@@ -49,7 +51,11 @@ public class NewPoolController extends JoinstrFormController {
                 return;
             }
 
+            long denominationSats = Long.valueOf((long) (Double.parseDouble(denomination)*100000000.0D));
+
             // TODO: Implement pool creation logic here
+            JoinstrPool pool = new JoinstrPool(getWalletForm(), Config.get().getNostrRelay(),9999, "pubkey", denominationSats);
+            pool.createPSBT();
 
             /*
             Alert alert = new Alert(AlertType.INFORMATION);

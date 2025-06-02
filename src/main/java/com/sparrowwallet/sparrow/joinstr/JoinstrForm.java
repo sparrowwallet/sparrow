@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.joinstr;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.wallet.WalletForm;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -10,20 +11,22 @@ public class JoinstrForm {
 
     private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
 
-    private final Storage storage;
-    protected Wallet wallet;
+    private final WalletForm walletForm;
 
-    public JoinstrForm(Storage storage, Wallet currentWallet) {
-        this.storage = storage;
-        this.wallet = currentWallet;
+    public JoinstrForm(WalletForm walletForm) {
+        this.walletForm = walletForm;
+    }
+
+    public WalletForm getWalletForm() {
+        return walletForm;
     }
 
     public Wallet getWallet() {
-        return wallet;
+        return walletForm.getWallet();
     }
 
     public Storage getStorage() {
-        return storage;
+        return walletForm.getStorage();
     }
 
     public BooleanProperty lockedProperty() {

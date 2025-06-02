@@ -556,7 +556,7 @@ public class AppController implements Initializable {
             stage.initOwner(tabs.getScene().getWindow());
 
             JoinstrController controller = loader.getController();
-            JoinstrForm joinstrForm = new JoinstrForm(getSelectedWalletForm().getStorage(), getSelectedWalletForm().getWallet());
+            JoinstrForm joinstrForm = new JoinstrForm(getSelectedWalletForm());
             controller.setJoinstrForm(joinstrForm);
 
             Scene scene = new Scene(root);
