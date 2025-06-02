@@ -1205,7 +1205,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     public void broadcastNotification(Wallet decryptedWallet) {
         try {
-            PaymentCode paymentCode = decryptedWallet.getPaymentCode();
+            PaymentCode paymentCode = decryptedWallet.isMasterWallet() ? decryptedWallet.getPaymentCode() : decryptedWallet.getMasterWallet().getPaymentCode();
             PaymentCode externalPaymentCode = paymentCodeProperty.get();
             WalletTransaction walletTransaction = walletTransactionProperty.get();
             WalletNode input0Node = walletTransaction.getSelectedUtxos().entrySet().iterator().next().getValue();
