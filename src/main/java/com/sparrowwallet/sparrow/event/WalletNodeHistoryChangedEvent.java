@@ -14,9 +14,16 @@ import java.util.List;
  */
 public class WalletNodeHistoryChangedEvent {
     private final String scriptHash;
+    private final String status;
 
     public WalletNodeHistoryChangedEvent(String scriptHash) {
         this.scriptHash = scriptHash;
+        this.status = null;
+    }
+
+    public WalletNodeHistoryChangedEvent(String scriptHash, String status) {
+        this.scriptHash = scriptHash;
+        this.status = status;
     }
 
     public WalletNode getWalletNode(Wallet wallet) {
@@ -69,5 +76,9 @@ public class WalletNodeHistoryChangedEvent {
 
     public String getScriptHash() {
         return scriptHash;
+    }
+
+    public String getStatus() {
+        return status;
     }
 }

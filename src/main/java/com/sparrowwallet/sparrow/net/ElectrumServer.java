@@ -76,6 +76,10 @@ public class ElectrumServer {
 
     private static final Set<String> sameHeightTxioScriptHashes = ConcurrentHashMap.newKeySet();
 
+    private final static Set<String> subscribedRecent = ConcurrentHashMap.newKeySet();
+
+    private final static Map<String, String> broadcastRecent = new ConcurrentHashMap<>();
+
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static Cormorant cormorant;
@@ -1062,9 +1066,10 @@ public class ElectrumServer {
                 List<BlockTransactionHash> recentTransactions = feeRatesSource.getRecentMempoolTransactions();
                 Map<BlockTransactionHash, Transaction> setReferences = new HashMap<>();
                 setReferences.put(recentTransactions.getFirst(), null);
-                Random random = new Random();
-                if(random.nextBoolean()) {
-                    setReferences.put(recentTransactions.get(random.nextInt(recentTransactions.size())), null);
+                if(recentTransactions.size() > 1) {
+                    Random random = new Random();
+                    int halfSize = recentTransactions.size() / 2;
+                    setReferences.put(recentTransactions.get(halfSize == 1 ? 1 : random.nextInt(halfSize) + 1), null);
                 }
                 Map<Sha256Hash, BlockTransaction> transactions = getTransactions(null, setReferences, Collections.emptyMap());
                 return transactions.values().stream().filter(blxTx -> blxTx.getTransaction() != null).toList();
@@ -1602,6 +1607,31 @@ public class ElectrumServer {
             Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
             EventManager.get().post(new MempoolRateSizesUpdatedEvent(mempoolRateSizes));
         }
+
+        @Subscribe
+        public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
+            String status = broadcastRecent.remove(event.getScriptHash());
+            if(status != null && status.equals(event.getStatus())) {
+                Map<String, String> subscribeScriptHashes = new HashMap<>();
+                Random random = new Random();
+                int subscriptions = random.nextInt(2) + 1;
+                for(int i = 0; i < subscriptions; i++) {
+                    byte[] randomScriptHashBytes = new byte[32];
+                    random.nextBytes(randomScriptHashBytes);
+                    String randomScriptHash = Utils.bytesToHex(randomScriptHashBytes);
+                    if(!subscribedScriptHashes.containsKey(randomScriptHash)) {
+                        subscribeScriptHashes.put("m/" + subscribeScriptHashes.size(), randomScriptHash);
+                    }
+                }
+
+                try {
+                    electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
+                    subscribedRecent.addAll(subscribeScriptHashes.values());
+                } catch(ElectrumServerRpcException e) {
+                    log.debug("Error subscribing to recent mempool transaction outputs", e);
+                }
+            }
+        }
     }
 
     public static class ReadRunnable implements Runnable {
@@ -2018,13 +2048,12 @@ public class ElectrumServer {
             return Network.get() != Network.MAINNET && totalBlocks > 2;
         }
 
-        private final static Set<String> subscribedRecent = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
         private void subscribeRecent(ElectrumServer electrumServer) {
             Set<String> unsubscribeScriptHashes = new HashSet<>(subscribedRecent);
             unsubscribeScriptHashes.removeIf(subscribedScriptHashes::containsKey);
             electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
             subscribedRecent.removeAll(unsubscribeScriptHashes);
+            broadcastRecent.clear();
 
             Map<String, String> subscribeScriptHashes = new HashMap<>();
             List<BlockTransaction> recentTransactions = electrumServer.getRecentMempoolTransactions();
@@ -2033,7 +2062,7 @@ public class ElectrumServer {
                     TransactionOutput txOutput = blkTx.getTransaction().getOutputs().get(i);
                     String scriptHash = getScriptHash(txOutput);
                     if(!subscribedScriptHashes.containsKey(scriptHash)) {
-                        subscribeScriptHashes.put("m/" + i, getScriptHash(txOutput));
+                        subscribeScriptHashes.put("m/" + subscribeScriptHashes.size(), scriptHash);
                     }
                     if(Math.random() < 0.1d) {
                         break;
@@ -2042,6 +2071,17 @@ public class ElectrumServer {
             }
 
             if(!subscribeScriptHashes.isEmpty()) {
+                Random random = new Random();
+                int additionalRandomScriptHashes = random.nextInt(8) + 4;
+                for(int i = 0; i < additionalRandomScriptHashes; i++) {
+                    byte[] randomScriptHashBytes = new byte[32];
+                    random.nextBytes(randomScriptHashBytes);
+                    String randomScriptHash = Utils.bytesToHex(randomScriptHashBytes);
+                    if(!subscribedScriptHashes.containsKey(randomScriptHash)) {
+                        subscribeScriptHashes.put("m/" + subscribeScriptHashes.size(), randomScriptHash);
+                    }
+                }
+
                 try {
                     electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
                     subscribedRecent.addAll(subscribeScriptHashes.values());
@@ -2066,6 +2106,9 @@ public class ElectrumServer {
                                 Random random = new Random();
                                 if(random.nextBoolean()) {
                                     BlockTransaction blkTx = recentTransactions.get(random.nextInt(recentTransactions.size()));
+                                    String scriptHash = getScriptHash(blkTx.getTransaction().getOutputs().getFirst());
+                                    String status = getScriptHashStatus(List.of(new ScriptHashTx(0, blkTx.getHashAsString(), blkTx.getFee())));
+                                    broadcastRecent.put(scriptHash, status);
                                     electrumServer.broadcastTransaction(blkTx.getTransaction());
                                 }
                             }
