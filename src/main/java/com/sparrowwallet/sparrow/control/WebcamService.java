@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,7 +37,8 @@ import java.util.stream.Stream;
 public class WebcamService extends ScheduledService<Image> {
     private static final Logger log = LoggerFactory.getLogger(WebcamService.class);
 
-    private final Semaphore taskSemaphore = new Semaphore(1, true);
+    private final Semaphore taskSemaphore = new Semaphore(1);
+    private final AtomicBoolean cancelRequested = new AtomicBoolean(false);
 
     private List<CaptureDevice> devices;
     private List<CaptureDevice> availableDevices;
@@ -110,7 +112,15 @@ public class WebcamService extends ScheduledService<Image> {
         return new Task<>() {
             @Override
             protected Image call() throws Exception {
-                taskSemaphore.acquire();
+                if(cancelRequested.get() || isCancelled()) {
+                    return null;
+                }
+
+                if(!taskSemaphore.tryAcquire()) {
+                    log.warn("Skipped execution of webcam capture task, another task is running");
+                    return null;
+                }
+
                 try {
                     if(devices == null) {
                         devices = capture.getDevices();
@@ -222,11 +232,13 @@ public class WebcamService extends ScheduledService<Image> {
     public void reset() {
         stream = null;
         zoomLimits = null;
+        cancelRequested.set(false);
         super.reset();
     }
 
     @Override
     public boolean cancel() {
+        cancelRequested.set(true);
         boolean cancelled = super.cancel();
 
         try {
@@ -412,6 +424,10 @@ public class WebcamService extends ScheduledService<Image> {
 
     public BooleanProperty openedProperty() {
         return opened;
+    }
+
+    public boolean getCancelRequested() {
+        return cancelRequested.get();
     }
 
     public static <T extends Enum<T>> T getNearestEnum(T target) {
