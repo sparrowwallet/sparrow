@@ -182,8 +182,13 @@ public class WebcamService extends ScheduledService<Image> {
                             }
                         }
 
+                        //On Linux, formats not defined in WebcamPixelFormat are unsupported so ask for RGB3
+                        if(OsType.getCurrent() == OsType.UNIX && WebcamPixelFormat.fromFourCC(format.getFormatInfo().fourcc) == null) {
+                            format.getFormatInfo().fourcc = WebcamPixelFormat.PIX_FMT_RGB24.getFourCC();
+                        }
+
                         if(log.isDebugEnabled()) {
-                            log.debug("Opening capture stream  on " + device + " with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + WebcamPixelFormat.fourCCToString(format.getFormatInfo().fourcc) + ")");
+                            log.debug("Opening capture stream on " + device + " with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + WebcamPixelFormat.fourCCToString(format.getFormatInfo().fourcc) + ")");
                         }
 
                         opening.set(true);

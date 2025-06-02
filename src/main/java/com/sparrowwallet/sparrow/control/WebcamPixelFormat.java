@@ -6,8 +6,7 @@ public enum WebcamPixelFormat {
     //Only V4L2 formats defined in linux/videodev2.h are required here, declared in order of priority for supported formats
     PIX_FMT_RGB24("RGB3", true),
     PIX_FMT_YUYV("YUYV", true),
-    PIX_FMT_MJPG("MJPG", true),
-    PIX_FMT_NV12("NV12", false);
+    PIX_FMT_MJPG("MJPG", true);
 
     private final String name;
     private final boolean supported;
@@ -23,6 +22,14 @@ public enum WebcamPixelFormat {
 
     public boolean isSupported() {
         return supported;
+    }
+
+    public int getFourCC() {
+        char a = name.charAt(0);
+        char b = name.charAt(1);
+        char c = name.charAt(2);
+        char d = name.charAt(3);
+        return ((int) a) | ((int) b << 8) | ((int) c << 16) | ((int) d << 24);
     }
 
     public String toString() {
