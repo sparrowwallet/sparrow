@@ -1255,11 +1255,11 @@ public class ElectrumServer {
         if(!serverVersion.isEmpty()) {
             String server = serverVersion.getFirst().toLowerCase(Locale.ROOT);
             if(server.contains("electrumx")) {
-                return new ServerCapability(true);
+                return new ServerCapability(true, false);
             }
 
             if(server.startsWith("cormorant")) {
-                return new ServerCapability(true, false, true);
+                return new ServerCapability(true, false, true, false);
             }
 
             if(server.startsWith("electrs/")) {
@@ -1271,7 +1271,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(electrsVersion);
                     if(version.compareTo(ELECTRS_MIN_BATCHING_VERSION) >= 0) {
-                        return new ServerCapability(true);
+                        return new ServerCapability(true, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1287,7 +1287,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(fulcrumVersion);
                     if(version.compareTo(FULCRUM_MIN_BATCHING_VERSION) >= 0) {
-                        return new ServerCapability(true);
+                        return new ServerCapability(true, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1306,7 +1306,7 @@ public class ElectrumServer {
                     Version version = new Version(mempoolElectrsVersion);
                     if(version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) > 0 ||
                             (version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) == 0 && (!mempoolElectrsSuffix.contains("dev") || mempoolElectrsSuffix.contains("dev-249848d")))) {
-                        return new ServerCapability(true, 25);
+                        return new ServerCapability(true, 25, false);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1314,7 +1314,7 @@ public class ElectrumServer {
             }
         }
 
-        return new ServerCapability(false);
+        return new ServerCapability(false, true);
     }
 
     public static class ServerVersionService extends Service<List<String>> {
@@ -2051,7 +2051,9 @@ public class ElectrumServer {
         private void subscribeRecent(ElectrumServer electrumServer) {
             Set<String> unsubscribeScriptHashes = new HashSet<>(subscribedRecent);
             unsubscribeScriptHashes.removeIf(subscribedScriptHashes::containsKey);
-            electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
+            if(!unsubscribeScriptHashes.isEmpty() && serverCapability.supportsUnsubscribe()) {
+                electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
+            }
             subscribedRecent.removeAll(unsubscribeScriptHashes);
             broadcastRecent.clear();
 
@@ -2072,7 +2074,7 @@ public class ElectrumServer {
 
             if(!subscribeScriptHashes.isEmpty()) {
                 Random random = new Random();
-                int additionalRandomScriptHashes = random.nextInt(8) + 4;
+                int additionalRandomScriptHashes = random.nextInt(4) + 4;
                 for(int i = 0; i < additionalRandomScriptHashes; i++) {
                     byte[] randomScriptHashBytes = new byte[32];
                     random.nextBytes(randomScriptHashBytes);
