@@ -5,6 +5,8 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 
+import nostr.event.impl.GenericEvent;
+
 public class NewPoolController extends JoinstrFormController {
     @FXML
     private TextField denominationField;
@@ -49,15 +51,18 @@ public class NewPoolController extends JoinstrFormController {
                 return;
             }
 
-            // TODO: Implement pool creation logic here
+            try {
+                GenericEvent event = NostrPublisher.publishCustomEvent(denomination, peers);
 
-            /*
-            Alert alert = new Alert(AlertType.INFORMATION);
-            alert.setTitle("Success");
-            alert.setHeaderText(null);
-            alert.setContentText("Pool created successfully!");
-            alert.showAndWait();
-            */
+                Alert alert = new Alert(AlertType.INFORMATION);
+                alert.setHeaderText(null);
+                assert event != null;
+                alert.setContentText("Pool created successfully!\nEvent ID: " + event.getId() +
+                                     "\nDenomination: " + denomination + "\nPeers: " + peers);
+                alert.showAndWait();
+            } catch (Exception e) {
+                showError("Error: " + e.getMessage());
+            }
 
             denominationField.clear();
             peersField.clear();

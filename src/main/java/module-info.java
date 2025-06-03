@@ -56,4 +56,9 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.tern;
     requires com.sparrowwallet.lark;
     requires com.sun.jna;
+    requires nostr.api;
+    requires nostr.base;
+    requires nostr.event;
+    requires nostr.id;
+    requires nostr.util;
 }

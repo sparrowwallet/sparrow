@@ -25,6 +25,7 @@ version '2.2.2'
 repositories {
     mavenCentral()
     maven { url 'https://code.sparrowwallet.com/api/packages/sparrowwallet/maven' }
+    maven { url 'https://jitpack.io' }
 }
 
 tasks.withType(AbstractArchiveTask) {
@@ -43,6 +44,9 @@ java {
 
 dependencies {
     //Any changes to the dependencies must be reflected in the module definitions below!
+    implementation('com.github.tcheeric:nostr-java:v0.007.1-alpha') {
+        exclude group: 'com.github.tcheeric.nostr-java', module: 'nostr-java-test'
+    }
     implementation(project(':drongo'))
     implementation(project(':lark'))
     implementation('com.google.guava:guava:33.0.0-jre')
@@ -347,6 +351,38 @@ tasks.register('packageTarDistribution', Tar) {
 }
 
 extraJavaModuleInfo {
+    module('com.github.tcheeric:nostr-java', 'nostr.java') {
+        exports('nostr.api')
+        exports('nostr.base')
+        exports('nostr.event')
+        exports('nostr.event.impl')
+        exports('nostr.id')
+        exports('nostr.ws')
+        exports('nostr.ws.listener')
+        exports('nostr.crypto')
+        exports('nostr.util')
+        requires('java.base')
+        requires('java.net.http')
+    }
+
+    module('com.squareup.okio:okio', 'com.squareup.okio') {
+        exports('okio')
+        requires('java.base')
+        requires('org.jetbrains.kotlin.stdlib')
+    }
+
+    module('me.champeau.openbeans:openbeans', 'me.champeau.openbeans') {
+        exports('com.sun.beans')
+        exports('com.sun.beans.decoder')
+        exports('com.sun.beans.editors')
+        exports('com.sun.beans.finder')
+        exports('com.sun.beans.infos')
+        exports('com.sun.beans.util')
+        requires('java.base')
+        requires('java.desktop')
+    }
+
+
     module('no.tornado:tornadofx-controls', 'tornadofx.controls') {
         exports('tornadofx.control')
         requires('javafx.controls')
