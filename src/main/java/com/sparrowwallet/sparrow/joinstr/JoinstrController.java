@@ -57,26 +57,21 @@ public class JoinstrController extends JoinstrFormController {
             }
 
             try {
-                    URL url = AppServices.class.getResource("joinstr/" + display.toString().toLowerCase(Locale.ROOT) + ".fxml");
-                    if(url == null) {
-                        throw new IllegalStateException("Cannot find joinstr/" + display.toString().toLowerCase(Locale.ROOT) + ".fxml");
-                    }
-
-                    FXMLLoader displayLoader = new FXMLLoader(url);
-                    Node joinstrDisplay = displayLoader.load();
-
-                    if(!existing) {
-
-                        joinstrDisplay.setUserData(display);
-                        joinstrDisplay.setViewOrder(1);
-
-                        joinstrPane.getChildren().add(joinstrDisplay);
-                    }
-
-                    JoinstrFormController controller = displayLoader.getController();
-                    JoinstrForm joinstrForm = getJoinstrForm();
-                    controller.setJoinstrForm(joinstrForm);
-                    controller.initializeView();
+                URL url = AppServices.class.getResource("joinstr/" + display.toString().toLowerCase(Locale.ROOT) + ".fxml");
+                if(url == null) {
+                    throw new IllegalStateException("Cannot find joinstr/" + display.toString().toLowerCase(Locale.ROOT) + ".fxml");
+                }
+                FXMLLoader displayLoader = new FXMLLoader(url);
+                Node joinstrDisplay = displayLoader.load();
+                if(!existing) {
+                    joinstrDisplay.setUserData(display);
+                    joinstrDisplay.setViewOrder(1);
+                    joinstrPane.getChildren().add(joinstrDisplay);
+                }
+                JoinstrFormController controller = displayLoader.getController();
+                JoinstrForm joinstrForm = getJoinstrForm();
+                controller.setJoinstrForm(joinstrForm);
+                controller.initializeView();
 
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);

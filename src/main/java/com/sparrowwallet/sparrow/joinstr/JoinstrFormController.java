@@ -1,10 +1,15 @@
 package com.sparrowwallet.sparrow.joinstr;
 
 import com.sparrowwallet.sparrow.BaseController;
+import com.sparrowwallet.sparrow.wallet.WalletForm;
 
 public abstract class JoinstrFormController extends BaseController {
 
-    public JoinstrForm joinstrForm;
+    private JoinstrForm joinstrForm;
+
+    public WalletForm getWalletForm() {
+        return joinstrForm.getWalletForm();
+    }
 
     public JoinstrForm getJoinstrForm() {
         return joinstrForm;
