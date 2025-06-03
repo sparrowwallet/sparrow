@@ -24,15 +24,20 @@ public class SettingsController extends JoinstrFormController {
                 @Override
                 public void changed(ObservableValue<? extends String> observable,
                                     String oldValue, String newValue) {
-                    if(nostrRelayTextField.getText().isEmpty()) {
-                        nostrRelayTextField.setText("wss://nostr.fmt.wiz.biz");
-                    }
+                    setDefaultNostrRelayIfEmpty();
                     Config.get().setNostrRelay(nostrRelayTextField.getText());
                 }
             });
+            setDefaultNostrRelayIfEmpty();
 
         } catch(Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    public void setDefaultNostrRelayIfEmpty() {
+        if(nostrRelayTextField.getText().isEmpty()) {
+            nostrRelayTextField.setText("wss://nostr.fmt.wiz.biz");
         }
     }
 

@@ -3,36 +3,62 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
+<?import javafx.collections.FXCollections?>
 
-<BorderPane stylesheets="@joinstr.css, @../wallet/wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.NewPoolController">
+<?import com.sparrowwallet.sparrow.control.FiatLabel?>
+<?import com.sparrowwallet.drongo.BitcoinUnit?>
+<?import org.controlsfx.glyphfont.Glyph?>
+
+<?import tornadofx.control.Form?>
+<?import tornadofx.control.Fieldset?>
+<?import tornadofx.control.Field?>
+
+<BorderPane stylesheets="@joinstr.css, @../wallet/wallet.css, @../general.css" styleClass="send-form" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.joinstr.NewPoolController">
     <padding>
         <Insets top="30" right="30" bottom="30" left="30"/>
     </padding>
     <center>
         <VBox maxWidth="Infinity" fx:id="contentVBox" spacing="20">
-            <VBox maxWidth="Infinity" HBox.hgrow="ALWAYS">
                 <Label styleClass="sub-title">Create a new pool</Label>
+                <Form maxWidth="Infinity" style="-fx-max-width: 600px;">
+                    <Fieldset inputGrow="ALWAYS">
+                        <Field text="Pay to:">
+                            <Label fx:id="addressLabel" />
+                        </Field>
+                        <Field text="Label:">
+                            <TextField fx:id="labelField" promptText="Required" style="-fx-max-width: 250px;">
+                                <tooltip>
+                                    <Tooltip text="Required to label the transaction (privately in this wallet)"/>
+                                </tooltip>
+                            </TextField>
+                        </Field>
+                        <Field text="UTXO:">
+                            <ComboBox fx:id="utxosComboBox" styleClass="amount-unit" style="-fx-max-width: 150px;" onAction="#setUtxoAmount" />
+                            <TextField fx:id="amountField" disable="true" style="-fx-max-width: 100px;-fx-text-fill: white;" />
+                        </Field>
+                        <Field text="Denomination:" style="-fx-text-fill: #aaaaaa;">
+                            <TextField fx:id="denominationField" promptText="Required" style="-fx-max-width: 100px;-fx-background-color: #444444; -fx-text-fill: white; -fx-prompt-text-fill: #888888;">
+                                <tooltip>
+                                    <Tooltip text="Required to create coinjoin pool"/>
+                                </tooltip>
+                            </TextField>
+                            <ComboBox fx:id="denominationUnit" styleClass="amount-unit" style="-fx-min-width: 60px;" onAction="#handleDenominationUnitChange">
+                                <items>
+                                    <FXCollections fx:factory="observableArrayList">
+                                        <BitcoinUnit fx:constant="BTC" />
+                                        <BitcoinUnit fx:constant="SATOSHIS" />
+                                    </FXCollections>
+                                </items>
+                            </ComboBox>
+                        </Field>
+                        <Field text="Number of Peers:" style="-fx-text-fill: #aaaaaa;">
+                            <TextField fx:id="peersField" promptText="Req." style="-fx-max-width: 50px;-fx-background-color: #444444; -fx-text-fill: white; -fx-prompt-text-fill: #888888;" />
+                        </Field>
+                        <Field>
+                            <ToggleButton fx:id="createButton" text="Create" onAction="#handleCreateButton" style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-cursor: hand;" />
+                        </Field>
+                    </Fieldset>
+                </Form>
             </VBox>
-
-            <GridPane hgap="10" vgap="15" maxWidth="600">
-                <padding>
-                    <Insets top="20"/>
-                </padding>
-
-                <Label text="Denomination (BTC):" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-text-fill: #aaaaaa;"/>
-                <TextField fx:id="denominationField" GridPane.rowIndex="0" GridPane.columnIndex="1"
-                    style="-fx-background-color: #444444; -fx-text-fill: white; -fx-prompt-text-fill: #888888;"
-                    promptText="Enter denomination"/>
-
-                <Label text="Number of Peers:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-text-fill: #aaaaaa;"/>
-                <TextField fx:id="peersField" GridPane.rowIndex="1" GridPane.columnIndex="1"
-                    style="-fx-background-color: #444444; -fx-text-fill: white; -fx-prompt-text-fill: #888888;"
-                    promptText="Enter number of peers"/>
-
-                <Button fx:id="createButton" text="Create" GridPane.rowIndex="2" GridPane.columnIndex="1"
-                    onAction="#handleCreateButton"
-                    style="-fx-background-color: #2196F3; -fx-text-fill: white; -fx-cursor: hand;"/>
-            </GridPane>
-        </VBox>
     </center>
 </BorderPane>
