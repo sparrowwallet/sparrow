@@ -182,9 +182,9 @@ public class WebcamService extends ScheduledService<Image> {
                             }
                         }
 
-                        //On Linux, formats not defined in WebcamPixelFormat are unsupported so ask for RGB3
+                        //On Linux, formats not defined in WebcamPixelFormat are unsupported
                         if(OsType.getCurrent() == OsType.UNIX && WebcamPixelFormat.fromFourCC(format.getFormatInfo().fourcc) == null) {
-                            format.getFormatInfo().fourcc = WebcamPixelFormat.PIX_FMT_RGB24.getFourCC();
+                            log.warn("Unsupported camera pixel format " + WebcamPixelFormat.fourCCToString(format.getFormatInfo().fourcc));
                         }
 
                         if(log.isDebugEnabled()) {
