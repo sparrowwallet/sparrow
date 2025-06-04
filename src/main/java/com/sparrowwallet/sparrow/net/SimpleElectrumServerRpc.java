@@ -39,7 +39,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
     @Override
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
-        if(Config.get().isLegacyServer()) {
+        if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER && Config.get().isLegacyServer()) {
             return getLegacyServerVersion(transport, clientName);
         }
 
