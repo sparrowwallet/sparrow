@@ -69,6 +69,7 @@ public class Config {
     private File coreDataDir;
     private String coreAuth;
     private boolean useLegacyCoreWallet;
+    private boolean legacyServer;
     private Server electrumServer;
     private List<Server> recentElectrumServers;
     private File electrumServerCert;
@@ -546,6 +547,15 @@ public class Config {
 
     public void setUseLegacyCoreWallet(boolean useLegacyCoreWallet) {
         this.useLegacyCoreWallet = useLegacyCoreWallet;
+        flush();
+    }
+
+    public boolean isLegacyServer() {
+        return legacyServer;
+    }
+
+    public void setLegacyServer(boolean legacyServer) {
+        this.legacyServer = legacyServer;
         flush();
     }
 

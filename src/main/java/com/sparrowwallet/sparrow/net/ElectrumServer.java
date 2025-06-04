@@ -76,7 +76,7 @@ public class ElectrumServer {
 
     private static final Set<String> sameHeightTxioScriptHashes = ConcurrentHashMap.newKeySet();
 
-    private final static Set<String> subscribedRecent = ConcurrentHashMap.newKeySet();
+    private final static Map<String, Integer> subscribedRecent = new ConcurrentHashMap<>();
 
     private final static Map<String, String> broadcastRecent = new ConcurrentHashMap<>();
 
@@ -1255,7 +1255,7 @@ public class ElectrumServer {
         if(!serverVersion.isEmpty()) {
             String server = serverVersion.getFirst().toLowerCase(Locale.ROOT);
             if(server.contains("electrumx")) {
-                return new ServerCapability(true, false);
+                return new ServerCapability(true, true);
             }
 
             if(server.startsWith("cormorant")) {
@@ -1311,6 +1311,10 @@ public class ElectrumServer {
                 } catch(Exception e) {
                     //ignore
                 }
+            }
+
+            if(server.startsWith("electrumpersonalserver")) {
+                return new ServerCapability(false, false);
             }
         }
 
@@ -1626,7 +1630,7 @@ public class ElectrumServer {
 
                 try {
                     electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
-                    subscribedRecent.addAll(subscribeScriptHashes.values());
+                    subscribeScriptHashes.values().forEach(scriptHash -> subscribedRecent.put(scriptHash, AppServices.getCurrentBlockHeight()));
                 } catch(ElectrumServerRpcException e) {
                     log.debug("Error subscribing to recent mempool transaction outputs", e);
                 }
@@ -2032,7 +2036,7 @@ public class ElectrumServer {
                     Config config = Config.get();
                     if(!isBlockstorm(totalBlocks) && !AppServices.isUsingProxy() && config.getServer().getProtocol().equals(Protocol.SSL)
                             && (config.getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER || config.getServerType() == ServerType.ELECTRUM_SERVER)) {
-                        subscribeRecent(electrumServer);
+                        subscribeRecent(electrumServer, AppServices.getCurrentBlockHeight() == null ? endHeight : AppServices.getCurrentBlockHeight());
                     }
 
                     Double nextBlockMedianFeeRate = null;
@@ -2048,13 +2052,14 @@ public class ElectrumServer {
             return Network.get() != Network.MAINNET && totalBlocks > 2;
         }
 
-        private void subscribeRecent(ElectrumServer electrumServer) {
-            Set<String> unsubscribeScriptHashes = new HashSet<>(subscribedRecent);
+        private void subscribeRecent(ElectrumServer electrumServer, int currentHeight) {
+            Set<String> unsubscribeScriptHashes = subscribedRecent.entrySet().stream().filter(entry -> entry.getValue() == null || entry.getValue() <= currentHeight - 3)
+                    .map(Map.Entry::getKey).collect(Collectors.toSet());
             unsubscribeScriptHashes.removeIf(subscribedScriptHashes::containsKey);
             if(!unsubscribeScriptHashes.isEmpty() && serverCapability.supportsUnsubscribe()) {
                 electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
             }
-            subscribedRecent.removeAll(unsubscribeScriptHashes);
+            subscribedRecent.keySet().removeAll(unsubscribeScriptHashes);
             broadcastRecent.clear();
 
             Map<String, String> subscribeScriptHashes = new HashMap<>();
@@ -2074,7 +2079,7 @@ public class ElectrumServer {
 
             if(!subscribeScriptHashes.isEmpty()) {
                 Random random = new Random();
-                int additionalRandomScriptHashes = random.nextInt(4) + 4;
+                int additionalRandomScriptHashes = random.nextInt(8);
                 for(int i = 0; i < additionalRandomScriptHashes; i++) {
                     byte[] randomScriptHashBytes = new byte[32];
                     random.nextBytes(randomScriptHashBytes);
@@ -2086,7 +2091,7 @@ public class ElectrumServer {
 
                 try {
                     electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
-                    subscribedRecent.addAll(subscribeScriptHashes.values());
+                    subscribeScriptHashes.values().forEach(scriptHash -> subscribedRecent.put(scriptHash, currentHeight));
                 } catch(ElectrumServerRpcException e) {
                     log.debug("Error subscribing to recent mempool transactions", e);
                 }
