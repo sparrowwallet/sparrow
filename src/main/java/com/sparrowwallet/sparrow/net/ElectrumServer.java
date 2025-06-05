@@ -2060,7 +2060,7 @@ public class ElectrumServer {
                 electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
             }
             subscribedRecent.keySet().removeAll(unsubscribeScriptHashes);
-            broadcastRecent.clear();
+            broadcastRecent.keySet().removeAll(unsubscribeScriptHashes);
 
             Map<String, String> subscribeScriptHashes = new HashMap<>();
             List<BlockTransaction> recentTransactions = electrumServer.getRecentMempoolTransactions();
