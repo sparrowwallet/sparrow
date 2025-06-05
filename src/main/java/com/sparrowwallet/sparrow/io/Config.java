@@ -52,6 +52,7 @@ public class Config {
     private boolean showDeprecatedImportExport = false;
     private boolean signBsmsExports = false;
     private boolean preventSleep = false;
+    private Boolean connectToBroadcast;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
@@ -348,6 +349,16 @@ public class Config {
 
     public void setPreventSleep(boolean preventSleep) {
         this.preventSleep = preventSleep;
+        flush();
+    }
+
+    public Boolean getConnectToBroadcast() {
+        return connectToBroadcast;
+    }
+
+    public void setConnectToBroadcast(Boolean connectToBroadcast) {
+        this.connectToBroadcast = connectToBroadcast;
+        flush();
     }
 
     public List<File> getRecentWalletFiles() {
