@@ -53,6 +53,7 @@ public class Config {
     private boolean signBsmsExports = false;
     private boolean preventSleep = false;
     private Boolean connectToBroadcast;
+    private Boolean suggestSendToMany;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
@@ -358,6 +359,15 @@ public class Config {
 
     public void setConnectToBroadcast(Boolean connectToBroadcast) {
         this.connectToBroadcast = connectToBroadcast;
+        flush();
+    }
+
+    public Boolean getSuggestSendToMany() {
+        return suggestSendToMany;
+    }
+
+    public void setSuggestSendToMany(Boolean suggestSendToMany) {
+        this.suggestSendToMany = suggestSendToMany;
         flush();
     }
 

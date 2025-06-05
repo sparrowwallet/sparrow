@@ -491,11 +491,35 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.setErrorDecorationEnabled(false);
     }
 
-    public Tab addPaymentTab() {
+    public void addPaymentTab() {
+        if(Config.get().getSuggestSendToMany() == null && openSendToMany()) {
+            return;
+        }
+
         Tab tab = getPaymentTab();
         paymentTabs.getTabs().add(tab);
         paymentTabs.getSelectionModel().select(tab);
-        return tab;
+    }
+
+    private boolean openSendToMany() {
+        try {
+            List<Payment> payments = getPayments();
+            if(payments.size() == 3) {
+                ConfirmationAlert confirmationAlert = new ConfirmationAlert("Open Send To Many?", "Open the Tools > Send To Many dialog to add multiple payments?", ButtonType.NO, ButtonType.YES);
+                Optional<ButtonType> optType = confirmationAlert.showAndWait();
+                if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
+                    Config.get().setSuggestSendToMany(optType.get() == ButtonType.YES);
+                }
+                if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                    Platform.runLater(() -> EventManager.get().post(new RequestSendToManyEvent(payments)));
+                    return true;
+                }
+            }
+        } catch(Exception e) {
+            //ignore
+        }
+
+        return false;
     }
 
     public Tab getPaymentTab() {
