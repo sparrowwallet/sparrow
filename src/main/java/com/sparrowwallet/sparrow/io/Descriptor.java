@@ -126,7 +126,7 @@ public class Descriptor implements WalletImport, WalletExport {
             } else if(line.startsWith("#")) {
                 continue;
             } else {
-                paragraph.append(line);
+                paragraph.append(line.replaceFirst("^.+:", "").trim());
             }
         }
 
