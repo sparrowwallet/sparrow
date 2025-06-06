@@ -240,6 +240,9 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                         setFormatFromScriptType(address.getScriptType());
                         if(wallet != null) {
                             setWalletNodeFromAddress(wallet, address);
+                            if(walletNode != null) {
+                                setFormatFromScriptType(getSigningScriptType(walletNode));
+                            }
                         }
                     } catch(InvalidAddressException e) {
                         //can't happen
@@ -273,7 +276,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             }
 
             if(wallet != null && walletNode != null) {
-                setFormatFromScriptType(wallet.getScriptType());
+                setFormatFromScriptType(getSigningScriptType(walletNode));
             } else {
                 formatGroup.selectToggle(formatElectrum);
             }
@@ -287,9 +290,13 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private boolean canSign(Wallet wallet) {
-        return wallet.getKeystores().get(0).hasPrivateKey()
-                || wallet.getKeystores().get(0).getSource() == KeystoreSource.HW_USB
-                || wallet.getKeystores().get(0).getWalletModel().isCard();
+        return wallet.getKeystores().getFirst().hasPrivateKey()
+                || wallet.getKeystores().getFirst().getSource() == KeystoreSource.HW_USB
+                || wallet.getKeystores().getFirst().getWalletModel().isCard();
+    }
+
+    private boolean canSignBip322(Wallet wallet) {
+        return wallet.getKeystores().getFirst().hasPrivateKey();
     }
 
     private Address getAddress()throws InvalidAddressException {
@@ -311,6 +318,11 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void setWalletNodeFromAddress(Wallet wallet, Address address) {
         walletNode = wallet.getWalletAddresses().get(address);
+    }
+
+    private ScriptType getSigningScriptType(WalletNode walletNode) {
+        ScriptType scriptType = walletNode.getWallet().getScriptType();
+        return canSign(walletNode.getWallet()) && !canSignBip322(walletNode.getWallet()) ? ScriptType.P2PKH : scriptType;
     }
 
     private void setFormatFromScriptType(ScriptType scriptType) {
@@ -345,7 +357,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         //Note we can expect a single keystore due to the check in the constructor
         Wallet signingWallet = walletNode.getWallet();
-        if(signingWallet.getKeystores().get(0).hasPrivateKey()) {
+        if(signingWallet.getKeystores().getFirst().hasPrivateKey()) {
             if(signingWallet.isEncrypted()) {
                 EventManager.get().post(new RequestOpenWalletsEvent());
             } else {
@@ -358,7 +370,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void signUnencryptedKeystore(Wallet decryptedWallet) {
         try {
-            Keystore keystore = decryptedWallet.getKeystores().get(0);
+            Keystore keystore = decryptedWallet.getKeystores().getFirst();
             ECKey privKey = keystore.getKey(walletNode);
             String signatureText;
             if(isBip322()) {
@@ -378,8 +390,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private void signDeviceKeystore(Wallet deviceWallet) {
-        List<String> fingerprints = List.of(deviceWallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
-        KeyDerivation fullDerivation = deviceWallet.getKeystores().get(0).getKeyDerivation().extend(walletNode.getDerivation());
+        List<String> fingerprints = List.of(deviceWallet.getKeystores().getFirst().getKeyDerivation().getMasterFingerprint());
+        KeyDerivation fullDerivation = deviceWallet.getKeystores().getFirst().getKeyDerivation().extend(walletNode.getDerivation());
         DeviceSignMessageDialog deviceSignMessageDialog = new DeviceSignMessageDialog(fingerprints, deviceWallet, message.getText().trim(), fullDerivation);
         deviceSignMessageDialog.initOwner(getDialogPane().getScene().getWindow());
         Optional<String> optSignature = deviceSignMessageDialog.showAndWait();
