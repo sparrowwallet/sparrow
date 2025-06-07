@@ -1,4 +1,4 @@
-package net.sourceforge.zbar;
+package com.sparrowwallet.sparrow.control;
 
 import com.github.doblon8.jzbar.Config;
 import com.github.doblon8.jzbar.Image;
