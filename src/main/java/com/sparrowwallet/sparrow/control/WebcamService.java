@@ -15,7 +15,6 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
-import net.sourceforge.zbar.ZBar;
 import org.openpnp.capture.*;
 import org.openpnp.capture.library.OpenpnpCaptureLibrary;
 import org.slf4j.Logger;
