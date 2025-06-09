@@ -7,6 +7,7 @@ import com.google.zxing.qrcode.QRCodeReader;
 import com.sparrowwallet.bokmakierie.Bokmakierie;
 import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.io.ZBar;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;

@@ -1,4 +1,4 @@
-package com.sparrowwallet.sparrow.control;
+package com.sparrowwallet.sparrow.io;
 
 import com.github.doblon8.jzbar.Config;
 import com.github.doblon8.jzbar.Image;
