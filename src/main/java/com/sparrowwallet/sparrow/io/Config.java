@@ -52,6 +52,8 @@ public class Config {
     private boolean showDeprecatedImportExport = false;
     private boolean signBsmsExports = false;
     private boolean preventSleep = false;
+    private Boolean connectToBroadcast;
+    private Boolean suggestSendToMany;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
@@ -69,6 +71,7 @@ public class Config {
     private File coreDataDir;
     private String coreAuth;
     private boolean useLegacyCoreWallet;
+    private boolean legacyServer;
     private Server electrumServer;
     private List<Server> recentElectrumServers;
     private File electrumServerCert;
@@ -355,6 +358,25 @@ public class Config {
 
     public void setPreventSleep(boolean preventSleep) {
         this.preventSleep = preventSleep;
+        flush();
+    }
+
+    public Boolean getConnectToBroadcast() {
+        return connectToBroadcast;
+    }
+
+    public void setConnectToBroadcast(Boolean connectToBroadcast) {
+        this.connectToBroadcast = connectToBroadcast;
+        flush();
+    }
+
+    public Boolean getSuggestSendToMany() {
+        return suggestSendToMany;
+    }
+
+    public void setSuggestSendToMany(Boolean suggestSendToMany) {
+        this.suggestSendToMany = suggestSendToMany;
+        flush();
     }
 
     public List<File> getRecentWalletFiles() {
@@ -554,6 +576,15 @@ public class Config {
 
     public void setUseLegacyCoreWallet(boolean useLegacyCoreWallet) {
         this.useLegacyCoreWallet = useLegacyCoreWallet;
+        flush();
+    }
+
+    public boolean isLegacyServer() {
+        return legacyServer;
+    }
+
+    public void setLegacyServer(boolean legacyServer) {
+        this.legacyServer = legacyServer;
         flush();
     }
 

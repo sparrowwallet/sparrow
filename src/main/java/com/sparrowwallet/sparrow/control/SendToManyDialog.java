@@ -13,8 +13,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.Clipboard;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
@@ -34,7 +32,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
     private final SpreadsheetView spreadsheetView;
     public static final AddressCellType ADDRESS = new AddressCellType();
 
-    public SendToManyDialog(BitcoinUnit bitcoinUnit) {
+    public SendToManyDialog(BitcoinUnit bitcoinUnit, List<Payment> payments) {
         this.bitcoinUnit = bitcoinUnit;
 
         final DialogPane dialogPane = new SendToManyDialogPane();
@@ -44,7 +42,8 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         dialogPane.setHeaderText("Send to many recipients by specifying addresses and amounts.\nOnly the first row's label is necessary.");
         dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
-        List<Payment> initialPayments = IntStream.range(0, 100).mapToObj(i -> new Payment(null, null, -1, false)).collect(Collectors.toList());
+        List<Payment> initialPayments = IntStream.range(0, 100)
+                .mapToObj(i -> i < payments.size() ? payments.get(i) : new Payment(null, null, -1, false)).collect(Collectors.toList());
         Grid grid = getGrid(initialPayments);
 
         spreadsheetView = new SpreadsheetView(grid) {

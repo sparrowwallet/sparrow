@@ -38,6 +38,6 @@ public class SubscriptionService {
             existingStatuses.add(status);
         }
 
-        Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash)));
+        Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash, status)));
     }
 }

@@ -35,10 +35,11 @@ public class ElectrumServerService {
     }
 
     @JsonRpcMethod("server.version")
-    public List<String> getServerVersion(@JsonRpcParam("client_name") String clientName, @JsonRpcParam("protocol_version") String protocolVersion) throws UnsupportedVersionException {
-        Version clientVersion = new Version(protocolVersion);
+    public List<String> getServerVersion(@JsonRpcParam("client_name") String clientName, @JsonRpcParam("protocol_version") String[] protocolVersion) throws UnsupportedVersionException {
+        String version = protocolVersion.length > 1 ? protocolVersion[1] : protocolVersion[0];
+        Version clientVersion = new Version(version);
         if(clientVersion.compareTo(VERSION) < 0) {
-            throw new UnsupportedVersionException(protocolVersion);
+            throw new UnsupportedVersionException(version);
         }
 
         return List.of(Cormorant.SERVER_NAME + " " + SparrowWallet.APP_VERSION, VERSION.get());

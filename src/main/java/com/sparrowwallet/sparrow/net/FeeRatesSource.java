@@ -35,6 +35,12 @@ public enum FeeRatesSource {
         }
 
         @Override
+        public Double getNextBlockMedianFeeRate() throws Exception {
+            String url = getApiUrl() + "v1/fees/mempool-blocks";
+            return requestNextBlockMedianFeeRate(this, url);
+        }
+
+        @Override
         public BlockSummary getBlockSummary(Sha256Hash blockId) throws Exception {
             String url = getApiUrl() + "v1/block/" + Utils.bytesToHex(blockId.getReversedBytes());
             return requestBlockSummary(this, url);
@@ -130,6 +136,10 @@ public enum FeeRatesSource {
 
     public abstract Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates);
 
+    public Double getNextBlockMedianFeeRate() throws Exception {
+        throw new UnsupportedOperationException(name + " does not support retrieving the next block median fee rate");
+    }
+
     public BlockSummary getBlockSummary(Sha256Hash blockId) throws Exception {
         throw new UnsupportedOperationException(name + " does not support block summaries");
     }
@@ -197,6 +207,30 @@ public enum FeeRatesSource {
 
     protected ThreeTierRates getThreeTierRates(String url, HttpClientService httpClientService) throws Exception {
         return httpClientService.requestJson(url, ThreeTierRates.class, null);
+    }
+
+    protected static Double requestNextBlockMedianFeeRate(FeeRatesSource feeRatesSource, String url) throws Exception {
+        if(log.isInfoEnabled()) {
+            log.info("Requesting next block median fee rate from " + url);
+        }
+
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        try {
+            MempoolBlock[] mempoolBlocks = feeRatesSource.requestMempoolBlocks(url, httpClientService);
+            return mempoolBlocks.length > 0 ? mempoolBlocks[0].medianFee : null;
+        } catch (Exception e) {
+            if(log.isDebugEnabled()) {
+                log.warn("Error retrieving next block median fee rate from " + url, e);
+            } else {
+                log.warn("Error retrieving next block median fee rate from " + url + " (" + e.getMessage() + ")");
+            }
+
+            throw e;
+        }
+    }
+
+    protected MempoolBlock[] requestMempoolBlocks(String url, HttpClientService httpClientService) throws Exception {
+        return httpClientService.requestJson(url, MempoolBlock[].class, null);
     }
 
     protected static BlockSummary requestBlockSummary(FeeRatesSource feeRatesSource, String url) throws Exception {
@@ -308,6 +342,8 @@ public enum FeeRatesSource {
             return new ThreeTierRates(recommended_fee_099/1000, recommended_fee_090/1000, recommended_fee_050/1000, null);
         }
     }
+
+    protected record MempoolBlock(Integer nTx, Double medianFee) {}
 
     protected record MempoolBlockSummary(String id, Integer height, Long timestamp, Integer tx_count, Integer weight, MempoolBlockSummaryExtras extras) {
         public Double getMedianFee() {

@@ -1462,6 +1462,10 @@ public class AppController implements Initializable {
     }
 
     public void sendToMany(ActionEvent event) {
+        sendToMany(Collections.emptyList());
+    }
+
+    private void sendToMany(List<Payment> initialPayments) {
         if(sendToManyDialog != null) {
             Stage stage = (Stage)sendToManyDialog.getDialogPane().getScene().getWindow();
             stage.setAlwaysOnTop(true);
@@ -1477,7 +1481,7 @@ public class AppController implements Initializable {
                 bitcoinUnit = wallet.getAutoUnit();
             }
 
-            sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog = new SendToManyDialog(bitcoinUnit, initialPayments);
             sendToManyDialog.initModality(Modality.NONE);
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
             sendToManyDialog = null;
@@ -3145,6 +3149,11 @@ public class AppController implements Initializable {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             verifyDownload(new ActionEvent(event.getFile(), rootStack));
         }
+    }
+
+    @Subscribe
+    public void requestSendToMany(RequestSendToManyEvent event) {
+        sendToMany(event.getPayments());
     }
 
     @Subscribe

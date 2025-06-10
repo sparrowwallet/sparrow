@@ -61,7 +61,7 @@ public class WebcamView {
         });
 
         service.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null) {
+            if(newValue != null && !service.getCancelRequested()) {
                 imageProperty.set(newValue);
             }
         });

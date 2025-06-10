@@ -76,6 +76,10 @@ public class ElectrumServer {
 
     private static final Set<String> sameHeightTxioScriptHashes = ConcurrentHashMap.newKeySet();
 
+    private final static Map<String, Integer> subscribedRecent = new ConcurrentHashMap<>();
+
+    private final static Map<String, String> broadcastRecent = new ConcurrentHashMap<>();
+
     private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static Cormorant cormorant;
@@ -936,6 +940,20 @@ public class ElectrumServer {
         return targetBlocksFeeRatesSats;
     }
 
+    public Double getNextBlockMedianFeeRate() {
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        if(feeRatesSource.supportsNetwork(Network.get())) {
+            try {
+                return feeRatesSource.getNextBlockMedianFeeRate();
+            } catch(Exception e) {
+                return null;
+            }
+        }
+
+        return null;
+    }
+
     public Map<Integer, Double> getDefaultFeeEstimates(List<Integer> targetBlocks) throws ServerException {
         try {
             Map<Integer, Double> targetBlocksFeeRatesBtcKb = electrumServerRpc.getFeeEstimates(getTransport(), targetBlocks);
@@ -1048,6 +1066,11 @@ public class ElectrumServer {
                 List<BlockTransactionHash> recentTransactions = feeRatesSource.getRecentMempoolTransactions();
                 Map<BlockTransactionHash, Transaction> setReferences = new HashMap<>();
                 setReferences.put(recentTransactions.getFirst(), null);
+                if(recentTransactions.size() > 1) {
+                    Random random = new Random();
+                    int halfSize = recentTransactions.size() / 2;
+                    setReferences.put(recentTransactions.get(halfSize == 1 ? 1 : random.nextInt(halfSize) + 1), null);
+                }
                 Map<Sha256Hash, BlockTransaction> transactions = getTransactions(null, setReferences, Collections.emptyMap());
                 return transactions.values().stream().filter(blxTx -> blxTx.getTransaction() != null).toList();
             } catch(Exception e) {
@@ -1232,11 +1255,11 @@ public class ElectrumServer {
         if(!serverVersion.isEmpty()) {
             String server = serverVersion.getFirst().toLowerCase(Locale.ROOT);
             if(server.contains("electrumx")) {
-                return new ServerCapability(true);
+                return new ServerCapability(true, true);
             }
 
             if(server.startsWith("cormorant")) {
-                return new ServerCapability(true, false, true);
+                return new ServerCapability(true, false, true, false);
             }
 
             if(server.startsWith("electrs/")) {
@@ -1248,7 +1271,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(electrsVersion);
                     if(version.compareTo(ELECTRS_MIN_BATCHING_VERSION) >= 0) {
-                        return new ServerCapability(true);
+                        return new ServerCapability(true, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1264,7 +1287,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(fulcrumVersion);
                     if(version.compareTo(FULCRUM_MIN_BATCHING_VERSION) >= 0) {
-                        return new ServerCapability(true);
+                        return new ServerCapability(true, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1283,15 +1306,19 @@ public class ElectrumServer {
                     Version version = new Version(mempoolElectrsVersion);
                     if(version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) > 0 ||
                             (version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) == 0 && (!mempoolElectrsSuffix.contains("dev") || mempoolElectrsSuffix.contains("dev-249848d")))) {
-                        return new ServerCapability(true, 25);
+                        return new ServerCapability(true, 25, false);
                     }
                 } catch(Exception e) {
                     //ignore
                 }
             }
+
+            if(server.startsWith("electrumpersonalserver")) {
+                return new ServerCapability(false, false);
+            }
         }
 
-        return new ServerCapability(false);
+        return new ServerCapability(false, true);
     }
 
     public static class ServerVersionService extends Service<List<String>> {
@@ -1456,8 +1483,9 @@ public class ElectrumServer {
                             if(elapsed > FEE_RATES_PERIOD) {
                                 Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
                                 Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
+                                Double nextBlockMedianFeeRate = electrumServer.getNextBlockMedianFeeRate();
                                 feeRatesRetrievedAt = System.currentTimeMillis();
-                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes);
+                                return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes, nextBlockMedianFeeRate);
                             }
                         } else {
                             closeConnection();
@@ -1582,6 +1610,31 @@ public class ElectrumServer {
             ElectrumServer electrumServer = new ElectrumServer();
             Set<MempoolRateSize> mempoolRateSizes = electrumServer.getMempoolRateSizes();
             EventManager.get().post(new MempoolRateSizesUpdatedEvent(mempoolRateSizes));
+        }
+
+        @Subscribe
+        public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
+            String status = broadcastRecent.remove(event.getScriptHash());
+            if(status != null && status.equals(event.getStatus())) {
+                Map<String, String> subscribeScriptHashes = new HashMap<>();
+                Random random = new Random();
+                int subscriptions = random.nextInt(2) + 1;
+                for(int i = 0; i < subscriptions; i++) {
+                    byte[] randomScriptHashBytes = new byte[32];
+                    random.nextBytes(randomScriptHashBytes);
+                    String randomScriptHash = Utils.bytesToHex(randomScriptHashBytes);
+                    if(!subscribedScriptHashes.containsKey(randomScriptHash)) {
+                        subscribeScriptHashes.put("m/" + subscribeScriptHashes.size(), randomScriptHash);
+                    }
+                }
+
+                try {
+                    electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
+                    subscribeScriptHashes.values().forEach(scriptHash -> subscribedRecent.put(scriptHash, AppServices.getCurrentBlockHeight()));
+                } catch(ElectrumServerRpcException e) {
+                    log.debug("Error subscribing to recent mempool transaction outputs", e);
+                }
+            }
         }
     }
 
@@ -1935,7 +1988,8 @@ public class ElectrumServer {
                 protected FeeRatesUpdatedEvent call() throws ServerException {
                     ElectrumServer electrumServer = new ElectrumServer();
                     Map<Integer, Double> blockTargetFeeRates = electrumServer.getFeeEstimates(AppServices.TARGET_BLOCKS_RANGE, false);
-                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, null);
+                    Double nextBlockMedianFeeRate = electrumServer.getNextBlockMedianFeeRate();
+                    return new FeeRatesUpdatedEvent(blockTargetFeeRates, null, nextBlockMedianFeeRate);
                 }
             };
         }
@@ -1982,10 +2036,14 @@ public class ElectrumServer {
                     Config config = Config.get();
                     if(!isBlockstorm(totalBlocks) && !AppServices.isUsingProxy() && config.getServer().getProtocol().equals(Protocol.SSL)
                             && (config.getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER || config.getServerType() == ServerType.ELECTRUM_SERVER)) {
-                        subscribeRecent(electrumServer);
+                        subscribeRecent(electrumServer, AppServices.getCurrentBlockHeight() == null ? endHeight : AppServices.getCurrentBlockHeight());
                     }
 
-                    return new BlockSummaryEvent(blockSummaryMap);
+                    Double nextBlockMedianFeeRate = null;
+                    if(!isBlockstorm(totalBlocks)) {
+                        nextBlockMedianFeeRate = electrumServer.getNextBlockMedianFeeRate();
+                    }
+                    return new BlockSummaryEvent(blockSummaryMap, nextBlockMedianFeeRate);
                 }
             };
         }
@@ -1994,43 +2052,72 @@ public class ElectrumServer {
             return Network.get() != Network.MAINNET && totalBlocks > 2;
         }
 
-        private final static Set<String> subscribedRecent = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
-        private void subscribeRecent(ElectrumServer electrumServer) {
-            Set<String> unsubscribeScriptHashes = new HashSet<>(subscribedRecent);
+        private void subscribeRecent(ElectrumServer electrumServer, int currentHeight) {
+            Set<String> unsubscribeScriptHashes = subscribedRecent.entrySet().stream().filter(entry -> entry.getValue() == null || entry.getValue() <= currentHeight - 3)
+                    .map(Map.Entry::getKey).collect(Collectors.toSet());
             unsubscribeScriptHashes.removeIf(subscribedScriptHashes::containsKey);
-            electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
-            subscribedRecent.removeAll(unsubscribeScriptHashes);
+            if(!unsubscribeScriptHashes.isEmpty() && serverCapability.supportsUnsubscribe()) {
+                electrumServerRpc.unsubscribeScriptHashes(transport, unsubscribeScriptHashes);
+            }
+            subscribedRecent.keySet().removeAll(unsubscribeScriptHashes);
+            broadcastRecent.keySet().removeAll(unsubscribeScriptHashes);
 
             Map<String, String> subscribeScriptHashes = new HashMap<>();
             List<BlockTransaction> recentTransactions = electrumServer.getRecentMempoolTransactions();
             for(BlockTransaction blkTx : recentTransactions) {
-                for(int i = 0; i < blkTx.getTransaction().getOutputs().size() && subscribeScriptHashes.size() < 10; i++) {
+                for(int i = 0; i < blkTx.getTransaction().getOutputs().size(); i++) {
                     TransactionOutput txOutput = blkTx.getTransaction().getOutputs().get(i);
                     String scriptHash = getScriptHash(txOutput);
                     if(!subscribedScriptHashes.containsKey(scriptHash)) {
-                        subscribeScriptHashes.put("m/" + i, getScriptHash(txOutput));
+                        subscribeScriptHashes.put("m/" + subscribeScriptHashes.size(), scriptHash);
+                    }
+                    if(Math.random() < 0.1d) {
+                        break;
                     }
                 }
             }
 
             if(!subscribeScriptHashes.isEmpty()) {
+                Random random = new Random();
+                int additionalRandomScriptHashes = random.nextInt(8);
+                for(int i = 0; i < additionalRandomScriptHashes; i++) {
+                    byte[] randomScriptHashBytes = new byte[32];
+                    random.nextBytes(randomScriptHashBytes);
+                    String randomScriptHash = Utils.bytesToHex(randomScriptHashBytes);
+                    if(!subscribedScriptHashes.containsKey(randomScriptHash)) {
+                        subscribeScriptHashes.put("m/" + subscribeScriptHashes.size(), randomScriptHash);
+                    }
+                }
+
                 try {
                     electrumServerRpc.subscribeScriptHashes(transport, null, subscribeScriptHashes);
-                    subscribedRecent.addAll(subscribeScriptHashes.values());
+                    subscribeScriptHashes.values().forEach(scriptHash -> subscribedRecent.put(scriptHash, currentHeight));
                 } catch(ElectrumServerRpcException e) {
                     log.debug("Error subscribing to recent mempool transactions", e);
                 }
             }
 
+            if(!recentTransactions.isEmpty()) {
+                broadcastRecent(electrumServer, recentTransactions);
+            }
+        }
+
+        private void broadcastRecent(ElectrumServer electrumServer, List<BlockTransaction> recentTransactions) {
             ScheduledService<Void> broadcastService = new ScheduledService<>() {
                 @Override
                 protected Task<Void> createTask() {
                     return new Task<>() {
                         @Override
                         protected Void call() throws Exception {
-                            for(BlockTransaction blkTx : recentTransactions) {
-                                electrumServer.broadcastTransaction(blkTx.getTransaction());
+                            if(!recentTransactions.isEmpty()) {
+                                Random random = new Random();
+                                if(random.nextBoolean()) {
+                                    BlockTransaction blkTx = recentTransactions.get(random.nextInt(recentTransactions.size()));
+                                    String scriptHash = getScriptHash(blkTx.getTransaction().getOutputs().getFirst());
+                                    String status = getScriptHashStatus(List.of(new ScriptHashTx(0, blkTx.getHashAsString(), blkTx.getFee())));
+                                    broadcastRecent.put(scriptHash, status);
+                                    electrumServer.broadcastTransaction(blkTx.getTransaction());
+                                }
                             }
                             return null;
                         }

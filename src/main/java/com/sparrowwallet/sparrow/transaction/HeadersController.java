@@ -1559,6 +1559,23 @@ public class HeadersController extends TransactionFormController implements Init
 
             signButtonBox.setVisible(false);
             broadcastButtonBox.setVisible(true);
+
+            if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
+                if(Config.get().getConnectToBroadcast() == null) {
+                    Platform.runLater(() -> {
+                        ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to broadcast?", "Connect to the configured server to broadcast the transaction?", ButtonType.NO, ButtonType.YES);
+                        Optional<ButtonType> optType = confirmationAlert.showAndWait();
+                        if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
+                            Config.get().setConnectToBroadcast(optType.get() == ButtonType.YES);
+                        }
+                        if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                            EventManager.get().post(new RequestConnectEvent());
+                        }
+                    });
+                } else if(Config.get().getConnectToBroadcast()) {
+                    Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
+                }
+            }
         }
     }
 

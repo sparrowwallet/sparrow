@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +39,29 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
     @Override
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
+        if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER && Config.get().isLegacyServer()) {
+            return getLegacyServerVersion(transport, clientName);
+        }
+
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            //Using 1.4 as the version number as EPS tries to parse this number to a float :(
             return new RetryLogic<List<String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
-                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).params(clientName, "1.4").execute());
+                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).params(clientName, supportedVersions).execute());
+        } catch(JsonRpcException e) {
+            return getLegacyServerVersion(transport, clientName);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server version", e);
+        }
+    }
+
+    private List<String> getLegacyServerVersion(Transport transport, String clientName) {
+        try {
+            //Fallback to using 1.4 as the version number as EPS tries to parse this number to a float :(
+            JsonRpcClient client = new JsonRpcClient(transport);
+            return new RetryLogic<List<String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).params(clientName, "1.4").execute());
+        } catch(Exception ex) {
+            throw new ElectrumServerRpcException("Error getting legacy server version", ex);
         }
     }
 

@@ -326,7 +326,7 @@ public class SendController extends WalletFormController implements Initializabl
         recentBlocksView.visibleProperty().bind(Bindings.equal(feeRatesSelectionProperty, FeeRatesSelection.RECENT_BLOCKS));
         List<BlockSummary> blockSummaries = AppServices.getBlockSummaries().values().stream().sorted().toList();
         if(!blockSummaries.isEmpty()) {
-            recentBlocksView.update(blockSummaries, AppServices.getDefaultFeeRate());
+            recentBlocksView.update(blockSummaries, AppServices.getNextBlockMedianFeeRate());
         }
 
         feeRatesSelectionProperty.addListener((_, oldValue, newValue) -> {
@@ -491,11 +491,35 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.setErrorDecorationEnabled(false);
     }
 
-    public Tab addPaymentTab() {
+    public void addPaymentTab() {
+        if(Config.get().getSuggestSendToMany() == null && openSendToMany()) {
+            return;
+        }
+
         Tab tab = getPaymentTab();
         paymentTabs.getTabs().add(tab);
         paymentTabs.getSelectionModel().select(tab);
-        return tab;
+    }
+
+    private boolean openSendToMany() {
+        try {
+            List<Payment> payments = getPayments();
+            if(payments.size() == 3) {
+                ConfirmationAlert confirmationAlert = new ConfirmationAlert("Open Send To Many?", "Open the Tools > Send To Many dialog to add multiple payments?", ButtonType.NO, ButtonType.YES);
+                Optional<ButtonType> optType = confirmationAlert.showAndWait();
+                if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
+                    Config.get().setSuggestSendToMany(optType.get() == ButtonType.YES);
+                }
+                if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                    Platform.runLater(() -> EventManager.get().post(new RequestSendToManyEvent(payments)));
+                    return true;
+                }
+            }
+        } catch(Exception e) {
+            //ignore
+        }
+
+        return false;
     }
 
     public Tab getPaymentTab() {
@@ -1205,7 +1229,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     public void broadcastNotification(Wallet decryptedWallet) {
         try {
-            PaymentCode paymentCode = decryptedWallet.getPaymentCode();
+            PaymentCode paymentCode = decryptedWallet.isMasterWallet() ? decryptedWallet.getPaymentCode() : decryptedWallet.getMasterWallet().getPaymentCode();
             PaymentCode externalPaymentCode = paymentCodeProperty.get();
             WalletTransaction walletTransaction = walletTransactionProperty.get();
             WalletNode input0Node = walletTransaction.getSelectedUtxos().entrySet().iterator().next().getValue();
@@ -1411,7 +1435,12 @@ public class SendController extends WalletFormController implements Initializabl
             setFeeRatePriority(getFeeRangeRate());
         }
         feeRange.updateTrackHighlight();
-        recentBlocksView.updateFeeRate(event.getTargetBlockFeeRates());
+
+        if(event.getNextBlockMedianFeeRate() != null) {
+            recentBlocksView.updateFeeRate(event.getNextBlockMedianFeeRate());
+        } else {
+            recentBlocksView.updateFeeRate(event.getTargetBlockFeeRates());
+        }
 
         if(updateDefaultFeeRate) {
             if(getFeeRate() != null && Long.valueOf((long)getFallbackFeeRate()).equals(getFeeRate().longValue())) {
@@ -1435,7 +1464,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void blockSummary(BlockSummaryEvent event) {
-        Platform.runLater(() -> recentBlocksView.update(AppServices.getBlockSummaries().values().stream().sorted().toList(), AppServices.getDefaultFeeRate()));
+        Platform.runLater(() -> recentBlocksView.update(AppServices.getBlockSummaries().values().stream().sorted().toList(), AppServices.getNextBlockMedianFeeRate()));
     }
 
     @Subscribe
