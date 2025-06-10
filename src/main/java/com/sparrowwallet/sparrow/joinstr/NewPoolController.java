@@ -1,5 +1,11 @@
 package com.sparrowwallet.sparrow.joinstr;
 
+import com.google.gson.Gson;
+import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.payjoin.Payjoin;
+
+import java.util.ArrayList;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Alert;
@@ -57,9 +63,20 @@ public class NewPoolController extends JoinstrFormController {
                 Alert alert = new Alert(AlertType.INFORMATION);
                 alert.setHeaderText(null);
                 assert event != null;
+
+                // Custom class for ease of use
+                JoinstrEvent joinstrEvent = new JoinstrEvent(event.getContent());
+
+                // Add pool to pool store in Config
+                ArrayList<JoinstrPool> pools = Config.get().getPoolStore();
+                JoinstrPool pool = new JoinstrPool(joinstrEvent.relay, joinstrEvent.public_key,joinstrEvent.denomination, joinstrEvent.peers, joinstrEvent.timeout);
+                pools.add(pool);
+                Config.get().setPoolStore(pools);
+
                 alert.setContentText("Pool created successfully!\nEvent ID: " + event.getId() +
                                      "\nDenomination: " + denomination + "\nPeers: " + peers);
                 alert.showAndWait();
+
             } catch (Exception e) {
                 showError("Error: " + e.getMessage());
             }

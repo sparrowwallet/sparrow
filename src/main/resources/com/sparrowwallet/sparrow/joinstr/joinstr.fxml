@@ -13,7 +13,7 @@
     <left>
         <VBox fx:id="joinstrMenuBox" styleClass="list-menu">
             <Pane styleClass="spacerV50" />
-            <ToggleButton VBox.vgrow="ALWAYS" text="New pool" contentDisplay="CENTER" styleClass="list-item" maxHeight="Infinity">
+            <ToggleButton VBox.vgrow="ALWAYS" text="New pool" contentDisplay="CENTER" styleClass="list-item" maxHeight="Infinity" toggleGroup="$joinstrMenu">
                 <toggleGroup>
                     <ToggleGroup fx:id="joinstrMenu" />
                 </toggleGroup>

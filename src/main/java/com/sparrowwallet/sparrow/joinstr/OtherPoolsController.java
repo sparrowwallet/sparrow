@@ -6,8 +6,10 @@ import com.sparrowwallet.sparrow.joinstr.control.JoinstrPoolList;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import nostr.event.impl.GenericEvent;
 
 public class OtherPoolsController extends JoinstrFormController {
 
@@ -60,6 +62,7 @@ public class OtherPoolsController extends JoinstrFormController {
     }
 
     private void addSamplePoolData() {
+
         // Create the two sample pools
         JoinstrPool pool1 = new JoinstrPool(
                 "relay.joinstr.xyz",
@@ -91,26 +94,12 @@ public class OtherPoolsController extends JoinstrFormController {
         }
     }
 
-    public static class JoinstrPool {
-        private final SimpleStringProperty relay;
-        private final SimpleStringProperty pubkey;
-        private final SimpleStringProperty denomination;
-        private final SimpleStringProperty peers;
-        private final SimpleStringProperty timeout;
-
-        public JoinstrPool(String relay, String pubkey, String denomination,
-                           String peers, String timeout) {
-            this.relay = new SimpleStringProperty(relay);
-            this.pubkey = new SimpleStringProperty(pubkey);
-            this.denomination = new SimpleStringProperty(denomination);
-            this.peers = new SimpleStringProperty(peers);
-            this.timeout = new SimpleStringProperty(timeout);
-        }
-
-        public String getRelay() { return relay.get(); }
-        public String getPubkey() { return pubkey.get(); }
-        public String getDenomination() { return denomination.get(); }
-        public String getPeers() { return peers.get(); }
-        public String getTimeout() { return timeout.get(); }
+    private void showError(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
+
 }

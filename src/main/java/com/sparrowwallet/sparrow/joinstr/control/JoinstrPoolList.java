@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.joinstr.control;
 
-import com.sparrowwallet.sparrow.joinstr.OtherPoolsController.JoinstrPool;
+import com.sparrowwallet.sparrow.joinstr.JoinstrPool;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
