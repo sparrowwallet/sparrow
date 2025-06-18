@@ -31,7 +31,6 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRDecoder;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRException;
 import com.sparrowwallet.sparrow.wallet.KeystoreController;
-import io.reactivex.Observable;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.ObjectProperty;
@@ -58,7 +57,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -203,8 +201,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
             Platform.runLater(() -> {
                 webcamResolutionProperty.set(null);
-                Observable.just(this).delay(500, TimeUnit.MILLISECONDS)
-                        .subscribe(_ -> webcamService.close(), throwable -> log.error("Error closing webcam", throwable));
+                webcamService.close();
             });
         });
 

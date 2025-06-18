@@ -39,6 +39,7 @@ public class WebcamService extends ScheduledService<Image> {
 
     private final Semaphore taskSemaphore = new Semaphore(1);
     private final AtomicBoolean cancelRequested = new AtomicBoolean(false);
+    private final AtomicBoolean captureClosed = new AtomicBoolean(false);
 
     private List<CaptureDevice> devices;
     private List<CaptureDevice> availableDevices;
@@ -112,7 +113,7 @@ public class WebcamService extends ScheduledService<Image> {
         return new Task<>() {
             @Override
             protected Image call() throws Exception {
-                if(cancelRequested.get() || isCancelled()) {
+                if(cancelRequested.get() || isCancelled() || captureClosed.get()) {
                     return null;
                 }
 
@@ -264,8 +265,11 @@ public class WebcamService extends ScheduledService<Image> {
         return cancelled;
     }
 
-    public void close() {
-        capture.close();
+    public synchronized void close() {
+        if(!captureClosed.get()) {
+            captureClosed.set(true);
+            capture.close();
+        }
     }
 
     public PropertyLimits getZoomLimits() {
