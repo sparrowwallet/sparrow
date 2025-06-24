@@ -192,7 +192,7 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             String record = "BSMS 1.0\n" +
-                    OutputDescriptor.getOutputDescriptor(wallet) +
+                    OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null) +
                     "\n/0/*,/1/*\n" +
                     wallet.getNode(KeyPurpose.RECEIVE).getChildren().iterator().next().getAddress();
             outputStream.write(record.getBytes(StandardCharsets.UTF_8));
