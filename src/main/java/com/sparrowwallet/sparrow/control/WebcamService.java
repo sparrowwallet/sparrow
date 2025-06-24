@@ -444,10 +444,27 @@ public class WebcamService extends ScheduledService<Image> {
     }
 
     public static <T extends Enum<T>> T getNearestEnum(T target, T[] values) {
-        int ordinal = target.ordinal();
-        return Stream.concat(ordinal > 0 ? Stream.of(values[ordinal - 1]) : Stream.empty(), ordinal < values.length - 1 ? Stream.of(values[ordinal + 1]) : Stream.empty())
-                .findFirst()
-                .orElse(null);
+        if(values == null || values.length == 0) {
+            return null;
+        }
+
+        int targetOrdinal = target.ordinal();
+        if(values.length == 1) {
+            return values[0];
+        }
+
+        for(int i = 0; i < values.length; i++) {
+            if(targetOrdinal < values[i].ordinal()) {
+                if(i == 0) {
+                    return values[0];
+                }
+                int diffToPrev = Math.abs(targetOrdinal - values[i - 1].ordinal());
+                int diffToNext = Math.abs(targetOrdinal - values[i].ordinal());
+                return diffToPrev <= diffToNext ? values[i - 1] : values[i];
+            }
+        }
+
+        return values[values.length - 1];
     }
 
     private static class CroppedDimension {
