@@ -491,9 +491,6 @@ extraJavaModuleInfo {
     module('com.jcraft:jzlib', 'com.jcraft.jzlib') {
         exports('com.jcraft.jzlib')
     }
-    module('jzbar-0.0.1.jar', 'com.github.doblon8.jzbar', '0.0.1') {
-        exports 'com.github.doblon8.jzbar'
-    }
 }
 
 kmpTorResourceFilterJar {
