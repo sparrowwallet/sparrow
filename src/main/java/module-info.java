@@ -56,5 +56,5 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.tern;
     requires com.sparrowwallet.lark;
     requires com.sun.jna;
-    requires com.github.doblon8.jzbar;
+    requires io.github.doblon8.jzbar;
 }

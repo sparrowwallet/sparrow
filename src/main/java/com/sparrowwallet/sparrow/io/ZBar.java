@@ -1,9 +1,9 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.github.doblon8.jzbar.Config;
-import com.github.doblon8.jzbar.Image;
-import com.github.doblon8.jzbar.ImageScanner;
-import com.github.doblon8.jzbar.SymbolType;
+import io.github.doblon8.jzbar.Config;
+import io.github.doblon8.jzbar.Image;
+import io.github.doblon8.jzbar.ImageScanner;
+import io.github.doblon8.jzbar.SymbolType;
 import com.sparrowwallet.sparrow.net.NativeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
