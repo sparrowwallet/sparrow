@@ -1034,6 +1034,10 @@ public class AppController implements Initializable {
             cmd.add(System.getProperty(JPACKAGE_APP_PATH));
             cmd.addAll(args.toParams());
             final ProcessBuilder builder = new ProcessBuilder(cmd);
+            if(OsType.getCurrent() == OsType.UNIX) {
+                Map<String, String> env = builder.environment();
+                env.remove("LD_LIBRARY_PATH");
+            }
             builder.start();
             quit(event);
         } catch(Exception e) {
