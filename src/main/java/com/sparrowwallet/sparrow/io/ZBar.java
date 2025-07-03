@@ -1,5 +1,9 @@
-package net.sourceforge.zbar;
+package com.sparrowwallet.sparrow.io;
 
+import io.github.doblon8.jzbar.Config;
+import io.github.doblon8.jzbar.Image;
+import io.github.doblon8.jzbar.ImageScanner;
+import io.github.doblon8.jzbar.SymbolType;
 import com.sparrowwallet.sparrow.net.NativeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.util.Iterator;
 
 public class ZBar {
     private static final Logger log = LoggerFactory.getLogger(ZBar.class);
@@ -41,19 +44,12 @@ public class ZBar {
                 image.setData(data);
 
                 try(ImageScanner scanner = new ImageScanner()) {
-                    scanner.setConfig(Symbol.NONE, Config.ENABLE, 0);
-                    scanner.setConfig(Symbol.QRCODE, Config.ENABLE, 1);
+                    scanner.setConfig(SymbolType.NONE, Config.ENABLE, 0);
+                    scanner.setConfig(SymbolType.QRCODE, Config.ENABLE, 1);
                     int result = scanner.scanImage(image);
                     if(result != 0) {
-                        try(SymbolSet results = scanner.getResults()) {
-                            Scan scan = null;
-                            for(Iterator<Symbol> iter = results.iterator(); iter.hasNext(); ) {
-                                try(Symbol symbol = iter.next()) {
-                                    scan = new Scan(getRawBytes(symbol.getData()), symbol.getData());
-                                }
-                            }
-                            return scan;
-                        }
+                        String symbolData = image.getFirstSymbol().getData();
+                        return new Scan(getRawBytes(symbolData), symbolData);
                     }
                 }
             }
