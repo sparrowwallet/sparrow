@@ -315,9 +315,6 @@ public class WebcamService extends ScheduledService<Image> {
     }
 
     private Result readQR(BufferedImage bufferedImage) {
-        LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
-        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
-
         try {
             com.sparrowwallet.bokmakierie.Result result = bokmakierie.scan(bufferedImage);
             if(result != null) {
@@ -335,6 +332,8 @@ public class WebcamService extends ScheduledService<Image> {
         }
 
         try {
+            LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
+            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
             return qrReader.decode(bitmap, Map.of(DecodeHintType.TRY_HARDER, Boolean.TRUE));
         } catch(ReaderException e) {
             // fall thru, it means there is no QR code in image
