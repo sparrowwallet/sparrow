@@ -188,7 +188,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
         });
         webcamDeviceProperty.addListener((_, _, newValue) -> {
-            Config.get().setWebcamDevice(newValue.getUniqueId());
+            Config.get().setWebcamDevice(newValue.getName());
+            Config.get().setWebcamDeviceId(newValue.getUniqueId());
             if(!Objects.equals(webcamService.getDevice(), newValue)) {
                 webcamService.cancel();
             }

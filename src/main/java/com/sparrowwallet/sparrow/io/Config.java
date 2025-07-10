@@ -63,6 +63,7 @@ public class Config {
     private boolean mirrorCapture = true;
     private boolean useZbar = true;
     private String webcamDevice;
+    private String webcamDeviceId;
     private ServerType serverType;
     private Server publicElectrumServer;
     private Server coreServer;
@@ -434,6 +435,15 @@ public class Config {
 
     public void setWebcamDevice(String webcamDevice) {
         this.webcamDevice = webcamDevice;
+        flush();
+    }
+
+    public String getWebcamDeviceId() {
+        return webcamDeviceId;
+    }
+
+    public void setWebcamDeviceId(String webcamDeviceId) {
+        this.webcamDeviceId = webcamDeviceId;
         flush();
     }
 
