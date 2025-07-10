@@ -144,6 +144,10 @@ public class WebcamService extends ScheduledService<Image> {
                             }
                         } else if(Config.get().getWebcamDevice() != null) {
                             for(CaptureDevice webcam : availableDevices) {
+                                if(webcam.getUniqueId().equals(Config.get().getWebcamDevice())) {
+                                    selectedDevice = webcam;
+                                    break;
+                                }
                                 if(webcam.getName().equals(Config.get().getWebcamDevice())) {
                                     selectedDevice = webcam;
                                     break;
