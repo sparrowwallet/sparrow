@@ -1,13 +1,15 @@
 // Import necessary Java libraries for encoding, cryptography, and utilities
-import java.nio.charset.StandardCharsets; // For UTF-8 charset handling
-import java.security.MessageDigest; // For SHA-256 hashing
-import java.security.SecureRandom; // For generating secure random IVs
-import java.util.Arrays; // For array operations like sorting
-import java.util.Base64; // For Base64 encoding/decoding
-import javax.crypto.Cipher; // For encryption/decryption operations
-import javax.crypto.SecretKeySpec; // For creating AES keys
-import javax.crypto.spec.GCMParameterSpec; // For GCM mode parameters
-import javax.crypto.AEADBadTagException; // For handling authentication failures in GCM
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.List;
+import javax.crypto.Cipher;
+import javax.crypto.SecretKeySpec;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.AEADBadTagException;
 
 // Define the public class for encrypted multisig descriptors
 public class EncryptedMultisigDescriptor {
@@ -18,6 +20,9 @@ public class EncryptedMultisigDescriptor {
 
     // Method to generate a symmetric key from two zpubs by hashing their sorted concatenation
     public static byte[] getPairKey(String zpub1, String zpub2) throws Exception {
+        if (zpub1 == null || zpub2 == null || zpub1.isEmpty() || zpub2.isEmpty()) {
+            throw new IllegalArgumentException("zpubs cannot be null or empty");
+        }
         String[] pair = {zpub1, zpub2}; // Create array of the two zpubs
         Arrays.sort(pair); // Sort to ensure consistent order regardless of input
         String concat = pair[0] + pair[1]; // Concatenate sorted zpubs
@@ -63,10 +68,70 @@ public class EncryptedMultisigDescriptor {
         }
     }
 
-    // Comment block: Example usage for encryption and decryption in a 2-of-3 setup
-    // Usage example: String[] zpubs = {...}; String descriptor = "...";
-    // String[] blobs = new String[3];
-    // blobs[0] = encrypt(descriptor, getPairKey(zpubs[0], zpubs[1]));
-    // etc.
-    // To decrypt: given zpubA, zpubB, try decrypt each blob with getPairKey(A,B), return first non-null.
+    // Generate all 2-of-3 combinations of zpubs
+    public static List<String[]> generatePairs(String[] zpubs) {
+        if (zpubs.length != 3) {
+            throw new IllegalArgumentException("Must provide exactly 3 zpubs");
+        }
+
+        // List to store combinations of pairs
+        List<String[]> pairs = new ArrayList<>();
+        pairs.add(new String[]{zpubs[0], zpubs[1]});
+        pairs.add(new String[]{zpubs[0], zpubs[2]});
+        pairs.add(new String[]{zpubs[1], zpubs[2]});
+
+        return pairs;
+    }
+
+    // Encrypt a descriptor string using 2-of-3 scheme
+    public static List<String> encrypt2of3(String descriptor, String[] zpubs) throws Exception {
+        // Generate 2-of-3 pairs
+        List<String[]> pairs = generatePairs(zpubs);
+
+        // List to store the encrypted blobs
+        List<String> blobs = new ArrayList<>();
+
+        // Encrypt using each pair
+        for (String[] pair : pairs) {
+            byte[] key = getPairKey(pair[0], pair[1]); // Generate symmetric key for the pair
+            String blob = encrypt(descriptor, key);    // Encrypt using that key
+            blobs.add(blob);
+        }
+
+        return blobs; // Return list of encrypted blobs
+    }
+
+    // Decrypt an encrypted blob using 2-of-3 scheme
+    public static String decrypt2of3(String blob, String[] zpubs) throws Exception {
+        // Generate 2-of-3 pairs
+        List<String[]> pairs = generatePairs(zpubs);
+
+        // Try decrypting using each pair
+        for (String[] pair : pairs) {
+            byte[] key = getPairKey(pair[0], pair[1]); // Generate symmetric key for the pair
+            String descriptor = decrypt(blob, key);   // Attempt to decrypt
+
+            if (descriptor != null) { // If successful, return the descriptor
+                return descriptor;
+            }
+        }
+
+        // If no pair works, throw an exception
+        throw new SecurityException("Failed to decrypt blob with given zpubs");
+    }
+
+    // Example flow for encryption and decryption of 2-of-3
+    public static void twoOfThreeFlow(String[] zpubs, String descriptor) throws Exception {
+        // 1. Encrypt descriptor using 2-of-3 scheme
+        List<String> blobs = encrypt2of3(descriptor, zpubs);
+        System.out.println("Encrypted blobs:");
+        for (String blob : blobs) {
+            System.out.println(blob);
+        }
+
+        // 2. Attempt decryption using any valid pair
+        System.out.println("\nAttempting decryption:");
+        String result = decrypt2of3(blobs.get(0), zpubs); // Test with the first blob
+        System.out.println("Decrypted result: " + result);
+    }
 }
