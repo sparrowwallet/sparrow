@@ -178,6 +178,7 @@ public class SendController extends WalletFormController implements Initializabl
                 setFiatFeeAmount(AppServices.getFiatCurrencyExchangeRate(), getFeeValueSats());
             }
 
+            createButton.setDisable(isInsufficientFeeRate());
             setTargetBlocks(getTargetBlocks());
             updateTransaction();
         }
@@ -456,8 +457,8 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() == null || getFeeValueSats() == 0),
-                (Control c, String newValue) -> ValidationResult.fromWarningIf( c, "Insufficient Fee Rate", isInsufficientFeeRate())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", isInsufficientFeeRate()),
+                (Control c, String newValue) -> ValidationResult.fromWarningIf( c, "Fee Rate Below Minimum", isBelowMinimumFeeRate())
         ));
 
         validationSupport.setErrorDecorationEnabled(false);
@@ -862,8 +863,12 @@ public class SendController extends WalletFormController implements Initializabl
         return AppServices.getMempoolHistogram();
     }
 
-    public boolean isInsufficientFeeRate() {
+    public boolean isBelowMinimumFeeRate() {
         return walletTransactionProperty.get() != null && walletTransactionProperty.get().getFeeRate() < AppServices.getMinimumRelayFeeRate();
+    }
+
+    public boolean isInsufficientFeeRate() {
+        return getFeeValueSats() == null || getFeeValueSats() == 0;
     }
 
     private void setFeeRate(Double feeRateAmt) {
