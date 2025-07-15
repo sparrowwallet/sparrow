@@ -456,8 +456,8 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() != null && getFeeValueSats() == 0),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee Rate", isInsufficientFeeRate())
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() == null || getFeeValueSats() == 0),
+                (Control c, String newValue) -> ValidationResult.fromWarningIf( c, "Insufficient Fee Rate", isInsufficientFeeRate())
         ));
 
         validationSupport.setErrorDecorationEnabled(false);

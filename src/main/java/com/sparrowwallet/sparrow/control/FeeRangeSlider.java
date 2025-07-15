@@ -1,24 +1,16 @@
 package com.sparrowwallet.sparrow.control;
 
-import static com.sparrowwallet.sparrow.AppServices.DOUBLE_FEE_RATES_RANGE;
-import static com.sparrowwallet.sparrow.AppServices.FEE_RATES_RANGE;
-import static com.sparrowwallet.sparrow.AppServices.TARGET_BLOCKS_RANGE;
-import static com.sparrowwallet.sparrow.AppServices.getFallbackFeeRate;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.net.FeeRatesSource;
-
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.Slider;
 import javafx.util.StringConverter;
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class FeeRangeSlider extends Slider {
     private static final double FEE_RATE_SCROLL_INCREMENT = 0.01;
