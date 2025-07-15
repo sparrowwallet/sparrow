@@ -124,7 +124,7 @@ public enum ExchangeSource {
             return historicalRates;
         }
     },
-    COINGECKO("Coingecko", "No historical rates") {
+    COINGECKO("Coingecko", "Historical rates for the last 365 days") {
         @Override
         public List<Currency> getSupportedCurrencies() {
             return getRates().rates.entrySet().stream().filter(rate -> "fiat".equals(rate.getValue().type) && isValidISO4217Code(rate.getKey().toUpperCase(Locale.ROOT)))
@@ -166,6 +166,11 @@ public enum ExchangeSource {
         public Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end) {
             long startDate = start.getTime() / 1000;
             long endDate = end.getTime() / 1000;
+
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.YEAR, -1);
+            startDate = Math.max(cal.getTimeInMillis() / 1000, startDate);
+            endDate = Math.max(cal.getTimeInMillis() / 1000, endDate);
 
             String url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=" + currency.getCurrencyCode() + "&from=" + startDate + "&to=" + endDate;
 
