@@ -63,16 +63,14 @@ public class FeeRangeSlider extends Slider {
 
     public double getFeeRate() {
         double value = getValue();
-        // First range: 0.01, 0.02, 0.04, 0.08 and smooth values in between
-        if(value < 3) return 0.01 * Math.pow(2, value);
-        // Transition from 0.08 to 0.1 (smoothly, using factor 1.25)
-        if(value < 4) return 0.08 * Math.pow(1.25, value - 3);
-        // Second binary range: 0.1, 0.2, 0.4, 0.8 and smooth values in between
-        if(value < 7) return 0.1 * Math.pow(2, value - 4);
-        // Transition from 0.8 to 1.0 (smoothly, using factor 1.25)
-        if(value < 8) return 0.8 * Math.pow(1.25, value - 7);
-        // Third binary range: 1, 2, 4, 8, ... and smooth values in between
-        return Math.pow(2, value - 8);
+        // First range: 0.01, 0.05, 0.1
+        if(value < 1) return 0.01 + (0.05 - 0.01) * value;
+        if(value < 2) return 0.05 + (0.1 - 0.05) * (value - 1);
+        // Second range: 0.1, 0.5, 1
+        if(value < 3) return 0.1 + (0.5 - 0.1) * (value - 2);
+        if(value < 4) return 0.5 + (1.0 - 0.5) * (value - 3);
+        // Third range: 1, 2, 4, 8, ...
+        return Math.pow(2, value - 4 + 0) * 1.0;
     }
 
     public void setFeeRate(double feeRate) {
