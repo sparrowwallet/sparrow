@@ -900,13 +900,13 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private void setFeeRatePriority(Double feeRateAmt) {
+        feeRateAmt = Math.round(feeRateAmt * 100.0) / 100.0; // Round to 2 decimal places
         Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
-        Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
-            if(minFeeRate > 1.0 && feeRateAmt < minFeeRate) {
+            if(feeRateAmt > 0.01 && feeRateAmt < minFeeRate) {
                 feeRatePriority.setText("Below Minimum");
-                feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate are currently being purged from the default sized mempool"));
+                feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate can be purged from the default sized mempool"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
                 return;
@@ -922,6 +922,7 @@ public class SendController extends WalletFormController implements Initializabl
             }
         }
 
+        Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocks != null) {
             if(targetBlocks < FeeRatesSource.BLOCKS_IN_HALF_HOUR) {
                 Double maxFeeRate = FEE_RATES_RANGE.get(FEE_RATES_RANGE.size() - 1).doubleValue();

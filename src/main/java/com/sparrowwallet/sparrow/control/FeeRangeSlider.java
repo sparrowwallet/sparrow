@@ -1,16 +1,24 @@
 package com.sparrowwallet.sparrow.control;
 
+import static com.sparrowwallet.sparrow.AppServices.DOUBLE_FEE_RATES_RANGE;
+import static com.sparrowwallet.sparrow.AppServices.FEE_RATES_RANGE;
+import static com.sparrowwallet.sparrow.AppServices.TARGET_BLOCKS_RANGE;
+import static com.sparrowwallet.sparrow.AppServices.getFallbackFeeRate;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.net.FeeRatesSource;
+
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.Slider;
 import javafx.util.StringConverter;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class FeeRangeSlider extends Slider {
     private static final double FEE_RATE_SCROLL_INCREMENT = 0.01;
@@ -27,11 +35,11 @@ public class FeeRangeSlider extends Slider {
         setLabelFormatter(new StringConverter<>() {
             @Override
             public String toString(Double object) {
-                Long feeRate = LONG_FEE_RATES_RANGE.get(object.intValue());
-                if(isLongFeeRange() && feeRate >= 1000) {
+                Double feeRate = DOUBLE_FEE_RATES_RANGE.get(object.intValue());
+                if(isDoubleFeeRange() && feeRate >= 1000) {
                     return feeRate / 1000 + "k";
                 }
-                return Long.toString(feeRate);
+                return feeRate < 1 ? Double.toString(feeRate) : String.format("%.0f", feeRate);
             }
 
             @Override
@@ -51,10 +59,10 @@ public class FeeRangeSlider extends Slider {
         setOnScroll(event -> {
             if(event.getDeltaY() != 0) {
                 double newFeeRate = getFeeRate() + (event.getDeltaY() > 0 ? FEE_RATE_SCROLL_INCREMENT : -FEE_RATE_SCROLL_INCREMENT);
-                if(newFeeRate < LONG_FEE_RATES_RANGE.get(0)) {
-                    newFeeRate = LONG_FEE_RATES_RANGE.get(0);
-                } else if(newFeeRate > LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1)) {
-                    newFeeRate = LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1);
+                if(newFeeRate < DOUBLE_FEE_RATES_RANGE.get(0)) {
+                    newFeeRate = DOUBLE_FEE_RATES_RANGE.get(0);
+                } else if(newFeeRate > DOUBLE_FEE_RATES_RANGE.get(DOUBLE_FEE_RATES_RANGE.size() - 1)) {
+                    newFeeRate = DOUBLE_FEE_RATES_RANGE.get(DOUBLE_FEE_RATES_RANGE.size() - 1);
                 }
                 setFeeRate(newFeeRate);
             }
@@ -62,7 +70,17 @@ public class FeeRangeSlider extends Slider {
     }
 
     public double getFeeRate() {
-        return Math.pow(2.0, getValue());
+        double value = getValue();
+        // First range: 0.01, 0.02, 0.04, 0.08 and smooth values in between
+        if(value < 3) return 0.01 * Math.pow(2, value);
+        // Transition from 0.08 to 0.1 (smoothly, using factor 1.25)
+        if(value < 4) return 0.08 * Math.pow(1.25, value - 3);
+        // Second binary range: 0.1, 0.2, 0.4, 0.8 and smooth values in between
+        if(value < 7) return 0.1 * Math.pow(2, value - 4);
+        // Transition from 0.8 to 1.0 (smoothly, using factor 1.25)
+        if(value < 8) return 0.8 * Math.pow(1.25, value - 7);
+        // Third binary range: 1, 2, 4, 8, ... and smooth values in between
+        return Math.pow(2, value - 8);
     }
 
     public void setFeeRate(double feeRate) {
@@ -72,16 +90,18 @@ public class FeeRangeSlider extends Slider {
     }
 
     private void updateMaxFeeRange(double value) {
-        if(value >= getMax() && !isLongFeeRange()) {
-            setMax(LONG_FEE_RATES_RANGE.size() - 1);
+        if(value >= getMax() && !isDoubleFeeRange()) {
+            setMin(FEE_RATES_RANGE.size() - 2);
+            setMax(DOUBLE_FEE_RATES_RANGE.size() - 1);
             updateTrackHighlight();
-        } else if(value == getMin() && isLongFeeRange()) {
+        } else if(value == getMin() && isDoubleFeeRange()) {
+            setMin(0);
             setMax(FEE_RATES_RANGE.size() - 1);
             updateTrackHighlight();
         }
     }
 
-    private boolean isLongFeeRange() {
+    private boolean isDoubleFeeRange() {
         return getMax() > FEE_RATES_RANGE.size() - 1;
     }
 
@@ -138,8 +158,8 @@ public class FeeRangeSlider extends Slider {
 
     private int getPercentageOfFeeRange(Double feeRate) {
         double index = Math.log(feeRate) / Math.log(2);
-        if(isLongFeeRange()) {
-            index *= ((double)FEE_RATES_RANGE.size() / (LONG_FEE_RATES_RANGE.size())) * 0.99;
+        if(isDoubleFeeRange()) {
+            index *= ((double)FEE_RATES_RANGE.size() / (DOUBLE_FEE_RATES_RANGE.size())) * 0.99;
         }
         return (int)Math.round(index * 10.0);
     }
