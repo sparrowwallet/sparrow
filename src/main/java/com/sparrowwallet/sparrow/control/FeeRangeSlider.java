@@ -29,7 +29,7 @@ public class FeeRangeSlider extends Slider {
             public String toString(Double object) {
                 Double feeRate = DOUBLE_FEE_RATES_RANGE.get(object.intValue());
                 if(isDoubleFeeRange() && feeRate >= 1000) {
-                    return feeRate / 1000 + "k";
+                    return feeRate.longValue() / 1000 + "k";
                 }
                 return feeRate < 1 ? Double.toString(feeRate) : String.format("%.0f", feeRate);
             }
