@@ -91,8 +91,8 @@ public class AppServices {
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
 
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
-    public static final List<Long> LONG_FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L, 2048L, 4096L, 8192L);
-    public static final List<Long> FEE_RATES_RANGE = LONG_FEE_RATES_RANGE.subList(0, LONG_FEE_RATES_RANGE.size() - 3);
+    public static final List<Double> DOUBLE_FEE_RATES_RANGE = List.of(0.01D, 0.05D, 0.1D, 0.5, 1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D);
+    public static final List<Double> FEE_RATES_RANGE = DOUBLE_FEE_RATES_RANGE.subList(0, DOUBLE_FEE_RATES_RANGE.size() - 8);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
 
