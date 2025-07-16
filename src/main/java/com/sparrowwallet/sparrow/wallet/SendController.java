@@ -950,7 +950,7 @@ public class SendController extends WalletFormController implements Initializabl
         Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
         if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
-            if(feeRateAmt > 0.01 && feeRateAmt < minFeeRate) {
+            if(feeRateAmt > getMinimumRelayFeeRate() && feeRateAmt < minFeeRate) {
                 feeRatePriority.setText("Below Minimum");
                 feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate can be purged from mempool"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
@@ -971,7 +971,7 @@ public class SendController extends WalletFormController implements Initializabl
         Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocks != null) {
             if(targetBlocks < FeeRatesSource.BLOCKS_IN_HALF_HOUR) {
-                Double maxFeeRate = FEE_RATES_RANGE.get(FEE_RATES_RANGE.size() - 1).doubleValue();
+                Double maxFeeRate = getFeeRatesRange().get(getFeeRatesRange().size() - 1).doubleValue();
                 Double highestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(0));
                 if(highestBlocksRate < maxFeeRate && feeRateAmt > (highestBlocksRate + ((maxFeeRate - highestBlocksRate) / 10))) {
                     feeRatePriority.setText("Overpaid");

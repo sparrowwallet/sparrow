@@ -16,7 +16,6 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.DialogImage;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
@@ -71,6 +70,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
 
@@ -91,8 +91,11 @@ public class AppServices {
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
 
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
-    public static final List<Double> DOUBLE_FEE_RATES_RANGE = List.of(0.01D, 0.05D, 0.1D, 0.5, 1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D);
-    public static final List<Double> FEE_RATES_RANGE = DOUBLE_FEE_RATES_RANGE.subList(0, DOUBLE_FEE_RATES_RANGE.size() - 8);
+    public static final List<Double> DOUBLE_FEE_MIN_RATES_RANGE = List.of(0.01D, 0.05D, 0.1D, 0.5);
+    public static final List<Double> DOUBLE_FEE_RATES_RANGE = List.of(1D, 2D, 4D, 8D, 16D, 32D, 64D, 128D, 256D, 512D, 1024D, 2048D, 4096D, 8192D);
+    public static final List<Double> FULL_DOUBLE_FEE_RATES_RANGE = Stream.concat(DOUBLE_FEE_MIN_RATES_RANGE.stream(), DOUBLE_FEE_RATES_RANGE.stream()).toList();
+    public static final List<Double> FEE_RATES_RANGE = DOUBLE_FEE_RATES_RANGE.subList(0, DOUBLE_FEE_RATES_RANGE.size() - 4);
+    public static final List<Double> FULL_FEE_RATES_RANGE = FULL_DOUBLE_FEE_RATES_RANGE.subList(0, FULL_DOUBLE_FEE_RATES_RANGE.size() - 8);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
 
@@ -792,6 +795,24 @@ public class AppServices {
         return minimumRelayFeeRate == null ? Transaction.DEFAULT_MIN_RELAY_FEE : minimumRelayFeeRate;
     }
 
+    public static List<Double> getDoubleFeeRatesRange() {
+        if (AppServices.getMinimumRelayFeeRate() == 0.01) {
+            return FULL_DOUBLE_FEE_RATES_RANGE;
+        }
+        return DOUBLE_FEE_RATES_RANGE;
+    }
+
+    public static List<Double> getFeeRatesRange() {
+        if (isFullFeeRatesRange()) {
+            return FULL_FEE_RATES_RANGE;
+        }
+        return FEE_RATES_RANGE;
+    }
+
+    public static boolean isFullFeeRatesRange() {
+        return getDoubleFeeRatesRange().size() == FULL_DOUBLE_FEE_RATES_RANGE.size();
+    }
+
     public static CurrencyRate getFiatCurrencyExchangeRate() {
         return fiatCurrencyExchangeRate;
     }
@@ -1219,7 +1240,7 @@ public class AppServices {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
-        minimumRelayFeeRate = Math.max(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
+        minimumRelayFeeRate = Math.min(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
 
