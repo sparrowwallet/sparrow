@@ -952,7 +952,7 @@ public class SendController extends WalletFormController implements Initializabl
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
             if(feeRateAmt > 0.01 && feeRateAmt < minFeeRate) {
                 feeRatePriority.setText("Below Minimum");
-                feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate can be purged from the default sized mempool"));
+                feeRatePriority.setTooltip(new Tooltip("Transactions at this fee rate can be purged from mempool"));
                 feeRatePriorityGlyph.setStyle("-fx-text-fill: #a0a1a7cc");
                 feeRatePriorityGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
                 return;
