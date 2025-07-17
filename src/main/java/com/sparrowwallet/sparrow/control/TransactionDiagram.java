@@ -225,7 +225,6 @@ public class TransactionDiagram extends GridPane {
         GridPane.setConstraints(outputsPane, 5, 0);
 
         getChildren().clear();
-        getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
 
         List<Payment> userPayments = getUserPayments();
         if(!isFinal() && userPayments.size() > 1) {
@@ -233,6 +232,8 @@ public class TransactionDiagram extends GridPane {
             GridPane.setConstraints(totalsPane, 2, 0, 3, 1);
             getChildren().add(totalsPane);
         }
+
+        getChildren().addAll(inputsTypePane, inputsPane, inputsLinesPane, txPane, outputsLinesPane, outputsPane);
 
         if(contextMenu == null) {
             contextMenu = new ContextMenu();

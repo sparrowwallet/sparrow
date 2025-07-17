@@ -398,14 +398,14 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
         double feeRate = feeRange.getFeeRate();
         long fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate);
-        if(feeRate == Transaction.DEFAULT_MIN_RELAY_FEE) {
+        if(feeRate == AppServices.getMinimumRelayFeeRate() && feeRate > 0d) {
             fee++;
         }
 
         long dustThreshold = destAddress.getScriptType().getDustThreshold(sweepOutput, Transaction.DUST_RELAY_TX_FEE);
         if(total - fee <= dustThreshold) {
-            feeRate = Transaction.DEFAULT_MIN_RELAY_FEE;
-            fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate) + 1;
+            feeRate = AppServices.getMinimumRelayFeeRate();
+            fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate) + (feeRate > 0d ? 1 : 0);
 
             if(total - fee <= dustThreshold) {
                 AppServices.showErrorDialog("Insufficient funds", "The unspent outputs for this private key contain insufficient funds to spend (" + total + " sats).");

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
@@ -83,6 +84,7 @@ public class Config {
     private int maxPageSize = DEFAULT_PAGE_SIZE;
     private boolean usePayNym;
     private boolean mempoolFullRbf;
+    private double minRelayFeeRate = Transaction.DEFAULT_MIN_RELAY_FEE;
     private Double appWidth;
     private Double appHeight;
 
@@ -706,6 +708,14 @@ public class Config {
     public void setMempoolFullRbf(boolean mempoolFullRbf) {
         this.mempoolFullRbf = mempoolFullRbf;
         flush();
+    }
+
+    public double getMinRelayFeeRate() {
+        return minRelayFeeRate;
+    }
+
+    public void setMinRelayFeeRate(double minRelayFeeRate) {
+        this.minRelayFeeRate = minRelayFeeRate;
     }
 
     public Double getAppWidth() {

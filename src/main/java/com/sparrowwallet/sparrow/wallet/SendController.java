@@ -484,7 +484,6 @@ public class SendController extends WalletFormController implements Initializabl
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
         validationSupport.registerValidator(fee, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", userFeeSet.get() && insufficientInputsProperty.get()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee", getFeeValueSats() != null && getFeeValueSats() == 0),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Fee Rate", isInsufficientFeeRate())
         ));
 
@@ -606,10 +605,11 @@ public class SendController extends WalletFormController implements Initializabl
         try {
             List<Payment> payments = transactionPayments != null ? transactionPayments : getPayments();
             updateOptimizationButtons(payments);
-            if(!userFeeSet.get() || (getFeeValueSats() != null && getFeeValueSats() > 0)) {
+            if(!userFeeSet.get() || getFeeValueSats() != null) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 double feeRate = getUserFeeRate();
+                double minRelayFeeRate = AppServices.getMinimumRelayFeeRate();
                 Integer currentBlockHeight = AppServices.getCurrentBlockHeight();
                 boolean groupByAddress = Config.get().isGroupByAddress();
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
@@ -617,7 +617,7 @@ public class SendController extends WalletFormController implements Initializabl
 
                 walletTransactionService = new WalletTransactionService(addressNodeMap, wallet, getUtxoSelectors(payments), getTxoFilters(),
                         payments, opReturnsList, excludedChangeNodes,
-                        feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, replacedTransaction);
+                        feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, replacedTransaction);
                 walletTransactionService.setOnSucceeded(event -> {
                     if(!walletTransactionService.isIgnoreResult()) {
                         walletTransactionProperty.setValue(walletTransactionService.getValue());
@@ -688,6 +688,7 @@ public class SendController extends WalletFormController implements Initializabl
         private final Set<WalletNode> excludedChangeNodes;
         private final double feeRate;
         private final double longTermFeeRate;
+        private final double minRelayFeeRate;
         private final Long fee;
         private final Integer currentBlockHeight;
         private final boolean groupByAddress;
@@ -698,7 +699,8 @@ public class SendController extends WalletFormController implements Initializabl
         public WalletTransactionService(Map<Wallet, Map<Address, WalletNode>> addressNodeMap,
                                         Wallet wallet, List<UtxoSelector> utxoSelectors, List<TxoFilter> txoFilters,
                                         List<Payment> payments, List<byte[]> opReturns, Set<WalletNode> excludedChangeNodes,
-                                        double feeRate, double longTermFeeRate, Long fee, Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, BlockTransaction replacedTransaction) {
+                                        double feeRate, double longTermFeeRate, double minRelayFeeRate, Long fee,
+                                        Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, BlockTransaction replacedTransaction) {
             this.addressNodeMap = addressNodeMap;
             this.wallet = wallet;
             this.utxoSelectors = utxoSelectors;
@@ -708,6 +710,7 @@ public class SendController extends WalletFormController implements Initializabl
             this.excludedChangeNodes = excludedChangeNodes;
             this.feeRate = feeRate;
             this.longTermFeeRate = longTermFeeRate;
+            this.minRelayFeeRate = minRelayFeeRate;
             this.fee = fee;
             this.currentBlockHeight = currentBlockHeight;
             this.groupByAddress = groupByAddress;
@@ -747,7 +750,7 @@ public class SendController extends WalletFormController implements Initializabl
                 private WalletTransaction getWalletTransaction() throws InsufficientFundsException {
                     updateMessage("Selecting UTXOs...");
                     WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, excludedChangeNodes,
-                            feeRate, longTermFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs);
+                            feeRate, longTermFeeRate, minRelayFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs);
                     updateMessage("Deriving keys...");
                     walletTransaction.updateAddressNodeMap(addressNodeMap, walletTransaction.getWallet());
                     return walletTransaction;
@@ -878,7 +881,7 @@ public class SendController extends WalletFormController implements Initializabl
      * @return the fee rate to use when constructing a transaction
      */
     public Double getUserFeeRate() {
-        return (userFeeSet.get() ? Transaction.DEFAULT_MIN_RELAY_FEE : getFeeRate());
+        return (userFeeSet.get() ? AppServices.getMinimumRelayFeeRate() : getFeeRate());
     }
 
     public Double getFeeRate() {
@@ -942,7 +945,6 @@ public class SendController extends WalletFormController implements Initializabl
 
     private void setFeeRatePriority(Double feeRateAmt) {
         Map<Integer, Double> targetBlocksFeeRates = getTargetBlocksFeeRates();
-        Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocksFeeRates.get(Integer.MAX_VALUE) != null) {
             Double minFeeRate = targetBlocksFeeRates.get(Integer.MAX_VALUE);
             if(minFeeRate > 1.0 && feeRateAmt < minFeeRate) {
@@ -963,9 +965,10 @@ public class SendController extends WalletFormController implements Initializabl
             }
         }
 
+        Integer targetBlocks = getTargetBlocks(feeRateAmt);
         if(targetBlocks != null) {
             if(targetBlocks < FeeRatesSource.BLOCKS_IN_HALF_HOUR) {
-                Double maxFeeRate = FEE_RATES_RANGE.get(FEE_RATES_RANGE.size() - 1).doubleValue();
+                Double maxFeeRate = AppServices.getFeeRatesRange().getLast();
                 Double highestBlocksRate = targetBlocksFeeRates.get(TARGET_BLOCKS_RANGE.get(0));
                 if(highestBlocksRate < maxFeeRate && feeRateAmt > (highestBlocksRate + ((maxFeeRate - highestBlocksRate) / 10))) {
                     feeRatePriority.setText("Overpaid");
@@ -1243,11 +1246,13 @@ public class SendController extends WalletFormController implements Initializabl
             List<UtxoSelector> utxoSelectors = List.of(new PresetUtxoSelector(walletTransaction.getSelectedUtxos().keySet(), true, false));
             Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
             double feeRate = getUserFeeRate();
+            Double minRelayFeeRate = AppServices.getMinimumRelayFeeRate();
             Integer currentBlockHeight = AppServices.getCurrentBlockHeight();
             boolean groupByAddress = Config.get().isGroupByAddress();
             boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
 
-            WalletTransaction finalWalletTx = decryptedWallet.createWalletTransaction(utxoSelectors, getTxoFilters(), walletTransaction.getPayments(), List.of(blindedPaymentCode), excludedChangeNodes, feeRate, getMinimumFeeRate(), userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs);
+            WalletTransaction finalWalletTx = decryptedWallet.createWalletTransaction(utxoSelectors, getTxoFilters(), walletTransaction.getPayments(), List.of(blindedPaymentCode),
+                    excludedChangeNodes, feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs);
             PSBT psbt = finalWalletTx.createPSBT();
             decryptedWallet.sign(psbt);
             decryptedWallet.finalise(psbt);
@@ -1633,6 +1638,14 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
         recentBlocksView.updateFeeRatesSource(event.getFeeRateSource());
+    }
+
+    @Subscribe
+    public void connection(ConnectionEvent event) {
+        if(!Objects.equals(event.getMinimumRelayFeeRate(), event.getPreviousMinimumRelayFeeRate())) {
+            feeRange.updateFeeRange(event.getMinimumRelayFeeRate(), event.getPreviousMinimumRelayFeeRate());
+            updateTransaction();
+        }
     }
 
     private class PrivacyAnalysisTooltip extends VBox {

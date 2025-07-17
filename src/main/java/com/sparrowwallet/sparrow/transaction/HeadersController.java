@@ -1139,7 +1139,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         if(fee.getValue() > 0) {
             double feeRateAmt = fee.getValue() / headersForm.getTransaction().getVirtualSize();
-            if(feeRateAmt > AppServices.LONG_FEE_RATES_RANGE.get(AppServices.LONG_FEE_RATES_RANGE.size() - 1)) {
+            if(feeRateAmt > AppServices.getLongFeeRatesRange().getLast()) {
                 Optional<ButtonType> optType = AppServices.showWarningDialog("Very high fee rate!",
                         "This transaction pays a very high fee rate of " + String.format("%.0f", feeRateAmt) + " sats/vB.\n\nBroadcast this transaction?", ButtonType.YES, ButtonType.NO);
                 if(optType.isPresent() && optType.get() == ButtonType.NO) {
@@ -1225,9 +1225,17 @@ public class HeadersController extends TransactionFormController implements Init
 
             UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
             if(failMessage.startsWith("min relay fee not met")) {
-                AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the signed transaction is below the minimum " + format.getCurrencyFormat().format(AppServices.getMinimumRelayFeeRate()) + " sats/vB. " +
-                        "This usually happens because a keystore has created a signature that is larger than necessary.\n\n" +
-                        "You can solve this by recreating the transaction with a slightly increased fee rate.");
+                if(AppServices.getServerMinimumRelayFeeRate() != null && !AppServices.getServerMinimumRelayFeeRate().equals(AppServices.getMinimumRelayFeeRate())) {
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the signed transaction is below the minimum configured relay fee rate for the server of " +
+                            format.getCurrencyFormat().format(AppServices.getServerMinimumRelayFeeRate()) + " sats/vB.");
+                } else {
+                    Double minRelayFeeRate = AppServices.getServerMinimumRelayFeeRate() != null ? AppServices.getServerMinimumRelayFeeRate() : AppServices.getMinimumRelayFeeRate();
+                    AppServices.showErrorDialog("Error broadcasting transaction", "The fee rate for the signed transaction is below the minimum " + format.getCurrencyFormat().format(minRelayFeeRate) + " sats/vB. " +
+                            "This usually happens because a keystore has created a signature that is larger than necessary.\n\n" +
+                            "You can solve this by recreating the transaction with a slightly increased fee rate.");
+                }
+            } else if(failMessage.startsWith("dust")) {
+                AppServices.showErrorDialog("Error broadcasting transaction", "The server will not accept this transaction for broadcast due to its configured dust limit policy.");
             } else if(failMessage.startsWith("bad-txns-inputs-missingorspent")) {
                 AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error indicating some or all of the UTXOs this transaction is spending are missing or have already been spent.");
             } else if(failMessage.contains("mempool min fee not met")) {

@@ -91,8 +91,7 @@ public class AppServices {
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
 
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
-    public static final List<Long> LONG_FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L, 2048L, 4096L, 8192L);
-    public static final List<Long> FEE_RATES_RANGE = LONG_FEE_RATES_RANGE.subList(0, LONG_FEE_RATES_RANGE.size() - 3);
+    private static final List<Double> LONG_FEE_RATES_RANGE = List.of(1d, 2d, 4d, 8d, 16d, 32d, 64d, 128d, 256d, 512d, 1024d, 2048d, 4096d, 8192d);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
 
@@ -141,6 +140,8 @@ public class AppServices {
     private static final TreeMap<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
 
     private static Double minimumRelayFeeRate;
+
+    private static Double serverMinimumRelayFeeRate;
 
     private static CurrencyRate fiatCurrencyExchangeRate;
 
@@ -211,6 +212,7 @@ public class AppServices {
         preventSleepService = createPreventSleepService();
 
         onlineProperty.addListener(onlineServicesListener);
+        minimumRelayFeeRate = getConfiguredMinimumRelayFeeRate(config);
 
         if(config.getMode() == Mode.ONLINE) {
             if(config.requiresInternalTor()) {
@@ -750,6 +752,26 @@ public class AppServices {
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
     }
 
+    public static List<Double> getLongFeeRatesRange() {
+        if(minimumRelayFeeRate == null || minimumRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
+            return LONG_FEE_RATES_RANGE;
+        } else {
+            List<Double> longFeeRatesRange = new ArrayList<>();
+            longFeeRatesRange.add(minimumRelayFeeRate);
+            longFeeRatesRange.addAll(LONG_FEE_RATES_RANGE);
+            return longFeeRatesRange;
+        }
+    }
+
+    public static List<Double> getFeeRatesRange() {
+        if(minimumRelayFeeRate == null || minimumRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
+            return LONG_FEE_RATES_RANGE.subList(0, LONG_FEE_RATES_RANGE.size() - 3);
+        } else {
+            List<Double> longFeeRatesRange = getLongFeeRatesRange();
+            return longFeeRatesRange.subList(0, longFeeRatesRange.size() - 4);
+        }
+    }
+
     public static Double getNextBlockMedianFeeRate() {
         return nextBlockMedianFeeRate == null ? getDefaultFeeRate() : nextBlockMedianFeeRate;
     }
@@ -788,8 +810,16 @@ public class AppServices {
         });
     }
 
+    public static Double getConfiguredMinimumRelayFeeRate(Config config) {
+        return config.getMinRelayFeeRate() >= 0d && config.getMinRelayFeeRate() < Transaction.DEFAULT_MIN_RELAY_FEE ? config.getMinRelayFeeRate() : null;
+    }
+
     public static Double getMinimumRelayFeeRate() {
         return minimumRelayFeeRate == null ? Transaction.DEFAULT_MIN_RELAY_FEE : minimumRelayFeeRate;
+    }
+
+    public static Double getServerMinimumRelayFeeRate() {
+        return serverMinimumRelayFeeRate;
     }
 
     public static CurrencyRate getFiatCurrencyExchangeRate() {
@@ -1219,7 +1249,10 @@ public class AppServices {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
-        minimumRelayFeeRate = Math.max(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
+        if(getConfiguredMinimumRelayFeeRate(Config.get()) == null) {
+            minimumRelayFeeRate = event.getMinimumRelayFeeRate() == null ? Transaction.DEFAULT_MIN_RELAY_FEE : event.getMinimumRelayFeeRate();
+        }
+        serverMinimumRelayFeeRate = event.getMinimumRelayFeeRate();
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
 
