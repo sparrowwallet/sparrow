@@ -21,7 +21,7 @@
         <Insets top="10.0" bottom="10.0" />
     </padding>
     <columnConstraints>
-        <ColumnConstraints prefWidth="410" />
+        <ColumnConstraints prefWidth="410" hgrow="SOMETIMES" />
         <ColumnConstraints prefWidth="200" />
         <ColumnConstraints prefWidth="105" />
     </columnConstraints>

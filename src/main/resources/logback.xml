@@ -36,6 +36,7 @@
     <logger name="org.springframework.web.HttpLogging" level="OFF" />
     <logger name="org.springframework.web.socket.sockjs.client.SockJsClient" level="OFF" />
     <logger name="org.springframework.web.socket.sockjs.client.DefaultTransportRequest" level="OFF" />
+    <logger name="org.xbill.DNS.dnssec.DnsSecVerifier" level="ERROR" />
 
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator"/>
 

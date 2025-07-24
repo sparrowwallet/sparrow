@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.dns.DnsPayment;
+import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -206,7 +208,9 @@ public class TransactionDiagramLabel extends HBox {
         WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap().get(payment.getAddress()) : null;
 
         Glyph glyph = GlyphUtils.getOutputGlyph(transactionDiagram.getWalletTransaction(), payment);
-        String text = (toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ") + transactionDiagram.getSatsValue(payment.getAmount()) + " sats to " + payment.getAddress().toString();
+        DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(payment.getAddress());
+        String recipient = dnsPayment == null ? payment.getAddress().toString() : dnsPayment.toString();
+        String text = (toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ") + transactionDiagram.getSatsValue(payment.getAmount()) + " sats to " + recipient;
 
         return getOutputLabel(glyph, text);
     }
@@ -240,7 +244,7 @@ public class TransactionDiagramLabel extends HBox {
         icon.setGraphic(glyph);
 
         CopyableLabel label = new CopyableLabel();
-        label.setFont(Font.font("Roboto Mono Italic", 13));
+        label.setFont(Font.font("Fragment Mono Italic", 13));
         label.setText(text);
 
         HBox output = new HBox(5);

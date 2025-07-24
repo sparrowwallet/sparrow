@@ -113,8 +113,8 @@ public class SparrowDesktop extends Application {
     private void initializeFonts() {
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
-        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
-        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Italic.ttf"), 11);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/FragmentMono-Regular.ttf"), 13);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/FragmentMono-Italic.ttf"), 11);
         if(OsType.getCurrent() == OsType.MACOS) {
             Font.loadFont(AppServices.class.getResourceAsStream("/font/LiberationSans-Regular.ttf"), 13);
         }

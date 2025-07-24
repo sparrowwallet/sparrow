@@ -40,7 +40,9 @@
         <ColumnConstraints percentWidth="50" />
     </columnConstraints>
    <rowConstraints>
-      <RowConstraints />
+        <RowConstraints />
+        <RowConstraints />
+        <RowConstraints vgrow="SOMETIMES" />
    </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset text="Transaction" inputGrow="SOMETIMES" wrapWidth="620">
@@ -74,9 +76,11 @@
 
     <TabPane side="RIGHT" GridPane.columnIndex="0" GridPane.rowIndex="2" GridPane.columnSpan="2" styleClass="headers-tabs">
         <Tab text="Overview" closable="false">
-            <VBox spacing="8">
+            <VBox spacing="8" alignment="CENTER">
+                <Region VBox.vgrow="SOMETIMES" />
                 <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
                 <TransactionDiagramLabel fx:id="transactionDiagramLabel" maxWidth="640" prefWidth="640" />
+                <Region VBox.vgrow="SOMETIMES" />
             </VBox>
         </Tab>
         <Tab text="Detail" closable="false">
@@ -176,19 +180,41 @@
 
     <Separator GridPane.columnIndex="0" GridPane.rowIndex="5" GridPane.columnSpan="2" styleClass="form-separator"/>
 
-    <DynamicForm fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
-        <Fieldset text="Blockchain" inputGrow="SOMETIMES">
-            <Field text="Status:">
-                <Label fx:id="blockStatus" contentDisplay="RIGHT" graphicTextGap="5" />
-            </Field>
-            <Field fx:id="blockHeightField" text="Block Height:">
-                <CopyableLabel fx:id="blockHeight" />
-            </Field>
-            <Field fx:id="blockTimestampField" text="Timestamp:">
-                <CopyableLabel fx:id="blockTimestamp" />
-            </Field>
-        </Fieldset>
-    </DynamicForm>
+    <GridPane GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="6">
+        <columnConstraints>
+            <ColumnConstraints percentWidth="80" />
+            <ColumnConstraints percentWidth="20" />
+        </columnConstraints>
+        <DynamicForm fx:id="blockchainForm" GridPane.columnIndex="0" GridPane.rowIndex="0">
+            <Fieldset text="Blockchain" inputGrow="SOMETIMES">
+                <Field text="Status:">
+                    <Label fx:id="blockStatus" contentDisplay="RIGHT" graphicTextGap="5" />
+                </Field>
+                <Field fx:id="blockHeightField" text="Block Height:">
+                    <CopyableLabel fx:id="blockHeight" />
+                </Field>
+                <Field fx:id="blockTimestampField" text="Timestamp:">
+                    <CopyableLabel fx:id="blockTimestamp" />
+                </Field>
+            </Fieldset>
+        </DynamicForm>
+        <Form fx:id="blockchainSpacerForm" GridPane.columnIndex="1" GridPane.rowIndex="0" visible="false">
+            <Fieldset text="Spacer" inputGrow="SOMETIMES">
+                <VBox>
+                    <ProgressBar styleClass="signatures-progress-bar" maxWidth="Infinity" minHeight="50" prefHeight="50" progress="0" />
+                </VBox>
+                <VBox>
+                    <HBox styleClass="signatures-buttons" spacing="20">
+                        <Button HBox.hgrow="ALWAYS" textAlignment="CENTER" text="Spacer" contentDisplay="TOP" wrapText="true">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SEARCH" />
+                            </graphic>
+                        </Button>
+                    </HBox>
+                </VBox>
+            </Fieldset>
+        </Form>
+    </GridPane>
 
     <Form fx:id="signingWalletForm" GridPane.columnIndex="0" GridPane.rowIndex="6">
         <Fieldset text="Signatures" inputGrow="SOMETIMES" styleClass="relaxedLabelFieldSet">
@@ -236,7 +262,7 @@
         <Fieldset text="Signatures" inputGrow="SOMETIMES">
             <VBox>
                 <SignaturesProgressBar fx:id="signaturesProgressBar" />
-                <ProgressBar fx:id="broadcastProgressBar" maxWidth="Infinity" prefHeight="50" />
+                <ProgressBar fx:id="broadcastProgressBar" maxWidth="Infinity" minHeight="50" prefHeight="50" />
             </VBox>
             <VBox>
                 <HBox fx:id="signButtonBox" styleClass="signatures-buttons" spacing="20">

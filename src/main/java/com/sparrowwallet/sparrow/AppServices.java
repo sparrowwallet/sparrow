@@ -1233,7 +1233,7 @@ public class AppServices {
     }
 
     public static Font getMonospaceFont() {
-        return Font.font("Roboto Mono", 13);
+        return Font.font("Fragment Mono Regular", 13);
     }
 
     public static boolean isOnWayland() {

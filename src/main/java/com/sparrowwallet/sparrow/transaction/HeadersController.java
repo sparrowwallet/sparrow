@@ -181,6 +181,9 @@ public class HeadersController extends TransactionFormController implements Init
     private CopyableLabel blockTimestamp;
 
     @FXML
+    private Form blockchainSpacerForm;
+
+    @FXML
     private Form signingWalletForm;
 
     @FXML
@@ -451,6 +454,7 @@ public class HeadersController extends TransactionFormController implements Init
         headersForm.setWalletTransaction(getWalletTransaction(headersForm.getInputTransactions()));
 
         blockchainForm.managedProperty().bind(blockchainForm.visibleProperty());
+        blockchainSpacerForm.managedProperty().bind(blockchainForm.managedProperty());
 
         signingWalletForm.managedProperty().bind(signingWalletForm.visibleProperty());
         sigHashForm.managedProperty().bind(sigHashForm.visibleProperty());

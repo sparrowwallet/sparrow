@@ -29,7 +29,7 @@
 
 .virtualized-scroll-pane .code-area, .uneditable-codearea {
     -fx-font-size: 13px;
-    -fx-font-family: 'Roboto Mono';
+    -fx-font-family: 'Fragment Mono Regular';
     -fx-padding: 4;
     -fx-fill: -fx-text-inner-color;
 }

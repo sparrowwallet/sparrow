@@ -9,15 +9,13 @@ import com.sparrowwallet.drongo.address.P2PKHAddress;
 import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
-import com.sparrowwallet.sparrow.UnitFormat;
-import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.CurrencyRate;
-import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.*;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -25,6 +23,8 @@ import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
+import com.sparrowwallet.drongo.dns.DnsPayment;
+import com.sparrowwallet.drongo.dns.DnsPaymentResolver;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
 import javafx.application.Platform;
@@ -36,21 +36,32 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.concurrent.Service;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.HBox;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
+import org.girod.javafx.svgimage.SVGImage;
+import org.girod.javafx.svgimage.SVGLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -131,6 +142,8 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private final ObjectProperty<PayNym> payNymProperty = new SimpleObjectProperty<>();
 
+    private final ObjectProperty<DnsPayment> dnsPaymentProperty = new SimpleObjectProperty<>();
+
     private static final Wallet payNymWallet = new Wallet() {
         @Override
         public String getFullDisplayName() {
@@ -142,6 +155,76 @@ public class PaymentController extends WalletFormController implements Initializ
         @Override
         public String getFullDisplayName() {
             return "NFC Card...";
+        }
+    };
+
+    private final ChangeListener<String> addressListener = new ChangeListener<>() {
+        @Override
+        public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+            address.leftProperty().set(null);
+
+            if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
+                payNymProperty.set(null);
+            }
+
+            if(dnsPaymentProperty.get() != null && !newValue.equals(dnsPaymentProperty.get().hrn())) {
+                dnsPaymentProperty.set(null);
+            }
+
+            try {
+                BitcoinURI bitcoinURI = new BitcoinURI(newValue);
+                Platform.runLater(() -> updateFromURI(bitcoinURI));
+                return;
+            } catch(Exception e) {
+                //ignore, not a URI
+            }
+
+            String dnsPaymentHrn = getDnsPaymentHrn(newValue);
+            if(dnsPaymentHrn != null) {
+                DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
+                dnsPaymentService.setOnSucceeded(_ -> dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment)));
+                dnsPaymentService.setOnFailed(failEvent -> {
+                    if(failEvent.getSource().getException() != null && !(failEvent.getSource().getException().getCause() instanceof TimeoutException)) {
+                        AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, failEvent.getSource().getException().getMessage());
+                    }
+                });
+                dnsPaymentService.start();
+                return;
+            }
+
+            if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
+                try {
+                    PaymentCode paymentCode = new PaymentCode(newValue);
+                    Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
+                    if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
+                        recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
+                    }
+
+                    if(recipientBip47Wallet != null) {
+                        PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
+                        Platform.runLater(() -> setPayNym(payNym));
+                    } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
+                        ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
+                        Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
+                        if(optButton.isPresent() && optButton.get() == previewType) {
+                            Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
+                            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
+                        } else {
+                            Platform.runLater(() -> address.setText(""));
+                        }
+                    }
+                } catch(Exception e) {
+                    //ignore, not a payment code
+                }
+            }
+
+            revalidateAmount();
+            maxButton.setDisable(!isMaxButtonEnabled());
+            sendController.updateTransaction();
+
+            if(validationSupport != null) {
+                validationSupport.setErrorDecorationEnabled(true);
+            }
         }
     };
 
@@ -210,6 +293,24 @@ public class PaymentController extends WalletFormController implements Initializ
             revalidateAmount();
         });
 
+        dnsPaymentProperty.addListener((observable, oldValue, dnsPayment) -> {
+            if(dnsPayment != null) {
+                MenuItem copyMenuItem = new MenuItem("Copy URI");
+                copyMenuItem.setOnAction(e -> {
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(dnsPayment.bitcoinURI().toURIString());
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                address.setContextMenu(address.getCustomContextMenu(List.of(copyMenuItem)));
+            } else {
+                address.setContextMenu(address.getCustomContextMenu(Collections.emptyList()));
+            }
+
+            revalidateAmount();
+            maxButton.setDisable(!isMaxButtonEnabled());
+            sendController.updateTransaction();
+        });
+
         address.setTextFormatter(new TextFormatter<>(change -> {
             String controlNewText = change.getControlNewText();
             if(!controlNewText.equals(controlNewText.trim())) {
@@ -222,55 +323,8 @@ public class PaymentController extends WalletFormController implements Initializ
             return change;
         }));
 
-        address.textProperty().addListener((observable, oldValue, newValue) -> {
-            address.leftProperty().set(null);
-
-            if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
-                payNymProperty.set(null);
-            }
-
-            try {
-                BitcoinURI bitcoinURI = new BitcoinURI(newValue);
-                Platform.runLater(() -> updateFromURI(bitcoinURI));
-                return;
-            } catch(Exception e) {
-                //ignore, not a URI
-            }
-
-            if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
-                try {
-                    PaymentCode paymentCode = new PaymentCode(newValue);
-                    Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
-                    if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
-                        recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
-                    }
-
-                    if(recipientBip47Wallet != null) {
-                        PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
-                        Platform.runLater(() -> setPayNym(payNym));
-                    } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
-                        ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
-                        Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
-                        if(optButton.isPresent() && optButton.get() == previewType) {
-                            Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
-                            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
-                        } else {
-                            Platform.runLater(() -> address.setText(""));
-                        }
-                    }
-                } catch(Exception e) {
-                    //ignore, not a payment code
-                }
-            }
-
-            revalidateAmount();
-            maxButton.setDisable(!isMaxButtonEnabled());
-            sendController.updateTransaction();
-
-            if(validationSupport != null) {
-                validationSupport.setErrorDecorationEnabled(true);
-            }
-        });
+        address.textProperty().addListener(addressListener);
+        address.setContextMenu(address.getCustomContextMenu(Collections.emptyList()));
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
             maxButton.setDisable(!isMaxButtonEnabled());
@@ -326,6 +380,23 @@ public class PaymentController extends WalletFormController implements Initializ
         if(existingPayNym != null && payNym.nymName().equals(existingPayNym.nymName())) {
             sendController.updateTransaction();
         }
+    }
+
+    public void setDnsPayment(DnsPayment dnsPayment) {
+        if(dnsPayment.bitcoinURI().getAddress() == null) {
+            AppServices.showWarningDialog("No Address Provided", "The DNS payment instruction for " + dnsPayment.hrn() + " resolved correctly but did not contain a Bitcoin address.");
+            return;
+        }
+
+        DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
+        dnsPaymentProperty.set(dnsPayment);
+        address.setText(dnsPayment.hrn());
+        revalidate(address, addressListener);
+        address.leftProperty().set(getBitcoinCharacter());
+        if(label.getText().isEmpty()) {
+            label.setText("To " + dnsPayment);
+        }
+        label.requestFocus();
     }
 
     private void updateOpenWallets() {
@@ -399,6 +470,11 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
+        DnsPayment dnsPayment = dnsPaymentProperty.get();
+        if(dnsPayment != null) {
+            return dnsPayment.bitcoinURI().getAddress();
+        }
+
         PayNym payNym = payNymProperty.get();
         if(payNym == null) {
             return Address.fromString(address.getText());
@@ -420,6 +496,25 @@ public class PaymentController extends WalletFormController implements Initializ
         }
 
         throw new InvalidAddressException();
+    }
+
+    private String getDnsPaymentHrn(String value) {
+        String hrn = value;
+        if(value.endsWith(".")) {
+            return null;
+        }
+
+        if(hrn.startsWith("₿")) {
+            hrn = hrn.substring(1);
+        }
+
+        String[] addressParts = hrn.split("@");
+        if(addressParts.length == 2 && addressParts[1].indexOf('.') > -1 && addressParts[1].substring(addressParts[1].indexOf('.') + 1).length() > 1 &&
+                StandardCharsets.US_ASCII.newEncoder().canEncode(hrn)) {
+            return hrn;
+        }
+
+        return null;
     }
 
     private Wallet getWalletForPayNym(PayNym payNym) throws InvalidPaymentCodeException {
@@ -565,6 +660,7 @@ public class PaymentController extends WalletFormController implements Initializ
 
         dustAmountProperty.set(false);
         payNymProperty.set(null);
+        dnsPaymentProperty.set(null);
     }
 
     public void setMaxInput(ActionEvent event) {
@@ -625,7 +721,7 @@ public class PaymentController extends WalletFormController implements Initializ
             setRecipientValueSats(bitcoinURI.getAmount());
             setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), bitcoinURI.getAmount());
         }
-        if(bitcoinURI.getPayjoinUrl() != null) {
+        if(bitcoinURI.getAddress() != null && bitcoinURI.getPayjoinUrl() != null) {
             AppServices.addPayjoinURI(bitcoinURI);
         }
         sendController.updateTransaction();
@@ -676,8 +772,31 @@ public class PaymentController extends WalletFormController implements Initializ
     public static Glyph getPayNymGlyph() {
         Glyph payNymGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.ROBOT);
         payNymGlyph.getStyleClass().add("paynym-icon");
-        payNymGlyph.setFontSize(12);
+        payNymGlyph.setFontSize(10);
         return payNymGlyph;
+    }
+
+    public static Node getBitcoinCharacter() {
+        try {
+            URL url;
+            if(Config.get().getTheme() == Theme.DARK) {
+                url = AppServices.class.getResource("/image/bitcoin-character-invert.svg");
+            } else {
+                url = AppServices.class.getResource("/image/bitcoin-character.svg");
+            }
+            if(url != null) {
+                SVGImage svgImage = SVGLoader.load(url);
+                HBox hBox = new HBox();
+                hBox.setAlignment(Pos.CENTER);
+                hBox.getChildren().add(svgImage);
+                hBox.setPadding(new Insets(0, 2, 0, 4));
+                return hBox;
+            }
+        } catch(Exception e) {
+            log.error("Could not load bitcoin character");
+        }
+
+        return null;
     }
 
     public static Glyph getNfcCardGlyph() {
@@ -722,5 +841,24 @@ public class PaymentController extends WalletFormController implements Initializ
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         updateOpenWallets(event.getWallets());
+    }
+
+    private static class DnsPaymentService extends Service<Optional<DnsPayment>> {
+        private final String hrn;
+
+        public DnsPaymentService(String hrn) {
+            this.hrn = hrn;
+        }
+
+        @Override
+        protected Task<Optional<DnsPayment>> createTask() {
+            return new Task<>() {
+                @Override
+                protected Optional<DnsPayment> call() throws Exception {
+                    DnsPaymentResolver resolver = new DnsPaymentResolver(hrn);
+                    return resolver.resolve();
+                }
+            };
+        }
     }
 }

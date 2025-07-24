@@ -23,7 +23,7 @@
 
 .chart-legend-item {
     -fx-font-size: 13;
-    -fx-font-family: 'Roboto Mono';
+    -fx-font-family: 'Fragment Mono Regular';
 }
 
 .default-color7.chart-pie { -fx-pie-color: #0184bc }
