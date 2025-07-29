@@ -453,20 +453,26 @@ public class DevicePane extends TitledDescriptionPane {
         });
         vBox.getChildren().addAll(pinField, enterPinButton);
 
-        TilePane tilePane = new TilePane();
-        tilePane.setPrefColumns(3);
-        tilePane.setHgap(10);
-        tilePane.setVgap(10);
-        tilePane.setMaxWidth(150);
-        tilePane.setMaxHeight(120);
+        GridPane gridPane = new GridPane();
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+        gridPane.setMaxWidth(150);
+        gridPane.setMaxHeight(device.getModel().hasZeroInPin() ? 160 : 120);
 
-        int[] digits = new int[] {7, 8, 9, 4, 5, 6, 1, 2, 3};
+        int[] digits = device.getModel().hasZeroInPin() ? new int[] {7, 8, 9, 4, 5, 6, 1, 2, 3, 0} : new int[] {7, 8, 9, 4, 5, 6, 1, 2, 3};
         for(int i = 0; i < digits.length; i++) {
             Button pinButton = new Button();
             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, "CIRCLE");
             pinButton.setGraphic(circle);
             pinButton.setUserData(digits[i]);
-            tilePane.getChildren().add(pinButton);
+            GridPane.setRowIndex(pinButton, i / 3);
+            GridPane.setColumnIndex(pinButton, i % 3);
+            if((i / 3) == 3) {
+                GridPane.setHgrow(pinButton, Priority.ALWAYS);
+                GridPane.setColumnSpan(pinButton, 3);
+                pinButton.setMaxWidth(Double.MAX_VALUE);
+            }
+            gridPane.getChildren().add(pinButton);
             pinButton.setOnAction(event -> {
                 pinField.setText(pinField.getText() + pinButton.getUserData());
             });
@@ -474,7 +480,7 @@ public class DevicePane extends TitledDescriptionPane {
 
         HBox contentBox = new HBox();
         contentBox.setSpacing(50);
-        contentBox.getChildren().add(tilePane);
+        contentBox.getChildren().add(gridPane);
         contentBox.getChildren().add(vBox);
         contentBox.setPadding(new Insets(10, 0, 10, 0));
         contentBox.setAlignment(Pos.TOP_CENTER);
