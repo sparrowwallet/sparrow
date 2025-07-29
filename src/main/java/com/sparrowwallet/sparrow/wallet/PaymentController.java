@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
@@ -181,11 +182,29 @@ public class PaymentController extends WalletFormController implements Initializ
 
             String dnsPaymentHrn = getDnsPaymentHrn(newValue);
             if(dnsPaymentHrn != null) {
+                if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
+                    if(Config.get().getConnectToResolve() == null) {
+                        Platform.runLater(() -> {
+                            ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "Connect to the configured server to resolve the address?", ButtonType.NO, ButtonType.YES);
+                            Optional<ButtonType> optType = confirmationAlert.showAndWait();
+                            if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
+                                Config.get().setConnectToResolve(optType.get() == ButtonType.YES);
+                            }
+                            if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                                EventManager.get().post(new RequestConnectEvent());
+                            }
+                        });
+                    } else if(Config.get().getConnectToResolve()) {
+                        Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
+                    }
+                    return;
+                }
+
                 DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
                 dnsPaymentService.setOnSucceeded(_ -> dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment)));
                 dnsPaymentService.setOnFailed(failEvent -> {
                     if(failEvent.getSource().getException() != null && !(failEvent.getSource().getException().getCause() instanceof TimeoutException)) {
-                        AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, failEvent.getSource().getException().getMessage());
+                        AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(failEvent.getSource().getException()).getMessage());
                     }
                 });
                 dnsPaymentService.start();
@@ -393,7 +412,7 @@ public class PaymentController extends WalletFormController implements Initializ
         address.setText(dnsPayment.hrn());
         revalidate(address, addressListener);
         address.leftProperty().set(getBitcoinCharacter());
-        if(label.getText().isEmpty()) {
+        if(label.getText().isEmpty() || label.getText().startsWith("To ₿")) {
             label.setText("To " + dnsPayment);
         }
         label.requestFocus();

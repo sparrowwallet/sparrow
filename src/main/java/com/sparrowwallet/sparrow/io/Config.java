@@ -54,6 +54,7 @@ public class Config {
     private boolean signBsmsExports = false;
     private boolean preventSleep = false;
     private Boolean connectToBroadcast;
+    private Boolean connectToResolve;
     private Boolean suggestSendToMany;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
@@ -362,6 +363,15 @@ public class Config {
 
     public void setConnectToBroadcast(Boolean connectToBroadcast) {
         this.connectToBroadcast = connectToBroadcast;
+        flush();
+    }
+
+    public Boolean getConnectToResolve() {
+        return connectToResolve;
+    }
+
+    public void setConnectToResolve(Boolean connectToResolve) {
+        this.connectToResolve = connectToResolve;
         flush();
     }
 
