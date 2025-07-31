@@ -3,13 +3,13 @@ package com.sparrowwallet.sparrow;
 import com.beust.jcommander.JCommander;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.*;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.dns.DnsPayment;
+import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
-import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.psbt.PSBTInput;
-import com.sparrowwallet.drongo.psbt.PSBTParseException;
-import com.sparrowwallet.drongo.psbt.PSBTSignatureException;
+import com.sparrowwallet.drongo.psbt.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
@@ -1911,6 +1911,21 @@ public class AppController implements Initializable {
                             psbtInput.setNonWitnessUtxo(null);
                         }
                         break;
+                    }
+                }
+            }
+        }
+
+        //Add DNS payment information if not already cached
+        for(PSBTOutput psbtOutput : psbt.getPsbtOutputs()) {
+            if(psbtOutput.getDnssecProof() != null && !psbtOutput.getDnssecProof().isEmpty() && psbtOutput.getScript() != null) {
+                Address address = psbtOutput.getScript().getToAddress();
+                if(address != null && DnsPaymentCache.getDnsPayment(address) == null) {
+                    try {
+                        Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                        optDnsPayment.ifPresent(dnsPayment -> DnsPaymentCache.putDnsPayment(address, dnsPayment));
+                    } catch(Exception e) {
+                        log.debug("Error resolving DNS payment", e);
                     }
                 }
             }
