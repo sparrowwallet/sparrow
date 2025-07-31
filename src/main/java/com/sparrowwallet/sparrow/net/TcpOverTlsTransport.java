@@ -16,6 +16,7 @@ import java.security.cert.Certificate;
 
 public class TcpOverTlsTransport extends TcpTransport {
     private static final Logger log = LoggerFactory.getLogger(TcpOverTlsTransport.class);
+    public static final int PAD_TO_MULTIPLE_OF_BYTES = 96;
 
     protected final SSLSocketFactory sslSocketFactory;
 
@@ -39,6 +40,24 @@ public class TcpOverTlsTransport extends TcpTransport {
         sslContext.init(null, trustManagers, null);
 
         sslSocketFactory = sslContext.getSocketFactory();
+    }
+
+    @Override
+    protected void writeRequest(String request) throws IOException {
+        int currentLength = request.length();
+        int targetLength;
+        if(currentLength % PAD_TO_MULTIPLE_OF_BYTES == 0) {
+            targetLength = currentLength;
+        } else {
+            targetLength = ((currentLength / PAD_TO_MULTIPLE_OF_BYTES) + 1) * PAD_TO_MULTIPLE_OF_BYTES;
+        }
+
+        int paddingNeeded = targetLength - currentLength;
+        if(paddingNeeded > 0) {
+            super.writeRequest(request + " ".repeat(paddingNeeded));
+        } else {
+            super.writeRequest(request);
+        }
     }
 
     private TrustManager[] getTrustManagers(File crtFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
