@@ -149,6 +149,9 @@ public class BitcoindClient {
         List<String> loadedWallets;
         try {
             loadedWallets = getBitcoindService().listWallets();
+            if(loadedWallets == null) {
+                throw new BitcoinRPCException("Wallet support must be enabled in Bitcoin Core");
+            }
             legacyWalletExists = loadedWallets.contains(Bwt.DEFAULT_CORE_WALLET);
         } catch(JsonRpcException e) {
             if(e.getErrorMessage().getCode() == RPC_METHOD_NOT_FOUND) {
