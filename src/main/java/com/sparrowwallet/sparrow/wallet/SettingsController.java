@@ -41,8 +41,11 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.drongo.OutputDescriptor.KEY_ORIGIN_PATTERN;
+import static com.sparrowwallet.drongo.OutputDescriptor.XPUB_PATTERN;
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.AppServices.showWarningDialog;
 
@@ -453,6 +456,26 @@ public class SettingsController extends WalletFormController implements Initiali
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
             if(text.get().contains("(multi(")) {
                 AppServices.showWarningDialog("Legacy multisig wallet detected", "Sparrow supports BIP67 compatible multisig wallets only.\n\nThe public keys will be lexicographically sorted, and the output descriptor represented with sortedmulti.");
+            }
+
+            Matcher matcher = XPUB_PATTERN.matcher(text.get());
+            while(matcher.find()) {
+                String keyDerivationPath = null;
+                if(matcher.group(1) != null) {
+                    Matcher keyOriginMatcher = KEY_ORIGIN_PATTERN.matcher(matcher.group(1));
+                    if(keyOriginMatcher.matches()) {
+                        keyDerivationPath = keyOriginMatcher.group(2);
+                    }
+                }
+                String extKey = matcher.group(2);
+                String childDerivationPath = matcher.group(3);
+
+                if(ExtendedKey.Header.getHeaders(Network.get()).stream().anyMatch(header -> header.isPrivateKey() && extKey.startsWith(header.name())) &&
+                        (keyDerivationPath != null || (childDerivationPath != null && !(childDerivationPath.equals("/0/*") || childDerivationPath.equals("/1/*") || childDerivationPath.equals("/<0;1>/*"))))) {
+                    AppServices.showWarningDialog("Private extended key detected", "Sparrow will convert the provided private key to a public key for use in a watch only wallet.\n\nTo import a private key, use the Master Private Key option when creating a Software Wallet.");
+                } else if(childDerivationPath != null && !(childDerivationPath.endsWith("/0/*") || childDerivationPath.endsWith("/1/*") || childDerivationPath.endsWith("/<0;1>/*"))) {
+                    AppServices.showWarningDialog("Non standard child derivation detected", "Sparrow does not support non-BIP32 wallets without standard receive and change chains.\n\nThe provided descriptor will be amended if necessary.");
+                }
             }
 
             setDescriptorText(text.get().replace("\n", ""));
