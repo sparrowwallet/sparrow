@@ -33,27 +33,19 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.logging.Logging;
 import org.gradle.api.plugins.ApplicationPlugin;
 import org.gradle.api.tasks.JavaExec;
 import org.gradle.api.tasks.TaskAction;
-import org.javamodularity.moduleplugin.extensions.RunModuleOptions;
 import org.openjfx.gradle.JavaFXModule;
 import org.openjfx.gradle.JavaFXOptions;
 import org.openjfx.gradle.JavaFXPlatform;
 
 import javax.inject.Inject;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.TreeSet;
 
 public class ExecTask extends DefaultTask {
-
-    private static final Logger LOGGER = Logging.getLogger(ExecTask.class);
-
     private final Project project;
     private JavaExec execTask;
 
@@ -78,37 +70,11 @@ public class ExecTask extends DefaultTask {
 
             var definedJavaFXModuleNames = new TreeSet<>(javaFXOptions.getModules());
             if (!definedJavaFXModuleNames.isEmpty()) {
-                RunModuleOptions moduleOptions = execTask.getExtensions().findByType(RunModuleOptions.class);
-
                 final FileCollection classpathWithoutJavaFXJars = execTask.getClasspath().filter(
                         jar -> Arrays.stream(JavaFXModule.values()).noneMatch(javaFXModule -> jar.getName().contains(javaFXModule.getArtifactName()))
                 );
                 final FileCollection javaFXPlatformJars = execTask.getClasspath().filter(jar -> isJavaFXJar(jar, javaFXOptions.getPlatform()));
-
-                if (moduleOptions != null) {
-                    LOGGER.info("Modular JavaFX application found");
-                    // Remove empty JavaFX jars from classpath
-                    execTask.setClasspath(classpathWithoutJavaFXJars.plus(javaFXPlatformJars));
-                    definedJavaFXModuleNames.forEach(javaFXModule -> moduleOptions.getAddModules().add(javaFXModule));
-                } else {
-                    LOGGER.info("Non-modular JavaFX application found");
-                    // Remove all JavaFX jars from classpath
-                    execTask.setClasspath(classpathWithoutJavaFXJars);
-
-                    var javaFXModuleJvmArgs = List.of("--module-path", javaFXPlatformJars.getAsPath());
-
-                    var jvmArgs = new ArrayList<String>();
-                    jvmArgs.add("--add-modules");
-                    jvmArgs.add(String.join(",", definedJavaFXModuleNames));
-
-                    List<String> execJvmArgs = execTask.getJvmArgs();
-                    if (execJvmArgs != null) {
-                        jvmArgs.addAll(execJvmArgs);
-                    }
-                    jvmArgs.addAll(javaFXModuleJvmArgs);
-
-                    execTask.setJvmArgs(jvmArgs);
-                }
+                execTask.setClasspath(classpathWithoutJavaFXJars.plus(javaFXPlatformJars));
             }
         } else {
             throw new GradleException("Run task not found. Please, make sure the Application plugin is applied");

@@ -4,13 +4,12 @@ plugins {
 
 dependencies {
     implementation 'com.google.gradle:osdetector-gradle-plugin:1.7.3'
-    implementation 'org.javamodularity:moduleplugin:1.8.14'
 }
 
 repositories {
     mavenCentral()
     maven {
-        url "https://plugins.gradle.org/m2/"
+        url = uri("https://plugins.gradle.org/m2/")
     }
 }
 

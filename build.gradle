@@ -1,8 +1,8 @@
 plugins {
     id 'application'
     id 'org-openjfx-javafxplugin'
-    id 'org.beryx.jlink' version '3.1.1'
-    id 'org.gradlex.extra-java-module-info' version '1.9'
+    id 'org.beryx.jlink' version '3.1.2'
+    id 'org.gradlex.extra-java-module-info' version '1.13'
     id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.16.3'
 }
 
@@ -19,12 +19,12 @@ if(System.getProperty("os.arch") == "aarch64") {
 }
 def headless = "true".equals(System.getProperty("java.awt.headless"))
 
-group 'com.sparrowwallet'
-version '2.2.4'
+group = 'com.sparrowwallet'
+version = '2.2.4'
 
 repositories {
     mavenCentral()
-    maven { url 'https://code.sparrowwallet.com/api/packages/sparrowwallet/maven' }
+    maven { url = uri('https://code.sparrowwallet.com/api/packages/sparrowwallet/maven') }
 }
 
 tasks.withType(AbstractArchiveTask) {
