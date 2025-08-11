@@ -24,6 +24,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
@@ -105,6 +106,7 @@ public class TransactionDiagram extends GridPane {
                 expandedDiagram.setId("transactionDiagram");
                 expandedDiagram.setExpanded(true);
                 expandedDiagram.setFinal(isFinal());
+                expandedDiagram.setMaxWidth(AppServices.getActiveWindow().getWidth() - 200);
                 updateDerivedDiagram(expandedDiagram);
 
                 HBox buttonBox = new HBox();
@@ -122,7 +124,7 @@ public class TransactionDiagram extends GridPane {
                 AppServices.setStageIcon(stage);
                 stage.setScene(scene);
                 stage.setOnShowing(e -> {
-                    AppServices.moveToActiveWindowScreen(stage, 600, 460);
+                    AppServices.moveToActiveWindowScreen(stage, expandedDiagram.getMaxWidth(), 460);
                 });
                 stage.setOnHidden(e -> {
                     expandedDiagram = null;
@@ -138,6 +140,39 @@ public class TransactionDiagram extends GridPane {
             contextMenu.show(getChildren().iterator().next(), event.getScreenX(), event.getScreenY());
         }
     };
+
+    public TransactionDiagram() {
+        ColumnConstraints col1 = new ColumnConstraints();
+        col1.setPrefWidth(22);
+        col1.setHgrow(Priority.NEVER);
+
+        ColumnConstraints col2 = new ColumnConstraints();
+        col2.setHgrow(Priority.ALWAYS);
+        col2.setPercentWidth(25);
+        col2.setFillWidth(true);
+
+        ColumnConstraints col3 = new ColumnConstraints();
+        col3.setPrefWidth(140);
+        col3.setHgrow(Priority.NEVER);
+
+        ColumnConstraints col4 = new ColumnConstraints();
+        Label label = new Label();
+        col4.setMinWidth(TextUtils.computeTextWidth(label.getFont(), "Transaction", 0) + 20);
+        col4.setHgrow(Priority.NEVER);
+        col4.setHalignment(HPos.CENTER);
+
+        ColumnConstraints col5 = new ColumnConstraints();
+        col5.setPrefWidth(140);
+        col5.setHgrow(Priority.NEVER);
+
+        ColumnConstraints col6 = new ColumnConstraints();
+        col6.setHgrow(Priority.ALWAYS);
+        col6.setPercentWidth(25);
+        col6.setFillWidth(true);
+
+        getColumnConstraints().addAll(col1, col2, col3, col4, col5, col6);
+        setPadding(new Insets(0, 0, 0, 40));
+    }
 
     public void update(WalletTransaction walletTx) {
         setMinHeight(getDiagramHeight());
@@ -410,8 +445,6 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getInputsLabels(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {
         VBox inputsBox = new VBox();
-        inputsBox.setMaxWidth(isExpanded() ? 300 : 150);
-        inputsBox.setPrefWidth(isExpanded() ? 230 : 150);
         inputsBox.setPadding(new Insets(0, 10, 0, 10));
         inputsBox.minHeightProperty().bind(minHeightProperty());
         inputsBox.setAlignment(Pos.BASELINE_RIGHT);
@@ -679,8 +712,6 @@ public class TransactionDiagram extends GridPane {
 
     private Pane getOutputsLabels(List<Payment> displayedPayments) {
         VBox outputsBox = new VBox();
-        outputsBox.setMaxWidth(isExpanded() ? 350 : 150);
-        outputsBox.setPrefWidth(isExpanded() ? 230 : 150);
         outputsBox.setPadding(new Insets(0, 20, 0, 10));
         outputsBox.setAlignment(Pos.BASELINE_LEFT);
         outputsBox.getChildren().add(createSpacer());

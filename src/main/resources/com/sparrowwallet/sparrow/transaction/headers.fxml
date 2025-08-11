@@ -78,8 +78,8 @@
         <Tab text="Overview" closable="false">
             <VBox spacing="8" alignment="CENTER">
                 <Region VBox.vgrow="SOMETIMES" />
-                <TransactionDiagram fx:id="transactionDiagram" maxWidth="700" final="true"/>
-                <TransactionDiagramLabel fx:id="transactionDiagramLabel" maxWidth="640" prefWidth="640" />
+                <TransactionDiagram fx:id="transactionDiagram" final="true"/>
+                <TransactionDiagramLabel fx:id="transactionDiagramLabel" />
                 <Region VBox.vgrow="SOMETIMES" />
             </VBox>
         </Tab>
