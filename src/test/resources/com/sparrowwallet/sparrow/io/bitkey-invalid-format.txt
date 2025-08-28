@@ -1,0 +1,2 @@
+This is not a valid Bitkey export format.
+It should contain External: and Internal: lines with descriptors. 

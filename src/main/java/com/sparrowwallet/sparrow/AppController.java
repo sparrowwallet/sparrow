@@ -49,8 +49,6 @@ import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -1230,6 +1228,7 @@ public class AppController implements Initializable {
                 new CoboVaultSinglesig(), new CoboVaultMultisig(),
                 new PassportSinglesig(),
                 new KeystoneSinglesig(), new KeystoneMultisig(),
+                new BitkeyMultisig(),
                 new CaravanMultisig());
         for(WalletImport importer : walletImporters) {
             if(importer.isDeprecated() && !Config.get().isShowDeprecatedImportExport()) {
