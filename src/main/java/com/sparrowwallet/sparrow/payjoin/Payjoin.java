@@ -108,6 +108,9 @@ public class Payjoin {
         } catch(PSBTParseException e) {
             log.error("Error parsing received PSBT", e);
             throw new PayjoinReceiverException("Payjoin receiver returned invalid PSBT", e);
+        } catch(PayjoinReceiverException e) {
+            log.error("Payjoin receiver error", e);
+            throw e;
         } catch(Exception e) {
             log.error("Payjoin error", e);
             throw new PayjoinReceiverException("Payjoin error", e);
