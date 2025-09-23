@@ -437,7 +437,7 @@ public class AppController implements Initializable {
 
     private void registerShortcuts() {
         OsType osType = OsType.getCurrent();
-        if(osType == OsType.MACOS) {
+        if(osType == OsType.MACOS || osType == OsType.WINDOWS) {
             tabs.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
                 if(event.isShortcutDown() && event.isAltDown() && (event.getCode() == KeyCode.LEFT || event.getCode() == KeyCode.RIGHT)) {
                     int currentIndex = tabs.getSelectionModel().getSelectedIndex();
@@ -448,7 +448,37 @@ public class AppController implements Initializable {
                     }
                 }
             });
+
+            // MSC: move tabs by keyboard
+            tabs.getScene().addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                if (event.isControlDown() && event.isShiftDown() && (event.getCode() == KeyCode.LEFT || event.getCode() == KeyCode.RIGHT)){
+                    boolean moveLeft = event.getCode() == KeyCode.LEFT;
+                    int currentIndex = tabs.getSelectionModel().getSelectedIndex();
+
+                    if (moveLeft && currentIndex == 0)
+                        return;
+                    if (!moveLeft && currentIndex + 1 >= tabs.getTabs().size())
+                        return;
+
+                    Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
+                    tabs.getTabs().removeListener(tabsChangeListener);
+                    tabs.getTabs().remove(selectedTab);
+
+                    if (moveLeft)
+                        tabs.getTabs().add(currentIndex - 1, selectedTab);
+                    else
+                        tabs.getTabs().add(currentIndex + 1, selectedTab);
+
+                    tabs.getTabs().addListener(tabsChangeListener);
+                    tabs.getSelectionModel().select(selectedTab);
+                    EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
+                }
+            });
+
         }
+
+
+
     }
 
     private void setPlatformApplicationMenu() {
