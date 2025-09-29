@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.BaseController;
 import com.sparrowwallet.sparrow.EventManager;
@@ -33,23 +34,41 @@ public abstract class TransactionFormController extends BaseController {
         long totalAmt = 0;
         for(int i = 0; i < outputs.size(); i++) {
             TransactionOutput output = outputs.get(i);
-            String name = "#" + i;
-            try {
-                Address[] addresses = output.getScript().getToAddresses();
-                if(addresses.length == 1) {
-                    name = name + " " + addresses[0].getAddress();
-                } else {
-                    name = name + " [" + addresses[0].getAddress() + ",...]";
-                }
-            } catch(NonStandardScriptException e) {
-                //ignore
-            }
+            String name = getPieDataName(i, output);
 
             totalAmt += output.getValue();
             outputsPieData.add(new PieChart.Data(name, output.getValue()));
         }
 
         addPieData(pie, outputsPieData);
+    }
+
+    protected void updatePieData(PieChart pie, List<TransactionOutput> outputs) {
+        for(int i = 0; i < outputs.size(); i++) {
+            TransactionOutput output = outputs.get(i);
+            String name = getPieDataName(i, output);
+            pie.getData().get(i).setName(name);
+        }
+    }
+
+    private String getPieDataName(int i, TransactionOutput output) {
+        String name = "#" + i;
+        Address address = output.getScript().getToAddress();
+        SilentPaymentAddress silentPaymentAddress = getTransactionForm().getSilentPaymentAddress(output);
+        if(address != null) {
+            name = name + " " + address.getAddress();
+        } else if(silentPaymentAddress != null) {
+            name = name + " " + silentPaymentAddress.toAbbreviatedString();
+        } else {
+            try {
+                Address[] addresses = output.getScript().getToAddresses();
+                name = name + " [" + addresses[0].getAddress() + ",...]";
+            } catch(NonStandardScriptException e) {
+                //ignore
+            }
+        }
+
+        return name;
     }
 
     protected void addCoinbasePieData(PieChart pie, long value) {

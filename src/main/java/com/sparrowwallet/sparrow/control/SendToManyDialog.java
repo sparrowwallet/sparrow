@@ -6,6 +6,8 @@ import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.silentpayments.SilentPayment;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
@@ -30,7 +32,7 @@ import java.util.stream.IntStream;
 public class SendToManyDialog extends Dialog<List<Payment>> {
     private final BitcoinUnit bitcoinUnit;
     private final SpreadsheetView spreadsheetView;
-    public static final AddressCellType ADDRESS = new AddressCellType();
+    public static final SendToAddressCellType SEND_TO_ADDRESS = new SendToAddressCellType();
 
     public SendToManyDialog(BitcoinUnit bitcoinUnit, List<Payment> payments) {
         this.bitcoinUnit = bitcoinUnit;
@@ -92,7 +94,8 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         for(int row = 0; row < grid.getRowCount(); ++row) {
             final ObservableList<SpreadsheetCell> list = FXCollections.observableArrayList();
 
-            SpreadsheetCell addressCell = ADDRESS.createCell(row, 0, 1, 1, payments.get(row).getAddress());
+            SendToAddress sendToAddress = SendToAddress.fromPayment(payments.get(row));
+            SpreadsheetCell addressCell = SEND_TO_ADDRESS.createCell(row, 0, 1, 1, sendToAddress);
             addressCell.getStyleClass().add("fixed-width");
             list.add(addressCell);
 
@@ -123,7 +126,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         String firstLabel = null;
         for(int row = 0; row < grid.getRowCount(); row++) {
             ObservableList<SpreadsheetCell> rowCells = spreadsheetView.getItems().get(row);
-            Address address = (Address)rowCells.get(0).getItem();
+            SendToAddress sendToAddress = (SendToAddress)rowCells.get(0).getItem();
             Double value = (Double)rowCells.get(1).getItem();
             String label = (String)rowCells.get(2).getItem();
             if(firstLabel == null) {
@@ -133,12 +136,12 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                 label = firstLabel;
             }
 
-            if(address != null && value != null) {
+            if(sendToAddress != null && value != null) {
                 if(bitcoinUnit == BitcoinUnit.BTC) {
                     value = value * Transaction.SATOSHIS_PER_BITCOIN;
                 }
 
-                payments.add(new Payment(address, label, value.longValue(), false));
+                payments.add(sendToAddress.toPayment(label, value.longValue(), false));
             }
         }
 
@@ -183,9 +186,14 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                                         } else {
                                             amount = Long.parseLong(csvReader.get(1).replace(",", ""));
                                         }
-                                        Address address = Address.fromString(csvReader.get(0));
                                         String label = csvReader.get(2);
-                                        csvPayments.add(new Payment(address, label, amount, false));
+                                        try {
+                                            SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(csvReader.get(0));
+                                            csvPayments.add(new SilentPayment(silentPaymentAddress, label, amount, false));
+                                        } catch(Exception e) {
+                                            Address address = Address.fromString(csvReader.get(0));
+                                            csvPayments.add(new Payment(address, label, amount, false));
+                                        }
                                     } catch(NumberFormatException e) {
                                         //ignore and continue - probably a header line
                                     } catch(InvalidAddressException e) {
@@ -221,16 +229,16 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         }
     }
 
-    public static class AddressCellType extends SpreadsheetCellType<Address> {
-        public AddressCellType() {
-            this(new StringConverterWithFormat<>(new AddressStringConverter()) {
+    public static class SendToAddressCellType extends SpreadsheetCellType<SendToAddress> {
+        public SendToAddressCellType() {
+            this(new StringConverterWithFormat<>(new SendToAddressStringConverter()) {
                 @Override
-                public String toString(Address item) {
+                public String toString(SendToAddress item) {
                     return toStringFormat(item, ""); //$NON-NLS-1$
                 }
 
                 @Override
-                public Address fromString(String str) {
+                public SendToAddress fromString(String str) {
                     if(str == null || str.isEmpty()) { //$NON-NLS-1$
                         return null;
                     } else {
@@ -239,7 +247,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                 }
 
                 @Override
-                public String toStringFormat(Address item, String format) {
+                public String toStringFormat(SendToAddress item, String format) {
                     try {
                         if(item == null) {
                             return ""; //$NON-NLS-1$
@@ -253,7 +261,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             });
         }
 
-        public AddressCellType(StringConverter<Address> converter) {
+        public SendToAddressCellType(StringConverter<SendToAddress> converter) {
             super(converter);
         }
 
@@ -263,7 +271,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         }
 
         public SpreadsheetCell createCell(final int row, final int column, final int rowSpan, final int columnSpan,
-                                          final Address value) {
+                                          final SendToAddress value) {
             SpreadsheetCell cell = new SpreadsheetCellBase(row, column, rowSpan, columnSpan, this);
             cell.setItem(value);
             return cell;
@@ -276,7 +284,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
 
         @Override
         public boolean match(Object value, Object... options) {
-            if(value instanceof Address)
+            if(value instanceof SendToAddress)
                 return true;
             else {
                 try {
@@ -289,9 +297,9 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         }
 
         @Override
-        public Address convertValue(Object value) {
-            if(value instanceof Address)
-                return (Address)value;
+        public SendToAddress convertValue(Object value) {
+            if(value instanceof SendToAddress)
+                return (SendToAddress)value;
             else {
                 try {
                     return converter.fromString(value == null ? null : value.toString());
@@ -302,13 +310,64 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         }
 
         @Override
-        public String toString(Address item) {
+        public String toString(SendToAddress item) {
             return converter.toString(item);
         }
 
         @Override
-        public String toString(Address item, String format) {
-            return ((StringConverterWithFormat<Address>)converter).toStringFormat(item, format);
+        public String toString(SendToAddress item, String format) {
+            return ((StringConverterWithFormat<SendToAddress>)converter).toStringFormat(item, format);
         }
     };
+
+    public static class SendToAddress {
+        private final Address address;
+        private final SilentPaymentAddress silentPaymentAddress;
+
+        public SendToAddress(Address address) {
+            this.address = address;
+            this.silentPaymentAddress = null;
+        }
+
+        public SendToAddress(SilentPaymentAddress silentPaymentAddress) {
+            this.address = null;
+            this.silentPaymentAddress = silentPaymentAddress;
+        }
+
+        public String toString() {
+            return silentPaymentAddress == null ? (address == null ? null : address.toString()) : silentPaymentAddress.toString();
+        }
+
+        public static SendToAddress fromPayment(Payment payment) {
+            return payment instanceof SilentPayment ? new SendToAddress(((SilentPayment)payment).getSilentPaymentAddress()) : new SendToAddress(payment.getAddress());
+        }
+
+        public Payment toPayment(String label, long value, boolean sendMax) {
+            if(silentPaymentAddress != null) {
+                return new SilentPayment(silentPaymentAddress, label, value, sendMax);
+            } else {
+                return new Payment(address, label, value, sendMax);
+            }
+        }
+    }
+
+    private static class SendToAddressStringConverter extends StringConverter<SendToAddress> {
+        private final AddressStringConverter addressStringConverter = new AddressStringConverter();
+
+        @Override
+        public SendToAddress fromString(String value) {
+            try {
+                SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(value);
+                return new SendToAddress(silentPaymentAddress);
+            } catch(Exception e) {
+                Address address = addressStringConverter.fromString(value);
+                return address == null ? null : new SendToAddress(address);
+            }
+        }
+
+        @Override
+        public String toString(SendToAddress value) {
+            return value.toString();
+        }
+    }
 }

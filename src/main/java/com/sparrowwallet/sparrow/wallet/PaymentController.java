@@ -14,6 +14,8 @@ import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.silentpayments.SilentPayment;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.*;
@@ -143,6 +145,8 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private final ObjectProperty<PayNym> payNymProperty = new SimpleObjectProperty<>();
 
+    private final ObjectProperty<SilentPaymentAddress> silentPaymentAddressProperty = new SimpleObjectProperty<>();
+
     private final ObjectProperty<DnsPayment> dnsPaymentProperty = new SimpleObjectProperty<>();
 
     private static final Wallet payNymWallet = new Wallet() {
@@ -170,6 +174,10 @@ public class PaymentController extends WalletFormController implements Initializ
 
             if(dnsPaymentProperty.get() != null && !newValue.equals(dnsPaymentProperty.get().hrn())) {
                 dnsPaymentProperty.set(null);
+            }
+
+            if(silentPaymentAddressProperty.get() != null && !newValue.equals(silentPaymentAddressProperty.get().getAddress())) {
+                silentPaymentAddressProperty.set(null);
             }
 
             try {
@@ -235,6 +243,13 @@ public class PaymentController extends WalletFormController implements Initializ
                 } catch(Exception e) {
                     //ignore, not a payment code
                 }
+            }
+
+            try {
+                SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(newValue);
+                setSilentPaymentAddress(silentPaymentAddress);
+            } catch(Exception e) {
+                //ignore, not a silent payment address
             }
 
             revalidateAmount();
@@ -309,6 +324,10 @@ public class PaymentController extends WalletFormController implements Initializ
         });
 
         payNymProperty.addListener((observable, oldValue, payNym) -> {
+            revalidateAmount();
+        });
+
+        silentPaymentAddressProperty.addListener((observable, oldValue, silentPaymentAddress) -> {
             revalidateAmount();
         });
 
@@ -402,19 +421,33 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     public void setDnsPayment(DnsPayment dnsPayment) {
-        if(dnsPayment.bitcoinURI().getAddress() == null) {
-            AppServices.showWarningDialog("No Address Provided", "The DNS payment instruction for " + dnsPayment.hrn() + " resolved correctly but did not contain a Bitcoin address.");
+        if(dnsPayment.hasAddress()) {
+            DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
+        } else if(dnsPayment.hasSilentPaymentAddress()) {
+            DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getSilentPaymentAddress(), dnsPayment);
+            setSilentPaymentAddress(dnsPayment.bitcoinURI().getSilentPaymentAddress());
+        } else {
+            AppServices.showWarningDialog("No Address Provided", "The DNS payment instruction for " + dnsPayment.hrn() + " resolved correctly but did not contain a bitcoin address.");
             return;
         }
 
-        DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
         dnsPaymentProperty.set(dnsPayment);
         address.setText(dnsPayment.hrn());
         revalidate(address, addressListener);
         address.leftProperty().set(getBitcoinCharacter());
-        if(label.getText().isEmpty() || label.getText().startsWith("To ₿")) {
-            label.setText("To " + dnsPayment);
+        if(label.getText().isEmpty() || (label.getText().startsWith("₿") && !label.getText().contains(" "))) {
+            label.setText(dnsPayment.toString());
         }
+        label.requestFocus();
+    }
+
+    private void setSilentPaymentAddress(SilentPaymentAddress silentPaymentAddress) {
+        if(!sendController.getWalletForm().getWallet().canSendSilentPayments()) {
+            Platform.runLater(() -> AppServices.showErrorDialog("Silent Payments Unsupported", "This wallet does not support sending silent payments. Use a single signature software wallet."));
+            return;
+        }
+
+        silentPaymentAddressProperty.set(silentPaymentAddress);
         label.requestFocus();
     }
 
@@ -489,8 +522,13 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private Address getRecipientAddress() throws InvalidAddressException {
+        SilentPaymentAddress silentPaymentAddress = silentPaymentAddressProperty.get();
+        if(silentPaymentAddress != null) {
+            return SilentPayment.getDummyAddress();
+        }
+
         DnsPayment dnsPayment = dnsPaymentProperty.get();
-        if(dnsPayment != null) {
+        if(dnsPayment != null && dnsPayment.hasAddress()) {
             return dnsPayment.bitcoinURI().getAddress();
         }
 
@@ -630,7 +668,14 @@ public class PaymentController extends WalletFormController implements Initializ
             Long value = sendAll ? Long.valueOf(getRecipientDustThreshold() + 1) : getRecipientValueSats();
 
             if(!label.getText().isEmpty() && value != null && value >= getRecipientDustThreshold()) {
-                Payment payment = new Payment(recipientAddress, label.getText(), value, sendAll);
+                Payment payment;
+                SilentPaymentAddress silentPaymentAddress = silentPaymentAddressProperty.get();
+                if(silentPaymentAddress != null) {
+                    payment = new SilentPayment(silentPaymentAddress, label.getText(), value, sendAll);
+                } else {
+                    payment = new Payment(recipientAddress, label.getText(), value, sendAll);
+                }
+
                 if(address.getUserData() != null) {
                     payment.setType((Payment.Type)address.getUserData());
                 }
@@ -647,7 +692,11 @@ public class PaymentController extends WalletFormController implements Initializ
     public void setPayment(Payment payment) {
         if(getRecipientValueSats() == null || payment.getAmount() != getRecipientValueSats()) {
             if(payment.getAddress() != null) {
-                address.setText(payment.getAddress().toString());
+                if(payment instanceof SilentPayment silentPayment) {
+                    address.setText(silentPayment.getSilentPaymentAddress().getAddress());
+                } else {
+                    address.setText(payment.getAddress().toString());
+                }
                 address.setUserData(payment.getType());
             }
             if(payment.getLabel() != null && !label.getText().equals(payment.getLabel())) {
@@ -680,6 +729,7 @@ public class PaymentController extends WalletFormController implements Initializ
         dustAmountProperty.set(false);
         payNymProperty.set(null);
         dnsPaymentProperty.set(null);
+        silentPaymentAddressProperty.set(null);
     }
 
     public void setMaxInput(ActionEvent event) {

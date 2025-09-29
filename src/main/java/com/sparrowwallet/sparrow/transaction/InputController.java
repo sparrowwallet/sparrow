@@ -337,7 +337,7 @@ public class InputController extends TransactionFormController implements Initia
                 }
             } else {
                 if(txInput.isAbsoluteTimeLocked()) {
-                    txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
+                    txInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_DISABLED);
                     if(oldValue != null) {
                         EventManager.get().post(new TransactionChangedEvent(transaction));
                     }
@@ -389,7 +389,7 @@ public class InputController extends TransactionFormController implements Initia
                     if(rbf.selectedProperty().getValue()) {
                         txInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_ENABLED);
                     } else {
-                        txInput.setSequenceNumber(TransactionInput.SEQUENCE_LOCKTIME_DISABLED - 1);
+                        txInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_DISABLED);
                     }
                     if(old_toggle != null) {
                         EventManager.get().post(new TransactionChangedEvent(transaction));

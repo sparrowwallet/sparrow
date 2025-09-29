@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.*;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
@@ -822,10 +823,10 @@ public class AppController implements Initializable {
                 try(FileOutputStream outputStream = new FileOutputStream(file)) {
                     if(asText) {
                         PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-                        writer.print(transactionTabData.getPsbt().toBase64String(includeXpubs));
+                        writer.print(transactionTabData.getPsbt().getForExport().toBase64String(includeXpubs));
                         writer.flush();
                     } else {
-                        outputStream.write(transactionTabData.getPsbt().serialize(includeXpubs, true));
+                        outputStream.write(transactionTabData.getPsbt().getForExport().serialize(includeXpubs, true));
                     }
                 } catch(IOException e) {
                     log.error("Error saving PSBT", e);
@@ -848,7 +849,7 @@ public class AppController implements Initializable {
         TabData tabData = (TabData)selectedTab.getUserData();
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
-            String data = asBase64 ? transactionTabData.getPsbt().toBase64String() : transactionTabData.getPsbt().toString();
+            String data = asBase64 ? transactionTabData.getPsbt().getForExport().toBase64String() : transactionTabData.getPsbt().getForExport().toString();
 
             ClipboardContent content = new ClipboardContent();
             content.putString(data);
@@ -862,7 +863,7 @@ public class AppController implements Initializable {
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
 
-            byte[] psbtBytes = transactionTabData.getPsbt().serialize();
+            byte[] psbtBytes = transactionTabData.getPsbt().getForExport().serialize();
             CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
             BBQR bbqr = new BBQR(BBQRType.PSBT, psbtBytes);
             QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, false);
@@ -1897,6 +1898,11 @@ public class AppController implements Initializable {
     }
 
     private void addTransactionTab(String name, File file, PSBT psbt) {
+        //Convert to PSBTv0 first
+        if(psbt.getVersion() != null && psbt.getVersion() >= 2) {
+            psbt.convertVersion(0);
+        }
+
         //Add any missing previous outputs if available in open wallets
         for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
             if(psbtInput.getUtxo() == null) {
@@ -1920,13 +1926,32 @@ public class AppController implements Initializable {
         for(PSBTOutput psbtOutput : psbt.getPsbtOutputs()) {
             if(psbtOutput.getDnssecProof() != null && !psbtOutput.getDnssecProof().isEmpty() && psbtOutput.getScript() != null) {
                 Address address = psbtOutput.getScript().getToAddress();
-                if(address != null && DnsPaymentCache.getDnsPayment(address) == null) {
-                    try {
-                        Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
-                        optDnsPayment.ifPresent(dnsPayment -> DnsPaymentCache.putDnsPayment(address, dnsPayment));
-                    } catch(Exception e) {
-                        log.debug("Error resolving DNS payment", e);
-                    }
+                if(address != null) {
+                    Optional<SilentPaymentAddress> optSilentPaymentAddress = AppServices.get().getOpenWallets().keySet().stream()
+                            .map(wallet -> wallet.getSilentPaymentAddress(address)).filter(Objects::nonNull).findFirst();
+                    optSilentPaymentAddress.ifPresentOrElse(silentPaymentAddress -> {
+                        if(DnsPaymentCache.getDnsPayment(silentPaymentAddress) == null) {
+                            try {
+                                Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                                if(optDnsPayment.isPresent() && optDnsPayment.get().hasSilentPaymentAddress()) {
+                                    DnsPaymentCache.putDnsPayment(silentPaymentAddress, optDnsPayment.get());
+                                }
+                            } catch(Exception e) {
+                                log.debug("Error resolving DNS payment", e);
+                            }
+                        }
+                    }, () -> {
+                        if(DnsPaymentCache.getDnsPayment(address) == null) {
+                            try {
+                                Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                                if(optDnsPayment.isPresent() && optDnsPayment.get().hasAddress()) {
+                                    DnsPaymentCache.putDnsPayment(address, optDnsPayment.get());
+                                }
+                            } catch(Exception e) {
+                                log.debug("Error resolving DNS payment", e);
+                            }
+                        }
+                    });
                 }
             }
         }

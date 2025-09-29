@@ -835,8 +835,8 @@ public class AppServices {
     }
 
     public static void addPayjoinURI(BitcoinURI bitcoinURI) {
-        if(bitcoinURI.getPayjoinUrl() == null) {
-            throw new IllegalArgumentException("Not a payjoin URI");
+        if(bitcoinURI.getPayjoinUrl() == null || bitcoinURI.getAddress() == null) {
+            throw new IllegalArgumentException("Not a valid payjoin URI");
         }
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }

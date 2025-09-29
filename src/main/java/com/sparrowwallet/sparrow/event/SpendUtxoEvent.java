@@ -17,12 +17,13 @@ public class SpendUtxoEvent {
     private final boolean requireAllUtxos;
     private final BlockTransaction replacedTransaction;
     private final PaymentCode paymentCode;
+    private final boolean allowPaymentChanges;
 
     public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos) {
-        this(wallet, utxos, null, null, null, false, null);
+        this(wallet, utxos, null, null, null, false, null, true);
     }
 
-    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, List<byte[]> opReturns, Long fee, boolean requireAllUtxos, BlockTransaction replacedTransaction) {
+    public SpendUtxoEvent(Wallet wallet, List<BlockTransactionHashIndex> utxos, List<Payment> payments, List<byte[]> opReturns, Long fee, boolean requireAllUtxos, BlockTransaction replacedTransaction, boolean allowPaymentChanges) {
         this.wallet = wallet;
         this.utxos = utxos;
         this.payments = payments;
@@ -31,6 +32,7 @@ public class SpendUtxoEvent {
         this.requireAllUtxos = requireAllUtxos;
         this.replacedTransaction = replacedTransaction;
         this.paymentCode = null;
+        this.allowPaymentChanges = allowPaymentChanges;
     }
 
     public SpendUtxoEvent(Wallet wallet, List<Payment> payments, List<byte[]> opReturns, PaymentCode paymentCode) {
@@ -42,6 +44,7 @@ public class SpendUtxoEvent {
         this.requireAllUtxos = false;
         this.replacedTransaction = null;
         this.paymentCode = paymentCode;
+        this.allowPaymentChanges = false;
     }
 
     public Wallet getWallet() {
@@ -74,5 +77,9 @@ public class SpendUtxoEvent {
 
     public PaymentCode getPaymentCode() {
         return paymentCode;
+    }
+
+    public boolean allowPaymentChanges() {
+        return allowPaymentChanges;
     }
 }

@@ -6,12 +6,12 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.address.Address;
-import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.bip47.SecretPoint;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.*;
 import com.sparrowwallet.sparrow.control.*;
@@ -615,9 +615,14 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 BlockTransaction replacedTransaction = replacedTransactionProperty.get();
 
+                //Disable RBF for silent payments, as we can't guarantee RBF won't be attempted on another device without knowledge to recompute the address if necessary
+                boolean allowRbf = (replacedTransaction == null || replacedTransaction.getTransaction().isReplaceByFee())
+                        && payments.stream().noneMatch(payment -> payment instanceof SilentPayment);
+
                 walletTransactionService = new WalletTransactionService(addressNodeMap, wallet, getUtxoSelectors(payments), getTxoFilters(),
                         payments, opReturnsList, excludedChangeNodes,
-                        feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, replacedTransaction);
+                        feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee,
+                        currentBlockHeight, groupByAddress, includeMempoolOutputs, replacedTransaction, allowRbf);
                 walletTransactionService.setOnSucceeded(event -> {
                     if(!walletTransactionService.isIgnoreResult()) {
                         walletTransactionProperty.setValue(walletTransactionService.getValue());
@@ -652,12 +657,12 @@ public class SendController extends WalletFormController implements Initializabl
 
                 walletTransactionService.start();
             }
-        } catch(InvalidAddressException | IllegalStateException e) {
+        } catch(IllegalStateException e) {
             walletTransactionProperty.setValue(null);
         }
     }
 
-    private List<UtxoSelector> getUtxoSelectors(List<Payment> payments) throws InvalidAddressException {
+    private List<UtxoSelector> getUtxoSelectors(List<Payment> payments) {
         if(utxoSelectorProperty.get() != null) {
             return List.of(utxoSelectorProperty.get());
         }
@@ -694,13 +699,15 @@ public class SendController extends WalletFormController implements Initializabl
         private final boolean groupByAddress;
         private final boolean includeMempoolOutputs;
         private final BlockTransaction replacedTransaction;
+        private final boolean allowRbf;
         private boolean ignoreResult;
 
         public WalletTransactionService(Map<Wallet, Map<Address, WalletNode>> addressNodeMap,
                                         Wallet wallet, List<UtxoSelector> utxoSelectors, List<TxoFilter> txoFilters,
                                         List<Payment> payments, List<byte[]> opReturns, Set<WalletNode> excludedChangeNodes,
                                         double feeRate, double longTermFeeRate, double minRelayFeeRate, Long fee,
-                                        Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs, BlockTransaction replacedTransaction) {
+                                        Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs,
+                                        BlockTransaction replacedTransaction, boolean allowRbf) {
             this.addressNodeMap = addressNodeMap;
             this.wallet = wallet;
             this.utxoSelectors = utxoSelectors;
@@ -716,6 +723,7 @@ public class SendController extends WalletFormController implements Initializabl
             this.groupByAddress = groupByAddress;
             this.includeMempoolOutputs = includeMempoolOutputs;
             this.replacedTransaction = replacedTransaction;
+            this.allowRbf = allowRbf;
         }
 
         @Override
@@ -725,7 +733,8 @@ public class SendController extends WalletFormController implements Initializabl
                     try {
                         return getWalletTransaction();
                     } catch(InsufficientFundsException e) {
-                        if(e.getTargetValue() != null && replacedTransaction != null && utxoSelectors.size() == 1 && utxoSelectors.get(0) instanceof PresetUtxoSelector presetUtxoSelector) {
+                        if(e.getTargetValue() != null && replacedTransaction != null && wallet.isSafeToAddInputsOrOutputs(replacedTransaction)
+                                && utxoSelectors.size() == 1 && utxoSelectors.getFirst() instanceof PresetUtxoSelector presetUtxoSelector) {
                             //Creating RBF transaction - include additional UTXOs if available to pay desired fee
                             List<TxoFilter> filters = new ArrayList<>(txoFilters);
                             filters.add(presetUtxoSelector.asExcludeTxoFilter());
@@ -734,7 +743,7 @@ public class SendController extends WalletFormController implements Initializabl
                             Collections.shuffle(outputGroups);
 
                             while(!outputGroups.isEmpty() && presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum() < e.getTargetValue()) {
-                                OutputGroup outputGroup = outputGroups.remove(0);
+                                OutputGroup outputGroup = outputGroups.removeFirst();
                                 for(BlockTransactionHashIndex utxo : outputGroup.getUtxos()) {
                                     presetUtxoSelector.getPresetUtxos().add(utxo);
                                 }
@@ -748,12 +757,16 @@ public class SendController extends WalletFormController implements Initializabl
                 }
 
                 private WalletTransaction getWalletTransaction() throws InsufficientFundsException {
-                    updateMessage("Selecting UTXOs...");
-                    WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, excludedChangeNodes,
-                            feeRate, longTermFeeRate, minRelayFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs);
-                    updateMessage("Deriving keys...");
-                    walletTransaction.updateAddressNodeMap(addressNodeMap, walletTransaction.getWallet());
-                    return walletTransaction;
+                    try {
+                        updateMessage("Selecting UTXOs...");
+                        WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, excludedChangeNodes,
+                                feeRate, longTermFeeRate, minRelayFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, allowRbf);
+                        updateMessage("Deriving keys...");
+                        walletTransaction.updateAddressNodeMap(addressNodeMap, walletTransaction.getWallet());
+                        return walletTransaction;
+                    } finally {
+                        updateMessage("");
+                    }
                 }
             };
         }
@@ -1252,7 +1265,7 @@ public class SendController extends WalletFormController implements Initializabl
             boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
 
             WalletTransaction finalWalletTx = decryptedWallet.createWalletTransaction(utxoSelectors, getTxoFilters(), walletTransaction.getPayments(), List.of(blindedPaymentCode),
-                    excludedChangeNodes, feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs);
+                    excludedChangeNodes, feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee, currentBlockHeight, groupByAddress, includeMempoolOutputs, true);
             PSBT psbt = finalWalletTx.createPSBT();
             decryptedWallet.sign(psbt);
             decryptedWallet.finalise(psbt);
@@ -1511,7 +1524,7 @@ public class SendController extends WalletFormController implements Initializabl
             notificationButton.setVisible(isNotificationTransaction);
             notificationButton.setDefaultButton(isNotificationTransaction);
 
-            setInputFieldsDisabled(isNotificationTransaction, false);
+            setInputFieldsDisabled(!event.allowPaymentChanges(), false);
         }
     }
 

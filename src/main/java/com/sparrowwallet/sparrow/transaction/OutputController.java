@@ -5,14 +5,12 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
-import com.sparrowwallet.sparrow.event.PSBTReorderedEvent;
-import com.sparrowwallet.sparrow.event.UnitFormatChangedEvent;
-import com.sparrowwallet.sparrow.event.BlockTransactionOutputsFetchedEvent;
-import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -70,20 +68,7 @@ public class OutputController extends TransactionFormController implements Initi
             updateOutputLegendFromWallet(txOutput, walletTransaction != null ? walletTransaction.getWallet() : null);
         });
         updateOutputLegendFromWallet(txOutput, outputForm.getWallet());
-
-        value.setValue(txOutput.getValue());
-        to.setVisible(false);
-        try {
-            Address[] addresses = txOutput.getScript().getToAddresses();
-            to.setVisible(true);
-            if(addresses.length == 1) {
-                address.setAddress(addresses[0]);
-            } else {
-                address.setText("multiple addresses");
-            }
-        } catch(NonStandardScriptException e) {
-            //ignore
-        }
+        updateSends(txOutput);
 
         spentField.managedProperty().bind(spentField.visibleProperty());
         spentByField.managedProperty().bind(spentByField.visibleProperty());
@@ -98,6 +83,32 @@ public class OutputController extends TransactionFormController implements Initi
         }
 
         initializeScriptField(scriptPubKeyArea);
+        updateScriptPubKey(txOutput);
+    }
+
+    private void updateSends(TransactionOutput txOutput) {
+        value.setValue(txOutput.getValue());
+        to.setVisible(false);
+        Address toAddress = txOutput.getScript().getToAddress();
+        SilentPaymentAddress silentPaymentAddress = outputForm.getSilentPaymentAddress(txOutput);
+        if(toAddress != null) {
+            to.setVisible(true);
+            address.setAddress(toAddress);
+        } else if(silentPaymentAddress != null) {
+            to.setVisible(true);
+            address.setText(silentPaymentAddress.toAbbreviatedString());
+        } else {
+            try {
+                txOutput.getScript().getToAddresses();
+                to.setVisible(true);
+                address.setText("multiple addresses");
+            } catch(NonStandardScriptException e) {
+                //ignore
+            }
+        }
+    }
+
+    private void updateScriptPubKey(TransactionOutput txOutput) {
         scriptPubKeyArea.clear();
         scriptPubKeyArea.appendScript(txOutput.getScript(), null, null);
     }
@@ -115,6 +126,8 @@ public class OutputController extends TransactionFormController implements Initi
                 WalletTransaction.Output output = outputs.get(outputForm.getIndex());
                 if(output instanceof WalletTransaction.NonAddressOutput) {
                     outputFieldset.setText(baseText);
+                } else if(output instanceof WalletTransaction.SilentPaymentOutput silentPaymentOutput) {
+                    outputFieldset.setText(baseText + " - Silent Payment");
                 } else if(output instanceof WalletTransaction.PaymentOutput paymentOutput) {
                     Payment payment = paymentOutput.getPayment();
                     Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
@@ -204,6 +217,14 @@ public class OutputController extends TransactionFormController implements Initi
     public void psbtReordered(PSBTReorderedEvent event) {
         if(event.getPsbt().equals(outputForm.getPsbt())) {
             updateOutputLegendFromWallet(outputForm.getTransactionOutput(), null);
+        }
+    }
+
+    @Subscribe
+    public void transactionOutputsChanged(TransactionOutputsChangedEvent event) {
+        if(event.getTransaction().equals(outputForm.getTransaction())) {
+            updateSends(outputForm.getTransactionOutput());
+            updateScriptPubKey(outputForm.getTransactionOutput());
         }
     }
 }
