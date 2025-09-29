@@ -463,7 +463,7 @@ public class AppController implements Initializable {
                     settings, new SeparatorMenuItem(),
                     tk.createHideMenuItem(SparrowWallet.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
                     tk.createQuitMenuItem(SparrowWallet.APP_NAME));
-            tk.setApplicationMenu(defaultApplicationMenu);
+            Platform.runLater(() -> tk.setApplicationMenu(defaultApplicationMenu));
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
             toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));

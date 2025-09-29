@@ -1,7 +1,7 @@
 plugins {
     id 'application'
     id 'org-openjfx-javafxplugin'
-    id 'org.beryx.jlink' version '3.1.2'
+    id 'org.beryx.jlink' version '3.1.4-rc'
     id 'org.gradlex.extra-java-module-info' version '1.13'
     id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.16.3'
 }
@@ -33,7 +33,7 @@ tasks.withType(AbstractArchiveTask) {
 }
 
 javafx {
-    version = headless ? "18" : "23.0.2"
+    version = headless ? "18" : "25"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 
@@ -58,7 +58,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('org.flywaydb:flyway-core:9.22.3')
-    implementation('org.fxmisc.richtext:richtextfx:0.10.4')
+    implementation('org.fxmisc.richtext:richtextfx:0.11.6')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('com.google.zxing:javase:3.4.0') {
         exclude group: 'com.beust', module: 'jcommander'
@@ -142,6 +142,10 @@ application {
     mainClass = 'com.sparrowwallet.sparrow.SparrowWallet'
 
     applicationDefaultJvmArgs = ["-XX:+HeapDumpOnOutOfMemoryError",
+                                 "--enable-native-access=com.sparrowwallet.drongo",
+                                 "--enable-native-access=javafx.graphics",
+                                 "--enable-native-access=com.fazecast.jSerialComm",
+                                 "--enable-native-access=org.usb4java",
                                  "--enable-native-access=io.github.doblon8.jzbar",
                                  "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                                  "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
@@ -191,7 +195,12 @@ jlink {
     options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', 'zip-6', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png', '--exclude-resources', 'glob:/com.sparrowwallet.merged.module/META-INF/*']
     launcher {
         name = 'sparrow'
-        jvmArgs = ["--enable-native-access=io.github.doblon8.jzbar",
+        jvmArgs = ["--enable-native-access=com.sparrowwallet.drongo",
+                   "--enable-native-access=javafx.graphics",
+                   "--enable-native-access=com.sparrowwallet.merged.module",
+                   "--enable-native-access=com.fazecast.jSerialComm",
+                   "--enable-native-access=org.usb4java",
+                   "--enable-native-access=io.github.doblon8.jzbar",
                    "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                    "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
                    "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls",
@@ -224,6 +233,7 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.pg",
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.provider",
                    "--add-reads=com.sparrowwallet.merged.module=kotlin.stdlib",
+                   "--add-reads=com.sparrowwallet.merged.module=org.reactfx.reactfx",
                    "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
                    "--add-reads=org.flywaydb.core=java.desktop"]
 
@@ -419,10 +429,10 @@ extraJavaModuleInfo {
         requires('javafx.graphics')
         requires('org.fxmisc.flowless')
         requires('org.reactfx.reactfx')
-        requires('org.fxmisc.undo.undofx')
+        requires('org.fxmisc.undo')
         requires('org.fxmisc.wellbehaved')
     }
-    module('org.fxmisc.undo:undofx', 'org.fxmisc.undo.undofx') {
+    module('org.fxmisc.undo:undofx', 'org.fxmisc.undo') {
         requires('javafx.base')
         requires('javafx.controls')
         requires('javafx.graphics')
