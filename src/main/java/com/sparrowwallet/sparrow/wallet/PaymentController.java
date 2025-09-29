@@ -188,12 +188,19 @@ public class PaymentController extends WalletFormController implements Initializ
                 //ignore, not a URI
             }
 
-            String dnsPaymentHrn = getDnsPaymentHrn(newValue);
-            if(dnsPaymentHrn != null) {
+            Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(newValue);
+            if(optDnsPaymentHrn.isPresent()) {
+                String dnsPaymentHrn = optDnsPaymentHrn.get();
+                DnsPayment cachedDnsPayment = DnsPaymentCache.getDnsPayment(dnsPaymentHrn);
+                if(cachedDnsPayment != null) {
+                    setDnsPayment(cachedDnsPayment);
+                    return;
+                }
+
                 if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
-                    if(Config.get().getConnectToResolve() == null) {
+                    if(Config.get().getConnectToResolve() == null || Config.get().getConnectToResolve() == Boolean.FALSE) {
                         Platform.runLater(() -> {
-                            ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "Connect to the configured server to resolve the address?", ButtonType.NO, ButtonType.YES);
+                            ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "You are currently offline. Connect to resolve the address?", ButtonType.NO, ButtonType.YES);
                             Optional<ButtonType> optType = confirmationAlert.showAndWait();
                             if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
                                 Config.get().setConnectToResolve(optType.get() == ButtonType.YES);
@@ -202,7 +209,7 @@ public class PaymentController extends WalletFormController implements Initializ
                                 EventManager.get().post(new RequestConnectEvent());
                             }
                         });
-                    } else if(Config.get().getConnectToResolve()) {
+                    } else {
                         Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
                     }
                     return;
@@ -555,25 +562,6 @@ public class PaymentController extends WalletFormController implements Initializ
         throw new InvalidAddressException();
     }
 
-    private String getDnsPaymentHrn(String value) {
-        String hrn = value;
-        if(value.endsWith(".")) {
-            return null;
-        }
-
-        if(hrn.startsWith("₿")) {
-            hrn = hrn.substring(1);
-        }
-
-        String[] addressParts = hrn.split("@");
-        if(addressParts.length == 2 && addressParts[1].indexOf('.') > -1 && addressParts[1].substring(addressParts[1].indexOf('.') + 1).length() > 1 &&
-                StandardCharsets.US_ASCII.newEncoder().canEncode(hrn)) {
-            return hrn;
-        }
-
-        return null;
-    }
-
     private Wallet getWalletForPayNym(PayNym payNym) throws InvalidPaymentCodeException {
         Wallet masterWallet = sendController.getWalletForm().getMasterWallet();
         return masterWallet.getChildWallet(new PaymentCode(payNym.paymentCode().toString()), payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH);
@@ -692,7 +680,10 @@ public class PaymentController extends WalletFormController implements Initializ
     public void setPayment(Payment payment) {
         if(getRecipientValueSats() == null || payment.getAmount() != getRecipientValueSats()) {
             if(payment.getAddress() != null) {
-                if(payment instanceof SilentPayment silentPayment) {
+                DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(payment);
+                if(dnsPayment != null) {
+                    address.setText(dnsPayment.hrn());
+                } else if(payment instanceof SilentPayment silentPayment) {
                     address.setText(silentPayment.getSilentPaymentAddress().getAddress());
                 } else {
                     address.setText(payment.getAddress().toString());
