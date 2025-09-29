@@ -4,7 +4,6 @@ import io.github.doblon8.jzbar.Config;
 import io.github.doblon8.jzbar.Image;
 import io.github.doblon8.jzbar.ImageScanner;
 import io.github.doblon8.jzbar.SymbolType;
-import com.sparrowwallet.sparrow.net.NativeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,18 +14,8 @@ import java.awt.image.DataBufferByte;
 public class ZBar {
     private static final Logger log = LoggerFactory.getLogger(ZBar.class);
 
-    private final static boolean enabled;
-
-    static { // static initializer
-        if(com.sparrowwallet.sparrow.io.Config.get().isUseZbar()) {
-            enabled = loadLibrary();
-        } else {
-            enabled = false;
-        }
-    }
-
     public static boolean isEnabled() {
-        return enabled;
+        return com.sparrowwallet.sparrow.io.Config.get().isUseZbar();
     }
 
     public static Scan scan(BufferedImage bufferedImage) {
@@ -91,31 +80,6 @@ public class ZBar {
         }
 
         return outputData;
-    }
-
-    private static boolean loadLibrary() {
-        try {
-            String osName = System.getProperty("os.name");
-            String osArch = System.getProperty("os.arch");
-            if(osName.startsWith("Mac") && osArch.equals("aarch64")) {
-                NativeUtils.loadLibraryFromJar("/native/osx/aarch64/libzbar.dylib");
-            } else if(osName.startsWith("Mac")) {
-                NativeUtils.loadLibraryFromJar("/native/osx/x64/libzbar.dylib");
-            } else if(osName.startsWith("Windows")) {
-                NativeUtils.loadLibraryFromJar("/native/windows/x64/iconv-2.dll");
-                NativeUtils.loadLibraryFromJar("/native/windows/x64/zbar.dll");
-            } else if(osArch.equals("aarch64")) {
-                NativeUtils.loadLibraryFromJar("/native/linux/aarch64/libzbar.so");
-            } else {
-                NativeUtils.loadLibraryFromJar("/native/linux/x64/libzbar.so");
-            }
-
-            return true;
-        } catch(Exception e) {
-            log.warn("Could not load ZBar native libraries, disabling. " + e.getMessage());
-        }
-
-        return false;
     }
 
     private static byte[] getRawBytes(String str) {
