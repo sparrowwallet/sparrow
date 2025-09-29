@@ -143,6 +143,7 @@ application {
 
     applicationDefaultJvmArgs = ["-XX:+HeapDumpOnOutOfMemoryError",
                                  "--enable-native-access=com.sparrowwallet.drongo",
+                                 "--enable-native-access=com.sun.jna",
                                  "--enable-native-access=javafx.graphics",
                                  "--enable-native-access=com.fazecast.jSerialComm",
                                  "--enable-native-access=org.usb4java",
@@ -196,6 +197,7 @@ jlink {
     launcher {
         name = 'sparrow'
         jvmArgs = ["--enable-native-access=com.sparrowwallet.drongo",
+                   "--enable-native-access=com.sun.jna",
                    "--enable-native-access=javafx.graphics",
                    "--enable-native-access=com.sparrowwallet.merged.module",
                    "--enable-native-access=com.fazecast.jSerialComm",

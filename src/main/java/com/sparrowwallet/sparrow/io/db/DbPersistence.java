@@ -171,7 +171,7 @@ public class DbPersistence implements Persistence {
 
     private synchronized void createUpdateExecutor(Wallet masterWallet) {
         if(updateExecutor == null) {
-            BasicThreadFactory factory = new BasicThreadFactory.Builder().namingPattern(masterWallet.getFullName() + "-dbupdater").daemon(true).priority(Thread.NORM_PRIORITY).build();
+            BasicThreadFactory factory = BasicThreadFactory.builder().namingPattern(masterWallet.getFullName() + "-dbupdater").daemon(true).priority(Thread.NORM_PRIORITY).build();
             updateExecutor = Executors.newSingleThreadExecutor(factory);
         }
     }
