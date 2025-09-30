@@ -74,7 +74,7 @@ dependencies {
     implementation('com.fasterxml.jackson.core:jackson-databind:2.17.2')
     implementation('com.sparrowwallet:hummingbird:1.7.4')
     implementation('co.nstant.in:cbor:0.9')
-    implementation('org.openpnp:openpnp-capture-java:0.0.28-7')
+    implementation('org.openpnp:openpnp-capture-java:0.0.28-6')
     implementation("io.matthewnelson.kmp-tor:runtime:2.2.1")
     implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.16.3")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.1') {
