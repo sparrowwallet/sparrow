@@ -684,7 +684,7 @@ public class Storage {
 
         public static Executor getSingleThreadedExecutor() {
             if(singleThreadedExecutor == null) {
-                BasicThreadFactory factory = new BasicThreadFactory.Builder().namingPattern("LoadWalletService-single").daemon(true).priority(Thread.MIN_PRIORITY).build();
+                BasicThreadFactory factory = BasicThreadFactory.builder().namingPattern("LoadWalletService-single").daemon(true).priority(Thread.MIN_PRIORITY).build();
                 singleThreadedExecutor = Executors.newSingleThreadScheduledExecutor(factory);
             }
 

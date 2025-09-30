@@ -51,10 +51,10 @@ dependencies {
     implementation('com.zaxxer:HikariCP:4.0.3') {
         exclude group: 'org.slf4j'
     }
-    implementation('org.jdbi:jdbi3-core:3.20.0') {
+    implementation('org.jdbi:jdbi3-core:3.49.5') {
         exclude group: 'org.slf4j'
     }
-    implementation('org.jdbi:jdbi3-sqlobject:3.20.0') {
+    implementation('org.jdbi:jdbi3-sqlobject:3.49.5') {
         exclude group: 'org.slf4j'
     }
     implementation('org.flywaydb:flyway-core:9.22.3')
@@ -407,21 +407,6 @@ extraJavaModuleInfo {
     module('com.google.guava:listenablefuture|empty-to-avoid-conflict-with-guava', 'com.google.guava.listenablefuture')
     module('com.google.code.findbugs:jsr305', 'com.google.code.findbugs.jsr305')
     module('j2objc-annotations-2.8.jar', 'com.google.j2objc.j2objc.annotations', '2.8')
-    module('org.jdbi:jdbi3-core', 'org.jdbi.v3.core') {
-        exports('org.jdbi.v3.core')
-        exports('org.jdbi.v3.core.mapper')
-        exports('org.jdbi.v3.core.statement')
-        exports('org.jdbi.v3.core.result')
-        exports('org.jdbi.v3.core.h2')
-        exports('org.jdbi.v3.core.spi')
-        requires('io.leangen.geantyref')
-        requires('java.sql')
-        requires('org.slf4j')
-        requires('com.github.benmanes.caffeine')
-    }
-    module('io.leangen.geantyref:geantyref', 'io.leangen.geantyref') {
-        exports('io.leangen.geantyref')
-    }
     module('org.fxmisc.richtext:richtextfx', 'org.fxmisc.richtext') {
         exports('org.fxmisc.richtext')
         exports('org.fxmisc.richtext.event')

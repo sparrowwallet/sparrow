@@ -27,6 +27,7 @@ open module com.sparrowwallet.sparrow {
     requires com.google.gson;
     requires org.jdbi.v3.core;
     requires org.jdbi.v3.sqlobject;
+    requires io.leangen.geantyref;
     requires org.flywaydb.core;
     requires com.zaxxer.hikari;
     requires com.h2database;
