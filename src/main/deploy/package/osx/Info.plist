@@ -33,6 +33,8 @@
   <string>Copyright (C) 2021</string>
   <key>NSHighResolutionCapable</key>
   <string>true</string>
+  <key>NSCameraUseContinuityCameraDeviceType</key>
+  <true/>
   <key>NSCameraUsageDescription</key>
   <string>Sparrow requires access to the camera in order to scan QR codes</string>
   <key>NSLocalNetworkUsageDescription</key>
