@@ -1924,34 +1924,33 @@ public class AppController implements Initializable {
 
         //Add DNS payment information if not already cached
         for(PSBTOutput psbtOutput : psbt.getPsbtOutputs()) {
-            if(psbtOutput.getDnssecProof() != null && !psbtOutput.getDnssecProof().isEmpty() && psbtOutput.getScript() != null) {
-                Address address = psbtOutput.getScript().getToAddress();
-                if(address != null) {
-                    Optional<SilentPaymentAddress> optSilentPaymentAddress = AppServices.get().getOpenWallets().keySet().stream()
-                            .map(wallet -> wallet.getSilentPaymentAddress(address)).filter(Objects::nonNull).findFirst();
-                    optSilentPaymentAddress.ifPresentOrElse(silentPaymentAddress -> {
-                        if(DnsPaymentCache.getDnsPayment(silentPaymentAddress) == null) {
-                            try {
-                                Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
-                                if(optDnsPayment.isPresent() && optDnsPayment.get().hasSilentPaymentAddress()) {
-                                    DnsPaymentCache.putDnsPayment(silentPaymentAddress, optDnsPayment.get());
-                                }
-                            } catch(Exception e) {
-                                log.debug("Error resolving DNS payment", e);
-                            }
+            if(psbtOutput.getDnssecProof() != null && !psbtOutput.getDnssecProof().isEmpty()) {
+                Address address = psbtOutput.getScript() != null ? psbtOutput.getScript().getToAddress() : null;
+                if(address != null && DnsPaymentCache.getDnsPayment(address) == null) {
+                    try {
+                        Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                        if(optDnsPayment.isPresent() && address.equals(optDnsPayment.get().bitcoinURI().getAddress())) {
+                            DnsPaymentCache.putDnsPayment(address, optDnsPayment.get());
                         }
-                    }, () -> {
-                        if(DnsPaymentCache.getDnsPayment(address) == null) {
-                            try {
-                                Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
-                                if(optDnsPayment.isPresent() && optDnsPayment.get().hasAddress()) {
-                                    DnsPaymentCache.putDnsPayment(address, optDnsPayment.get());
-                                }
-                            } catch(Exception e) {
-                                log.debug("Error resolving DNS payment", e);
-                            }
+                    } catch(Exception e) {
+                        log.debug("Error resolving DNS payment", e);
+                    }
+                }
+
+                SilentPaymentAddress silentPaymentAddress = psbtOutput.getSilentPaymentAddress();
+                if(address != null && silentPaymentAddress == null) {
+                    silentPaymentAddress = AppServices.get().getOpenWallets().keySet().stream()
+                            .map(wallet -> wallet.getSilentPaymentAddress(address)).filter(Objects::nonNull).findFirst().orElse(null);
+                }
+                if(silentPaymentAddress != null && DnsPaymentCache.getDnsPayment(silentPaymentAddress) == null) {
+                    try {
+                        Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                        if(optDnsPayment.isPresent() && silentPaymentAddress.equals(optDnsPayment.get().bitcoinURI().getSilentPaymentAddress())) {
+                            DnsPaymentCache.putDnsPayment(silentPaymentAddress, optDnsPayment.get());
                         }
-                    });
+                    } catch(Exception e) {
+                        log.debug("Error resolving DNS payment", e);
+                    }
                 }
             }
         }
