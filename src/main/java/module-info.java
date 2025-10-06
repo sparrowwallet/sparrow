@@ -34,7 +34,7 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.hummingbird;
     requires org.fxmisc.flowless;
     requires openpnp.capture.java;
-    requires centerdevice.nsmenufx;
+    requires nsmenufx;
     requires org.jcommander;
     requires jul.to.slf4j;
     requires net.sourceforge.javacsv;

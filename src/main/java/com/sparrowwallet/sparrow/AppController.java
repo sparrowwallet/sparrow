@@ -31,7 +31,7 @@ import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
-import de.codecentric.centerdevice.MenuToolkit;
+import de.jangassen.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -50,12 +50,14 @@ import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.*;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
@@ -70,6 +72,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.*;
@@ -463,7 +466,7 @@ public class AppController implements Initializable {
                     settings, new SeparatorMenuItem(),
                     tk.createHideMenuItem(SparrowWallet.APP_NAME), tk.createHideOthersMenuItem(), tk.createUnhideAllMenuItem(), new SeparatorMenuItem(),
                     tk.createQuitMenuItem(SparrowWallet.APP_NAME));
-            Platform.runLater(() -> tk.setApplicationMenu(defaultApplicationMenu));
+            tk.setApplicationMenu(defaultApplicationMenu);
 
             fileMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
             toolsMenu.getItems().removeIf(item -> item.getStyleClass().contains("osxHide"));
