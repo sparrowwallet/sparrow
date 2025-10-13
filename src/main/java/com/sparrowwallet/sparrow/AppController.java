@@ -2096,23 +2096,33 @@ public class AppController implements Initializable {
         }
 
         MenuItem moveRight = new MenuItem("Move Right");
+        moveRight.setAccelerator(new KeyCodeCombination(KeyCode.RIGHT, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         moveRight.setOnAction(event -> {
-            int index = tabs.getTabs().indexOf(tab);
+            int currentIndex = tabs.getSelectionModel().getSelectedIndex();
+            if(currentIndex + 1 >= tabs.getTabs().size()) {
+                return;
+            }
+            Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
             tabs.getTabs().removeListener(tabsChangeListener);
-            tabs.getTabs().remove(tab);
-            tabs.getTabs().add(index + 1, tab);
+            tabs.getTabs().remove(selectedTab);
+            tabs.getTabs().add(currentIndex + 1, selectedTab);
             tabs.getTabs().addListener(tabsChangeListener);
-            tabs.getSelectionModel().select(tab);
+            tabs.getSelectionModel().select(selectedTab);
             EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
         });
         MenuItem moveLeft = new MenuItem("Move Left");
+        moveLeft.setAccelerator(new KeyCodeCombination(KeyCode.LEFT, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         moveLeft.setOnAction(event -> {
-            int index = tabs.getTabs().indexOf(tab);
+            int currentIndex = tabs.getSelectionModel().getSelectedIndex();
+            if(currentIndex == 0) {
+                return;
+            }
+            Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
             tabs.getTabs().removeListener(tabsChangeListener);
-            tabs.getTabs().remove(tab);
-            tabs.getTabs().add(index - 1, tab);
+            tabs.getTabs().remove(selectedTab);
+            tabs.getTabs().add(currentIndex - 1, selectedTab);
             tabs.getTabs().addListener(tabsChangeListener);
-            tabs.getSelectionModel().select(tab);
+            tabs.getSelectionModel().select(selectedTab);
             EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
         });
         contextMenu.getItems().addAll(moveRight, moveLeft);
