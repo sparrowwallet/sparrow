@@ -87,6 +87,8 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             } else if(entry instanceof UtxoEntry) {
                 setGraphic(null);
             } else if(entry instanceof HashIndexEntry) {
+                tooltip.hideConfirmations();
+
                 Region node = new Region();
                 node.setPrefWidth(10);
                 setGraphic(node);
@@ -144,6 +146,14 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 confirmationsProperty.unbind();
                 confirmationsProperty.set(confirmations);
             }
+
+            setTooltipText();
+        }
+
+        public void hideConfirmations() {
+            showConfirmations = false;
+            isCoinbase = false;
+            confirmationsProperty.unbind();
 
             setTooltipText();
         }
