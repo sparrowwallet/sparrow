@@ -50,24 +50,30 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
             EntryCell.applyRowStyles(this, entry);
 
-            CoinTreeTable coinTreeTable = (CoinTreeTable)getTreeTableView();
-            UnitFormat format = coinTreeTable.getUnitFormat();
-            BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
-
-            String satsValue = format.formatSatsValue(amount.longValue());
-            DecimalFormat decimalFormat = (amount.longValue() == 0L ? format.getBtcFormat() : format.getTableBtcFormat());
-            final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
-
-            if(unit.equals(BitcoinUnit.BTC)) {
-                tooltip.setValue(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());
-                setText(btcValue);
+            if(Config.get().isHideAmounts()) {
+                setText("*****");
+                setTooltip(null);
+                setContextMenu(null);
             } else {
-                tooltip.setValue(btcValue + " " + BitcoinUnit.BTC.getLabel());
-                setText(satsValue);
+                CoinTreeTable coinTreeTable = (CoinTreeTable)getTreeTableView();
+                UnitFormat format = coinTreeTable.getUnitFormat();
+                BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
+
+                String satsValue = format.formatSatsValue(amount.longValue());
+                DecimalFormat decimalFormat = (amount.longValue() == 0L ? format.getBtcFormat() : format.getTableBtcFormat());
+                final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
+
+                if(unit.equals(BitcoinUnit.BTC)) {
+                    tooltip.setValue(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());
+                    setText(btcValue);
+                } else {
+                    tooltip.setValue(btcValue + " " + BitcoinUnit.BTC.getLabel());
+                    setText(satsValue);
+                }
+                setTooltip(tooltip);
+                contextMenu.updateAmount(amount);
+                setContextMenu(contextMenu);
             }
-            setTooltip(tooltip);
-            contextMenu.updateAmount(amount);
-            setContextMenu(contextMenu);
 
             if(entry instanceof TransactionEntry transactionEntry) {
                 tooltip.showConfirmations(transactionEntry.confirmationsProperty(), transactionEntry.isCoinbase());
@@ -95,7 +101,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 setContentDisplay(ContentDisplay.RIGHT);
 
                 if(((HashIndexEntry) entry).getType() == HashIndexEntry.Type.INPUT) {
-                    satsValue = "-" + satsValue;
+                    setText("-" + getText());
                 }
             } else {
                 setGraphic(null);

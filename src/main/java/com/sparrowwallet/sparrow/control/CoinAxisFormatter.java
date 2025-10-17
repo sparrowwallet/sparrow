@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.scene.chart.NumberAxis;
 import javafx.util.StringConverter;
 
@@ -18,6 +19,9 @@ final class CoinAxisFormatter extends StringConverter<Number> {
 
     @Override
     public String toString(Number object) {
+        if(Config.get().isHideAmounts()) {
+            return "";
+        }
         Double value = bitcoinUnit.getValue(object.longValue());
         return new CoinTextFormatter(unitFormat).getCoinFormat().format(value);
     }

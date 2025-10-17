@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
@@ -47,20 +48,27 @@ public class FiatCell extends TreeTableCell<Entry, Number> {
             CurrencyRate currencyRate = coinTreeTable.getCurrencyRate();
 
             if(currencyRate != null && currencyRate.isAvailable()) {
-                Currency currency = currencyRate.getCurrency();
-                double btcRate = currencyRate.getBtcRate();
+                if(Config.get().isHideAmounts()) {
+                    setText("*****");
+                    setGraphic(null);
+                    setTooltip(null);
+                    setContextMenu(null);
+                } else {
+                    Currency currency = currencyRate.getCurrency();
+                    double btcRate = currencyRate.getBtcRate();
 
-                BigDecimal satsBalance = BigDecimal.valueOf(amount.longValue());
-                BigDecimal btcBalance = satsBalance.divide(BigDecimal.valueOf(Transaction.SATOSHIS_PER_BITCOIN));
-                BigDecimal fiatBalance = btcBalance.multiply(BigDecimal.valueOf(btcRate));
+                    BigDecimal satsBalance = BigDecimal.valueOf(amount.longValue());
+                    BigDecimal btcBalance = satsBalance.divide(BigDecimal.valueOf(Transaction.SATOSHIS_PER_BITCOIN));
+                    BigDecimal fiatBalance = btcBalance.multiply(BigDecimal.valueOf(btcRate));
 
-                String label = format.formatCurrencyValue(fiatBalance.doubleValue());
-                tooltip.setText("1 BTC = " + currency.getSymbol() + " " + format.formatCurrencyValue(btcRate));
+                    String label = format.formatCurrencyValue(fiatBalance.doubleValue());
+                    tooltip.setText("1 BTC = " + currency.getSymbol() + " " + format.formatCurrencyValue(btcRate));
 
-                setText(label);
-                setGraphic(null);
-                setTooltip(tooltip);
-                setContextMenu(contextMenu);
+                    setText(label);
+                    setGraphic(null);
+                    setTooltip(tooltip);
+                    setContextMenu(contextMenu);
+                }
             } else {
                 setText(null);
                 setGraphic(null);

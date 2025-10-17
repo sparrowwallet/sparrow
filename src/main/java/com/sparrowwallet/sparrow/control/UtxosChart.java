@@ -90,6 +90,10 @@ public class UtxosChart extends BarChart<String, Number> {
     private void installTooltip(XYChart.Data<String, Number> item) {
         Tooltip.uninstall(item.getNode(), null);
 
+        if(Config.get().isHideAmounts()) {
+            return;
+        }
+
         String satsValue = String.format(Locale.ENGLISH, "%,d", item.getYValue());
         Tooltip tooltip = new Tooltip(item.getXValue() + "\n" + satsValue + " sats");
         tooltip.setShowDelay(Duration.millis(TOOLTIP_SHOW_DELAY));
