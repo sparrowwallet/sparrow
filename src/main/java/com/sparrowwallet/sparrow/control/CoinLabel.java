@@ -49,6 +49,13 @@ public class CoinLabel extends Label {
     }
 
     private void setValueAsText(Long value, BitcoinUnit bitcoinUnit) {
+        if(Config.get().isHideAmounts()) {
+            setText("*****");
+            setTooltip(null);
+            setContextMenu(null);
+            return;
+        }
+
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 
