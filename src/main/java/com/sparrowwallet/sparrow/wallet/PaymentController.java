@@ -143,6 +143,8 @@ public class PaymentController extends WalletFormController implements Initializ
         }
     };
 
+    private final ObjectProperty<WalletNode> consolidationNodeProperty = new SimpleObjectProperty<>();
+
     private final ObjectProperty<PayNym> payNymProperty = new SimpleObjectProperty<>();
 
     private final ObjectProperty<SilentPaymentAddress> silentPaymentAddressProperty = new SimpleObjectProperty<>();
@@ -167,6 +169,10 @@ public class PaymentController extends WalletFormController implements Initializ
         @Override
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
             address.leftProperty().set(null);
+
+            if(consolidationNodeProperty.get() != null && !newValue.equals(consolidationNodeProperty.get().getAddress().toString())) {
+                consolidationNodeProperty.set(null);
+            }
 
             if(payNymProperty.get() != null && !newValue.equals(payNymProperty.get().nymName())) {
                 payNymProperty.set(null);
@@ -257,6 +263,17 @@ public class PaymentController extends WalletFormController implements Initializ
                 setSilentPaymentAddress(silentPaymentAddress);
             } catch(Exception e) {
                 //ignore, not a silent payment address
+            }
+
+            try {
+                Address toAddress = Address.fromString(newValue);
+                WalletNode walletNode = sendController.getWalletNode(toAddress);
+                if(walletNode != null) {
+                    consolidationNodeProperty.set(walletNode);
+                }
+                label.requestFocus();
+            } catch(Exception e) {
+                //ignore, not an address
             }
 
             revalidateAmount();
@@ -658,8 +675,11 @@ public class PaymentController extends WalletFormController implements Initializ
             if(!label.getText().isEmpty() && value != null && value >= getRecipientDustThreshold()) {
                 Payment payment;
                 SilentPaymentAddress silentPaymentAddress = silentPaymentAddressProperty.get();
+                WalletNode consolidationNode = consolidationNodeProperty.get();
                 if(silentPaymentAddress != null) {
                     payment = new SilentPayment(silentPaymentAddress, label.getText(), value, sendAll);
+                } else if(consolidationNode != null) {
+                    payment = new WalletNodePayment(consolidationNode, label.getText(), value, sendAll);
                 } else {
                     payment = new Payment(recipientAddress, label.getText(), value, sendAll);
                 }
@@ -718,6 +738,7 @@ public class PaymentController extends WalletFormController implements Initializ
         setSendMax(false);
 
         dustAmountProperty.set(false);
+        consolidationNodeProperty.set(null);
         payNymProperty.set(null);
         dnsPaymentProperty.set(null);
         silentPaymentAddressProperty.set(null);
@@ -728,8 +749,7 @@ public class PaymentController extends WalletFormController implements Initializ
         if(utxoSelector == null) {
             MaxUtxoSelector maxUtxoSelector = new MaxUtxoSelector();
             sendController.utxoSelectorProperty().set(maxUtxoSelector);
-        } else if(utxoSelector instanceof PresetUtxoSelector && !isValidAddressAndLabel() && sendController.getPaymentTabs().getTabs().size() == 1) {
-            PresetUtxoSelector presetUtxoSelector = (PresetUtxoSelector)utxoSelector;
+        } else if(utxoSelector instanceof PresetUtxoSelector presetUtxoSelector && !isValidAddressAndLabel() && sendController.getPaymentTabs().getTabs().size() == 1) {
             Payment payment = new Payment(null, null, presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum(), true);
             setPayment(payment);
             return;

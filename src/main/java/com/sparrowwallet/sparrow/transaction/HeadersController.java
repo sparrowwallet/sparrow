@@ -643,19 +643,20 @@ public class HeadersController extends TransactionFormController implements Init
             List<Payment> payments = new ArrayList<>();
             List<WalletTransaction.Output> outputs = new ArrayList<>();
             Map<WalletNode, Long> changeMap = new LinkedHashMap<>();
+            Map<Script, WalletNode> receiveOutputScripts = wallet.getWalletOutputScripts(KeyPurpose.RECEIVE);
             Map<Script, WalletNode> changeOutputScripts = wallet.getWalletOutputScripts(wallet.getChangeKeyPurpose());
             for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
                 WalletNode changeNode = changeOutputScripts.get(txOutput.getScript());
                 if(changeNode != null) {
                     if(headersForm.getTransaction().getOutputs().size() == 4 && headersForm.getTransaction().getOutputs().stream().anyMatch(txo -> txo != txOutput && txo.getValue() == txOutput.getValue())) {
                         if(selectedTxos.values().stream().allMatch(Objects::nonNull)) {
-                            payments.add(new Payment(txOutput.getScript().getToAddress(), ".." + changeNode + " (Fake Mix)", txOutput.getValue(), false, Payment.Type.FAKE_MIX));
+                            payments.add(new WalletNodePayment(changeNode, ".." + changeNode + " (Fake Mix)", txOutput.getValue(), false, Payment.Type.FAKE_MIX));
                         } else {
-                            payments.add(new Payment(txOutput.getScript().getToAddress(), ".." + changeNode + " (Mix)", txOutput.getValue(), false, Payment.Type.MIX));
+                            payments.add(new WalletNodePayment(changeNode, ".." + changeNode + " (Mix)", txOutput.getValue(), false, Payment.Type.MIX));
                         }
                     } else {
                         if(changeMap.containsKey(changeNode)) {
-                            payments.add(new Payment(txOutput.getScript().getToAddress(), headersForm.getName(), txOutput.getValue(), false, Payment.Type.DEFAULT));
+                            payments.add(new WalletNodePayment(changeNode, headersForm.getName(), txOutput.getValue(), false, Payment.Type.DEFAULT));
                         } else {
                             changeMap.put(changeNode, txOutput.getValue());
                         }
@@ -672,12 +673,18 @@ public class HeadersController extends TransactionFormController implements Init
                     BlockTransactionHashIndex receivedTxo = walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txOutput.getHash()) && txo.getIndex() == txOutput.getIndex()).findFirst().orElse(null);
                     String label = headersForm.getName() == null || (headersForm.getName().startsWith("[") && headersForm.getName().endsWith("]") && headersForm.getName().length() == 8) ? null : headersForm.getName();
                     Address address = txOutput.getScript().getToAddress();
+                    WalletNode receiveNode = receiveOutputScripts.get(txOutput.getScript());
                     SilentPaymentAddress silentPaymentAddress = headersForm.getSilentPaymentAddress(txOutput);
                     label = receivedTxo != null ? receivedTxo.getLabel() : label;
                     if(address != null || silentPaymentAddress != null) {
-                        Payment payment = (silentPaymentAddress == null ?
-                                new Payment(address, label, txOutput.getValue(), false, paymentType) :
-                                new SilentPayment(silentPaymentAddress, address, label, txOutput.getValue(), false));
+                        Payment payment;
+                        if(silentPaymentAddress != null) {
+                            payment = new SilentPayment(silentPaymentAddress, address, label, txOutput.getValue(), false);
+                        } else if(receiveNode != null) {
+                            payment = new WalletNodePayment(receiveNode, label, txOutput.getValue(), false, paymentType);
+                        } else {
+                            payment = new Payment(address, label, txOutput.getValue(), false, paymentType);
+                        }
                         WalletTransaction createdTx = AppServices.get().getCreatedTransaction(selectedTxos.keySet());
                         if(createdTx != null) {
                             Optional<String> optLabel = createdTx.getPayments().stream()
@@ -689,8 +696,13 @@ public class HeadersController extends TransactionFormController implements Init
                             }
                         }
                         payments.add(payment);
-                        outputs.add(payment instanceof SilentPayment silentPayment ? new WalletTransaction.SilentPaymentOutput(txOutput, silentPayment) :
-                                new WalletTransaction.PaymentOutput(txOutput, payment));
+                        if(payment instanceof SilentPayment silentPayment) {
+                            outputs.add(new WalletTransaction.SilentPaymentOutput(txOutput, silentPayment));
+                        } else if(payment instanceof WalletNodePayment walletNodePayment) {
+                            outputs.add(new WalletTransaction.ConsolidationOutput(txOutput, walletNodePayment, walletNodePayment.getAmount()));
+                        } else {
+                            outputs.add(new WalletTransaction.PaymentOutput(txOutput, payment));
+                        }
                     } else {
                         outputs.add(new WalletTransaction.NonAddressOutput(txOutput));
                     }

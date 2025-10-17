@@ -90,20 +90,20 @@ public class TransactionDiagramLabel extends HBox {
                 outputLabels.add(mixOutputLabel);
             }
         } else if(walletTx.getPayments().size() >= 5 && walletTx.getPayments().stream().mapToLong(Payment::getAmount).distinct().count() <= 1 && walletTx.getWallet() != null
-                && walletTx.getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX  && walletTx.getPayments().stream().anyMatch(walletTx::isConsolidationSend)) {
+                && walletTx.getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_POSTMIX && !walletTx.getWalletNodePayments().isEmpty()) {
             OutputLabel remixOutputLabel = getRemixOutputLabel(transactionDiagram, walletTx.getPayments());
             if(remixOutputLabel != null) {
                 outputLabels.add(remixOutputLabel);
             }
         } else {
-            List<Payment> payments = walletTx.getPayments().stream().filter(payment -> payment.getType() == Payment.Type.DEFAULT && !walletTx.isConsolidationSend(payment)).collect(Collectors.toList());
+            List<Payment> payments = walletTx.getExternalPayments().stream().filter(payment -> payment.getType() == Payment.Type.DEFAULT).collect(Collectors.toList());
             List<OutputLabel> paymentLabels = payments.stream().map(payment -> getOutputLabel(transactionDiagram, payment)).collect(Collectors.toList());
             if(walletTx.getSelectedUtxos().values().stream().allMatch(Objects::isNull)) {
                 paymentLabels.sort(Comparator.comparingInt(paymentLabel -> (paymentLabel.text.startsWith("Receive") ? 0 : 1)));
             }
             outputLabels.addAll(paymentLabels);
 
-            List<Payment> consolidations = walletTx.getPayments().stream().filter(payment -> payment.getType() == Payment.Type.DEFAULT && walletTx.isConsolidationSend(payment)).collect(Collectors.toList());
+            List<Payment> consolidations = walletTx.getWalletNodePayments().stream().filter(payment -> payment.getType() == Payment.Type.DEFAULT).collect(Collectors.toList());
             outputLabels.addAll(consolidations.stream().map(consolidation -> getOutputLabel(transactionDiagram, consolidation)).collect(Collectors.toList()));
 
             List<Payment> mixes = walletTx.getPayments().stream().filter(payment -> payment.getType() == Payment.Type.MIX || payment.getType() == Payment.Type.FAKE_MIX).collect(Collectors.toList());
@@ -203,7 +203,7 @@ public class TransactionDiagramLabel extends HBox {
     private OutputLabel getOutputLabel(TransactionDiagram transactionDiagram, Payment payment) {
         WalletTransaction walletTx = transactionDiagram.getWalletTransaction();
         Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
-        WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap().get(payment.getAddress()) : null;
+        WalletNode toNode = payment instanceof WalletNodePayment walletNodePayment ? walletNodePayment.getWalletNode() : null;
 
         Glyph glyph = GlyphUtils.getOutputGlyph(transactionDiagram.getWalletTransaction(), payment);
         String text = (toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ") + transactionDiagram.getSatsValue(payment.getAmount()) + " sats to " + payment;

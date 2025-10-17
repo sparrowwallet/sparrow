@@ -172,7 +172,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     private final Set<WalletNode> excludedChangeNodes = new HashSet<>();
 
-    private final Map<Wallet, Map<Address, WalletNode>> addressNodeMap = new HashMap<>();
+    private final Map<Address, WalletNode> walletAddresses = new HashMap<>();
 
     private final ChangeListener<String> feeListener = new ChangeListener<>() {
         @Override
@@ -619,7 +619,7 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean allowRbf = (replacedTransaction == null || replacedTransaction.getTransaction().isReplaceByFee())
                         && payments.stream().noneMatch(payment -> payment instanceof SilentPayment);
 
-                walletTransactionService = new WalletTransactionService(addressNodeMap, wallet, getUtxoSelectors(payments), getTxoFilters(),
+                walletTransactionService = new WalletTransactionService(wallet, getUtxoSelectors(payments), getTxoFilters(),
                         payments, opReturnsList, excludedChangeNodes,
                         feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee,
                         currentBlockHeight, groupByAddress, includeMempoolOutputs, replacedTransaction, allowRbf);
@@ -684,7 +684,6 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private static class WalletTransactionService extends Service<WalletTransaction> {
-        private final Map<Wallet, Map<Address, WalletNode>> addressNodeMap;
         private final Wallet wallet;
         private final List<UtxoSelector> utxoSelectors;
         private final List<TxoFilter> txoFilters;
@@ -702,13 +701,11 @@ public class SendController extends WalletFormController implements Initializabl
         private final boolean allowRbf;
         private boolean ignoreResult;
 
-        public WalletTransactionService(Map<Wallet, Map<Address, WalletNode>> addressNodeMap,
-                                        Wallet wallet, List<UtxoSelector> utxoSelectors, List<TxoFilter> txoFilters,
+        public WalletTransactionService(Wallet wallet, List<UtxoSelector> utxoSelectors, List<TxoFilter> txoFilters,
                                         List<Payment> payments, List<byte[]> opReturns, Set<WalletNode> excludedChangeNodes,
                                         double feeRate, double longTermFeeRate, double minRelayFeeRate, Long fee,
                                         Integer currentBlockHeight, boolean groupByAddress, boolean includeMempoolOutputs,
                                         BlockTransaction replacedTransaction, boolean allowRbf) {
-            this.addressNodeMap = addressNodeMap;
             this.wallet = wallet;
             this.utxoSelectors = utxoSelectors;
             this.txoFilters = txoFilters;
@@ -759,11 +756,8 @@ public class SendController extends WalletFormController implements Initializabl
                 private WalletTransaction getWalletTransaction() throws InsufficientFundsException {
                     try {
                         updateMessage("Selecting UTXOs...");
-                        WalletTransaction walletTransaction = wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, excludedChangeNodes,
+                        return wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, excludedChangeNodes,
                                 feeRate, longTermFeeRate, minRelayFeeRate, fee, currentBlockHeight, groupByAddress, includeMempoolOutputs, allowRbf);
-                        updateMessage("Deriving keys...");
-                        walletTransaction.updateAddressNodeMap(addressNodeMap, walletTransaction.getWallet());
-                        return walletTransaction;
                     } finally {
                         updateMessage("");
                     }
@@ -1131,7 +1125,7 @@ public class SendController extends WalletFormController implements Initializabl
 
         paymentCodeProperty.set(null);
 
-        addressNodeMap.clear();
+        walletAddresses.clear();
     }
 
     public UtxoSelector getUtxoSelector() {
@@ -1209,11 +1203,18 @@ public class SendController extends WalletFormController implements Initializabl
         WalletTransaction walletTransaction = walletTransactionProperty.get();
         Set<WalletNode> nodes = new LinkedHashSet<>(walletTransaction.getSelectedUtxos().values());
         nodes.addAll(walletTransaction.getChangeMap().keySet());
-        Map<Address, WalletNode> addressNodeMap = walletTransaction.getAddressNodeMap();
-        nodes.addAll(addressNodeMap.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
+        nodes.addAll(walletTransaction.getWalletNodePayments().stream().map(WalletNodePayment::getWalletNode).collect(Collectors.toList()));
 
         //All wallet nodes applicable to this transaction are stored so when the subscription status for one is updated, the history for all can be fetched in one atomic update
         walletForm.addWalletTransactionNodes(nodes);
+    }
+
+    public WalletNode getWalletNode(Address address) {
+        if(walletAddresses.isEmpty()) {
+            walletAddresses.putAll(getWalletForm().getWallet().getWalletAddresses());
+        }
+
+        return walletAddresses.get(address);
     }
 
     public void broadcastNotification(ActionEvent event) {
@@ -1667,12 +1668,12 @@ public class SendController extends WalletFormController implements Initializabl
         public PrivacyAnalysisTooltip(WalletTransaction walletTransaction) {
             List<Payment> payments = walletTransaction.getPayments();
             List<Payment> userPayments = payments.stream().filter(payment -> payment.getType() != Payment.Type.FAKE_MIX).collect(Collectors.toList());
-            Map<Address, WalletNode> walletAddresses = walletTransaction.getAddressNodeMap();
+            List<WalletNodePayment> walletNodePayments = walletTransaction.getWalletNodePayments();
             OptimizationStrategy optimizationStrategy = getPreferredOptimizationStrategy();
             boolean fakeMixPresent = payments.stream().anyMatch(payment -> payment.getType() == Payment.Type.FAKE_MIX);
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
             boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
-            boolean addressReuse = userPayments.stream().anyMatch(payment -> walletAddresses.get(payment.getAddress()) != null && !walletAddresses.get(payment.getAddress()).getTransactionOutputs().isEmpty());
+            boolean addressReuse = walletNodePayments.stream().anyMatch(walletNodePayment -> !walletNodePayment.getWalletNode().getTransactionOutputs().isEmpty());
             boolean payjoinPresent = userPayments.stream().anyMatch(payment -> AppServices.getPayjoinURI(payment.getAddress()) != null);
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {

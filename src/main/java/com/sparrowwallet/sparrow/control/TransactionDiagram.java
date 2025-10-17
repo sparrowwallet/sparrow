@@ -727,7 +727,7 @@ public class TransactionDiagram extends GridPane {
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
             Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
-            WalletNode toNode = walletTx.getWallet() != null && !walletTx.getWallet().isBip47() ? walletTx.getAddressNodeMap().get(payment.getAddress()) : null;
+            WalletNode toNode = payment instanceof WalletNodePayment walletNodePayment ? walletNodePayment.getWalletNode() : null;
             Wallet toBip47Wallet = getBip47SendWallet(payment);
             DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(payment);
             Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")

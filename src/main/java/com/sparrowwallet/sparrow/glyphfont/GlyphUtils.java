@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.glyphfont;
 
 import com.sparrowwallet.drongo.wallet.Payment;
+import com.sparrowwallet.drongo.wallet.WalletNodePayment;
 import com.sparrowwallet.drongo.wallet.WalletTransaction;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.control.TransactionDiagram;
@@ -15,7 +16,7 @@ public class GlyphUtils {
             return getFakeMixGlyph();
         } else if(payment.getType().equals(Payment.Type.ANCHOR)) {
             return getAnchorGlyph();
-        } else if(walletTx.isConsolidationSend(payment)) {
+        } else if(payment instanceof WalletNodePayment) {
             return getConsolidationGlyph();
         } else if(walletTx.isPremixSend(payment)) {
             return getPremixGlyph();
