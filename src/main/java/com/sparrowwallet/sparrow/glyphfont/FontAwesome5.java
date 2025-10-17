@@ -38,6 +38,7 @@ public class FontAwesome5 extends GlyphFont {
         EXTERNAL_LINK_ALT('\uf35d'),
         ELLIPSIS_H('\uf141'),
         EYE('\uf06e'),
+        EYE_SLASH('\uf070'),
         FEATHER_ALT('\uf56b'),
         FILE_CSV('\uf6dd'),
         FILE_IMPORT('\uf56f'),
