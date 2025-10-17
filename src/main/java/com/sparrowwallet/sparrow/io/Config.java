@@ -47,6 +47,7 @@ public class Config {
     private Theme theme;
     private boolean openWalletsInNewWindows = false;
     private boolean hideEmptyUsedAddresses = false;
+    private boolean hideAmounts = false;
     private boolean showTransactionHex = true;
     private boolean showLoadingLog = true;
     private boolean showAddressTransactionCount = false;
@@ -300,6 +301,15 @@ public class Config {
 
     public void setHideEmptyUsedAddresses(boolean hideEmptyUsedAddresses) {
         this.hideEmptyUsedAddresses = hideEmptyUsedAddresses;
+        flush();
+    }
+
+    public boolean isHideAmounts() {
+        return hideAmounts;
+    }
+
+    public void setHideAmounts(boolean hideAmounts) {
+        this.hideAmounts = hideAmounts;
         flush();
     }
 
