@@ -120,6 +120,7 @@
                         <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets In New Windows" onAction="#openWalletsInNewWindows"/>
                         <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
+                        <CheckMenuItem fx:id="hideAmounts" mnemonicParsing="false" text="Hide Amounts" onAction="#hideAmounts"/>
                         <CheckMenuItem fx:id="showLoadingLog" mnemonicParsing="false" text="Show Wallet Loading Log" onAction="#showLoadingLog" />
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>
                         <SeparatorMenuItem />
@@ -174,6 +175,11 @@
 
         <StatusBar fx:id="statusBar" text="" minHeight="36">
             <rightItems>
+                <ToggleButton fx:id="hideAmountsToggle" contentDisplay="GRAPHIC_ONLY" onAction="#toggleHideAmounts">
+                    <tooltip>
+                        <Tooltip text="Hide Amounts" />
+                    </tooltip>
+                </ToggleButton>
                 <UnlabeledToggleSwitch fx:id="serverToggle">
                     <tooltip>
                         <Tooltip text="Disconnected" />
