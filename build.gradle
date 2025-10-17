@@ -283,9 +283,12 @@ if(os.linux) {
     tasks.jlink.finalizedBy('addUserWritePermission')
 }
 
+// Windows "Users" group SID (language-independent)
+def usersGroup = '*S-1-5-32-545'
+
 tasks.register('addUserWritePermission', Exec) {
     if(os.windows) {
-        commandLine 'icacls', "$buildDir\\image\\legal", '/grant', 'Users:(OI)(CI)F', '/T'
+        commandLine 'icacls', "$buildDir\\image\\legal", '/grant', "${usersGroup}:(OI)(CI)F", '/T'
     } else {
         commandLine 'chmod', '-R', 'u+w', "$buildDir/image/legal"
     }
