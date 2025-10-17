@@ -121,18 +121,22 @@ public class UtxosController extends WalletFormController implements Initializab
 
         long selectedTotal = selectedEntries.stream().mapToLong(Entry::getValue).sum();
         if(selectedTotal > 0) {
-            if(format == null) {
-                format = UnitFormat.DOT;
-            }
-
-            if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
-                unit = (selectedTotal >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
-            }
-
-            if(unit.equals(BitcoinUnit.BTC)) {
-                sendSelected.setText("Send Selected (" + format.formatBtcValue(selectedTotal) + " BTC)");
+            if(Config.get().isHideAmounts()) {
+                sendSelected.setText("Send Selected");
             } else {
-                sendSelected.setText("Send Selected (" + format.formatSatsValue(selectedTotal) + " sats)");
+                if(format == null) {
+                    format = UnitFormat.DOT;
+                }
+
+                if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+                    unit = (selectedTotal >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS);
+                }
+
+                if(unit.equals(BitcoinUnit.BTC)) {
+                    sendSelected.setText("Send Selected (" + format.formatBtcValue(selectedTotal) + " BTC)");
+                } else {
+                    sendSelected.setText("Send Selected (" + format.formatSatsValue(selectedTotal) + " sats)");
+                }
             }
         } else {
             sendSelected.setText("Send Selected");
@@ -268,6 +272,17 @@ public class UtxosController extends WalletFormController implements Initializab
         updateButtons(event.getUnitFormat(), event.getBitcoinUnit());
         fiatBalance.refresh(event.getUnitFormat());
         fiatMempoolBalance.refresh(event.getUnitFormat());
+    }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        utxosTable.refresh();
+        utxosChart.update(getWalletForm().getWalletUtxosEntry());
+        balance.refresh();
+        mempoolBalance.refresh();
+        updateButtons(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
+        fiatBalance.refresh();
+        fiatMempoolBalance.refresh();
     }
 
     @Subscribe

@@ -196,6 +196,15 @@ public class TransactionsController extends WalletFormController implements Init
     }
 
     @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        transactionsTable.refresh();
+        balance.refresh();
+        mempoolBalance.refresh();
+        fiatBalance.refresh();
+        fiatMempoolBalance.refresh();
+    }
+
+    @Subscribe
     public void fiatCurrencySelected(FiatCurrencySelectedEvent event) {
         if(event.getExchangeSource() == ExchangeSource.NONE) {
             fiatBalance.setCurrency(null);
