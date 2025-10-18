@@ -132,6 +132,12 @@ public class AddressesController extends WalletFormController implements Initial
         changeTable.showTransactionsCount(event.isShowCount());
     }
 
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        receiveTable.refresh();
+        changeTable.refresh();
+    }
+
     public void exportReceiveAddresses(ActionEvent event) {
         exportAddresses(KeyPurpose.RECEIVE);
     }
