@@ -578,4 +578,9 @@ public class InputController extends TransactionFormController implements Initia
             updateInputLegendFromWallet(inputForm.getTransactionInput(), null);
         }
     }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        spends.refresh();
+    }
 }

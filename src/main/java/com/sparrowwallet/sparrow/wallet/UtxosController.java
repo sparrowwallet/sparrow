@@ -278,6 +278,7 @@ public class UtxosController extends WalletFormController implements Initializab
     public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
         utxosTable.refresh();
         utxosChart.update(getWalletForm().getWalletUtxosEntry());
+        utxosChart.refreshAxisLabels();
         balance.refresh();
         mempoolBalance.refresh();
         updateButtons(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());

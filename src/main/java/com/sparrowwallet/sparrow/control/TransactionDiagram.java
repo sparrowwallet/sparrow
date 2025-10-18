@@ -284,6 +284,10 @@ public class TransactionDiagram extends GridPane {
             contextMenu.getItems().add(menuItem);
             setOnContextMenuRequested(contextMenuHandler);
         }
+
+        if(getLabel() != null) {
+            getLabel().update(this);
+        }
     }
 
     private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {

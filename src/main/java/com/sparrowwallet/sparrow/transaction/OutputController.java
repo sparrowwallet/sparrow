@@ -228,4 +228,9 @@ public class OutputController extends TransactionFormController implements Initi
             updateScriptPubKey(outputForm.getTransactionOutput());
         }
     }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        value.refresh();
+    }
 }
