@@ -72,6 +72,13 @@ public class CopyableCoinLabel extends CopyableLabel {
     }
 
     private void setValueAsText(Long value, UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
+        if(Config.get().isHideAmounts()) {
+            setText("*****");
+            setTooltip(null);
+            setContextMenu(null);
+            return;
+        }
+
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 

@@ -405,6 +405,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 DecimalFormat df = new DecimalFormat("#.#", unitFormat.getDecimalFormatSymbols());
                 df.setMaximumFractionDigits(8);
                 amount.setText(df.format(newValue.getValue(value)));
+                setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), value);
             }
         });
 
@@ -921,6 +922,11 @@ public class PaymentController extends WalletFormController implements Initializ
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         updateOpenWallets(event.getWallets());
+    }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        fiatAmount.refresh(Config.get().getUnitFormat());
     }
 
     private static class DnsPaymentService extends Service<Optional<DnsPayment>> {

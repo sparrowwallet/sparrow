@@ -1662,6 +1662,11 @@ public class SendController extends WalletFormController implements Initializabl
         }
     }
 
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        updateTransaction();
+    }
+
     private class PrivacyAnalysisTooltip extends VBox {
         private final List<Label> analysisLabels = new ArrayList<>();
 

@@ -48,6 +48,10 @@ public class NewWalletTransactionsEvent {
     }
 
     public String getValueAsText(long value) {
+        if(Config.get().isHideAmounts()) {
+            return "*****";
+        }
+
         UnitFormat format = Config.get().getUnitFormat();
         if(format == null) {
             format = UnitFormat.DOT;
