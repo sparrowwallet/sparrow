@@ -144,4 +144,10 @@ public class UtxosChart extends BarChart<String, Number> {
         yaxis.setUpperBound(upper);
         yaxis.setAutoRanging(true);
     }
+
+    public void refreshTooltips() {
+        for(XYChart.Data<String, Number> data : utxoSeries.getData()) {
+            installTooltip(data);
+        }
+    }
 }

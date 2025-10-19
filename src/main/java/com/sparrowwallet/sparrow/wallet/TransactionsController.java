@@ -198,6 +198,7 @@ public class TransactionsController extends WalletFormController implements Init
     @Subscribe
     public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
         transactionsTable.refresh();
+        balanceChart.refreshAxisLabels();
         balance.refresh();
         mempoolBalance.refresh();
         fiatBalance.refresh();

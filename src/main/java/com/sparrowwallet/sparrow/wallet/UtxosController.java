@@ -279,6 +279,7 @@ public class UtxosController extends WalletFormController implements Initializab
         utxosTable.refresh();
         utxosChart.update(getWalletForm().getWalletUtxosEntry());
         utxosChart.refreshAxisLabels();
+        utxosChart.refreshTooltips();
         balance.refresh();
         mempoolBalance.refresh();
         updateButtons(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
