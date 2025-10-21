@@ -624,8 +624,9 @@ public class PayNymController {
         List<UtxoSelector> utxoSelectors = List.of(utxos == null ? new KnapsackUtxoSelector(noInputsFee) : new PresetUtxoSelector(utxos, true, false));
         List<TxoFilter> txoFilters = List.of(new SpentTxoFilter(), new FrozenTxoFilter(), new CoinbaseTxoFilter(wallet));
 
-        return wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, Collections.emptySet(), feeRate, minimumFeeRate, minRelayFeeRate, null,
-                AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs, true);
+        TransactionParameters params = new TransactionParameters(utxoSelectors, txoFilters, payments, opReturns, Collections.emptySet(),
+                feeRate, minimumFeeRate, minRelayFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs, true);
+        return wallet.createWalletTransaction(params);
     }
 
     private Map<BlockTransaction, WalletNode> getNotificationTransaction(PaymentCode externalPaymentCode) {
