@@ -285,7 +285,8 @@ if(os.linux) {
 
 tasks.register('addUserWritePermission', Exec) {
     if(os.windows) {
-        commandLine 'icacls', "$buildDir\\image\\legal", '/grant', 'Users:(OI)(CI)F', '/T'
+        def usersGroup = '*S-1-5-32-545' // Windows "Users" group SID (language-independent)
+        commandLine 'icacls', "$buildDir\\image\\legal", '/grant', "${usersGroup}:(OI)(CI)F", '/T'
     } else {
         commandLine 'chmod', '-R', 'u+w', "$buildDir/image/legal"
     }
