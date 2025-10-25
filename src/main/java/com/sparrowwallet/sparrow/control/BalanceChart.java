@@ -128,4 +128,15 @@ public class BalanceChart extends LineChart<Number, Number> {
         NumberAxis yaxis = (NumberAxis)getYAxis();
         yaxis.setTickLabelFormatter(new CoinAxisFormatter(yaxis, format, unit));
     }
+
+    public void refreshAxisLabels() {
+        NumberAxis yaxis = (NumberAxis)getYAxis();
+        // Force the axis to redraw by invalidating the upper and lower bounds
+        yaxis.setAutoRanging(false);
+        double lower = yaxis.getLowerBound();
+        double upper = yaxis.getUpperBound();
+        yaxis.setLowerBound(lower);
+        yaxis.setUpperBound(upper);
+        yaxis.setAutoRanging(true);
+    }
 }

@@ -90,6 +90,10 @@ public class UtxosChart extends BarChart<String, Number> {
     private void installTooltip(XYChart.Data<String, Number> item) {
         Tooltip.uninstall(item.getNode(), null);
 
+        if(Config.get().isHideAmounts()) {
+            return;
+        }
+
         String satsValue = String.format(Locale.ENGLISH, "%,d", item.getYValue());
         Tooltip tooltip = new Tooltip(item.getXValue() + "\n" + satsValue + " sats");
         tooltip.setShowDelay(Duration.millis(TOOLTIP_SHOW_DELAY));
@@ -128,5 +132,22 @@ public class UtxosChart extends BarChart<String, Number> {
 
         NumberAxis yaxis = (NumberAxis)getYAxis();
         yaxis.setTickLabelFormatter(new CoinAxisFormatter(yaxis, format, unit));
+    }
+
+    public void refreshAxisLabels() {
+        NumberAxis yaxis = (NumberAxis)getYAxis();
+        // Force the axis to redraw by invalidating the upper and lower bounds
+        yaxis.setAutoRanging(false);
+        double lower = yaxis.getLowerBound();
+        double upper = yaxis.getUpperBound();
+        yaxis.setLowerBound(lower);
+        yaxis.setUpperBound(upper);
+        yaxis.setAutoRanging(true);
+    }
+
+    public void refreshTooltips() {
+        for(XYChart.Data<String, Number> data : utxoSeries.getData()) {
+            installTooltip(data);
+        }
     }
 }

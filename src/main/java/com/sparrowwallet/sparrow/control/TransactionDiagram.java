@@ -284,6 +284,10 @@ public class TransactionDiagram extends GridPane {
             contextMenu.getItems().add(menuItem);
             setOnContextMenuRequested(contextMenuHandler);
         }
+
+        if(getLabel() != null) {
+            getLabel().update(this);
+        }
     }
 
     private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {
@@ -572,6 +576,9 @@ public class TransactionDiagram extends GridPane {
     }
 
     String getSatsValue(long amount) {
+        if(Config.get().isHideAmounts()) {
+            return "*****";
+        }
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
         return format.formatSatsValue(amount);
     }
