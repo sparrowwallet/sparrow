@@ -153,9 +153,6 @@ public class AppController implements Initializable {
     private CheckMenuItem hideAmounts;
 
     @FXML
-    private ToggleButton hideAmountsToggle;
-
-    @FXML
     private CheckMenuItem useHdCameraResolution;
     private static final BooleanProperty useHdCameraResolutionProperty = new SimpleBooleanProperty();
 
@@ -391,10 +388,6 @@ public class AppController implements Initializable {
         hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
         hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
         hideAmounts.setSelected(Config.get().isHideAmounts());
-        hideAmountsToggle.setSelected(Config.get().isHideAmounts());
-        Glyph eyeGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE);
-        Glyph eyeSlashGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE_SLASH);
-        hideAmountsToggle.setGraphic(Config.get().isHideAmounts() ? eyeSlashGlyph : eyeGlyph);
         useHdCameraResolutionProperty.set(Config.get().getWebcamResolution() == null || Config.get().getWebcamResolution().isWidescreenAspect());
         useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
         mirrorCameraImageProperty.set(Config.get().isMirrorCapture());
@@ -964,11 +957,6 @@ public class AppController implements Initializable {
         EventManager.get().post(new HideAmountsStatusEvent(item.isSelected()));
     }
 
-    public void toggleHideAmounts(ActionEvent event) {
-        boolean hideAmounts = hideAmountsToggle.isSelected();
-        Config.get().setHideAmounts(hideAmounts);
-        EventManager.get().post(new HideAmountsStatusEvent(hideAmounts));
-    }
 
     public void useHdCameraResolution(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
@@ -3150,11 +3138,6 @@ public class AppController implements Initializable {
     @Subscribe
     public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
         hideAmounts.setSelected(event.isHideAmounts());
-        hideAmountsToggle.setSelected(event.isHideAmounts());
-        Glyph glyph = event.isHideAmounts() ?
-            new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE_SLASH) :
-            new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EYE);
-        hideAmountsToggle.setGraphic(glyph);
     }
 
     @Subscribe

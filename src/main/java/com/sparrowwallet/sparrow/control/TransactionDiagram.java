@@ -577,8 +577,9 @@ public class TransactionDiagram extends GridPane {
 
     String getSatsValue(long amount) {
         if(Config.get().isHideAmounts()) {
-            return "*****";
+            return CoinLabel.HIDDEN_AMOUNT_TEXT;
         }
+
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
         return format.formatSatsValue(amount);
     }

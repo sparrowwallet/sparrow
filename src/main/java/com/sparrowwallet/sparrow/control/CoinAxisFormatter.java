@@ -22,6 +22,7 @@ final class CoinAxisFormatter extends StringConverter<Number> {
         if(Config.get().isHideAmounts()) {
             return "";
         }
+
         Double value = bitcoinUnit.getValue(object.longValue());
         return new CoinTextFormatter(unitFormat).getCoinFormat().format(value);
     }

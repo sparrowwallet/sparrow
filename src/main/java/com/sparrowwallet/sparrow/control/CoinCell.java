@@ -50,19 +50,19 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             Entry entry = getTreeTableView().getTreeItem(getIndex()).getValue();
             EntryCell.applyRowStyles(this, entry);
 
+            CoinTreeTable coinTreeTable = (CoinTreeTable)getTreeTableView();
+            UnitFormat format = coinTreeTable.getUnitFormat();
+            BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
+
+            String satsValue = format.formatSatsValue(amount.longValue());
+            DecimalFormat decimalFormat = (amount.longValue() == 0L ? format.getBtcFormat() : format.getTableBtcFormat());
+            final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
+
             if(Config.get().isHideAmounts()) {
-                setText("*****");
+                setText(CoinLabel.HIDDEN_AMOUNT_TEXT);
                 setTooltip(null);
                 setContextMenu(null);
             } else {
-                CoinTreeTable coinTreeTable = (CoinTreeTable)getTreeTableView();
-                UnitFormat format = coinTreeTable.getUnitFormat();
-                BitcoinUnit unit = coinTreeTable.getBitcoinUnit();
-
-                String satsValue = format.formatSatsValue(amount.longValue());
-                DecimalFormat decimalFormat = (amount.longValue() == 0L ? format.getBtcFormat() : format.getTableBtcFormat());
-                final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
-
                 if(unit.equals(BitcoinUnit.BTC)) {
                     tooltip.setValue(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());
                     setText(btcValue);
@@ -100,7 +100,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 setGraphic(node);
                 setContentDisplay(ContentDisplay.RIGHT);
 
-                if(((HashIndexEntry) entry).getType() == HashIndexEntry.Type.INPUT) {
+                if(((HashIndexEntry) entry).getType() == HashIndexEntry.Type.INPUT && !Config.get().isHideAmounts()) {
                     setText("-" + getText());
                 }
             } else {
