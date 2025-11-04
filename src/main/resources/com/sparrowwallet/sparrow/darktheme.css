@@ -329,6 +329,10 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-stroke: #696c77;
 }
 
+#blockchainForm #blockStatus {
+    -fx-text-fill: white;
+}
+
 .root .progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {
     -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, #e06c75 70%, derive(-fx-control-inner-background, -9%) 100%);
 }

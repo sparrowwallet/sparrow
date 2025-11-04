@@ -196,6 +196,9 @@
                 <Field fx:id="blockTimestampField" text="Timestamp:">
                     <CopyableLabel fx:id="blockTimestamp" />
                 </Field>
+                <Field fx:id="signedByField" text="Signed by:">
+                    <CopyableLabel fx:id="signedBy" />
+                </Field>
             </Fieldset>
         </DynamicForm>
         <Form fx:id="blockchainSpacerForm" GridPane.columnIndex="1" GridPane.rowIndex="0" visible="false">

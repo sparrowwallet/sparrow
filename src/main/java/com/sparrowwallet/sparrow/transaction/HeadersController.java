@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -180,6 +181,12 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private CopyableLabel blockTimestamp;
+
+    @FXML
+    private Field signedByField;
+
+    @FXML
+    private CopyableLabel signedBy;
 
     @FXML
     private Form blockchainSpacerForm;
@@ -811,6 +818,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         blockHeightField.managedProperty().bind(blockHeightField.visibleProperty());
         blockTimestampField.managedProperty().bind(blockTimestampField.visibleProperty());
+        signedByField.managedProperty().bind(signedByField.visibleProperty());
 
         if(blockTransaction.getHeight() > 0) {
             blockHeightField.setVisible(true);
@@ -827,6 +835,19 @@ public class HeadersController extends TransactionFormController implements Init
             blockTimestamp.setContextMenu(new BlockHeightContextMenu(blockTransaction));
         } else {
             blockTimestampField.setVisible(false);
+        }
+
+        if(headersForm.getWalletTransaction() != null && headersForm.getWalletTransaction().getWallet() != null
+                && headersForm.getWalletTransaction().getWallet().getPolicyType() == PolicyType.MULTI
+                && headersForm.getWalletTransaction().getWallet().getDefaultPolicy().getNumSignaturesRequired() < headersForm.getWalletTransaction().getWallet().getKeystores().size()) {
+            signedByField.setVisible(true);
+            Wallet wallet = headersForm.getWalletTransaction().getWallet();
+            Map<TransactionInput, Map<TransactionSignature, Keystore>> signedKeystores = wallet.getSignedKeystores(blockTransaction.getTransaction());
+            StringJoiner joiner = new StringJoiner(", ");
+            signedKeystores.values().stream().flatMap(map -> map.values().stream()).distinct().forEach(keystore -> joiner.add(keystore.getLabel()));
+            signedBy.setText(joiner.toString());
+        } else {
+            signedByField.setVisible(false);
         }
     }
 
@@ -1478,6 +1499,7 @@ public class HeadersController extends TransactionFormController implements Init
             errorGlyph.getStyleClass().add("failure");
             blockHeightField.setVisible(false);
             blockTimestampField.setVisible(false);
+            signedByField.setVisible(false);
         }
     }
 
