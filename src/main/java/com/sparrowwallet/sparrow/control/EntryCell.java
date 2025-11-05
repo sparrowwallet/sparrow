@@ -57,7 +57,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         super.updateItem(entry, empty);
 
         //Return immediately to avoid CPU usage when updating the same invisible cell to determine tableview size (see https://bugs.openjdk.org/browse/JDK-8280442)
-        if(this == lastCell && !getTableRow().isVisible()) {
+        if(this == lastCell && !getTableRow().isVisible() && isTableSizeRecalculation()) {
             return;
         }
         lastCell = this;
@@ -855,5 +855,12 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 cell.getStyleClass().add("summary-row");
             }
         }
+    }
+
+    private boolean isTableSizeRecalculation() {
+        //As per https://bugs.openjdk.org/browse/JDK-8265669 we check for cell visibility to avoid unnecessary recalculation, but this can result in false positives
+        //The method releaseCell in VirtualFlow is responsible for setting accumCell visibility to false after use, so check this method is calling updateItem
+        return StackWalker.getInstance().walk(frames -> frames.anyMatch(frame -> frame.getClassName().equals("javafx.scene.control.skin.VirtualFlow")
+                && frame.getMethodName().equals("releaseCell")));
     }
 }
