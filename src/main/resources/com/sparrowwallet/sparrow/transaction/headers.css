@@ -11,6 +11,7 @@
 
 .num-outputs { -fx-fill: color-0 }
 .output-value { -fx-fill: color-3 }
+.hide-amounts .output-value { -fx-fill: -fx-control-inner-background }
 .output-pubkeyscript-length { -fx-fill: color-3 }
 .output-pubkeyscript { -fx-fill: color-3 }
 

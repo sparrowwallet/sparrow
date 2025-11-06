@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.control.CoinLabel;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
@@ -48,6 +49,10 @@ public class NewWalletTransactionsEvent {
     }
 
     public String getValueAsText(long value) {
+        if(Config.get().isHideAmounts()) {
+            return CoinLabel.HIDDEN_AMOUNT_TEXT;
+        }
+
         UnitFormat format = Config.get().getUnitFormat();
         if(format == null) {
             format = UnitFormat.DOT;

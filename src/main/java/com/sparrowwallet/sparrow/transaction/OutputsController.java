@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.CopyableCoinLabel;
 import com.sparrowwallet.sparrow.control.CopyableLabel;
+import com.sparrowwallet.sparrow.event.HideAmountsStatusEvent;
 import com.sparrowwallet.sparrow.event.TransactionOutputsChangedEvent;
 import com.sparrowwallet.sparrow.event.UnitFormatChangedEvent;
 import javafx.fxml.FXML;
@@ -67,5 +68,10 @@ public class OutputsController extends TransactionFormController implements Init
         if(event.getTransaction().equals(outputsForm.getTransaction())) {
             updatePieData(outputsPie, outputsForm.getTransaction().getOutputs());
         }
+    }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        total.refresh();
     }
 }

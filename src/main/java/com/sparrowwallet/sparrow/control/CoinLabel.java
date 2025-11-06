@@ -13,6 +13,8 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 
 public class CoinLabel extends Label {
+    public static final String HIDDEN_AMOUNT_TEXT = "\u2022\u2022\u2022\u2022\u2022";
+
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
     private final Tooltip tooltip;
     private final CoinContextMenu contextMenu;
@@ -49,6 +51,13 @@ public class CoinLabel extends Label {
     }
 
     private void setValueAsText(Long value, BitcoinUnit bitcoinUnit) {
+        if(Config.get().isHideAmounts()) {
+            setText(HIDDEN_AMOUNT_TEXT);
+            setTooltip(null);
+            setContextMenu(null);
+            return;
+        }
+
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 

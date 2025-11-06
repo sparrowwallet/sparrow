@@ -150,6 +150,9 @@ public class AppController implements Initializable {
     private static final BooleanProperty hideEmptyUsedAddressesProperty = new SimpleBooleanProperty();
 
     @FXML
+    private CheckMenuItem hideAmounts;
+
+    @FXML
     private CheckMenuItem useHdCameraResolution;
     private static final BooleanProperty useHdCameraResolutionProperty = new SimpleBooleanProperty();
 
@@ -384,6 +387,7 @@ public class AppController implements Initializable {
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
         hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
         hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
+        hideAmounts.setSelected(Config.get().isHideAmounts());
         useHdCameraResolutionProperty.set(Config.get().getWebcamResolution() == null || Config.get().getWebcamResolution().isWidescreenAspect());
         useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
         mirrorCameraImageProperty.set(Config.get().isMirrorCapture());
@@ -945,6 +949,12 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setHideEmptyUsedAddresses(item.isSelected());
         EventManager.get().post(new HideEmptyUsedAddressesStatusEvent(item.isSelected()));
+    }
+
+    public void hideAmounts(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setHideAmounts(item.isSelected());
+        EventManager.get().post(new HideAmountsStatusEvent(item.isSelected()));
     }
 
     public void useHdCameraResolution(ActionEvent event) {
@@ -3122,6 +3132,11 @@ public class AppController implements Initializable {
     @Subscribe
     public void hideEmptyUsedAddressesStatusChanged(HideEmptyUsedAddressesStatusEvent event) {
         hideEmptyUsedAddresses.setSelected(event.isHideEmptyUsedAddresses());
+    }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        hideAmounts.setSelected(event.isHideAmounts());
     }
 
     @Subscribe

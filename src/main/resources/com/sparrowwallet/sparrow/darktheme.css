@@ -220,6 +220,7 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 .root .script-pubkey { -fx-fill: #c678dd }
 .root .script-redeem, .root .script-controlblock { -fx-fill: derive(#e06c75, 20%) }
 .root .script-other { -fx-fill: #c8ccd4 }
+.root .hide-amounts .output-value { -fx-fill: derive(-fx-control-inner-background, -50%) }
 
 .root #txhex {
     -fx-background-color: derive(-fx-control-inner-background, -50%);

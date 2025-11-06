@@ -358,6 +358,17 @@ public class TransactionController implements Initializable {
 
     void highlightTxHex() {
         txhex.applyHighlighting(getTransaction(), selectedInputIndex, selectedOutputIndex);
+        setTxHexHideAmounts(Config.get().isHideAmounts());
+    }
+
+    private void setTxHexHideAmounts(boolean hideAmounts) {
+        if(hideAmounts) {
+            if(!txhex.getStyleClass().contains("hide-amounts")) {
+                txhex.getStyleClass().add("hide-amounts");
+            }
+        } else {
+            txhex.getStyleClass().remove("hide-amounts");
+        }
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
@@ -731,5 +742,10 @@ public class TransactionController implements Initializable {
             txhex.setTransaction(getTransaction());
             highlightTxHex();
         }
+    }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        setTxHexHideAmounts(event.isHideAmounts());
     }
 }

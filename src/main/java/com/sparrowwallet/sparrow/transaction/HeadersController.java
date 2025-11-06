@@ -1781,6 +1781,12 @@ public class HeadersController extends TransactionFormController implements Init
         }
     }
 
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        transactionDiagram.update(transactionDiagram.getWalletTransaction());
+        fee.refresh();
+    }
+
     private static class WalletSignComparator implements Comparator<Wallet> {
         private static final List<KeystoreSource> sourceOrder = List.of(KeystoreSource.SW_WATCH, KeystoreSource.HW_AIRGAPPED, KeystoreSource.HW_USB, KeystoreSource.SW_SEED);
 

@@ -923,6 +923,11 @@ public class PaymentController extends WalletFormController implements Initializ
         updateOpenWallets(event.getWallets());
     }
 
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        fiatAmount.refresh();
+    }
+
     private static class DnsPaymentService extends Service<Optional<DnsPayment>> {
         private final String hrn;
 

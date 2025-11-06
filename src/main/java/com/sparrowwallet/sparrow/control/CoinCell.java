@@ -58,16 +58,22 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
             DecimalFormat decimalFormat = (amount.longValue() == 0L ? format.getBtcFormat() : format.getTableBtcFormat());
             final String btcValue = decimalFormat.format(amount.doubleValue() / Transaction.SATOSHIS_PER_BITCOIN);
 
-            if(unit.equals(BitcoinUnit.BTC)) {
-                tooltip.setValue(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());
-                setText(btcValue);
+            if(Config.get().isHideAmounts()) {
+                setText(CoinLabel.HIDDEN_AMOUNT_TEXT);
+                setTooltip(null);
+                setContextMenu(null);
             } else {
-                tooltip.setValue(btcValue + " " + BitcoinUnit.BTC.getLabel());
-                setText(satsValue);
+                if(unit.equals(BitcoinUnit.BTC)) {
+                    tooltip.setValue(satsValue + " " + BitcoinUnit.SATOSHIS.getLabel());
+                    setText(btcValue);
+                } else {
+                    tooltip.setValue(btcValue + " " + BitcoinUnit.BTC.getLabel());
+                    setText(satsValue);
+                }
+                setTooltip(tooltip);
+                contextMenu.updateAmount(amount);
+                setContextMenu(contextMenu);
             }
-            setTooltip(tooltip);
-            contextMenu.updateAmount(amount);
-            setContextMenu(contextMenu);
 
             if(entry instanceof TransactionEntry transactionEntry) {
                 tooltip.showConfirmations(transactionEntry.confirmationsProperty(), transactionEntry.isCoinbase());
@@ -86,7 +92,7 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 }
             } else if(entry instanceof UtxoEntry) {
                 setGraphic(null);
-            } else if(entry instanceof HashIndexEntry) {
+            } else if(entry instanceof HashIndexEntry hashIndexEntry) {
                 tooltip.hideConfirmations();
 
                 Region node = new Region();
@@ -94,8 +100,8 @@ class CoinCell extends TreeTableCell<Entry, Number> implements ConfirmationsList
                 setGraphic(node);
                 setContentDisplay(ContentDisplay.RIGHT);
 
-                if(((HashIndexEntry) entry).getType() == HashIndexEntry.Type.INPUT) {
-                    satsValue = "-" + satsValue;
+                if(hashIndexEntry.getType() == HashIndexEntry.Type.INPUT && !Config.get().isHideAmounts()) {
+                    setText("-" + getText());
                 }
             } else {
                 setGraphic(null);
