@@ -35,7 +35,16 @@
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                     <Fieldset inputGrow="SOMETIMES" text="Transactions" styleClass="header">
                         <Field text="Balance:">
-                            <CopyableCoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
+                            <CopyableCoinLabel fx:id="balance"/>
+                            <Button fx:id="hideAmountsButton" maxHeight="25" onAction="#toggleHideAmounts" translateY="-1" styleClass="icon-button">
+                                <graphic>
+                                    <Glyph fontFamily="Font Awesome 5 Free Solid" icon="EYE" fontSize="12" />
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Hide Amounts" />
+                                </tooltip>
+                            </Button>
+                            <Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
                         </Field>
                         <Field text="Mempool:">
                             <CopyableCoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" minWidth="110" />

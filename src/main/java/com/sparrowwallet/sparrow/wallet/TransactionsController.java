@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.WalletTransactions;
 import com.sparrowwallet.sparrow.net.ExchangeSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
@@ -16,10 +17,12 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.controlsfx.control.MasterDetailPane;
+import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +70,9 @@ public class TransactionsController extends WalletFormController implements Init
     @FXML
     private Button exportCsv;
 
+    @FXML
+    private Button hideAmountsButton;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
@@ -99,6 +105,8 @@ public class TransactionsController extends WalletFormController implements Init
         transactionsMasterDetail.setShowDetailNode(Config.get().isShowLoadingLog());
         loadingLog.appendText("Wallet loading history for " + getWalletForm().getWallet().getFullDisplayName());
         loadingLog.setEditable(false);
+
+        updateHideAmountsButtonIcon(Config.get().isHideAmounts());
     }
 
     private void setTransactionCount(WalletTransactionsEntry walletTransactionsEntry) {
@@ -123,6 +131,21 @@ public class TransactionsController extends WalletFormController implements Init
             });
             exportService.start();
         }
+    }
+
+    public void toggleHideAmounts(ActionEvent event) {
+        boolean currentState = Config.get().isHideAmounts();
+        Config.get().setHideAmounts(!currentState);
+        EventManager.get().post(new HideAmountsStatusEvent(!currentState));
+        updateHideAmountsButtonIcon(!currentState);
+    }
+
+    private void updateHideAmountsButtonIcon(boolean isHidden) {
+        // Use EYE_SLASH unicode character (\uf070) when hidden, EYE when shown
+        Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, isHidden ? '\uf070' : FontAwesome5.Glyph.EYE);
+        glyph.setFontSize(12);
+        hideAmountsButton.setGraphic(glyph);
+        hideAmountsButton.setTooltip(new Tooltip(isHidden ? "Show Amounts" : "Hide Amounts"));
     }
 
     private void logMessage(String logMessage) {
@@ -203,6 +226,7 @@ public class TransactionsController extends WalletFormController implements Init
         mempoolBalance.refresh();
         fiatBalance.refresh();
         fiatMempoolBalance.refresh();
+        updateHideAmountsButtonIcon(event.isHideAmounts());
     }
 
     @Subscribe
