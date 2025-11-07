@@ -197,6 +197,7 @@ public abstract class Instance {
             File sparrowHome = Storage.getSparrowHome(true);
             if(!sparrowHome.exists()) {
                 Storage.createOwnerOnlyDirectory(sparrowHome);
+                sparrowHome.deleteOnExit(); //Will only delete on exit if empty
             }
 
             return sparrowHome.toPath().resolve(applicationId + ".default");
