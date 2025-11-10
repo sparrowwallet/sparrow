@@ -24,13 +24,22 @@ jobs:
         run: ./gradlew -v
       - name: Build with Gradle
         run: ./gradlew jpackage
-      - name: Package zip distribution
-        if: ${{ runner.os == 'Windows' || runner.os == 'macOS' }}
+      - name: Codesign, package and notarize macOS distribution
+        if: ${{ runner.os == 'macOS' }}
+        uses: sparrowwallet/github-actions/codesign-macos@v1
+        with:
+          certificate: ${{ secrets.MACOS_CERTIFICATE }}
+          certificate-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          apple-id: ${{ secrets.MACOS_NOTARIZATION_APPLE_ID }}
+          team-id: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
+          notarization-password: ${{ secrets.MACOS_NOTARIZATION_PASSWORD }}
+      - name: Package Windows zip distribution
+        if: ${{ runner.os == 'Windows' }}
         run: ./gradlew packageZipDistribution
-      - name: Package tar distribution
+      - name: Package Linux tar distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew packageTarDistribution
-      - name: Repackage deb distribution
+      - name: Repackage Linux deb distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./repackage.sh
       - name: Upload Artifact
@@ -40,13 +49,14 @@ jobs:
           path: |
             build/jpackage/*
             !build/jpackage/Sparrow/
+            !build/jpackage/Sparrow.app/
       - name: Headless build with Gradle
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew -Djava.awt.headless=true clean jpackage
-      - name: Package headless tar distribution
+      - name: Package Linux headless tar distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew -Djava.awt.headless=true packageTarDistribution
-      - name: Repackage headless deb distribution
+      - name: Repackage Linux headless deb distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./repackage.sh
       - name: Upload Headless Artifact
