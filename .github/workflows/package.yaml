@@ -28,6 +28,7 @@ jobs:
         if: ${{ runner.os == 'macOS' }}
         uses: sparrowwallet/github-actions/codesign-macos@v1
         with:
+          app-name: Sparrow
           certificate: ${{ secrets.MACOS_CERTIFICATE }}
           certificate-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           apple-id: ${{ secrets.MACOS_NOTARIZATION_APPLE_ID }}
