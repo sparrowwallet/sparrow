@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -14,7 +15,7 @@ public class KeycardShellSinglesig extends KeystoneSinglesig {
 
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import QR created on your Keycard Shell, by selecting Connect software wallet > Bitcoin";
+        return "Import QR created on your Keycard Shell by selecting Connect software wallet > Bitcoin" + (Network.getCanonical() == Network.TESTNET ? " Testnet" : "");
     }
 
     @Override

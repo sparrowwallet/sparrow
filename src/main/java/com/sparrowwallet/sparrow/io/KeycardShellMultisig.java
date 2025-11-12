@@ -14,7 +14,7 @@ public class KeycardShellMultisig extends ColdcardMultisig {
 
     @Override
     public String getKeystoreImportDescription(int account) {
-        return "Import QR created on your Keycard Shell, by selecting Connect software wallet > Bitcoin MultiSig";
+        return "Import QR created on your Keycard Shell by selecting Connect software wallet > Bitcoin MultiSig";
     }
 
     @Override

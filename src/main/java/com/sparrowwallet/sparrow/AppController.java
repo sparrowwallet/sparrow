@@ -1234,8 +1234,7 @@ public class AppController implements Initializable {
                 new CoboVaultSinglesig(), new CoboVaultMultisig(),
                 new PassportSinglesig(),
                 new KeystoneSinglesig(), new KeystoneMultisig(),
-                new CaravanMultisig(),
-                new KeycardShellSinglesig(), new KeycardShellMultisig());
+                new CaravanMultisig());
         for(WalletImport importer : walletImporters) {
             if(importer.isDeprecated() && !Config.get().isShowDeprecatedImportExport()) {
                 continue;
