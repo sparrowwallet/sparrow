@@ -656,7 +656,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
                 List<ChildNumber> path = cryptoKeypath.getComponents().stream().map(comp -> (IndexPathComponent)comp)
                         .map(comp -> new ChildNumber(comp.getIndex(), comp.isHardened())).collect(Collectors.toList());
-                String fingerprint = cryptoKeypath.getSourceFingerprint() == null ? KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT : Utils.bytesToHex(cryptoKeypath.getSourceFingerprint());
+                String fingerprint = cryptoKeypath.getSourceFingerprint() == null ? KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT : Utils.bytesToHex(cryptoKeypath.getSourceFingerprint());
                 return new KeyDerivation(fingerprint, KeyDerivation.writePath(path));
             }
 

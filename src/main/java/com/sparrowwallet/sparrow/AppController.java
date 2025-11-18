@@ -1911,7 +1911,7 @@ public class AppController implements Initializable {
     }
 
     private void addTransactionTab(String name, File file, PSBT psbt) {
-        //Convert to PSBTv0 first
+        //Convert to PSBTv0 first as the consistent internal representation
         if(psbt.getVersion() != null && psbt.getVersion() >= 2) {
             psbt.convertVersion(0);
         }

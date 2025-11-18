@@ -44,8 +44,6 @@ import static com.sparrowwallet.sparrow.io.CardApi.isReaderAvailable;
 public class KeystoreController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(KeystoreController.class);
 
-    public static final String DEFAULT_WATCH_ONLY_FINGERPRINT = "00000000";
-
     private Keystore keystore;
 
     @FXML
@@ -252,7 +250,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(keystoreSource != KeystoreSource.SW_WATCH) {
             launchImportDialog(keystoreSource);
         } else {
-            fingerprint.setText(DEFAULT_WATCH_ONLY_FINGERPRINT);
+            fingerprint.setText(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT);
             derivation.setText(getWalletForm().getWallet().getScriptType().getDefaultDerivationPath());
             selectSourcePane.setVisible(false);
         }

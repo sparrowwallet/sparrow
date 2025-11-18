@@ -140,7 +140,7 @@ public class Descriptor implements WalletImport, WalletExport {
     private static Wallet ensureKeyDerivations(Wallet wallet) {
         for(Keystore keystore : wallet.getKeystores()) {
             if(keystore.getKeyDerivation().getMasterFingerprint() == null || keystore.getKeyDerivation().getDerivationPath() == null) {
-                keystore.setKeyDerivation(new KeyDerivation(KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT, wallet.getScriptType().getDefaultDerivationPath()));
+                keystore.setKeyDerivation(new KeyDerivation(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT, wallet.getScriptType().getDefaultDerivationPath()));
             }
         }
 
