@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.psbt.PSBTProofException;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -1187,17 +1188,31 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void extractTransaction(ActionEvent event) {
+        extractTransaction();
+    }
+
+    public boolean extractTransaction() {
         viewFinalButton.setDisable(true);
 
-        Transaction finalTx = headersForm.getPsbt().extractTransaction();
-        headersForm.setFinalTransaction(finalTx);
-        EventManager.get().post(new TransactionExtractedEvent(headersForm.getPsbt(), finalTx));
+        try {
+            Transaction finalTx = headersForm.getPsbt().extractTransaction();
+            headersForm.setFinalTransaction(finalTx);
+            EventManager.get().post(new TransactionExtractedEvent(headersForm.getPsbt(), finalTx));
+            return true;
+        } catch(PSBTProofException e) {
+            AppServices.showErrorDialog("Invalid Silent Payments Transaction", e.getMessage());
+            viewFinalButton.setDisable(false);
+            return false;
+        }
     }
 
     public void broadcastTransaction(ActionEvent event) {
         broadcastButton.setDisable(true);
         if(headersForm.getPsbt() != null) {
-            extractTransaction(event);
+            if(!extractTransaction()) {
+                broadcastButton.setDisable(false);
+                return;
+            }
         }
 
         if(fee.getValue() > 0) {
@@ -1363,10 +1378,12 @@ public class HeadersController extends TransactionFormController implements Init
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             try {
+                Transaction finalTx = headersForm.getPsbt().extractTransaction();
                 try(PrintWriter writer = new PrintWriter(file, StandardCharsets.UTF_8)) {
-                    Transaction finalTx = headersForm.getPsbt().extractTransaction();
                     writer.print(Utils.bytesToHex(finalTx.bitcoinSerialize()));
                 }
+            } catch(PSBTProofException e) {
+                AppServices.showErrorDialog("Invalid Silent Payments Transaction", e.getMessage());
             } catch(IOException e) {
                 log.error("Error saving transaction", e);
                 AppServices.showErrorDialog("Error saving transaction", "Cannot write to " + file.getAbsolutePath());
@@ -1387,7 +1404,8 @@ public class HeadersController extends TransactionFormController implements Init
             EventManager.get().post(new ViewPSBTEvent(payjoinButton.getScene().getWindow(), headersForm.getName() + " Payjoin", null, proposalPsbt));
         });
         requestPayjoinPSBTService.setOnFailed(failedEvent -> {
-            AppServices.showErrorDialog("Error Requesting Payjoin Transaction", failedEvent.getSource().getException().getMessage());
+            Throwable exception = failedEvent.getSource().getException();
+            AppServices.showErrorDialog(exception instanceof PSBTProofException ? "Invalid Silent Payments Transaction" : "Error Requesting Payjoin Transaction", exception.getMessage());
         });
         requestPayjoinPSBTService.start();
     }

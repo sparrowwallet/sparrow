@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.psbt.PSBTProofException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
@@ -28,8 +29,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -461,7 +460,11 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             psbtInput.setFinalScriptWitness(finalizedTxInput.getWitness());
         }
 
-        setResult(psbt.extractTransaction());
+        try {
+            setResult(psbt.extractTransaction());
+        } catch(PSBTProofException e) {
+            AppServices.showErrorDialog("Invalid Silent Payments Transaction", e.getMessage());
+        }
     }
 
     public Glyph getGlyph(FontAwesome5.Glyph glyphEnum) {
