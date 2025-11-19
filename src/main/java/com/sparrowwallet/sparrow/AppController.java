@@ -1911,11 +1911,6 @@ public class AppController implements Initializable {
     }
 
     private void addTransactionTab(String name, File file, PSBT psbt) {
-        //Convert to PSBTv0 first as the consistent internal representation
-        if(psbt.getVersion() != null && psbt.getVersion() >= 2) {
-            psbt.convertVersion(0);
-        }
-
         //Add any missing previous outputs if available in open wallets
         for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
             if(psbtInput.getUtxo() == null) {
@@ -2565,7 +2560,7 @@ public class AppController implements Initializable {
             if(event instanceof TransactionTabSelectedEvent) {
                 TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
                 TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
-                if(transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction()) {
+                if(transactionTabData.getPsbt() == null || !transactionTabData.getPsbt().getTransaction().getTxId().equals(transactionTabData.getTransaction().getTxId())) {
                     saveTransaction.setVisible(true);
                     saveTransaction.setDisable(false);
                 } else {
