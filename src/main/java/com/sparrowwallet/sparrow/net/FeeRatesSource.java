@@ -71,6 +71,30 @@ public enum FeeRatesSource {
             return network == Network.MAINNET || network == Network.TESTNET || network == Network.TESTNET4 || network == Network.SIGNET;
         }
     },
+    BLOCK_AUGUR("block.xyz Augur", true) {
+        /*
+            https://engineering.block.xyz/blog/augur-an-open-source-bitcoin-fee-estimation-library
+         */
+        @Override
+        public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
+            String url = "https://pricing.bitcoin.block.xyz/fees";
+            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return network == Network.MAINNET;
+        }
+
+        @Override
+        protected ThreeTierRates getThreeTierRates(String url, HttpClientService httpClientService) throws Exception {
+            BlockAugurRates rates = httpClientService.requestJson(url, BlockAugurRates.class, null);
+            if(rates.estimates == null) {
+                throw new Exception("Invalid response from " + url);
+            }
+            return rates.getThreeTierRates();
+        }
+    },
     BITCOINFEES_EARN_COM("bitcoinfees.earn.com", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
@@ -342,6 +366,37 @@ public enum FeeRatesSource {
             return new ThreeTierRates(recommended_fee_099/1000, recommended_fee_090/1000, recommended_fee_050/1000, null);
         }
     }
+
+    private record BlockAugurRates(Map<String, BlockAugurEstimate> estimates) {
+        public ThreeTierRates getThreeTierRates() {
+            // see https://engineering.block.xyz/blog/augur-an-open-source-bitcoin-fee-estimation-library
+            //
+            // fastestFee: 95% confidence at 3 blocks
+            // halfHourFee: 80% confidence at 3 blocks
+            // hourFee: 80% confidence at 6 blocks
+            // minimumFee: 80% confidence at 144 blocks
+            Double fastestFee = getFeeRate("3", "0.95");
+            Double halfHourFee = getFeeRate("3", "0.80");
+            Double hourFee = getFeeRate("6", "0.80");
+            Double minimumFee = getFeeRate("144", "0.80");
+            return new ThreeTierRates(fastestFee, halfHourFee, hourFee, minimumFee);
+        }
+
+        private Double getFeeRate(String blocks, String probability) {
+            BlockAugurEstimate estimate = estimates.get(blocks);
+            if(estimate != null && estimate.probabilities != null) {
+                BlockAugurFeeRate feeRate = estimate.probabilities.get(probability);
+                if(feeRate != null) {
+                    return feeRate.fee_rate;
+                }
+            }
+            return 1.0;
+        }
+    }
+
+    private record BlockAugurEstimate(Map<String, BlockAugurFeeRate> probabilities) {}
+
+    private record BlockAugurFeeRate(Double fee_rate) {}
 
     protected record MempoolBlock(Integer nTx, Double medianFee) {}
 
