@@ -1986,39 +1986,13 @@ public class AppController implements Initializable {
     private void addTransactionTab(String name, File file, Transaction transaction, PSBT psbt, BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();
-            if(tabData instanceof TransactionTabData) {
-                TransactionTabData transactionTabData = (TransactionTabData)tabData;
+            if(tabData instanceof TransactionTabData transactionTabData) {
+                if(isExistingTransaction(transactionTabData, transaction, psbt, getTabName(tab))) {
+                    handleTransactionMerge(transactionTabData, psbt, name, tab);
+                    return;
+                }
 
-                //If an exact match bytewise of an existing tab, return that tab
-                if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), transaction.bitcoinSerialize())) {
-                    if(transactionTabData.getPsbt() != null && psbt != null && !transactionTabData.getPsbt().isFinalized()) {
-                        if(!psbt.isFinalized()) {
-                            //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
-                            transactionTabData.getPsbt().combine(psbt);
-                            if(name != null && !name.isEmpty()) {
-                                ((Label)tab.getGraphic()).setText(name);
-                            }
-
-                            EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
-                        } else {
-                            //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
-                            for(int i = 0; i < transactionTabData.getPsbt().getPsbtInputs().size(); i++) {
-                                PSBTInput existingInput = transactionTabData.getPsbt().getPsbtInputs().get(i);
-                                PSBTInput finalizedInput = psbt.getPsbtInputs().get(i);
-                                existingInput.setFinalScriptSig(finalizedInput.getFinalScriptSig());
-                                existingInput.setFinalScriptWitness(finalizedInput.getFinalScriptWitness());
-                                existingInput.clearNonFinalFields();
-                            }
-
-                            if(name != null && !name.isEmpty()) {
-                                ((Label)tab.getGraphic()).setText(name);
-                            }
-
-                            EventManager.get().post(new PSBTFinalizedEvent(transactionTabData.getPsbt()));
-                        }
-                    }
-
-                    tabs.getSelectionModel().select(tab);
+                if(transactionTabData.getPsbt() != null && transactionTabData.getPsbt().possibleUnverifiableSilentPaymentsTransaction(transaction) && !openUnverifiableTransaction(getTabName(tab))) {
                     return;
                 }
             }
@@ -2082,6 +2056,69 @@ public class AppController implements Initializable {
             tabs.getSelectionModel().select(tab);
         } catch(IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private boolean isExistingTransaction(TransactionTabData transactionTabData, Transaction transaction, PSBT psbt, String tabName) {
+        PSBT currentPsbt = transactionTabData.getPsbt();
+        Transaction currentTransaction = transactionTabData.getTransaction();
+
+        if(currentPsbt != null && psbt != null && currentPsbt.matches(psbt)) {
+            return true;
+        } else if(currentTransaction.getTxId().equals(transaction.getTxId())) {
+            if(currentTransaction.getWTxId().equals(transaction.getWTxId())) {
+                return true;
+            } else if(currentPsbt == null) {
+                AppServices.showWarningDialog("Suspicious Transaction",
+                        "This transaction has the same txid as the transaction in tab " + tabName + ", but contains different witnesses. It will be opened in a separate tab.");
+            }
+        }
+
+        return false;
+    }
+
+    private void handleTransactionMerge(TransactionTabData transactionTabData, PSBT psbt, String name, Tab tab) {
+        PSBT currentPsbt = transactionTabData.getPsbt();
+
+        if(currentPsbt != null && psbt != null && !currentPsbt.isFinalized()) {
+            if(!psbt.isFinalized()) {
+                //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
+                try {
+                    currentPsbt.verifyCombinedSignatures(psbt);
+                    currentPsbt.combine(psbt);
+                    setTabName(tab, name);
+                    EventManager.get().post(new PSBTCombinedEvent(currentPsbt));
+                } catch(PSBTSignatureException e) {
+                    AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+                }
+            } else {
+                //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
+                currentPsbt.copyFinalizedFields(psbt);
+                setTabName(tab, name);
+                EventManager.get().post(new PSBTFinalizedEvent(currentPsbt));
+            }
+        }
+
+        tabs.getSelectionModel().select(tab);
+    }
+
+    private boolean openUnverifiableTransaction(String tabName) {
+        Optional<ButtonType> result = AppServices.showWarningDialog(
+                "Unverifiable Silent Payments Transaction",
+                "This transaction contains an unverifiable silent payments output.\n\n" +
+                        "The tab " + tabName + " contains a similar transaction spending to a silent payments address, " +
+                        "but this transaction does not contain enough information to determine if the recipient address is correct.\n\n" +
+                        "Open the transaction in another tab?", ButtonType.YES, ButtonType.NO);
+        return result.isPresent() && result.get() == ButtonType.YES;
+    }
+
+    private String getTabName(Tab tab) {
+        return ((Label)tab.getGraphic()).getText();
+    }
+
+    private void setTabName(Tab tab, String name){
+        if(name != null && !name.isEmpty()) {
+            ((Label)tab.getGraphic()).setText(name);
         }
     }
 

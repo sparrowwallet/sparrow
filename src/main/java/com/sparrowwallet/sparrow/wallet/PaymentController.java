@@ -467,7 +467,7 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private void setSilentPaymentAddress(SilentPaymentAddress silentPaymentAddress) {
         if(!sendController.getWalletForm().getWallet().canSendSilentPayments()) {
-            Platform.runLater(() -> AppServices.showErrorDialog("Silent Payments Unsupported", "This wallet does not support sending silent payments. Use a single signature software wallet."));
+            Platform.runLater(() -> AppServices.showErrorDialog("Silent Payments Unsupported", "This wallet does not support sending silent payments. Use a single signature wallet."));
             return;
         }
 

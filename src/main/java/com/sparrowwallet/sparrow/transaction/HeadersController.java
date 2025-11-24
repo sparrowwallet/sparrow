@@ -6,9 +6,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
-import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.psbt.PSBTInput;
-import com.sparrowwallet.drongo.psbt.PSBTProofException;
+import com.sparrowwallet.drongo.psbt.*;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -1161,8 +1159,13 @@ public class HeadersController extends TransactionFormController implements Init
         Optional<PSBT> optionalSignedPsbt = dlg.showAndWait();
         if(optionalSignedPsbt.isPresent()) {
             PSBT signedPsbt = optionalSignedPsbt.get();
-            headersForm.getPsbt().combine(signedPsbt);
-            EventManager.get().post(new PSBTCombinedEvent(headersForm.getPsbt()));
+            try {
+                headersForm.getPsbt().verifyCombinedSignatures(signedPsbt);
+                headersForm.getPsbt().combine(signedPsbt);
+                EventManager.get().post(new PSBTCombinedEvent(headersForm.getPsbt()));
+            } catch(PSBTSignatureException e) {
+                AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+            }
         }
     }
 
