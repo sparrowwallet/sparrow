@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.net;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.sparrow.AppServices;
@@ -71,7 +72,7 @@ public enum FeeRatesSource {
             return network == Network.MAINNET || network == Network.TESTNET || network == Network.TESTNET4 || network == Network.SIGNET;
         }
     },
-    BLOCK_AUGUR("block.xyz Augur", true) {
+    BLOCK_XYZ("block.xyz", true) {
         /*
             https://engineering.block.xyz/blog/augur-an-open-source-bitcoin-fee-estimation-library
          */
@@ -88,7 +89,7 @@ public enum FeeRatesSource {
 
         @Override
         protected ThreeTierRates getThreeTierRates(String url, HttpClientService httpClientService) throws Exception {
-            BlockAugurRates rates = httpClientService.requestJson(url, BlockAugurRates.class, null);
+            BlockXyzRates rates = httpClientService.requestJson(url, BlockXyzRates.class, null);
             if(rates.estimates == null) {
                 throw new Exception("Invalid response from " + url);
             }
@@ -367,7 +368,7 @@ public enum FeeRatesSource {
         }
     }
 
-    private record BlockAugurRates(Map<String, BlockAugurEstimate> estimates) {
+    private record BlockXyzRates(Map<String, BlockXyzEstimate> estimates) {
         public ThreeTierRates getThreeTierRates() {
             // see https://engineering.block.xyz/blog/augur-an-open-source-bitcoin-fee-estimation-library
             //
@@ -383,20 +384,20 @@ public enum FeeRatesSource {
         }
 
         private Double getFeeRate(String blocks, String probability) {
-            BlockAugurEstimate estimate = estimates.get(blocks);
+            BlockXyzEstimate estimate = estimates.get(blocks);
             if(estimate != null && estimate.probabilities != null) {
-                BlockAugurFeeRate feeRate = estimate.probabilities.get(probability);
+                BlockXyzFeeRate feeRate = estimate.probabilities.get(probability);
                 if(feeRate != null) {
                     return feeRate.fee_rate;
                 }
             }
-            return 1.0;
+            return Transaction.DEFAULT_MIN_RELAY_FEE;
         }
     }
 
-    private record BlockAugurEstimate(Map<String, BlockAugurFeeRate> probabilities) {}
+    private record BlockXyzEstimate(Map<String, BlockXyzFeeRate> probabilities) {}
 
-    private record BlockAugurFeeRate(Double fee_rate) {}
+    private record BlockXyzFeeRate(Double fee_rate) {}
 
     protected record MempoolBlock(Integer nTx, Double medianFee) {}
 
