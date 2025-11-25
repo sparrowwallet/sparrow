@@ -25,14 +25,6 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     private final ScriptType scriptType;
     private final String existingLabel;
 
-    public KeystoreImportDialog(Wallet wallet) {
-        this(wallet, KeystoreSource.HW_USB);
-    }
-
-    public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource) {
-        this(wallet, initialSource, null, null, Keystore.DEFAULT_LABEL, false);
-    }
-
     public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource, KeyDerivation currentDerivation, WalletModel currentModel, String currentLabel, boolean restrictImport) {
         EventManager.get().register(this);
         setOnCloseRequest(event -> {

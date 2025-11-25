@@ -43,7 +43,7 @@ public class HwAirgappedController extends KeystoreImportDetailController {
         List<KeystoreCardImport> cardImporters = List.of(new Tapsigner(), new Satochip(), new Satschip());
         for(KeystoreCardImport importer : cardImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
-                CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());
+                CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getDefaultDerivation(), getMasterController().getRequiredDerivation());
                 if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == importer.getWalletModel()) {
                     importAccordion.getPanes().add(importPane);
                 }

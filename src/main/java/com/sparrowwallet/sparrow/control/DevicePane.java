@@ -51,7 +51,8 @@ public class DevicePane extends TitledDescriptionPane {
     private final Wallet wallet;
     private final PSBT psbt;
     private final OutputDescriptor outputDescriptor;
-    private final KeyDerivation keyDerivation;
+    private final KeyDerivation defaultDerivation;
+    private final KeyDerivation requiredDerivation;
     private final String message;
     private final List<StandardAccount> availableAccounts;
     private final Device device;
@@ -74,13 +75,14 @@ public class DevicePane extends TitledDescriptionPane {
 
     private boolean defaultDevice;
 
-    public DevicePane(Wallet wallet, Device device, boolean defaultDevice, KeyDerivation requiredDerivation) {
+    public DevicePane(Wallet wallet, Device device, boolean defaultDevice, KeyDerivation defaultDerivation, KeyDerivation requiredDerivation) {
         super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.IMPORT;
         this.wallet = wallet;
         this.psbt = null;
         this.outputDescriptor = null;
-        this.keyDerivation = requiredDerivation;
+        this.defaultDerivation = defaultDerivation;
+        this.requiredDerivation = requiredDerivation;
         this.message = null;
         this.availableAccounts = null;
         this.device = device;
@@ -107,7 +109,8 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = wallet;
         this.psbt = psbt;
         this.outputDescriptor = null;
-        this.keyDerivation = null;
+        this.defaultDerivation = null;
+        this.requiredDerivation = null;
         this.message = null;
         this.availableAccounts = null;
         this.device = device;
@@ -134,7 +137,8 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = wallet;
         this.psbt = null;
         this.outputDescriptor = outputDescriptor;
-        this.keyDerivation = null;
+        this.defaultDerivation = null;
+        this.requiredDerivation = null;
         this.message = null;
         this.availableAccounts = null;
         this.device = device;
@@ -151,13 +155,14 @@ public class DevicePane extends TitledDescriptionPane {
         buttonBox.getChildren().addAll(setPassphraseButton, displayAddressButton);
     }
 
-    public DevicePane(Wallet wallet, String message, KeyDerivation keyDerivation, Device device, boolean defaultDevice) {
+    public DevicePane(Wallet wallet, String message, KeyDerivation requiredDerivation, Device device, boolean defaultDevice) {
         super(device.getModel().toDisplayString(), "", "", device.getModel());
         this.deviceOperation = DeviceOperation.SIGN_MESSAGE;
         this.wallet = wallet;
         this.psbt = null;
         this.outputDescriptor = null;
-        this.keyDerivation = keyDerivation;
+        this.defaultDerivation = requiredDerivation;
+        this.requiredDerivation = requiredDerivation;
         this.message = message;
         this.availableAccounts = null;
         this.device = device;
@@ -184,7 +189,8 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = wallet;
         this.psbt = null;
         this.outputDescriptor = null;
-        this.keyDerivation = null;
+        this.defaultDerivation = null;
+        this.requiredDerivation = null;
         this.message = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
@@ -207,7 +213,8 @@ public class DevicePane extends TitledDescriptionPane {
         this.wallet = null;
         this.psbt = null;
         this.outputDescriptor = null;
-        this.keyDerivation = null;
+        this.defaultDerivation = null;
+        this.requiredDerivation = null;
         this.message = null;
         this.device = device;
         this.defaultDevice = defaultDevice;
@@ -286,13 +293,12 @@ public class DevicePane extends TitledDescriptionPane {
     }
 
     private void createImportButton() {
-        importButton = keyDerivation == null ? new SplitMenuButton() : new Button();
+        importButton = requiredDerivation == null ? new SplitMenuButton() : new Button();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
-            List<ChildNumber> defaultDerivation = wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
-            importKeystore(keyDerivation == null ? defaultDerivation : keyDerivation.getDerivation());
+            importKeystore(requiredDerivation == null ? getDefaultDerivation() : requiredDerivation.getDerivation());
         });
 
         if(importButton instanceof SplitMenuButton importMenuButton) {
@@ -363,7 +369,7 @@ public class DevicePane extends TitledDescriptionPane {
         signMessageButton.managedProperty().bind(signMessageButton.visibleProperty());
         signMessageButton.setVisible(false);
 
-        if(device.getFingerprint() != null && !device.getFingerprint().equals(keyDerivation.getMasterFingerprint())) {
+        if(device.getFingerprint() != null && !device.getFingerprint().equals(requiredDerivation.getMasterFingerprint())) {
             signMessageButton.setDisable(true);
         }
     }
@@ -431,6 +437,14 @@ public class DevicePane extends TitledDescriptionPane {
         });
         getAddressButton.managedProperty().bind(getAddressButton.visibleProperty());
         getAddressButton.setVisible(false);
+    }
+
+    private List<ChildNumber> getDefaultDerivation() {
+        if(defaultDerivation != null && !defaultDerivation.getDerivation().isEmpty()) {
+            return defaultDerivation.getDerivation();
+        }
+
+        return wallet == null || wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
     }
 
     private void unlock(Device device) {
@@ -864,7 +878,7 @@ public class DevicePane extends TitledDescriptionPane {
         if(device.isCard()) {
             try {
                 CardApi cardApi = CardApi.getCardApi(device.getModel(), pin.get());
-                Service<String> signMessageService = cardApi.getSignMessageService(message, wallet.getScriptType(), keyDerivation.getDerivation(), messageProperty);
+                Service<String> signMessageService = cardApi.getSignMessageService(message, wallet.getScriptType(), requiredDerivation.getDerivation(), messageProperty);
                 handleCardOperation(signMessageService, signMessageButton, "Signing", true, event -> {
                     String signature = signMessageService.getValue();
                     EventManager.get().post(new MessageSignedEvent(wallet, signature));
@@ -875,7 +889,7 @@ public class DevicePane extends TitledDescriptionPane {
                 signButton.setDisable(false);
             }
         } else {
-            Hwi.SignMessageService signMessageService = new Hwi.SignMessageService(device, passphrase.get(), message, keyDerivation.getDerivationPath());
+            Hwi.SignMessageService signMessageService = new Hwi.SignMessageService(device, passphrase.get(), message, requiredDerivation.getDerivationPath());
             signMessageService.setOnSucceeded(successEvent -> {
                 String signature = signMessageService.getValue();
                 EventManager.get().post(new MessageSignedEvent(wallet, signature));
@@ -1003,8 +1017,7 @@ public class DevicePane extends TitledDescriptionPane {
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
             showHideLink.setVisible(!device.isCard());
-            List<ChildNumber> defaultDerivation = wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
-            setContent(getDerivationEntry(keyDerivation == null ? defaultDerivation : keyDerivation.getDerivation()));
+            setContent(getDerivationEntry(requiredDerivation == null ? getDefaultDerivation() : requiredDerivation.getDerivation()));
         } else if(deviceOperation.equals(DeviceOperation.SIGN)) {
             signButton.setDefaultButton(defaultDevice);
             signButton.setVisible(true);
@@ -1038,7 +1051,7 @@ public class DevicePane extends TitledDescriptionPane {
         TextField derivationField = new TextField();
         derivationField.setPromptText("Derivation path");
         derivationField.setText(KeyDerivation.writePath(derivation));
-        derivationField.setDisable(device.isCard() || keyDerivation != null);
+        derivationField.setDisable(device.isCard() || requiredDerivation != null);
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
         ValidationSupport validationSupport = new ValidationSupport();

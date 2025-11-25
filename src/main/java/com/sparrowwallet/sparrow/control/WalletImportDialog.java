@@ -112,7 +112,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
             List<Device> devices = enumerateService.getValue();
             importAccordion.getPanes().removeIf(titledPane -> titledPane instanceof DevicePane);
             for(Device device : devices) {
-                DevicePane devicePane = new DevicePane(new Wallet(), device, devices.size() == 1, null);
+                DevicePane devicePane = new DevicePane(new Wallet(), device, devices.size() == 1, null, null);
                 importAccordion.getPanes().add(0, devicePane);
             }
             Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));

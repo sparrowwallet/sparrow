@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.google.common.base.Throwables;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -47,10 +48,18 @@ public class CardImportPane extends TitledDescriptionPane {
     protected Button importButton;
     private final SimpleStringProperty pin = new SimpleStringProperty("");
 
-    public CardImportPane(Wallet wallet, KeystoreCardImport importer, KeyDerivation requiredDerivation) {
+    public CardImportPane(Wallet wallet, KeystoreCardImport importer, KeyDerivation defaultDerivation, KeyDerivation requiredDerivation) {
         super(importer.getName(), "Place card on reader", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), importer.getWalletModel());
         this.importer = importer;
-        this.derivation = requiredDerivation == null ? wallet.getScriptType().getDefaultDerivation() : requiredDerivation.getDerivation();
+        this.derivation = requiredDerivation == null ? getDefaultDerivation(wallet, defaultDerivation) : requiredDerivation.getDerivation();
+    }
+
+    private static List<ChildNumber> getDefaultDerivation(Wallet wallet, KeyDerivation defaultDerivation) {
+        if(defaultDerivation != null && !defaultDerivation.getDerivation().isEmpty()) {
+            return defaultDerivation.getDerivation();
+        }
+
+        return wallet == null || wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
     }
 
     @Override
