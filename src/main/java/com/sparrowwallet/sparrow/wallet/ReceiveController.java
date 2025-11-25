@@ -164,7 +164,8 @@ public class ReceiveController extends WalletFormController implements Initializ
 
             displayAddress.setUserData(addressDevices);
             return;
-        } else if(currentEntry != null && wallet.getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))) {
+        } else if(currentEntry != null && (wallet.getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB))
+                || wallet.getKeystores().stream().allMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_WATCH)))) {
             displayAddress.setVisible(true);
             displayAddress.setUserData(null);
             return;
