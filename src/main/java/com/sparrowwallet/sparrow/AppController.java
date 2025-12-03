@@ -583,7 +583,7 @@ public class AppController implements Initializable {
                 sudo install -m 644 /opt/sparrowwallet/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
                 sudo udevadm control --reload
                 sudo udevadm trigger
-                sudo groupadd -f plugdev
+                sudo groupadd -f -r plugdev
                 sudo usermod -aG plugdev `whoami`
                 """;
         String home = System.getProperty(JPACKAGE_APP_PATH);

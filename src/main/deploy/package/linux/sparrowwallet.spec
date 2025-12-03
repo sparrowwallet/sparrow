@@ -82,7 +82,7 @@ xdg-desktop-menu install /opt/sparrowwallet/lib/sparrowwallet-Sparrow.desktop
 xdg-mime install /opt/sparrowwallet/lib/sparrowwallet-Sparrow-MimeInfo.xml
 install -D -m 644 /opt/sparrowwallet/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
 if ! getent group plugdev > /dev/null; then
-    groupadd plugdev
+    groupadd -r plugdev
 fi
 if ! groups "${SUDO_USER:-$(whoami)}" | grep -q plugdev; then
     usermod -aG plugdev "${SUDO_USER:-$(whoami)}"
