@@ -21,7 +21,7 @@ public class Bip32 implements KeystoreXprvImport {
 
     @Override
     public String getKeystoreImportDescription() {
-        return "Import an extended master private key (BIP 32 xprv)";
+        return "Import an extended master private key (BIP 32 xprv).";
     }
 
     @Override
