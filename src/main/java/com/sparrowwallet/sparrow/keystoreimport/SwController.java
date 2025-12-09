@@ -12,7 +12,7 @@ public class SwController extends KeystoreImportDetailController {
     private Accordion importAccordion;
 
     public void initializeView() {
-        List<KeystoreImport> importers = List.of(new Bip39(), new Bip32(), new Slip39());
+        List<KeystoreImport> importers = List.of(new Bip39(), new Bip32(), new Slip39(), new Bip93());
 
         for(KeystoreImport importer : importers) {
             if(importer.isDeprecated() && !Config.get().isShowDeprecatedImportExport()) {
@@ -29,6 +29,8 @@ public class SwController extends KeystoreImportDetailController {
                 importPane = new XprvKeystoreImportPane(getMasterController().getWallet(), (KeystoreXprvImport)importer, getMasterController().getDefaultDerivation());
             } else if(importer instanceof KeystoreMnemonicShareImport) {
                 importPane = new MnemonicShareKeystoreImportPane(getMasterController().getWallet(), (KeystoreMnemonicShareImport)importer, getMasterController().getDefaultDerivation());
+            } else if (importer instanceof KeystoreCodexImport) {
+                importPane = new CodexKeystoreImportPane(getMasterController().getWallet(), (KeystoreCodexImport)importer, getMasterController().getDefaultDerivation());
             } else {
                 throw new IllegalArgumentException("Could not create ImportPane for importer of type " + importer.getClass());
             }
