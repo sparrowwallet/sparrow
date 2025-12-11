@@ -58,5 +58,5 @@ open module com.sparrowwallet.sparrow {
     requires com.sparrowwallet.lark;
     requires com.sun.jna;
     requires io.github.doblon8.jzbar;
-    requires im.status.keycard;
+    requires org.bouncycastle.provider;
 }

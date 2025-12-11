@@ -1,7 +1,5 @@
 package com.sparrowwallet.sparrow.io.keycard;
 
-import im.status.keycard.io.APDUCommand;
-import im.status.keycard.io.APDUResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +8,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-public class KeycardTransport implements im.status.keycard.io.CardChannel {
+public class KeycardTransport implements CardChannel {
     private static final Logger log = LoggerFactory.getLogger(KeycardTransport.class);
 
     private final Card connection;
@@ -41,7 +39,7 @@ public class KeycardTransport implements im.status.keycard.io.CardChannel {
     private Card getConnection(CardTerminal cardTerminal, byte[] appletAid) throws CardException {
         Card connection = cardTerminal.connect("*");
 
-        CardChannel cardChannel = connection.getBasicChannel();
+        javax.smartcardio.CardChannel cardChannel = connection.getBasicChannel();
         ResponseAPDU resp = cardChannel.transmit(new CommandAPDU(0, 0xA4, 4, 0, appletAid));
         if(resp.getSW() != APDUResponse.SW_OK) {
             throw new CardException("Card initialization error, response was 0x" + Integer.toHexString(resp.getSW()));

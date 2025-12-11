@@ -12,12 +12,10 @@ import com.sparrowwallet.drongo.psbt.PSBTInputSigner;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.CardImportPane;
 import com.sparrowwallet.sparrow.io.CardApi;
-import im.status.keycard.applet.*;
-import im.status.keycard.io.APDUException;
-import im.status.keycard.io.APDUResponse;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +31,7 @@ import java.util.Map;
 
 public class KeycardApi extends CardApi {
     static {
-        Security.addProvider(Drongo.getProvider());
+        Security.addProvider(new BouncyCastleProvider());
     }
 
     private static final Logger log = LoggerFactory.getLogger(KeycardApi.class);

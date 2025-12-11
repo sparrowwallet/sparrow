@@ -25,7 +25,6 @@ version = '2.3.2'
 repositories {
     mavenCentral()
     maven { url = uri('https://code.sparrowwallet.com/api/packages/sparrowwallet/maven') }
-    maven { url 'https://jitpack.io' }
 }
 
 tasks.withType(AbstractArchiveTask).configureEach {
@@ -112,7 +111,7 @@ dependencies {
     implementation('com.sparrowwallet:toucan:0.9.0')
     implementation('com.jcraft:jzlib:1.1.3')
     implementation('io.github.doblon8:jzbar:0.2.1')
-    implementation('com.github.status-im.status-keycard-java:lib:3.1.4')
+    implementation ('org.bouncycastle:bcprov-jdk18on:1.80')
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.10.0')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.10.0')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher')
@@ -167,8 +166,7 @@ application {
                                  "--add-opens=java.base/java.io=com.google.gson",
                                  "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
                                  "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
-                                 "--add-reads=org.flywaydb.core=java.desktop",
-                                 "--add-reads=im.status.keycard=org.bouncycastle.provider"]
+                                 "--add-reads=org.flywaydb.core=java.desktop"]
 
     if(os.macOsX) {
         applicationDefaultJvmArgs += ["-Dprism.lcdtext=false", "-Xdock:name=Sparrow"]
@@ -230,8 +228,7 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=kotlin.stdlib",
                    "--add-reads=com.sparrowwallet.merged.module=org.reactfx.reactfx",
                    "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
-                   "--add-reads=org.flywaydb.core=java.desktop",
-                   "--add-reads=im.status.keycard=org.bouncycastle.provider"]
+                   "--add-reads=org.flywaydb.core=java.desktop"]
 
         if(os.windows) {
             jvmArgs += ["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"]
@@ -478,10 +475,6 @@ extraJavaModuleInfo {
     }
     module('com.jcraft:jzlib', 'com.jcraft.jzlib') {
         exports('com.jcraft.jzlib')
-    }
-    module('com.github.status-im.status-keycard-java:lib', 'im.status.keycard') {
-        exports('im.status.keycard.io')
-        exports('im.status.keycard.applet')
     }
 }
 
