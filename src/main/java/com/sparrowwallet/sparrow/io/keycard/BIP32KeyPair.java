@@ -2,10 +2,6 @@ package com.sparrowwallet.sparrow.io.keycard;
 
 import com.sparrowwallet.drongo.crypto.ECKey;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.util.Arrays;
-
 /**
  * Represents a BIP32 keypair. This can be a master key or any other key in the path. Contains convenience method to
  * read and write formats the the card understands.
@@ -19,24 +15,6 @@ public class BIP32KeyPair {
     static final byte TLV_PUB_KEY = (byte) 0x80;
     static final byte TLV_PRIV_KEY = (byte) 0x81;
     static final byte TLV_CHAIN_CODE = (byte) 0x82;
-
-    /**
-     * Returns a BIP32 keypair from a BIP32 binary seed. It includes all components.
-     *
-     * @param binarySeed the binary seed
-     * @return the BIP32 keypair
-     */
-    public static BIP32KeyPair fromBinarySeed(byte[] binarySeed) {
-        try {
-            Mac hmacSHA512 = Mac.getInstance("HmacSHA512");
-            SecretKeySpec keySpec = new SecretKeySpec("Bitcoin seed".getBytes(), "HmacSHA512");
-            hmacSHA512.init(keySpec);
-            byte[] mac = hmacSHA512.doFinal(binarySeed);
-            return new BIP32KeyPair(Arrays.copyOf(mac, 32), Arrays.copyOfRange(mac, 32, 64), null);
-        } catch(Exception e) {
-            throw new RuntimeException("Is BouncyCastle correctly installed? ", e);
-        }
-    }
 
     /**
      * Constructs a BIP32 keypair from a KEY TEMPLATE TLV. Data can be the output of the EXPORT KEY command.
