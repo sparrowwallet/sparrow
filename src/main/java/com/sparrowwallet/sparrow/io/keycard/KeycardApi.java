@@ -15,7 +15,6 @@ import com.sparrowwallet.sparrow.io.CardApi;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,16 +23,11 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
-import java.security.Security;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 public class KeycardApi extends CardApi {
-    static {
-        Security.addProvider(new BouncyCastleProvider());
-    }
-
     private static final Logger log = LoggerFactory.getLogger(KeycardApi.class);
 
     private final WalletModel cardType;
@@ -50,7 +44,7 @@ public class KeycardApi extends CardApi {
 
         try {
             this.cardProtocol.select().checkOK();
-        } catch (IOException | APDUException e) {
+        } catch(IOException | APDUException e) {
             throw new CardException(e);
         }
     }
@@ -69,9 +63,9 @@ public class KeycardApi extends CardApi {
         if(!cardStatus.isInitializedCard()) {
             try {
                 String puk = String.format("%012d", new SecureRandom().nextLong(999999999999L));
-                this.cardProtocol.init(pin, puk, "KeycardDefaultPairing").checkOK();;
+                this.cardProtocol.init(pin, puk, "KeycardDefaultPairing").checkOK();
                 this.cardProtocol.select().checkOK();
-            } catch (IOException|APDUException e) {
+            } catch(IOException | APDUException e) {
                 throw new CardException(e);
             }
         }
@@ -133,7 +127,7 @@ public class KeycardApi extends CardApi {
         try {
             this.authenticate();
             this.cardProtocol.changePIN(newPin).checkOK();
-        } catch (IOException|APDUException e) {
+        } catch(IOException | APDUException e) {
             throw new CardException(e);
         }
         return true;
@@ -211,7 +205,7 @@ public class KeycardApi extends CardApi {
             this.authenticate();
             xpub = this.cardBip32GetXpub(keyDerivationString, xtype);
             masterXpub = this.cardBip32GetXpub("m", xtype);
-        } catch(IOException|APDUException e) {
+        } catch(IOException | APDUException e) {
             throw new CardException(e);
         }
 
@@ -253,7 +247,7 @@ public class KeycardApi extends CardApi {
                         break;
                     }
                 }
-                if (fullPath == null) {
+                if(fullPath == null) {
                     // recover a default derivation path from first keystore
                     Keystore keystore = keystores.get(0);
                     String basePath = keystore.getKeyDerivation().getDerivationPath();
@@ -279,7 +273,7 @@ public class KeycardApi extends CardApi {
             APDUResponse rapdu = cardProtocol.exportKey(fullpath, false, KeycardCommandSet.EXPORT_KEY_P2_PUBLIC_ONLY).checkOK();
             BIP32KeyPair keys = BIP32KeyPair.fromTLV(rapdu.getData());
             pubkey = ECKey.fromPublicOnly(compressedPub(keys.getPublicKey()));
-        } catch(IOException|APDUException e) {
+        } catch(IOException | APDUException e) {
             throw new CardException(e);
         }
 
@@ -310,7 +304,7 @@ public class KeycardApi extends CardApi {
     public void disconnect() {
         try {
             cardTransport.disconnect();
-        } catch (CardException e) {
+        } catch(CardException e) {
             log.error("Error disconnecting Keycard" + e);
         }
     }
