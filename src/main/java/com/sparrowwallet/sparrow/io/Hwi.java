@@ -11,12 +11,16 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.lark.DeviceException;
 import com.sparrowwallet.lark.Lark;
 import com.sparrowwallet.lark.bitbox02.BitBoxFileNoiseConfig;
+import com.sparrowwallet.lark.trezor.TrezorFileNoiseConfig;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.control.BitBoxPairingDialog;
+import com.sparrowwallet.sparrow.control.TextfieldDialog;
 import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +30,9 @@ import javax.smartcardio.CardNotPresentException;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Hwi {
@@ -34,8 +40,9 @@ public class Hwi {
     private static final String HWI_HOME_DIR = "hwi";
     private static final String LARK_HOME_DIR = "lark";
     private static final String BITBOX_FILENAME = "bitbox02.json";
+    private static final String TREZOR_FILENAME = "trezor.json";
 
-    private static boolean isPromptActive = false;
+    private static volatile boolean isPromptActive = false;
 
     private final Set<byte[]> newDeviceRegistrations = new HashSet<>();
 
@@ -223,6 +230,7 @@ public class Hwi {
     private Lark getLark(String passphrase, OutputDescriptor walletDescriptor, String walletName, byte[] walletRegistration) {
         Lark lark = new Lark(AppServices.getHttpClientService());
         lark.setBitBoxNoiseConfig(new BitBoxFxNoiseConfig());
+        lark.setTrezorNoiseConfig(new TrezorFxNoiseConfig());
         if(passphrase != null) {
             lark.setPassphrase(passphrase);
         }
@@ -534,6 +542,78 @@ public class Hwi {
             });
 
             return confirmedDevice.get();
+        }
+    }
+
+    private static final class TrezorFxNoiseConfig extends TrezorFileNoiseConfig {
+        public TrezorFxNoiseConfig() {
+            super(Path.of(Storage.getSparrowHome().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
+        }
+
+        @Override
+        public String promptForPairingCode() {
+            CompletableFuture<String> future = new CompletableFuture<>();
+
+            Platform.runLater(() -> {
+                TextfieldDialog textfieldDialog = new TextfieldDialog();
+                textfieldDialog.initOwner(AppServices.getActiveWindow());
+                textfieldDialog.setTitle("Enter Pairing Code");
+                textfieldDialog.setHeaderText("Enter the code shown on the device");
+                textfieldDialog.getDialogPane().setPrefWidth(300);
+                textfieldDialog.getEditor().setOnAction(_ -> textfieldDialog.setResult(textfieldDialog.getEditor().getText()));
+                textfieldDialog.getEditor().requestFocus();
+                textfieldDialog.showAndWait().ifPresentOrElse(future::complete, () -> future.complete(null));
+            });
+
+            try {
+                isPromptActive = true;
+                return future.get(); // Block until dialog is closed
+            } catch (InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            } finally {
+                isPromptActive = false;
+            }
+        }
+
+        @Override
+        public boolean confirmPairing(String deviceInfo) {
+            CompletableFuture<ButtonType> future = new CompletableFuture<>();
+
+            Platform.runLater(() -> {
+                AppServices.showAlertDialog("Pairing Required", "Pair the " + deviceInfo + " with " + SparrowWallet.APP_NAME + "?",
+                        Alert.AlertType.CONFIRMATION, ButtonType.YES, ButtonType.NO).ifPresentOrElse(future::complete, () -> future.complete(null));
+            });
+
+            try {
+                isPromptActive = true;
+                return future.get() == ButtonType.YES; // Block until dialog is closed
+            } catch (InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            } finally {
+                isPromptActive = false;
+            }
+        }
+
+        @Override
+        public void displayPairingCode(String code) {
+            super.displayPairingCode(code);
+        }
+
+        @Override
+        public String getAppName() {
+            return SparrowWallet.APP_NAME;
+        }
+
+        @Override
+        public void pairingFailed(String reason) {
+            Platform.runLater(() -> AppServices.showErrorDialog("Pairing Failed", "Pairing failed: " + reason));
+        }
+
+        @Override
+        public void pairingSuccessful(String deviceInfo) {
+            Platform.runLater(() -> AppServices.showSuccessDialog("Pairing Successful", "The " + deviceInfo + " has been successfully paired."));
         }
     }
 }
