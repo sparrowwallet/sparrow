@@ -20,8 +20,11 @@ import javafx.application.Platform;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.layout.HBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -546,6 +549,8 @@ public class Hwi {
     }
 
     private static final class TrezorFxNoiseConfig extends TrezorFileNoiseConfig {
+        private String deviceInfo;
+
         public TrezorFxNoiseConfig() {
             super(Path.of(Storage.getSparrowHome().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
         }
@@ -553,14 +558,22 @@ public class Hwi {
         @Override
         public String promptForPairingCode() {
             CompletableFuture<String> future = new CompletableFuture<>();
-
             Platform.runLater(() -> {
                 TextfieldDialog textfieldDialog = new TextfieldDialog();
                 textfieldDialog.initOwner(AppServices.getActiveWindow());
                 textfieldDialog.setTitle("Enter Pairing Code");
-                textfieldDialog.setHeaderText("Enter the code shown on the device");
+                textfieldDialog.setHeaderText("Enter the code shown on the " + deviceInfo + ":");
                 textfieldDialog.getDialogPane().setPrefWidth(300);
                 textfieldDialog.getEditor().setOnAction(_ -> textfieldDialog.setResult(textfieldDialog.getEditor().getText()));
+                textfieldDialog.getEditor().setTextFormatter(new TextFormatter<>(change -> {
+                    String newText = change.getControlNewText();
+                    if(newText.matches("\\d*")) {
+                        return change;
+                    }
+                    return null;
+                }));
+                textfieldDialog.getEditor().setStyle("-fx-font-size: 30px;");
+                HBox.setMargin(textfieldDialog.getEditor(), new Insets(0, 60, 0, 60));
                 textfieldDialog.getEditor().requestFocus();
                 textfieldDialog.showAndWait().ifPresentOrElse(future::complete, () -> future.complete(null));
             });
@@ -578,8 +591,8 @@ public class Hwi {
 
         @Override
         public boolean confirmPairing(String deviceInfo) {
+            this.deviceInfo = deviceInfo;
             CompletableFuture<ButtonType> future = new CompletableFuture<>();
-
             Platform.runLater(() -> {
                 AppServices.showAlertDialog("Pairing Required", "Pair the " + deviceInfo + " with " + SparrowWallet.APP_NAME + "?",
                         Alert.AlertType.CONFIRMATION, ButtonType.YES, ButtonType.NO).ifPresentOrElse(future::complete, () -> future.complete(null));
@@ -613,6 +626,7 @@ public class Hwi {
 
         @Override
         public void pairingSuccessful(String deviceInfo) {
+            this.deviceInfo = deviceInfo;
             Platform.runLater(() -> AppServices.showSuccessDialog("Pairing Successful", "The " + deviceInfo + " has been successfully paired."));
         }
     }
