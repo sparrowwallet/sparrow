@@ -573,7 +573,7 @@ public class Hwi {
                     return null;
                 }));
                 textfieldDialog.getEditor().setStyle("-fx-font-size: 30px;");
-                HBox.setMargin(textfieldDialog.getEditor(), new Insets(0, 60, 0, 60));
+                HBox.setMargin(textfieldDialog.getEditor(), new Insets(0, 65, 0, 65));
                 textfieldDialog.getEditor().requestFocus();
                 textfieldDialog.showAndWait().ifPresentOrElse(future::complete, () -> future.complete(null));
             });
