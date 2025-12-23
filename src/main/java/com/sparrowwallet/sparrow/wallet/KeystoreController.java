@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.wallet;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -194,6 +195,14 @@ public class KeystoreController extends WalletFormController implements Initiali
                 if(!extendedKey.equals(keystore.getExtendedPublicKey()) && extendedKey.getKey().isPubKeyOnly()) {
                     keystore.setExtendedPublicKey(extendedKey);
                     EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
+
+                    ExtendedKey.Header header = ExtendedKey.Header.fromExtendedKey(newValue);
+                    ExtendedKey.Header defaultHeader = Network.get().getXpubHeader();
+                    ScriptType scriptType = walletForm.getWallet().getScriptType();
+                    if(keystore.getSource() == KeystoreSource.SW_WATCH && header.getDefaultScriptType() != defaultHeader.getDefaultScriptType() && scriptType != header.getDefaultScriptType()) {
+                        AppServices.showWarningDialog("Script type mismatch", "You have entered a " + header.getDisplayName() + " into a " + scriptType.getDescription() + " wallet. " +
+                                "Consider changing the script type to " + header.getDefaultScriptType().getDescription() + " to match the default value for a " + header.getDisplayName() + ".");
+                    }
                 }
             } else {
                 xpub.setContextMenu(null);
