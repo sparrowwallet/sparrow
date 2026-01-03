@@ -1625,6 +1625,7 @@ public class HeadersController extends TransactionFormController implements Init
                 broadcastButtonBox.setVisible(true);
             } else {
                 signButtonBox.setVisible(true);
+                event.getPsbt().addKeyPathInformation(event.getSigningWallet());
             }
         }
     }
