@@ -25,6 +25,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import javafx.util.Callback;
 import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.tools.Borders;
@@ -69,20 +70,26 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     private String[] legacyParts;
     private int legacyPartIndex;
 
+    private boolean useRawTx;
+    private String rawTxData;
+    private boolean rawTxEncodable;
+
     private static boolean initialDensityChange;
 
     public QRDisplayDialog(String type, byte[] data, boolean addLegacyEncodingOption) throws UR.URException {
-        this(UR.fromBytes(type, data), null, addLegacyEncodingOption, false, false);
+        this(UR.fromBytes(type, data), null, null, addLegacyEncodingOption, false, false);
     }
 
     public QRDisplayDialog(UR ur) {
-        this(ur, null, false, false, false);
+        this(ur, null, null, false, false, false);
     }
 
-    public QRDisplayDialog(UR ur, BBQR bbqr, boolean addLegacyEncodingOption, boolean addScanButton, boolean selectBbqrButton) {
+    public QRDisplayDialog(UR ur, BBQR bbqr, String rawTxData, boolean addLegacyEncodingOption, boolean addScanButton, boolean selectBbqrButton) {
         this.ur = ur;
         this.bbqr = bbqr;
         this.addLegacyEncodingOption = bbqr == null && addLegacyEncodingOption;
+        this.rawTxData = rawTxData;
+        this.rawTxEncodable = rawTxData != null && getQrCode(rawTxData) != null;
 
         this.urEncoder = new UREncoder(ur, Config.get().getQrDensity().getMaxUrFragmentLength(), MIN_FRAGMENT_LENGTH, 0);
 
@@ -120,7 +127,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             createAnimateQRService();
         }
 
-        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.CANCEL_CLOSE);
+        final ButtonType cancelButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.RIGHT);
         dialogPane.getButtonTypes().add(cancelButtonType);
 
         if(this.addLegacyEncodingOption) {
@@ -131,9 +138,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             dialogPane.getButtonTypes().add(densityButtonType);
         }
 
-        if(bbqr != null) {
-            final ButtonType bbqrButtonType = new javafx.scene.control.ButtonType("Show BBQr", ButtonBar.ButtonData.BACK_PREVIOUS);
-            dialogPane.getButtonTypes().add(bbqrButtonType);
+        if(bbqr != null || rawTxData != null) {
+            final ButtonType encodingButtonType = new javafx.scene.control.ButtonType("QR Encoding", ButtonBar.ButtonData.BACK_PREVIOUS);
+            dialogPane.getButtonTypes().add(encodingButtonType);
         }
 
         if(addScanButton) {
@@ -205,7 +212,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     }
 
     private boolean isSinglePart() {
-        if(useBbqrEncoding) {
+        if(useRawTx) {
+            return true;
+        } else if(useBbqrEncoding) {
             return bbqrEncoder.isSinglePart();
         } else if(!useLegacyEncoding) {
             return urEncoder.isSinglePart();
@@ -215,7 +224,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     }
 
     private void nextPart() {
-        if(useBbqrEncoding) {
+        if(useRawTx) {
+            currentPart = rawTxData;
+        } else if(useBbqrEncoding) {
             String fragment = bbqrEncoder.nextPart();
             currentPart = fragment.toUpperCase(Locale.ROOT);
         } else if(!useLegacyEncoding) {
@@ -269,14 +280,27 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         return useBbqrEncoding;
     }
 
-    private void setUseBbqrEncoding(boolean useBbqrEncoding) {
-        if(useBbqrEncoding) {
-            this.useBbqrEncoding = true;
-            restartAnimation();
+    private void setEncodingType(String encodingType) {
+        if("BBQr".equals(encodingType)) {
+            useBbqrEncoding = true;
+            useRawTx = false;
+        } else if("RAW".equals(encodingType)) {
+            useBbqrEncoding = false;
+            useRawTx = true;
         } else {
-            this.useBbqrEncoding = false;
-            restartAnimation();
+            useBbqrEncoding = false;
+            useRawTx = false;
         }
+        restartAnimation();
+    }
+
+    private String getEncodingType() {
+        if(useBbqrEncoding) {
+            return "BBQr";
+        } else if(useRawTx) {
+            return "RAW";
+        }
+        return "UR";
     }
 
     private void changeQRDensity() {
@@ -373,18 +397,52 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
                 return scanButton;
             } else if(buttonType.getButtonData() == ButtonBar.ButtonData.BACK_PREVIOUS) {
-                ToggleButton bbqr = new ToggleButton(buttonType.getText());
-                bbqr.setGraphicTextGap(5);
-                bbqr.setGraphic(getGlyph(FontAwesome5.Glyph.QRCODE));
-                bbqr.setSelected(useBbqrEncoding);
-                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
-                ButtonBar.setButtonData(bbqr, buttonData);
+                ComboBox<String> encodingCombo = new ComboBox<>();
+                if(ur != null) {
+                    encodingCombo.getItems().add("UR");
+                }
+                if(bbqr != null) {
+                    encodingCombo.getItems().add("BBQr");
+                }
+                if(rawTxData != null) {
+                    encodingCombo.getItems().add("RAW");
+                }
 
-                bbqr.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                    setUseBbqrEncoding(newValue);
+                Callback<ListView<String>, ListCell<String>> encodingCellFactory = lv -> new ListCell<>() {
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if(empty || item == null) {
+                            setText(null);
+                            setGraphic(null);
+                            setDisable(false);
+                        } else {
+                            setText(item);
+                            setGraphic(getGlyph(FontAwesome5.Glyph.QRCODE));
+                            setDisable("RAW".equals(item) && !rawTxEncodable);
+                        }
+                    }
+                };
+
+                encodingCombo.setCellFactory(encodingCellFactory);
+                encodingCombo.setButtonCell(encodingCellFactory.call(new ListView<>()));
+
+                encodingCombo.setValue(getEncodingType());
+                encodingCombo.setOnAction(e -> {
+                    String selected = encodingCombo.getValue();
+                    if(!("RAW".equals(selected) && !rawTxEncodable)) {
+                        setEncodingType(selected);
+                    }
                 });
 
-                return bbqr;
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(encodingCombo, buttonData);
+
+                return encodingCombo;
+            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.RIGHT) {
+                Button closeButton = (Button)super.createButton(buttonType);
+                closeButton.setDefaultButton(false);
+                return closeButton;
             }
 
             return super.createButton(buttonType);

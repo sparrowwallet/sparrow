@@ -151,6 +151,10 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-border-color: #626367;
 }
 
+.root .list-cell:disabled {
+    -fx-opacity: 0.5;
+}
+
 .root .tab-pane > .tab-header-area > .headers-region {
     -fx-color: derive(-fx-base, 40%);
     -fx-mark-color: ladder(-fx-base, white 30%, derive(-fx-base,-63%) 31%);

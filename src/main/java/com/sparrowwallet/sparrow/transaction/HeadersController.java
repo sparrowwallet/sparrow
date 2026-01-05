@@ -988,7 +988,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
         BBQR bbqr = addBbqrOption ? new BBQR(BBQRType.PSBT, psbtBytes) : null;
-        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, addLegacyEncodingOption, true, selectBbqrOption);
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, null, addLegacyEncodingOption, true, selectBbqrOption);
         qrDisplayDialog.initOwner(toggleButton.getScene().getWindow());
         Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
         if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
@@ -1358,7 +1358,8 @@ public class HeadersController extends TransactionFormController implements Init
             byte[] txBytes = transaction.bitcoinSerialize();
             UR ur = UR.fromBytes(txBytes);
             BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+            String txHex = Utils.bytesToHex(txBytes);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, txHex, false, false, false);
             qrDisplayDialog.initOwner(showTransactionButton.getScene().getWindow());
             qrDisplayDialog.showAndWait();
         } catch (Exception exception) {
