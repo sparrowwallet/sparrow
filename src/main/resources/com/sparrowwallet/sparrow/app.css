@@ -107,3 +107,8 @@
     -fx-background-color: linear-gradient(to bottom, derive(-fx-text-box-border, -20%), derive(-fx-text-box-border, -30%)), linear-gradient(to bottom, derive(gold, 30%), gold);
     -fx-background-insets: 0, 1;
 }
+
+.root .list-item:disabled,
+.root .list-cell:disabled {
+    -fx-opacity: 0.5;
+}
