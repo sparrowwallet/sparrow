@@ -103,7 +103,7 @@ public class KeycardApi extends CardApi {
     void authenticate() throws IOException, APDUException {
         this.cardProtocol.autoPair("KeycardDefaultPairing");
         this.cardProtocol.autoOpenSecureChannel();
-        this.cardProtocol.verifyPIN(pin).checkOK();
+        this.cardProtocol.verifyPIN(pin).checkAuthOK();
         this.cardProtocol.autoUnpair();
     }
 
