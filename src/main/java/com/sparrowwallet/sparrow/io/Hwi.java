@@ -93,7 +93,7 @@ public class Hwi {
             } catch(CardNotPresentException e) {
                 //ignore
             } catch(CardException e) {
-                log.error("Error reading card", e);
+                log.info("Error reading card", e);
             }
         }
 

@@ -140,7 +140,7 @@ public class CardTransport {
                 }
             }
         } catch(CborException e) {
-            log.error("CBOR encoding error", e);
+            throw new CardException("CBOR encoding error", e);
         }
 
         return new JsonObject();
