@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.psbt.PSBTInputSigner;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.CardImportPane;
 import com.sparrowwallet.sparrow.io.CardApi;
+import com.sparrowwallet.sparrow.io.CardAuthorizationException;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -100,7 +101,7 @@ public class KeycardApi extends CardApi {
         return this.cardProtocol.getApplicationInfo();
     }
 
-    void authenticate() throws IOException, APDUException {
+    void authenticate() throws IOException, APDUException, CardAuthorizationException {
         this.cardProtocol.autoPair("KeycardDefaultPairing");
         this.cardProtocol.autoOpenSecureChannel();
         this.cardProtocol.verifyPIN(pin).checkAuthOK();

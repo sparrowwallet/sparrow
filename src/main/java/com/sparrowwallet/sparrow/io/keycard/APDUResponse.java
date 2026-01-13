@@ -1,5 +1,7 @@
 package com.sparrowwallet.sparrow.io.keycard;
 
+import com.sparrowwallet.sparrow.io.CardAuthorizationException;
+
 /**
  * ISO7816-4 APDU response.
  */
@@ -120,12 +122,13 @@ public class APDUResponse {
     /**
      * Checks response from an authentication command (VERIFY PIN, UNBLOCK PUK)
      *
-     * @throws WrongPINException wrong PIN
-     * @throws APDUException     unexpected response
+     * @throws CardAuthorizationException wrong PIN
+     * @throws APDUException              unexpected response
      */
-    public APDUResponse checkAuthOK() throws WrongPINException, APDUException {
+    public APDUResponse checkAuthOK() throws CardAuthorizationException, APDUException {
         if((this.sw & SW_WRONG_PIN_MASK) == SW_WRONG_PIN_MASK) {
-            throw new WrongPINException(sw2 & 0x0F);
+            int retryAttempts = sw2 & 0x0F;
+            throw new CardAuthorizationException("Wrong PIN, remaining tries: " + retryAttempts);
         } else {
             return checkOK();
         }
