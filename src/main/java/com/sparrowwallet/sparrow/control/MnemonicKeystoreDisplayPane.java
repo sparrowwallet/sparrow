@@ -6,10 +6,9 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import javafx.beans.property.SimpleListProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.geometry.Orientation;
 import javafx.scene.Node;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
-import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
@@ -32,11 +31,9 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 
-        wordsPane = new TilePane();
-        wordsPane.setPrefRows(Math.ceilDiv(numWords, 3));
+        wordsPane = new GridPane();
         wordsPane.setHgap(10);
         wordsPane.setVgap(10);
-        wordsPane.setOrientation(Orientation.VERTICAL);
 
         List<String> words = new ArrayList<>();
         for(int i = 0; i < numWords; i++) {
@@ -53,7 +50,14 @@ public class MnemonicKeystoreDisplayPane extends MnemonicKeystorePane {
             wordEntries.get(i).setNextEntry(wordEntries.get(i + 1));
             wordEntries.get(i).setNextField(wordEntries.get(i + 1).getEditor());
         }
-        wordsPane.getChildren().addAll(wordEntries);
+
+        int numCols = 3;
+        int numRows = Math.ceilDiv(numWords, numCols);
+        for(int i = 0; i < wordEntries.size(); i++) {
+            int col = i / numRows;
+            int row = i % numRows;
+            wordsPane.add(wordEntries.get(i), col, row);
+        }
 
         vBox.getChildren().add(wordsPane);
 

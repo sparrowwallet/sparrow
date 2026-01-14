@@ -15,20 +15,15 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
-import javafx.concurrent.ScheduledService;
-import javafx.concurrent.Task;
 import javafx.geometry.Insets;
-import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.layout.*;
 import javafx.util.Callback;
-import javafx.util.Duration;
 import org.controlsfx.control.textfield.AutoCompletionBinding;
 import org.controlsfx.control.textfield.TextFields;
-import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
 import org.controlsfx.validation.Validator;
@@ -44,7 +39,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(MnemonicKeystorePane.class);
 
     protected SplitMenuButton enterMnemonicButton;
-    protected TilePane wordsPane;
+    protected GridPane wordsPane;
     protected Label validLabel;
     protected Label invalidLabel;
 
@@ -167,11 +162,9 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
         VBox vBox = new VBox();
         vBox.setSpacing(10);
 
-        wordsPane = new TilePane();
-        wordsPane.setPrefRows(Math.ceilDiv(numWords, 3));
+        wordsPane = new GridPane();
         wordsPane.setHgap(10);
         wordsPane.setVgap(10);
-        wordsPane.setOrientation(Orientation.VERTICAL);
 
         List<String> words = new ArrayList<>();
         for(int i = 0; i < numWords; i++) {
@@ -188,7 +181,14 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             wordEntries.get(i).setNextEntry(wordEntries.get(i + 1));
             wordEntries.get(i).setNextField(wordEntries.get(i + 1).getEditor());
         }
-        wordsPane.getChildren().addAll(wordEntries);
+
+        int numCols = 3;
+        int numRows = Math.ceilDiv(numWords, numCols);
+        for(int i = 0; i < wordEntries.size(); i++) {
+            int col = i / numRows;
+            int row = i % numRows;
+            wordsPane.add(wordEntries.get(i), col, row);
+        }
 
         vBox.getChildren().add(wordsPane);
 
