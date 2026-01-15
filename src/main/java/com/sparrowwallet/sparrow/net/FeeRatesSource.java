@@ -31,7 +31,7 @@ public enum FeeRatesSource {
     MEMPOOL_SPACE("mempool.space", true) {
         @Override
         public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
-            String url = getApiUrl() + "v1/fees/recommended";
+            String url = getApiUrl() + "v1/fees/precise";
             return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
         }
 
