@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow;
 
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptChunk;
 import com.sparrowwallet.drongo.wallet.Keystore;
@@ -72,8 +73,7 @@ public abstract class BaseController {
             StringBuilder builder = new StringBuilder();
             builder.append("[");
             builder.append(keystore.getKeyDerivation().getMasterFingerprint());
-            builder.append("/");
-            builder.append(keystore.getKeyDerivation().getDerivationPath().replaceFirst("^m?/", ""));
+            builder.append(KeyDerivation.writePath(KeyDerivation.parsePath(keystore.getKeyDerivation().getDerivationPath())).substring(1));
             builder.append("]");
             builder.append(keystore.getExtendedPublicKey().toString());
 
