@@ -68,7 +68,7 @@ public enum ExchangeSource {
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                return httpClientService.requestJson(url, CoinbaseRates.class, null);
+                return httpClientService.requestJson(url, CoinbaseRates.class, HTTP_HEADERS);
             } catch (Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -104,7 +104,7 @@ public enum ExchangeSource {
 
                 HttpClientService httpClientService = AppServices.getHttpClientService();
                 try {
-                    Number[][] coinbaseData = httpClientService.requestJson(url, Number[][].class, Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*"));
+                    Number[][] coinbaseData = httpClientService.requestJson(url, Number[][].class, HTTP_HEADERS);
                     for(Number[] price : coinbaseData) {
                         Date date = new Date(price[0].longValue() * 1000);
                         historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), price[4].doubleValue());
@@ -152,7 +152,7 @@ public enum ExchangeSource {
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                return httpClientService.requestJson(url, CoinGeckoRates.class, Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*"));
+                return httpClientService.requestJson(url, CoinGeckoRates.class, HTTP_HEADERS);
             } catch(Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -182,7 +182,7 @@ public enum ExchangeSource {
             Map<Date, Double> historicalRates = new TreeMap<>();
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                CoinGeckoHistoricalRates coinGeckoHistoricalRates = httpClientService.requestJson(url, CoinGeckoHistoricalRates.class, null);
+                CoinGeckoHistoricalRates coinGeckoHistoricalRates = httpClientService.requestJson(url, CoinGeckoHistoricalRates.class, HTTP_HEADERS);
                 for(List<Number> historicalRate : coinGeckoHistoricalRates.prices) {
                     Date date = new Date(historicalRate.get(0).longValue());
                     historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), historicalRate.get(1).doubleValue());
@@ -225,7 +225,7 @@ public enum ExchangeSource {
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                return httpClientService.requestJson(url, MempoolSpaceRates.class, null);
+                return httpClientService.requestJson(url, MempoolSpaceRates.class, HTTP_HEADERS);
             } catch(Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -248,7 +248,7 @@ public enum ExchangeSource {
             Map<Date, Double> historicalRates = new TreeMap<>();
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                MempoolSpaceHistoricalRates mempoolSpaceHistoricalRates = httpClientService.requestJson(url, MempoolSpaceHistoricalRates.class, null);
+                MempoolSpaceHistoricalRates mempoolSpaceHistoricalRates = httpClientService.requestJson(url, MempoolSpaceHistoricalRates.class, HTTP_HEADERS);
                 Collections.reverse(mempoolSpaceHistoricalRates.prices); //Use "closing" rates
                 for(MempoolSpaceRates historicalRate : mempoolSpaceHistoricalRates.prices) {
                     Date date = new Date(historicalRate.time * 1000);
@@ -269,6 +269,7 @@ public enum ExchangeSource {
     };
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
+    private static final Map<String, String> HTTP_HEADERS = Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*");
 
     private final String name;
     private final String description;
