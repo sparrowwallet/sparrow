@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.control.QRDensity;
+import com.sparrowwallet.sparrow.control.QREncoding;
 import com.sparrowwallet.sparrow.control.WebcamResolution;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
@@ -62,6 +63,7 @@ public class Config {
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
+    private QREncoding qrEncoding;
     private WebcamResolution webcamResolution;
     private boolean mirrorCapture = true;
     private boolean useZbar = true;
@@ -426,6 +428,15 @@ public class Config {
 
     public void setQrDensity(QRDensity qrDensity) {
         this.qrDensity = qrDensity;
+        flush();
+    }
+
+    public QREncoding getQrEncoding() {
+        return qrEncoding;
+    }
+
+    public void setQrEncoding(QREncoding qrEncoding) {
+        this.qrEncoding = qrEncoding;
         flush();
     }
 

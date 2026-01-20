@@ -383,11 +383,11 @@ public class SettingsController extends WalletFormController implements Initiali
         }
 
         boolean addBbqrOption = walletForm.getWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
-        boolean selectBbqrOption = walletForm.getWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr());
+        QREncoding encoding = walletForm.getWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr()) ? QREncoding.BBQR : QREncoding.UR;
 
         UR cryptoOutputUR = cryptoOutput.toUR();
         BBQR bbqr = addBbqrOption ? new BBQR(BBQRType.UNICODE, outputDescriptor.toString(true).getBytes(StandardCharsets.UTF_8)) : null;
-        QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR, bbqr, selectBbqrOption);
+        QRDisplayDialog qrDisplayDialog = new DescriptorQRDisplayDialog(walletForm.getWallet().getFullDisplayName(), outputDescriptor.toString(true), cryptoOutputUR, bbqr, encoding);
         qrDisplayDialog.initOwner(showDescriptorQR.getScene().getWindow());
         qrDisplayDialog.showAndWait();
     }

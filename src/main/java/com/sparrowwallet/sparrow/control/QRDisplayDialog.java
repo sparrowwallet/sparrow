@@ -57,7 +57,11 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
     private final BBQR bbqr;
     private BBQREncoder bbqrEncoder;
-    private boolean useBbqrEncoding;
+
+    private final String raw;
+    private final boolean rawEncodable;
+
+    private QREncoding encoding = QREncoding.UR;
 
     private final ImageView qrImageView;
 
@@ -72,14 +76,18 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     private static boolean initialDensityChange;
 
     public QRDisplayDialog(String type, byte[] data, boolean addLegacyEncodingOption) throws UR.URException {
-        this(UR.fromBytes(type, data), null, addLegacyEncodingOption, false, false);
+        this(UR.fromBytes(type, data), null, addLegacyEncodingOption, false, QREncoding.UR);
     }
 
     public QRDisplayDialog(UR ur) {
-        this(ur, null, false, false, false);
+        this(ur, null, false, false, QREncoding.UR);
     }
 
-    public QRDisplayDialog(UR ur, BBQR bbqr, boolean addLegacyEncodingOption, boolean addScanButton, boolean selectBbqrButton) {
+    public QRDisplayDialog(UR ur, BBQR bbqr, boolean addLegacyEncodingOption, boolean addScanButton, QREncoding defaultEncoding) {
+        this(ur, bbqr, null, addLegacyEncodingOption, addScanButton, defaultEncoding);
+    }
+
+    public QRDisplayDialog(UR ur, BBQR bbqr, String raw, boolean addLegacyEncodingOption, boolean addScanButton, QREncoding defaultEncoding) {
         this.ur = ur;
         this.bbqr = bbqr;
         this.addLegacyEncodingOption = bbqr == null && addLegacyEncodingOption;
@@ -88,10 +96,13 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         if(bbqr != null) {
             this.bbqrEncoder = new BBQREncoder(bbqr.type(), DEFAULT_BBQR_ENCODING, bbqr.data(), Config.get().getQrDensity().getMaxBbqrFragmentLength(), 0);
-            if(selectBbqrButton) {
-                useBbqrEncoding = true;
+            if(defaultEncoding == QREncoding.BBQR || Config.get().getQrEncoding() == QREncoding.BBQR) {
+                encoding = QREncoding.BBQR;
             }
         }
+
+        this.raw = raw;
+        this.rawEncodable = raw != null && getQrCode(raw, true) != null;
 
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
@@ -156,8 +167,10 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     public QRDisplayDialog(String data, boolean addScanButton) {
         this.ur = null;
         this.bbqr = null;
+        this.raw = data;
         this.urEncoder = null;
         this.bbqrEncoder = null;
+        this.rawEncodable = true;
 
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
@@ -205,7 +218,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     }
 
     private boolean isSinglePart() {
-        if(useBbqrEncoding) {
+        if(encoding == QREncoding.RAW) {
+            return true;
+        } else if(encoding == QREncoding.BBQR) {
             return bbqrEncoder.isSinglePart();
         } else if(!useLegacyEncoding) {
             return urEncoder.isSinglePart();
@@ -215,7 +230,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     }
 
     private void nextPart() {
-        if(useBbqrEncoding) {
+        if(encoding == QREncoding.RAW) {
+            currentPart = raw;
+        } else if(encoding == QREncoding.BBQR) {
             String fragment = bbqrEncoder.nextPart();
             currentPart = fragment.toUpperCase(Locale.ROOT);
         } else if(!useLegacyEncoding) {
@@ -231,6 +248,10 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
     }
 
     protected Image getQrCode(String fragment) {
+        return getQrCode(fragment, false);
+    }
+
+    protected Image getQrCode(String fragment, boolean trial) {
         try {
             QRCodeWriter qrCodeWriter = new QRCodeWriter();
             BitMatrix qrMatrix = qrCodeWriter.encode(fragment, BarcodeFormat.QR_CODE, qrSize, qrSize, Map.of(EncodeHintType.MARGIN, "2"));
@@ -241,7 +262,9 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
             return new Image(bais);
         } catch(Exception e) {
-            log.error("Error generating QR", e);
+            if(!trial) {
+                log.error("Error generating QR", e);
+            }
         }
 
         return null;
@@ -265,18 +288,13 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         }
     }
 
-    public boolean isUseBbqrEncoding() {
-        return useBbqrEncoding;
+    public QREncoding getEncoding() {
+        return encoding;
     }
 
-    private void setUseBbqrEncoding(boolean useBbqrEncoding) {
-        if(useBbqrEncoding) {
-            this.useBbqrEncoding = true;
-            restartAnimation();
-        } else {
-            this.useBbqrEncoding = false;
-            restartAnimation();
-        }
+    private void setEncoding(QREncoding encoding) {
+        this.encoding = encoding;
+        restartAnimation();
     }
 
     private void changeQRDensity() {
@@ -373,18 +391,29 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
                 return scanButton;
             } else if(buttonType.getButtonData() == ButtonBar.ButtonData.BACK_PREVIOUS) {
-                ToggleButton bbqr = new ToggleButton(buttonType.getText());
-                bbqr.setGraphicTextGap(5);
-                bbqr.setGraphic(getGlyph(FontAwesome5.Glyph.QRCODE));
-                bbqr.setSelected(useBbqrEncoding);
-                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
-                ButtonBar.setButtonData(bbqr, buttonData);
+                ComboBox<QREncoding> encodingComboBox = new ComboBox<>();
+                if(ur != null) {
+                    encodingComboBox.getItems().add(QREncoding.UR);
+                }
+                if(bbqr != null) {
+                    encodingComboBox.getItems().add(QREncoding.BBQR);
+                }
+                if(raw != null) {
+                    encodingComboBox.getItems().add(QREncoding.RAW);
+                }
 
-                bbqr.selectedProperty().addListener((observable, oldValue, newValue) -> {
-                    setUseBbqrEncoding(newValue);
+                encodingComboBox.setCellFactory(_ -> new QREncodingListCell());
+                encodingComboBox.setButtonCell(new QREncodingButtonCell());
+                encodingComboBox.setValue(encoding);
+                encodingComboBox.setOnAction(_ -> {
+                    setEncoding(encodingComboBox.getValue());
+                    Config.get().setQrEncoding(encodingComboBox.getValue());
                 });
 
-                return bbqr;
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(encodingComboBox, buttonData);
+
+                return encodingComboBox;
             }
 
             return super.createButton(buttonType);
@@ -412,5 +441,39 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, glyphName);
         glyph.setFontSize(11);
         return glyph;
+    }
+
+    private class QREncodingListCell extends ListCell<QREncoding> {
+        @Override
+        protected void updateItem(QREncoding item, boolean empty) {
+            super.updateItem(item, empty);
+            if(empty || item == null) {
+                setText(null);
+                setGraphic(null);
+                setDisable(false);
+                setOpacity(1.0);
+            } else {
+                setText(item.getName() + " Encoding");
+                setGraphic(item.getSVGImage());
+                setGraphicTextGap(8.0d);
+                setDisable(item == QREncoding.RAW && !rawEncodable);
+                setOpacity(isDisabled() ? 0.5 : 1.0);
+            }
+        }
+    }
+
+    private static class QREncodingButtonCell extends ListCell<QREncoding> {
+        @Override
+        protected void updateItem(QREncoding item, boolean empty) {
+            super.updateItem(item, empty);
+            if(item == null || empty) {
+                setText("");
+                setGraphic(null);
+            } else {
+                setText(item.getName());
+                setGraphic(item.getSVGImage());
+                setGraphicTextGap(8.0d);
+            }
+        }
     }
 }

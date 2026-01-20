@@ -771,7 +771,8 @@ public class AppController implements Initializable {
                 byte[] txBytes = transaction.bitcoinSerialize();
                 UR ur = UR.fromBytes(txBytes);
                 BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
-                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+                String raw = Utils.bytesToHex(txBytes);
+                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, raw, false, false, QREncoding.UR);
                 qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             } catch(Exception e) {
@@ -873,7 +874,7 @@ public class AppController implements Initializable {
             byte[] psbtBytes = transactionTabData.getPsbt().getForExport().serialize();
             CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
             BBQR bbqr = new BBQR(BBQRType.PSBT, psbtBytes);
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, false);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, QREncoding.UR);
             qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
             qrDisplayDialog.show();
         }

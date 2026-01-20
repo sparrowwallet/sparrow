@@ -171,18 +171,18 @@ public class FileWalletExportPane extends TitledDescriptionPane {
                 } else if(exporter instanceof Bip129 || exporter instanceof WalletLabels) {
                     UR ur = UR.fromBytes(outputStream.toByteArray());
                     BBQR bbqr = new BBQR(BBQRType.UNICODE, outputStream.toByteArray());
-                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, QREncoding.UR);
                 } else if(exporter instanceof Descriptor) {
                     boolean addBbqrOption = exportWallet.getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
-                    boolean selectBbqrOption = exportWallet.getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr());
+                    QREncoding encoding = exportWallet.getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr()) ? QREncoding.BBQR : QREncoding.UR;
                     OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(exportWallet, KeyPurpose.DEFAULT_PURPOSES, null);
                     CryptoOutput cryptoOutput = getCryptoOutput(exportWallet);
                     BBQR bbqr = addBbqrOption ? new BBQR(BBQRType.UNICODE, outputDescriptor.toString(true).getBytes(StandardCharsets.UTF_8)) : null;
-                    qrDisplayDialog = new DescriptorQRDisplayDialog(exportWallet.getFullDisplayName(), outputDescriptor.toString(true), cryptoOutput.toUR(), bbqr, selectBbqrOption);
+                    qrDisplayDialog = new DescriptorQRDisplayDialog(exportWallet.getFullDisplayName(), outputDescriptor.toString(true), cryptoOutput.toUR(), bbqr, encoding);
                 } else if(exporter.getClass().equals(ColdcardMultisig.class)) {
                     UR ur = UR.fromBytes(outputStream.toByteArray());
                     BBQR bbqr = new BBQR(BBQRType.UNICODE, outputStream.toByteArray());
-                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, true);
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, QREncoding.BBQR);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(outputStream.toString(StandardCharsets.UTF_8));
                 }

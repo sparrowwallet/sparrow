@@ -982,7 +982,7 @@ public class HeadersController extends TransactionFormController implements Init
         //TODO: Remove once Cobo Vault support has been removed
         boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showLegacyQR());
         boolean addBbqrOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
-        boolean selectBbqrOption = headersForm.getSigningWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr());
+        QREncoding encoding = headersForm.getSigningWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr()) ? QREncoding.BBQR : QREncoding.UR;
 
         //Don't include non witness utxo fields for segwit wallets when displaying the PSBT as a QR - it can add greatly to the time required for scanning
         boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType());
@@ -990,7 +990,7 @@ public class HeadersController extends TransactionFormController implements Init
 
         CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
         BBQR bbqr = addBbqrOption ? new BBQR(BBQRType.PSBT, psbtBytes) : null;
-        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, addLegacyEncodingOption, true, selectBbqrOption);
+        QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, addLegacyEncodingOption, true, encoding);
         qrDisplayDialog.initOwner(toggleButton.getScene().getWindow());
         Optional<ButtonType> optButtonType = qrDisplayDialog.showAndWait();
         if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
@@ -1360,7 +1360,8 @@ public class HeadersController extends TransactionFormController implements Init
             byte[] txBytes = transaction.bitcoinSerialize();
             UR ur = UR.fromBytes(txBytes);
             BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+            String raw = Utils.bytesToHex(txBytes);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, raw, false, false, QREncoding.UR);
             qrDisplayDialog.initOwner(showTransactionButton.getScene().getWindow());
             qrDisplayDialog.showAndWait();
         } catch (Exception exception) {

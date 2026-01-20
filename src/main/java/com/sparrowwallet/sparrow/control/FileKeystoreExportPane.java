@@ -157,7 +157,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
                 if(exporter instanceof Bip129) {
                     UR ur = UR.fromBytes(baos.toByteArray());
                     BBQR bbqr = new BBQR(BBQRType.UNICODE, baos.toByteArray());
-                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, false);
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, QREncoding.UR);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(baos.toString(StandardCharsets.UTF_8));
                 }
