@@ -68,7 +68,7 @@ public enum ExchangeSource {
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                return httpClientService.requestJson(url, CoinbaseRates.class, HTTP_HEADERS);
+                return httpClientService.requestJson(url, CoinbaseRates.class, null);
             } catch (Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -225,7 +225,7 @@ public enum ExchangeSource {
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                return httpClientService.requestJson(url, MempoolSpaceRates.class, HTTP_HEADERS);
+                return httpClientService.requestJson(url, MempoolSpaceRates.class, null);
             } catch(Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -248,7 +248,7 @@ public enum ExchangeSource {
             Map<Date, Double> historicalRates = new TreeMap<>();
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                MempoolSpaceHistoricalRates mempoolSpaceHistoricalRates = httpClientService.requestJson(url, MempoolSpaceHistoricalRates.class, HTTP_HEADERS);
+                MempoolSpaceHistoricalRates mempoolSpaceHistoricalRates = httpClientService.requestJson(url, MempoolSpaceHistoricalRates.class, null);
                 Collections.reverse(mempoolSpaceHistoricalRates.prices); //Use "closing" rates
                 for(MempoolSpaceRates historicalRate : mempoolSpaceHistoricalRates.prices) {
                     Date date = new Date(historicalRate.time * 1000);
