@@ -134,9 +134,15 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         progressIndicator.progressProperty().bind(walletDiscoveryService.progressProperty());
         walletDiscoveryService.setOnSucceeded(successEvent -> {
             discoverButton.setGraphic(null);
-            Optional<Wallet> optWallet = walletDiscoveryService.getValue();
-            if(optWallet.isPresent()) {
-                EventManager.get().post(new WalletImportEvent(optWallet.get()));
+            Optional<List<Wallet>> optWallets = walletDiscoveryService.getValue();
+            if(optWallets.isPresent()) {
+                List<Wallet> discoveredWallets = optWallets.get();
+                if(discoveredWallets.size() > 1) {
+                    for(Wallet wallet : discoveredWallets) {
+                        wallet.setName(wallet.getKeystores().getFirst().getLabel() + " " + wallet.getScriptType().getDescription());
+                    }
+                }
+                EventManager.get().post(new WalletImportEvent(discoveredWallets));
             } else {
                 discoverButton.setDisable(false);
                 Optional<ButtonType> optButtonType = AppServices.showErrorDialog("No existing wallet found",

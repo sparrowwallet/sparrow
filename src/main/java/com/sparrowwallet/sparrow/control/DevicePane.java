@@ -19,6 +19,7 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -313,6 +314,11 @@ public class DevicePane extends TitledDescriptionPane {
                     });
                     importMenuButton.getItems().add(item);
                 }
+                importMenuButton.getItems().add(new SeparatorMenuItem());
+                MenuItem discoverItem = new MenuItem("Discover Wallet...");
+                discoverItem.setDisable(!AppServices.isConnected());
+                discoverItem.setOnAction(_ -> discoverWallet());
+                importMenuButton.getItems().add(discoverItem);
             } else {
                 String[] accounts = new String[] {"Default Account #0", "Account #1", "Account #2", "Account #3", "Account #4", "Account #5", "Account #6", "Account #7", "Account #8", "Account #9"};
                 int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
@@ -378,7 +384,6 @@ public class DevicePane extends TitledDescriptionPane {
         discoverKeystoresButton = new Button("Discover");
         discoverKeystoresButton.setAlignment(Pos.CENTER_RIGHT);
         discoverKeystoresButton.setOnAction(event -> {
-            discoverKeystoresButton.setDisable(true);
             discoverKeystores();
         });
         discoverKeystoresButton.managedProperty().bind(discoverKeystoresButton.visibleProperty());
@@ -903,29 +908,129 @@ public class DevicePane extends TitledDescriptionPane {
         }
     }
 
+    private void discoverWallet() {
+        importButton.setDisable(true);
+        importButton.setMaxHeight(importButton.getHeight());
+        ProgressIndicator progressIndicator = new ProgressIndicator(0);
+        progressIndicator.getStyleClass().add("button-progress");
+        importButton.setGraphic(progressIndicator);
+        List<Wallet> wallets = new ArrayList<>();
+
+        RangeInputDialog rangeInputDialog = new RangeInputDialog(StandardAccount.ACCOUNT_0.getAccountNumber(), StandardAccount.ACCOUNT_30.getAccountNumber(), StandardAccount.ACCOUNT_10.getAccountNumber());
+        rangeInputDialog.setTitle("Choose number of accounts");
+        rangeInputDialog.setHeaderText("Enter the number of additional accounts to scan for existing funds.\n\nThis may take a few minutes depending on how many accounts are selected.");
+        Optional<Integer> optRange = rangeInputDialog.showAndWait();
+        if(optRange.isEmpty()) {
+            return;
+        }
+
+        List<StandardAccount> discoveryAccounts = new ArrayList<>(Arrays.asList(StandardAccount.values()).subList(0, optRange.get() + 1));
+        Map<Hwi.WalletType, String> derivationPaths = new LinkedHashMap<>();
+        for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(PolicyType.SINGLE)) {
+            for(StandardAccount discoveryAccount : discoveryAccounts) {
+                derivationPaths.put(new Hwi.WalletType(scriptType, discoveryAccount), KeyDerivation.writePath(scriptType.getDefaultDerivation(discoveryAccount.getAccountNumber())));
+            }
+        }
+
+        Hwi.GetXpubsService getXpubsService = new Hwi.GetXpubsService(device, passphrase.get(), derivationPaths);
+        getXpubsService.setOnSucceeded(_ -> {
+            Map<Hwi.WalletType, String> accountXpubs = getXpubsService.getValue();
+
+            for(Map.Entry<Hwi.WalletType, String> entry : accountXpubs.entrySet()) {
+                try {
+                    Wallet wallet = new Wallet(device.getModel().toDisplayString());
+                    wallet.setPolicyType(PolicyType.SINGLE);
+                    wallet.setScriptType(entry.getKey().scriptType());
+                    Keystore keystore = new Keystore();
+                    keystore.setLabel(device.getModel().toDisplayString());
+                    keystore.setSource(KeystoreSource.HW_USB);
+                    keystore.setWalletModel(device.getModel());
+                    keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPaths.get(entry.getKey())));
+                    keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(entry.getValue()));
+                    wallet.getKeystores().add(keystore);
+                    wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, entry.getKey().scriptType(), wallet.getKeystores(), 1));
+                    if(entry.getKey().standardAccount().equals(StandardAccount.ACCOUNT_0)) {
+                        wallets.add(wallet);
+                    } else {
+                        Wallet masterWallet = wallets.getLast();
+                        wallet.setName(entry.getKey().standardAccount().getName());
+                        wallet.setMasterWallet(masterWallet);
+                        masterWallet.getChildWallets().add(wallet);
+                    }
+                } catch(Exception e) {
+                    setError("Could not retrieve xpub", e.getMessage());
+                }
+            }
+
+            ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallets);
+            walletDiscoveryService.setOnSucceeded(_ -> {
+                importButton.setGraphic(null);
+                Optional<List<Wallet>> optWallets = walletDiscoveryService.getValue();
+                if(optWallets.isPresent()) {
+                    List<Wallet> discoveredWallets = optWallets.get();
+                    if(discoveredWallets.size() > 1) {
+                        for(Wallet wallet : discoveredWallets) {
+                            wallet.setName(wallet.getName() + " " + wallet.getScriptType().getDescription());
+                        }
+                    }
+                    EventManager.get().post(new WalletImportEvent(discoveredWallets));
+                } else {
+                    AppServices.showErrorDialog("No existing wallet found",
+                            Config.get().getServerType() == ServerType.BITCOIN_CORE ? "The configured server type is Bitcoin Core, which does not support wallet discovery.\n\n" +
+                                    "You can however import the " + device.getModel().toDisplayString() + " and scan the blockchain by supplying a start date." :
+                                    "Could not find a wallet with existing transactions using the " + device.getModel().toDisplayString() + ".");
+                    setDefaultStatus();
+                    importButton.setDisable(false);
+                }
+            });
+            walletDiscoveryService.setOnFailed(failedEvent -> {
+                log.error("Failed to discover wallets", failedEvent.getSource().getException());
+                setError("Failed to discover wallets", failedEvent.getSource().getException().getMessage());
+                importButton.setGraphic(null);
+                importButton.setDisable(false);
+            });
+            walletDiscoveryService.start();
+        });
+        getXpubsService.setOnFailed(_ -> {
+            setError("Could not retrieve xpub", getXpubsService.getException().getMessage());
+            importButton.setGraphic(null);
+            importButton.setDisable(false);
+        });
+        progressIndicator.progressProperty().bind(getXpubsService.progressProperty());
+        getXpubsService.progressProperty().addListener((_, _, newValue) -> setDescription("Discovering... (" + Math.round(newValue.doubleValue() * 100) + "%)"));
+        showHideLink.setVisible(false);
+        getXpubsService.start();
+    }
+
     private void discoverKeystores() {
         if(wallet.getKeystores().size() != 1) {
             setError("Could not discover keystores", "Only single signature wallets are supported for keystore discovery");
             return;
         }
 
+        discoverKeystoresButton.setDisable(true);
+        discoverKeystoresButton.setMaxHeight(discoverKeystoresButton.getHeight());
+        ProgressIndicator progressIndicator = new ProgressIndicator(0);
+        progressIndicator.getStyleClass().add("button-progress");
+        discoverKeystoresButton.setGraphic(progressIndicator);
+
         String masterFingerprint = wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint();
 
         Wallet copyWallet = wallet.copy();
-        Map<StandardAccount, String> accountDerivationPaths = new LinkedHashMap<>();
+        Map<Hwi.WalletType, String> accountDerivationPaths = new LinkedHashMap<>();
         for(StandardAccount availableAccount : availableAccounts) {
             Wallet availableWallet = copyWallet.addChildWallet(availableAccount);
             Keystore availableKeystore = availableWallet.getKeystores().get(0);
             String derivationPath = availableKeystore.getKeyDerivation().getDerivationPath();
-            accountDerivationPaths.put(availableAccount, derivationPath);
+            accountDerivationPaths.put(new Hwi.WalletType(wallet.getScriptType(), availableAccount), derivationPath);
         }
 
         Map<StandardAccount, Keystore> importedKeystores = new LinkedHashMap<>();
         Hwi.GetXpubsService getXpubsService = new Hwi.GetXpubsService(device, passphrase.get(), accountDerivationPaths);
         getXpubsService.setOnSucceeded(workerStateEvent -> {
-            Map<StandardAccount, String> accountXpubs = getXpubsService.getValue();
+            Map<Hwi.WalletType, String> accountXpubs = getXpubsService.getValue();
 
-            for(Map.Entry<StandardAccount, String> entry : accountXpubs.entrySet()) {
+            for(Map.Entry<Hwi.WalletType, String> entry : accountXpubs.entrySet()) {
                 try {
                     Keystore keystore = new Keystore();
                     keystore.setLabel(device.getModel().toDisplayString());
@@ -933,7 +1038,7 @@ public class DevicePane extends TitledDescriptionPane {
                     keystore.setWalletModel(device.getModel());
                     keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, accountDerivationPaths.get(entry.getKey())));
                     keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(entry.getValue()));
-                    importedKeystores.put(entry.getKey(), keystore);
+                    importedKeystores.put(entry.getKey().standardAccount(), keystore);
                 } catch(Exception e) {
                     setError("Could not retrieve xpub", e.getMessage());
                 }
@@ -947,15 +1052,18 @@ public class DevicePane extends TitledDescriptionPane {
             accountDiscoveryService.setOnFailed(event -> {
                 log.error("Failed to discover accounts", event.getSource().getException());
                 setError("Failed to discover accounts", event.getSource().getException().getMessage());
+                discoverKeystoresButton.setGraphic(null);
                 discoverKeystoresButton.setDisable(false);
             });
             accountDiscoveryService.start();
         });
         getXpubsService.setOnFailed(workerStateEvent -> {
             setError("Could not retrieve xpub", getXpubsService.getException().getMessage());
+            discoverKeystoresButton.setGraphic(null);
             discoverKeystoresButton.setDisable(false);
         });
-        setDescription("Discovering...");
+        progressIndicator.progressProperty().bind(getXpubsService.progressProperty());
+        getXpubsService.progressProperty().addListener((_, _, newValue) -> setDescription("Discovering... (" + Math.round(newValue.doubleValue() * 100) + "%)"));
         showHideLink.setVisible(false);
         getXpubsService.start();
     }

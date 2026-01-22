@@ -88,8 +88,8 @@ public abstract class NewWalletDialog extends DialogWindow {
         Platform.runLater(() -> {
             ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallets);
             walletDiscoveryService.setOnSucceeded(successEvent -> {
-                Optional<Wallet> optWallet = walletDiscoveryService.getValue();
-                wallet = optWallet.orElseGet(() -> wallets.get(0));
+                Optional<List<Wallet>> optWallets = walletDiscoveryService.getValue();
+                wallet = optWallets.orElseGet(() -> wallets).getFirst();
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     SparrowTerminal.get().getGui().removeWindow(discoveringDialog);
                     saveWallet(wallet);

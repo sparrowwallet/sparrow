@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class WalletImportDialog extends Dialog<Wallet> {
-    private Wallet wallet;
+public class WalletImportDialog extends Dialog<List<Wallet>> {
+    private List<Wallet> wallets;
     private final Accordion importAccordion;
     private final Button scanButton;
 
@@ -95,13 +95,13 @@ public class WalletImportDialog extends Dialog<Wallet> {
         dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
-        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);
+        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallets : null);
     }
 
     @Subscribe
     public void walletImported(WalletImportEvent event) {
-        wallet = event.getWallet();
-        setResult(wallet);
+        wallets = event.getWallets();
+        setResult(wallets);
     }
 
     private void scan() {
