@@ -926,7 +926,11 @@ public class DevicePane extends TitledDescriptionPane {
 
         List<StandardAccount> discoveryAccounts = new ArrayList<>(Arrays.asList(StandardAccount.values()).subList(0, optRange.get() + 1));
         Map<Hwi.WalletType, String> derivationPaths = new LinkedHashMap<>();
-        for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(PolicyType.SINGLE)) {
+        List<ScriptType> scriptTypes = new ArrayList<>(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE));
+        if(device.getModel() == WalletModel.BITBOX_02) {
+            scriptTypes.remove(ScriptType.P2PKH);
+        }
+        for(ScriptType scriptType : scriptTypes) {
             for(StandardAccount discoveryAccount : discoveryAccounts) {
                 derivationPaths.put(new Hwi.WalletType(scriptType, discoveryAccount), KeyDerivation.writePath(scriptType.getDefaultDerivation(discoveryAccount.getAccountNumber())));
             }
