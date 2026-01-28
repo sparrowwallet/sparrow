@@ -152,6 +152,11 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
             dialogPane.getButtonTypes().add(scanButtonType);
         }
 
+        ButtonBar buttonBar = (ButtonBar)dialogPane.lookup(".button-bar");
+        if(buttonBar != null) {
+            buttonBar.setButtonOrder("L+B+C+O");
+        }
+
         dialogPane.setPrefWidth(40 + qrSize + 40);
         dialogPane.setPrefHeight(40 + qrSize + 85);
         dialogPane.setMinHeight(dialogPane.getPrefHeight());
@@ -428,7 +433,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         }
 
         private void updateDensityButton(Button density) {
-            density.setText(Config.get().getQrDensity() == QRDensity.NORMAL ? "Decrease Density" : "Increase Density");
+            density.setText(Config.get().getQrDensity() == QRDensity.NORMAL ? "Less Dense" : "More Dense");
             if(Config.get().getQrDensity() == QRDensity.NORMAL) {
                 density.setGraphic(getGlyph(FontAwesome5.Glyph.MAGNIFYING_GLASS_PLUS));
             } else {
