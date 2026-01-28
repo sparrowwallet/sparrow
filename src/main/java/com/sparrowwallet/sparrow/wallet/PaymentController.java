@@ -74,6 +74,7 @@ public class PaymentController extends WalletFormController implements Initializ
     private static final Logger log = LoggerFactory.getLogger(PaymentController.class);
 
     public static final long MINIMUM_P2PKH_OUTPUT_SATS = 546L;
+    public static final int MAX_OP_RETURN_SIZE = 80;
 
     private SendController sendController;
 
@@ -111,6 +112,15 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @FXML
     private Button addPaymentButton;
+
+    @FXML
+    private TextField opReturn;
+
+    @FXML
+    private Label opReturnStatus;
+
+    @FXML
+    private Glyph opReturnStatusGlyph;
 
     private final BooleanProperty emptyAmountProperty = new SimpleBooleanProperty(true);
 
@@ -423,6 +433,13 @@ public class PaymentController extends WalletFormController implements Initializ
         dustStatus.managedProperty().bind(dustStatus.visibleProperty());
         dustStatus.visibleProperty().bind(dustAmountProperty);
 
+        opReturn.textProperty().addListener((observable, oldValue, newValue) -> {
+            updateOpReturnStatus();
+            sendController.updateTransaction();
+        });
+        opReturnStatus.managedProperty().bind(opReturnStatus.visibleProperty());
+        opReturnStatus.setVisible(false);
+
         Optional<Tab> firstTab = sendController.getPaymentTabs().getTabs().stream().findFirst();
         if(firstTab.isPresent()) {
             PaymentController controller = (PaymentController)firstTab.get().getUserData();
@@ -525,6 +542,9 @@ public class PaymentController extends WalletFormController implements Initializ
         validationSupport.registerValidator(amount, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Inputs", getRecipientValueSats() != null && sendController.isInsufficientInputs()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Insufficient Value", getRecipientValueSats() != null && getRecipientValueSats() < getRecipientDustThreshold())
+        ));
+        validationSupport.registerValidator(opReturn, Validator.combine(
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "OP_RETURN data exceeds " + MAX_OP_RETURN_SIZE + " bytes", !isValidOpReturn())
         ));
     }
 
@@ -742,6 +762,8 @@ public class PaymentController extends WalletFormController implements Initializ
         payNymProperty.set(null);
         dnsPaymentProperty.set(null);
         silentPaymentAddressProperty.set(null);
+
+        clearOpReturn();
     }
 
     public void setMaxInput(ActionEvent event) {
@@ -847,6 +869,58 @@ public class PaymentController extends WalletFormController implements Initializ
         scanQrButton.setDisable(disable);
         addPaymentButton.setDisable(disable);
         maxButton.setDisable(disable);
+        opReturn.setDisable(disable);
+    }
+
+    /**
+     * Returns the OP_RETURN data as bytes, or null if the field is empty.
+     * The data is encoded as UTF-8.
+     */
+    public byte[] getOpReturnData() {
+        String text = opReturn.getText();
+        if(text == null || text.isEmpty()) {
+            return null;
+        }
+        return text.getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Returns true if the OP_RETURN data is valid (empty or within the 80 byte limit).
+     */
+    public boolean isValidOpReturn() {
+        byte[] data = getOpReturnData();
+        return data == null || data.length <= MAX_OP_RETURN_SIZE;
+    }
+
+    /**
+     * Updates the OP_RETURN status indicator.
+     */
+    private void updateOpReturnStatus() {
+        byte[] data = getOpReturnData();
+        if(data == null) {
+            opReturnStatus.setVisible(false);
+            return;
+        }
+
+        opReturnStatus.setVisible(true);
+        if(data.length <= MAX_OP_RETURN_SIZE) {
+            opReturnStatus.setText(data.length + "/" + MAX_OP_RETURN_SIZE + " bytes");
+            opReturnStatusGlyph.setIcon(FontAwesome5.Glyph.CHECK_CIRCLE);
+            opReturnStatusGlyph.getStyleClass().removeAll("failure");
+            opReturnStatusGlyph.getStyleClass().add("success");
+        } else {
+            opReturnStatus.setText(data.length + "/" + MAX_OP_RETURN_SIZE + " bytes (exceeds limit)");
+            opReturnStatusGlyph.setIcon(FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
+            opReturnStatusGlyph.getStyleClass().removeAll("success");
+            opReturnStatusGlyph.getStyleClass().add("failure");
+        }
+    }
+
+    /**
+     * Clears the OP_RETURN field.
+     */
+    public void clearOpReturn() {
+        opReturn.setText("");
     }
 
     public static Glyph getPayNymGlyph() {
