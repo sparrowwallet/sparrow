@@ -6,16 +6,19 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
-import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.BaseController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.control.AddressLabelSkin;
 import com.sparrowwallet.sparrow.event.TransactionTabsClosedEvent;
 import com.sparrowwallet.sparrow.io.Config;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
@@ -92,6 +95,19 @@ public abstract class TransactionFormController extends BaseController {
             tooltip.setText(data.getName() + "\n" + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + " (" + String.format("%.1f", percent) + "%)");
             Tooltip.install(data.getNode(), tooltip);
             data.pieValueProperty().addListener((observable, oldValue, newValue) -> tooltip.setText(newValue + "%"));
+        });
+
+        Platform.runLater(() -> applyAddressLabelSkinToLegend(pie));
+    }
+
+    private void applyAddressLabelSkinToLegend(PieChart pie) {
+        pie.lookupAll(".chart-legend-item").forEach(node -> {
+            if(node instanceof Label label) {
+                String text = label.getText();
+                label.setSkin(new AddressLabelSkin(label));
+                label.setText("");
+                label.setText(text);
+            }
         });
     }
 

@@ -134,6 +134,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         address.getStyleClass().add("id");
         address.setEditable(walletNode == null);
         address.setTooltip(new Tooltip("Only singlesig addresses can sign"));
+        address.setSkin(new AddressTextFieldSkin(address));
         addressField.getInputs().add(address);
 
         if(walletNode != null) {

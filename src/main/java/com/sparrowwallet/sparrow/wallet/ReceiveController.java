@@ -79,6 +79,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     @Override
     public void initializeView() {
+        address.setSkin(new AddressTextFieldSkin(address));
         initializeScriptField(scriptPubKeyArea);
 
         displayAddress.managedProperty().bind(displayAddress.visibleProperty());

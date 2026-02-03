@@ -74,6 +74,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         searchField.setText("Search:");
         search = TextFields.createClearableTextField();
         search.setPromptText("Label, address, value or transaction ID");
+        search.setSkin(new AddressTextFieldSkin(search));
         searchField.getInputs().add(search);
 
         fieldset.getChildren().addAll(searchField);
@@ -113,7 +114,11 @@ public class SearchWalletDialog extends Dialog<Entry> {
         entryCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
         });
-        entryCol.setCellFactory(p -> new SearchEntryCell());
+        entryCol.setCellFactory(p -> {
+            SearchEntryCell searchEntryCell = new SearchEntryCell();
+            searchEntryCell.setSkin(new AddressTreeTableCellSkin<>(searchEntryCell));
+            return searchEntryCell;
+        });
         String address = walletForms.iterator().next().getNodeEntry(KeyPurpose.RECEIVE).getAddress().toString();
         entryCol.setMinWidth(TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0));
         results.getColumns().add(entryCol);

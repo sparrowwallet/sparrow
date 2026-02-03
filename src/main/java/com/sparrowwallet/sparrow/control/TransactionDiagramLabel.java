@@ -240,6 +240,7 @@ public class TransactionDiagramLabel extends HBox {
         icon.setGraphic(glyph);
 
         CopyableLabel label = new CopyableLabel();
+        label.setSkin(new AddressTextFieldSkin(label));
         label.setFont(Font.font("Fragment Mono Italic", 13));
         label.setText(text);
 

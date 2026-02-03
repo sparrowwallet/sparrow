@@ -377,3 +377,19 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 .root .block-unconfirmed .block-left {
     -fx-fill: #4e4846;
 }
+
+.root .label .address-chunk {
+    -fx-fill: lightgray;
+}
+
+.root .tree-table-view .address-chunk, .root .text-field .address-chunk, .root .tooltip .address-chunk {
+    -fx-fill: white;
+}
+
+.root .address-chunk.alternate {
+    -fx-fill: derive(-fx-text-inner-color, -35%);
+}
+
+.root .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
+    -fx-fill: derive(-fx-selection-bar-text, -35%);
+}

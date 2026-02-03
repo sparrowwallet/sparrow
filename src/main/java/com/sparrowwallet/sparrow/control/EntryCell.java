@@ -124,13 +124,13 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 setGraphic(actionBox);
             } else if(entry instanceof NodeEntry nodeEntry) {
                 Address address = nodeEntry.getAddress();
+                getStyleClass().add("address-cell");
                 setText(address.toString());
                 setContextMenu(new AddressContextMenu(address, nodeEntry.getOutputDescriptor(), nodeEntry, true, getTreeTableView()));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(nodeEntry.getNode().toString());
                 setTooltip(tooltip);
-                getStyleClass().add("address-cell");
 
                 HBox actionBox = new HBox();
                 actionBox.getStyleClass().add("cell-actions");

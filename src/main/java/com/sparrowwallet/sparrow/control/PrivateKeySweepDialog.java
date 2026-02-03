@@ -140,6 +140,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         toAddressField.setText("Sweep to:");
         toAddress = new ComboBoxTextField();
         toAddress.getStyleClass().add("fixed-width");
+        toAddress.setSkin(new AddressTextFieldSkin(toAddress));
         toWallet = new ComboBox<>();
         toWallet.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream()
                 .filter(w -> !w.isWhirlpoolChildWallet() && !w.isBip47()).collect(Collectors.toList())));

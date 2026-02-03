@@ -532,6 +532,7 @@ public class TransactionDiagram extends GridPane {
                 tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
                 tooltip.setShowDuration(Duration.INDEFINITE);
                 tooltip.setWrapText(true);
+                tooltip.setSkin(new AddressTooltipSkin(tooltip));
                 Window activeWindow = AppServices.getActiveWindow();
                 if(activeWindow != null) {
                     tooltip.setMaxWidth(activeWindow.getWidth());
@@ -727,9 +728,13 @@ public class TransactionDiagram extends GridPane {
         for(Payment payment : displayedPayments) {
             Glyph outputGlyph = GlyphUtils.getOutputGlyph(walletTx, payment);
             boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon", "anchor-icon").contains(style)) || payment instanceof AdditionalPayment || payment.getLabel() != null;
-            Label recipientLabel = new Label(payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX || payment.getType() == Payment.Type.MIX ? payment.toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
+            boolean addressLabel = payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX || payment.getType() == Payment.Type.MIX;
+            Label recipientLabel = new Label(addressLabel ? payment.toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
             recipientLabel.getStyleClass().add("output-label");
             recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
+            if(addressLabel) {
+                recipientLabel.setSkin(new AddressLabelSkin(recipientLabel));
+            }
             Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
             WalletNode toNode = payment instanceof WalletNodePayment walletNodePayment ? walletNodePayment.getWalletNode() : null;
             Wallet toBip47Wallet = getBip47SendWallet(payment);
@@ -742,6 +747,7 @@ public class TransactionDiagram extends GridPane {
             recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             recipientTooltip.setShowDuration(Duration.INDEFINITE);
             recipientTooltip.setWrapText(true);
+            recipientTooltip.setSkin(new AddressTooltipSkin(recipientTooltip));
             Window activeWindow = AppServices.getActiveWindow();
             if(activeWindow != null) {
                 recipientTooltip.setMaxWidth(activeWindow.getWidth());
@@ -782,10 +788,12 @@ public class TransactionDiagram extends GridPane {
             String changeDesc = changeAddress.toString().substring(0, 8) + "...";
             Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
+            changeLabel.setSkin(new AddressLabelSkin(changeLabel));
             Tooltip changeTooltip = new Tooltip("Change of " + getSatsValue(changeEntry.getValue()) + " sats to " + changeNode + "\n" + walletTx.getChangeAddress(changeNode).toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
             changeTooltip.getStyleClass().add("change-label");
             changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
             changeTooltip.setShowDuration(Duration.INDEFINITE);
+            changeTooltip.setSkin(new AddressTooltipSkin(changeTooltip));
             changeLabel.setTooltip(changeTooltip);
             actionBox.getChildren().add(changeLabel);
 

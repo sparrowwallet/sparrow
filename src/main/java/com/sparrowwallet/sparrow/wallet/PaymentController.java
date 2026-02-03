@@ -387,6 +387,7 @@ public class PaymentController extends WalletFormController implements Initializ
 
         address.textProperty().addListener(addressListener);
         address.setContextMenu(address.getCustomContextMenu(Collections.emptyList()));
+        address.setSkin(new AddressTextFieldSkin(address));
 
         label.textProperty().addListener((observable, oldValue, newValue) -> {
             maxButton.setDisable(!isMaxButtonEnabled());
