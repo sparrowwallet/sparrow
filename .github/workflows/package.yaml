@@ -12,14 +12,14 @@ jobs:
       matrix:
         os: [windows-2022, ubuntu-22.04, ubuntu-22.04-arm, macos-15-intel, macos-14]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
-          submodules: true
-      - name: Set up JDK 22.0.2
+          submodules: recursive
+      - name: Set up JDK 25.0.2
         uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
-          java-version: '22.0.2'
+          java-version: '25.0.2'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Build with Gradle
@@ -44,7 +44,7 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         run: ./repackage.sh
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }}
           path: |
@@ -62,7 +62,7 @@ jobs:
         run: ./repackage.sh
       - name: Upload Headless Artifact
         if: ${{ runner.os == 'Linux' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }} Headless
           path: |
