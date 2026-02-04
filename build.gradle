@@ -135,7 +135,7 @@ processResources {
 
 test {
     useJUnitPlatform()
-    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--add-opens=java.base/java.io=com.google.gson", "--add-reads=org.flywaydb.core=java.desktop"]
+    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED"]
 }
 
 application {
