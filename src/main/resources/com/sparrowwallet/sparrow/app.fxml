@@ -99,6 +99,12 @@
                                 </RadioMenuItem>
                             </items>
                         </Menu>
+                        <Menu mnemonicParsing="false" text="Bitcoin Addresses">
+                            <items>
+                                <CheckMenuItem fx:id="chunkAddresses" mnemonicParsing="false" text="Chunk Addresses" onAction="#chunkAddresses"/>
+                                <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
+                            </items>
+                        </Menu>
                         <Menu mnemonicParsing="false" text="Theme">
                             <items>
                                 <RadioMenuItem mnemonicParsing="false" text="Light" toggleGroup="$theme" onAction="#setTheme">
@@ -119,7 +125,6 @@
                         </Menu>
                         <SeparatorMenuItem />
                         <CheckMenuItem fx:id="openWalletsInNewWindows" mnemonicParsing="false" text="Open Wallets In New Windows" onAction="#openWalletsInNewWindows"/>
-                        <CheckMenuItem fx:id="hideEmptyUsedAddresses" mnemonicParsing="false" text="Hide Empty Used Addresses" onAction="#hideEmptyUsedAddresses"/>
                         <CheckMenuItem fx:id="hideAmounts" mnemonicParsing="false" text="Hide Amounts" accelerator="Shortcut+Shift+H" onAction="#hideAmounts"/>
                         <CheckMenuItem fx:id="showLoadingLog" mnemonicParsing="false" text="Show Wallet Loading Log" onAction="#showLoadingLog" />
                         <CheckMenuItem fx:id="showTxHex" mnemonicParsing="false" text="Show Transaction Hex" onAction="#showTxHex"/>

@@ -382,14 +382,18 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-fill: lightgray;
 }
 
-.root .tree-table-view .address-chunk, .root .text-field .address-chunk, .root .tooltip .address-chunk {
+.root .tree-table-view .address-chunk,
+.root .text-field .address-chunk,
+.root .tooltip .address-chunk {
     -fx-fill: white;
 }
 
-.root .text-field .address-chunk.alternate, .root .label .address-chunk.alternate, .root .tree-table-view:focused .address-chunk.alternate {
+.root #rootStack.chunk-addresses .text-field .address-chunk.alternate,
+.root #rootStack.chunk-addresses .label .address-chunk.alternate,
+.root #rootStack.chunk-addresses .tree-table-view:focused .address-chunk.alternate {
     -fx-fill: derive(-fx-text-inner-color, -35%);
 }
 
-.root .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
+.root #rootStack.chunk-addresses .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
     -fx-fill: derive(-fx-selection-bar-text, -35%);
 }

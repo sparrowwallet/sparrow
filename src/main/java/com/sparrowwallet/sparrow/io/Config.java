@@ -47,6 +47,7 @@ public class Config {
     private boolean checkNewVersions = true;
     private Theme theme;
     private boolean openWalletsInNewWindows = false;
+    private boolean chunkAddresses = true;
     private boolean hideEmptyUsedAddresses = false;
     private boolean hideAmounts = false;
     private boolean showTransactionHex = true;
@@ -294,6 +295,15 @@ public class Config {
 
     public void setOpenWalletsInNewWindows(boolean openWalletsInNewWindows) {
         this.openWalletsInNewWindows = openWalletsInNewWindows;
+        flush();
+    }
+
+    public boolean isChunkAddresses() {
+        return chunkAddresses;
+    }
+
+    public void setChunkAddresses(boolean chunkAddresses) {
+        this.chunkAddresses = chunkAddresses;
         flush();
     }
 

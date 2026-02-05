@@ -139,15 +139,18 @@ public class AppController implements Initializable {
     private ToggleGroup unitFormat;
 
     @FXML
+    private CheckMenuItem chunkAddresses;
+
+    @FXML
+    private CheckMenuItem hideEmptyUsedAddresses;
+    private static final BooleanProperty hideEmptyUsedAddressesProperty = new SimpleBooleanProperty();
+
+    @FXML
     private ToggleGroup theme;
 
     @FXML
     private CheckMenuItem openWalletsInNewWindows;
     private static final BooleanProperty openWalletsInNewWindowsProperty = new SimpleBooleanProperty();
-
-    @FXML
-    private CheckMenuItem hideEmptyUsedAddresses;
-    private static final BooleanProperty hideEmptyUsedAddressesProperty = new SimpleBooleanProperty();
 
     @FXML
     private CheckMenuItem hideAmounts;
@@ -373,6 +376,13 @@ public class AppController implements Initializable {
         Optional<Toggle> selectedFormatToggle = unitFormat.getToggles().stream().filter(toggle -> selectedFormat.equals(toggle.getUserData())).findFirst();
         selectedFormatToggle.ifPresent(toggle -> unitFormat.selectToggle(toggle));
 
+        chunkAddresses.setSelected(Config.get().isChunkAddresses());
+        if(Config.get().isChunkAddresses()) {
+            rootStack.getStyleClass().add("chunk-addresses");
+        }
+        hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
+        hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
+
         Theme configTheme = Config.get().getTheme();
         if(configTheme == null) {
             configTheme = Theme.LIGHT;
@@ -385,8 +395,6 @@ public class AppController implements Initializable {
 
         openWalletsInNewWindowsProperty.set(Config.get().isOpenWalletsInNewWindows());
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
-        hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
-        hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
         hideAmounts.setSelected(Config.get().isHideAmounts());
         useHdCameraResolutionProperty.set(Config.get().getWebcamResolution() == null || Config.get().getWebcamResolution().isWidescreenAspect());
         useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
@@ -944,6 +952,16 @@ public class AppController implements Initializable {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setOpenWalletsInNewWindows(item.isSelected());
         EventManager.get().post(new OpenWalletsNewWindowsStatusEvent(item.isSelected()));
+    }
+
+    public void chunkAddresses(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setChunkAddresses(item.isSelected());
+        if(item.isSelected() && !rootStack.getStyleClass().contains("chunk-addresses")) {
+            rootStack.getStyleClass().add("chunk-addresses");
+        } else {
+            rootStack.getStyleClass().remove("chunk-addresses");
+        }
     }
 
     public void hideEmptyUsedAddresses(ActionEvent event) {
