@@ -16,7 +16,7 @@ jobs:
         with:
           submodules: recursive
       - name: Set up SDKman and Java
-        uses: sdkman/sdkman-action@v1
+        uses: sdkman/sdkman-action@main
         with:
           sdkmanrc: .sdkmanrc
       - name: Show Build Versions
