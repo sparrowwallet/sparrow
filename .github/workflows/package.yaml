@@ -15,22 +15,14 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - name: Download JDK via SDKMAN
-        id: sdkman
-        run: |
-          curl -s "https://get.sdkman.io" | bash
-          source "$HOME/.sdkman/bin/sdkman-init.sh"
-          sdk env install
-          JAVA_VERSION=$(grep '^java=' .sdkmanrc | cut -d= -f2)
-          ARCHIVE=$(ls ~/.sdkman/archives/java-${JAVA_VERSION}.*)
-          echo "file=$ARCHIVE" >> $GITHUB_OUTPUT
-          echo "version=$(echo $JAVA_VERSION | cut -d- -f1)" >> $GITHUB_OUTPUT
-
-      - uses: actions/setup-java@v5
+      - name: Clear Java tool-cache for reproduciblity
+        shell: bash
+        run: rm -rf "$RUNNER_TOOL_CACHE/Java_*"
+      - name: Set up JDK 25.0.2
+        uses: actions/setup-java@v5
         with:
-          distribution: 'jdkfile'
-          java-version: ${{ steps.sdkman.outputs.version }}
-          jdkFile: ${{ steps.sdkman.outputs.file }}
+          distribution: 'temurin'
+          java-version: '25.0.2'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Build with Gradle
