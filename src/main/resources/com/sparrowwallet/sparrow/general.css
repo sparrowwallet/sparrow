@@ -350,7 +350,7 @@ CellView > .text-input.text-field {
     -fx-fill: white;
 }
 
-.address-chunk.alternate {
+.text-field .address-chunk.alternate, .label .address-chunk.alternate, .tree-table-view:focused .address-chunk.alternate {
     -fx-fill: derive(-fx-text-inner-color, 70%);
 }
 

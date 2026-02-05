@@ -386,7 +386,7 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-fill: white;
 }
 
-.root .address-chunk.alternate {
+.root .text-field .address-chunk.alternate, .root .label .address-chunk.alternate, .root .tree-table-view:focused .address-chunk.alternate {
     -fx-fill: derive(-fx-text-inner-color, -35%);
 }
 
