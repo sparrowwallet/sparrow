@@ -259,13 +259,13 @@ jlink {
                 installerOptions = ['--license-file', 'LICENSE']
             } else {
                 installerName = "sparrowwallet"
-                installerOptions += ['--file-associations', 'src/main/deploy/bitcoin.properties', '--file-associations', 'src/main/deploy/auth47.properties', '--file-associations', 'src/main/deploy/lightning.properties', '--linux-shortcut', '--linux-menu-group', 'Sparrow']
+                installerOptions += ['--linux-shortcut', '--linux-menu-group', 'Sparrow']
             }
             installerOptions += ['--resource-dir', layout.buildDirectory.dir('deploy/package').get().asFile.toString(), '--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com']
             imageOptions += ['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/']
         }
         if(os.macOsX) {
-            installerOptions += ['--file-associations', 'src/main/deploy/bitcoin.properties', '--file-associations', 'src/main/deploy/auth47.properties', '--file-associations', 'src/main/deploy/lightning.properties', '--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
+            installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
             imageOptions += ['--icon', 'src/main/deploy/package/macos/sparrow.icns', '--resource-dir', 'src/main/deploy/package/macos/']
             installerType = "dmg"
         }
