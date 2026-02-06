@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/psbt">
+    <comment>Partially Signed Bitcoin Transaction</comment>
+    <glob pattern="*.psbt"/>
+  </mime-type>
+  <mime-type type="application/bitcoin-transaction">
+    <comment>Bitcoin Transaction</comment>
+    <glob pattern="*.txn"/>
+  </mime-type>
+  <mime-type type="application/pgp-signature">
+    <comment>ASCII Armored File</comment>
+    <glob pattern="*.asc"/>
+  </mime-type>
+  <mime-type type="x-scheme-handler/bitcoin">
+    <comment>Bitcoin Scheme URI</comment>
+  </mime-type>
+  <mime-type type="x-scheme-handler/auth47">
+    <comment>Auth47 Authentication URI</comment>
+  </mime-type>
+  <mime-type type="x-scheme-handler/lightning">
+    <comment>LNURL URI</comment>
+  </mime-type>
+</mime-info>

@@ -280,6 +280,9 @@ jlink {
 if(os.linux) {
     tasks.jlink.finalizedBy('addUserWritePermission', 'copyUdevRules')
     tasks.jpackageImage.finalizedBy('prepareResourceDir')
+    if(!headless) {
+        tasks.jpackage.dependsOn('copyMimeInfo')
+    }
 } else {
     tasks.jlink.finalizedBy('addUserWritePermission')
 }
@@ -313,6 +316,13 @@ tasks.register('prepareResourceDir', Copy) {
             }
         }
     }
+}
+
+tasks.register('copyMimeInfo', Copy) {
+    mustRunAfter tasks.jpackageImage
+    from('src/main/deploy/package/linux')
+    into(layout.buildDirectory.dir('jpackage/Sparrow/lib'))
+    include('sparrowwallet-Sparrow-MimeInfo.xml')
 }
 
 static def getDirectorySize(File directory) {
