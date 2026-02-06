@@ -391,9 +391,9 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 .root.chunk-addresses .text-field .address-chunk.alternate,
 .root.chunk-addresses .label .address-chunk.alternate,
 .root.chunk-addresses .tree-table-view:focused .address-chunk.alternate {
-    -fx-fill: derive(-fx-text-inner-color, -35%);
+    -fx-fill: derive(-fx-text-inner-color, -25%);
 }
 
 .root.chunk-addresses .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
-    -fx-fill: derive(-fx-selection-bar-text, -35%);
+    -fx-fill: derive(-fx-selection-bar-text, -20%);
 }
