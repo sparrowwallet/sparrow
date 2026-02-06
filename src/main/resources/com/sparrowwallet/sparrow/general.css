@@ -350,20 +350,20 @@ CellView > .text-input.text-field {
     -fx-fill: white;
 }
 
-#rootStack.chunk-addresses .text-field .address-chunk.alternate,
-#rootStack.chunk-addresses .label .address-chunk.alternate,
-#rootStack.chunk-addresses .tree-table-view:focused .address-chunk.alternate {
+.chunk-addresses .text-field .address-chunk.alternate,
+.chunk-addresses .label .address-chunk.alternate,
+.chunk-addresses .tree-table-view:focused .address-chunk.alternate {
     -fx-fill: derive(-fx-text-inner-color, 70%);
 }
 
-#rootStack.chunk-addresses .tooltip .address-chunk.alternate {
+.chunk-addresses .tooltip .address-chunk.alternate {
     -fx-fill: derive(gray, 60%);
 }
 
-#rootStack.chunk-addresses .tree-table-view:focused .tree-table-row-cell:selected .address-chunk.alternate {
+.chunk-addresses .tree-table-view:focused .tree-table-row-cell:selected .address-chunk.alternate {
     -fx-fill: derive(-fx-selection-bar-text, -15%);
 }
 
-#rootStack.chunk-addresses .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
+.chunk-addresses .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
     -fx-fill: derive(-fx-selection-bar-text, 60%);
 }

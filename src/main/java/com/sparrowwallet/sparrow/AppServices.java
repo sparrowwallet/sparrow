@@ -887,8 +887,13 @@ public class AppServices {
         Stage stage = (Stage)window;
         stage.getIcons().add(getWindowIcon());
 
-        if(stage.getScene() != null && Config.get().getTheme() == Theme.DARK) {
-            stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+        if(stage.getScene() != null) {
+            if(Config.get().getTheme() == Theme.DARK) {
+                stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+            }
+            if(Config.get().isChunkAddresses()) {
+                stage.getScene().getRoot().getStyleClass().add("chunk-addresses");
+            }
         }
     }
 

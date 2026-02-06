@@ -91,6 +91,9 @@ public class AppController implements Initializable {
     public static final String JPACKAGE_APP_PATH = "jpackage.app-path";
 
     @FXML
+    private VBox rootBox;
+
+    @FXML
     private MenuItem saveTransaction;
 
     @FXML
@@ -378,7 +381,7 @@ public class AppController implements Initializable {
 
         chunkAddresses.setSelected(Config.get().isChunkAddresses());
         if(Config.get().isChunkAddresses()) {
-            rootStack.getStyleClass().add("chunk-addresses");
+            rootBox.getStyleClass().add("chunk-addresses");
         }
         hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
         hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
@@ -957,10 +960,10 @@ public class AppController implements Initializable {
     public void chunkAddresses(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setChunkAddresses(item.isSelected());
-        if(item.isSelected() && !rootStack.getStyleClass().contains("chunk-addresses")) {
-            rootStack.getStyleClass().add("chunk-addresses");
+        if(item.isSelected() && !rootBox.getStyleClass().contains("chunk-addresses")) {
+            rootBox.getStyleClass().add("chunk-addresses");
         } else {
-            rootStack.getStyleClass().remove("chunk-addresses");
+            rootBox.getStyleClass().remove("chunk-addresses");
         }
     }
 
