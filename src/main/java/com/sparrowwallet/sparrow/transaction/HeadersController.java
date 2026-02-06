@@ -1529,6 +1529,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
+        transactionDiagram.update(transactionDiagram.getWalletTransaction());
         fee.refresh(event.getUnitFormat(), event.getBitcoinUnit());
     }
 

@@ -1523,6 +1523,7 @@ public class SendController extends WalletFormController implements Initializabl
 
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
+        transactionDiagram.update(transactionDiagram.getWalletTransaction());
         setEffectiveFeeRate(getWalletTransaction());
         setFeeRate(getFeeRate());
         if(fee.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
