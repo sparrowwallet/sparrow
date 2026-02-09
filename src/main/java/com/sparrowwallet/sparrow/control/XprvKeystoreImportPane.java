@@ -79,7 +79,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         importButton = new SplitMenuButton();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
-        importButton.getStyleClass().add("default-button");
+        setDefaultButton(importButton);
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
             importKeystore(getDefaultDerivation());

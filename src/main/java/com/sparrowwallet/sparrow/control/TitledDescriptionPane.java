@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -180,6 +181,22 @@ public class TitledDescriptionPane extends TitledPane {
                 removeArrow(count+1);
             }
         });
+    }
+
+    protected static void setDefaultButton(ButtonBase button) {
+        button.getStyleClass().add("default-button");
+        if(button instanceof SplitMenuButton splitMenuButton) {
+            for(MenuItem item : splitMenuButton.getItems()) {
+                item.getStyleClass().add("default-button");
+            }
+            splitMenuButton.getItems().addListener((ListChangeListener<MenuItem>) c -> {
+                while(c.next()) {
+                    for(MenuItem item : c.getAddedSubList()) {
+                        item.getStyleClass().add("default-button");
+                    }
+                }
+            });
+        }
     }
 
     protected static int getAccount(Wallet wallet, KeyDerivation requiredDerivation) {

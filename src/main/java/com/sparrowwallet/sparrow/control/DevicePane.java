@@ -519,7 +519,7 @@ public class DevicePane extends TitledDescriptionPane {
 
         SplitMenuButton sendPassphraseButton = new SplitMenuButton();
         sendPassphraseButton.setText("Send Passphrase");
-        sendPassphraseButton.getStyleClass().add("default-button");
+        setDefaultButton(sendPassphraseButton);
         sendPassphraseButton.setOnAction(event -> {
             setExpanded(false);
             setDescription("Confirm passphrase on device...");
@@ -1124,7 +1124,7 @@ public class DevicePane extends TitledDescriptionPane {
     private void showOperationButton() {
         if(deviceOperation.equals(DeviceOperation.IMPORT)) {
             if(defaultDevice) {
-                importButton.getStyleClass().add("default-button");
+                setDefaultButton(importButton);
             }
             importButton.setVisible(true);
             showHideLink.setText("Show derivation...");
@@ -1148,7 +1148,7 @@ public class DevicePane extends TitledDescriptionPane {
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.GET_PRIVATE_KEY)) {
             if(defaultDevice) {
-                getPrivateKeyButton.getStyleClass().add("default-button");
+                setDefaultButton(getPrivateKeyButton);
             }
             getPrivateKeyButton.setVisible(true);
             showHideLink.setVisible(false);

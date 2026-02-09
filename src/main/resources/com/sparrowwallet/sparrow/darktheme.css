@@ -38,7 +38,7 @@
     -fx-base: -fx-default-button;
 }
 
-.split-menu-button.default-button > .label {
+.split-menu-button.default-button > .label, .menu-item.default-button > .label {
     -fx-text-fill: white;
 }
 

@@ -196,7 +196,7 @@ public class MnemonicShareKeystoreImportPane extends MnemonicKeystorePane {
         importButton = new SplitMenuButton();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
-        importButton.getStyleClass().add("default-button");
+        setDefaultButton(importButton);
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
             importKeystore(getDefaultDerivation(), false);
