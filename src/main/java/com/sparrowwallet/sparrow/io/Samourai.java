@@ -29,10 +29,7 @@ public class Samourai implements KeystoreFileImport {
         try {
             String input = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
-            Gson gson = new Gson();
-            Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {
-            }.getType();
-            Map<String, JsonElement> map = gson.fromJson(input, stringStringMap);
+            Map<String, JsonElement> map = this.parseJsonInput(input);
 
             String payload = input;
             if(map.containsKey("payload")) {
@@ -53,7 +50,7 @@ public class Samourai implements KeystoreFileImport {
                 throw new ImportException("Unsupported backup version: " + version);
             }
 
-            SamouraiBackup backup = gson.fromJson(decrypted, SamouraiBackup.class);
+            SamouraiBackup backup = new Gson().fromJson(decrypted, SamouraiBackup.class);
             DeterministicSeed seed = new DeterministicSeed(Utils.hexToBytes(backup.wallet.seed), password, 0);
             Keystore keystore = Keystore.fromSeed(seed, scriptType.getDefaultDerivation());
             keystore.setLabel(getWalletModel().toDisplayString());
@@ -64,6 +61,20 @@ public class Samourai implements KeystoreFileImport {
             throw e;
         } catch(Exception e) {
             throw new ImportException("Error importing backup", e);
+        }
+    }
+
+    private Map<String, JsonElement> parseJsonInput(String input) {
+        Gson gson = new Gson();
+        Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {
+        }.getType();
+
+        try {
+            return gson.fromJson(input, stringStringMap);
+        } catch (JsonParseException e) {
+            int closingBracket = input.indexOf('}');
+            String fixedInput = input.substring(0, closingBracket + 1);
+            return gson.fromJson(fixedInput, stringStringMap);
         }
     }
 
