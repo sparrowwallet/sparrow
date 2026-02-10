@@ -12,63 +12,36 @@ Work on resolving both of these issues is ongoing.
 ### Install Java
 
 Because Sparrow bundles a Java runtime in the release binaries, it is essential to have the same version of Java installed when creating the release.
-For v1.6.6 to v1.9.1, this was Eclipse Temurin 18.0.1+10. For v2.0.0 and later, Eclipse Temurin 22.0.2+9 is used.
+For v1.6.6 to v1.9.1, this was Eclipse Temurin 18.0.1+10. For v2.0.0 to v2.3.1, this was Eclipse Temurin 22.0.2+9. For v2.4.0 and later, Eclipse Temurin 25.0.2+10 is used.
+
+Note: Do not install Java using a system package manager (e.g. apt, dnf, rpm). 
+Linux packages replace the JDK's bundled `cacerts` file with a symlink to the system CA certificates, which differ from those in the release tarballs and will produce a non-reproducible build.
 
 #### Java from Adoptium github repo
 
-It is available for all supported platforms from [Eclipse Temurin 22.0.2+9](https://github.com/adoptium/temurin22-binaries/releases/tag/jdk-22.0.2%2B9).
+It is available for all supported platforms from [Eclipse Temurin 25.0.2+10](https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.2%2B10).
 
 For reference, the downloads are as follows:
-- [Linux x64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_linux_hotspot_22.0.2_9.tar.gz)
-- [Linux aarch64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_aarch64_linux_hotspot_22.0.2_9.tar.gz)
-- [MacOS x64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_mac_hotspot_22.0.2_9.tar.gz)
-- [MacOS aarch64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_aarch64_mac_hotspot_22.0.2_9.tar.gz)
-- [Windows x64](https://github.com/adoptium/temurin22-binaries/releases/download/jdk-22.0.2%2B9/OpenJDK22U-jdk_x64_windows_hotspot_22.0.2_9.zip)
+- [Linux x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_10.tar.gz)
+- [Linux aarch64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.2_10.tar.gz)
+- [MacOS x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_mac_hotspot_25.0.2_10.tar.gz)
+- [MacOS aarch64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.2_10.tar.gz)
+- [Windows x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_windows_hotspot_25.0.2_10.zip)
 
-#### Java from Adoptium deb repo
-
-It is also possible to install via a package manager on *nix systems. For example, on Debian/Ubuntu systems:
-
-- Install dependencies:
-```sh
-sudo apt-get install -y wget curl apt-transport-https gnupg
+On Linux, extract the tarball and set `JAVA_HOME` to use it for the build:
+```shell
+tar -xzf OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_10.tar.gz
+export JAVA_HOME=$PWD/jdk-25.0.2+10
+export PATH=$JAVA_HOME/bin:$PATH
 ```
 
-Download Adoptium public PGP key:
-```sh
-curl --tlsv1.2 --proto =https --location -o adoptium.asc https://packages.adoptium.net/artifactory/api/gpg/key/public
-```
+#### Java from SDKMAN
 
-Check if key fingerprint matches: `3B04D753C9050D9A5D343F39843C48A565F8F04B`:
-```
-gpg --import --import-options show-only adoptium.asc
-```
-If key doesn't match, do not proceed.
-
-Add Adoptium PGP key to a the keyring shared folder:
-```sh
-sudo cp adoptium.asc /usr/share/keyrings/
-```
-
-Add Adoptium debian repository:
-```sh
-echo "deb [signed-by=/usr/share/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
-```
-
-Update cache, install the desired temurin version and configure java to be linked to this same version:
-```
-sudo apt update -y
-sudo apt-get install -y temurin-22-jdk=22.0.2+9
-sudo update-alternatives --config java
-```
-
-#### Java from SDK
-
-A alternative option for all platforms is to use the [sdkman.io](https://sdkman.io/) package manager ([Git Bash for Windows](https://git-scm.com/download/win) is a good choice on that platform).
+An alternative option for all platforms is to use the [sdkman.io](https://sdkman.io/) package manager ([Git Bash for Windows](https://git-scm.com/download/win) is a good choice on that platform).
 See the installation [instructions here](https://sdkman.io/install).
 Once installed, run
 ```shell
-sdk install java 22.0.2-tem
+sdk install java 25.0.2-tem
 ```
 
 ### Other requirements
@@ -83,7 +56,7 @@ sudo apt install -y rpm fakeroot binutils
 First, assign a temporary variable in your shell for the specific release you want to build. For the current one specify:
 
 ```shell
-GIT_TAG="2.3.1"
+GIT_TAG="2.4.0"
 ```
 
 The project can then be initially cloned as follows:
@@ -101,7 +74,7 @@ git checkout "${GIT_TAG}"
 ```
 
 Note - there is an additional step if you updated rather than initially cloned your repo at `GIT_TAG`. 
-This is due to the [drongo submodule](https://github.com/sparrowwallet/drongo/tree/master) which needs to be checked out to the commit state it had at the time of the release. 
+This is due to the Git submodules which need to be checked out to the commit state they had at the time of the release. 
 Only then your build will be comparable to the provided one in the release section of Github. 
 To checkout the submodule to the correct commit for `GIT_TAG`, additionally run:
 
