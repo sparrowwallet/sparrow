@@ -18,6 +18,7 @@ public class AddressTreeTableCellSkin<S, T> extends TreeTableCellSkin<S, T> {
         super(cell);
 
         displayFlow = new TextFlow();
+        displayFlow.setManaged(false);
         displayFlow.setMouseTransparent(true);
         displayFlow.setMinWidth(Region.USE_PREF_SIZE);
         getChildren().add(displayFlow);

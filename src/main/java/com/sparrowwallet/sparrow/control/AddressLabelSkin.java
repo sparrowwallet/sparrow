@@ -28,6 +28,7 @@ public class AddressLabelSkin extends LabelSkin {
         super(control);
 
         displayFlow = new TextFlow();
+        displayFlow.setManaged(false);
         displayFlow.setMouseTransparent(true);
 
         getChildren().addFirst(displayFlow);

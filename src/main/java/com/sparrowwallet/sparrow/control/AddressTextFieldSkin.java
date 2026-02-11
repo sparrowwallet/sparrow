@@ -37,6 +37,7 @@ public class AddressTextFieldSkin extends CustomTextFieldSkin {
         super(control);
 
         displayFlow = new TextFlow();
+        displayFlow.setManaged(false);
         displayFlow.setMouseTransparent(true);
 
         clip = new Rectangle();
