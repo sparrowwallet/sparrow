@@ -73,6 +73,10 @@ public class Samourai implements KeystoreFileImport {
             return gson.fromJson(input, stringStringMap);
         } catch (JsonParseException e) {
             int closingBracket = input.indexOf('}');
+            if (closingBracket < 0) {
+                throw e;
+            }
+
             String fixedInput = input.substring(0, closingBracket + 1);
             return gson.fromJson(fixedInput, stringStringMap);
         }
