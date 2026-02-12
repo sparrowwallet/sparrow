@@ -36,6 +36,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -54,6 +55,7 @@ public class DbPersistence implements Persistence {
     private static final String H2_USER = "sa";
     private static final String H2_PASSWORD = "";
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
+    private static final Pattern JDBC_URL_INJECTION_PATTERN = Pattern.compile(";\\w+=");
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
@@ -695,7 +697,10 @@ public class DbPersistence implements Persistence {
         }
     }
 
-    private String getUrl(File walletFile, String password) {
+    private String getUrl(File walletFile, String password) throws StorageException {
+        if(JDBC_URL_INJECTION_PATTERN.matcher(walletFile.getName()).find()) {
+            throw new StorageException("Wallet file name contains invalid characters");
+        }
         return "jdbc:h2:" + walletFile.getAbsolutePath().replace("." + getType().getExtension(), "") + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
     }
 
