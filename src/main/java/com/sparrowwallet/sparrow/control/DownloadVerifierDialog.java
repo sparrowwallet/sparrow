@@ -62,7 +62,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private static final List<String> ARCHIVE_EXTENSIONS = List.of("zip", "tar.gz", "tar.bz2", "tar.xz", "rar", "7z");
 
     private static final String SPARROW_RELEASE_PREFIX = "sparrow-";
-    private static final String SPARROW_RELEASE_ALT_PREFIX = "sparrow_";
+    private static final String[] SPARROW_RELEASE_ALT_PREFIXES = { "sparrowwallet-", "sparrowwallet_", "sparrowserver-", "sparrowserver_" };
     private static final String SPARROW_MANIFEST_SUFFIX = "-manifest.txt";
     private static final String SPARROW_SIGNATURE_SUFFIX = SPARROW_MANIFEST_SUFFIX + ".asc";
     private static final Pattern SPARROW_RELEASE_VERSION = Pattern.compile("[0-9]+(\\.[0-9]+)*");
@@ -465,7 +465,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         String providedName = providedFile.getName().toLowerCase(Locale.ROOT);
-        if(providedName.startsWith(SPARROW_RELEASE_PREFIX) || providedName.startsWith(SPARROW_RELEASE_ALT_PREFIX)) {
+        if(providedName.startsWith(SPARROW_RELEASE_PREFIX) || Arrays.stream(SPARROW_RELEASE_ALT_PREFIXES).anyMatch(providedName::startsWith)) {
             Matcher matcher = SPARROW_RELEASE_VERSION.matcher(providedFile.getName());
             if(matcher.find()) {
                 String version = matcher.group();
@@ -591,7 +591,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 }
             }
 
-            if((name.startsWith(SPARROW_RELEASE_PREFIX) || name.startsWith(SPARROW_RELEASE_ALT_PREFIX)) && file.length() >= MIN_VALID_SPARROW_RELEASE_SIZE) {
+            if((name.startsWith(SPARROW_RELEASE_PREFIX) || Arrays.stream(SPARROW_RELEASE_ALT_PREFIXES).anyMatch(name::startsWith))
+                    && file.length() >= MIN_VALID_SPARROW_RELEASE_SIZE) {
                 Matcher matcher = SPARROW_RELEASE_VERSION.matcher(name);
                 return matcher.find();
             }
