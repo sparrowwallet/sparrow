@@ -62,6 +62,12 @@ public class TcpOverTlsTransport extends TcpTransport {
 
     private TrustManager[] getTrustManagers(File crtFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
         if(crtFile == null) {
+            if(PublicElectrumServer.isPublicServer(server)) {
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init((KeyStore) null);
+                return tmf.getTrustManagers();
+            }
+
             return new TrustManager[] {
                     new X509TrustManager() {
                         public X509Certificate[] getAcceptedIssuers() {
@@ -88,7 +94,10 @@ public class TcpOverTlsTransport extends TcpTransport {
             };
         }
 
-        Certificate certificate = CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(crtFile));
+        Certificate certificate;
+        try(FileInputStream fis = new FileInputStream(crtFile)) {
+            certificate = CertificateFactory.getInstance("X.509").generateCertificate(fis);
+        }
         if(certificate instanceof X509Certificate) {
             try {
                 X509Certificate x509Certificate = (X509Certificate)certificate;
