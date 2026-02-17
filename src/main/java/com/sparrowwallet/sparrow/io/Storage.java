@@ -485,7 +485,16 @@ public class Storage {
     }
 
     public static File getWalletsDir() {
-        File walletsDir = new File(getSparrowDir(), WALLETS_DIR);
+        File walletsDir = Config.get().getWalletsDir();
+        if(walletsDir != null) {
+            if(!walletsDir.exists() && (walletsDir.getParentFile() == null || !walletsDir.getParentFile().exists() || !walletsDir.getParentFile().canWrite())) {
+                log.info("Configured wallets directory " + walletsDir.getAbsolutePath() + " is not reachable, reverting to default");
+                walletsDir = null;
+            }
+        }
+        if(walletsDir == null) {
+            walletsDir = new File(getSparrowDir(), WALLETS_DIR);
+        }
         if(!walletsDir.exists()) {
             createOwnerOnlyDirectory(walletsDir);
         }

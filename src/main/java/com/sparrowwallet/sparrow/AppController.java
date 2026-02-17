@@ -1140,8 +1140,33 @@ public class AppController implements Initializable {
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         List<File> files = fileChooser.showOpenMultipleDialog(window);
         if(files != null) {
+            configureWalletsDir(files);
             for(File file : files) {
                 openWalletFile(file, forceSameWindow);
+            }
+        }
+    }
+
+    private static void configureWalletsDir(List<File> files) {
+        List<File> parentDirs = files.stream().map(File::getParentFile).distinct().collect(Collectors.toList());
+        if(parentDirs.size() == 1 && !Boolean.FALSE.equals(Config.get().getSuggestChangeWalletsDir())) {
+            File selectedDir = parentDirs.getFirst();
+            boolean sameDir;
+            try {
+                sameDir = Files.isSameFile(selectedDir.toPath(), Storage.getWalletsDir().toPath());
+            } catch(IOException e) {
+                sameDir = selectedDir.toPath().normalize().equals(Storage.getWalletsDir().toPath().normalize());
+            }
+            if(!sameDir) {
+                ConfirmationAlert alert = new ConfirmationAlert("Change wallets directory?",
+                    "Do you want to configure Sparrow to use " + selectedDir + " as the default wallets directory?", ButtonType.NO, ButtonType.YES);
+                Optional<ButtonType> optType = alert.showAndWait();
+                if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                    Config.get().setWalletsDir(selectedDir);
+                    Config.get().setSuggestChangeWalletsDir(null);
+                } else if(alert.isDontAskAgain()) {
+                    Config.get().setSuggestChangeWalletsDir(Boolean.FALSE);
+                }
             }
         }
     }

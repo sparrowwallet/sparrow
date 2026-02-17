@@ -59,6 +59,8 @@ public class Config {
     private Boolean connectToBroadcast;
     private Boolean connectToResolve;
     private Boolean suggestSendToMany;
+    private Boolean suggestChangeWalletsDir;
+    private File walletsDir;
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
@@ -403,6 +405,24 @@ public class Config {
 
     public void setSuggestSendToMany(Boolean suggestSendToMany) {
         this.suggestSendToMany = suggestSendToMany;
+        flush();
+    }
+
+    public Boolean getSuggestChangeWalletsDir() {
+        return suggestChangeWalletsDir;
+    }
+
+    public void setSuggestChangeWalletsDir(Boolean suggestChangeWalletsDir) {
+        this.suggestChangeWalletsDir = suggestChangeWalletsDir;
+        flush();
+    }
+
+    public File getWalletsDir() {
+        return walletsDir;
+    }
+
+    public void setWalletsDir(File walletsDir) {
+        this.walletsDir = walletsDir;
         flush();
     }
 
