@@ -701,7 +701,7 @@ public class DbPersistence implements Persistence {
         if(JDBC_URL_INJECTION_PATTERN.matcher(walletFile.getName()).find()) {
             throw new StorageException("Wallet file name contains invalid characters");
         }
-        return "jdbc:h2:" + walletFile.getAbsolutePath().replace("." + getType().getExtension(), "") + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
+        return "jdbc:h2:" + walletFile.getAbsolutePath().replace("." + getType().getExtension(), "") + ";TRACE_LEVEL_FILE=0;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
     }
 
     private boolean persistsFor(Wallet wallet) {
