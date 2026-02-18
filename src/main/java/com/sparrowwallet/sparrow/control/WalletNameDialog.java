@@ -73,7 +73,7 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
         name = (CustomTextField)TextFields.createClearableTextField();
         name.setText(initialName);
         name.setTextFormatter(new TextFormatter<>((change) -> {
-            change.setText(change.getText().replaceAll("[\\\\/:*?\"<>|;]", "_"));
+            change.setText(change.getText().replaceAll("[\\\\/:*?\"<>|;`]", "_"));
             return change;
         }));
         content.getChildren().add(name);

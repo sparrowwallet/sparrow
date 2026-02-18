@@ -215,7 +215,7 @@ public class DbPersistence implements Persistence {
             WalletDao walletDao = handle.attach(WalletDao.class);
             try {
                 if(dirtyPersistables.deleteAccount && !wallet.isMasterWallet()) {
-                    handle.execute("drop schema `" + getSchema(wallet) + "` cascade");
+                    handle.execute("drop schema `" + getSchema(wallet).replace("`", "``") + "` cascade");
                     return;
                 }
 
