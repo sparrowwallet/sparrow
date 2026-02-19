@@ -23,7 +23,7 @@ public class TcpOverTlsTransport extends TcpTransport {
     public TcpOverTlsTransport(HostAndPort server) throws NoSuchAlgorithmException, KeyManagementException, CertificateException, KeyStoreException, IOException {
         super(server);
 
-        TrustManager[] trustManagers = getTrustManagers(Storage.getCertificateFile(server.getHost()));
+        TrustManager[] trustManagers = getTrustManagers(Storage.getCertificateFile(server.getHost()), server.getHost());
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, trustManagers, new SecureRandom());
@@ -34,7 +34,7 @@ public class TcpOverTlsTransport extends TcpTransport {
     public TcpOverTlsTransport(HostAndPort server, File crtFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         super(server);
 
-        TrustManager[] trustManagers = getTrustManagers(crtFile);
+        TrustManager[] trustManagers = getTrustManagers(crtFile, server.getHost());
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
         sslContext.init(null, trustManagers, null);
@@ -60,7 +60,7 @@ public class TcpOverTlsTransport extends TcpTransport {
         }
     }
 
-    private TrustManager[] getTrustManagers(File crtFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
+    public static TrustManager[] getTrustManagers(File crtFile, String host) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException {
         if(crtFile == null) {
             return new TrustManager[] {
                     new X509TrustManager() {
@@ -79,7 +79,7 @@ public class TcpOverTlsTransport extends TcpTransport {
                             try {
                                 certs[0].checkValidity();
                             } catch(CertificateExpiredException e) {
-                                if(Storage.getCertificateFile(server.getHost()) == null) {
+                                if(Storage.getCertificateFile(host) == null) {
                                     throw new UnknownCertificateExpiredException(e.getMessage(), certs[0]);
                                 }
                             }
@@ -88,7 +88,10 @@ public class TcpOverTlsTransport extends TcpTransport {
             };
         }
 
-        Certificate certificate = CertificateFactory.getInstance("X.509").generateCertificate(new FileInputStream(crtFile));
+        Certificate certificate;
+        try(FileInputStream fis = new FileInputStream(crtFile)) {
+            certificate = CertificateFactory.getInstance("X.509").generateCertificate(fis);
+        }
         if(certificate instanceof X509Certificate) {
             try {
                 X509Certificate x509Certificate = (X509Certificate)certificate;
@@ -98,7 +101,7 @@ public class TcpOverTlsTransport extends TcpTransport {
                 //These will usually be self-signed certificates that users may not have the expertise to renew
             } catch(CertificateException e) {
                 crtFile.delete();
-                return getTrustManagers(null);
+                return getTrustManagers(null, host);
             }
         }
 

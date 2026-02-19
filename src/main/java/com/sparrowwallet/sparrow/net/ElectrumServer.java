@@ -31,6 +31,7 @@ import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLHandshakeException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -1434,6 +1435,12 @@ public class ElectrumServer {
                                 } finally {
                                     bwtStartLock.unlock();
                                 }
+                            }
+                        } catch(IllegalStateException e) {
+                            if(e.getCause() instanceof SSLHandshakeException) {
+                                throw new TlsServerException(Config.get().getCoreServer().getHostAndPort(), e.getCause());
+                            } else {
+                                throw e;
                             }
                         }
                     }

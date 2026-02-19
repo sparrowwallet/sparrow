@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
@@ -504,7 +505,7 @@ public class Storage {
 
     public static File getCertificateFile(String host) {
         File certsDir = getCertsDir();
-        File[] certs = certsDir.listFiles((dir, name) -> name.equals(host));
+        File[] certs = certsDir.listFiles((dir, name) -> name.equals(getCertName(host)));
         if(certs != null && certs.length > 0) {
             return certs[0];
         }
@@ -513,7 +514,7 @@ public class Storage {
     }
 
     public static void saveCertificate(String host, Certificate cert) {
-        try(FileWriter writer = new FileWriter(new File(getCertsDir(), host))) {
+        try(FileWriter writer = new FileWriter(new File(getCertsDir(), getCertName(host)))) {
             writer.write("-----BEGIN CERTIFICATE-----\n");
             writer.write(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
             writer.write("\n-----END CERTIFICATE-----\n");
@@ -522,6 +523,14 @@ public class Storage {
         } catch(IOException e) {
             log.error("Error writing PEM certificate", e);
         }
+    }
+
+    private static String getCertName(String host) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+            return host + ".bitcoind";
+        }
+
+        return host;
     }
 
     static File getCertsDir() {
