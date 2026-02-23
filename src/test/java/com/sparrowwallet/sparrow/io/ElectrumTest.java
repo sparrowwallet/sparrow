@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.jupiter.api.AfterEach;
@@ -127,6 +128,20 @@ public class ElectrumTest extends IoTest {
         Assertions.assertEquals("xpub68YmVxWbxqjpxbUqqaPrgkBQPBSJuq6gEaL22uuytSEojtS2x5eLPN2uspUuyigtnMkoHrFSF1KwoXPwjzuaUjErUwztxfHquAwuaQhSd9J", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
         Assertions.assertEquals(wallet.getKeystores().get(0).getSeed().getMnemonicString().asString(), "coach fan denial rifle frost rival join install one wasp cool antique");
         Assertions.assertEquals("e14c40c638e2c83d1f20e5ee9cd744bc2ba1ef64fa939926f3778fc8735e891f56852f687b32bbd044f272d2831137e3eeba61fd1f285fa73dcc97d9f2be3cd1", Utils.bytesToHex(wallet.getKeystores().get(0).getSeed().getSeedBytes()));
+    }
+
+    @Test
+    public void testSinglesigSeedKeystoreScriptTypeMismatch() throws ImportException {
+        Electrum electrum = new Electrum();
+        Keystore keystore = electrum.getKeystore(ScriptType.P2SH_P2WPKH, getInputStream("electrum-singlesig-seed-wallet.json"), null);
+        Assertions.assertEquals("m/49'/0'/0'", keystore.getKeyDerivation().getDerivationPath());
+    }
+
+    @Test
+    public void testSinglesigSeedKeystoreScriptTypeMatch() throws ImportException {
+        Electrum electrum = new Electrum();
+        Keystore keystore = electrum.getKeystore(ScriptType.P2WPKH, getInputStream("electrum-singlesig-seed-wallet.json"), null);
+        Assertions.assertEquals("m/84'/0'/0'", keystore.getKeyDerivation().getDerivationPath());
     }
 
     @AfterEach

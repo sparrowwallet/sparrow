@@ -47,12 +47,32 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             throw new ImportException("Multisig wallet detected - import it using File > Import Wallet");
         }
 
-        if(!wallet.getScriptType().equals(scriptType)) {
-            //TODO: Derive appropriate ScriptType keystore from xprv if present
-            throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType() + ", and the correct script type cannot be derived without the master private key.");
+        Keystore keystore = wallet.getKeystores().getFirst();
+        List<ChildNumber> expectedDerivation = scriptType.getDefaultDerivation();
+        List<ChildNumber> actualDerivation = keystore.getKeyDerivation().getDerivation();
+
+        // Re-derive if script type mismatches OR if derivation path is non-standard (e.g. Electrum's m/0')
+        if(!wallet.getScriptType().equals(scriptType) || !actualDerivation.equals(expectedDerivation)) {
+            if(keystore.hasSeed()) {
+                try {
+                    return Keystore.fromSeed(keystore.getSeed(), expectedDerivation);
+                } catch(MnemonicException e) {
+                    throw new ImportException("Could not derive keystore for script type " + scriptType, e);
+                }
+            }
+            if(keystore.hasMasterPrivateExtendedKey()) {
+                try {
+                    return Keystore.fromMasterPrivateExtendedKey(keystore.getMasterPrivateExtendedKey(), expectedDerivation);
+                } catch(MnemonicException e) {
+                    throw new ImportException("Could not derive keystore for script type " + scriptType, e);
+                }
+            }
+            if(!wallet.getScriptType().equals(scriptType)) {
+                throw new ImportException("Wallet has an incompatible script type of " + wallet.getScriptType() + ", and the correct script type cannot be derived without the master private key.");
+            }
         }
 
-        return wallet.getKeystores().get(0);
+        return keystore;
     }
 
     @Override
