@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
@@ -176,7 +177,11 @@ public class SettingsWalletForm extends WalletForm {
             return true;
         }
 
-        //TODO: Determine if Miniscript has changed for custom policies
+        if(original.getPolicyType() == PolicyType.CUSTOM) {
+            if(!Objects.equals(original.getDefaultPolicy().getMiniscript(), changed.getDefaultPolicy().getMiniscript())) {
+                return true;
+            }
+        }
 
         if(!Objects.equals(getNumSignaturesRequired(original.getDefaultPolicy()), getNumSignaturesRequired(changed.getDefaultPolicy()))) {
             return true;
