@@ -328,6 +328,9 @@ public class AppServices {
                                 "\n\nChange the configured server certificate if you would like to proceed.");
                     } else {
                         crtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
+                        if(crtFile == null) {
+                            crtFile = Storage.getCaCertificateFile(tlsServerException.getServer().getHost());
+                        }
                         if(crtFile != null) {
                             Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
                                     "\n\nThis may be simply due to a certificate renewal, or it may indicate a man-in-the-middle attack." +

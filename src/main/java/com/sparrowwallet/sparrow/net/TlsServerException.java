@@ -42,6 +42,8 @@ public class TlsServerException extends ServerException {
                     return "Provided server certificate from " + server.getHost() + " did not match configured certificate at " + configCrtFile.getAbsolutePath();
                 } else if(savedCrtFile != null) {
                     return "Provided server certificate from " + server.getHost() + " did not match previously saved certificate at " + savedCrtFile.getAbsolutePath();
+                } else if(Storage.getCaCertificateFile(server.getHost()) != null) {
+                    return "Provided server certificate from " + server.getHost() + " failed CA validation";
                 }
 
                 return "Provided server certificate from " + server.getHost() + " was invalid: " + (cause.getCause() != null ? cause.getCause().getMessage() : cause.getMessage());

@@ -504,8 +504,23 @@ public class Storage {
     }
 
     public static File getCertificateFile(String host) {
-        File certsDir = getCertsDir();
-        File[] certs = certsDir.listFiles((dir, name) -> name.equals(getCertName(host)));
+        return findCertFile(getCertName(host));
+    }
+
+    public static void saveCertificate(String host, Certificate cert) {
+        writeCertPem(getCertName(host), cert);
+    }
+
+    public static File getCaCertificateFile(String host) {
+        return findCertFile(host + ".cacert");
+    }
+
+    public static void saveCaCertificate(String host, Certificate cert) {
+        writeCertPem(host + ".cacert", cert);
+    }
+
+    private static File findCertFile(String filename) {
+        File[] certs = getCertsDir().listFiles((dir, name) -> name.equals(filename));
         if(certs != null && certs.length > 0) {
             return certs[0];
         }
@@ -513,8 +528,8 @@ public class Storage {
         return null;
     }
 
-    public static void saveCertificate(String host, Certificate cert) {
-        try(FileWriter writer = new FileWriter(new File(getCertsDir(), getCertName(host)))) {
+    private static void writeCertPem(String filename, Certificate cert) {
+        try(FileWriter writer = new FileWriter(new File(getCertsDir(), filename))) {
             writer.write("-----BEGIN CERTIFICATE-----\n");
             writer.write(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
             writer.write("\n-----END CERTIFICATE-----\n");

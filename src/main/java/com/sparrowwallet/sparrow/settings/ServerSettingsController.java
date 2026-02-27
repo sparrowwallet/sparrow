@@ -670,6 +670,9 @@ public class ServerSettingsController extends SettingsDetailController {
             if(exception.getCause().getMessage().contains("PKIX path building failed")) {
                 File configCrtFile = Config.get().getElectrumServerCert();
                 File savedCrtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
+                if(savedCrtFile == null) {
+                    savedCrtFile = Storage.getCaCertificateFile(tlsServerException.getServer().getHost());
+                }
                 if(configCrtFile == null && savedCrtFile != null) {
                     Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
                             "\n\nThis may indicate a man-in-the-middle attack!" +
