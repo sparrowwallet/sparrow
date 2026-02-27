@@ -80,6 +80,18 @@
                 <Region style="-fx-pref-width: 5" />
                 <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
             </Field>
+            <Field fx:id="opReturnField" text="OP_RETURN:">
+                <TextField fx:id="opReturn" promptText="Optional data (max 80 bytes)">
+                    <tooltip>
+                        <Tooltip text="Optional arbitrary data to embed in the transaction (max 80 bytes). The data will be stored in an OP_RETURN output with 0 value."/>
+                    </tooltip>
+                </TextField>
+                <Label fx:id="opReturnStatus" text="">
+                    <graphic>
+                        <Glyph fx:id="opReturnStatusGlyph" fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CHECK_CIRCLE" />
+                    </graphic>
+                </Label>
+            </Field>
         </Fieldset>
     </Form>
     <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
