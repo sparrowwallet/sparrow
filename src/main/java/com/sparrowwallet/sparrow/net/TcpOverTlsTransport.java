@@ -193,7 +193,8 @@ public class TcpOverTlsTransport extends TcpTransport {
                 x509Certs[i] = (X509Certificate)certs[i];
             }
 
-            defaultTm.checkServerTrusted(x509Certs, "RSA");
+            String authType = x509Certs[0].getPublicKey().getAlgorithm().equals("EC") ? "ECDHE_ECDSA" : "RSA";
+            defaultTm.checkServerTrusted(x509Certs, authType);
             return true;
         } catch(Exception e) {
             return false;
