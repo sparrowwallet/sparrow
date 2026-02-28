@@ -20,6 +20,7 @@ public class TcpOverTlsTransport extends TcpTransport {
     public static final int PAD_TO_MULTIPLE_OF_BYTES = 96;
 
     protected final SSLSocketFactory sslSocketFactory;
+    protected final boolean usingCaTrust;
 
     public TcpOverTlsTransport(HostAndPort server) throws NoSuchAlgorithmException, KeyManagementException, CertificateException, KeyStoreException, IOException {
         super(server);
@@ -27,8 +28,10 @@ public class TcpOverTlsTransport extends TcpTransport {
         TrustManager[] trustManagers;
         if(Storage.getCaCertificateFile(server.getHost()) != null) {
             trustManagers = getCaTrustManagers();
+            this.usingCaTrust = true;
         } else {
             trustManagers = getTrustManagers(Storage.getCertificateFile(server.getHost()), server.getHost());
+            this.usingCaTrust = false;
         }
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -40,6 +43,7 @@ public class TcpOverTlsTransport extends TcpTransport {
     public TcpOverTlsTransport(HostAndPort server, File crtFile) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         super(server);
 
+        this.usingCaTrust = false;
         TrustManager[] trustManagers = getTrustManagers(crtFile, server.getHost());
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
@@ -147,6 +151,12 @@ public class TcpOverTlsTransport extends TcpTransport {
                 }
             }
         });
+
+        if(usingCaTrust && !Protocol.isOnionAddress(server)) {
+            SSLParameters sslParameters = sslSocket.getSSLParameters();
+            sslParameters.setEndpointIdentificationAlgorithm("HTTPS");
+            sslSocket.setSSLParameters(sslParameters);
+        }
 
         sslSocket.startHandshake();
     }
