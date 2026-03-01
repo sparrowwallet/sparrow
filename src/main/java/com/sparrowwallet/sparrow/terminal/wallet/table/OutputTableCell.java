@@ -13,7 +13,13 @@ public class OutputTableCell extends TableCell {
     @Override
     public String formatCell() {
         if(entry instanceof UtxoEntry utxoEntry) {
-            return utxoEntry.getDescription();
+            String description = utxoEntry.getDescription();
+            int maxLength = WIDTH - 2;
+            if (description.length() > maxLength) {
+                return description.substring(0, maxLength - 2) + "..";
+            }
+
+            return description;
         }
 
         return "";

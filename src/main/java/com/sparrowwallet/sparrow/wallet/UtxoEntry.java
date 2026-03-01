@@ -29,7 +29,7 @@ public class UtxoEntry extends HashIndexEntry {
 
     @Override
     public String getDescription() {
-        return getHashIndex().getHash().toString().substring(0, 8) + "..:" + getHashIndex().getIndex();
+        return getHashIndex().getHash().toString() + ":" + getHashIndex().getIndex();
     }
 
     @Override

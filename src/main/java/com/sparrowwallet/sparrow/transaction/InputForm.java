@@ -93,7 +93,7 @@ public class InputForm extends IndexedTransactionForm {
         }
 
         TransactionOutPoint outPoint = getTransactionInput().getOutpoint();
-        return outPoint.getHash().toString().substring(0, 8) + "..:" + outPoint.getIndex();
+        return outPoint.getHash().toString() + ":" + outPoint.getIndex();
     }
 
     @Override

@@ -570,7 +570,7 @@ public class TransactionDiagram extends GridPane {
     }
 
     private String getInputDescription(BlockTransactionHashIndex input) {
-        return input.getLabel() != null && !input.getLabel().isEmpty() ? input.getLabel() : input.getHashAsString().substring(0, 8) + "..:" + input.getIndex();
+        return input.getLabel() != null && !input.getLabel().isEmpty() ? input.getLabel() : input.getHashAsString() + ":" + input.getIndex();
     }
 
     String getCoinValue(long amount) {

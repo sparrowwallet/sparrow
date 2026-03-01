@@ -35,3 +35,8 @@
 .change-warning-icon, .payment-warning-icon {
     -fx-text-fill: rgb(238, 210, 2);
 }
+
+.tree-cell > .label {
+    -fx-text-overflow: ellipsis;
+    -fx-white-space: nowrap;
+}

@@ -32,6 +32,8 @@
 .address-cell, .utxo-row.entry-cell {
     -fx-font-size: 13px;
     -fx-font-family: 'Fragment Mono Regular';
+    -fx-text-overflow: ellipsis;
+    -fx-white-space: nowrap;
 }
 
 .cell > .hyperlink {
