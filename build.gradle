@@ -105,7 +105,7 @@ dependencies {
     implementation('org.apache.commons:commons-compress:1.28.0')
     implementation('com.github.librepdf:openpdf:1.3.43')
     implementation('com.googlecode.lanterna:lanterna:3.1.3')
-    implementation('net.coobird:thumbnailator:0.4.18')
+    implementation('net.coobird:thumbnailator:0.4.21')
     implementation('com.github.hervegirod:fxsvgimage:1.1')
     implementation('com.sparrowwallet:toucan:0.9.0')
     implementation('com.jcraft:jzlib:1.1.3')
@@ -460,10 +460,6 @@ extraJavaModuleInfo {
         exports('co.nstant.in.cbor')
         exports('co.nstant.in.cbor.model')
         exports('co.nstant.in.cbor.builder')
-    }
-    module('net.coobird:thumbnailator', 'net.coobird.thumbnailator') {
-        exports('net.coobird.thumbnailator')
-        requires('java.desktop')
     }
     module('org.jcommander:jcommander', 'org.jcommander') {
         exports('com.beust.jcommander')
