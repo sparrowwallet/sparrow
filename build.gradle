@@ -99,7 +99,7 @@ dependencies {
     }
     implementation('com.sparrowwallet.bokmakierie:bokmakierie:1.0')
     implementation('com.sparrowwallet:tern:1.0.6')
-    implementation('io.reactivex.rxjava2:rxjava:2.2.15')
+    implementation('io.reactivex.rxjava2:rxjava:2.2.21')
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.20.0')
     implementation('org.apache.commons:commons-compress:1.28.0')
