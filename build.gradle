@@ -82,7 +82,7 @@ dependencies {
     implementation('de.jangassen:nsmenufx:3.1.0') {
         exclude group: 'net.java.dev.jna', module: 'jna'
     }
-    implementation('org.controlsfx:controlsfx:11.1.0' ) {
+    implementation('org.controlsfx:controlsfx:11.2.3' ) {
         exclude group: 'org.openjfx', module: 'javafx-base'
         exclude group: 'org.openjfx', module: 'javafx-graphics'
         exclude group: 'org.openjfx', module: 'javafx-controls'
