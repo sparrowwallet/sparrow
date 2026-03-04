@@ -62,7 +62,7 @@ dependencies {
     implementation('com.google.zxing:javase:3.5.4') {
         exclude group: 'com.beust', module: 'jcommander'
     }
-    implementation('org.jcommander:jcommander:2.0')
+    implementation('org.jcommander:jcommander:3.0')
     implementation('com.github.arteam:simple-json-rpc-core:1.3')
     implementation('com.github.arteam:simple-json-rpc-client:1.3') {
         exclude group: 'com.github.arteam', module: 'simple-json-rpc-core'
