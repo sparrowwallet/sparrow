@@ -162,13 +162,65 @@ public class DbPersistence implements Persistence {
 
     @Override
     public void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws StorageException {
-        updatePassword(storage, encryptionPubKey);
+        String newPassword = getFilePassword(encryptionPubKey);
 
-        updateExecutor.execute(() -> {
+        if(dataSource != null && !Objects.equals(getDatasourcePassword(), newPassword)) {
+            // Password is changing: capture the current password now, then run the keystore-encryption
+            // flush and the H2 file re-encryption atomically on the executor.  This guarantees that any
+            // pending keystoreEncryptionChanged task (which is also queued on the executor) completes
+            // first, so seed/keystore rows are written under the OLD file password before the file
+            // encryption is changed – eliminating the crash-corruption window where the DB file is
+            // already unencrypted but the seed row still holds encrypted data.
+            String currentPassword = getDatasourcePassword();
+            updateExecutor.execute(() -> {
+                try {
+                    flushEncryptionKeystores(storage, wallet, currentPassword);
+                    updatePassword(storage, encryptionPubKey);
+                    update(storage, wallet, newPassword);
+                } catch(Exception e) {
+                    log.error("Error updating wallet db during password change", e);
+                }
+            });
+        } else {
+            updatePassword(storage, encryptionPubKey);
+            updateExecutor.execute(() -> {
+                try {
+                    update(storage, wallet, newPassword);
+                } catch(Exception e) {
+                    log.error("Error updating wallet db", e);
+                }
+            });
+        }
+    }
+
+    /**
+     * Synchronously writes any pending keystore/seed encryption changes to the DB using the supplied
+     * (current/old) file password, then clears them from the dirty map so {@link #update} does not
+     * process them a second time.  Must be called from the update executor thread before the file
+     * encryption is changed.
+     */
+    private void flushEncryptionKeystores(Storage storage, Wallet wallet, String currentPassword) throws StorageException {
+        DirtyPersistables dirtyPersistables = dirtyPersistablesMap.get(wallet);
+        if(dirtyPersistables == null || dirtyPersistables.encryptionKeystores.isEmpty()) {
+            return;
+        }
+
+        List<Keystore> keystoresToFlush = new ArrayList<>(dirtyPersistables.encryptionKeystores);
+        dirtyPersistables.encryptionKeystores.clear();
+
+        log.debug("Flushing " + keystoresToFlush.size() + " keystore encryption change(s) for " + wallet.getFullName() + " before file password change");
+
+        Jdbi jdbi = getJdbi(storage, currentPassword);
+        jdbi.useHandle(handle -> {
+            WalletDao walletDao = handle.attach(WalletDao.class);
             try {
-                update(storage, wallet, getFilePassword(encryptionPubKey));
-            } catch(Exception e) {
-                log.error("Error updating wallet db", e);
+                walletDao.setSchema(getSchema(wallet));
+                KeystoreDao keystoreDao = handle.attach(KeystoreDao.class);
+                for(Keystore keystore : keystoresToFlush) {
+                    keystoreDao.updateKeystoreEncryption(keystore);
+                }
+            } finally {
+                walletDao.setSchema(DEFAULT_SCHEMA);
             }
         });
     }
