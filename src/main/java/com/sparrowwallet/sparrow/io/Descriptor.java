@@ -114,24 +114,12 @@ public class Descriptor implements WalletImport, WalletExport {
 
     private static List<String> getParagraphs(InputStream inputStream) {
         List<String> paragraphs = new ArrayList<>();
-        StringBuilder paragraph = new StringBuilder();
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         for(String line : reader.lines().map(String::trim).toArray(String[]::new)) {
-            if(line.isEmpty()) {
-                if(!paragraph.isEmpty()) {
-                    paragraphs.add(paragraph.toString());
-                    paragraph.setLength(0);
-                }
-            } else if(line.startsWith("#")) {
-                continue;
-            } else {
-                paragraph.append(line.replaceFirst("^.+:", "").trim());
+            if(!line.isEmpty() && !line.startsWith("#")) {
+                paragraphs.add(line.replaceFirst("^.+:", "").trim());
             }
-        }
-
-        if(!paragraph.isEmpty()) {
-            paragraphs.add(paragraph.toString());
         }
 
         return paragraphs;
