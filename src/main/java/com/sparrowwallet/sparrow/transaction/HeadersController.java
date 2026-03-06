@@ -268,6 +268,13 @@ public class HeadersController extends TransactionFormController implements Init
         return headersForm;
     }
 
+    private void setTransactionLocktime(Transaction tx, long locktime) {
+        tx.setLocktime(locktime);
+        if(headersForm.getPsbt() != null) {
+            headersForm.getPsbt().setFallbackLocktime(locktime);
+        }
+    }
+
     private void initializeView() {
         Transaction tx = headersForm.getTransaction();
 
@@ -280,6 +287,9 @@ public class HeadersController extends TransactionFormController implements Init
             }
 
             tx.setVersion(newValue);
+            if(headersForm.getPsbt() != null) {
+                headersForm.getPsbt().setTxVersion((long)newValue);
+            }
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
             }
@@ -296,7 +306,7 @@ public class HeadersController extends TransactionFormController implements Init
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
                     locktimeFieldset.getChildren().remove(locktimeNoneField);
                     locktimeFieldset.getChildren().add(locktimeNoneField);
-                    tx.setLocktime(0);
+                    setTransactionLocktime(tx, 0);
                     if(old_toggle != null) {
                         EventManager.get().post(new TransactionChangedEvent(tx));
                     }
@@ -309,7 +319,7 @@ public class HeadersController extends TransactionFormController implements Init
                     if(block != null) {
                         locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppServices.getCurrentBlockHeight() != null && block < AppServices.getCurrentBlockHeight());
                         futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && block > AppServices.getCurrentBlockHeight());
-                        tx.setLocktime(block);
+                        setTransactionLocktime(tx, block);
                         if(old_toggle != null) {
                             EventManager.get().post(new TransactionChangedEvent(tx));
                         }
@@ -323,7 +333,7 @@ public class HeadersController extends TransactionFormController implements Init
                     if(date != null) {
                         locktimeDate.setDateTimeValue(date);
                         futureDateWarning.setVisible(date.isAfter(LocalDateTime.now()));
-                        tx.setLocktime(date.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
+                        setTransactionLocktime(tx, date.atZone(ZoneId.systemDefault()).toEpochSecond());
                         if(old_toggle != null) {
                             EventManager.get().post(new TransactionChangedEvent(tx));
                         }
@@ -361,7 +371,7 @@ public class HeadersController extends TransactionFormController implements Init
                 return;
             }
 
-            tx.setLocktime(newValue);
+            setTransactionLocktime(tx, newValue);
             locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppServices.getCurrentBlockHeight() != null && newValue < AppServices.getCurrentBlockHeight());
             futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && newValue > AppServices.getCurrentBlockHeight());
             if(oldValue != null) {
@@ -386,7 +396,7 @@ public class HeadersController extends TransactionFormController implements Init
             int caret = locktimeDate.getEditor().getCaretPosition();
             locktimeDate.getEditor().setText(newValue.format(DateTimeFormatter.ofPattern(locktimeDate.getFormat())));
             locktimeDate.getEditor().positionCaret(caret);
-            tx.setLocktime(newValue.toEpochSecond(OffsetDateTime.now(ZoneId.systemDefault()).getOffset()));
+            setTransactionLocktime(tx, newValue.atZone(ZoneId.systemDefault()).toEpochSecond());
             futureDateWarning.setVisible(newValue.isAfter(LocalDateTime.now()));
             if(oldValue != null) {
                 EventManager.get().post(new TransactionChangedEvent(tx));
@@ -1441,7 +1451,7 @@ public class HeadersController extends TransactionFormController implements Init
     public void transactionChanged(TransactionChangedEvent event) {
         if(headersForm.getTransaction().equals(event.getTransaction())) {
             updateTxId();
-            boolean locktimeEnabled = headersForm.getTransaction().isLocktimeSequenceEnabled();
+            boolean locktimeEnabled = headersForm.isEditable() && headersForm.getTransaction().isLocktimeSequenceEnabled();
             locktimeNoneType.setDisable(!locktimeEnabled);
             locktimeBlockType.setDisable(!locktimeEnabled);
             locktimeBlock.setDisable(!locktimeEnabled);
