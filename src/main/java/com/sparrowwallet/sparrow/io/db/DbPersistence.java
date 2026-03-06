@@ -162,11 +162,20 @@ public class DbPersistence implements Persistence {
 
     @Override
     public void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws StorageException {
-        updatePassword(storage, encryptionPubKey);
+        String newPassword = getFilePassword(encryptionPubKey);
+        String currentPassword = getDatasourcePassword();
 
         updateExecutor.execute(() -> {
             try {
-                update(storage, wallet, getFilePassword(encryptionPubKey));
+                if(dataSource != null && currentPassword != null && newPassword == null) {
+                    //Removing encryption: write data first
+                    update(storage, wallet, currentPassword);
+                    updatePassword(storage, encryptionPubKey);
+                } else {
+                    //Adding encryption or no change: change file first
+                    updatePassword(storage, encryptionPubKey);
+                    update(storage, wallet, newPassword);
+                }
             } catch(Exception e) {
                 log.error("Error updating wallet db", e);
             }
