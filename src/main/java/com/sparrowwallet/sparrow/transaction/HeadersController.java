@@ -280,9 +280,9 @@ public class HeadersController extends TransactionFormController implements Init
 
         updateTxId();
 
-        version.setValueFactory(new IntegerSpinner.ValueFactory(1, 2, (int)tx.getVersion()));
+        version.setValueFactory(new IntegerSpinner.ValueFactory(1, 3, (int)tx.getVersion()));
         version.valueProperty().addListener((obs, oldValue, newValue) -> {
-            if(newValue == null || newValue < 1 || newValue > 2) {
+            if(newValue == null || newValue < 1 || newValue > 3) {
                 return;
             }
 
