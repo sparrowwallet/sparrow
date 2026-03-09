@@ -37,7 +37,8 @@ public class UsbStatusButton extends MenuButton {
                     togglePassphraseService.setOnSucceeded(event1 -> {
                         EventManager.get().post(new RequestOpenWalletsEvent());
                         if(!device.getModel().externalPassphraseEntry()) {
-                            AppServices.showAlertDialog("Reconnect device", "Reconnect your " + device.getModel().toDisplayString() + " to reset the passphrase.", Alert.AlertType.INFORMATION);
+                            AppServices.showAlertDialog("Restart device", "Reconnect your " + device.getModel().toDisplayString() + " to reset the passphrase." +
+                                    "\n\nIf it has a battery, hold down the power button until it restarts.", Alert.AlertType.INFORMATION);
                         }
                     });
                     togglePassphraseService.setOnFailed(event1 -> {
