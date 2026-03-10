@@ -505,7 +505,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         PSBT psbt = Bip322.getBip322Psbt(scriptType, walletNode.getAddress(), message.getText().trim());
         addBip322DerivationInfo(psbt, signingWallet);
 
-        byte[] psbtBytes = psbt.serialize();
+        byte[] psbtBytes = psbt.getForExport().serialize();
         CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
         BBQR bbqr = new BBQR(BBQRType.PSBT, psbtBytes);
         QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, QREncoding.UR);
@@ -613,7 +613,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
             try(OutputStream os = new FileOutputStream(file)) {
-                os.write(psbt.serialize());
+                os.write(psbt.getForExport().serialize());
             } catch(IOException e) {
                 log.error("Error saving BIP-322 PSBT", e);
                 AppServices.showErrorDialog("Error saving PSBT", "Cannot write to " + file.getAbsolutePath());
