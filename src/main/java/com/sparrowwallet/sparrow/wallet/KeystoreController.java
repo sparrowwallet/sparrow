@@ -433,9 +433,15 @@ public class KeystoreController extends WalletFormController implements Initiali
         if(copy.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             dlg.initOwner(viewSeedButton.getScene().getWindow());
+            if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
+                dlg.setAllowEmptyPassword(true);
+            }
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
-                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
+                if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
+                    getWalletForm().getStorage().setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                }
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get(), getWalletForm().getStorage());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();

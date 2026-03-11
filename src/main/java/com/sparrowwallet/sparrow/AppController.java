@@ -1193,6 +1193,10 @@ public class AppController implements Initializable {
                 loadWalletService.start();
             } else {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(storage.getWalletName(null), WalletPasswordDialog.PasswordRequirement.LOAD);
+                if(storage.isChallengeResponseEnabled()) {
+                    dlg.setHeaderText("Enter the wallet password (leave empty if none).\nYubiKey touch will be required after unlocking.");
+                    dlg.setAllowEmptyPassword(true);
+                }
                 dlg.initOwner(rootStack.getScene().getWindow());
                 Optional<SecureString> optionalPassword = dlg.showAndWait();
                 if(optionalPassword.isEmpty()) {
@@ -1200,6 +1204,9 @@ public class AppController implements Initializable {
                 }
 
                 SecureString password = optionalPassword.get();
+                if(storage.isChallengeResponseEnabled()) {
+                    storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                }
                 Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
                 loadWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Done"));
@@ -1224,7 +1231,7 @@ public class AppController implements Initializable {
                         password.clear();
                     }
                 });
-                EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.START, "Decrypting wallet..."));
+                EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.START, storage.isChallengeResponseEnabled() ? "Touch your YubiKey..." : "Decrypting wallet..."));
                 loadWalletService.start();
             }
         } catch(Exception e) {
@@ -1378,7 +1385,7 @@ public class AppController implements Initializable {
         dlg.initOwner(rootStack.getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            if(password.get().length() == 0) {
+            if(password.get().length() == 0 && !dlg.isYubikeyEnabled()) {
                 try {
                     storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     storage.saveWallet(wallet);
@@ -1395,6 +1402,10 @@ public class AppController implements Initializable {
                     log.error("Error saving imported wallet", e);
                 }
             } else {
+                if(dlg.isYubikeyEnabled()) {
+                    storage.setChallengeResponseEnabled(true);
+                    storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                }
                 keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(Storage.getWalletFile(wallet.getName()).getAbsolutePath(), TimedEvent.Action.END, "Done"));
@@ -2329,8 +2340,14 @@ public class AppController implements Initializable {
             if(selectedWalletForm.getMasterWallet().isEncrypted()) {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(selectedWalletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                 dlg.initOwner(rootStack.getScene().getWindow());
+                if(storage.isChallengeResponseEnabled()) {
+                    dlg.setAllowEmptyPassword(true);
+                }
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
+                    if(storage.isChallengeResponseEnabled()) {
+                        storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    }
                     keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));

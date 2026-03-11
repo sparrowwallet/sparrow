@@ -714,9 +714,15 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
         dlg.initOwner(getDialogPane().getScene().getWindow());
+        if(storage.isChallengeResponseEnabled()) {
+            dlg.setAllowEmptyPassword(true);
+        }
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(walletNode.getWallet().copy(), password.get());
+            if(storage.isChallengeResponseEnabled()) {
+                storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+            }
+            Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(walletNode.getWallet().copy(), password.get(), storage);
             decryptWalletService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                 Wallet decryptedWallet = decryptWalletService.getValue();

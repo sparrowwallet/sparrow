@@ -22,7 +22,9 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private final CheckBox backupExisting;
     private final CheckBox changePassword;
     private final CheckBox deleteBackups;
+    private final CheckBox yubikey;
     private boolean addingPassword;
+    private boolean allowEmptyPassword;
 
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement) {
         this(walletName, requirement, false);
@@ -35,6 +37,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         this.backupExisting = new CheckBox("Backup existing wallet first");
         this.changePassword = new CheckBox("Change password");
         this.deleteBackups = new CheckBox("Delete any backups");
+        this.yubikey = new CheckBox("Require YubiKey for unlock");
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Wallet Password" + (walletName != null ? " - " + walletName : ""));
@@ -72,6 +75,11 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
             deleteBackups.setSelected(true);
         }
 
+        if(requirement == PasswordRequirement.UPDATE_NEW || requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_CHANGE) {
+            yubikey.managedProperty().bind(yubikey.visibleProperty());
+            content.getChildren().add(yubikey);
+        }
+
         dialogPane.setContent(content);
 
         ValidationSupport validationSupport = new ValidationSupport();
@@ -84,7 +92,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         dialogPane.getButtonTypes().addAll(okButtonType);
         Button okButton = (Button) dialogPane.lookupButton(okButtonType);
         okButton.setPrefWidth(130);
-        BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> (requirement == PasswordRequirement.LOAD && password.getText().isEmpty()) || (passwordConfirm.isVisible() && !password.getText().equals(passwordConfirm.getText())), password.textProperty(), passwordConfirm.textProperty());
+        BooleanBinding isInvalid = Bindings.createBooleanBinding(() -> (requirement == PasswordRequirement.LOAD && password.getText().isEmpty() && !allowEmptyPassword) || (passwordConfirm.isVisible() && !password.getText().equals(passwordConfirm.getText())), password.textProperty(), passwordConfirm.textProperty());
         okButton.disableProperty().bind(isInvalid);
 
         if(requirement != PasswordRequirement.UPDATE_NEW && requirement != PasswordRequirement.UPDATE_CHANGE) {
@@ -94,7 +102,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
 
         if(requirement == PasswordRequirement.UPDATE_NEW || requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_CHANGE) {
             password.textProperty().addListener((observable, oldValue, newValue) -> {
-                if(newValue.isEmpty()) {
+                if(newValue.isEmpty() && !yubikey.isSelected()) {
                     okButton.setText("No Password");
                     passwordConfirm.setVisible(false);
                     passwordConfirm.setManaged(false);
@@ -106,6 +114,17 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
                     passwordConfirm.setManaged(true);
                     backupExisting.setVisible(false);
                     addingPassword = true;
+                }
+            });
+            yubikey.selectedProperty().addListener((observable, oldValue, newValue) -> {
+                if(newValue && password.getText().isEmpty()) {
+                    okButton.setText("Set Password");
+                    passwordConfirm.setVisible(false);
+                    passwordConfirm.setManaged(false);
+                    addingPassword = true;
+                } else if(!newValue && password.getText().isEmpty()) {
+                    okButton.setText("No Password");
+                    addingPassword = false;
                 }
             });
         }
@@ -127,6 +146,15 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
 
     public boolean isDeleteBackups() {
         return (addingPassword || isChangePassword()) && deleteBackups.isSelected();
+    }
+
+    public boolean isYubikeyEnabled() {
+        return yubikey.isSelected();
+    }
+
+    public void setAllowEmptyPassword(boolean allow) {
+        this.allowEmptyPassword = allow;
+        password.textProperty().setValue(password.getText());
     }
 
     public enum PasswordRequirement {

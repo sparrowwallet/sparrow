@@ -533,11 +533,17 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     private void rederiveAndReplaceEncryptedWallet(Wallet editedWallet) {
+        Storage storage = walletForm.getStorage();
         WalletPasswordDialog dlg = new WalletPasswordDialog(walletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
         dlg.initOwner(apply.getScene().getWindow());
+        if(storage.isChallengeResponseEnabled()) {
+            dlg.setAllowEmptyPassword(true);
+        }
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            Storage storage = walletForm.getStorage();
+            if(storage.isChallengeResponseEnabled()) {
+                storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+            }
             Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
             keyDerivationService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Done"));
@@ -649,8 +655,14 @@ public class SettingsController extends WalletFormController implements Initiali
                 String walletId = walletForm.getWalletId();
                 WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
                 dlg.initOwner(addAccount.getScene().getWindow());
+                if(walletForm.getStorage().isChallengeResponseEnabled()) {
+                    dlg.setAllowEmptyPassword(true);
+                }
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
+                    if(walletForm.getStorage().isChallengeResponseEnabled()) {
+                        walletForm.getStorage().setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    }
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
@@ -954,7 +966,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 }
             }
 
-            if(password.get().length() == 0 && requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
+            if(password.get().length() == 0 && !dlg.isYubikeyEnabled() && requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
                     walletForm.saveAndRefresh();
@@ -966,6 +978,13 @@ public class SettingsController extends WalletFormController implements Initiali
                     apply.setDisable(false);
                 }
             } else {
+                if(dlg.isYubikeyEnabled()) {
+                    walletForm.getStorage().setChallengeResponseEnabled(true);
+                    walletForm.getStorage().setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                } else if(walletForm.getStorage().isChallengeResponseEnabled()) {
+                    walletForm.getStorage().setChallengeResponseEnabled(false);
+                    walletForm.getStorage().setChallengeResponseProvider(null);
+                }
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.END, "Done"));
