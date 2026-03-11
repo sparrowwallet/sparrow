@@ -108,6 +108,12 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
                     passwordConfirm.setManaged(false);
                     backupExisting.setVisible(true);
                     addingPassword = false;
+                } else if(newValue.isEmpty() && yubikey.isSelected()) {
+                    okButton.setText("Set YubiKey");
+                    passwordConfirm.setVisible(false);
+                    passwordConfirm.setManaged(false);
+                    backupExisting.setVisible(false);
+                    addingPassword = true;
                 } else {
                     okButton.setText("Set Password");
                     passwordConfirm.setVisible(true);
