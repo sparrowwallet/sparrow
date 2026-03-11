@@ -57,6 +57,12 @@ public class LoadWallet implements Runnable {
                     loadWalletService.start();
                 });
             } else {
+                if(storage.isChallengeResponseEnabled()) {
+                    SparrowTerminal.get().getGui().removeWindow(loadingDialog);
+                    showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+                    return;
+                }
+
                 TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Password");
                 builder.setDescription("Enter the password for\n" + storage.getWalletName(null));
                 builder.setPasswordInput(true);

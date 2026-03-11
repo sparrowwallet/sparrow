@@ -96,6 +96,11 @@ public class MasterActionListBox extends ActionListBox {
 
     private static void openLoadedWallet(Storage storage, Wallet wallet) {
         if(SparrowTerminal.get().isLocked(storage)) {
+            if(storage.isChallengeResponseEnabled()) {
+                showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+                return;
+            }
+
             String walletId = storage.getWalletId(wallet);
 
             TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Password");

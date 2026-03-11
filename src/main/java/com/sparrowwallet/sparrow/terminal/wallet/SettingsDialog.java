@@ -127,6 +127,11 @@ public class SettingsDialog extends WalletDialog {
     private void showSeed() {
         Wallet wallet = getWalletForm().getWallet().copy();
         if(wallet.isEncrypted()) {
+            if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
+                showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+                return;
+            }
+
             Wallet copy = wallet.copy();
             String walletId = getWalletForm().getWalletId();
 
@@ -173,6 +178,11 @@ public class SettingsDialog extends WalletDialog {
 
     private void saveWallet(boolean changePassword, boolean suggestChangePassword) {
         WalletForm walletForm = getWalletForm();
+        if(walletForm.getStorage().isChallengeResponseEnabled()) {
+            showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+            return;
+        }
+
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         PasswordRequirement requirement;
