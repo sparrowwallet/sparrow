@@ -1195,9 +1195,15 @@ public class SendController extends WalletFormController implements Initializabl
         if(wallet.isEncrypted()) {
             WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
             dlg.initOwner(paymentTabs.getScene().getWindow());
+            if(storage.isChallengeResponseEnabled()) {
+                dlg.setAllowEmptyPassword(true);
+            }
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
-                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+                if(storage.isChallengeResponseEnabled()) {
+                    storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                }
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get(), storage);
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
