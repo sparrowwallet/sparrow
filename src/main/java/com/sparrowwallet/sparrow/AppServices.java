@@ -16,6 +16,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.DialogImage;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.lark.yubikey.YubiKeyHmacProvider;
 import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -886,16 +887,16 @@ public class AppServices {
         return getInteractionServices().showAlert(title, content, alertType, graphic, buttons);
     }
 
-    public static com.sparrowwallet.lark.yubikey.YubiKeyHmacProvider createYubiKeyProvider() {
-        com.sparrowwallet.lark.yubikey.YubiKeyHmacProvider provider = new com.sparrowwallet.lark.yubikey.YubiKeyHmacProvider();
-        javafx.scene.control.Alert[] touchAlert = new javafx.scene.control.Alert[1];
+    public static YubiKeyHmacProvider createYubiKeyProvider() {
+        YubiKeyHmacProvider provider = new YubiKeyHmacProvider();
+        Alert[] touchAlert = new Alert[1];
         provider.setOnWaitingForTouch(() -> {
-            javafx.application.Platform.runLater(() -> {
-                touchAlert[0] = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+            Platform.runLater(() -> {
+                touchAlert[0] = new Alert(Alert.AlertType.INFORMATION);
                 touchAlert[0].setTitle("YubiKey");
                 touchAlert[0].setHeaderText("Touch your YubiKey");
                 touchAlert[0].setContentText("Waiting for YubiKey touch to complete authentication...");
-                touchAlert[0].getButtonTypes().setAll(javafx.scene.control.ButtonType.CANCEL);
+                touchAlert[0].getButtonTypes().setAll(ButtonType.CANCEL);
                 touchAlert[0].getDialogPane().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
                 setStageIcon(touchAlert[0].getDialogPane().getScene().getWindow());
                 moveToActiveWindowScreen(touchAlert[0]);
@@ -903,7 +904,7 @@ public class AppServices {
             });
         });
         provider.setOnComplete(() -> {
-            javafx.application.Platform.runLater(() -> {
+            Platform.runLater(() -> {
                 if(touchAlert[0] != null) {
                     touchAlert[0].close();
                 }
@@ -1138,7 +1139,7 @@ public class AppServices {
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
                         if(storage.isChallengeResponseEnabled()) {
-                            storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                            storage.setChallengeResponseProvider(createYubiKeyProvider());
                         }
                         Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                         keyDerivationService.setOnSucceeded(workerStateEvent -> {

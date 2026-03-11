@@ -118,12 +118,14 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
             });
             yubikey.selectedProperty().addListener((observable, oldValue, newValue) -> {
                 if(newValue && password.getText().isEmpty()) {
-                    okButton.setText("Set Password");
+                    okButton.setText("Set YubiKey");
                     passwordConfirm.setVisible(false);
                     passwordConfirm.setManaged(false);
+                    backupExisting.setVisible(false);
                     addingPassword = true;
                 } else if(!newValue && password.getText().isEmpty()) {
                     okButton.setText("No Password");
+                    backupExisting.setVisible(true);
                     addingPassword = false;
                 }
             });

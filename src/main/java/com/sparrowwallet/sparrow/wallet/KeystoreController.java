@@ -439,7 +439,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
-                    getWalletForm().getStorage().setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    getWalletForm().getStorage().setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                 }
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get(), getWalletForm().getStorage());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {

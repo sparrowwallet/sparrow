@@ -542,7 +542,7 @@ public class SettingsController extends WalletFormController implements Initiali
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
             if(storage.isChallengeResponseEnabled()) {
-                storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                storage.setChallengeResponseProvider(AppServices.createYubiKeyProvider());
             }
             Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
             keyDerivationService.setOnSucceeded(workerStateEvent -> {
@@ -661,7 +661,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
                     if(walletForm.getStorage().isChallengeResponseEnabled()) {
-                        walletForm.getStorage().setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                        walletForm.getStorage().setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                     }
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
@@ -980,7 +980,7 @@ public class SettingsController extends WalletFormController implements Initiali
             } else {
                 if(dlg.isYubikeyEnabled()) {
                     walletForm.getStorage().setChallengeResponseEnabled(true);
-                    walletForm.getStorage().setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    walletForm.getStorage().setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                 } else if(walletForm.getStorage().isChallengeResponseEnabled()) {
                     walletForm.getStorage().setChallengeResponseEnabled(false);
                     walletForm.getStorage().setChallengeResponseProvider(null);

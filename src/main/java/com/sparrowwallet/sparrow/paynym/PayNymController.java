@@ -375,7 +375,7 @@ public class PayNymController {
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
                         if(storage.isChallengeResponseEnabled()) {
-                            storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                            storage.setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                         }
                         Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get(), storage);
                         decryptWalletService.setOnSucceeded(workerStateEvent -> {
@@ -523,7 +523,7 @@ public class PayNymController {
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
                 if(storage.isChallengeResponseEnabled()) {
-                    storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    storage.setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                 }
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get(), storage);
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {

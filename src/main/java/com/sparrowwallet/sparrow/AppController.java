@@ -1205,7 +1205,7 @@ public class AppController implements Initializable {
 
                 SecureString password = optionalPassword.get();
                 if(storage.isChallengeResponseEnabled()) {
-                    storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    storage.setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                 }
                 Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, password);
                 loadWalletService.setOnSucceeded(workerStateEvent -> {
@@ -1404,7 +1404,7 @@ public class AppController implements Initializable {
             } else {
                 if(dlg.isYubikeyEnabled()) {
                     storage.setChallengeResponseEnabled(true);
-                    storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                    storage.setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                 }
                 keyDerivationService = new Storage.KeyDerivationService(storage, password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
@@ -2346,7 +2346,7 @@ public class AppController implements Initializable {
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
                     if(storage.isChallengeResponseEnabled()) {
-                        storage.setChallengeResponseProvider(com.sparrowwallet.sparrow.AppServices.createYubiKeyProvider());
+                        storage.setChallengeResponseProvider(AppServices.createYubiKeyProvider());
                     }
                     keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
